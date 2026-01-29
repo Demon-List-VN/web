@@ -7,6 +7,7 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { ArrowLeft } from 'lucide-svelte';
 	import Ads from '$lib/components/ads.svelte';
+	import { fade } from 'svelte/transition';
 
 	export let data: any;
 
@@ -72,7 +73,14 @@
 	});
 </script>
 
-<Card.Root class="mx-auto mt-[50px] max-w-[1000px]">
+<img
+	in:fade={{ delay: 500, duration: 300 }}
+	class="absolute z-0 mt-[-50px] h-[50vw] max-h-[450px] w-full object-cover"
+	src={metadata.image}
+	alt={metadata.title}
+/>
+<div class="head"></div>
+<Card.Root class="relative mx-auto max-w-[1000px] mt-[-200px] z-10">
 	<div class="ml-[25px] mt-[10px] flex items-center gap-[5px]">
 		{#each folders as folder, index}
 			<a href={folder.link}>
@@ -89,7 +97,7 @@
 	</div>
 	<Ads />
 	{#if content}
-		<Card.Header class='mt-[-12px]'>
+		<Card.Header class="mt-[-12px]">
 			<Card.Title class="text-3xl">{metadata.title}</Card.Title>
 			<Card.Description>
 				{$t('wiki.created_at')}
@@ -104,3 +112,16 @@
 		<Loading inverted />
 	{/if}
 </Card.Root>
+
+<style lang="scss">
+	.head {
+		position: relative;
+		background: linear-gradient(rgba(0, 0, 0, 0) 10%, hsl(var(--background)) 100%);
+		height: 50vw;
+		max-height: 450px;
+		margin-top: -50px;
+		z-index: 10;
+		display: flex;
+		flex-direction: column;
+	}
+</style>
