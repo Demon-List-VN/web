@@ -1220,4 +1220,9 @@
       "double_rewards": "Nhận gấp đôi phần thưởng ở mỗi cấp"
     }
   }
+  ,
+  "wiki": {
+    "created_at": "Được tạo lúc:",
+    "last_updated": "Cập nhật lần cuối:"
+  }
 }

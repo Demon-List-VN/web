@@ -1221,4 +1221,9 @@
       "double_rewards": "Double rewards at every tier"
     }
   }
+  },
+  "wiki": {
+    "created_at": "Created at",
+    "last_updated": "Last updated at"
+  }
 }
