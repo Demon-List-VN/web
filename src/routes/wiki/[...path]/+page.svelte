@@ -79,7 +79,7 @@
 	src={metadata.image}
 	alt={metadata.title}
 />
-<div class="head"></div>
+<div class="head" />
 <Card.Root class="relative mx-auto max-w-[1000px] mt-[-200px] z-10">
 	<div class="ml-[25px] mt-[10px] flex items-center gap-[5px]">
 		{#each folders as folder, index}
