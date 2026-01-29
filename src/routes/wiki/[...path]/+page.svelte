@@ -71,6 +71,15 @@
 	});
 </script>
 
+<svelte:head>
+	<title>{metadata.title} - Wiki - Demon List VN</title>
+	<meta property="og:title" content={`${metadata.title} - Wiki - Demon List VN`} />
+	<meta property="og:description" content={metadata.description} />
+	{#if metadata.image}
+		<meta property="og:image" content={metadata.image} />
+	{/if}
+</svelte:head>
+
 <img
 	in:fade={{ delay: 500, duration: 300 }}
 	class="absolute z-0 mt-[-50px] h-[50vw] max-h-[450px] w-full object-cover"
@@ -107,7 +116,7 @@
 			<Markdown {content} />
 		</Card.Content>
 	{:else}
-		<Skeleton class="ml-[20px] mb-[5px] h-[20px] w-[40%]" />
+		<Skeleton class="mb-[5px] ml-[20px] h-[20px] w-[40%]" />
 		<Skeleton class="mx-auto mb-[5px] h-[300px] w-[calc(100%-40px)]" />
 		<Skeleton class="mx-[20px] mb-[5px] h-[20px] w-[calc(100%-100px)]" />
 		<Skeleton class="mx-[20px] mb-[5px] h-[20px] w-[calc(100%-60px)]" />
