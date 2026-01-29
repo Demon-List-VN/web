@@ -68,8 +68,6 @@
 
 	onMount(async () => {
 		content = await getRawFileByRawUrl(metadata.rawUrl);
-
-		console.log(metadata);
 	});
 </script>
 
