@@ -3,16 +3,16 @@
 	import { locale, t } from 'svelte-i18n';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import Markdown from '$lib/components/markdown.svelte';
-	import Loading from '$lib/components/animation/loading.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import { ArrowLeft } from 'lucide-svelte';
 	import Ads from '$lib/components/ads.svelte';
 	import { fade } from 'svelte/transition';
+	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 
 	export let data: any;
 
 	let content: string | null = null;
-	$: metadata = $locale ? data[$locale] : null;
+
+	$: metadata = $locale ? data.metadatas.filter((x: any) => x.locale == $locale)[0] : null;
 	$: folders = getFolders(metadata) ?? [];
 
 	function getFolders(metadata: any) {
@@ -78,7 +78,7 @@
 	alt={metadata.title}
 />
 <div class="head" />
-<Card.Root class="relative mx-auto max-w-[1000px] mt-[-200px] z-10">
+<Card.Root class="relative z-10 mx-auto mt-[-200px] max-w-[1000px]">
 	<div class="ml-[25px] mt-[10px] flex items-center gap-[5px]">
 		{#each folders as folder, index}
 			<a href={folder.link}>
@@ -94,20 +94,24 @@
 		{/each}
 	</div>
 	<Ads />
+	<Card.Header class="mt-[-12px]">
+		<Card.Title class="text-3xl">{metadata.title}</Card.Title>
+		<Card.Description>
+			{$t('wiki.created_at')}
+			{new Date(metadata.created_at).toLocaleString('vi-vn')}, {$t('wiki.last_updated')}
+			{new Date(metadata.modifiedAt).toLocaleString('vi-vn')}
+		</Card.Description>
+	</Card.Header>
 	{#if content}
-		<Card.Header class="mt-[-12px]">
-			<Card.Title class="text-3xl">{metadata.title}</Card.Title>
-			<Card.Description>
-				{$t('wiki.created_at')}
-				{new Date(metadata.created_at).toLocaleString('vi-vn')}, {$t('wiki.last_updated')}
-				{new Date(metadata.modifiedAt).toLocaleString('vi-vn')}
-			</Card.Description>
-		</Card.Header>
 		<Card.Content>
 			<Markdown {content} />
 		</Card.Content>
 	{:else}
-		<Loading inverted />
+		<Skeleton class="ml-[20px] mb-[5px] h-[20px] w-[40%]" />
+		<Skeleton class="mx-auto mb-[5px] h-[300px] w-[calc(100%-40px)]" />
+		<Skeleton class="mx-[20px] mb-[5px] h-[20px] w-[calc(100%-100px)]" />
+		<Skeleton class="mx-[20px] mb-[5px] h-[20px] w-[calc(100%-60px)]" />
+		<Skeleton class="mx-[20px] mb-[5px] h-[20px] w-[calc(100%-200px)]" />
 	{/if}
 </Card.Root>
 
