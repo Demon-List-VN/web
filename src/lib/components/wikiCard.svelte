@@ -29,7 +29,7 @@
 </script>
 
 {#if item}
-	<a href={`/wiki/${item.path.replace('.md', '')}`}>
+	<a href={`/wiki/${item.path}`}>
 		<Card class="h-full transition-all hover:border-primary/50 hover:shadow-md">
 			{#if metadata?.image}
 				<div class="relative overflow-hidden rounded-t-xl">

@@ -42,11 +42,11 @@
 			});
 
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/wiki/files?${query.toString()}`);
-			
+
 			if (!res.ok) {
 				throw new Error(`HTTP ${res.status}`);
 			}
-			
+
 			const data: WikiResponse = await res.json();
 
 			if (data?.items) {
@@ -71,7 +71,7 @@
 
 	// Quick links for common sections
 	const quickLinks = [
-		{ icon: Scale, labelKey: 'wiki.quick_links.rules', href: '/rules' },
+		{ icon: Scale, labelKey: 'wiki.quick_links.rules', href: '/wiki/rules' },
 		{ icon: Newspaper, labelKey: 'wiki.quick_links.news', href: '/wiki/news' },
 		{ icon: History, labelKey: 'wiki.quick_links.changelog', href: '/wiki/changelog' },
 		{ icon: FileText, labelKey: 'wiki.quick_links.guides', href: '/wiki/guides' }
@@ -80,7 +80,10 @@
 
 <svelte:head>
 	<title>Wiki - Demon List VN</title>
-	<meta name="description" content="Explore the Demon List VN Wiki - guides, rules, news, and changelogs" />
+	<meta
+		name="description"
+		content="Explore the Demon List VN Wiki - guides, rules, news, and changelogs"
+	/>
 </svelte:head>
 
 <BigTitle value="Wiki" description={$_('wiki.description')} />
@@ -101,36 +104,6 @@
 			{/each}
 		</div>
 	</section>
-
-	<!-- Error State -->
-	{#if hasError}
-		<Alert.Root class="mb-6 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950">
-			<AlertCircle class="h-4 w-4" />
-			<Alert.Title>{$_('wiki.error_title')}</Alert.Title>
-			<Alert.Description>{$_('wiki.error_description')}</Alert.Description>
-		</Alert.Root>
-	{/if}
-
-	<!-- Featured Categories -->
-	{#if featuredFolders.length > 0 || isLoading}
-		<section class="section">
-			<h2 class="section-title">
-				<BookOpen class="mr-2 inline h-5 w-5" />
-				{$_('wiki.categories')}
-			</h2>
-			<div class="folders-grid">
-				{#if isLoading}
-					{#each { length: 4 } as _}
-						<FolderCard folder={null} />
-					{/each}
-				{:else}
-					{#each featuredFolders as folder}
-						<FolderCard {folder} />
-					{/each}
-				{/if}
-			</div>
-		</section>
-	{/if}
 
 	<!-- Latest Articles -->
 	<section class="section">
