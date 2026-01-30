@@ -159,16 +159,7 @@
 		grid-template-columns: repeat(4, 1fr);
 		gap: 16px;
 	}
-
-	:global(.quick-link-btn) {
-		transition: all 0.2s ease;
-	}
-
-	:global(.quick-link-btn:hover) {
-		transform: translateY(-2px);
-		border-color: hsl(var(--primary));
-	}
-
+	
 	.section {
 		margin-bottom: 40px;
 	}

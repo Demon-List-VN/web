@@ -30,13 +30,13 @@
 
 {#if item}
 	<a href={`/wiki/${item.path}`}>
-		<Card class="h-full transition-all hover:border-primary/50 hover:shadow-md">
+		<Card class="h-full hover:border-primary/50 hover:shadow-md">
 			{#if metadata?.image}
 				<div class="relative overflow-hidden rounded-t-xl">
 					<img
 						src={metadata.image}
 						alt={getTitle(item, metadata)}
-						class="aspect-[2/1] w-full object-cover transition-transform duration-300 hover:scale-105"
+						class="aspect-[2/1] w-full object-cover"
 						loading="lazy"
 					/>
 				</div>
