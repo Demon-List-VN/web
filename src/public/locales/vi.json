@@ -1218,10 +1218,24 @@
       "exclusive_items": "Vật phẩm và trang phục độc quyền premium",
       "double_rewards": "Nhận gấp đôi phần thưởng ở mỗi cấp"
     }
-  }
-  ,
+  },
   "wiki": {
     "created_at": "Được tạo lúc:",
-    "last_updated": "Cập nhật lần cuối:"
+    "last_updated": "Cập nhật lần cuối:",
+    "description": "Hướng dẫn, luật lệ, tin tức và nhật ký thay đổi",
+    "categories": "Danh mục",
+    "latest_articles": "Bài viết mới nhất",
+    "no_articles": "Chưa có bài viết nào",
+    "items": "mục",
+    "subfolders": "Thư mục con",
+    "articles": "Bài viết",
+    "empty_folder": "Thư mục này trống",
+    "folder_description": "{count} mục trong thư mục này",
+    "quick_links": {
+      "rules": "Luật",
+      "news": "Tin tức",
+      "changelog": "Nhật ký",
+      "guides": "Hướng dẫn"
+    }
   }
 }
