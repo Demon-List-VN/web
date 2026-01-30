@@ -5,8 +5,9 @@
 	import WikiCard from '$lib/components/wikiCard.svelte';
 	import FolderCard from '$lib/components/folderCard.svelte';
 	import * as Carousel from '$lib/components/ui/carousel/index.js';
+	import * as Alert from '$lib/components/ui/alert';
 	import Ads from '$lib/components/ads.svelte';
-	import { BookOpen, FileText, Scale, Newspaper, History } from 'lucide-svelte';
+	import { BookOpen, FileText, Scale, Newspaper, History, AlertCircle } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 
 	interface WikiFile {
@@ -29,6 +30,7 @@
 	let latestArticles: WikiFile[] = [];
 	let featuredFolders: WikiFile[] = [];
 	let isLoading = true;
+	let hasError = false;
 
 	async function fetchWikiRoot() {
 		try {
@@ -40,6 +42,11 @@
 			});
 
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/wiki/files?${query.toString()}`);
+			
+			if (!res.ok) {
+				throw new Error(`HTTP ${res.status}`);
+			}
+			
 			const data: WikiResponse = await res.json();
 
 			if (data?.items) {
@@ -49,8 +56,10 @@
 					.filter((item) => item.type === 'file' && item.metadata)
 					.slice(0, 8);
 			}
+			hasError = false;
 		} catch (err) {
 			console.error('Failed to fetch wiki data:', err);
+			hasError = true;
 		} finally {
 			isLoading = false;
 		}
@@ -92,6 +101,15 @@
 			{/each}
 		</div>
 	</section>
+
+	<!-- Error State -->
+	{#if hasError}
+		<Alert.Root class="mb-6 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950">
+			<AlertCircle class="h-4 w-4" />
+			<Alert.Title>{$_('wiki.error_title')}</Alert.Title>
+			<Alert.Description>{$_('wiki.error_description')}</Alert.Description>
+		</Alert.Root>
+	{/if}
 
 	<!-- Featured Categories -->
 	{#if featuredFolders.length > 0 || isLoading}

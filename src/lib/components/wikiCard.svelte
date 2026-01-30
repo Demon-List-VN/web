@@ -16,7 +16,7 @@
 	$: metadata = item?.metadata && $locale ? item.metadata[$locale] || Object.values(item.metadata)[0] : null;
 
 	function formatDate(dateString: string) {
-		return new Date(dateString).toLocaleDateString('vi-VN');
+		return new Date(dateString).toLocaleDateString($locale || 'vi-VN');
 	}
 
 	function getTitle(item: any, metadata: any) {

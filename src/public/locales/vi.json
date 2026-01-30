@@ -1231,6 +1231,8 @@
     "articles": "Bài viết",
     "empty_folder": "Thư mục này trống",
     "folder_description": "{count} mục trong thư mục này",
+    "error_title": "Không thể tải nội dung",
+    "error_description": "Không thể tải nội dung wiki. Vui lòng thử lại sau.",
     "quick_links": {
       "rules": "Luật",
       "news": "Tin tức",

@@ -20,6 +20,7 @@
 		? data.metadata[$locale] || Object.values(data.metadata)[0] 
 		: null;
 	$: breadcrumbs = getBreadcrumbs(data) ?? [];
+	$: folderTitle = isFolder ? getFolderTitle(data.path) : '';
 
 	// Separate items for folder view
 	$: folderItems = isFolder && data.items 
@@ -93,8 +94,8 @@
 
 <svelte:head>
 	{#if isFolder}
-		<title>{getFolderTitle(data.path)} - Wiki - Demon List VN</title>
-		<meta property="og:title" content={`${getFolderTitle(data.path)} - Wiki - Demon List VN`} />
+		<title>{folderTitle} - Wiki - Demon List VN</title>
+		<meta property="og:title" content={`${folderTitle} - Wiki - Demon List VN`} />
 	{:else if metadata}
 		<title>{metadata.title} - Wiki - Demon List VN</title>
 		<meta property="og:title" content={`${metadata.title} - Wiki - Demon List VN`} />
@@ -107,7 +108,7 @@
 
 {#if isFolder}
 	<!-- Folder View -->
-	<BigTitle value={getFolderTitle(data.path)} description={$_('wiki.folder_description', { values: { count: data.count || 0 } })} />
+	<BigTitle value={folderTitle} description={$_('wiki.folder_description', { values: { count: data.count || 0 } })} />
 	
 	<Ads unit="leaderboard" />
 	
@@ -185,8 +186,8 @@
 			<Card.Title class="text-3xl">{metadata.title}</Card.Title>
 			<Card.Description>
 				{$_('wiki.created_at')}
-				{new Date(metadata.created_at).toLocaleString('vi-vn')}, {$_('wiki.last_updated')}
-				{new Date(metadata.modifiedAt).toLocaleString('vi-vn')}
+				{new Date(metadata.created_at).toLocaleString($locale || 'vi-vn')}, {$_('wiki.last_updated')}
+				{new Date(metadata.modifiedAt).toLocaleString($locale || 'vi-vn')}
 			</Card.Description>
 		</Card.Header>
 		{#if content}
