@@ -1,24 +1,29 @@
 <script lang="ts">
-	import { locale } from 'svelte-i18n';
 	import FolderView from './FolderView.svelte';
 	import FileView from './FileView.svelte';
+	import { onMount } from 'svelte';
 
 	export let data: any;
 
-	$: isFolder = data.type === 'folder';
-	$: metadata = !isFolder && data.metadata && $locale 
-		? data.metadata[$locale] || Object.values(data.metadata)[0] 
-		: null;
-	$: breadcrumbs = getBreadcrumbs(data) ?? [];
-	$: folderTitle = isFolder ? getFolderTitle(data.path) : '';
+	$: locale = data.locale;
+	$: detail = data.detail;
+	$: isFolder = detail.type === 'folder';
+	$: metadata =
+		!isFolder && detail.metadata && locale
+			? detail.metadata[locale] || Object.values(detail.metadata)[0]
+			: null;
+	$: breadcrumbs = getBreadcrumbs(detail) ?? [];
+	$: folderTitle = isFolder ? getFolderTitle(detail.path) : '';
 
 	function getBreadcrumbs(data: any) {
 		let path = data.path;
-		if (!path) return [];
+
+		if (!path) {
+			return [];
+		}
 
 		let parts: string[] = path.split('/');
 
-		// Remove .md extension if it's a file
 		if (parts.at(-1)?.endsWith('.md')) {
 			parts[parts.length - 1] = parts[parts.length - 1].replace('.md', '');
 		}
@@ -47,12 +52,15 @@
 	function getFolderTitle(path: string) {
 		const parts = path.split('/');
 		const name = parts[parts.length - 1];
-		return name.split('-').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+		return name
+			.split('-')
+			.map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+			.join(' ');
 	}
 </script>
 
 {#if isFolder}
-	<FolderView {data} {breadcrumbs} {folderTitle} />
+	<FolderView data={detail} {breadcrumbs} {folderTitle} />
 {:else if metadata}
 	<FileView {metadata} {breadcrumbs} />
 {/if}

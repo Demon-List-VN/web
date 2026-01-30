@@ -13,23 +13,30 @@
 
 	export let item: any = null;
 
-	$: metadata = item?.metadata && $locale ? item.metadata[$locale] || Object.values(item.metadata)[0] : null;
+	$: metadata =
+		item?.metadata && $locale ? item.metadata[$locale] || Object.values(item.metadata)[0] : null;
 
 	function formatDate(dateString: string) {
 		return new Date(dateString).toLocaleDateString($locale || 'vi-VN');
 	}
 
 	function getTitle(item: any, metadata: any) {
-		if (metadata?.title) return metadata.title;
-		// Fallback: convert path to title
+		if (metadata?.title) {
+			return metadata.title;
+		}
+
 		const pathParts = item.path.split('/');
 		const name = pathParts[pathParts.length - 1].replace('.md', '');
-		return name.split('-').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+
+		return name
+			.split('-')
+			.map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+			.join(' ');
 	}
 </script>
 
 {#if item}
-	<a href={`/wiki/${item.path}`}>
+	<a href={`/wiki/${$locale}/${item.path}`}>
 		<Card class="h-full hover:border-primary/50 hover:shadow-md">
 			{#if metadata?.image}
 				<div class="relative overflow-hidden rounded-t-xl">
@@ -50,8 +57,17 @@
 						{/if}
 					</div>
 					{#if metadata?.locale}
-						<Badge variant="outline" class="shrink-0 uppercase">{metadata.locale}</Badge>
+						<Badge
+							variant="outline"
+							class="shrink-0 bg-black uppercase text-white dark:bg-white dark:text-black"
+							>{metadata.locale}</Badge
+						>
 					{/if}
+					{#each Object.keys(item.metadata) as loc}
+						{#if loc != metadata.locale}
+							<Badge variant="outline" class="shrink-0 uppercase">{loc}</Badge>
+						{/if}
+					{/each}
 				</div>
 			</CardHeader>
 			<CardContent>

@@ -1,8 +1,12 @@
 export async function load({ fetch, params }) {
 	const { path } = params;
-	const data: any = await (
-		await fetch(`${import.meta.env.VITE_API_URL}/wiki/files/${path}`)
+	const parts: string[] = path.split('/');
+	const locale = parts[0];
+	const src = parts.slice(1).join('/');
+
+	const detail: any = await (
+		await fetch(`${import.meta.env.VITE_API_URL}/wiki/files/${src}?locale=${locale}`)
 	).json();
 
-	return data;
+	return { locale, detail };
 }

@@ -9,12 +9,8 @@
 	export let breadcrumbs: Array<{ title: string; link: string }>;
 	export let folderTitle: string;
 
-	$: folderItems = data.items 
-		? data.items.filter((item: any) => item.type === 'folder') 
-		: [];
-	$: fileItems = data.items 
-		? data.items.filter((item: any) => item.type === 'file') 
-		: [];
+	$: folderItems = data.items ? data.items.filter((item: any) => item.type === 'folder') : [];
+	$: fileItems = data.items ? data.items.filter((item: any) => item.type === 'file') : [];
 </script>
 
 <svelte:head>
