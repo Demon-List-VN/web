@@ -42,7 +42,7 @@
 			<h2 class="section-title">{$_('wiki.subfolders')}</h2>
 			<div class="folders-grid">
 				{#each folderItems as folder}
-					<FolderCard {folder} />
+					<FolderCard {folder} {locale} />
 				{/each}
 			</div>
 		</section>

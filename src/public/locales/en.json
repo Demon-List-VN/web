@@ -344,8 +344,7 @@
       "purchase": "Purchase",
       "consuming": "Consuming boost...",
       "queue_boost_used": "Queue boost successfully applied!",
-      "queue_boost_error": "Failed to use queue boost. Please try again."
-      ,
+      "queue_boost_error": "Failed to use queue boost. Please try again.",
       "supporter_note": "All Supporters' submissions are prioritized by 30 days"
     }
   },
@@ -549,8 +548,7 @@
         "proof_placeholder": "Provide proof",
         "message_placeholder": "Message (optional)",
         "continue": "Continue"
-      }
-      ,
+      },
       "toast": {
         "sent": "Sent!",
         "sending": "Sending...",
@@ -1239,6 +1237,9 @@
       "news": "News",
       "changelog": "Changelog",
       "guides": "Guides"
+    },
+    "folders": {
+      "test-nested": "Test nested"
     }
   }
 }

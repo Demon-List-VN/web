@@ -343,8 +343,7 @@
       "purchase": "Mua",
       "consuming": "Đang sử dụng tăng tốc...",
       "queue_boost_used": "Đã áp dụng tăng tốc hàng chờ thành công!",
-      "queue_boost_error": "Không thể sử dụng tăng tốc hàng chờ. Vui lòng thử lại."
-      ,
+      "queue_boost_error": "Không thể sử dụng tăng tốc hàng chờ. Vui lòng thử lại.",
       "supporter_note": "Tất cả bản nộp của Supporter được ưu tiên thêm 30 ngày"
     }
   },
@@ -548,8 +547,7 @@
         "proof_placeholder": "Cung cấp bằng chứng",
         "message_placeholder": "Tin nhắn (tuỳ chọn)",
         "continue": "Tiếp tục"
-      }
-      ,
+      },
       "toast": {
         "sent": "Đã gửi!",
         "sending": "Đang gửi...",
@@ -1238,6 +1236,9 @@
       "news": "Tin tức",
       "changelog": "Nhật ký",
       "guides": "Hướng dẫn"
+    },
+    "folders": {
+      "test-nested": "Test thư mục trong"
     }
   }
 }
