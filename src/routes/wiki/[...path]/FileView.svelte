@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { locale, _ } from 'svelte-i18n';
+	import { _ } from 'svelte-i18n';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import Markdown from '$lib/components/markdown.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -10,6 +10,7 @@
 
 	export let metadata: any;
 	export let breadcrumbs: Array<{ title: string; link: string }>;
+	export let locale: string;
 
 	let content: string | null = null;
 
@@ -76,8 +77,8 @@
 		<Card.Title class="text-3xl">{metadata.title}</Card.Title>
 		<Card.Description>
 			{$_('wiki.created_at')}
-			{new Date(metadata.created_at).toLocaleString($locale || 'vi-vn')}, {$_('wiki.last_updated')}
-			{new Date(metadata.modifiedAt).toLocaleString($locale || 'vi-vn')}
+			{new Date(metadata.created_at).toLocaleString(locale || 'vi-vn')}, {$_('wiki.last_updated')}
+			{new Date(metadata.modifiedAt).toLocaleString(locale || 'vi-vn')}
 		</Card.Description>
 	</Card.Header>
 	{#if content !== null}

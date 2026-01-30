@@ -6,6 +6,7 @@
 	import FolderCard from '$lib/components/folderCard.svelte';
 
 	export let data: any;
+	export let locale: string;
 	export let breadcrumbs: Array<{ title: string; link: string }>;
 	export let folderTitle: string;
 
@@ -53,7 +54,7 @@
 			<h2 class="section-title">{$_('wiki.articles')}</h2>
 			<div class="files-grid">
 				{#each fileItems as item}
-					<WikiCard {item} />
+					<WikiCard {item} {locale} />
 				{/each}
 			</div>
 		</section>

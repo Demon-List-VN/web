@@ -8,16 +8,17 @@
 	} from '$lib/components/ui/card';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Calendar } from 'svelte-radix';
-	import { locale, _ } from 'svelte-i18n';
+	import { _ } from 'svelte-i18n';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 
 	export let item: any = null;
+	export let locale: string;
 
 	$: metadata =
-		item?.metadata && $locale ? item.metadata[$locale] || Object.values(item.metadata)[0] : null;
+		item?.metadata && locale ? item.metadata[locale] || Object.values(item.metadata)[0] : null;
 
 	function formatDate(dateString: string) {
-		return new Date(dateString).toLocaleDateString($locale || 'vi-VN');
+		return new Date(dateString).toLocaleDateString(locale || 'vi-VN');
 	}
 
 	function getTitle(item: any, metadata: any) {
@@ -36,7 +37,7 @@
 </script>
 
 {#if item}
-	<a href={`/wiki/${$locale}/${item.path}`}>
+	<a href={`/wiki/${locale}/${item.path}`}>
 		<Card class="h-full hover:border-primary/50 hover:shadow-md">
 			{#if metadata?.image}
 				<div class="relative overflow-hidden rounded-t-xl">

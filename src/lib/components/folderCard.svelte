@@ -9,7 +9,10 @@
 	function getFolderName(path: string) {
 		const parts = path.split('/');
 		const name = parts[parts.length - 1];
-		return name.split('-').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+		return name
+			.split('-')
+			.map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+			.join(' ');
 	}
 </script>
 
@@ -23,7 +26,8 @@
 				<div class="flex-1">
 					<CardTitle class="text-base">{getFolderName(folder.path)}</CardTitle>
 					<CardDescription>
-						{folder.count ?? 0} {$_('wiki.items')}
+						{folder.count ?? 0}
+						{$_('wiki.items')}
 					</CardDescription>
 				</div>
 			</CardHeader>

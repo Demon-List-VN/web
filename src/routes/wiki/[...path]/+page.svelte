@@ -31,7 +31,7 @@
 		let res = [
 			{
 				title: 'Wiki',
-				link: '/wiki'
+				link: `/wiki/${locale}`
 			}
 		];
 
@@ -42,7 +42,7 @@
 
 			res.push({
 				title: part,
-				link: '/wiki/' + parts.slice(0, i + 1).join('/')
+				link: `/wiki/${locale}/` + parts.slice(0, i + 1).join('/')
 			});
 		}
 
@@ -60,7 +60,7 @@
 </script>
 
 {#if isFolder}
-	<FolderView data={detail} {breadcrumbs} {folderTitle} />
+	<FolderView data={detail} {breadcrumbs} {folderTitle} {locale} />
 {:else if metadata}
-	<FileView {metadata} {breadcrumbs} />
+	<FileView {metadata} {breadcrumbs} {locale} />
 {/if}

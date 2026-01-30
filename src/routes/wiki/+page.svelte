@@ -116,7 +116,7 @@
 					<Carousel.Content>
 						{#each { length: 4 } as _}
 							<Carousel.Item class="sm:basis-1/1 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-								<WikiCard item={null} />
+								<WikiCard item={null} locale={String($locale)} />
 							</Carousel.Item>
 						{/each}
 					</Carousel.Content>
@@ -128,7 +128,7 @@
 					<Carousel.Content>
 						{#each latestArticles as article}
 							<Carousel.Item class="sm:basis-1/1 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-								<WikiCard item={article} />
+								<WikiCard item={article} locale={String($locale)} />
 							</Carousel.Item>
 						{/each}
 					</Carousel.Content>
