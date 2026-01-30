@@ -72,7 +72,7 @@
 	$: quickLinks = [
 		{ icon: Scale, labelKey: 'wiki.quick_links.rules', href: `wiki/${$locale}/rules` },
 		{ icon: Newspaper, labelKey: 'wiki.quick_links.news', href: `/wiki/${$locale}/news` },
-		{ icon: History, labelKey: 'wiki.quick_links.changelog', href: `/wiki/${$locale}/changelog` },
+		{ icon: History, labelKey: 'wiki.quick_links.changelog', href: `/wiki/${$locale}/changelogs` },
 		{ icon: FileText, labelKey: 'wiki.quick_links.guides', href: `/wiki/${$locale}/guides` }
 	];
 </script>
