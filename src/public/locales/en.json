@@ -20,7 +20,8 @@
     "saving": "Saving",
     "delete": "Delete",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "previous": "Previous"
   },
   "time_unit": {
     "second": "second",

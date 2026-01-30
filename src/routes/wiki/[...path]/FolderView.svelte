@@ -4,6 +4,7 @@
 	import Ads from '$lib/components/ads.svelte';
 	import WikiCard from '$lib/components/wikiCard.svelte';
 	import FolderCard from '$lib/components/folderCard.svelte';
+	import { page } from '$app/stores';
 
 	export let data: any;
 	export let locale: string;
@@ -12,6 +13,25 @@
 
 	$: folderItems = data.items ? data.items.filter((item: any) => item.type === 'folder') : [];
 	$: fileItems = data.items ? data.items.filter((item: any) => item.type === 'file') : [];
+
+	// Pagination
+	let totalPages: number = 1;
+	let currentPage: number = 1;
+	let prevPage: number = 1;
+	let nextPage: number = 1;
+	let isFirstPage: boolean = true;
+	let isLastPage: boolean = true;
+	$: totalPages = Math.max(1, Math.ceil((data?.count || 0) / 12));
+	$: {
+		const raw = $page.url.searchParams.get('page');
+		const parsed = parseInt(raw || '1', 10);
+		// clamp to [1, totalPages]
+		currentPage = isNaN(parsed) ? 1 : Math.min(Math.max(1, parsed), totalPages);
+	}
+	$: prevPage = Math.max(1, currentPage - 1);
+	$: nextPage = Math.min(totalPages, currentPage + 1);
+	$: isFirstPage = currentPage <= 1;
+	$: isLastPage = currentPage >= totalPages;
 </script>
 
 <svelte:head>
@@ -62,6 +82,36 @@
 
 	{#if folderItems.length === 0 && fileItems.length === 0}
 		<p class="empty-message">{$_('wiki.empty_folder')}</p>
+	{/if}
+</div>
+
+<div class="mx-auto w-fit">
+	{#if !isFirstPage}
+		<a href={`?page=${prevPage}`}>
+			<Button variant="link">{$_('general.previous')}</Button>
+		</a>
+	{:else}
+		<Button variant="link" disabled>{$_('general.previous')}</Button>
+	{/if}
+
+	{#each { length: totalPages } as _, index}
+		<a href={`?page=${index + 1}`}>
+			<Button
+				variant="link"
+				class="px-[10px]"
+				aria-current={currentPage === index + 1 ? 'page' : undefined}
+			>
+				{index + 1}
+			</Button>
+		</a>
+	{/each}
+
+	{#if !isLastPage}
+		<a href={`?page=${nextPage}`}>
+			<Button variant="link">{$_('general.next')}</Button>
+		</a>
+	{:else}
+		<Button variant="link" disabled>{$_('general.next')}</Button>
 	{/if}
 </div>
 

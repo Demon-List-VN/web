@@ -20,7 +20,8 @@
     "saving": "Đang lưu",
     "delete": "Xóa",
     "yes": "Có",
-    "no": "Không"
+    "no": "Không",
+    "previous": "Trước"
   },
   "time_unit": {
     "second": "giây",
