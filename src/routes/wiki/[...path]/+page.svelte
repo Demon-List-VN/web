@@ -12,7 +12,7 @@
 
 	let content: string | null = null;
 
-	$: metadata = $locale ? data.metadatas.filter((x: any) => x.locale == $locale)[0] : null;
+	$: metadata = $locale ? data.metadata[$locale] : null;
 	$: folders = getFolders(metadata) ?? [];
 
 	function getFolders(metadata: any) {
