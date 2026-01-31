@@ -9,6 +9,10 @@ export async function load({ params, fetch }) {
 			fetch(`${import.meta.env.VITE_API_URL}/deathCount/${uid}/${levelid}`)
 		]);
 
+		if (!recordRes.ok) {
+			throw error(recordRes.status, 'Record not found');
+		}
+
 		const record = await recordRes.json();
 
 		let deathCount: number[] = [];
@@ -27,7 +31,10 @@ export async function load({ params, fetch }) {
 			record,
 			deathCount
 		};
-	} catch (e) {
-		throw error(404, 'Record not found');
+	} catch (e: any) {
+		if (e.status) {
+			throw e;
+		}
+		throw error(500, 'Failed to load record');
 	}
 }
