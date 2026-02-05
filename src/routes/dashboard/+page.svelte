@@ -71,7 +71,7 @@
 </script>
 
 <svelte:head>
-	<title>Dashboard - Demon List VN</title>
+	<title>Dashboard - Geometry Dash VN</title>
 </svelte:head>
 
 <Dashboard {events} />

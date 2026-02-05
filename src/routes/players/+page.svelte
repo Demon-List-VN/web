@@ -63,7 +63,7 @@
 </script>
 
 <svelte:head>
-	<title>Người chơi - Demon List VN</title>
+	<title>Người chơi - Geometry Dash VN</title>
 </svelte:head>
 
 <div class="wrapper">

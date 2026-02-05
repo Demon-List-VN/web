@@ -36,8 +36,8 @@
 </script>
 
 <svelte:head>
-	<title>{data.name} - Demon List VN</title>
-	<meta property="og:title" content={`${data.name} - Demon List VN`} />
+	<title>{data.name} - Geometry Dash VN</title>
+	<meta property="og:title" content={`${data.name} - Geometry Dash VN`} />
 	<meta property="og:description" content={getFirstLine(data.description)} />
 	<meta
 		property="og:image"

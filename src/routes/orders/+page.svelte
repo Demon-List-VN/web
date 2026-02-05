@@ -41,7 +41,7 @@
 </script>
 
 <svelte:head>
-	<title>Đơn hàng - Demon List VN</title>
+	<title>Đơn hàng - Geometry Dash VN</title>
 </svelte:head>
 
 {#if $user.loggedIn}

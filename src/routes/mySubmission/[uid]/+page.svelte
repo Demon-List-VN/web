@@ -92,7 +92,7 @@
 </script>
 
 <svelte:head>
-	<title>Bản nộp của tôi - Demon List VN</title>
+	<title>Bản nộp của tôi - Geometry Dash VN</title>
 </svelte:head>
 
 <Ads unit="leaderboard" />

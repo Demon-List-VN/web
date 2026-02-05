@@ -41,7 +41,7 @@
 </script>
 
 <svelte:head>
-	<title>Bảng xếp hạng - {getListTitle()} - Demon List VN</title>
+	<title>Bảng xếp hạng - {getListTitle()} - Geometry Dash VN</title>
 </svelte:head>
 
 <Ads dataAdFormat="rectangle" />

@@ -400,7 +400,7 @@
 	<div class="footerFiller"></div>
 	<p>
 		© Copyright 2020-2025 demonlistvn.com.<br />
-		All rights reserved demonlistvn.com and Demon List VN are in no way affiliated with RobTopGamesAB
+		All rights reserved demonlistvn.com and Geometry Dash VN are in no way affiliated with RobTopGamesAB
 		®
 	</p>
 	<div class="links">

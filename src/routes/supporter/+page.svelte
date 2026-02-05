@@ -11,7 +11,7 @@
 </script>
 
 <svelte:head>
-	<title>Nhận Supporter - Demon List VN</title>
+	<title>Nhận Supporter - Geometry Dash VN</title>
 </svelte:head>
 
 <div in:fade={{ delay: 300, duration: 1000 }}>

@@ -132,7 +132,7 @@
 				<Dialog.Title>{$_("payment.review.title")}</Dialog.Title>
 			</Dialog.Header>
 			<div class="flex text-sm">
-				<p>Demon List VN Supporter Role ({quantity[0]} {$_("general.month")}{quantity[0] > 1 && $locale == 'en' ? 's' : ''})</p>
+				<p>Geometry Dash VN Supporter Role ({quantity[0]} {$_("general.month")}{quantity[0] > 1 && $locale == 'en' ? 's' : ''})</p>
 				<p class="ml-auto"><b>{formatPrice(49000 * quantity[0])}₫</b></p>
 			</div>
 			<hr />

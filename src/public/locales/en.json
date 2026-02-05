@@ -123,7 +123,7 @@
     "inventory": "Inventory"
   },
   "inventory": {
-    "page_title": "Inventory - Demon List VN",
+    "page_title": "Inventory - Geometry Dash VN",
     "title": "Inventory",
     "empty": "No items in inventory.",
     "failed_load": "Failed to load inventory",
@@ -276,7 +276,7 @@
     "review": {
       "title": "Review your order",
       "recipent": "Recipent",
-      "caution": "Please do not close the payment window until you are redirected back to Demon List VN",
+      "caution": "Please do not close the payment window until you are redirected back to Geometry Dash VN",
       "proceed": "Process to payment"
     }
   },
@@ -353,7 +353,7 @@
     "button": "Search",
     "placeholder": "Type and press Enter to search...",
     "no_result": "No results found",
-    "dlvn": "Levels from Demon List VN",
+    "dlvn": "Levels from Geometry Dash VN",
     "gd": "Levels from Geometry Dash",
     "players": "Players"
   },
@@ -391,7 +391,7 @@
       "days": "day",
       "days_plural": "days",
       "recipent_clan": "Recipent Clan",
-      "caution": "Please do not close the payment window until you are redirected back to Demon List VN",
+      "caution": "Please do not close the payment window until you are redirected back to Geometry Dash VN",
       "proceed": "Proceed to Payment"
     },
     "public": "Public",
@@ -794,7 +794,7 @@
     "or": "or",
     "store_button": "Check out our store",
     "alert": {
-      "title": "Support Demon List VN 💖",
+      "title": "Support Geometry Dash VN 💖",
       "description": "Consider becoming a Supporter to help DLVN grow and get exclusive perks!",
       "learn_more": "Learn more"
     },
@@ -813,17 +813,17 @@
       "no_buyers_found": "No buyers found"
     },
     "why_support": {
-      "title": "Why should you support Demon List VN",
+      "title": "Why should you support Geometry Dash VN",
       "support_team": {
         "title": "Support the Team",
-        "description": "A small single person team develops and runs Demon List VN. Your support gives him the motivation to develop and maintain the website."
+        "description": "A small single person team develops and runs Geometry Dash VN. Your support gives him the motivation to develop and maintain the website."
       },
       "server_infrastructure": {
         "title": "Server Infrastructure",
         "description": "Contributions go towards the servers for running the website."
       },
       "self_sustaining": {
-        "title": "Keep Demon List VN self-sustaining",
+        "title": "Keep Geometry Dash VN self-sustaining",
         "description": "Your contributions help keep the site independent and completely free from outside sponsors."
       }
     },
@@ -892,8 +892,8 @@
     },
     "notes": {
       "title": "Note:",
-      "non_recurring": "Demon List VN Supporter roles are non-recurring payments.",
-      "non_refundable": "Demon List VN Supporter roles are non-refundable.",
+      "non_recurring": "Geometry Dash VN Supporter roles are non-recurring payments.",
+      "non_refundable": "Geometry Dash VN Supporter roles are non-refundable.",
       "extension": "If you buy one while you still have an active roles, it will extend the duration in addition to any remaining time.",
       "duration": "1 Month = 30 Days."
     }
@@ -941,7 +941,7 @@
         "shipping_fee": "Shipping Fee",
         "total": "Total",
         "free": "Free",
-        "bank_transfer_note": "Please do not close the payment window until you are redirected back to Demon List VN",
+        "bank_transfer_note": "Please do not close the payment window until you are redirected back to Geometry Dash VN",
         "cod_note": "Payment will be collected upon delivery by our shipping partner",
         "proceed_payment": "Proceed to Payment",
         "place_order": "Place Order"
@@ -1015,15 +1015,15 @@
     "title": "Discord Bot",
     "page_title": "Discord",
     "page_description": "Join our community or add our bot to your server",
-    "description": "Access Demon List VN right in Discord",
+    "description": "Access Geometry Dash VN right in Discord",
     "server_title": "Join Our Server",
-    "server_description": "Connect with the Demon List VN community",
+    "server_description": "Connect with the Geometry Dash VN community",
     "server_feature_1": "Chat with other players",
     "server_feature_2": "Get latest updates & announcements",
     "server_feature_3": "Participate in events",
     "join_server": "Join Server",
     "bot_title": "Add Our Bot",
-    "bot_description": "Bring Demon List VN to your server",
+    "bot_description": "Bring Geometry Dash VN to your server",
     "bot_feature_1": "Slash commands for quick access",
     "bot_feature_2": "Real-time data updates",
     "bot_feature_3": "Easy to set up",
@@ -1032,7 +1032,7 @@
     "features_subtitle": "Everything you need right in Discord",
     "feature_level_search": {
       "title": "Level Search",
-      "description": "View detailed information about any level in Demon List VN"
+      "description": "View detailed information about any level in Geometry Dash VN"
     },
     "feature_leaderboard": {
       "title": "Leaderboard",

@@ -71,10 +71,10 @@
 </script>
 
 <svelte:head>
-	<title>Discord - Demon List VN</title>
+	<title>Discord - Geometry Dash VN</title>
 	<meta
 		name="description"
-		content="Tham gia cộng đồng Demon List VN trên Discord hoặc thêm bot vào server của bạn!"
+		content="Tham gia cộng đồng Geometry Dash VN trên Discord hoặc thêm bot vào server của bạn!"
 	/>
 </svelte:head>
 

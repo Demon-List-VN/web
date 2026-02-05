@@ -70,7 +70,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.name} - Demon List VN</title>
+	<title>{data.name} - Geometry Dash VN</title>
 </svelte:head>
 
 <div

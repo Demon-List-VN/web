@@ -64,7 +64,7 @@
 </script>
 
 <svelte:head>
-	<title>Chi tiết đơn hàng - Demon List VN</title>
+	<title>Chi tiết đơn hàng - Geometry Dash VN</title>
 </svelte:head>
 
 <Title value={$_('order_detail.title')} />

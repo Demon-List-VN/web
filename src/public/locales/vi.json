@@ -123,7 +123,7 @@
     "inventory": "Kho đồ"
   },
   "inventory": {
-    "page_title": "Kho đồ - Demon List VN",
+    "page_title": "Kho đồ - Geometry Dash VN",
     "title": "Kho đồ",
     "empty": "Không có vật phẩm trong kho.",
     "failed_load": "Tải kho đồ thất bại",
@@ -275,7 +275,7 @@
     "review": {
       "title": "Xem lại đơn hàng",
       "recipent": "Người nhận",
-      "caution": "Vui lòng không đóng cửa sổ thanh toán cho đến khi bạn được chuyển hướng trở lại Demon List VN",
+      "caution": "Vui lòng không đóng cửa sổ thanh toán cho đến khi bạn được chuyển hướng trở lại Geometry Dash VN",
       "proceed": "Tiến hành thanh toán"
     }
   },
@@ -352,7 +352,7 @@
     "button": "Tìm kiếm",
     "placeholder": "Nhập và bấm Enter để tìm kiếm...",
     "no_result": "Không có kết quả",
-    "dlvn": "Levels từ Demon List VN",
+    "dlvn": "Levels từ Geometry Dash VN",
     "gd": "Levels từ Geometry Dash",
     "players": "Người chơi"
   },
@@ -390,7 +390,7 @@
       "days": "ngày",
       "days_plural": "ngày",
       "recipent_clan": "Hội nhận",
-      "caution": "Vui lòng không đóng cửa sổ thanh toán cho đến khi bạn được chuyển hướng trở lại Demon List VN",
+      "caution": "Vui lòng không đóng cửa sổ thanh toán cho đến khi bạn được chuyển hướng trở lại Geometry Dash VN",
       "proceed": "Tiến hành thanh toán"
     },
     "public": "Công khai",
@@ -814,7 +814,7 @@
     "or": "hoặc",
     "store_button": "Xem cửa hàng của chúng tôi",
     "alert": {
-      "title": "Ủng hộ Demon List VN 💖",
+      "title": "Ủng hộ Geometry Dash VN 💖",
       "description": "Trở thành Supporter để ủng hộ và giúp DLVN phát triển hơn, đồng thời nhận các quyền lợi độc quyền!",
       "learn_more": "Tìm hiểu thêm"
     },
@@ -833,17 +833,17 @@
       "no_buyers_found": "Không tìm thấy người mua"
     },
     "why_support": {
-      "title": "Tại sao bạn nên ủng hộ Demon List VN",
+      "title": "Tại sao bạn nên ủng hộ Geometry Dash VN",
       "support_team": {
         "title": "Ủng hộ đội ngũ",
-        "description": "Một đội ngũ nhỏ chỉ có một người phát triển và vận hành Demon List VN. Sự ủng hộ của bạn mang lại động lực để anh ấy phát triển và duy trì trang web."
+        "description": "Một đội ngũ nhỏ chỉ có một người phát triển và vận hành Geometry Dash VN. Sự ủng hộ của bạn mang lại động lực để anh ấy phát triển và duy trì trang web."
       },
       "server_infrastructure": {
         "title": "Hạ tầng máy chủ",
         "description": "Sự đóng góp của bạn sẽ được dùng cho các máy chủ để vận hành trang web."
       },
       "self_sustaining": {
-        "title": "Giữ Demon List VN tự duy trì",
+        "title": "Giữ Geometry Dash VN tự duy trì",
         "description": "Sự đóng góp của bạn giúp trang web độc lập và hoàn toàn không phụ thuộc vào các nhà tài trợ bên ngoài."
       }
     },
@@ -912,8 +912,8 @@
     },
     "notes": {
       "title": "Lưu ý:",
-      "non_recurring": "Demon List VN Supporter không tự động gia hạn.",
-      "non_refundable": "Demon List VN Supporter không thể hoàn tiền.",
+      "non_recurring": "Geometry Dash VN Supporter không tự động gia hạn.",
+      "non_refundable": "Geometry Dash VN Supporter không thể hoàn tiền.",
       "extension": "Nếu bạn mua Supporter khi vẫn còn Supporter đang hoạt động, thời gian sẽ được cộng thêm thêm.",
       "duration": "1 Tháng = 30 Ngày."
     }
@@ -961,7 +961,7 @@
         "shipping_fee": "Phí vận chuyển",
         "total": "Tổng cộng",
         "free": "Miễn phí",
-        "bank_transfer_note": "Vui lòng không đóng cửa sổ thanh toán cho đến khi bạn được chuyển hướng trở lại Demon List VN",
+        "bank_transfer_note": "Vui lòng không đóng cửa sổ thanh toán cho đến khi bạn được chuyển hướng trở lại Geometry Dash VN",
         "cod_note": "Phí thanh toán sẽ được thu khi giao hàng bởi đối tác vận chuyển của chúng tôi",
         "proceed_payment": "Tiến hành thanh toán",
         "place_order": "Đặt hàng"
@@ -1014,15 +1014,15 @@
     "title": "Discord Bot",
     "page_title": "Discord",
     "page_description": "Tham gia cộng đồng hoặc thêm bot vào server của bạn",
-    "description": "Truy cập Demon List VN ngay trong Discord",
+    "description": "Truy cập Geometry Dash VN ngay trong Discord",
     "server_title": "Tham Gia Server",
-    "server_description": "Kết nối với cộng đồng Demon List VN",
+    "server_description": "Kết nối với cộng đồng Geometry Dash VN",
     "server_feature_1": "Trò chuyện với người chơi khác",
     "server_feature_2": "Nhận thông báo & cập nhật mới nhất",
     "server_feature_3": "Tham gia các sự kiện",
     "join_server": "Tham Gia Server",
     "bot_title": "Thêm Bot",
-    "bot_description": "Đưa Demon List VN vào server của bạn",
+    "bot_description": "Đưa Geometry Dash VN vào server của bạn",
     "bot_feature_1": "Lệnh slash để truy cập nhanh",
     "bot_feature_2": "Cập nhật dữ liệu theo thời gian thực",
     "bot_feature_3": "Dễ dàng cài đặt",
@@ -1031,7 +1031,7 @@
     "features_subtitle": "Mọi thứ bạn cần ngay trong Discord",
     "feature_level_search": {
       "title": "Tra cứu level",
-      "description": "Xem thông tin chi tiết về bất kỳ level nào trong Demon List VN"
+      "description": "Xem thông tin chi tiết về bất kỳ level nào trong Geometry Dash VN"
     },
     "feature_leaderboard": {
       "title": "Bảng xếp hạng",

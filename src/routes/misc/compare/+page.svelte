@@ -111,7 +111,7 @@
 </script>
 
 <svelte:head>
-	<title>{$_('compare.title')} - Demon List VN</title>
+	<title>{$_('compare.title')} - Geometry Dash VN</title>
 </svelte:head>
 
 <div class="wrapper">

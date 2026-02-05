@@ -4,10 +4,10 @@
 </script>
 
 <svelte:head>
-	<title>About - Demon List VN</title>
+	<title>About - Geometry Dash VN</title>
 </svelte:head>
 
-<BigTitle value="About" description="Demon List VN maintainers and developers" />
+<BigTitle value="About" description="Geometry Dash VN maintainers and developers" />
 
 <div class="wrapper">
 	<p>Source code</p>

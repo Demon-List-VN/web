@@ -39,8 +39,8 @@
 </script>
 
 <svelte:head>
-	<title>{metadata.title} - Wiki - Demon List VN</title>
-	<meta property="og:title" content={`${metadata.title} - Wiki - Demon List VN`} />
+	<title>{metadata.title} - Wiki - Geometry Dash VN</title>
+	<meta property="og:title" content={`${metadata.title} - Wiki - Geometry Dash VN`} />
 	<meta property="og:description" content={metadata.description} />
 	{#if metadata.image}
 		<meta property="og:image" content={metadata.image} />

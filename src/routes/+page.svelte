@@ -132,10 +132,10 @@
 </script>
 
 <svelte:head>
-	<title>Demon List VN</title>
+	<title>Geometry Dash VN</title>
 	<meta
 		name="description"
-		content="Chào mừng đến với Demon List VN, nơi chúng tôi theo dõi những demon khó nhất được tạo ra, xác minh và những demon khó nhất được đánh bại bởi người Việt Nam!"
+		content="Chào mừng đến với Geometry Dash VN, nơi chúng tôi theo dõi những demon khó nhất được tạo ra, xác minh và những demon khó nhất được đánh bại bởi người Việt Nam!"
 	/>
 </svelte:head>
 

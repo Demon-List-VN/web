@@ -36,7 +36,7 @@
 </script>
 
 <svelte:head>
-	<title>{$_('supporter.top_supporters.page_title')} - Demon List VN</title>
+	<title>{$_('supporter.top_supporters.page_title')} - Geometry Dash VN</title>
 </svelte:head>
 
 <div>

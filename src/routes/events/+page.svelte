@@ -68,7 +68,7 @@
 </script>
 
 <svelte:head>
-	<title>Sự kiện - Demon List VN</title>
+	<title>Sự kiện - Geometry Dash VN</title>
 </svelte:head>
 
 <div class="mx-auto mt-[20px] w-full max-w-[1500px] px-1">

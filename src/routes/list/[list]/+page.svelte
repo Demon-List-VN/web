@@ -178,7 +178,7 @@
 </script>
 
 <svelte:head>
-	<title>{getTitle()} - Demon List VN</title>
+	<title>{getTitle()} - Geometry Dash VN</title>
 </svelte:head>
 
 <div class="levelsWrapper">

@@ -8,7 +8,7 @@
 </script>
 
 <svelte:head>
-	<title>Misc - Demon List VN</title>
+	<title>Misc - Geometry Dash VN</title>
 </svelte:head>
 
 {#if $user.loggedIn && isActive($user.data.supporterUntil)}

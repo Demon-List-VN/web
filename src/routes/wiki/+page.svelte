@@ -78,10 +78,10 @@
 </script>
 
 <svelte:head>
-	<title>Wiki - Demon List VN</title>
+	<title>Wiki - Geometry Dash VN</title>
 	<meta
 		name="description"
-		content="Explore the Demon List VN Wiki - guides, rules, news, and changelogs"
+		content="Explore the Geometry Dash VN Wiki - guides, rules, news, and changelogs"
 	/>
 </svelte:head>
 

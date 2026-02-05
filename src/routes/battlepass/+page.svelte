@@ -24,7 +24,7 @@
 </script>
 
 <svelte:head>
-	<title>{$_('battlepass.title')} - Demon List VN</title>
+	<title>{$_('battlepass.title')} - Geometry Dash VN</title>
 </svelte:head>
 
 {#if !data.season}

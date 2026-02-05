@@ -31,7 +31,7 @@
 </script>
 
 <svelte:head>
-	<title>Giỏ hàng - Demon List VN</title>
+	<title>Giỏ hàng - Geometry Dash VN</title>
 </svelte:head>
 
 <div

@@ -62,8 +62,8 @@
 </script>
 
 <svelte:head>
-	<title>{data.player.name} - Demon List VN</title>
-	<meta property="og:title" content={`${data.player.name} - Demon List VN`} />
+	<title>{data.player.name} - Geometry Dash VN</title>
+	<meta property="og:title" content={`${data.player.name} - Geometry Dash VN`} />
 	<meta
 		property="og:description"
 		content={`Điểm Classic: ${data.player.rating} #${data.player.overallRank}\nTổng điểm Featured List: ${data.player.totalFLpt} #${data.player.flrank}\nĐiểm cuộc thi: ${data.player.elo}`}

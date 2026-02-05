@@ -35,8 +35,8 @@
 </script>
 
 <svelte:head>
-	<title>{folderTitle} - Wiki - Demon List VN</title>
-	<meta property="og:title" content={`${folderTitle} - Wiki - Demon List VN`} />
+	<title>{folderTitle} - Wiki - Geometry Dash VN</title>
+	<meta property="og:title" content={`${folderTitle} - Wiki - Geometry Dash VN`} />
 </svelte:head>
 
 <Ads unit="leaderboard" />

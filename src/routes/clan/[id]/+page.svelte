@@ -355,8 +355,8 @@
 </script>
 
 <svelte:head>
-	<title>Hội {data.name} - Demon List VN</title>
-	<meta property="og:title" content={`Hội ${data.name} - Demon List VN`} />
+	<title>Hội {data.name} - Geometry Dash VN</title>
+	<meta property="og:title" content={`Hội ${data.name} - Geometry Dash VN`} />
 	<meta
 		property="og:image"
 		content={`https://cdn.demonlistvn.com/clan-photos/${$page.params.id}.jpg?version=${data.imageVersion}`}

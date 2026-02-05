@@ -109,7 +109,7 @@
 </script>
 
 <svelte:head>
-	<title>Hội - Demon List VN</title>
+	<title>Hội - Geometry Dash VN</title>
 </svelte:head>
 
 <div class="titleWrapper">

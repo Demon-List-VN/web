@@ -40,8 +40,8 @@
 </script>
 
 <svelte:head>
-	<title>{data.title} - Demon List VN</title>
-	<meta property="og:title" content={`${data.title} - Demon List VN`} />
+	<title>{data.title} - Geometry Dash VN</title>
+	<meta property="og:title" content={`${data.title} - Geometry Dash VN`} />
 	<meta property="og:description" content={data.description} />
 	<meta
 		property="og:image"

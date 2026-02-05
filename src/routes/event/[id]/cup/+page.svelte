@@ -21,7 +21,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.title} - Demon List VN</title>
+	<title>{data.title} - Geometry Dash VN</title>
 </svelte:head>
 
 {#if tab == 'detail'}

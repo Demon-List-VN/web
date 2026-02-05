@@ -35,6 +35,6 @@
 		<img class="invert" src="/tick-svgrepo-com.svg" alt="tick" />
 	</div>
 	<h1 class="mb-[10px] text-5xl">Payment Success</h1>
-	<p class="text-lg">Thank you for supporting the development of Demon List VN!</p>
+	<p class="text-lg">Thank you for supporting the development of Geometry Dash VN!</p>
 	<p class="text-lg">Order ID: {id}</p>
 </div>

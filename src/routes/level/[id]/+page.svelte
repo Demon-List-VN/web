@@ -130,17 +130,17 @@
 
 <svelte:head>
 	{#if 'gdbrowser' in data}
-		<title>{data.gdbrowser.name} by {data.gdbrowser.author} - Demon List VN</title>
+		<title>{data.gdbrowser.name} by {data.gdbrowser.author} - Geometry Dash VN</title>
 		<meta
 			property="og:title"
-			content={`${data.gdbrowser.name} by {data.gdbrowser.author} - Demon List VN`}
+			content={`${data.gdbrowser.name} by {data.gdbrowser.author} - Geometry Dash VN`}
 		/>
 		<meta property="og:description" content={data.gdbrowser.description} />
 	{:else}
-		<title>{data.level.name} by {data.level.creator} - Demon List VN</title>
+		<title>{data.level.name} by {data.level.creator} - Geometry Dash VN</title>
 		<meta
 			property="og:title"
-			content={`${data.level.name} by ${data.level.creator} - Demon List VN`}
+			content={`${data.level.name} by ${data.level.creator} - Geometry Dash VN`}
 		/>
 		<meta
 			property="og:description"
@@ -197,7 +197,7 @@
 				<Tabs.Trigger
 					class="h-[40px]"
 					value="dlvn"
-					on:click={() => goto(`/level/${$page.params.id}`)}>Demon List VN</Tabs.Trigger
+					on:click={() => goto(`/level/${$page.params.id}`)}>Geometry Dash VN</Tabs.Trigger
 				>
 				<Tabs.Trigger
 					class="h-[40px]"
