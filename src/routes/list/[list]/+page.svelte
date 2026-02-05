@@ -29,8 +29,13 @@
 		ratingMax: null as string | null,
 		nameSearch: '',
 		creatorSearch: '',
-		sortBy: currentListType === 'fl' ? 'flTop' : 'dlTop',
-		ascending: true
+		sortBy:
+			$page.params.list === 'fl'
+				? 'flTop'
+				: $page.params.list === 'cl'
+					? 'created_at'
+					: 'dlTop',
+		ascending: $page.params.list !== 'cl'
 	};
 
 	function getCacheKey() {
@@ -55,8 +60,11 @@
 		const query = new URLSearchParams({
 			start: String((curPage - 1) * 50),
 			end: String(curPage * 50 - 1),
-			sortBy: `${$page.params.list == 'fl' ? 'fl' : 'dl'}Top`,
-			ascending: 'true',
+			sortBy:
+				$page.params.list === 'cl'
+					? 'created_at'
+					: `${$page.params.list == 'fl' ? 'fl' : 'dl'}Top`,
+			ascending: $page.params.list == 'cl' ? 'false' : 'true',
 			uid: $user.loggedIn ? $user.data.uid : ''
 		});
 

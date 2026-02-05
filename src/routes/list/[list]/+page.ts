@@ -2,8 +2,8 @@ async function getTotalPage(fetch: any, list: string) {
 	const query = new URLSearchParams({
 		start: '0',
 		end: '0',
-		sortBy: list == 'fl' ? 'flTop' : 'dlTop',
-		ascending: 'false'
+		sortBy: list == 'fl' ? 'flTop' : list == 'cl' ? 'created_at' : 'dlTop',
+		ascending: list == 'cl' ? 'false' : 'true'
 	});
 
 	const res = await (
@@ -16,15 +16,15 @@ async function getTotalPage(fetch: any, list: string) {
 async function getLevels(fetch: any, list: string, page: number, uid: string | null) {
 	let sortBy = list == 'fl' ? 'flTop' : 'dlTop';
 
-	if(list == 'cl') {
-		sortBy = 'created_at'
+	if (list == 'cl') {
+		sortBy = 'created_at';
 	}
 
 	const query = new URLSearchParams({
 		start: String((page - 1) * 50),
 		end: String(page * 50 - 1),
 		sortBy: sortBy,
-		ascending: 'true',
+		ascending: list == 'cl' ? 'false' : 'true',
 		uid: !uid ? '' : uid
 	});
 

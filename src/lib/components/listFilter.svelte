@@ -24,9 +24,10 @@
 	let sortBy = '';
 	let isPinned = false;
 	let isCollapsed = true;
-	let ascending = true;
+	let ascending = listType !== 'cl';
 
-	$: defaultTopColumn = listType === 'fl' ? 'flTop' : 'dlTop';
+	$: defaultTopColumn =
+		listType === 'fl' ? 'flTop' : listType === 'cl' ? 'created_at' : 'dlTop';
 
 	const dispatch = createEventDispatcher();
 
@@ -64,6 +65,7 @@
 		nameSearch = '';
 		creatorSearch = '';
 		sortBy = '';
+		ascending = listType !== 'cl';
 
 		dispatch('filter', {
 			topStart: null,
@@ -72,7 +74,8 @@
 			ratingMax: null,
 			nameSearch: '',
 			creatorSearch: '',
-			sortBy: defaultTopColumn
+			sortBy: defaultTopColumn,
+			ascending
 		});
 	}
 </script>
