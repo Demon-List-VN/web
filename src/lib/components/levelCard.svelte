@@ -11,6 +11,7 @@
 	import { isActive } from '$lib/client/isSupporterActive';
 	import { _ } from 'svelte-i18n';
 	import { get } from 'svelte/store';
+	import PlayerLink from '$lib/components/playerLink.svelte';
 
 	let failedToLoad = false;
 
@@ -55,8 +56,12 @@
 								{/if}
 							</div>
 						</a>
-						<a href={`/level/${level.id}`} data-sveltekit-preload-data="tap">
-							<div class="levelInfo h-[60px]">
+						<div class="levelInfo relative h-[60px]">
+							<a
+								href={`/level/${level.id}`}
+								class="absolute inset-0 z-10"
+								data-sveltekit-preload-data="tap"
+							></a>
 								{#if !hideTop}
 									{#if top}
 										<div class="top">#{top}</div>
@@ -67,7 +72,7 @@
 								<div class="info">
 									<div class="levelName">
 										<div class="name">
-										{#if top && !hideTop}
+											{#if top && !hideTop}
 												#{level[`${type == 'fl' ? 'fl' : 'dl'}Top`]}
 											{/if}
 											{level.name}
@@ -83,11 +88,13 @@
 											{#if $user.loggedIn && isActive($user.data.supporterUntil) && type == 'dl'}
 												{#if !level.record}
 													<Tooltip.Root>
-														<Tooltip.Trigger>
-															<div class="pt">
-																+{calcRating($user.ratings, level.rating) - $user.data.rating}
-															</div>
-														</Tooltip.Trigger>
+														<div class="relative z-20">
+															<Tooltip.Trigger>
+																<div class="pt">
+																	+{calcRating($user.ratings, level.rating) - $user.data.rating}
+																</div>
+															</Tooltip.Trigger>
+														</div>
 														<Tooltip.Content>
 															<p>
 																{$user.data.rating} -> {calcRating($user.ratings, level.rating)}
@@ -109,7 +116,16 @@
 											{/if}
 										{/if}
 									</div>
-									<div class="creator">by {level.creator}</div>
+									<div class="creator flex gap-[5px]">
+										by
+										{#if level.creatorId}
+											<div class="relative z-20">
+												<PlayerLink player={level.creatorData} />
+											</div>
+										{:else}
+											{level.creator}
+										{/if}
+									</div>
 								</div>
 								{#if level.record}
 									<div class="progress">
@@ -129,15 +145,14 @@
 									</div>
 								{/if}
 							</div>
-						</a>
 					</ContextMenu.Trigger>
 					<ContextMenu.Content class="w-64">
 						<ContextMenu.Item
 							inset
 							on:click={async () => {
 								await navigator.clipboard.writeText(String(level.id));
-								toast.success($_("toast.clipboard"));
-							}}>{$_("context.copy_level_id")}</ContextMenu.Item
+								toast.success($_('toast.clipboard'));
+							}}>{$_('context.copy_level_id')}</ContextMenu.Item
 						>
 						<ContextMenu.Item
 							inset
@@ -145,8 +160,8 @@
 								await navigator.clipboard.writeText(
 									`https://img.youtube.com/vi/${level.videoID}/0.jpg`
 								);
-								toast.success($_("toast.clipboard"));
-							}}>{$_("context.copy_thumbnail")}</ContextMenu.Item
+								toast.success($_('toast.clipboard'));
+							}}>{$_('context.copy_thumbnail')}</ContextMenu.Item
 						>
 					</ContextMenu.Content>
 				</ContextMenu.Root>

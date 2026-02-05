@@ -13,6 +13,7 @@
 	import * as Tabs from '$lib/components/ui/tabs';
 	import { goto } from '$app/navigation';
 	import { _ } from 'svelte-i18n';
+	import PlayerLink from '$lib/components/playerLink.svelte';
 
 	export let data: PageData;
 	let levelAPI: any = null;
@@ -104,12 +105,12 @@
 	}
 
 	function getList() {
-		console.log(data.level)
-		if(data.level.isChallenge) {
-			return $_('level.challenge_rating')
+		console.log(data.level);
+		if (data.level.isChallenge) {
+			return $_('level.challenge_rating');
 		}
 
-		return data.level.isPlatformer ? $_('level.platformer_rating') : $_('level.classic_rating')
+		return data.level.isPlatformer ? $_('level.platformer_rating') : $_('level.classic_rating');
 	}
 
 	$: ($page.params.id, fetchData());
@@ -186,7 +187,14 @@
 							<span class="creator">by {data.gdbrowser.author}</span>
 						{:else}
 							<h2>{data.level.name}</h2>
-							<span class="creator">by {data.level.creator}</span>
+							<span class="creator flex gap-[5px]"
+								>by
+								{#if data.level.creatorId}
+									<PlayerLink player={data.level.creatorData} />
+								{:else}
+									{data.level.creator}
+								{/if}
+							</span>
 						{/if}
 					</div>
 				</div>
@@ -215,8 +223,7 @@
 				<div class="content">
 					{#if 'level' in data}
 						<div class="pointLabel">
-							{getList()}: {data.level
-								.rating}
+							{getList()}: {data.level.rating}
 							<div class="top">#{data.level.dlTop}</div>
 						</div>
 						<div class="pointLabel">
@@ -277,7 +284,11 @@
 							</p>
 						{:else if 'level' in data && data.level.rating}
 							<p>
-								<b>{data.level.isPlatformer ? $_('level.base_time') : $_('level.minimum_progress')}:</b>
+								<b
+									>{data.level.isPlatformer
+										? $_('level.base_time')
+										: $_('level.minimum_progress')}:</b
+								>
 								<span>
 									{data.level.isPlatformer
 										? getTimeString(data.level.minProgress)
@@ -316,7 +327,9 @@
 					<Table.Head class="w-[100px] text-center">{$_('level.submitted_on')}</Table.Head>
 					<Table.Head class="w-[100px] text-center">{$_('level.device')}</Table.Head>
 					<Table.Head class="w-[80px] text-center"
-						>{data.level && data.level.isPlatformer ? $_('level.time') : $_('level.progress')}</Table.Head
+						>{data.level && data.level.isPlatformer
+							? $_('level.time')
+							: $_('level.progress')}</Table.Head
 					>
 				</Table.Row>
 			</Table.Header>
