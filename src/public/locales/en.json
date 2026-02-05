@@ -83,6 +83,11 @@
       "invalid_progress": "Invalid progress",
       "cancel_confirm": "Cancel submission? This cannot be undone"
     },
+    "boost": {
+      "loading": "Boosting...",
+      "success": "Boost successful",
+      "error": "Boost failed"
+    },
     "order_restore": "Restoring your order...",
     "order_place": {
       "success": "Order placed!",

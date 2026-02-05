@@ -85,9 +85,9 @@
 					}
 				}),
 				{
-					loading: 'Boosting...',
-					success: 'Boost successful',
-					error: (err) => 'Boost failed'
+					loading: $_('toast.boost.loading'),
+					success: $_('toast.boost.success'),
+					error: (err) => $_('toast.boost.error')
 				}
 			);
 		} catch (e) {
@@ -123,7 +123,7 @@
 	<div class="wrapper">
 		<!-- Level Submissions Table -->
 		{#if data.levelSubmissions && data.levelSubmissions.length > 0}
-			<div class="section-title">Nộp Level</div>
+			<div class="section-title">Level</div>
 			<Table.Root>
 				<Table.Caption>Tổng số level nộp: {data.levelSubmissions.length}</Table.Caption>
 				<Table.Header>
@@ -169,7 +169,7 @@
 			class="section-title"
 			style="margin-top: {data.levelSubmissions && data.levelSubmissions.length > 0 ? '40px' : '0'}"
 		>
-			Bản ghi nộp
+			Bản ghi
 		</div>
 		<Table.Root>
 			<Table.Caption>{$_('submissions.total_record')}: {data.records.length}</Table.Caption>

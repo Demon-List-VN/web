@@ -83,6 +83,11 @@
       "invalid_progress": "Tiến độ không hợp lệ",
       "cancel_confirm": "Huỷ bản nộp? Hành động này không thể hoàn tác"
     },
+    "boost": {
+      "loading": "Đang tăng tốc...",
+      "success": "Tăng tốc thành công",
+      "error": "Tăng tốc thất bại"
+    },
     "order_restore": "Đang khôi phục đơn hàng của bạn...",
     "order_place": {
       "success": "Đã đặt hàng!",
