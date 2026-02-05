@@ -20,6 +20,8 @@
 	<BigTitle value={$_('list.classic.title')} description={$_('list.classic.description')} />
 {:else if $page.params.list == 'pl'}
 	<BigTitle value={$_('list.platformer.title')} description={$_('list.platformer.description')} />
+{:else if $page.params.list == 'cl'}
+	<BigTitle value={$_('list.challenge.title')} description={$_('list.challenge.description')} />
 {:else if $page.params.list == 'fl'}
 	<BigTitle value={$_('list.featured.title')} description={$_('list.featured.description')} />
 {/if}

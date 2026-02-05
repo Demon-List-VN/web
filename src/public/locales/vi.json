@@ -602,6 +602,10 @@
       "title": "Platformer List",
       "description": "Level platformer khó nhất được đánh bại bởi người Việt"
     },
+    "challenge": {
+      "title": "Challenge List",
+      "description": "Thử thách được tạo ra bởi người Việt"
+    },
     "featured": {
       "title": "Featured List",
       "description": "Level khó nhất được tạo bởi người Việt"

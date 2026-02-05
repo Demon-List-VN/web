@@ -603,6 +603,10 @@
       "title": "Platformer List",
       "description": "Hardest platformer level beaten by Vietnamese"
     },
+    "challenge": {
+      "title": "Challenge List",
+      "description": "Challenge made by Vietnamese"
+    },
     "featured": {
       "title": "Featured List",
       "description": "Hardest level created by Vietnamese"
