@@ -11,7 +11,7 @@
 	import RecordDetail from '$lib/components/recordDetail.svelte';
 	import Ads from '$lib/components/ads.svelte';
 	import { _ } from 'svelte-i18n';
-	import { EllipsisIcon, Hamburger, SkipForward, SkipForwardIcon } from 'lucide-svelte';
+	import { EllipsisIcon, Hamburger, SkipForward, SkipForwardIcon, CheckCircle2, XCircle } from 'lucide-svelte';
 	import { HamburgerMenu } from 'svelte-radix';
 	import { Ellipsis } from '$lib/components/ui/pagination';
 
@@ -44,7 +44,7 @@
 			{
 				loading: $_('toast.submission_cancel.loading'),
 				success: () => {
-					data.data = data.data.filter((x) => {
+					data.records = data.records.filter((x) => {
 						return x.levelid != lvID;
 					});
 
@@ -114,8 +114,57 @@
 {#if $user.loggedIn && $user.data.uid == $page.params.uid}
 	<Title value={$_('submissions.title')} />
 	<div class="wrapper">
+		<!-- Level Submissions Table -->
+		{#if data.levelSubmissions && data.levelSubmissions.length > 0}
+			<div class="section-title">Nộp Level</div>
+			<Table.Root>
+				<Table.Caption>Tổng số level nộp: {data.levelSubmissions.length}</Table.Caption>
+				<Table.Header>
+					<Table.Row>
+						<Table.Head>{$_('submissions.level')}</Table.Head>
+						<Table.Head class="w-[120px] text-center">Ngày nộp</Table.Head>
+						<Table.Head class="w-[100px] text-center">Trạng thái</Table.Head>
+						<Table.Head class="w-[0px] text-center"></Table.Head>
+					</Table.Row>
+				</Table.Header>
+				<Table.Body>
+					{#each data.levelSubmissions as submission}
+						<Table.Row>
+							<Table.Cell class="font-medium">
+								<a href={`/level/${submission.levels.id}`} data-sveltekit-preload-data="tap">
+									{submission.levels.name}
+								</a>
+							</Table.Cell>
+							<Table.Cell class="text-center">
+								{new Date(submission.created_at).toLocaleString('vi-VN')}
+							</Table.Cell>
+							<Table.Cell class="text-center">
+								{#if submission.accepted}
+									<span class="flex items-center justify-center gap-1 text-green-600">
+										<CheckCircle2 size={16} />
+										Chấp thuận
+									</span>
+								{:else}
+									<span class="flex items-center justify-center gap-1 text-yellow-600">
+										⏳ Chờ duyệt
+									</span>
+								{/if}
+							</Table.Cell>
+							<Table.Cell class="text-center">
+								<a href={`/level/${submission.levels.id}`} target="_blank">
+									<ExternalLink size={20} />
+								</a>
+							</Table.Cell>
+						</Table.Row>
+					{/each}
+				</Table.Body>
+			</Table.Root>
+		{/if}
+
+		<!-- Record Submissions Table -->
+		<div class="section-title" style="margin-top: {data.levelSubmissions && data.levelSubmissions.length > 0 ? '40px' : '0'}">Bản ghi nộp</div>
 		<Table.Root>
-			<Table.Caption>{$_('submissions.total_record')}: {data.data.length}</Table.Caption>
+			<Table.Caption>{$_('submissions.total_record')}: {data.records.length}</Table.Caption>
 			<Table.Header>
 				<Table.Row>
 					<Table.Head>{$_('submissions.level')}</Table.Head>
@@ -131,7 +180,7 @@
 				</Table.Row>
 			</Table.Header>
 			<Table.Body>
-				{#each data.data as record}
+				{#each data.records as record}
 					<Table.Row
 						on:click={(e) => {
 							// @ts-ignore
@@ -210,6 +259,13 @@
 <style lang="scss">
 	.wrapper {
 		padding-inline: 50px;
+	}
+
+	.section-title {
+		font-size: 1.25rem;
+		font-weight: 600;
+		margin-bottom: 20px;
+		margin-top: 30px;
 	}
 
 	@media screen and (max-width: 900px) {
