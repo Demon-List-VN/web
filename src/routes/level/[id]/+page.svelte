@@ -103,6 +103,15 @@
 			});
 	}
 
+	function getList() {
+		console.log(data.level)
+		if(data.level.isChallenge) {
+			return $_('level.challenge_rating')
+		}
+
+		return data.level.isPlatformer ? $_('level.platformer_rating') : $_('level.classic_rating')
+	}
+
 	$: ($page.params.id, fetchData());
 
 	onMount(() => {
@@ -206,7 +215,7 @@
 				<div class="content">
 					{#if 'level' in data}
 						<div class="pointLabel">
-							{data.level.isPlatformer ? $_('level.platformer_rating') : $_('level.classic_rating')}: {data.level
+							{getList()}: {data.level
 								.rating}
 							<div class="top">#{data.level.dlTop}</div>
 						</div>
