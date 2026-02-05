@@ -441,7 +441,9 @@
       "claiming": "Claiming...",
       "claim_error": "Failed to claim",
       "claimed_success": "Claimed! Please check your inventory",
-      "rarity_label": "Rarity:"
+      "rarity_label": "Rarity:",
+      "quantity_label": "Quantity",
+      "description_label": "Description"
     },
     "ended": "Ended"
   },

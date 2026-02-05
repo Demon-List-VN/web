@@ -3,6 +3,7 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Popover from '$lib/components/ui/popover/index.js';
+	import RewardItemDetails from '$lib/components/RewardItemDetails.svelte';
 	import { get } from 'svelte/store';
 	import { _ } from 'svelte-i18n';
 	import { user } from '$lib/client';
@@ -26,21 +27,6 @@
 				return '#dc2626';
 			default:
 				return '#9ca3af';
-		}
-	}
-
-	function rarityName(r: number) {
-		switch (r) {
-			case 1:
-				return get(_)('inventory.rarity_names.uncommon');
-			case 2:
-				return get(_)('inventory.rarity_names.rare');
-			case 3:
-				return get(_)('inventory.rarity_names.epic');
-			case 4:
-				return get(_)('inventory.rarity_names.legendary');
-			default:
-				return get(_)('inventory.rarity_names.common');
 		}
 	}
 
@@ -113,25 +99,7 @@
 								</button>
 							</Popover.Trigger>
 							<Popover.Content>
-								<div class="flex items-start gap-3">
-									<img
-										class="h-16 w-16 object-contain"
-										src={`https://cdn.demonlistvn.com/items/${reward.id}.webp`}
-										alt={reward.name}
-									/>
-									<div>
-										<div class="font-medium">{reward.name}</div>
-										<div class="text-sm text-neutral-400">
-											{get(_)('events.quest.rarity_label')}
-											<span class="font-bold" style="color: {rarityColor(reward.rarity)}"
-												>{rarityName(reward.rarity)}</span
-											>
-										</div>
-										{#if reward.description}
-											<div class="text-sm text-neutral-400">{reward.description}</div>
-										{/if}
-									</div>
-								</div>
+								<RewardItemDetails itemData={reward} quantity={1} />
 							</Popover.Content>
 						</Popover.Root>
 					{/each}

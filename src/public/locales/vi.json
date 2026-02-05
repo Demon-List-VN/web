@@ -440,7 +440,9 @@
       "claiming": "Đang nhận...",
       "claim_error": "Nhận thất bại",
       "claimed_success": "Đã nhận! Vui lòng kiểm tra kho đồ của bạn",
-      "rarity_label": "Độ hiếm:"
+      "rarity_label": "Độ hiếm:",
+      "quantity_label": "Số lượng",
+      "description_label": "Mô tả"
     },
     "ended": "Đẫ kết thúc"
   },
