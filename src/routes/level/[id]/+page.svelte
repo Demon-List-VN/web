@@ -3,7 +3,7 @@
 	import * as Table from '$lib/components/ui/table';
 	import RecordDetail from '$lib/components/recordDetail.svelte';
 	import type { PageData } from './$types';
-	import PlayerHoverCard from '$lib/components/playerLink.svelte';
+	import PlayerLink from '$lib/components/playerLink.svelte';
 	import { fade } from 'svelte/transition';
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
@@ -13,7 +13,6 @@
 	import * as Tabs from '$lib/components/ui/tabs';
 	import { goto } from '$app/navigation';
 	import { _ } from 'svelte-i18n';
-	import PlayerLink from '$lib/components/playerLink.svelte';
 
 	export let data: PageData;
 	let levelAPI: any = null;
@@ -350,8 +349,8 @@
 							<Table.Cell class="font-medium">
 								#{index + 1}
 							</Table.Cell>
-							<Table.Cell>
-								<PlayerHoverCard player={record.players} />
+							<Table.Cell on:click={(e) => e.stopPropagation()}>
+								<PlayerLink player={record.players} />
 							</Table.Cell>
 							<Table.Cell class="text-center">
 								{new Date(record.timestamp).toLocaleString('vi-VN')}
