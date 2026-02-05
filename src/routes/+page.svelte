@@ -135,7 +135,7 @@
 	<title>Geometry Dash VN</title>
 	<meta
 		name="description"
-		content="Chào mừng đến với Geometry Dash VN, nơi chúng tôi theo dõi những demon khó nhất được tạo ra, xác minh và những demon khó nhất được đánh bại bởi người Việt Nam!"
+		content="Website dành cho cộng đồng Geometry Dash Việt Nam"
 	/>
 </svelte:head>
 

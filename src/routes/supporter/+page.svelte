@@ -104,7 +104,7 @@
 					<Card.Title>{$_('supporter.perks.short_url.title')}</Card.Title>
 					<Card.Description class="w-[250px]">
 						{$_('supporter.perks.short_url.description')}<br />
-						Example: <a href="/@NamPE">demonlistvn.com/@NamPE</a>
+						Example: <a href="/@NamPE">gdvn.net/@NamPE</a>
 					</Card.Description>
 				</Card.Header>
 			</Card.Root>

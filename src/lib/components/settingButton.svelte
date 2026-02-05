@@ -377,7 +377,7 @@
 						>
 					{:else}
 						<a
-							href="https://discord.com/oauth2/authorize?client_id=1071500325338488843&response_type=code&redirect_uri=https%3A%2F%2Fapi.demonlistvn.com%2Fauth%2Fcallback%2Fdiscord&scope=identify"
+							href="https://discord.com/oauth2/authorize?client_id=1071500325338488843&response_type=code&redirect_uri=https%3A%2F%2Fapi.gdvn.net%2Fauth%2Fcallback%2Fdiscord&scope=identify"
 						>
 							<Button class="w-full" variant="outline">{$_('settings.account.link')}</Button>
 						</a>
