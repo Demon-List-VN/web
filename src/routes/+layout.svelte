@@ -541,6 +541,7 @@
 
 	.menu {
 		display: none;
+		margin-top: 6px;
 	}
 
 	.navbarWrapper {

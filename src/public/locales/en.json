@@ -1162,6 +1162,7 @@
     "sort_default": "Default (Top)",
     "sort_by_top": "By Top",
     "sort_by_date": "By Created Date",
+    "ascending": "Ascending",
     "apply": "Apply Filters",
     "clear": "Clear Filters"
   },

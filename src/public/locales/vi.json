@@ -1161,6 +1161,7 @@
     "sort_default": "Mặc định (Top)",
     "sort_by_top": "Theo Top",
     "sort_by_date": "Theo ngày tạo",
+    "ascending": "Tăng dần",
     "apply": "Áp dụng",
     "clear": "Xóa bộ lọc"
   },

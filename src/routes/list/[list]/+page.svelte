@@ -29,7 +29,8 @@
 		ratingMax: null as string | null,
 		nameSearch: '',
 		creatorSearch: '',
-		sortBy: currentListType === 'fl' ? 'flTop' : 'dlTop'
+		sortBy: currentListType === 'fl' ? 'flTop' : 'dlTop',
+		ascending: true
 	};
 
 	function getCacheKey() {
@@ -67,6 +68,7 @@
 		if (filters.nameSearch) query.set('nameSearch', filters.nameSearch);
 		if (filters.creatorSearch) query.set('creatorSearch', filters.creatorSearch);
 		if (filters.sortBy) query.set('sortBy', filters.sortBy);
+		if (filters.ascending) query.set('ascending', String(filters.ascending));
 
 		const res = await (
 			await fetch(`${import.meta.env.VITE_API_URL}/list/${$page.params.list}?${query.toString()}`)

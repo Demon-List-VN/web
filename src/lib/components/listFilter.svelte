@@ -4,6 +4,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Button } from '$lib/components/ui/button';
 	import * as Select from '$lib/components/ui/select';
+	import { Switch } from '$lib/components/ui/switch';
 	import { createEventDispatcher } from 'svelte';
 	import { Pin, ChevronDown, ChevronUp, Lock, Filter, Funnel } from 'lucide-svelte';
 	import { browser } from '$app/environment';
@@ -23,6 +24,7 @@
 	let sortBy = '';
 	let isPinned = false;
 	let isCollapsed = true;
+	let ascending = true;
 
 	$: defaultTopColumn = listType === 'fl' ? 'flTop' : 'dlTop';
 
@@ -49,7 +51,8 @@
 			ratingMax: ratingMax.trim() === '' ? null : ratingMax,
 			nameSearch: nameSearch.trim(),
 			creatorSearch: creatorSearch.trim(),
-			sortBy: sortBy.trim() === '' ? null : sortBy
+			sortBy: sortBy.trim() === '' ? null : sortBy,
+			ascending: ascending
 		});
 	}
 
@@ -200,6 +203,12 @@
 									<Select.Item value="created_at">{$_('list_filter.sort_by_date')}</Select.Item>
 								</Select.Content>
 							</Select.Root>
+						</div>
+						<div class="filterGroup">
+							<Label for="ascending">{$_('list_filter.ascending')}</Label>
+							<div class="flex h-10 items-center">
+								<Switch id="ascending" bind:checked={ascending} />
+							</div>
 						</div>
 					</div>
 				</div>
