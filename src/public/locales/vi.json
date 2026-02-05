@@ -1154,6 +1154,10 @@
     "search_by_name": "Tìm theo tên",
     "creator_name": "Tên Creator",
     "search_by_creator": "Tìm theo creator",
+    "sort_by": "Sắp xếp theo",
+    "sort_default": "Mặc định (Top)",
+    "sort_by_top": "Theo Top",
+    "sort_by_date": "Theo ngày tạo",
     "apply": "Áp dụng",
     "clear": "Xóa bộ lọc"
   },

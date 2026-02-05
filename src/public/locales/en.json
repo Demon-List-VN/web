@@ -1155,6 +1155,10 @@
     "search_by_name": "Search by name",
     "creator_name": "Creator Name",
     "search_by_creator": "Search by creator",
+    "sort_by": "Sort By",
+    "sort_default": "Default (Top)",
+    "sort_by_top": "By Top",
+    "sort_by_date": "By Created Date",
     "apply": "Apply Filters",
     "clear": "Clear Filters"
   },
