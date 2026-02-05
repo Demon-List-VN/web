@@ -38,10 +38,11 @@
 			routes: [
 				{ route: '/list/dl', name: 'Classic' },
 				{ route: '/list/pl', name: 'Platformer' },
-				{ route: '/list/fl', name: 'Featured' }
+				{ route: '/list/fl', name: 'Featured' },
+				{ route: '/list/cl', name: 'Challenge' }
 			]
 		},
-		{ route: '/battlepass', name: 'Battle Pass' },
+		// { route: '/battlepass', name: 'Battle Pass' },
 		{ route: '/events', name: $locale === 'en' ? 'Event' : 'Sự kiện' },
 		{
 			name: $locale === 'en' ? 'Community' : 'Cộng đồng',
@@ -350,11 +351,6 @@
 						{#if $user.data.isTrusted || $user.data.isAdmin}
 							<DropdownMenu.Item on:click={() => goto(`/overwatch`)}
 								>{$_('dropdown.overwatch')}</DropdownMenu.Item
-							>
-						{/if}
-						{#if $user.data.isAdmin}
-							<DropdownMenu.Item on:click={() => goto(`/admin/battlepass`)}
-								>Battle Pass Manager</DropdownMenu.Item
 							>
 						{/if}
 						<DropdownMenu.Separator />
