@@ -25,6 +25,7 @@
 	export let level: any;
 	export let type: string;
 	export let top: number | null = null;
+	export let hideTop: boolean = false;
 </script>
 
 {#if level}
@@ -56,15 +57,17 @@
 						</a>
 						<a href={`/level/${level.id}`} data-sveltekit-preload-data="tap">
 							<div class="levelInfo">
-								{#if top}
-									<div class="top">#{top}</div>
-								{:else}
-									<div class="top">#{level[`${type == 'fl' ? 'fl' : 'dl'}Top`]}</div>
+								{#if !hideTop}
+									{#if top}
+										<div class="top">#{top}</div>
+									{:else}
+										<div class="top">#{level[`${type == 'fl' ? 'fl' : 'dl'}Top`]}</div>
+									{/if}
 								{/if}
 								<div class="info">
 									<div class="levelName">
 										<div class="name">
-											{#if top}
+										{#if top && !hideTop}
 												#{level[`${type == 'fl' ? 'fl' : 'dl'}Top`]}
 											{/if}
 											{level.name}

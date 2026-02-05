@@ -47,8 +47,26 @@
 	// Level submission data
 	let levelSubmission = {
 		levelId: NaN,
-		comment: ''
+		comment: '',
+		videoLink: ''
 	};
+
+	// Extract YouTube video ID from URL
+	function extractYouTubeVideoId(url: string): string | null {
+		const patterns = [
+			/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/,
+			/^([a-zA-Z0-9_-]{11})$/
+		];
+		for (const pattern of patterns) {
+			const match = url.match(pattern);
+			if (match) return match[1];
+		}
+		return null;
+	}
+
+	function isValidYouTubeLink(url: string): boolean {
+		return extractYouTubeVideoId(url) !== null;
+	}
 
 	let submitLog: string[] = [];
 	let apiLevel: any = null;
@@ -134,11 +152,14 @@
 	async function submitLevel() {
 		submitId = new Date().getTime();
 
+		const videoID = levelSubmission.videoLink ? extractYouTubeVideoId(levelSubmission.videoLink) : null;
+
 		fetch(`${import.meta.env.VITE_API_URL}/level-submissions`, {
 			method: 'POST',
 			body: JSON.stringify({
 				levelId: levelSubmission.levelId,
-				comment: levelSubmission.comment
+				comment: levelSubmission.comment,
+				videoID: videoID
 			}),
 			headers: {
 				Authorization: `Bearer ${await $user.token()}`,
@@ -198,8 +219,17 @@
 				});
 		}
 
-		// For level submission, only need to validate level exists
+		// For level submission, only need to validate level exists and video link
 		if (submissionType === 'level' && step == 2) {
+			// Validate YouTube video link is required and valid
+			if (!levelSubmission.videoLink) {
+				toast.error($locale == 'vi' ? 'Vui lòng nhập link video YouTube' : 'Please enter a YouTube video link');
+				return;
+			}
+			if (!isValidYouTubeLink(levelSubmission.videoLink)) {
+				toast.error($locale == 'vi' ? 'Link video không hợp lệ. Vui lòng nhập link YouTube.' : 'Invalid video link. Please enter a valid YouTube link.');
+				return;
+			}
 			// Level submission is ready to submit after confirming level
 			return;
 		}
@@ -293,7 +323,7 @@
 				};
 			}
 			submissionType = 'record';
-			levelSubmission = { levelId: NaN, comment: '' };
+			levelSubmission = { levelId: NaN, comment: '', videoLink: '' };
 		}}>{$_('submit.button')}</Dialog.Trigger
 	>
 	<Dialog.Content class="sm:max-w-[425px]">
@@ -470,6 +500,20 @@
 									by {apiLevel.author} to the Challenge List
 								{/if}
 							</div>
+							<div class="grid grid-cols-4 items-center gap-4">
+								<Label for="levelVideoLink" class="text-right">{$locale == 'vi' ? 'Video' : 'Video Link'}</Label>
+								<Input
+									id="levelVideoLink"
+									bind:value={levelSubmission.videoLink}
+									placeholder={$locale == 'vi' ? 'Link YouTube (bắt buộc)' : 'YouTube link (required)'}
+									class="col-span-3"
+								/>
+							</div>
+							{#if levelSubmission.videoLink && !isValidYouTubeLink(levelSubmission.videoLink)}
+								<p class="text-sm text-red-500 text-center">
+									{$locale == 'vi' ? 'Link video không hợp lệ. Vui lòng nhập link YouTube.' : 'Invalid video link. Please enter a valid YouTube link.'}
+								</p>
+							{/if}
 							<div class="grid grid-cols-4 items-center gap-4">
 								<Label for="levelComment" class="text-right">{$locale == 'vi' ? 'Ghi chú' : 'Comment'}</Label>
 								<Textarea

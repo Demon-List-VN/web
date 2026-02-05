@@ -185,7 +185,7 @@
 	<ListFilter listType={currentListType} on:filter={handleFilterChange} />
 	<div class="levels">
 		{#each data.levels as level, index}
-			<LevelCard {level} type={$page.params.list || 'dl'} />
+			<LevelCard {level} type={$page.params.list || 'dl'} hideTop={$page.params.list === 'cl'} />
 		{/each}
 	</div>
 </div>
