@@ -171,7 +171,7 @@
 				<Alert.Description>
 					{$_('home.discord_alert.description')}
 					<a
-						href="https://discord.gg/MnGVdtjq49"
+						href="https://discord.gg/gdvn"
 						target="_blank"
 						class="font-semibold underline hover:text-blue-600"
 						>{$_('home.discord_alert.join_now')}</a

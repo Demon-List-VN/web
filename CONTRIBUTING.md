@@ -1,6 +1,6 @@
 # Resources
 - [Geometry Dash VN API server](https://github.com/NamPE286/DemonListVN-v3-api)
-- [Geometry Dash VN Discord server](https://discord.gg/MnGVdtjq49)
+- [Geometry Dash VN Discord server](https://discord.gg/gdvn)
 # Contribution Terms and Conditions
 
 By submitting a Pull Request (“PR”) to this repository, you (“Contributor”) acknowledge and agree to the following terms and conditions:
