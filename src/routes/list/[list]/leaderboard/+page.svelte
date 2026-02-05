@@ -26,6 +26,8 @@
 			return 'Classic List';
 		} else if ($page.params.list == 'pl') {
 			return 'Platformer List';
+		} else if ($page.params.list == 'cl') {
+			return 'Challenge List';
 		} else if ($page.params.list == 'fl') {
 			return 'Featured List';
 		}
@@ -53,7 +55,7 @@
 				<Table.Head class="w-[55px]">{$_('list.tabs.rank')}</Table.Head>
 				<Table.Head>{$_('list.tabs.player')}</Table.Head>
 				<Table.Head class="w-[70px] text-right">
-					{$page.params.list == 'dl' || 'pl' ? $_('list.tabs.rating') : $_('list.tabs.total_point')}
+					{$page.params.list == 'dl' || $page.params.list == 'pl' || $page.params.list == 'cl' ? $_('list.tabs.rating') : $_('list.tabs.total_point')}
 				</Table.Head>
 			</Table.Row>
 		</Table.Header>
@@ -82,6 +84,10 @@
 
 							if ($page.params.list == 'pl') {
 								return player.plRating;
+							}
+
+							if ($page.params.list == 'cl') {
+								return player.clRating;
 							}
 
 							return player[

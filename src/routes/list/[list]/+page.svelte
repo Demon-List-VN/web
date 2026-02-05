@@ -15,7 +15,7 @@
 
 	export let data: PageData;
 
-	$: currentListType = ($page.params.list as 'dl' | 'pl' | 'fl') || 'dl';
+	$: currentListType = ($page.params.list as 'dl' | 'pl' | 'fl' | 'cl') || 'dl';
 
 	let prefix = data.levels.slice(0, 4);
 	let curPage = 1;

@@ -284,7 +284,8 @@
     "rating": "Điểm Classic",
     "featured": "Tổng điểm Featured",
     "contest": "Điểm cuộc thi",
-    "plat_rating": "Điểm Platformer"
+    "plat_rating": "Điểm Platformer",
+    "challenge_rating": "Điểm Challenge"
   },
   "profile_edit": {
     "title": "Chỉnh sửa hồ sơ",
@@ -705,6 +706,7 @@
     "tabs": {
       "dl": "Classic",
       "pl": "Platformer",
+      "cl": "Challenge",
       "fl": "Featured",
       "medals": "Huy chương",
       "overview": "Tổng quan",

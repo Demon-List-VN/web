@@ -23,7 +23,7 @@
 	import CardCollectionTab from './tabs/CardCollectionTab.svelte';
 
 	export let data: PageData;
-	let list: 'dl' | 'fl' | 'pl' | '' = '';
+	let list: 'dl' | 'fl' | 'pl' | 'cl' | '' = '';
 	let recordDetailOpened = false;
 	let selectedRecord: any = null;
 	let filter = {
@@ -209,6 +209,9 @@
 					>
 					<Tabs.Trigger value="pl" on:click={() => (list = 'pl')}
 						>{$_('player.tabs.pl')}</Tabs.Trigger
+					>
+					<Tabs.Trigger value="cl" on:click={() => (list = 'cl')}
+						>{$_('player.tabs.cl')}</Tabs.Trigger
 					>
 					<Tabs.Trigger value="fl" on:click={() => (list = 'fl')}
 						>{$_('player.tabs.fl')}</Tabs.Trigger

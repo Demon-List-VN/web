@@ -128,6 +128,27 @@
 			<Tooltip.Root>
 				<Tooltip.Trigger>
 					<div class="leftCol">
+						<div
+							class="title text-white"
+							style={`background-color: ${getTitle('cl', player)?.color}`}
+						>
+							{player.clRating}
+						</div>
+					</div>
+				</Tooltip.Trigger>
+				<Tooltip.Content>{getTitle('cl', player)?.fullTitle}</Tooltip.Content>
+			</Tooltip.Root>
+			<div class="rankWrapper">
+				{$_('player_card.challenge_rating')}
+				<div class="rank">
+					#{player.clrank}
+				</div>
+			</div>
+		</div>
+		<div class="rating">
+			<Tooltip.Root>
+				<Tooltip.Trigger>
+					<div class="leftCol">
 						<div class="title" style={`background-color: ${getTitle('elo', player)?.color}`}>
 							{#if player.matchCount < 5}
 								<span class="opacity-50">{`${player.elo}?`}</span>

@@ -73,6 +73,73 @@ export function getTitle(list: string, player: any) {
 		return null;
 	}
 
+	if (list == 'cl') {
+		if (player.clRating >= 5000) {
+			return {
+				title: 'LGM',
+				fullTitle: 'Legendary Grandmaster',
+				color: 'darkred'
+			};
+		}
+		if (player.clRating >= 3500) {
+			return {
+				title: 'GM',
+				fullTitle: 'Grandmaster',
+				color: 'red'
+			};
+		}
+		if (player.clRating >= 2500) {
+			return {
+				title: 'M',
+				fullTitle: 'Master',
+				color: 'hsla(321, 100%, 50%, 1)'
+			};
+		}
+		if (player.clRating >= 2000) {
+			return {
+				title: 'CM',
+				fullTitle: 'Candidate Master',
+				color: 'purple'
+			};
+		}
+		if (player.clRating >= 1500) {
+			return {
+				title: 'EX',
+				fullTitle: 'Expert',
+				color: 'blue'
+			};
+		}
+		if (player.clRating >= 1000) {
+			return {
+				title: 'S',
+				fullTitle: 'S',
+				color: 'green'
+			};
+		}
+		if (player.clRating >= 800) {
+			return {
+				title: 'A',
+				fullTitle: 'A',
+				color: '#413cde'
+			};
+		}
+		if (player.clRating >= 600) {
+			return {
+				title: 'B',
+				fullTitle: 'B',
+				color: 'gray'
+			};
+		}
+		if (player.clRating > 0) {
+			return {
+				title: 'C',
+				fullTitle: 'C',
+				color: 'gray'
+			};
+		}
+		return null;
+	}
+
 	if (list == 'elo') {
 		if (player.matchCount < 5) {
 			return {

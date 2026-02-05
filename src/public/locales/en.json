@@ -285,7 +285,8 @@
     "rating": "Classic rating",
     "featured": "Total Featured List point",
     "contest": "Contest rating",
-    "plat_rating": "Platformer Rating"
+    "plat_rating": "Platformer Rating",
+    "challenge_rating": "Challenge Rating"
   },
   "profile_edit": {
     "title": "Edit profile",
@@ -706,6 +707,7 @@
     "tabs": {
       "dl": "Classic",
       "pl": "Platformer",
+      "cl": "Challenge",
       "fl": "Featured",
       "medals": "Medal",
       "overview": "Overview",

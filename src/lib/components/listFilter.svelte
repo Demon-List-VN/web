@@ -13,7 +13,7 @@
 	import { toast } from 'svelte-sonner';
 	import { _ } from 'svelte-i18n';
 
-	export let listType: 'dl' | 'pl' | 'fl' = 'dl';
+	export let listType: 'dl' | 'pl' | 'fl' | 'cl' = 'dl';
 
 	let topStart = '';
 	let topEnd = '';

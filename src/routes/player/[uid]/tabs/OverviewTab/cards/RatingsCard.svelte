@@ -72,6 +72,21 @@
 					<span class="rating-rank">#{data.player.flrank}</span>
 				</div>
 				<div class="rating-item">
+					<span class="rating-label">{$_('player_card.challenge_rating')}</span>
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							<div
+								class="rating-badge text-white"
+								style={`background-color: ${getTitle('cl', data.player)?.color}`}
+							>
+								{data.player.clRating}
+							</div>
+						</Tooltip.Trigger>
+						<Tooltip.Content>{getTitle('cl', data.player)?.fullTitle}</Tooltip.Content>
+					</Tooltip.Root>
+					<span class="rating-rank">#{data.player.clrank}</span>
+				</div>
+				<div class="rating-item">
 					<span class="rating-label">{$_('player_card.contest')}</span>
 					<Tooltip.Root>
 						<Tooltip.Trigger>
@@ -137,7 +152,7 @@
 
 	.ratings-grid {
 		display: grid;
-		grid-template-columns: repeat(4, 1fr);
+		grid-template-columns: repeat(5, 1fr);
 		gap: 10px;
 	}
 
