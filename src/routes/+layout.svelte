@@ -203,7 +203,7 @@
 	<div class="navbarWrapper navbarWrapperOnTop">
 		<div class="right">
 			<a href="/" data-sveltekit-preload-data="tap">
-				<img src="/favicon.png" alt="logo"/>
+				<img src="/logo.png" alt="logo"/>
 			</a>
 			<div class="links">
 				{#each linkGroup as group}

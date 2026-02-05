@@ -106,6 +106,8 @@
 			return 'Classic List';
 		} else if ($page.params.list == 'pl') {
 			return 'Platformer List';
+		} else if ($page.params.list == 'cl') {
+			return 'Challenge List';
 		} else if ($page.params.list == 'fl') {
 			return 'Featured List';
 		}
