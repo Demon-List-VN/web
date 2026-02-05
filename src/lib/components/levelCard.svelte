@@ -56,7 +56,7 @@
 							</div>
 						</a>
 						<a href={`/level/${level.id}`} data-sveltekit-preload-data="tap">
-							<div class="levelInfo">
+							<div class="levelInfo h-[60px]">
 								{#if !hideTop}
 									{#if top}
 										<div class="top">#{top}</div>
