@@ -61,7 +61,7 @@
 								<div class="event-card relative overflow-hidden rounded-lg">
 									<img
 										src={event.imgUrl ||
-											`https://cdn.demonlistvn.com/event-banner/${event.id}.webp`}
+											`https://cdn.gdvn.net/event-banner/${event.id}.webp`}
 										alt={event.title}
 										class="aspect-[16/9] w-full object-cover"
 									/>

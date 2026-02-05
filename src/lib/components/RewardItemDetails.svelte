@@ -39,7 +39,7 @@
 <div class="flex items-start gap-3">
 	<img
 		class="h-16 w-16 object-contain"
-		src={`https://cdn.demonlistvn.com/items/${itemData.id}.webp`}
+		src={`https://cdn.gdvn.net/items/${itemData.id}.webp`}
 		alt={itemData.name}
 	/>
 	<div>

@@ -313,7 +313,7 @@
 							<Avatar.Root>
 								<Avatar.Image
 									class="object-cover"
-									src={`https://cdn.demonlistvn.com/avatars/${$user.data.uid}${
+									src={`https://cdn.gdvn.net/avatars/${$user.data.uid}${
 										isActive($user.data.supporterUntil) && $user.data.isAvatarGif ? '.gif' : '.jpg'
 									}?version=${$user.data.avatarVersion}`}
 									alt=""

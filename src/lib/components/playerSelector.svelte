@@ -136,7 +136,7 @@
 							<Avatar.Root class="h-10 w-10">
 								<Avatar.Image
 									class="object-cover"
-									src={`https://cdn.demonlistvn.com/avatars/${player.uid}${
+									src={`https://cdn.gdvn.net/avatars/${player.uid}${
 										isActive(player.supporterUntil) && player.isAvatarGif ? '.gif' : '.jpg'
 									}`}
 									alt={player.name}

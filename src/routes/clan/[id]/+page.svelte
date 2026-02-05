@@ -359,7 +359,7 @@
 	<meta property="og:title" content={`Hội ${data.name} - Geometry Dash VN`} />
 	<meta
 		property="og:image"
-		content={`https://cdn.demonlistvn.com/clan-photos/${$page.params.id}.jpg?version=${data.imageVersion}`}
+		content={`https://cdn.gdvn.net/clan-photos/${$page.params.id}.jpg?version=${data.imageVersion}`}
 	/>
 </svelte:head>
 
@@ -377,7 +377,7 @@
 		<div
 			class="pageBackground"
 			aria-hidden="true"
-			style={`background-image: url(https://cdn.demonlistvn.com/clan-photos/${$page.params.id}.jpg?version=${data.imageVersion});`}
+			style={`background-image: url(https://cdn.gdvn.net/clan-photos/${$page.params.id}.jpg?version=${data.imageVersion});`}
 		/>
 	{/if}
 	<div class="leftWrapper">
@@ -385,7 +385,7 @@
 			<img
 				in:fade={{ delay: 250, duration: 300 }}
 				class="bg"
-				src={`https://cdn.demonlistvn.com/clan-photos/${$page.params.id}.jpg?version=${data.imageVersion}`}
+				src={`https://cdn.gdvn.net/clan-photos/${$page.params.id}.jpg?version=${data.imageVersion}`}
 				alt="bg"
 			/>
 			<div class="bannerContentWrapper">

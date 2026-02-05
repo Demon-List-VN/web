@@ -47,7 +47,7 @@
 	</div>
 {:else}
 	<div class="p-1">
-		<div class="promotion" style={`background-image: url('${data.imgUrl ? data.imgUrl : `https://cdn.demonlistvn.com/event-banner/${data.id}.webp`}')`}>
+		<div class="promotion" style={`background-image: url('${data.imgUrl ? data.imgUrl : `https://cdn.gdvn.net/event-banner/${data.id}.webp`}')`}>
 			<div class="promotionContent">
 				<div class="flex gap-[10px]">
 					<div class="period">

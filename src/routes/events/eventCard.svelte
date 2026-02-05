@@ -64,7 +64,7 @@
 		<CardContent>
 			<div class="mb-4">
 				<img
-					src={event.imgUrl || `https://cdn.demonlistvn.com/event-banner/${event.id}.webp`}
+					src={event.imgUrl || `https://cdn.gdvn.net/event-banner/${event.id}.webp`}
 					alt={event.title}
 					class="aspect-[4/1] w-full rounded-md object-cover"
 					loading="lazy"

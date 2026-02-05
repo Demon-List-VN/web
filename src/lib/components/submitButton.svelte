@@ -6,6 +6,7 @@
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
+	import { Textarea } from '$lib/components/ui/textarea/index.js';
 	import { user } from '$lib/client';
 	import Loading from '$lib/components/animation/loading.svelte';
 	import { toast } from 'svelte-sonner';
@@ -15,6 +16,9 @@
 	import { locale } from 'svelte-i18n';
 	import { _ } from 'svelte-i18n';
 	import { Lightbulb } from 'lucide-svelte';
+
+	// Submission type: 'record' for normal record submission, 'level' for challenge level submission
+	let submissionType: 'record' | 'level' = 'record';
 
 	const defaultValue: any = {
 		levelid: NaN,
@@ -37,6 +41,12 @@
 		raw: '',
 		mobile: null,
 		suggestedRating: NaN,
+		comment: ''
+	};
+
+	// Level submission data
+	let levelSubmission = {
+		levelId: NaN,
 		comment: ''
 	};
 
@@ -121,15 +131,54 @@
 		});
 	}
 
+	async function submitLevel() {
+		submitId = new Date().getTime();
+
+		fetch(`${import.meta.env.VITE_API_URL}/level-submissions`, {
+			method: 'POST',
+			body: JSON.stringify({
+				levelId: levelSubmission.levelId,
+				comment: levelSubmission.comment
+			}),
+			headers: {
+				Authorization: `Bearer ${await $user.token()}`,
+				'Content-Type': 'application/json'
+			}
+		}).then(async (res) => {
+			if (res.ok) {
+				sendStatus = 1;
+			} else {
+				sendStatus = 2;
+			}
+
+			const responseText = await res.text();
+			errorResponse = responseText;
+			try {
+				const resJson = JSON.parse(responseText);
+				submitLog = resJson.logs || [];
+
+				if ($locale == 'vi') {
+					errorMessage = resJson.vi;
+				} else {
+					errorMessage = resJson.en;
+				}
+			} catch {
+				errorMessage = responseText;
+			}
+		});
+	}
+
 	async function fetchLevel() {
+		const levelId = submissionType === 'level' ? levelSubmission.levelId : submission.levelid;
+		
 		try {
 			level = await (
-				await fetch(`${import.meta.env.VITE_API_URL}/levels/${submission.levelid}`)
+				await fetch(`${import.meta.env.VITE_API_URL}/levels/${levelId}`)
 			).json();
 		} catch {}
 
 		apiLevel = await (
-			await fetch(`${import.meta.env.VITE_API_URL}/levels/${submission.levelid}?fromGD=1`)
+			await fetch(`${import.meta.env.VITE_API_URL}/levels/${levelId}?fromGD=1`)
 		).json();
 	}
 
@@ -147,6 +196,12 @@
 					nextDisabled = false;
 					step--;
 				});
+		}
+
+		// For level submission, only need to validate level exists
+		if (submissionType === 'level' && step == 2) {
+			// Level submission is ready to submit after confirming level
+			return;
 		}
 
 		if (step == 3) {
@@ -237,6 +292,8 @@
 					ms: null
 				};
 			}
+			submissionType = 'record';
+			levelSubmission = { levelId: NaN, comment: '' };
 		}}>{$_('submit.button')}</Dialog.Trigger
 	>
 	<Dialog.Content class="sm:max-w-[425px]">
@@ -245,7 +302,7 @@
 				{#if step == 0}
 					{$_('submit.attention.title')}
 				{:else if step == 1 || step == 2}
-					{$_('submit.level.title')}
+					{submissionType === 'level' ? ($locale == 'vi' ? 'Nộp Challenge Level' : 'Submit Challenge Level') : $_('submit.level.title')}
 				{:else if step == 3}
 					{$_('submit.required.title')}
 				{:else if step == 4}
@@ -254,32 +311,59 @@
 			</Dialog.Title>
 		</Dialog.Header>
 		{#if step == 0}
+			<div class="grid gap-4 py-4">
+				<Label>{$locale == 'vi' ? 'Loại nộp' : 'Submission Type'}</Label>
+				<Select.Root 
+					onSelectedChange={(e) => { if (e) submissionType = e.value; }}
+					selected={{ value: submissionType, label: submissionType === 'record' ? ($locale == 'vi' ? 'Nộp Record' : 'Submit Record') : ($locale == 'vi' ? 'Nộp Challenge Level' : 'Submit Challenge Level') }}
+				>
+					<Select.Trigger>
+						<Select.Value />
+					</Select.Trigger>
+					<Select.Content>
+						<Select.Item value="record">{$locale == 'vi' ? 'Nộp Record' : 'Submit Record'}</Select.Item>
+						<Select.Item value="level">{$locale == 'vi' ? 'Nộp Challenge Level' : 'Submit Challenge Level'}</Select.Item>
+					</Select.Content>
+				</Select.Root>
+			</div>
 			<Alert.Root>
 				<Alert.Description>
-					{#if $locale == 'vi'}
-						- Đọc <button on:click={() => (open = false)}><a href="/rules"><u>luật</u></a></button>
-						trước khi nộp.<br />
-						- Điểm đề xuất là điểm của DLVN, không phải sao hay thứ hạng của level.
-						<br />
-						- Video thô là video quay từ lúc bắt đầu đến kết thúc quá trình quay chưa bị chỉnh sửa.
-						<br />
-						- Sử dụng
-						<a href="https://github.com/NamPE286/DemonListVN-geode-mod/releases">
-							<u>Geometry Dash VN's geode mod</u>
-						</a> trong khi chơi level để có cơ hội chấp nhận cao hơn.
+					{#if submissionType === 'record'}
+						{#if $locale == 'vi'}
+							- Đọc <button on:click={() => (open = false)}><a href="/rules"><u>luật</u></a></button>
+							trước khi nộp.<br />
+							- Điểm đề xuất là điểm của DLVN, không phải sao hay thứ hạng của level.
+							<br />
+							- Video thô là video quay từ lúc bắt đầu đến kết thúc quá trình quay chưa bị chỉnh sửa.
+							<br />
+							- Sử dụng
+							<a href="https://github.com/NamPE286/DemonListVN-geode-mod/releases">
+								<u>Geometry Dash VN's geode mod</u>
+							</a> trong khi chơi level để có cơ hội chấp nhận cao hơn.
+						{:else}
+							- Read the <button on:click={() => (open = false)}
+								><a href="/rules"><u>rules</u></a></button
+							>
+							before submitting.<br />
+							- Suggested rating is Geometry Dash VN level's rating, not level's stars or placement.
+							<br />
+							- Raw is recording from the beginning to the end of the recording session without editing.
+							<br />
+							- Use
+							<a href="https://github.com/NamPE286/DemonListVN-geode-mod/releases">
+								<u>Geometry Dash VN's geode mod</u>
+							</a> while beating level to have higher chance of acceptance.
+						{/if}
 					{:else}
-						- Read the <button on:click={() => (open = false)}
-							><a href="/rules"><u>rules</u></a></button
-						>
-						before submitting.<br />
-						- Suggested rating is Geometry Dash VN level's rating, not level's stars or placement.
-						<br />
-						- Raw is recording from the beginning to the end of the recording session without editing.
-						<br />
-						- Use
-						<a href="https://github.com/NamPE286/DemonListVN-geode-mod/releases">
-							<u>Geometry Dash VN's geode mod</u>
-						</a> while beating level to have higher chance of acceptance.
+						{#if $locale == 'vi'}
+							- Nộp challenge level mới để thêm vào Challenge List.<br />
+							- Level phải là Extreme hoặc Insane Demon challenge.<br />
+							- Level sẽ được kiểm duyệt trước khi thêm vào danh sách.
+						{:else}
+							- Submit a new challenge level to be added to the Challenge List.<br />
+							- Level must be an Extreme or Insane Demon challenge.<br />
+							- Level will be reviewed before being added to the list.
+						{/if}
 					{/if}
 				</Alert.Description>
 			</Alert.Root>
@@ -287,61 +371,115 @@
 		{#if step > 0}
 			<div class="grid gap-4 py-4">
 				{#if step == 1}
-					<Alert.Root>
-						<Alert.Description class="flex items-center gap-[10px]">
-							<Lightbulb size={24} />
-							<span>
-								{#if $locale == 'vi'}
-									Mẹo: Vào trang level và bấm Nộp để tự động điền ID. (Dành cho <a href="/supporter"
-										>Supporter</a
-									>)
-								{:else}
-									Tip: Go to the level page and click Submit to auto-fill the ID. (For <a
-										href="/supporter">Supporter</a
-									>)
-								{/if}
-							</span>
-						</Alert.Description>
-					</Alert.Root>
-					<div class="grid grid-cols-4 items-center gap-4">
-						<Label for="name" class="text-right">Level ID</Label>
-						<Input
-							id="name"
-							type="number"
-							inputmode="numeric"
-							bind:value={submission.levelid}
-							class="col-span-3"
-						/>
-					</div>
+					{#if submissionType === 'record'}
+						<Alert.Root>
+							<Alert.Description class="flex items-center gap-[10px]">
+								<Lightbulb size={24} />
+								<span>
+									{#if $locale == 'vi'}
+										Mẹo: Vào trang level và bấm Nộp để tự động điền ID. (Dành cho <a href="/supporter"
+											>Supporter</a
+										>)
+									{:else}
+										Tip: Go to the level page and click Submit to auto-fill the ID. (For <a
+											href="/supporter">Supporter</a
+										>)
+									{/if}
+								</span>
+							</Alert.Description>
+						</Alert.Root>
+						<div class="grid grid-cols-4 items-center gap-4">
+							<Label for="name" class="text-right">Level ID</Label>
+							<Input
+								id="name"
+								type="number"
+								inputmode="numeric"
+								bind:value={submission.levelid}
+								class="col-span-3"
+							/>
+						</div>
+					{:else}
+						<div class="grid grid-cols-4 items-center gap-4">
+							<Label for="levelId" class="text-right">Level ID</Label>
+							<Input
+								id="levelId"
+								type="number"
+								inputmode="numeric"
+								bind:value={levelSubmission.levelId}
+								class="col-span-3"
+							/>
+						</div>
+					{/if}
 				{/if}
 				{#if step == 2}
-					<div class="grid grid-cols-4 items-center gap-4">
-						<Label for="name" class="text-right">Level ID</Label>
-						<Input
-							id="name"
-							type="number"
-							inputmode="numeric"
-							bind:value={submission.levelid}
-							class="col-span-3"
-							disabled={true}
-						/>
-					</div>
-					{#if !apiLevel}
-						<Loading inverted={true} />
-					{:else}
-						<div class="text-center">
-							{#if $locale == 'vi'}
-								Bạn chuẩn bị nộp cho level <a href={`/level/${apiLevel.id}`}
-									><b><u>{apiLevel.name}</u></b></a
-								>
-								by {apiLevel.author}
-							{:else}
-								You are going to submit <a href={`/level/${apiLevel.id}`}
-									><b><u>{apiLevel.name}</u></b></a
-								>
-								by {apiLevel.author}
-							{/if}
+					{#if submissionType === 'record'}
+						<div class="grid grid-cols-4 items-center gap-4">
+							<Label for="name" class="text-right">Level ID</Label>
+							<Input
+								id="name"
+								type="number"
+								inputmode="numeric"
+								bind:value={submission.levelid}
+								class="col-span-3"
+								disabled={true}
+							/>
 						</div>
+						{#if !apiLevel}
+							<Loading inverted={true} />
+						{:else}
+							<div class="text-center">
+								{#if $locale == 'vi'}
+									Bạn chuẩn bị nộp cho level <a href={`/level/${apiLevel.id}`}
+										><b><u>{apiLevel.name}</u></b></a
+									>
+									by {apiLevel.author}
+								{:else}
+									You are going to submit <a href={`/level/${apiLevel.id}`}
+										><b><u>{apiLevel.name}</u></b></a
+									>
+									by {apiLevel.author}
+								{/if}
+							</div>
+						{/if}
+					{:else}
+						<!-- Level submission step 2: confirm level and add comment -->
+						<div class="grid grid-cols-4 items-center gap-4">
+							<Label for="levelIdConfirm" class="text-right">Level ID</Label>
+							<Input
+								id="levelIdConfirm"
+								type="number"
+								inputmode="numeric"
+								bind:value={levelSubmission.levelId}
+								class="col-span-3"
+								disabled={true}
+							/>
+						</div>
+						{#if !apiLevel}
+							<Loading inverted={true} />
+						{:else}
+							<div class="text-center">
+								{#if $locale == 'vi'}
+									Bạn chuẩn bị nộp level <a href={`/level/${apiLevel.id}`}
+										><b><u>{apiLevel.name}</u></b></a
+									>
+									by {apiLevel.author} vào Challenge List
+								{:else}
+									You are submitting <a href={`/level/${apiLevel.id}`}
+										><b><u>{apiLevel.name}</u></b></a
+									>
+									by {apiLevel.author} to the Challenge List
+								{/if}
+							</div>
+							<div class="grid grid-cols-4 items-center gap-4">
+								<Label for="levelComment" class="text-right">{$locale == 'vi' ? 'Ghi chú' : 'Comment'}</Label>
+								<Textarea
+									id="levelComment"
+									bind:value={levelSubmission.comment}
+									placeholder={$locale == 'vi' ? 'Ghi chú (không bắt buộc)' : 'Comment (optional)'}
+									class="col-span-3"
+								/>
+							</div>
+						{/if}
 					{/if}
 				{/if}
 				{#if step == 3}
@@ -468,7 +606,18 @@
 								variant="outline">{$_('submit.back')}</Button
 							>
 						{/if}
-						{#if step == 4}
+						{#if submissionType === 'level' && step == 2 && apiLevel}
+							<!-- Level submission: submit on step 2 -->
+							<Button
+								class="w-full"
+								type="submit"
+								builders={[builder]}
+								on:click={() => {
+									sendStatus = 0;
+									submitLevel();
+								}}>{$_('submit.button')}</Button
+							>
+						{:else if step == 4}
 							<Button
 								class="w-full"
 								type="submit"

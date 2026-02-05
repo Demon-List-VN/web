@@ -111,7 +111,7 @@
 			}
 		} else if (value == 'dl') {
 			for (const i of originalData.data) {
-				if (i.levels.rating) {
+				if (i.levels.rating && !i.levels.isChallenge) {
 					filtered.data.push(i);
 				}
 			}
@@ -127,9 +127,15 @@
 					filtered.data.push(i);
 				}
 			}
+		} else if (value == 'cl') {
+			for (const i of originalData.data) {
+				if (i.levels.isChallenge) {
+					filtered.data.push(i);
+				}
+			}
 		} else if (value == 'newLevel') {
 			for (const i of originalData.data) {
-				if (!i.levels.flPt && !i.levels.rating) {
+				if (!i.levels.flPt && !i.levels.rating && !i.levels.isChallenge) {
 					filtered.data.push(i);
 				}
 			}
@@ -173,6 +179,7 @@
 				<Select.Item value="dl">Classic</Select.Item>
 				<Select.Item value="pl">Platformer</Select.Item>
 				<Select.Item value="fl">Featured</Select.Item>
+				<Select.Item value="cl">Challenge</Select.Item>
 			</Select.Content>
 		</Select.Root>
 	</div>

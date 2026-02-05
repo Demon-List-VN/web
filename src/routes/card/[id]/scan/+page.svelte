@@ -140,7 +140,7 @@
 							isBannerFailedToLoad = true;
 						}}
 						class="bgGradient absolute z-0 rounded-xl object-cover"
-						src={`https://cdn.demonlistvn.com/banners/${data.players.uid}${
+						src={`https://cdn.gdvn.net/banners/${data.players.uid}${
 							data.players.isBannerGif ? '.gif' : '.jpg'
 						}`}
 						alt=""
@@ -151,7 +151,7 @@
 						<Avatar.Root>
 							<Avatar.Image
 								class="object-cover"
-								src={`https://cdn.demonlistvn.com/avatars/${data.players.uid}${
+								src={`https://cdn.gdvn.net/avatars/${data.players.uid}${
 									isActive(data.players.supporterUntil) && data.players.isAvatarGif
 										? '.gif'
 										: '.jpg'

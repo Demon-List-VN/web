@@ -51,6 +51,7 @@
 			icon: '📋',
 			items: [
 				{ name: 'Submission', href: '/admin/submission' },
+				{ name: 'Level Submissions', href: '/admin/levelSubmissions' },
 				{ name: 'Add Record', href: '/admin/addRecord' }
 			]
 		},

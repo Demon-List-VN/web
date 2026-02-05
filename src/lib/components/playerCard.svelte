@@ -26,7 +26,7 @@
 				isBannerFailedToLoad = true;
 			}}
 			class="bgGradient absolute top-[50px] z-[-1] ml-[-15px] h-[80px] w-full rounded object-cover"
-			src={`https://cdn.demonlistvn.com/banners/${player.uid}${player.isBannerGif ? '.gif' : '.jpg'}`}
+			src={`https://cdn.gdvn.net/banners/${player.uid}${player.isBannerGif ? '.gif' : '.jpg'}`}
 			alt=""
 		/>
 	{/if}
@@ -34,7 +34,7 @@
 		<Avatar.Root>
 			<Avatar.Image
 				class="object-cover"
-				src={`https://cdn.demonlistvn.com/avatars/${player.uid}${
+				src={`https://cdn.gdvn.net/avatars/${player.uid}${
 					isActive(player.supporterUntil) && player.isAvatarGif ? '.gif' : '.jpg'
 				}`}
 				alt=""

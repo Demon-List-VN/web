@@ -10,7 +10,7 @@
 	>
 		<img
 			class="h-[150px] w-[150px] object-cover"
-			src={`https://cdn.demonlistvn.com/medals/${medal.itemId}.webp`}
+			src={`https://cdn.gdvn.net/medals/${medal.itemId}.webp`}
 			alt=""
 		/>
 		<h3 class="mb-[10px] mt-[10px] text-center text-xl font-bold">{medal.name}</h3>

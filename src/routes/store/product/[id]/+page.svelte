@@ -41,7 +41,7 @@
 	<meta property="og:description" content={getFirstLine(data.description)} />
 	<meta
 		property="og:image"
-		content={`https://cdn.demonlistvn.com/products/${data.id}/0.webp`}
+		content={`https://cdn.gdvn.net/products/${data.id}/0.webp`}
 	/>
 </svelte:head>
 
@@ -70,7 +70,7 @@
 		>
 			<img
 				class="h-full w-full object-cover"
-				src={`https://cdn.demonlistvn.com/products/${data.id}/${selectedImageIndex}.webp`}
+				src={`https://cdn.gdvn.net/products/${data.id}/${selectedImageIndex}.webp`}
 				alt="product"
 			/>
 		</button>
@@ -85,7 +85,7 @@
 				>
 					<img
 						class="h-full w-full object-cover"
-						src={`https://cdn.demonlistvn.com/products/${data.id}/${index}.webp`}
+						src={`https://cdn.gdvn.net/products/${data.id}/${index}.webp`}
 						alt="product thumbnail {index + 1}"
 					/>
 				</button>
@@ -186,7 +186,7 @@
 			<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 			<img
 				class="max-h-[700px] max-w-full rounded-lg object-contain"
-				src={`https://cdn.demonlistvn.com/products/${data.id}/${selectedImageIndex}.webp`}
+				src={`https://cdn.gdvn.net/products/${data.id}/${selectedImageIndex}.webp`}
 				alt=""
 				on:click|stopPropagation
 			/>

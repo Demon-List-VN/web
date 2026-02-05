@@ -178,7 +178,7 @@
 											{#if reward.itemId}
 												<img
 													class="h-full w-full object-contain"
-													src={`https://cdn.demonlistvn.com/items/${reward.itemId}.webp`}
+													src={`https://cdn.gdvn.net/items/${reward.itemId}.webp`}
 													alt="Reward"
 												/>
 											{/if}

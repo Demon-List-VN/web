@@ -183,7 +183,7 @@
 				<div class="clan">
 					<a href={`/clan/${clan.id}`}>
 						<img
-							src={`https://cdn.demonlistvn.com/clan-photos/${clan.id}.jpg`}
+							src={`https://cdn.gdvn.net/clan-photos/${clan.id}.jpg`}
 							alt=""
 							loading="lazy"
 						/>
@@ -221,7 +221,7 @@
 				<div class="clan">
 					<a href={`/clan/${invitation.clans.id}`}>
 						<img
-							src={`https://cdn.demonlistvn.com/clan-photos/${invitation.clans.id}.jpg`}
+							src={`https://cdn.gdvn.net/clan-photos/${invitation.clans.id}.jpg`}
 							alt=""
 							loading="lazy"
 						/>

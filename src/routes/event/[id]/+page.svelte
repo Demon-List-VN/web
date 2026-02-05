@@ -45,7 +45,7 @@
 	<meta property="og:description" content={data.description} />
 	<meta
 		property="og:image"
-		content={data.imgUrl ? data.imgUrl : `https://cdn.demonlistvn.com/event-banner/${data.id}.webp`}
+		content={data.imgUrl ? data.imgUrl : `https://cdn.gdvn.net/event-banner/${data.id}.webp`}
 	/>
 </svelte:head>
 

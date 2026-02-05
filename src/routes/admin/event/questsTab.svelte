@@ -156,7 +156,7 @@
 										>
 											<img
 												class="max-h-full max-w-full object-contain p-1"
-												src={`https://cdn.demonlistvn.com/items/${reward.id}.webp`}
+												src={`https://cdn.gdvn.net/items/${reward.id}.webp`}
 												alt={reward.name}
 											/>
 										</div>

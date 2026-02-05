@@ -226,7 +226,7 @@
 						>
 							<div class="item-thumb flex h-36 w-full items-center justify-center rounded-sm">
 								<img
-									src={`https://cdn.demonlistvn.com/items/${item.itemId}.webp`}
+									src={`https://cdn.gdvn.net/items/${item.itemId}.webp`}
 									alt={item.name}
 									class="h-full w-full object-contain py-1"
 								/>
@@ -291,7 +291,7 @@
 									class={`relative h-40 w-40 flex-shrink-0 overflow-hidden rounded-md border-b-4 ${rarityClass(selectedItems[item.inventoryId].data.rarity ?? item.rarity)} bg-neutral-800 p-2`}
 								>
 									<img
-										src={`https://cdn.demonlistvn.com/items/${item.itemId}.webp`}
+										src={`https://cdn.gdvn.net/items/${item.itemId}.webp`}
 										alt={selectedItems[item.inventoryId].data.name ?? item.name}
 										class="h-full w-full object-cover"
 									/>
@@ -372,7 +372,7 @@
 												class={`flex flex-col items-center rounded-md border-b-4 bg-neutral-900 p-2 text-center ${rarityClass(c.items.rarity ?? item.rarity)}`}
 											>
 												<img
-													src={`https://cdn.demonlistvn.com/items/${c.items.id}.webp`}
+													src={`https://cdn.gdvn.net/items/${c.items.id}.webp`}
 													alt={c.items.name}
 													class="mb-1 h-16 w-16 object-contain"
 												/>
@@ -388,7 +388,7 @@
 										class={`h-40 w-40 flex-shrink-0 overflow-hidden rounded-md border-b-4 ${rarityClass(item.rarity)} mt-2 bg-neutral-800 p-2`}
 									>
 										<img
-											src={`https://cdn.demonlistvn.com/items/${item.itemId}.webp`}
+											src={`https://cdn.gdvn.net/items/${item.itemId}.webp`}
 											alt={item.name}
 											class="h-full w-full object-cover"
 										/>
