@@ -11,7 +11,14 @@
 	import RecordDetail from '$lib/components/recordDetail.svelte';
 	import Ads from '$lib/components/ads.svelte';
 	import { _ } from 'svelte-i18n';
-	import { EllipsisIcon, Hamburger, SkipForward, SkipForwardIcon, CheckCircle2, XCircle } from 'lucide-svelte';
+	import {
+		EllipsisIcon,
+		Hamburger,
+		SkipForward,
+		SkipForwardIcon,
+		CheckCircle2,
+		XCircle
+	} from 'lucide-svelte';
 	import { HamburgerMenu } from 'svelte-radix';
 	import { Ellipsis } from '$lib/components/ui/pagination';
 
@@ -124,7 +131,7 @@
 						<Table.Head>{$_('submissions.level')}</Table.Head>
 						<Table.Head class="w-[120px] text-center">Ngày nộp</Table.Head>
 						<Table.Head class="w-[100px] text-center">Trạng thái</Table.Head>
-						<Table.Head class="w-[0px] text-center"></Table.Head>
+						<Table.Head class="w-[50px] text-center">Video</Table.Head>
 					</Table.Row>
 				</Table.Header>
 				<Table.Body>
@@ -139,21 +146,17 @@
 								{new Date(submission.created_at).toLocaleString('vi-VN')}
 							</Table.Cell>
 							<Table.Cell class="text-center">
-								{#if submission.accepted}
-									<span class="flex items-center justify-center gap-1 text-green-600">
-										<CheckCircle2 size={16} />
-										Chấp thuận
-									</span>
-								{:else}
-									<span class="flex items-center justify-center gap-1 text-yellow-600">
-										⏳ Chờ duyệt
-									</span>
-								{/if}
+								<span class="flex items-center justify-center gap-1"> Chờ duyệt </span>
 							</Table.Cell>
 							<Table.Cell class="text-center">
-								<a href={`/level/${submission.levels.id}`} target="_blank">
-									<ExternalLink size={20} />
-								</a>
+								<button>
+									<a
+										href={`https://www.youtube.com/watch?v=${submission.levels.videoID}`}
+										target="_blank"
+									>
+										<ExternalLink size={20} />
+									</a>
+								</button>
 							</Table.Cell>
 						</Table.Row>
 					{/each}
@@ -162,7 +165,12 @@
 		{/if}
 
 		<!-- Record Submissions Table -->
-		<div class="section-title" style="margin-top: {data.levelSubmissions && data.levelSubmissions.length > 0 ? '40px' : '0'}">Bản ghi nộp</div>
+		<div
+			class="section-title"
+			style="margin-top: {data.levelSubmissions && data.levelSubmissions.length > 0 ? '40px' : '0'}"
+		>
+			Bản ghi nộp
+		</div>
 		<Table.Root>
 			<Table.Caption>{$_('submissions.total_record')}: {data.records.length}</Table.Caption>
 			<Table.Header>
@@ -173,7 +181,9 @@
 					<Table.Head class="w-[80px] text-center">{$_('submissions.progress')}</Table.Head>
 					<Table.Head class="w-[80px] text-center">{$_('submissions.time')}</Table.Head>
 					<Table.Head class="w-[80px] text-center">{$_('submissions.queue_no')}</Table.Head>
-					<Table.Head class="w-[80px] text-center">{$_('submissions.detail') || 'Detail'}</Table.Head>
+					<Table.Head class="w-[80px] text-center"
+						>{$_('submissions.detail') || 'Detail'}</Table.Head
+					>
 					<Table.Head class="w-[80px] text-center">{$_('submissions.boost') || 'Boost'}</Table.Head>
 					<Table.Head class="w-[0px] text-center"></Table.Head>
 					<Table.Head class="w-[0px] text-center"></Table.Head>
@@ -223,12 +233,26 @@
 							{/if}
 						</Table.Cell>
 						<Table.Cell class="text-center">
-							<button on:click|stopPropagation={() => { userID = record.userid; levelID = record.levels.id; recordDetailOpened = true; }}>
-								<EllipsisIcon size={16}/>
+							<button
+								on:click|stopPropagation={() => {
+									userID = record.userid;
+									levelID = record.levels.id;
+									recordDetailOpened = true;
+								}}
+							>
+								<EllipsisIcon size={16} />
 							</button>
 						</Table.Cell>
 						<Table.Cell class="text-center">
-							<button disabled={isBoosting(record.levelid)} on:click|stopPropagation={() => { userID = record.userid; levelID = record.levels.id; recordDetailTab = 'skipAhead'; recordDetailOpened = true; }}>
+							<button
+								disabled={isBoosting(record.levelid)}
+								on:click|stopPropagation={() => {
+									userID = record.userid;
+									levelID = record.levels.id;
+									recordDetailTab = 'skipAhead';
+									recordDetailOpened = true;
+								}}
+							>
 								<SkipForward size={16} />
 							</button>
 						</Table.Cell>
