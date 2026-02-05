@@ -14,6 +14,9 @@
 	import { isActive } from '$lib/client/isSupporterActive';
 
 	export let data: PageData;
+
+	$: currentListType = ($page.params.list as 'dl' | 'pl' | 'fl') || 'dl';
+
 	let prefix = data.levels.slice(0, 4);
 	let curPage = 1;
 	let loaded = true;
@@ -25,10 +28,9 @@
 		ratingMin: null as string | null,
 		ratingMax: null as string | null,
 		nameSearch: '',
-		creatorSearch: ''
+		creatorSearch: '',
+		sortBy: currentListType === 'fl' ? 'flTop' : 'dlTop'
 	};
-
-	$: currentListType = ($page.params.list as 'dl' | 'pl' | 'fl') || 'dl';
 
 	function getCacheKey() {
 		const filtersKey = JSON.stringify(filters);
@@ -64,6 +66,7 @@
 		if (filters.ratingMax) query.set('ratingMax', filters.ratingMax);
 		if (filters.nameSearch) query.set('nameSearch', filters.nameSearch);
 		if (filters.creatorSearch) query.set('creatorSearch', filters.creatorSearch);
+		if (filters.sortBy) query.set('sortBy', filters.sortBy);
 
 		const res = await (
 			await fetch(`${import.meta.env.VITE_API_URL}/list/${$page.params.list}?${query.toString()}`)
@@ -106,6 +109,8 @@
 			return 'Classic List';
 		} else if ($page.params.list == 'pl') {
 			return 'Platformer List';
+		} else if ($page.params.list == 'cl') {
+			return 'Challenge List';
 		} else if ($page.params.list == 'fl') {
 			return 'Featured List';
 		}

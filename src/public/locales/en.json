@@ -20,7 +20,8 @@
     "saving": "Saving",
     "delete": "Delete",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "previous": "Previous"
   },
   "time_unit": {
     "second": "second",
@@ -344,8 +345,7 @@
       "purchase": "Purchase",
       "consuming": "Consuming boost...",
       "queue_boost_used": "Queue boost successfully applied!",
-      "queue_boost_error": "Failed to use queue boost. Please try again."
-      ,
+      "queue_boost_error": "Failed to use queue boost. Please try again.",
       "supporter_note": "All Supporters' submissions are prioritized by 30 days"
     }
   },
@@ -604,6 +604,10 @@
     "platformer": {
       "title": "Platformer List",
       "description": "Hardest platformer level beaten by Vietnamese"
+    },
+    "challenge": {
+      "title": "Challenge List",
+      "description": "Challenge made by Vietnamese"
     },
     "featured": {
       "title": "Featured List",
@@ -1153,6 +1157,10 @@
     "search_by_name": "Search by name",
     "creator_name": "Creator Name",
     "search_by_creator": "Search by creator",
+    "sort_by": "Sort By",
+    "sort_default": "Default (Top)",
+    "sort_by_top": "By Top",
+    "sort_by_date": "By Created Date",
     "apply": "Apply Filters",
     "clear": "Clear Filters"
   },
@@ -1220,10 +1228,29 @@
       "exclusive_items": "Exclusive premium items and cosmetics",
       "double_rewards": "Double rewards at every tier"
     }
-  }
   },
   "wiki": {
-    "created_at": "Created at",
-    "last_updated": "Last updated at"
+    "created_at": "Created at:",
+    "last_updated": "Last updated at:",
+    "description": "Guides, rules, news, and changelogs",
+    "categories": "Categories",
+    "latest_articles": "Latest Articles",
+    "no_articles": "No articles yet",
+    "items": "items",
+    "subfolders": "Subfolders",
+    "articles": "Articles",
+    "empty_folder": "This folder is empty",
+    "folder_description": "{count} items in this folder",
+    "error_title": "Failed to load content",
+    "error_description": "Unable to load wiki content. Please try again later.",
+    "quick_links": {
+      "rules": "Rules",
+      "news": "News",
+      "changelog": "Changelog",
+      "guides": "Guides"
+    },
+    "folders": {
+      "test-nested": "Test nested"
+    }
   }
 }

@@ -20,7 +20,8 @@
     "saving": "Đang lưu",
     "delete": "Xóa",
     "yes": "Có",
-    "no": "Không"
+    "no": "Không",
+    "previous": "Trước"
   },
   "time_unit": {
     "second": "giây",
@@ -343,8 +344,7 @@
       "purchase": "Mua",
       "consuming": "Đang sử dụng tăng tốc...",
       "queue_boost_used": "Đã áp dụng tăng tốc hàng chờ thành công!",
-      "queue_boost_error": "Không thể sử dụng tăng tốc hàng chờ. Vui lòng thử lại."
-      ,
+      "queue_boost_error": "Không thể sử dụng tăng tốc hàng chờ. Vui lòng thử lại.",
       "supporter_note": "Tất cả bản nộp của Supporter được ưu tiên thêm 30 ngày"
     }
   },
@@ -603,6 +603,10 @@
     "platformer": {
       "title": "Platformer List",
       "description": "Level platformer khó nhất được đánh bại bởi người Việt"
+    },
+    "challenge": {
+      "title": "Challenge List",
+      "description": "Thử thách được tạo ra bởi người Việt"
     },
     "featured": {
       "title": "Featured List",
@@ -1152,6 +1156,10 @@
     "search_by_name": "Tìm theo tên",
     "creator_name": "Tên Creator",
     "search_by_creator": "Tìm theo creator",
+    "sort_by": "Sắp xếp theo",
+    "sort_default": "Mặc định (Top)",
+    "sort_by_top": "Theo Top",
+    "sort_by_date": "Theo ngày tạo",
     "apply": "Áp dụng",
     "clear": "Xóa bộ lọc"
   },
@@ -1219,10 +1227,29 @@
       "exclusive_items": "Vật phẩm và trang phục độc quyền premium",
       "double_rewards": "Nhận gấp đôi phần thưởng ở mỗi cấp"
     }
-  }
-  ,
+  },
   "wiki": {
     "created_at": "Được tạo lúc:",
-    "last_updated": "Cập nhật lần cuối:"
+    "last_updated": "Cập nhật lần cuối:",
+    "description": "Hướng dẫn, luật lệ, tin tức và nhật ký thay đổi",
+    "categories": "Danh mục",
+    "latest_articles": "Bài viết mới nhất",
+    "no_articles": "Chưa có bài viết nào",
+    "items": "mục",
+    "subfolders": "Thư mục con",
+    "articles": "Bài viết",
+    "empty_folder": "Thư mục này trống",
+    "folder_description": "{count} mục trong thư mục này",
+    "error_title": "Không thể tải nội dung",
+    "error_description": "Không thể tải nội dung wiki. Vui lòng thử lại sau.",
+    "quick_links": {
+      "rules": "Luật",
+      "news": "Tin tức",
+      "changelog": "Nhật ký",
+      "guides": "Hướng dẫn"
+    },
+    "folders": {
+      "test-nested": "Test thư mục trong"
+    }
   }
 }

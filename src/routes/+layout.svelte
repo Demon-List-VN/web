@@ -203,13 +203,8 @@
 {#if !hideNav}
 	<div class="navbarWrapper navbarWrapperOnTop">
 		<div class="right">
-			<a href="/" class="logo" data-sveltekit-preload-data="tap">
-				<div class="logo-img-wrapper">
-					<img src="/favicon.png" alt="logo" />
-				</div>
-				<span id="logo-name" style="font-family: 'Geist Variable', sans-serif;"
-					><b>Demon List VN</b></span
-				>
+			<a href="/" data-sveltekit-preload-data="tap">
+				<img src="/logo.png" alt="logo"/>
 			</a>
 			<div class="links">
 				{#each linkGroup as group}
@@ -273,7 +268,7 @@
 									>{$_('nav.supporter')}</a
 								>
 							{:else}
-								<Button class="bg-yellow-400 hover:bg-yellow-500 w-full" href="/supporter">
+								<Button class="w-full bg-yellow-400 hover:bg-yellow-500" href="/supporter">
 									{$_('nav.supporter')}
 								</Button>
 							{/if}
@@ -380,7 +375,7 @@
 {#if !supporterAlertDismissed && $user.checked && isVisible && (!$user.loggedIn || !isActive($user.data.supporterUntil)) && pathname !== '/supporter' && !pathname.startsWith('/player/') && !pathname.startsWith('/@')}
 	<div class="px-[5px] pt-[20px] md:px-[55px]">
 		<Alert.Root
-			class="relative flex items-center gap-[10px] border-pink-200 bg-pink-50 pb-[7px] mb-[10px] dark:border-pink-800 dark:bg-pink-950"
+			class="relative mb-[10px] flex items-center gap-[10px] border-pink-200 bg-pink-50 pb-[7px] dark:border-pink-800 dark:bg-pink-950"
 		>
 			<div class="mt-[-8px] text-3xl">💖</div>
 			<div>
@@ -572,8 +567,9 @@
 
 			img {
 				filter: invert(var(--inverted));
-				max-height: 22px;
-				max-width: 22px;
+				max-width: 75px;
+				margin-bottom: 14px;
+				margin-right: 10px;
 			}
 
 			a {

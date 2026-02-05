@@ -3,6 +3,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Button } from '$lib/components/ui/button';
+	import * as Select from '$lib/components/ui/select';
 	import { createEventDispatcher } from 'svelte';
 	import { Pin, ChevronDown, ChevronUp, Lock, Filter, Funnel } from 'lucide-svelte';
 	import { browser } from '$app/environment';
@@ -19,8 +20,11 @@
 	let ratingMax = '';
 	let nameSearch = '';
 	let creatorSearch = '';
+	let sortBy = '';
 	let isPinned = false;
 	let isCollapsed = true;
+
+	$: defaultTopColumn = listType === 'fl' ? 'flTop' : 'dlTop';
 
 	const dispatch = createEventDispatcher();
 
@@ -44,7 +48,8 @@
 			ratingMin: ratingMin.trim() === '' ? null : ratingMin,
 			ratingMax: ratingMax.trim() === '' ? null : ratingMax,
 			nameSearch: nameSearch.trim(),
-			creatorSearch: creatorSearch.trim()
+			creatorSearch: creatorSearch.trim(),
+			sortBy: sortBy.trim() === '' ? null : sortBy
 		});
 	}
 
@@ -55,13 +60,16 @@
 		ratingMax = '';
 		nameSearch = '';
 		creatorSearch = '';
+		sortBy = '';
+
 		dispatch('filter', {
 			topStart: null,
 			topEnd: null,
 			ratingMin: null,
 			ratingMax: null,
 			nameSearch: '',
-			creatorSearch: ''
+			creatorSearch: '',
+			sortBy: defaultTopColumn
 		});
 	}
 </script>
@@ -85,99 +93,122 @@
 						</div>
 					</button>
 					<button
-					class="iconButton collapseButton"
-					class:locked={isCollapsed && (!$user.loggedIn || !isActive($user.data?.supporterUntil))}
-					class:expanded={!isCollapsed}
-					on:click={toggleCollapse}
-					title={isCollapsed ? (!$user.loggedIn || !isActive($user.data?.supporterUntil) ? $_('list_filter.supporter_exclusive') : $_('list_filter.expand')) : $_('list_filter.collapse')}
-				>
-					{#if isCollapsed}
-						{#if !$user.loggedIn || !isActive($user.data?.supporterUntil)}
-							<Lock size={18} />
+						class="iconButton collapseButton"
+						class:locked={isCollapsed && (!$user.loggedIn || !isActive($user.data?.supporterUntil))}
+						class:expanded={!isCollapsed}
+						on:click={toggleCollapse}
+						title={isCollapsed
+							? !$user.loggedIn || !isActive($user.data?.supporterUntil)
+								? $_('list_filter.supporter_exclusive')
+								: $_('list_filter.expand')
+							: $_('list_filter.collapse')}
+					>
+						{#if isCollapsed}
+							{#if !$user.loggedIn || !isActive($user.data?.supporterUntil)}
+								<Lock size={18} />
+							{:else}
+								<ChevronDown size={18} />
+							{/if}
 						{:else}
-							<ChevronDown size={18} />
+							<ChevronUp size={18} />
 						{/if}
-					{:else}
-						<ChevronUp size={18} />
-					{/if}
-				</button>
+					</button>
+				</div>
 			</div>
-		</div>
-	</Card.Header>
-	{#if !isCollapsed}
-		<Card.Content>
-		<div class="filterGrid">
-			<div class="filterRow">
-				<div class="filterGroup">
-					<Label for="topStart">{$_('list_filter.top_range')}</Label>
-					<div class="rangeInputs">
-						<Input
-							id="topStart"
-							type="number"
-							placeholder={$_('list_filter.from')}
-							bind:value={topStart}
-							on:keypress={(e) => e.key === 'Enter' && handleApplyFilters()}
-						/>
-						<span class="rangeSeparator">-</span>
-						<Input
-							id="topEnd"
-							type="number"
-							placeholder={$_('list_filter.to')}
-							bind:value={topEnd}
-							on:keypress={(e) => e.key === 'Enter' && handleApplyFilters()}
-						/>
+		</Card.Header>
+		{#if !isCollapsed}
+			<Card.Content>
+				<div class="filterGrid">
+					<div class="filterRow">
+						<div class="filterGroup">
+							<Label for="topStart">{$_('list_filter.top_range')}</Label>
+							<div class="rangeInputs">
+								<Input
+									id="topStart"
+									type="number"
+									placeholder={$_('list_filter.from')}
+									bind:value={topStart}
+									on:keypress={(e) => e.key === 'Enter' && handleApplyFilters()}
+								/>
+								<span class="rangeSeparator">-</span>
+								<Input
+									id="topEnd"
+									type="number"
+									placeholder={$_('list_filter.to')}
+									bind:value={topEnd}
+									on:keypress={(e) => e.key === 'Enter' && handleApplyFilters()}
+								/>
+							</div>
+						</div>
+						<div class="filterGroup">
+							<Label for="ratingMin">{$_('list_filter.rating_range')}</Label>
+							<div class="rangeInputs">
+								<Input
+									id="ratingMin"
+									type="number"
+									placeholder={$_('list_filter.min')}
+									bind:value={ratingMin}
+									on:keypress={(e) => e.key === 'Enter' && handleApplyFilters()}
+								/>
+								<span class="rangeSeparator">-</span>
+								<Input
+									id="ratingMax"
+									type="number"
+									placeholder={$_('list_filter.max')}
+									bind:value={ratingMax}
+									on:keypress={(e) => e.key === 'Enter' && handleApplyFilters()}
+								/>
+							</div>
+						</div>
+					</div>
+					<div class="filterRow">
+						<div class="filterGroup">
+							<Label for="nameSearch">{$_('list_filter.level_name')}</Label>
+							<Input
+								id="nameSearch"
+								type="text"
+								placeholder={$_('list_filter.search_by_name')}
+								bind:value={nameSearch}
+								on:keypress={(e) => e.key === 'Enter' && handleApplyFilters()}
+							/>
+						</div>
+						<div class="filterGroup">
+							<Label for="creatorSearch">{$_('list_filter.creator_name')}</Label>
+							<Input
+								id="creatorSearch"
+								type="text"
+								placeholder={$_('list_filter.search_by_creator')}
+								bind:value={creatorSearch}
+								on:keypress={(e) => e.key === 'Enter' && handleApplyFilters()}
+							/>
+						</div>
+					</div>
+					<div class="filterRow">
+						<div class="filterGroup">
+							<Label for="sortBy">{$_('list_filter.sort_by')}</Label>
+							<Select.Root
+								onSelectedChange={(v) => {
+									sortBy = v?.value ? String(v.value) : '';
+								}}
+							>
+								<Select.Trigger class="w-full">
+									<Select.Value placeholder={$_('list_filter.sort_by_date')} />
+								</Select.Trigger>
+								<Select.Content>
+									<Select.Item value={defaultTopColumn}>{$_('list_filter.sort_by_top')}</Select.Item
+									>
+									<Select.Item value="created_at">{$_('list_filter.sort_by_date')}</Select.Item>
+								</Select.Content>
+							</Select.Root>
+						</div>
 					</div>
 				</div>
-				<div class="filterGroup">
-					<Label for="ratingMin">{$_('list_filter.rating_range')}</Label>
-					<div class="rangeInputs">
-						<Input
-							id="ratingMin"
-							type="number"
-							placeholder={$_('list_filter.min')}
-							bind:value={ratingMin}
-							on:keypress={(e) => e.key === 'Enter' && handleApplyFilters()}
-						/>
-						<span class="rangeSeparator">-</span>
-						<Input
-							id="ratingMax"
-							type="number"
-							placeholder={$_('list_filter.max')}
-							bind:value={ratingMax}
-							on:keypress={(e) => e.key === 'Enter' && handleApplyFilters()}
-						/>
-					</div>
+				<div class="filterActions">
+					<Button on:click={handleApplyFilters}>{$_('list_filter.apply')}</Button>
+					<Button variant="outline" on:click={handleClearFilters}>{$_('list_filter.clear')}</Button>
 				</div>
-			</div>
-			<div class="filterRow">
-				<div class="filterGroup">
-					<Label for="nameSearch">{$_('list_filter.level_name')}</Label>
-					<Input
-						id="nameSearch"
-						type="text"
-						placeholder={$_('list_filter.search_by_name')}
-						bind:value={nameSearch}
-						on:keypress={(e) => e.key === 'Enter' && handleApplyFilters()}
-					/>
-				</div>
-				<div class="filterGroup">
-					<Label for="creatorSearch">{$_('list_filter.creator_name')}</Label>
-					<Input
-						id="creatorSearch"
-						type="text"
-						placeholder={$_('list_filter.search_by_creator')}
-						bind:value={creatorSearch}
-						on:keypress={(e) => e.key === 'Enter' && handleApplyFilters()}
-					/>
-				</div>
-			</div>
-		</div>
-			<div class="filterActions">
-				<Button on:click={handleApplyFilters}>{$_('list_filter.apply')}</Button>
-				<Button variant="outline" on:click={handleClearFilters}>{$_('list_filter.clear')}</Button>
-			</div>
-		</Card.Content>
-	{/if}
+			</Card.Content>
+		{/if}
 	</Card.Root>
 </div>
 
@@ -265,7 +296,9 @@
 	}
 
 	.collapseButton {
-		transition: transform 0.3s ease, all 0.2s ease;
+		transition:
+			transform 0.3s ease,
+			all 0.2s ease;
 	}
 
 	.collapseButton.expanded {

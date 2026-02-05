@@ -27,6 +27,10 @@
 {/if}
 
 <style>
+	.markdown :global(img) {
+		width: 100%;
+		border-radius: 8px;
+	}
 	.markdown :global(h1) {
 		font-size: 2em;
 		margin-bottom: 0.5em;
