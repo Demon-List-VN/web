@@ -21,6 +21,7 @@
 	import { onMount } from 'svelte';
 	import EventTab from './tabs/EventsTab.svelte';
 	import CardCollectionTab from './tabs/CardCollectionTab.svelte';
+	import CreatedChallengesTab from './tabs/CreatedChallengesTab.svelte';
 
 	export let data: PageData;
 	let list: 'dl' | 'fl' | 'pl' | 'cl' | '' = '';
@@ -224,8 +225,9 @@
 					>
 					<Tabs.Trigger value="cards" on:click={() => (list = '')}>
 						{$_('player.tabs.cards')}
-					</Tabs.Trigger>
-				</Tabs.List>
+					</Tabs.Trigger>				<Tabs.Trigger value="created-challenges" on:click={() => (list = '')}>
+					{$_('player.tabs.created_challenges')}
+				</Tabs.Trigger>				</Tabs.List>
 				<Tabs.Content value="events" class="w-[1200px] max-w-full">
 					<EventTab {data} />
 				</Tabs.Content>
@@ -237,6 +239,9 @@
 				</Tabs.Content>
 				<Tabs.Content value="cards" class="w-[1200px] max-w-full">
 					<CardCollectionTab userID={data.player.uid} />
+				</Tabs.Content>
+				<Tabs.Content value="created-challenges" class="w-[1200px] max-w-full">
+					<CreatedChallengesTab userID={data.player.uid} />
 				</Tabs.Content>
 			</div>
 		</Tabs.Root>

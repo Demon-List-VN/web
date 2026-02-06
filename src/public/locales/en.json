@@ -717,7 +717,8 @@
       "medals": "Medal",
       "overview": "Overview",
       "events": "Events",
-      "cards": "Card collection"
+      "cards": "Card collection",
+      "created_challenges": "Created Challenges"
     },
     "filter": {
       "sort_by": "Sort by",
@@ -732,9 +733,11 @@
       "device": "Device",
       "point": "Point",
       "time": "Time",
-      "progress": "Progress"
+      "progress": "Progress",
+      "total_created_challenges": "Total created challenges"
     },
     "no_events": "No events participated yet",
+    "no_created_challenges": "No created challenges yet",
     "medals": {
       "achieved_on": "Achieved on"
     },

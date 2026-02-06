@@ -716,7 +716,8 @@
       "medals": "Huy chương",
       "overview": "Tổng quan",
       "events": "Sự kiện",
-      "cards": "Bộ sưu tập thẻ"
+      "cards": "Bộ sưu tập thẻ",
+      "created_challenges": "Challenge đã tạo"
     },
     "filter": {
       "sort_by": "Sắp xếp theo",
@@ -731,9 +732,11 @@
       "device": "Thiết bị",
       "point": "Điểm",
       "time": "Thời gian",
-      "progress": "Tiến độ"
+      "progress": "Tiến độ",
+      "total_created_challenges": "Tổng số challenge đã tạo"
     },
     "no_events": "Chưa tham gia sự kiện nào",
+    "no_created_challenges": "Chưa tạo challenge nào",
     "medals": {
       "achieved_on": "Đạt được vào"
     },
