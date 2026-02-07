@@ -25,6 +25,7 @@
 	let recordDetailOpened = false;
 	let selectedRecord: any = null;
 	let relatedPosts: any[] = [];
+	let activeTab = 'records';
 
 	function getTimeString(ms: number) {
 		const minutes = Math.floor(ms / 60000);
@@ -323,77 +324,86 @@
 			{/if}
 		</div>
 	{/if}
-	<div class="cardWrapper1 table">
-		<Table.Root>
-			{#if records}
-				<Table.Caption>{$_('level.total_records')}: {records.length}</Table.Caption>
-			{/if}
-			<Table.Header>
-				<Table.Row>
-					<Table.Head class="w-[35px]">{$_('level.no')}</Table.Head>
-					<Table.Head>Player</Table.Head>
-					<Table.Head class="w-[100px] text-center">{$_('level.submitted_on')}</Table.Head>
-					<Table.Head class="w-[100px] text-center">{$_('level.device')}</Table.Head>
-					<Table.Head class="w-[80px] text-center"
-						>{data.level && data.level.isPlatformer
-							? $_('level.time')
-							: $_('level.progress')}</Table.Head
-					>
-				</Table.Row>
-			</Table.Header>
-			<Table.Body>
-				{#if records}
-					{#each records as record, index}
-						<Table.Row
-							on:click={(e) => {
-								// @ts-ignore
-								if (e.target.nodeName == 'A') {
-									return;
-								}
-
-								selectedRecord = record;
-								recordDetailOpened = true;
-							}}
-						>
-							<Table.Cell class="font-medium">
-								#{index + 1}
-							</Table.Cell>
-							<Table.Cell on:click={(e) => e.stopPropagation()}>
-								<PlayerLink player={record.players} />
-							</Table.Cell>
-							<Table.Cell class="text-center">
-								{new Date(record.timestamp).toLocaleString('vi-VN')}
-							</Table.Cell>
-							<Table.Cell class="text-center">
-								{record.mobile ? $_('level.mobile') : $_('level.pc')}
-								{#if record.refreshRate}
-									<br />({record.refreshRate}{$_('level.fps')})
-								{/if}
-							</Table.Cell>
-							<Table.Cell class="text-center">
-								{data.level && data.level.isPlatformer
-									? getTimeString(record.progress)
-									: `${record.progress}%`}
-							</Table.Cell>
+	<div class="cardWrapper1 tabs-section">
+		<Tabs.Root bind:value={activeTab} class="w-full">
+			<Tabs.List class="grid h-[50px] w-full grid-cols-2">
+				<Tabs.Trigger class="h-[40px]" value="records">{$_('level.records')}</Tabs.Trigger>
+				<Tabs.Trigger class="h-[40px]" value="community">
+					<MessageSquare class="h-4 w-4 mr-2" />
+					{$_('community.related_posts')}
+				</Tabs.Trigger>
+			</Tabs.List>
+			<Tabs.Content value="records" class="mt-4">
+				<Table.Root>
+					{#if records}
+						<Table.Caption>{$_('level.total_records')}: {records.length}</Table.Caption>
+					{/if}
+					<Table.Header>
+						<Table.Row>
+							<Table.Head class="w-[35px]">{$_('level.no')}</Table.Head>
+							<Table.Head>Player</Table.Head>
+							<Table.Head class="w-[100px] text-center">{$_('level.submitted_on')}</Table.Head>
+							<Table.Head class="w-[100px] text-center">{$_('level.device')}</Table.Head>
+							<Table.Head class="w-[80px] text-center"
+								>{data.level && data.level.isPlatformer
+									? $_('level.time')
+									: $_('level.progress')}</Table.Head
+							>
 						</Table.Row>
-					{/each}
+					</Table.Header>
+					<Table.Body>
+						{#if records}
+							{#each records as record, index}
+								<Table.Row
+									on:click={(e) => {
+										// @ts-ignore
+										if (e.target.nodeName == 'A') {
+											return;
+										}
+
+										selectedRecord = record;
+										recordDetailOpened = true;
+									}}
+								>
+									<Table.Cell class="font-medium">
+										#{index + 1}
+									</Table.Cell>
+									<Table.Cell on:click={(e) => e.stopPropagation()}>
+										<PlayerLink player={record.players} />
+									</Table.Cell>
+									<Table.Cell class="text-center">
+										{new Date(record.timestamp).toLocaleString('vi-VN')}
+									</Table.Cell>
+									<Table.Cell class="text-center">
+										{record.mobile ? $_('level.mobile') : $_('level.pc')}
+										{#if record.refreshRate}
+											<br />({record.refreshRate}{$_('level.fps')})
+										{/if}
+									</Table.Cell>
+									<Table.Cell class="text-center">
+										{data.level && data.level.isPlatformer
+											? getTimeString(record.progress)
+											: `${record.progress}%`}
+									</Table.Cell>
+								</Table.Row>
+							{/each}
+						{/if}
+					</Table.Body>
+				</Table.Root>
+			</Tabs.Content>
+			<Tabs.Content value="community" class="mt-4">
+				{#if relatedPosts.length > 0}
+					<div class="relatedGrid">
+						{#each relatedPosts as post}
+							<CommunityPostCard {post} compact />
+						{/each}
+					</div>
+				{:else}
+					<p class="text-center text-muted-foreground py-8">{$_('community.no_posts')}</p>
 				{/if}
-			</Table.Body>
-		</Table.Root>
+			</Tabs.Content>
+		</Tabs.Root>
 	</div>
-	{#if relatedPosts.length > 0}
-		<div class="cardWrapper1 relatedPosts">
-			<h3 class="relatedTitle">
-				<MessageSquare class="h-5 w-5" />
-				{$_('community.related_posts')}
-			</h3>
-			<div class="relatedGrid">
-				{#each relatedPosts as post}
-					<CommunityPostCard {post} compact />
-				{/each}
-			</div>
-		</div>
-	{/if}
 </div>
 
 {#if !records}
@@ -401,7 +411,7 @@
 {/if}
 
 <style lang="scss">
-	.table {
+	.tabs-section {
 		padding-bottom: 20px;
 	}
 
@@ -529,19 +539,6 @@
 		.detail {
 			grid-template-columns: 100%;
 		}
-	}
-
-	.relatedPosts {
-		padding-bottom: 20px;
-	}
-
-	.relatedTitle {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		font-size: 18px;
-		font-weight: 600;
-		margin: 0 0 16px;
 	}
 
 	.relatedGrid {
