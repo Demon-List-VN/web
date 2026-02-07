@@ -717,11 +717,12 @@
       "submitting": "Đang đăng...",
       "uploading": "Đang tải lên...",
       "success": "Đã tạo bài viết!",
-      "validation_error": "Tiêu đề và nội dung là bắt buộc",
+      "validation_error": "Tiêu đề là bắt buộc",
       "attachment": "Đính kèm",
       "my_records": "Record của tôi",
       "attach_level": "Đính kèm Level",
       "search_levels": "Tìm kiếm level...",
+      "enter_level_id": "Nhập ID level...",
       "no_records": "Không tìm thấy record đã xác minh",
       "no_levels": "Không tìm thấy level"
     },

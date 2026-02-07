@@ -718,11 +718,12 @@
       "submitting": "Posting...",
       "uploading": "Uploading...",
       "success": "Post created!",
-      "validation_error": "Title and content are required",
+      "validation_error": "Title is required",
       "attachment": "Attachment",
       "my_records": "My Records",
       "attach_level": "Attach Level",
       "search_levels": "Search levels...",
+      "enter_level_id": "Enter level ID...",
       "no_records": "No verified records found",
       "no_levels": "No levels found"
     },

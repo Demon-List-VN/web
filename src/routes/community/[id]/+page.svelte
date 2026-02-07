@@ -452,13 +452,15 @@
 					</div>
 				{/if}
 
-				<div class="postText">
-					{#if post.type === 'announcement'}
-						<Markdown content={post.content} />
-					{:else}
-						{post.content}
-					{/if}
-				</div>
+				{#if post.content}
+					<div class="postText">
+						{#if post.type === 'announcement'}
+							<Markdown content={post.content} />
+						{:else}
+							{post.content}
+						{/if}
+					</div>
+				{/if}
 			</div>
 
 			<!-- Post Actions -->

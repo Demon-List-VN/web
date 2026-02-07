@@ -151,13 +151,39 @@
 		}
 	}
 
+	let levelSearchTimer: ReturnType<typeof setTimeout>;
+
+	function debouncedLevelSearch() {
+		clearTimeout(levelSearchTimer);
+		if (!levelSearchQuery.trim()) {
+			searchLevels = [];
+			return;
+		}
+		levelSearchTimer = setTimeout(() => searchForLevels(), 400);
+	}
+
 	async function searchForLevels() {
+		const query = levelSearchQuery.trim();
+		if (!query) {
+			searchLevels = [];
+			return;
+		}
 		loadingLevels = true;
 		try {
-			const params = new URLSearchParams({ limit: '20' });
-			if (levelSearchQuery.trim()) params.set('q', levelSearchQuery.trim());
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/levels/search?${params}`);
-			searchLevels = await res.json();
+			const res = await fetch(`https://gdbrowser.com/api/search/${encodeURIComponent(query)}?page=0&count=5&diff=-2`);
+			if (!res.ok) {
+				searchLevels = [];
+				return;
+			}
+			const data = await res.json();
+			searchLevels = (Array.isArray(data) ? data : []).map((l: any) => ({
+				id: parseInt(l.id),
+				name: l.name,
+				creator: l.author,
+				difficulty: l.difficulty,
+				isPlatformer: l.platformer ?? false,
+				rating: l.stars ?? 0
+			}));
 		} catch {
 			searchLevels = [];
 		} finally {
@@ -249,7 +275,7 @@
 	}
 
 	async function handleCreate() {
-		if (!newPost.title.trim() || !newPost.content.trim()) {
+		if (!newPost.title.trim()) {
 			toast.error($_('community.create.validation_error'));
 			return;
 		}
@@ -728,7 +754,7 @@
 										type="text"
 										bind:value={levelSearchQuery}
 										placeholder={$_('community.create.search_levels')}
-										on:input={() => searchForLevels()}
+										on:input={() => debouncedLevelSearch()}
 									/>
 								</div>
 							</div>
