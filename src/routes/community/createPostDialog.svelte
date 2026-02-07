@@ -206,7 +206,7 @@
 			let fileToUpload: File | Blob = imageFile;
 			if (ext !== 'gif') {
 				fileToUpload = await imageCompression(imageFile, {
-					maxSizeMB: 8,
+					maxSizeMB: 1,
 					maxWidthOrHeight: 1920,
 					useWebWorker: true
 				});
