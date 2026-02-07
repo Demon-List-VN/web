@@ -7,11 +7,12 @@
 	import Ads from '$lib/components/ads.svelte';
 	import { _, locale } from 'svelte-i18n';
 	import * as Alert from '$lib/components/ui/alert';
-	import { X, Newspaper, History, ArrowRight } from 'lucide-svelte';
+	import { X, Newspaper, History, ArrowRight, Users } from 'lucide-svelte';
 	import { goto } from '$app/navigation';
 	import { user } from '$lib/client';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import { browser } from '$app/environment';
+	import CommunityPostCard from '$lib/components/communityPostCard.svelte';
 
 	let visible = false;
 	let showDiscordAlert = false;
@@ -28,6 +29,7 @@
 	let newsArticles: any[] | null = null;
 	let changelogArticles: any[] | null = null;
 	let showDashboardAlert = false;
+	let communityPosts: any[] | null = null;
 
 	function getTitle(item: any, loc: string) {
 		const metadata =
@@ -135,6 +137,16 @@
 		getWikiFiles('changelogs', 5).then((data) => {
 			changelogArticles = Array.isArray(data) ? data : data?.items || [];
 		});
+
+		// Fetch community posts
+		fetch(`${import.meta.env.VITE_API_URL}/community/posts?limit=6&sortBy=created_at&ascending=false`)
+			.then((res) => res.json())
+			.then((data) => {
+				communityPosts = data?.data || [];
+			})
+			.catch(() => {
+				communityPosts = [];
+			});
 	});
 </script>
 
@@ -372,6 +384,37 @@
 			</a>
 		</div>
 	</section>
+
+	<!-- Community Hub -->
+	<section class="section">
+		<div class="sectionHeader">
+			<div class="flex items-center gap-2">
+				<Users class="h-5 w-5 text-indigo-500" />
+				<h4>{$_('community.hub_title')}</h4>
+			</div>
+			<a href="/community" class="viewAllBtn">
+				{$_('community.view_all')}
+				<ArrowRight class="ml-1 h-4 w-4" />
+			</a>
+		</div>
+		<div class="communityGrid">
+			{#if communityPosts}
+				{#if communityPosts.length > 0}
+					{#each communityPosts as post}
+						<CommunityPostCard {post} compact={true} />
+					{/each}
+				{:else}
+					<div class="communityEmpty">
+						<p>{$_('community.no_posts')}</p>
+					</div>
+				{/if}
+			{:else}
+				{#each { length: 6 } as _}
+					<CommunityPostCard post={null} />
+				{/each}
+			{/if}
+		</div>
+	</section>
 </div>
 
 <style lang="scss">
@@ -589,6 +632,23 @@
 		font-size: 14px;
 	}
 
+	/* Community Hub */
+	.communityGrid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+		gap: 14px;
+		padding-inline: 50px;
+		margin-top: 20px;
+	}
+
+	.communityEmpty {
+		grid-column: 1 / -1;
+		text-align: center;
+		padding: 40px 0;
+		color: hsl(var(--muted-foreground));
+		font-size: 14px;
+	}
+
 	@media screen and (max-width: 900px) {
 		.sectionHeader {
 			padding-inline: 16px;
@@ -603,6 +663,11 @@
 		}
 
 		.panelsGrid {
+			grid-template-columns: 1fr;
+			padding-inline: 16px;
+		}
+
+		.communityGrid {
 			grid-template-columns: 1fr;
 			padding-inline: 16px;
 		}

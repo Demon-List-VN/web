@@ -670,6 +670,54 @@
       "link": "Go to dashboard"
     }
   },
+  "community": {
+    "title": "Community Hub",
+    "subtitle": "Share, discuss, and connect with the Geometry Dash VN community",
+    "hub_title": "Community Hub",
+    "view_all": "View all posts",
+    "no_posts": "No posts yet. Be the first to share something!",
+    "pinned": "Pinned",
+    "edited": "edited",
+    "pin": "Pin",
+    "unpin": "Unpin",
+    "delete": "Delete",
+    "delete_confirm": "Are you sure you want to delete this post?",
+    "deleted": "Post deleted",
+    "login_required": "Please log in to perform this action",
+    "login_to_comment": "Log in to leave a comment",
+    "type": {
+      "all": "All",
+      "discussion": "Discussion",
+      "screenshot": "Screenshot",
+      "guide": "Guide",
+      "announcement": "Announcement"
+    },
+    "create": {
+      "button": "New Post",
+      "title": "Create Post",
+      "description": "Share something with the community",
+      "post_title": "Title",
+      "title_placeholder": "Enter a title...",
+      "post_type": "Type",
+      "post_content": "Content",
+      "content_placeholder": "Write your post content...",
+      "image_url": "Image URL",
+      "optional": "optional",
+      "submit": "Post",
+      "submitting": "Posting...",
+      "success": "Post created!",
+      "validation_error": "Title and content are required"
+    },
+    "comment": {
+      "placeholder": "Write a comment...",
+      "submit": "Comment",
+      "submitting": "Posting...",
+      "success": "Comment added",
+      "error": "Failed to add comment",
+      "none": "No comments yet"
+    },
+    "comments": "Comments"
+  },
   "orders": {
     "title": "Orders",
     "id": "ID",

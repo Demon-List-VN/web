@@ -47,6 +47,7 @@
 		{
 			name: $locale === 'en' ? 'Community' : 'Cộng đồng',
 			routes: [
+				{ route: '/community', name: $locale === 'en' ? 'Community Hub' : 'Cộng đồng' },
 				{ route: '/players', name: $locale === 'en' ? 'Players' : 'Người chơi' },
 				{ route: '/clans', name: $locale === 'en' ? 'Clans' : 'Hội' }
 			]

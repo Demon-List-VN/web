@@ -669,6 +669,54 @@
       "link": "Đi tới dashboard"
     }
   },
+  "community": {
+    "title": "Cộng đồng",
+    "subtitle": "Chia sẻ, thảo luận và kết nối với cộng đồng Geometry Dash VN",
+    "hub_title": "Cộng đồng",
+    "view_all": "Xem tất cả bài viết",
+    "no_posts": "Chưa có bài viết nào. Hãy là người đầu tiên chia sẻ!",
+    "pinned": "Ghim",
+    "edited": "đã chỉnh sửa",
+    "pin": "Ghim",
+    "unpin": "Bỏ ghim",
+    "delete": "Xoá",
+    "delete_confirm": "Bạn có chắc muốn xóa bài viết này?",
+    "deleted": "Đã xóa bài viết",
+    "login_required": "Vui lòng đăng nhập để thực hiện",
+    "login_to_comment": "Đăng nhập để bình luận",
+    "type": {
+      "all": "Tất cả",
+      "discussion": "Thảo luận",
+      "screenshot": "Ảnh chụp",
+      "guide": "Hướng dẫn",
+      "announcement": "Thông báo"
+    },
+    "create": {
+      "button": "Bài mới",
+      "title": "Tạo bài viết",
+      "description": "Chia sẻ điều gì đó với cộng đồng",
+      "post_title": "Tiêu đề",
+      "title_placeholder": "Nhập tiêu đề...",
+      "post_type": "Loại",
+      "post_content": "Nội dung",
+      "content_placeholder": "Viết nội dung bài viết...",
+      "image_url": "URL hình ảnh",
+      "optional": "tuỳ chọn",
+      "submit": "Đăng",
+      "submitting": "Đang đăng...",
+      "success": "Đã tạo bài viết!",
+      "validation_error": "Tiêu đề và nội dung là bắt buộc"
+    },
+    "comment": {
+      "placeholder": "Viết bình luận...",
+      "submit": "Bình luận",
+      "submitting": "Đang đăng...",
+      "success": "Đã thêm bình luận",
+      "error": "Không thể thêm bình luận",
+      "none": "Chưa có bình luận"
+    },
+    "comments": "Bình luận"
+  },
   "orders": {
     "title": "Đơn hàng",
     "id": "ID",
