@@ -695,7 +695,8 @@
       "discussion": "Discussion",
       "media": "Media",
       "guide": "Guide",
-      "announcement": "Announcement"
+      "announcement": "Announcement",
+      "review": "Review"
     },
     "create": {
       "button": "New Post",
@@ -745,6 +746,15 @@
       "difficulty": "Difficulty",
       "mobile": "Played on mobile",
       "watch_video": "Watch Video"
+    },
+    "review": {
+      "recommended": "Recommended",
+      "not_recommended": "Not Recommended",
+      "select_level": "Select Level to Review",
+      "search_levels": "Search from your accepted records...",
+      "no_eligible_levels": "No eligible levels found. You need accepted records to write reviews.",
+      "recommendation": "Your Recommendation",
+      "level_required": "You must select a level to review"
     },
     "report": {
       "button": "Report",

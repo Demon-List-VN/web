@@ -22,7 +22,8 @@
 		Megaphone,
 		ExternalLink,
 		Flag,
-		Check
+		Check,
+		Star
 	} from 'lucide-svelte';
 
 	let posts: any[] | null = null;
@@ -48,14 +49,16 @@
 		discussion: MessageCircle,
 		media: Image,
 		guide: BookOpen,
-		announcement: Megaphone
+		announcement: Megaphone,
+		review: Star
 	};
 
 	const typeColors: Record<string, string> = {
 		discussion: 'text-blue-500',
 		media: 'text-purple-500',
 		guide: 'text-emerald-500',
-		announcement: 'text-amber-500'
+		announcement: 'text-amber-500',
+		review: 'text-yellow-500'
 	};
 
 	async function getAuthHeaders() {
@@ -285,6 +288,7 @@
 					<Select.Item value="discussion">Discussion</Select.Item>
 					<Select.Item value="media">Media</Select.Item>
 					<Select.Item value="guide">Guide</Select.Item>
+					<Select.Item value="review">Review</Select.Item>
 					<Select.Item value="announcement">Announcement</Select.Item>
 				</Select.Content>
 			</Select.Root>
@@ -544,6 +548,7 @@
 							<Select.Item value="discussion">Discussion</Select.Item>
 							<Select.Item value="media">Media</Select.Item>
 							<Select.Item value="guide">Guide</Select.Item>
+							<Select.Item value="review">Review</Select.Item>
 							<Select.Item value="announcement">Announcement</Select.Item>
 						</Select.Content>
 					</Select.Root>

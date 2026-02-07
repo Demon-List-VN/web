@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ThumbsUp, MessageSquare, Pin, Image, BookOpen, Megaphone, MessageCircle, Play, Trophy, Gamepad2 } from 'lucide-svelte';
+	import { ThumbsUp, MessageSquare, Pin, Image, BookOpen, Megaphone, MessageCircle, Play, Trophy, Gamepad2, Star, ThumbsDown } from 'lucide-svelte';
 	import { _, locale } from 'svelte-i18n';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import PlayerLink from '$lib/components/playerLink.svelte';
@@ -11,21 +11,24 @@
 		discussion: MessageCircle,
 		media: Image,
 		guide: BookOpen,
-		announcement: Megaphone
+		announcement: Megaphone,
+		review: Star
 	};
 
 	const typeColors: Record<string, string> = {
 		discussion: 'text-blue-500',
 		media: 'text-purple-500',
 		guide: 'text-emerald-500',
-		announcement: 'text-amber-500'
+		announcement: 'text-amber-500',
+		review: 'text-yellow-500'
 	};
 
 	const typeBgColors: Record<string, string> = {
 		discussion: 'bg-blue-500/10',
 		media: 'bg-purple-500/10',
 		guide: 'bg-emerald-500/10',
-		announcement: 'bg-amber-500/10'
+		announcement: 'bg-amber-500/10',
+		review: 'bg-yellow-500/10'
 	};
 
 	function timeAgo(dateStr: string) {
@@ -114,6 +117,16 @@
 								<svelte:component this={TypeIcon} class="h-3.5 w-3.5 {typeColors[post.type]}" />
 								<span class={typeColors[post.type]}>{$_(`community.type.${post.type}`)}</span>
 							</div>
+							{#if post.type === 'review' && post.is_recommended !== null}
+								<div class="recommendBadge" class:recommended={post.is_recommended} class:notRecommended={!post.is_recommended}>
+									{#if post.is_recommended}
+										<ThumbsUp class="h-3 w-3" />
+									{:else}
+										<ThumbsDown class="h-3 w-3" />
+									{/if}
+									<span>{post.is_recommended ? $_('community.review.recommended') : $_('community.review.not_recommended')}</span>
+								</div>
+							{/if}
 							<h3 class="postTitle">{post.title}</h3>
 						</div>
 						{#if !compact && post.content}
@@ -338,6 +351,8 @@
 
 	/* Media post layout */
 	.mediaPost {
+		grid-row: span 2;
+
 		.postFooter {
 			border-top: none;
 		}
@@ -346,7 +361,6 @@
 	.mediaImage {
 		width: 100%;
 		aspect-ratio: 16 / 9;
-		max-height: 160px;
 		overflow: hidden;
 		position: relative;
 		background: hsl(var(--muted));
@@ -354,7 +368,7 @@
 		img {
 			width: 100%;
 			height: 100%;
-			object-fit: cover;
+			object-fit: contain;
 		}
 	}
 
@@ -414,6 +428,28 @@
 	}
 
 	.skeleton { pointer-events: none; }
+
+	.recommendBadge {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 2px 8px;
+		border-radius: 6px;
+		font-size: 11px;
+		font-weight: 600;
+		white-space: nowrap;
+		flex-shrink: 0;
+
+		&.recommended {
+			background: rgba(34, 197, 94, 0.1);
+			color: rgb(34, 197, 94);
+		}
+
+		&.notRecommended {
+			background: rgba(239, 68, 68, 0.1);
+			color: rgb(239, 68, 68);
+		}
+	}
 
 	.skeletonLine {
 		height: 14px;

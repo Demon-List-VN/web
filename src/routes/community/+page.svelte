@@ -25,7 +25,10 @@
 		Trophy,
 		Gamepad2,
 		Search,
-		Play
+		Play,
+		Star,
+		ThumbsUp,
+		ThumbsDown
 	} from 'lucide-svelte';
 
 	let posts: any[] | null = null;
@@ -57,6 +60,12 @@
 	let selectedRecord: any = null;
 	let selectedLevel: any = null;
 
+	// Review state
+	let isRecommended: boolean = true;
+	let reviewLevels: any[] = [];
+	let reviewLevelSearch = '';
+	let loadingReviewLevels = false;
+
 	const PAGE_SIZE = 15;
 
 	function getYouTubeId(url: string): string | null {
@@ -72,6 +81,7 @@
 		{ value: 'discussion', label: 'discussion', icon: MessageCircle },
 		{ value: 'media', label: 'media', icon: Image },
 		{ value: 'guide', label: 'guide', icon: BookOpen },
+		{ value: 'review', label: 'review', icon: Star },
 		{ value: 'announcement', label: 'announcement', icon: Megaphone }
 	];
 
@@ -173,6 +183,42 @@
 		attachmentType = 'none';
 	}
 
+	async function searchReviewLevels() {
+		loadingReviewLevels = true;
+		try {
+			// Get user's accepted records to know which levels they can review
+			const token = await $user.token();
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/my/records`, {
+				headers: { Authorization: `Bearer ${token}` }
+			});
+			const records = await res.json();
+			let levels = (records || []).map((r: any) => ({
+				id: r.levelid,
+				name: r.levels?.name,
+				creator: r.levels?.creator,
+				difficulty: r.levels?.difficulty,
+				isPlatformer: r.levels?.isPlatformer,
+				progress: r.progress
+			}));
+			if (reviewLevelSearch.trim()) {
+				levels = levels.filter((l: any) =>
+					l.name?.toLowerCase().includes(reviewLevelSearch.trim().toLowerCase())
+				);
+			}
+			reviewLevels = levels;
+		} catch {
+			reviewLevels = [];
+		} finally {
+			loadingReviewLevels = false;
+		}
+	}
+
+	function selectReviewLevel(level: any) {
+		selectedLevel = level;
+		selectedRecord = null;
+		attachmentType = 'level';
+	}
+
 	async function uploadImage(): Promise<string | undefined> {
 		if (!imageFile) return undefined;
 		uploading = true;
@@ -205,6 +251,12 @@
 	async function handleCreate() {
 		if (!newPost.title.trim() || !newPost.content.trim()) {
 			toast.error($_('community.create.validation_error'));
+			return;
+		}
+
+		// Review validation: must have an attached level
+		if (newPost.type === 'review' && !selectedLevel) {
+			toast.error($_('community.review.level_required'));
 			return;
 		}
 
@@ -253,6 +305,11 @@
 				};
 			}
 
+			// Add recommendation for review posts
+			if (newPost.type === 'review') {
+				body.is_recommended = isRecommended;
+			}
+
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/posts`, {
 				method: 'POST',
 				headers: {
@@ -272,6 +329,9 @@
 			newPost = { title: '', content: '', type: 'discussion', image_url: '', video_url: '' };
 			clearImage();
 			clearAttachment();
+			isRecommended = true;
+			reviewLevels = [];
+			reviewLevelSearch = '';
 			currentPage = 0;
 			await fetchPosts();
 		} catch (e: any) {
@@ -424,7 +484,13 @@
 				<label for="post-type">{$_('community.create.post_type')}</label>
 				<Select.Root
 					onSelectedChange={(v) => {
-						if (v) newPost.type = String(v.value);
+						if (v) {
+							newPost.type = String(v.value);
+							if (v.value === 'review') {
+								searchReviewLevels();
+								clearAttachment();
+							}
+						}
 					}}
 				>
 					<Select.Trigger>
@@ -434,12 +500,89 @@
 						<Select.Item value="discussion">{$_('community.type.discussion')}</Select.Item>
 						<Select.Item value="media">{$_('community.type.media')}</Select.Item>
 						<Select.Item value="guide">{$_('community.type.guide')}</Select.Item>
+						<Select.Item value="review">{$_('community.type.review')}</Select.Item>
 						{#if $user.data?.isAdmin}
 							<Select.Item value="announcement">{$_('community.type.announcement')}</Select.Item>
 						{/if}
 					</Select.Content>
 				</Select.Root>
 			</div>
+
+			{#if newPost.type === 'review'}
+				<!-- Review: Level Selection (from accepted records) -->
+				<div class="formField">
+					<span class="fieldLabel">
+						<Star class="inline h-3.5 w-3.5 text-yellow-500" />
+						{$_('community.review.select_level')} <span class="text-red-500">*</span>
+					</span>
+					{#if selectedLevel}
+						<div class="attachmentPreview">
+							<div class="attachmentCard">
+								<Gamepad2 class="h-4 w-4 text-emerald-500" />
+								<div class="attachmentInfo">
+									<strong>{selectedLevel.name}</strong>
+									<span class="text-xs text-muted-foreground">
+										{selectedLevel.creator}
+									</span>
+								</div>
+								<button class="removeBtn" on:click={() => { selectedLevel = null; }}>
+									<X class="h-3.5 w-3.5" />
+								</button>
+							</div>
+						</div>
+					{:else}
+						<div class="attachmentSearch">
+							<div class="searchInputWrap">
+								<Search class="h-3.5 w-3.5" />
+								<input
+									type="text"
+									bind:value={reviewLevelSearch}
+									placeholder={$_('community.review.search_levels')}
+									on:input={() => searchReviewLevels()}
+								/>
+							</div>
+						</div>
+						<div class="attachmentList">
+							{#if loadingReviewLevels}
+								<p class="attachmentLoading">{$_('general.loading')}...</p>
+							{:else if reviewLevels.length === 0}
+								<p class="attachmentEmpty">{$_('community.review.no_eligible_levels')}</p>
+							{:else}
+								{#each reviewLevels as level}
+									<button class="attachmentOption" on:click={() => selectReviewLevel(level)}>
+										<Gamepad2 class="h-3.5 w-3.5 text-emerald-500" />
+										<span class="attachmentName">{level.name}</span>
+										<span class="attachmentMeta">{level.creator}</span>
+									</button>
+								{/each}
+							{/if}
+						</div>
+					{/if}
+				</div>
+
+				<!-- Review: Recommend Toggle -->
+				<div class="formField">
+					<span class="fieldLabel">{$_('community.review.recommendation')}</span>
+					<div class="recommendToggle">
+						<button
+							class="recommendBtn recommended"
+							class:active={isRecommended}
+							on:click={() => (isRecommended = true)}
+						>
+							<ThumbsUp class="h-4 w-4" />
+							<span>{$_('community.review.recommended')}</span>
+						</button>
+						<button
+							class="recommendBtn notRecommended"
+							class:active={!isRecommended}
+							on:click={() => (isRecommended = false)}
+						>
+							<ThumbsDown class="h-4 w-4" />
+							<span>{$_('community.review.not_recommended')}</span>
+						</button>
+					</div>
+				</div>
+			{/if}
 
 			<div class="formField">
 				<label for="post-content">{$_('community.create.post_content')}</label>
@@ -886,6 +1029,45 @@
 	/* Attachment Picker */
 	.attachmentPreview {
 		display: flex;
+	}
+
+	/* Review Recommend Toggle */
+	.recommendToggle {
+		display: flex;
+		gap: 8px;
+	}
+
+	.recommendBtn {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 8px 16px;
+		border-radius: 8px;
+		font-size: 13px;
+		font-weight: 500;
+		border: 2px solid hsl(var(--border));
+		background: transparent;
+		color: hsl(var(--muted-foreground));
+		cursor: pointer;
+		transition: all 0.2s ease;
+		flex: 1;
+		justify-content: center;
+
+		&.recommended.active {
+			border-color: rgb(34, 197, 94);
+			background: rgba(34, 197, 94, 0.1);
+			color: rgb(34, 197, 94);
+		}
+
+		&.notRecommended.active {
+			border-color: rgb(239, 68, 68);
+			background: rgba(239, 68, 68, 0.1);
+			color: rgb(239, 68, 68);
+		}
+
+		&:hover {
+			border-color: hsl(var(--foreground) / 0.3);
+		}
 	}
 
 	.attachmentCard {

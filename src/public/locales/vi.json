@@ -694,7 +694,8 @@
       "discussion": "Thảo luận",
       "media": "Phương tiện",
       "guide": "Hướng dẫn",
-      "announcement": "Thông báo"
+      "announcement": "Thông báo",
+      "review": "Đánh giá"
     },
     "create": {
       "button": "Bài mới",
@@ -744,6 +745,15 @@
       "difficulty": "Độ khó",
       "mobile": "Chơi trên di động",
       "watch_video": "Xem Video"
+    },
+    "review": {
+      "recommended": "Đề xuất",
+      "not_recommended": "Không đề xuất",
+      "select_level": "Chọn Level để đánh giá",
+      "search_levels": "Tìm từ record đã được duyệt...",
+      "no_eligible_levels": "Không tìm thấy level phù hợp. Bạn cần có record đã được duyệt để viết đánh giá.",
+      "recommendation": "Đánh giá của bạn",
+      "level_required": "Bạn phải chọn level để đánh giá"
     },
     "report": {
       "button": "Báo cáo",

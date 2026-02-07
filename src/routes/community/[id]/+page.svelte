@@ -28,7 +28,9 @@
 		ExternalLink,
 		Video,
 		Smartphone,
-		Play
+		Play,
+		Star,
+		ThumbsDown
 	} from 'lucide-svelte';
 
 	let post: any = null;
@@ -51,21 +53,24 @@
 		discussion: MessageCircle,
 		media: Image,
 		guide: BookOpen,
-		announcement: Megaphone
+		announcement: Megaphone,
+		review: Star
 	};
 
 	const typeColors: Record<string, string> = {
 		discussion: 'text-blue-500',
 		media: 'text-purple-500',
 		guide: 'text-emerald-500',
-		announcement: 'text-amber-500'
+		announcement: 'text-amber-500',
+		review: 'text-yellow-500'
 	};
 
 	const typeBgColors: Record<string, string> = {
 		discussion: 'bg-blue-500/10',
 		media: 'bg-purple-500/10',
 		guide: 'bg-emerald-500/10',
-		announcement: 'bg-amber-500/10'
+		announcement: 'bg-amber-500/10',
+		review: 'bg-yellow-500/10'
 	};
 
 	function formatDate(dateStr: string) {
@@ -351,6 +356,18 @@
 					<svelte:component this={TypeIcon} class="h-3.5 w-3.5 {typeColors[post.type]}" />
 					<span class={typeColors[post.type]}>{$_(`community.type.${post.type}`)}</span>
 				</div>
+
+				{#if post.type === 'review' && post.is_recommended !== null && post.is_recommended !== undefined}
+					<div class="recommendBadgeDetail" class:recommended={post.is_recommended} class:notRecommended={!post.is_recommended}>
+						{#if post.is_recommended}
+							<ThumbsUp class="h-4 w-4" />
+							<span>{$_('community.review.recommended')}</span>
+						{:else}
+							<ThumbsDown class="h-4 w-4" />
+							<span>{$_('community.review.not_recommended')}</span>
+						{/if}
+					</div>
+				{/if}
 
 				<h1 class="postTitle">{post.title}</h1>
 
@@ -776,6 +793,27 @@
 		font-weight: 600;
 		text-transform: capitalize;
 		margin-bottom: 10px;
+	}
+
+	.recommendBadgeDetail {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 6px 14px;
+		border-radius: 8px;
+		font-size: 14px;
+		font-weight: 600;
+		margin-bottom: 10px;
+
+		&.recommended {
+			background: rgba(34, 197, 94, 0.1);
+			color: rgb(34, 197, 94);
+		}
+
+		&.notRecommended {
+			background: rgba(239, 68, 68, 0.1);
+			color: rgb(239, 68, 68);
+		}
 	}
 
 	.postTitle {
