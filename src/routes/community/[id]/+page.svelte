@@ -25,7 +25,9 @@
 		Flag,
 		Trophy,
 		Gamepad2,
-		ExternalLink
+		ExternalLink,
+		Video,
+		Smartphone
 	} from 'lucide-svelte';
 
 	let post: any = null;
@@ -41,23 +43,26 @@
 	let reportDescription = '';
 	let submittingReport = false;
 
+	// Record detail dialog state
+	let recordDialogOpen = false;
+
 	const typeIcons: Record<string, any> = {
 		discussion: MessageCircle,
-		screenshot: Image,
+		media: Image,
 		guide: BookOpen,
 		announcement: Megaphone
 	};
 
 	const typeColors: Record<string, string> = {
 		discussion: 'text-blue-500',
-		screenshot: 'text-purple-500',
+		media: 'text-purple-500',
 		guide: 'text-emerald-500',
 		announcement: 'text-amber-500'
 	};
 
 	const typeBgColors: Record<string, string> = {
 		discussion: 'bg-blue-500/10',
-		screenshot: 'bg-purple-500/10',
+		media: 'bg-purple-500/10',
 		guide: 'bg-emerald-500/10',
 		announcement: 'bg-amber-500/10'
 	};
@@ -386,7 +391,9 @@
 
 				<!-- Attached Record -->
 				{#if post.attached_record}
-					<div class="attachedCard">
+					<!-- svelte-ignore a11y-click-events-have-key-events -->
+					<!-- svelte-ignore a11y-no-static-element-interactions -->
+					<div class="attachedCard clickable" on:click={() => (recordDialogOpen = true)}>
 						<Trophy class="h-5 w-5 text-amber-500" />
 						<div class="attachedInfo">
 							<strong>{post.attached_record.levelName}</strong>
@@ -396,7 +403,7 @@
 							</span>
 						</div>
 						{#if post.attached_record.videoLink}
-							<a href={post.attached_record.videoLink} target="_blank" rel="noopener" class="attachedLink">
+							<a href={post.attached_record.videoLink} target="_blank" rel="noopener" class="attachedLink" on:click|stopPropagation>
 								<ExternalLink class="h-4 w-4" />
 							</a>
 						{/if}
@@ -578,6 +585,84 @@
 		</div>
 	{/if}
 </div>
+
+<!-- Record Detail Dialog -->
+{#if post?.attached_record}
+<Dialog.Root bind:open={recordDialogOpen}>
+	<Dialog.Content class="max-w-md">
+		<Dialog.Header>
+			<Dialog.Title>{$_('community.record_detail.title')}</Dialog.Title>
+		</Dialog.Header>
+
+		<div class="recordDetail">
+			<div class="recordDetailRow">
+				<Trophy class="h-5 w-5 text-amber-500" />
+				<div class="recordDetailInfo">
+					<span class="recordDetailLabel">{$_('community.record_detail.level')}</span>
+					<strong class="recordDetailValue">{post.attached_record.levelName}</strong>
+				</div>
+			</div>
+			<div class="recordDetailRow">
+				<span class="recordDetailIcon">🎨</span>
+				<div class="recordDetailInfo">
+					<span class="recordDetailLabel">{$_('community.record_detail.creator')}</span>
+					<span class="recordDetailValue">{post.attached_record.creator}</span>
+				</div>
+			</div>
+			<div class="recordDetailRow">
+				<span class="recordDetailIcon">📊</span>
+				<div class="recordDetailInfo">
+					<span class="recordDetailLabel">{$_('community.record_detail.progress')}</span>
+					<div class="recordProgress">
+						<div class="recordProgressBar">
+							<div class="recordProgressFill" style="width: {post.attached_record.progress}%"></div>
+						</div>
+						<span class="recordProgressText">{post.attached_record.progress}%</span>
+					</div>
+				</div>
+			</div>
+			{#if post.attached_record.difficulty}
+				<div class="recordDetailRow">
+					<span class="recordDetailIcon">⭐</span>
+					<div class="recordDetailInfo">
+						<span class="recordDetailLabel">{$_('community.record_detail.difficulty')}</span>
+						<span class="recordDetailValue">{post.attached_record.difficulty}</span>
+					</div>
+				</div>
+			{/if}
+			{#if post.attached_record.isPlatformer}
+				<div class="recordDetailRow">
+					<Gamepad2 class="h-5 w-5 text-emerald-500" />
+					<div class="recordDetailInfo">
+						<span class="recordDetailValue">Platformer</span>
+					</div>
+				</div>
+			{/if}
+			{#if post.attached_record.mobile}
+				<div class="recordDetailRow">
+					<Smartphone class="h-5 w-5 text-blue-500" />
+					<div class="recordDetailInfo">
+						<span class="recordDetailValue">{$_('community.record_detail.mobile')}</span>
+					</div>
+				</div>
+			{/if}
+			{#if post.attached_record.videoLink}
+				<a href={post.attached_record.videoLink} target="_blank" rel="noopener" class="recordVideoBtn">
+					<Video class="h-4 w-4" />
+					{$_('community.record_detail.watch_video')}
+					<ExternalLink class="h-3.5 w-3.5" />
+				</a>
+			{/if}
+		</div>
+
+		<Dialog.Footer>
+			<Button variant="outline" on:click={() => (recordDialogOpen = false)}>
+				{$_('general.close')}
+			</Button>
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>
+{/if}
 
 <!-- Report Dialog -->
 <Dialog.Root bind:open={reportDialogOpen}>
@@ -1009,6 +1094,16 @@
 		background: hsl(var(--muted) / 0.3);
 		margin-bottom: 16px;
 
+		&.clickable {
+			cursor: pointer;
+			transition: all 0.15s;
+
+			&:hover {
+				background: hsl(var(--muted) / 0.5);
+				border-color: hsl(var(--primary) / 0.3);
+			}
+		}
+
 		.attachedInfo {
 			flex: 1;
 			display: flex;
@@ -1035,6 +1130,91 @@
 				background: hsl(var(--muted));
 				color: hsl(var(--foreground));
 			}
+		}
+	}
+
+	/* Record Detail Dialog */
+	.recordDetail {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		padding: 8px 0;
+	}
+
+	.recordDetailRow {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+	}
+
+	.recordDetailIcon {
+		font-size: 20px;
+		width: 20px;
+		text-align: center;
+	}
+
+	.recordDetailInfo {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+
+	.recordDetailLabel {
+		font-size: 11px;
+		font-weight: 500;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		color: hsl(var(--muted-foreground));
+	}
+
+	.recordDetailValue {
+		font-size: 14px;
+		font-weight: 500;
+	}
+
+	.recordProgress {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+	}
+
+	.recordProgressBar {
+		flex: 1;
+		height: 8px;
+		border-radius: 4px;
+		background: hsl(var(--muted));
+		overflow: hidden;
+	}
+
+	.recordProgressFill {
+		height: 100%;
+		border-radius: 4px;
+		background: hsl(var(--primary));
+		transition: width 0.3s ease;
+	}
+
+	.recordProgressText {
+		font-size: 14px;
+		font-weight: 600;
+		min-width: 40px;
+	}
+
+	.recordVideoBtn {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 10px 16px;
+		border-radius: 8px;
+		background: hsl(var(--primary) / 0.1);
+		color: hsl(var(--primary));
+		font-size: 13px;
+		font-weight: 600;
+		text-decoration: none;
+		transition: all 0.15s;
+
+		&:hover {
+			background: hsl(var(--primary) / 0.2);
 		}
 	}
 

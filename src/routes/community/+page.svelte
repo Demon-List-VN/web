@@ -61,7 +61,7 @@
 	const types = [
 		{ value: null, label: 'all', icon: null },
 		{ value: 'discussion', label: 'discussion', icon: MessageCircle },
-		{ value: 'screenshot', label: 'screenshot', icon: Image },
+		{ value: 'media', label: 'media', icon: Image },
 		{ value: 'guide', label: 'guide', icon: BookOpen },
 		{ value: 'announcement', label: 'announcement', icon: Megaphone }
 	];
@@ -423,7 +423,7 @@
 					</Select.Trigger>
 					<Select.Content>
 						<Select.Item value="discussion">{$_('community.type.discussion')}</Select.Item>
-						<Select.Item value="screenshot">{$_('community.type.screenshot')}</Select.Item>
+						<Select.Item value="media">{$_('community.type.media')}</Select.Item>
 						<Select.Item value="guide">{$_('community.type.guide')}</Select.Item>
 						{#if $user.data?.isAdmin}
 							<Select.Item value="announcement">{$_('community.type.announcement')}</Select.Item>

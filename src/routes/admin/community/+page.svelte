@@ -46,14 +46,14 @@
 
 	const typeIcons: Record<string, any> = {
 		discussion: MessageCircle,
-		screenshot: Image,
+		media: Image,
 		guide: BookOpen,
 		announcement: Megaphone
 	};
 
 	const typeColors: Record<string, string> = {
 		discussion: 'text-blue-500',
-		screenshot: 'text-purple-500',
+		media: 'text-purple-500',
 		guide: 'text-emerald-500',
 		announcement: 'text-amber-500'
 	};
@@ -283,7 +283,7 @@
 				<Select.Content>
 					<Select.Item value="">All types</Select.Item>
 					<Select.Item value="discussion">Discussion</Select.Item>
-					<Select.Item value="screenshot">Screenshot</Select.Item>
+					<Select.Item value="media">Media</Select.Item>
 					<Select.Item value="guide">Guide</Select.Item>
 					<Select.Item value="announcement">Announcement</Select.Item>
 				</Select.Content>
@@ -542,7 +542,7 @@
 						</Select.Trigger>
 						<Select.Content>
 							<Select.Item value="discussion">Discussion</Select.Item>
-							<Select.Item value="screenshot">Screenshot</Select.Item>
+							<Select.Item value="media">Media</Select.Item>
 							<Select.Item value="guide">Guide</Select.Item>
 							<Select.Item value="announcement">Announcement</Select.Item>
 						</Select.Content>

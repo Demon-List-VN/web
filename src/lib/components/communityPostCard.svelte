@@ -9,21 +9,21 @@
 
 	const typeIcons: Record<string, any> = {
 		discussion: MessageCircle,
-		screenshot: Image,
+		media: Image,
 		guide: BookOpen,
 		announcement: Megaphone
 	};
 
 	const typeColors: Record<string, string> = {
 		discussion: 'text-blue-500',
-		screenshot: 'text-purple-500',
+		media: 'text-purple-500',
 		guide: 'text-emerald-500',
 		announcement: 'text-amber-500'
 	};
 
 	const typeBgColors: Record<string, string> = {
 		discussion: 'bg-blue-500/10',
-		screenshot: 'bg-purple-500/10',
+		media: 'bg-purple-500/10',
 		guide: 'bg-emerald-500/10',
 		announcement: 'bg-amber-500/10'
 	};
@@ -55,18 +55,29 @@
 	$: author = post?.players;
 	$: TypeIcon = typeIcons[post?.type] || MessageCircle;
 	$: thumbnail = post?.image_url || (post?.video_url ? getYouTubeThumbnail(post.video_url) : null);
+	$: isMedia = post?.type === 'media';
 </script>
 
 {#if post}
-	<a href="/community/{post.id}" class="communityPost" class:compact class:pinned={post.pinned}>
+	<a href="/community/{post.id}" class="communityPost" class:compact class:pinned={post.pinned} class:mediaPost={isMedia && thumbnail && !compact}>
 		{#if post.pinned}
 			<div class="pinnedBadge">
 				<Pin class="h-3 w-3" />
 				<span>{$_('community.pinned')}</span>
 			</div>
 		{/if}
-		<div class="postMain">
-			<div class="postLeft">
+
+		{#if isMedia && thumbnail && !compact}
+			<!-- Media layout: full-width image on top, then title below -->
+			<div class="mediaImage">
+				<img src={thumbnail} alt="" loading="lazy" />
+				{#if post.video_url && !post.image_url}
+					<div class="videoOverlay">
+						<Play class="h-6 w-6" />
+					</div>
+				{/if}
+			</div>
+			<div class="mediaBody">
 				<div class="postAuthor">
 					<!-- svelte-ignore a11y-click-events-have-key-events -->
 					<!-- svelte-ignore a11y-no-static-element-interactions -->
@@ -79,30 +90,66 @@
 					</div>
 					<span class="postTime">{timeAgo(post.created_at)}</span>
 				</div>
-				<div class="postContent">
-					<div class="postTitleRow">
-						<div class="typeBadge {typeBgColors[post.type]}">
-							<svelte:component this={TypeIcon} class="h-3.5 w-3.5 {typeColors[post.type]}" />
-							<span class={typeColors[post.type]}>{$_(`community.type.${post.type}`)}</span>
-						</div>
-						<h3 class="postTitle">{post.title}</h3>
-					</div>
-					{#if !compact && post.content}
-						<p class="postExcerpt">{post.content.slice(0, 200)}{post.content.length > 200 ? '...' : ''}</p>
-					{/if}
-				</div>
+				<h3 class="postTitle">{post.title}</h3>
 			</div>
-			{#if thumbnail && !compact}
-				<div class="postImage">
-					<img src={thumbnail} alt="" loading="lazy" />
-					{#if post.video_url && !post.image_url}
-						<div class="videoOverlay">
-							<Play class="h-5 w-5" />
+		{:else}
+			<!-- Default layout: side-by-side -->
+			<div class="postMain">
+				<div class="postLeft">
+					<div class="postAuthor">
+						<!-- svelte-ignore a11y-click-events-have-key-events -->
+						<!-- svelte-ignore a11y-no-static-element-interactions -->
+						<div class="authorLink" on:click|stopPropagation|preventDefault>
+							{#if author}
+								<PlayerLink player={author} />
+							{:else}
+								<span>Unknown</span>
+							{/if}
 						</div>
-					{/if}
+						<span class="postTime">{timeAgo(post.created_at)}</span>
+					</div>
+					<div class="postContent">
+						<div class="postTitleRow">
+							<div class="typeBadge {typeBgColors[post.type]}">
+								<svelte:component this={TypeIcon} class="h-3.5 w-3.5 {typeColors[post.type]}" />
+								<span class={typeColors[post.type]}>{$_(`community.type.${post.type}`)}</span>
+							</div>
+							<h3 class="postTitle">{post.title}</h3>
+						</div>
+						{#if !compact && post.content}
+							<p class="postExcerpt">{post.content.slice(0, 200)}{post.content.length > 200 ? '...' : ''}</p>
+						{/if}
+					</div>
 				</div>
-			{/if}
-		</div>
+				{#if thumbnail && !compact}
+					<div class="postImage">
+						<img src={thumbnail} alt="" loading="lazy" />
+						{#if post.video_url && !post.image_url}
+							<div class="videoOverlay">
+								<Play class="h-5 w-5" />
+							</div>
+						{/if}
+					</div>
+				{/if}
+			</div>
+		{/if}
+		{#if post.attached_record || post.attached_level}
+			<div class="attachmentBar">
+				{#if post.attached_record}
+					<div class="attachmentChip">
+						<Trophy class="h-3.5 w-3.5 text-amber-500" />
+						<span class="attachmentName">{post.attached_record.levelName}</span>
+						<span class="attachmentMeta">{post.attached_record.progress}%</span>
+					</div>
+				{:else if post.attached_level}
+					<div class="attachmentChip">
+						<Gamepad2 class="h-3.5 w-3.5 text-emerald-500" />
+						<span class="attachmentName">{post.attached_level.name}</span>
+						<span class="attachmentMeta">{post.attached_level.creator}</span>
+					</div>
+				{/if}
+			</div>
+		{/if}
 		<div class="postFooter">
 			<div class="postStat" class:liked={post.liked}>
 				<ThumbsUp class="h-4 w-4" />
@@ -112,15 +159,6 @@
 				<MessageSquare class="h-4 w-4" />
 				<span>{post.comments_count}</span>
 			</div>
-			{#if post.attached_record}
-				<div class="postStat attachmentIndicator">
-					<Trophy class="h-3.5 w-3.5 text-amber-500" />
-				</div>
-			{:else if post.attached_level}
-				<div class="postStat attachmentIndicator">
-					<Gamepad2 class="h-3.5 w-3.5 text-emerald-500" />
-				</div>
-			{/if}
 		</div>
 	</a>
 {:else}
@@ -293,6 +331,34 @@
 		color: white;
 	}
 
+	/* Media post layout */
+	.mediaPost {
+		.postFooter {
+			border-top: none;
+		}
+	}
+
+	.mediaImage {
+		width: 100%;
+		aspect-ratio: 16 / 9;
+		overflow: hidden;
+		position: relative;
+		background: hsl(var(--muted));
+
+		img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+		}
+	}
+
+	.mediaBody {
+		padding: 12px 16px 4px;
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
 	.postFooter {
 		display: flex;
 		gap: 16px;
@@ -307,7 +373,36 @@
 		font-size: 12px;
 		color: hsl(var(--muted-foreground));
 		&.liked { color: hsl(var(--primary)); }
-		&.attachmentIndicator { margin-left: auto; }
+	}
+
+	/* Attachment bar */
+	.attachmentBar {
+		padding: 0 16px 0;
+	}
+
+	.attachmentChip {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 6px 10px;
+		border-radius: 6px;
+		background: hsl(var(--muted) / 0.5);
+		font-size: 12px;
+		overflow: hidden;
+
+		.attachmentName {
+			font-weight: 500;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			flex: 1;
+			min-width: 0;
+		}
+
+		.attachmentMeta {
+			color: hsl(var(--muted-foreground));
+			flex-shrink: 0;
+		}
 	}
 
 	.skeleton { pointer-events: none; }

@@ -21,7 +21,8 @@
     "delete": "Delete",
     "yes": "Yes",
     "no": "No",
-    "previous": "Previous"
+    "previous": "Previous",
+    "loading": "Loading"
   },
   "time_unit": {
     "second": "second",
@@ -692,7 +693,7 @@
     "type": {
       "all": "All",
       "discussion": "Discussion",
-      "screenshot": "Screenshot",
+      "media": "Media",
       "guide": "Guide",
       "announcement": "Announcement"
     },
@@ -735,6 +736,15 @@
     "comments": "Comments",
     "attachment": {
       "by": "by"
+    },
+    "record_detail": {
+      "title": "Record Details",
+      "level": "Level",
+      "creator": "Creator",
+      "progress": "Progress",
+      "difficulty": "Difficulty",
+      "mobile": "Played on mobile",
+      "watch_video": "Watch Video"
     },
     "report": {
       "button": "Report",

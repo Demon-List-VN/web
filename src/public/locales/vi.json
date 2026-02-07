@@ -21,7 +21,8 @@
     "delete": "Xóa",
     "yes": "Có",
     "no": "Không",
-    "previous": "Trước"
+    "previous": "Trước",
+    "loading": "Đang tải"
   },
   "time_unit": {
     "second": "giây",
@@ -691,7 +692,7 @@
     "type": {
       "all": "Tất cả",
       "discussion": "Thảo luận",
-      "screenshot": "Ảnh chụp",
+      "media": "Phương tiện",
       "guide": "Hướng dẫn",
       "announcement": "Thông báo"
     },
@@ -734,6 +735,15 @@
     "comments": "Bình luận",
     "attachment": {
       "by": "bởi"
+    },
+    "record_detail": {
+      "title": "Chi tiết Record",
+      "level": "Level",
+      "creator": "Người tạo",
+      "progress": "Tiến độ",
+      "difficulty": "Độ khó",
+      "mobile": "Chơi trên di động",
+      "watch_video": "Xem Video"
     },
     "report": {
       "button": "Báo cáo",
