@@ -1,14 +1,16 @@
 <script lang="ts">
-	import * as Avatar from '$lib/components/ui/avatar';
 	import { Button } from '$lib/components/ui/button';
 	import { Textarea } from '$lib/components/ui/textarea';
+	import * as Dialog from '$lib/components/ui/dialog';
+	import * as Select from '$lib/components/ui/select';
 	import { _, locale } from 'svelte-i18n';
 	import { user } from '$lib/client';
-	import { isActive } from '$lib/client/isSupporterActive';
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
+	import PlayerLink from '$lib/components/playerLink.svelte';
+	import Markdown from '$lib/components/markdown.svelte';
 	import {
 		ThumbsUp,
 		MessageSquare,
@@ -19,7 +21,11 @@
 		BookOpen,
 		Megaphone,
 		MessageCircle,
-		Send
+		Send,
+		Flag,
+		Trophy,
+		Gamepad2,
+		ExternalLink
 	} from 'lucide-svelte';
 
 	let post: any = null;
@@ -27,6 +33,13 @@
 	let newComment = '';
 	let submittingComment = false;
 	let likingPost = false;
+
+	// Report state
+	let reportDialogOpen = false;
+	let reportTarget: { type: 'post' | 'comment'; id: number } | null = null;
+	let reportReason = 'inappropriate';
+	let reportDescription = '';
+	let submittingReport = false;
 
 	const typeIcons: Record<string, any> = {
 		discussion: MessageCircle,
@@ -240,6 +253,50 @@
 		}
 	}
 
+	function openReport(type: 'post' | 'comment', id: number) {
+		if (!$user.loggedIn) {
+			toast.error($_('community.login_required'));
+			return;
+		}
+		reportTarget = { type, id };
+		reportReason = 'inappropriate';
+		reportDescription = '';
+		reportDialogOpen = true;
+	}
+
+	async function submitReport() {
+		if (!reportTarget) return;
+		submittingReport = true;
+		const headers = await getHeaders();
+
+		try {
+			const endpoint = reportTarget.type === 'post'
+				? `${import.meta.env.VITE_API_URL}/community/posts/${reportTarget.id}/report`
+				: `${import.meta.env.VITE_API_URL}/community/comments/${reportTarget.id}/report`;
+
+			const res = await fetch(endpoint, {
+				method: 'POST',
+				headers,
+				body: JSON.stringify({
+					reason: reportReason,
+					description: reportDescription || undefined
+				})
+			});
+
+			if (!res.ok) {
+				const err = await res.json();
+				throw new Error(err.error || 'Failed to report');
+			}
+
+			toast.success($_('community.report.success'));
+			reportDialogOpen = false;
+		} catch (e: any) {
+			toast.error(e.message);
+		} finally {
+			submittingReport = false;
+		}
+	}
+
 	onMount(() => {
 		fetchPost();
 		fetchComments();
@@ -250,6 +307,14 @@
 	$: canDelete =
 		$user.loggedIn && post && ($user.data?.uid === post.uid || $user.data?.isAdmin);
 	$: canPin = $user.loggedIn && $user.data?.isAdmin;
+
+	function getYouTubeId(url: string): string | null {
+		if (!url) return null;
+		const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+		return match ? match[1] : null;
+	}
+
+	$: youtubeId = post?.video_url ? getYouTubeId(post.video_url) : null;
 </script>
 
 <svelte:head>
@@ -284,15 +349,13 @@
 				<h1 class="postTitle">{post.title}</h1>
 
 				<div class="postMeta">
-					<a href="/player/{author?.uid}" class="authorChip">
-						<Avatar.Root class="h-7 w-7">
-							<Avatar.Image src={`https://cdn.gdvn.net/avatars/${author?.uid}${isActive(author?.supporterUntil) && author?.isAvatarGif ? '.gif' : '.jpg'}?version=${author?.avatarVersion || 0}`} alt={author?.name} />
-							<Avatar.Fallback>{author?.name?.charAt(0) || '?'}</Avatar.Fallback>
-						</Avatar.Root>
-						<span class:supporter={isActive(author?.supporterUntil)}>
-							{author?.name || 'Unknown'}
-						</span>
-					</a>
+					<div class="authorChip">
+						{#if author}
+							<PlayerLink player={author} />
+						{:else}
+							<span>Unknown</span>
+						{/if}
+					</div>
 					<span class="metaDot">·</span>
 					<span class="metaDate">{formatDate(post.created_at)}</span>
 					{#if post.updated_at !== post.created_at}
@@ -309,8 +372,60 @@
 						<img src={post.image_url} alt="" />
 					</div>
 				{/if}
+				{#if youtubeId}
+					<div class="youtubeEmbed">
+						<iframe
+							src="https://www.youtube.com/embed/{youtubeId}"
+							title="YouTube video"
+							frameborder="0"
+							allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+							allowfullscreen
+						></iframe>
+					</div>
+				{/if}
+
+				<!-- Attached Record -->
+				{#if post.attached_record}
+					<div class="attachedCard">
+						<Trophy class="h-5 w-5 text-amber-500" />
+						<div class="attachedInfo">
+							<strong>{post.attached_record.levelName}</strong>
+							<span class="attachedMeta">
+								{$_('community.attachment.by')} {post.attached_record.creator} · {post.attached_record.progress}%
+								{#if post.attached_record.mobile} · 📱{/if}
+							</span>
+						</div>
+						{#if post.attached_record.videoLink}
+							<a href={post.attached_record.videoLink} target="_blank" rel="noopener" class="attachedLink">
+								<ExternalLink class="h-4 w-4" />
+							</a>
+						{/if}
+					</div>
+				{/if}
+
+				<!-- Attached Level -->
+				{#if post.attached_level}
+					<div class="attachedCard">
+						<Gamepad2 class="h-5 w-5 text-emerald-500" />
+						<div class="attachedInfo">
+							<strong>{post.attached_level.name}</strong>
+							<span class="attachedMeta">
+								{$_('community.attachment.by')} {post.attached_level.creator}
+								{#if post.attached_level.isPlatformer} · Platformer{/if}
+							</span>
+						</div>
+						<a href="/level/{post.attached_level.id}" class="attachedLink">
+							<ExternalLink class="h-4 w-4" />
+						</a>
+					</div>
+				{/if}
+
 				<div class="postText">
-					{post.content}
+					{#if post.type === 'announcement'}
+						<Markdown content={post.content} />
+					{:else}
+						{post.content}
+					{/if}
 				</div>
 			</div>
 
@@ -333,6 +448,12 @@
 							<span>{post.pinned ? $_('community.unpin') : $_('community.pin')}</span>
 						</button>
 					{/if}
+					{#if $user.loggedIn && $user.data?.uid !== post.uid}
+						<button class="actionBtn" on:click={() => openReport('post', post.id)}>
+							<Flag class="h-4 w-4" />
+							<span>{$_('community.report.button')}</span>
+						</button>
+					{/if}
 					{#if canDelete}
 						<button class="actionBtn danger" on:click={deletePost}>
 							<Trash2 class="h-4 w-4" />
@@ -353,10 +474,6 @@
 			<!-- Comment Input -->
 			{#if $user.loggedIn}
 				<div class="commentInput">
-					<Avatar.Root class="h-8 w-8 flex-shrink-0">
-						<Avatar.Image src={`https://cdn.gdvn.net/avatars/${$user.data?.uid}${isActive($user.data?.supporterUntil) && $user.data?.isAvatarGif ? '.gif' : '.jpg'}?version=${$user.data?.avatarVersion || 0}`} alt={$user.data?.name} />
-						<Avatar.Fallback>{$user.data?.name?.charAt(0) || '?'}</Avatar.Fallback>
-					</Avatar.Root>
 					<div class="commentForm">
 						<Textarea
 							bind:value={newComment}
@@ -383,26 +500,15 @@
 					{#if comments.length > 0}
 						{#each comments as comment}
 							<div class="commentItem">
-								<a href="/player/{comment.players?.uid}" class="commentAvatar">
-									<Avatar.Root class="h-8 w-8">
-										<Avatar.Image
-											src={`https://cdn.gdvn.net/avatars/${comment.players?.uid}${isActive(comment.players?.supporterUntil) && comment.players?.isAvatarGif ? '.gif' : '.jpg'}?version=${comment.players?.avatarVersion || 0}`}
-											alt={comment.players?.name}
-										/>
-										<Avatar.Fallback>
-											{comment.players?.name?.charAt(0) || '?'}
-										</Avatar.Fallback>
-									</Avatar.Root>
-								</a>
 								<div class="commentBody">
 									<div class="commentHeader">
-										<a
-											href="/player/{comment.players?.uid}"
-											class="commentAuthor"
-											class:supporter={isActive(comment.players?.supporterUntil)}
-										>
-											{comment.players?.name || 'Unknown'}
-										</a>
+										<div class="commentAuthorLink">
+											{#if comment.players}
+												<PlayerLink player={comment.players} />
+											{:else}
+												<span>Unknown</span>
+											{/if}
+										</div>
 										<span class="commentTime">{timeAgo(comment.created_at)}</span>
 									</div>
 									<p class="commentText">{comment.content}</p>
@@ -415,6 +521,14 @@
 											<ThumbsUp class="h-3.5 w-3.5" />
 											<span>{comment.likes_count}</span>
 										</button>
+										{#if $user.loggedIn && $user.data?.uid !== comment.uid}
+											<button
+												class="commentAction"
+												on:click={() => openReport('comment', comment.id)}
+											>
+												<Flag class="h-3.5 w-3.5" />
+											</button>
+										{/if}
 										{#if $user.loggedIn && ($user.data?.uid === comment.uid || $user.data?.isAdmin)}
 											<button
 												class="commentAction danger"
@@ -464,6 +578,51 @@
 		</div>
 	{/if}
 </div>
+
+<!-- Report Dialog -->
+<Dialog.Root bind:open={reportDialogOpen}>
+	<Dialog.Content class="max-w-md">
+		<Dialog.Header>
+			<Dialog.Title>{$_('community.report.title')}</Dialog.Title>
+			<Dialog.Description>{$_('community.report.description')}</Dialog.Description>
+		</Dialog.Header>
+
+		<div class="reportForm">
+			<div class="reportField">
+				<span class="reportLabel">{$_('community.report.reason')}</span>
+				<Select.Root
+					onSelectedChange={(v) => {
+						if (v) reportReason = String(v.value);
+					}}
+				>
+					<Select.Trigger>
+						<Select.Value placeholder={$_('community.report.reasons.inappropriate')} />
+					</Select.Trigger>
+					<Select.Content>
+						<Select.Item value="inappropriate">{$_('community.report.reasons.inappropriate')}</Select.Item>
+						<Select.Item value="spam">{$_('community.report.reasons.spam')}</Select.Item>
+						<Select.Item value="harassment">{$_('community.report.reasons.harassment')}</Select.Item>
+						<Select.Item value="misinformation">{$_('community.report.reasons.misinformation')}</Select.Item>
+						<Select.Item value="other">{$_('community.report.reasons.other')}</Select.Item>
+					</Select.Content>
+				</Select.Root>
+			</div>
+			<div class="reportField">
+				<label for="report-desc">{$_('community.report.details')} ({$_('community.create.optional')})</label>
+				<Textarea id="report-desc" bind:value={reportDescription} placeholder={$_('community.report.details_placeholder')} rows={3} />
+			</div>
+		</div>
+
+		<Dialog.Footer>
+			<Button variant="outline" on:click={() => (reportDialogOpen = false)}>
+				{$_('general.close')}
+			</Button>
+			<Button variant="destructive" on:click={submitReport} disabled={submittingReport}>
+				{submittingReport ? $_('community.report.submitting') : $_('community.report.submit')}
+			</Button>
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>
 
 <style lang="scss">
 	.postPage {
@@ -546,14 +705,8 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		text-decoration: none;
 		font-weight: 600;
 		color: hsl(var(--foreground));
-		transition: opacity 0.15s;
-
-		&:hover {
-			opacity: 0.8;
-		}
 	}
 
 	.supporter {
@@ -582,6 +735,23 @@
 			max-height: 500px;
 			object-fit: contain;
 			background: hsl(var(--muted));
+		}
+	}
+
+	.youtubeEmbed {
+		position: relative;
+		width: 100%;
+		padding-bottom: 56.25%;
+		margin-bottom: 20px;
+		border-radius: 8px;
+		overflow: hidden;
+
+		iframe {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
 		}
 	}
 
@@ -716,6 +886,11 @@
 		}
 	}
 
+	.commentAuthorLink {
+		font-weight: 600;
+		font-size: 13px;
+	}
+
 	.commentTime {
 		font-size: 12px;
 		color: hsl(var(--muted-foreground));
@@ -820,6 +995,65 @@
 
 		.postTitle {
 			font-size: 20px;
+		}
+	}
+
+	/* Attached Record/Level Card */
+	.attachedCard {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 14px 16px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 10px;
+		background: hsl(var(--muted) / 0.3);
+		margin-bottom: 16px;
+
+		.attachedInfo {
+			flex: 1;
+			display: flex;
+			flex-direction: column;
+			gap: 2px;
+
+			strong {
+				font-size: 14px;
+			}
+
+			.attachedMeta {
+				font-size: 12px;
+				color: hsl(var(--muted-foreground));
+			}
+		}
+
+		.attachedLink {
+			padding: 6px;
+			border-radius: 6px;
+			color: hsl(var(--muted-foreground));
+			transition: all 0.15s;
+
+			&:hover {
+				background: hsl(var(--muted));
+				color: hsl(var(--foreground));
+			}
+		}
+	}
+
+	/* Report Dialog */
+	.reportForm {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		padding: 8px 0;
+	}
+
+	.reportField {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+
+		label, .reportLabel {
+			font-size: 13px;
+			font-weight: 500;
 		}
 	}
 </style>

@@ -684,6 +684,10 @@
     "deleted": "Đã xóa bài viết",
     "login_required": "Vui lòng đăng nhập để thực hiện",
     "login_to_comment": "Đăng nhập để bình luận",
+    "sort": {
+      "newest": "Mới nhất",
+      "best": "Nổi bật"
+    },
     "type": {
       "all": "Tất cả",
       "discussion": "Thảo luận",
@@ -700,12 +704,24 @@
       "post_type": "Loại",
       "post_content": "Nội dung",
       "content_placeholder": "Viết nội dung bài viết...",
+      "image": "Hình ảnh",
       "image_url": "URL hình ảnh",
+      "upload_image": "Tải ảnh lên",
+      "or_url": "hoặc dán URL",
+      "upload_failed": "Tải ảnh lên thất bại",
+      "video_url": "Video YouTube",
       "optional": "tuỳ chọn",
       "submit": "Đăng",
       "submitting": "Đang đăng...",
+      "uploading": "Đang tải lên...",
       "success": "Đã tạo bài viết!",
-      "validation_error": "Tiêu đề và nội dung là bắt buộc"
+      "validation_error": "Tiêu đề và nội dung là bắt buộc",
+      "attachment": "Đính kèm",
+      "my_records": "Record của tôi",
+      "attach_level": "Đính kèm Level",
+      "search_levels": "Tìm kiếm level...",
+      "no_records": "Không tìm thấy record đã xác minh",
+      "no_levels": "Không tìm thấy level"
     },
     "comment": {
       "placeholder": "Viết bình luận...",
@@ -715,7 +731,28 @@
       "error": "Không thể thêm bình luận",
       "none": "Chưa có bình luận"
     },
-    "comments": "Bình luận"
+    "comments": "Bình luận",
+    "attachment": {
+      "by": "bởi"
+    },
+    "report": {
+      "button": "Báo cáo",
+      "title": "Báo cáo nội dung",
+      "description": "Giúp chúng tôi giữ cộng đồng an toàn bằng cách báo cáo nội dung không phù hợp.",
+      "reason": "Lý do",
+      "details": "Chi tiết bổ sung",
+      "details_placeholder": "Mô tả vấn đề...",
+      "submit": "Gửi báo cáo",
+      "submitting": "Đang gửi...",
+      "success": "Đã gửi báo cáo. Cảm ơn bạn!",
+      "reasons": {
+        "inappropriate": "Nội dung không phù hợp",
+        "spam": "Spam",
+        "harassment": "Quấy rối",
+        "misinformation": "Thông tin sai lệch",
+        "other": "Khác"
+      }
+    }
   },
   "orders": {
     "title": "Đơn hàng",

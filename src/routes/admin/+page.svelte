@@ -72,6 +72,11 @@
 			title: 'Features',
 			icon: '✨',
 			items: [{ name: 'Battlepass', href: '/admin/battlepass' }]
+		},
+		{
+			title: 'Community',
+			icon: '💬',
+			items: [{ name: 'Community Posts', href: '/admin/community' }]
 		}
 	];
 </script>

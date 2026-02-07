@@ -685,6 +685,10 @@
     "deleted": "Post deleted",
     "login_required": "Please log in to perform this action",
     "login_to_comment": "Log in to leave a comment",
+    "sort": {
+      "newest": "Newest",
+      "best": "Best"
+    },
     "type": {
       "all": "All",
       "discussion": "Discussion",
@@ -701,12 +705,24 @@
       "post_type": "Type",
       "post_content": "Content",
       "content_placeholder": "Write your post content...",
+      "image": "Image",
       "image_url": "Image URL",
+      "upload_image": "Upload image",
+      "or_url": "or paste URL",
+      "upload_failed": "Failed to upload image",
+      "video_url": "YouTube Video",
       "optional": "optional",
       "submit": "Post",
       "submitting": "Posting...",
+      "uploading": "Uploading...",
       "success": "Post created!",
-      "validation_error": "Title and content are required"
+      "validation_error": "Title and content are required",
+      "attachment": "Attachment",
+      "my_records": "My Records",
+      "attach_level": "Attach Level",
+      "search_levels": "Search levels...",
+      "no_records": "No verified records found",
+      "no_levels": "No levels found"
     },
     "comment": {
       "placeholder": "Write a comment...",
@@ -716,7 +732,28 @@
       "error": "Failed to add comment",
       "none": "No comments yet"
     },
-    "comments": "Comments"
+    "comments": "Comments",
+    "attachment": {
+      "by": "by"
+    },
+    "report": {
+      "button": "Report",
+      "title": "Report Content",
+      "description": "Help us keep the community safe by reporting inappropriate content.",
+      "reason": "Reason",
+      "details": "Additional details",
+      "details_placeholder": "Describe the issue...",
+      "submit": "Submit Report",
+      "submitting": "Submitting...",
+      "success": "Report submitted. Thank you!",
+      "reasons": {
+        "inappropriate": "Inappropriate content",
+        "spam": "Spam",
+        "harassment": "Harassment",
+        "misinformation": "Misinformation",
+        "other": "Other"
+      }
+    }
   },
   "orders": {
     "title": "Orders",

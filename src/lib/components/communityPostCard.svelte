@@ -1,9 +1,8 @@
 <script lang="ts">
-	import * as Avatar from '$lib/components/ui/avatar';
-	import { ThumbsUp, MessageSquare, Pin, Image, BookOpen, Megaphone, MessageCircle } from 'lucide-svelte';
+	import { ThumbsUp, MessageSquare, Pin, Image, BookOpen, Megaphone, MessageCircle, Play, Trophy, Gamepad2 } from 'lucide-svelte';
 	import { _, locale } from 'svelte-i18n';
-	import { user } from '$lib/client';
 	import { isActive } from '$lib/client/isSupporterActive';
+	import PlayerLink from '$lib/components/playerLink.svelte';
 
 	export let post: any;
 	export let compact: boolean = false;
@@ -47,8 +46,15 @@
 		return `${years}y`;
 	}
 
+	function getYouTubeThumbnail(url: string): string | null {
+		if (!url) return null;
+		const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+		return match ? `https://img.youtube.com/vi/${match[1]}/mqdefault.jpg` : null;
+	}
+
 	$: author = post?.players;
 	$: TypeIcon = typeIcons[post?.type] || MessageCircle;
+	$: thumbnail = post?.image_url || (post?.video_url ? getYouTubeThumbnail(post.video_url) : null);
 </script>
 
 {#if post}
@@ -62,16 +68,16 @@
 		<div class="postMain">
 			<div class="postLeft">
 				<div class="postAuthor">
-					<Avatar.Root class="h-8 w-8">
-						<Avatar.Image src={`https://cdn.gdvn.net/avatars/${author?.uid}${isActive(author?.supporterUntil) && author?.isAvatarGif ? '.gif' : '.jpg'}?version=${author?.avatarVersion || 0}`} alt={author?.name} />
-						<Avatar.Fallback>{author?.name?.charAt(0) || '?'}</Avatar.Fallback>
-					</Avatar.Root>
-					<div class="authorInfo">
-						<span class="authorName" class:supporter={isActive(author?.supporterUntil)}>
-							{author?.name || 'Unknown'}
-						</span>
-						<span class="postTime">{timeAgo(post.created_at)}</span>
+					<!-- svelte-ignore a11y-click-events-have-key-events -->
+					<!-- svelte-ignore a11y-no-static-element-interactions -->
+					<div class="authorLink" on:click|stopPropagation|preventDefault>
+						{#if author}
+							<PlayerLink player={author} />
+						{:else}
+							<span>Unknown</span>
+						{/if}
 					</div>
+					<span class="postTime">{timeAgo(post.created_at)}</span>
 				</div>
 				<div class="postContent">
 					<div class="postTitleRow">
@@ -86,9 +92,14 @@
 					{/if}
 				</div>
 			</div>
-			{#if post.image_url && !compact}
+			{#if thumbnail && !compact}
 				<div class="postImage">
-					<img src={post.image_url} alt="" loading="lazy" />
+					<img src={thumbnail} alt="" loading="lazy" />
+					{#if post.video_url && !post.image_url}
+						<div class="videoOverlay">
+							<Play class="h-5 w-5" />
+						</div>
+					{/if}
 				</div>
 			{/if}
 		</div>
@@ -101,6 +112,15 @@
 				<MessageSquare class="h-4 w-4" />
 				<span>{post.comments_count}</span>
 			</div>
+			{#if post.attached_record}
+				<div class="postStat attachmentIndicator">
+					<Trophy class="h-3.5 w-3.5 text-amber-500" />
+				</div>
+			{:else if post.attached_level}
+				<div class="postStat attachmentIndicator">
+					<Gamepad2 class="h-3.5 w-3.5 text-emerald-500" />
+				</div>
+			{/if}
 		</div>
 	</a>
 {:else}
@@ -109,11 +129,8 @@
 		<div class="postMain">
 			<div class="postLeft">
 				<div class="postAuthor">
-					<div class="skeletonAvatar"></div>
-					<div class="authorInfo">
-						<div class="skeletonLine w-24"></div>
-						<div class="skeletonLine w-12"></div>
-					</div>
+					<div class="skeletonLine w-24"></div>
+					<div class="skeletonLine w-12"></div>
 				</div>
 				<div class="postContent">
 					<div class="skeletonLine w-3/4 h-5"></div>
@@ -155,10 +172,7 @@
 
 		&.compact {
 			border-radius: 8px;
-
-			.postContent {
-				margin-top: 4px;
-			}
+			.postContent { margin-top: 4px; }
 		}
 	}
 
@@ -197,21 +211,7 @@
 		gap: 10px;
 	}
 
-	.authorInfo {
-		display: flex;
-		flex-direction: column;
-		gap: 1px;
-	}
-
-	.authorName {
-		font-weight: 600;
-		font-size: 13px;
-		line-height: 1.3;
-
-		&.supporter {
-			color: #eab308;
-		}
-	}
+	.authorLink { font-size: 13px; }
 
 	.postTime {
 		font-size: 11px;
@@ -274,12 +274,23 @@
 		flex-shrink: 0;
 		border-radius: 8px;
 		overflow: hidden;
+		position: relative;
 
 		img {
 			width: 100%;
 			height: 100%;
 			object-fit: cover;
 		}
+	}
+
+	.videoOverlay {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: rgba(0, 0, 0, 0.35);
+		color: white;
 	}
 
 	.postFooter {
@@ -295,24 +306,11 @@
 		gap: 5px;
 		font-size: 12px;
 		color: hsl(var(--muted-foreground));
-
-		&.liked {
-			color: hsl(var(--primary));
-		}
+		&.liked { color: hsl(var(--primary)); }
+		&.attachmentIndicator { margin-left: auto; }
 	}
 
-	/* Skeleton */
-	.skeleton {
-		pointer-events: none;
-	}
-
-	.skeletonAvatar {
-		width: 32px;
-		height: 32px;
-		border-radius: 50%;
-		background: hsl(var(--muted));
-		animation: pulse 1.5s ease-in-out infinite;
-	}
+	.skeleton { pointer-events: none; }
 
 	.skeletonLine {
 		height: 14px;
@@ -327,8 +325,6 @@
 	}
 
 	@media screen and (max-width: 640px) {
-		.postImage {
-			display: none;
-		}
+		.postImage { display: none; }
 	}
 </style>
