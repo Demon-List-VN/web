@@ -5,11 +5,45 @@
 	import { user } from '$lib/client';
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import { createEventDispatcher } from 'svelte';
+	import { toast } from 'svelte-sonner';
 
 	export let post: any;
 	export let compact: boolean = false;
 
 	const dispatch = createEventDispatcher();
+
+	let likingPost = false;
+
+	async function toggleLike() {
+		if (!$user.loggedIn) {
+			toast.error($_('community.login_required'));
+			return;
+		}
+		if (likingPost) return;
+		likingPost = true;
+
+		try {
+			const token = await $user.token();
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/community/posts/${post.id}/like`,
+				{
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						Authorization: `Bearer ${token}`
+					}
+				}
+			);
+			const result = await res.json();
+			post.liked = result.liked;
+			post.likes_count += result.liked ? 1 : -1;
+			post = post; // trigger reactivity
+		} catch {
+			toast.error('Failed to like post');
+		} finally {
+			likingPost = false;
+		}
+	}
 
 	const typeIcons: Record<string, any> = {
 		discussion: MessageCircle,
@@ -169,7 +203,9 @@
 		{/if}
 		<div class="postFooter">
 			<div class="postStats">
-				<div class="postStat" class:liked={post.liked}>
+				<!-- svelte-ignore a11y-click-events-have-key-events -->
+				<!-- svelte-ignore a11y-no-static-element-interactions -->
+				<div class="postStat likeBtn" class:liked={post.liked} on:click|stopPropagation|preventDefault={toggleLike}>
 					<ThumbsUp class="h-4 w-4" />
 					<span>{post.likes_count}</span>
 				</div>
@@ -415,6 +451,19 @@
 		font-size: 12px;
 		color: hsl(var(--muted-foreground));
 		&.liked { color: hsl(var(--primary)); }
+
+		&.likeBtn {
+			cursor: pointer;
+			border-radius: 6px;
+			padding: 4px 8px;
+			margin: -4px -8px;
+			transition: all 0.15s;
+
+			&:hover {
+				color: hsl(var(--primary));
+				background: hsl(var(--primary) / 0.1);
+			}
+		}
 	}
 
 	.reportBtn {
