@@ -263,7 +263,8 @@
 			}
 
 			if (level) {
-				if ((!level.flTop || level.rating) && !submission.raw) {
+				const needsRaw = (!level.flTop || level.rating) && !(level.isChallenge && level.rating < 2600);
+				if (needsRaw && !submission.raw) {
 					toast.error('Please fill in all required fields');
 					return;
 				}
@@ -587,7 +588,7 @@
 						<Label for="name" class="text-right">{$_('submit.required.video')}</Label>
 						<Input id="name" bind:value={submission.videoLink} class="col-span-3" />
 					</div>
-					{#if !level || !level.flTop || level.rating}
+					{#if (!level || !level.flTop || level.rating) && !(level?.isChallenge && level?.rating < 2600)}
 						<div class="grid grid-cols-4 items-center gap-4">
 							<Label for="name" class="text-right">{$_('submit.required.raw')}</Label>
 							<Input id="name" bind:value={submission.raw} class="col-span-3" />
