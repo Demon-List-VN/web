@@ -1243,7 +1243,7 @@
   "wiki": {
     "created_at": "Được tạo lúc:",
     "last_updated": "Cập nhật lần cuối:",
-    "description": "Hướng dẫn, luật lệ, tin tức và nhật ký thay đổi",
+    "description": "Hướng dẫn, luật lệ, tin tức và cập nhật",
     "categories": "Danh mục",
     "latest_articles": "Bài viết mới nhất",
     "no_articles": "Chưa có bài viết nào",
@@ -1257,7 +1257,7 @@
     "quick_links": {
       "rules": "Luật",
       "news": "Tin tức",
-      "changelog": "Nhật ký",
+      "changelog": "Cập nhật",
       "guides": "Hướng dẫn"
     },
     "folders": {

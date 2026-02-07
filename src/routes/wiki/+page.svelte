@@ -73,7 +73,7 @@
 	<title>Wiki - Geometry Dash VN</title>
 	<meta
 		name="description"
-		content="Explore the Geometry Dash VN Wiki - guides, rules, news, and changelogs"
+		content="Khám phá Wiki của Geometry Dash VN - hướng dẫn, luật lệ, tin tức và cập nhật"
 	/>
 </svelte:head>
 
