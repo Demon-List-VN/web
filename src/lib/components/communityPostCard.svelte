@@ -375,7 +375,8 @@
 
 	.postImage {
 		width: 120px;
-		align-self: stretch;
+		height: 120px;
+		max-height: 120px;
 		flex-shrink: 0;
 		border-radius: 8px;
 		overflow: hidden;
@@ -410,6 +411,7 @@
 	.mediaImage {
 		width: 100%;
 		aspect-ratio: 16 / 9;
+		max-height: 220px;
 		overflow: hidden;
 		position: relative;
 		background: hsl(var(--muted));
