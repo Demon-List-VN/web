@@ -286,7 +286,7 @@
 				<div class="postMeta">
 					<a href="/player/{author?.uid}" class="authorChip">
 						<Avatar.Root class="h-7 w-7">
-							<Avatar.Image src={author?.avatar} alt={author?.name} />
+							<Avatar.Image src={`https://cdn.gdvn.net/avatars/${author?.uid}${isActive(author?.supporterUntil) && author?.isAvatarGif ? '.gif' : '.jpg'}?version=${author?.avatarVersion || 0}`} alt={author?.name} />
 							<Avatar.Fallback>{author?.name?.charAt(0) || '?'}</Avatar.Fallback>
 						</Avatar.Root>
 						<span class:supporter={isActive(author?.supporterUntil)}>
@@ -354,7 +354,7 @@
 			{#if $user.loggedIn}
 				<div class="commentInput">
 					<Avatar.Root class="h-8 w-8 flex-shrink-0">
-						<Avatar.Image src={$user.data?.avatar} alt={$user.data?.name} />
+						<Avatar.Image src={`https://cdn.gdvn.net/avatars/${$user.data?.uid}${isActive($user.data?.supporterUntil) && $user.data?.isAvatarGif ? '.gif' : '.jpg'}?version=${$user.data?.avatarVersion || 0}`} alt={$user.data?.name} />
 						<Avatar.Fallback>{$user.data?.name?.charAt(0) || '?'}</Avatar.Fallback>
 					</Avatar.Root>
 					<div class="commentForm">
@@ -386,7 +386,7 @@
 								<a href="/player/{comment.players?.uid}" class="commentAvatar">
 									<Avatar.Root class="h-8 w-8">
 										<Avatar.Image
-											src={comment.players?.avatar}
+											src={`https://cdn.gdvn.net/avatars/${comment.players?.uid}${isActive(comment.players?.supporterUntil) && comment.players?.isAvatarGif ? '.gif' : '.jpg'}?version=${comment.players?.avatarVersion || 0}`}
 											alt={comment.players?.name}
 										/>
 										<Avatar.Fallback>
