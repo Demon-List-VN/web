@@ -31,7 +31,6 @@
 
 	// Search state
 	let searchQuery = '';
-	let searchTimer: ReturnType<typeof setTimeout>;
 
 	// Report state
 	let reportDialogOpen = false;
@@ -85,12 +84,15 @@
 		}
 	}
 
-	function debouncedSearch() {
-		clearTimeout(searchTimer);
-		searchTimer = setTimeout(() => {
-			currentPage = 0;
-			fetchPosts();
-		}, 400);
+	function handleSearch() {
+		currentPage = 0;
+		fetchPosts();
+	}
+
+	function handleSearchKeydown(e: KeyboardEvent) {
+		if (e.key === 'Enter') {
+			handleSearch();
+		}
 	}
 
 	function handlePostCreated() {
@@ -191,7 +193,31 @@
 	<div class="communityBody">
 		<!-- Toolbar -->
 		<div class="toolbar">
-			<div class="toolbarLeft">
+			<div class="toolbarTop">
+				{#if $user.loggedIn}
+					<Button on:click={() => (createDialogOpen = true)} class="createBtn">
+						<Plus class="mr-1 h-4 w-4" />
+						{$_('community.create.button')}
+					</Button>
+				{/if}
+				<div class="searchWrapper">
+					<div class="searchBox">
+						<Search class="h-4 w-4 searchIcon" />
+						<input
+							type="text"
+							bind:value={searchQuery}
+							placeholder={$_('community.search_placeholder')}
+							on:keydown={handleSearchKeydown}
+							class="searchInput"
+						/>
+					</div>
+					<Button size="sm" on:click={handleSearch} class="searchButton">
+						{$_('community.search')}
+					</Button>
+				</div>
+			</div>
+
+			<div class="toolbarBottom">
 				<div class="typeFilters">
 					{#each types as t}
 						<button
@@ -215,25 +241,6 @@
 						{$_('community.sort.best')}
 					</button>
 				</div>
-			</div>
-
-			<div class="toolbarRight">
-				<div class="searchBox">
-					<Search class="h-4 w-4 searchIcon" />
-					<input
-						type="text"
-						bind:value={searchQuery}
-						placeholder={$_('community.search_placeholder')}
-						on:input={debouncedSearch}
-						class="searchInput"
-					/>
-				</div>
-				{#if $user.loggedIn}
-					<Button on:click={() => (createDialogOpen = true)} class="createBtn">
-						<Plus class="mr-1 h-4 w-4" />
-						{$_('community.create.button')}
-					</Button>
-				{/if}
 			</div>
 		</div>
 
@@ -355,18 +362,35 @@
 
 	.toolbar {
 		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 16px;
+		flex-direction: column;
+		gap: 12px;
 		margin-bottom: 24px;
-		flex-wrap: wrap;
 	}
 
-	.toolbarLeft {
+	.toolbarTop {
 		display: flex;
 		align-items: center;
 		gap: 12px;
 		flex-wrap: wrap;
+	}
+
+	:global(.createBtn) {
+		flex-shrink: 0;
+	}
+
+	.searchWrapper {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex: 1;
+		min-width: 0;
+	}
+
+	.toolbarBottom {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
 	}
 
 	.typeFilters {
@@ -459,12 +483,6 @@
 		color: hsl(var(--muted-foreground));
 	}
 
-	.toolbarRight {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-	}
-
 	.searchBox {
 		display: flex;
 		align-items: center;
@@ -474,10 +492,17 @@
 		border-radius: 8px;
 		background: hsl(var(--background));
 		transition: border-color 0.15s;
+		flex: 1;
+		min-width: 0;
 
 		&:focus-within {
 			border-color: hsl(var(--primary));
 		}
+	}
+
+	:global(.searchButton) {
+		flex-shrink: 0;
+		white-space: nowrap;
 	}
 
 	.searchIcon {
@@ -491,7 +516,8 @@
 		background: transparent;
 		font-size: 13px;
 		color: hsl(var(--foreground));
-		width: 180px;
+		flex: 1;
+		width: 100%;
 
 		&::placeholder {
 			color: hsl(var(--muted-foreground));
@@ -502,7 +528,30 @@
 		.heroBanner { padding: 28px 16px; }
 		.communityBody { padding: 16px 16px 40px; }
 		.postsGrid { grid-template-columns: 1fr; }
-		.searchInput { width: 120px; }
+		
+		.toolbarTop {
+			flex-direction: column;
+			align-items: stretch;
+		}
+		
+		.searchWrapper {
+			width: 100%;
+		}
+		
+		:global(.createBtn) {
+			width: 100%;
+		}
+		
+		.toolbarBottom {
+			flex-direction: column;
+			align-items: stretch;
+		}
+		
+		.typeFilters,
+		.sortFilters {
+			width: 100%;
+			justify-content: center;
+		}
 	}
 
 	/* Report form */
