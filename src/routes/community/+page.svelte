@@ -24,7 +24,8 @@
 		X,
 		Trophy,
 		Gamepad2,
-		Search
+		Search,
+		Play
 	} from 'lucide-svelte';
 
 	let posts: any[] | null = null;
@@ -57,6 +58,14 @@
 	let selectedLevel: any = null;
 
 	const PAGE_SIZE = 15;
+
+	function getYouTubeId(url: string): string | null {
+		if (!url) return null;
+		const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+		return match ? match[1] : null;
+	}
+
+	$: videoPreviewId = getYouTubeId(newPost.video_url);
 
 	const types = [
 		{ value: null, label: 'all', icon: null },
@@ -177,7 +186,7 @@
 			let fileToUpload: File | Blob = imageFile;
 			if (ext !== 'gif') {
 				fileToUpload = await imageCompression(imageFile, {
-					maxSizeMB: 2,
+					maxSizeMB: 8,
 					maxWidthOrHeight: 1920,
 					useWebWorker: true
 				});
@@ -478,6 +487,19 @@
 					{$_('community.create.video_url')} ({$_('community.create.optional')})
 				</label>
 				<Input id="post-video" bind:value={newPost.video_url} placeholder="https://youtube.com/watch?v=..." />
+				{#if videoPreviewId}
+					<div class="videoPreview">
+						<div class="videoPreviewThumb">
+							<img src="https://img.youtube.com/vi/{videoPreviewId}/mqdefault.jpg" alt="Video preview" />
+							<div class="videoPreviewPlay">
+								<Play class="h-6 w-6" />
+							</div>
+						</div>
+						<a href="https://youtube.com/watch?v={videoPreviewId}" target="_blank" rel="noopener" class="videoPreviewLink">
+							youtube.com/watch?v={videoPreviewId}
+						</a>
+					</div>
+				{/if}
 			</div>
 
 			<!-- Attachment Picker -->
@@ -815,6 +837,51 @@
 	}
 
 	.hidden { display: none; }
+
+	/* Video Preview */
+	.videoPreview {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 8px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		background: hsl(var(--muted) / 0.3);
+	}
+
+	.videoPreviewThumb {
+		position: relative;
+		width: 120px;
+		height: 68px;
+		flex-shrink: 0;
+		border-radius: 6px;
+		overflow: hidden;
+
+		img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+		}
+	}
+
+	.videoPreviewPlay {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: rgba(0, 0, 0, 0.4);
+		color: white;
+	}
+
+	.videoPreviewLink {
+		font-size: 12px;
+		color: hsl(var(--primary));
+		word-break: break-all;
+		text-decoration: none;
+
+		&:hover { text-decoration: underline; }
+	}
 
 	/* Attachment Picker */
 	.attachmentPreview {

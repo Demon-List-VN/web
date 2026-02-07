@@ -27,7 +27,8 @@
 		Gamepad2,
 		ExternalLink,
 		Video,
-		Smartphone
+		Smartphone,
+		Play
 	} from 'lucide-svelte';
 
 	let post: any = null;
@@ -376,8 +377,15 @@
 					<div class="postImageFull">
 						<img src={post.image_url} alt="" />
 					</div>
+				{:else if youtubeId && !post.image_url}
+					<a href={post.video_url} target="_blank" rel="noopener" class="ytThumbnailFull">
+						<img src="https://img.youtube.com/vi/{youtubeId}/maxresdefault.jpg" alt="" />
+						<div class="ytThumbnailPlay">
+							<Play class="h-10 w-10" />
+						</div>
+					</a>
 				{/if}
-				{#if youtubeId}
+				{#if youtubeId && post.image_url}
 					<div class="youtubeEmbed">
 						<iframe
 							src="https://www.youtube.com/embed/{youtubeId}"
@@ -837,6 +845,42 @@
 			left: 0;
 			width: 100%;
 			height: 100%;
+		}
+	}
+
+	.ytThumbnailFull {
+		display: block;
+		position: relative;
+		margin-bottom: 20px;
+		border-radius: 8px;
+		overflow: hidden;
+		cursor: pointer;
+
+		img {
+			width: 100%;
+			max-height: 500px;
+			object-fit: contain;
+			background: hsl(var(--muted));
+		}
+
+		.ytThumbnailPlay {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			width: 64px;
+			height: 64px;
+			border-radius: 50%;
+			background: rgba(0, 0, 0, 0.6);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			color: white;
+			transition: background 0.15s;
+		}
+
+		&:hover .ytThumbnailPlay {
+			background: rgba(255, 0, 0, 0.85);
 		}
 	}
 

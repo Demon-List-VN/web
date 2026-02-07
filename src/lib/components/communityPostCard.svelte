@@ -117,7 +117,7 @@
 							<h3 class="postTitle">{post.title}</h3>
 						</div>
 						{#if !compact && post.content}
-							<p class="postExcerpt">{post.content.slice(0, 200)}{post.content.length > 200 ? '...' : ''}</p>
+							<p class="postExcerpt">{post.content.slice(0, 300)}{post.content.length > 300 ? '...' : ''}</p>
 						{/if}
 					</div>
 				</div>
@@ -195,6 +195,8 @@
 		text-decoration: none;
 		color: inherit;
 		cursor: pointer;
+		min-height: 220px;
+		height: 100%;
 
 		&:hover {
 			border-color: hsl(var(--border) / 0.8);
@@ -210,6 +212,8 @@
 
 		&.compact {
 			border-radius: 8px;
+			min-height: auto;
+			height: auto;
 			.postContent { margin-top: 4px; }
 		}
 	}
@@ -233,6 +237,7 @@
 		gap: 16px;
 		padding: 16px;
 		flex: 1;
+		min-height: 0;
 	}
 
 	.postLeft {
@@ -300,8 +305,8 @@
 		line-height: 1.5;
 		margin: 0;
 		display: -webkit-box;
-		-webkit-line-clamp: 2;
-		line-clamp: 2;
+		-webkit-line-clamp: 3;
+		line-clamp: 3;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
 	}
@@ -341,6 +346,7 @@
 	.mediaImage {
 		width: 100%;
 		aspect-ratio: 16 / 9;
+		max-height: 160px;
 		overflow: hidden;
 		position: relative;
 		background: hsl(var(--muted));
@@ -357,6 +363,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 6px;
+		flex: 1;
 	}
 
 	.postFooter {
@@ -364,6 +371,7 @@
 		gap: 16px;
 		padding: 10px 16px;
 		border-top: 1px solid hsl(var(--border) / 0.5);
+		margin-top: auto;
 	}
 
 	.postStat {
