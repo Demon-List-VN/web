@@ -27,38 +27,30 @@
 		items: WikiFile[];
 	}
 
-	let latestArticles: WikiFile[] = [];
-	let featuredFolders: WikiFile[] = [];
 	let isLoading = true;
 	let hasError = false;
+	let latestFiles: WikiFile[] = [];
 
-	async function fetchWikiRoot() {
+	async function fetchLatestFiles() {
 		try {
 			const query = new URLSearchParams({
-				sortBy: 'created_at',
-				ascending: 'false',
-				offset: '0',
-				limit: '20'
+				limit: '8'
 			});
 
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/wiki/files?${query.toString()}`);
+			if ($locale) {
+				query.set('locale', $locale);
+			}
+
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/wiki/latest?${query.toString()}`);
 
 			if (!res.ok) {
 				throw new Error(`HTTP ${res.status}`);
 			}
 
-			const data: WikiResponse = await res.json();
-
-			if (data?.items) {
-				// Separate folders and files
-				featuredFolders = data.items.filter((item) => item.type === 'folder').slice(0, 6);
-				latestArticles = data.items
-					.filter((item) => item.type === 'file' && item.metadata)
-					.slice(0, 8);
-			}
+			latestFiles = await res.json();
 			hasError = false;
 		} catch (err) {
-			console.error('Failed to fetch wiki data:', err);
+			console.error('Failed to fetch latest wiki files:', err);
 			hasError = true;
 		} finally {
 			isLoading = false;
@@ -66,7 +58,7 @@
 	}
 
 	onMount(() => {
-		fetchWikiRoot();
+		fetchLatestFiles();
 	});
 
 	$: quickLinks = [
@@ -123,12 +115,12 @@
 					<Carousel.Previous />
 					<Carousel.Next />
 				</Carousel.Root>
-			{:else if latestArticles.length > 0}
+			{:else if latestFiles.length > 0}
 				<Carousel.Root>
 					<Carousel.Content>
-						{#each latestArticles as article}
+						{#each latestFiles as file}
 							<Carousel.Item class="sm:basis-1/1 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-								<WikiCard item={article} locale={String($locale)} />
+								<WikiCard item={file} locale={String($locale)} />
 							</Carousel.Item>
 						{/each}
 					</Carousel.Content>
