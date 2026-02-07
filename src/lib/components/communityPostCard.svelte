@@ -86,7 +86,7 @@
 					<!-- svelte-ignore a11y-no-static-element-interactions -->
 					<div class="authorLink" on:click|stopPropagation|preventDefault>
 						{#if author}
-							<PlayerLink player={author} />
+							<PlayerLink player={author} showAvatar />
 						{:else}
 							<span>Unknown</span>
 						{/if}
@@ -104,7 +104,7 @@
 						<!-- svelte-ignore a11y-no-static-element-interactions -->
 						<div class="authorLink" on:click|stopPropagation|preventDefault>
 							{#if author}
-								<PlayerLink player={author} />
+							<PlayerLink player={author} showAvatar />
 							{:else}
 								<span>Unknown</span>
 							{/if}

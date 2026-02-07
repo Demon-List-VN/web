@@ -11,6 +11,7 @@
 
 	export let player: any;
 	export let showTitle = false;
+	export let showAvatar = false;
 	export let titleType: 'dl' | 'pl' | 'elo' = 'dl';
 	export let truncate: number | null = null;
 
@@ -42,6 +43,13 @@
 </script>
 
 <div class="wrapper">
+	{#if showAvatar}
+		<img
+			class="playerAvatar"
+			src={`https://cdn.gdvn.net/avatars/${player.uid}${isActive(player.supporterUntil) && player.isAvatarGif ? '.gif' : '.jpg'}?version=${player.avatarVersion}`}
+			alt={player.name}
+		/>
+	{/if}
 	<Popover.Root bind:open={isPopoverOpen}>
 		{#if showTitle && getTitle(titleType, player)?.title}
 			<Tooltip.Root>
@@ -134,6 +142,14 @@
 		display: flex;
 		align-items: center;
 		gap: 7px;
+	}
+
+	.playerAvatar {
+		width: 22px;
+		height: 22px;
+		border-radius: 50%;
+		object-fit: cover;
+		flex-shrink: 0;
 	}
 
 	.leftCol {

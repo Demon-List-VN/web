@@ -374,7 +374,7 @@
 				<div class="postMeta">
 					<div class="authorChip">
 						{#if author}
-							<PlayerLink player={author} />
+							<PlayerLink player={author} showAvatar />
 						{:else}
 							<span>Unknown</span>
 						{/if}
@@ -536,7 +536,7 @@
 									<div class="commentHeader">
 										<div class="commentAuthorLink">
 											{#if comment.players}
-												<PlayerLink player={comment.players} />
+												<PlayerLink player={comment.players} showAvatar />
 											{:else}
 												<span>Unknown</span>
 											{/if}

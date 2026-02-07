@@ -468,7 +468,7 @@
 
 <!-- Create Post Dialog -->
 <Dialog.Root bind:open={createDialogOpen}>
-	<Dialog.Content class="max-w-lg">
+	<Dialog.Content class="max-w-2xl max-h-[90vh] overflow-y-auto">
 		<Dialog.Header>
 			<Dialog.Title>{$_('community.create.title')}</Dialog.Title>
 			<Dialog.Description>{$_('community.create.description')}</Dialog.Description>
