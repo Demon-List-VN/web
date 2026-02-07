@@ -1,8 +1,5 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
-	import { Textarea } from '$lib/components/ui/textarea';
-	import * as Dialog from '$lib/components/ui/dialog';
-	import * as Select from '$lib/components/ui/select';
 	import { _, locale } from 'svelte-i18n';
 	import { user } from '$lib/client';
 	import { onMount } from 'svelte';
@@ -11,6 +8,10 @@
 	import { toast } from 'svelte-sonner';
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import Markdown from '$lib/components/markdown.svelte';
+	import RecordDetail from '$lib/components/recordDetail.svelte';
+	import ReportDialog from './ReportDialog.svelte';
+	import MentionDropdown from './MentionDropdown.svelte';
+	import LevelPicker from './LevelPicker.svelte';
 	import {
 		ThumbsUp,
 		MessageSquare,
@@ -26,12 +27,9 @@
 		Trophy,
 		Gamepad2,
 		ExternalLink,
-		Video,
-		Smartphone,
 		Play,
 		Star,
 		ThumbsDown,
-		Search,
 		X
 	} from 'lucide-svelte';
 
@@ -44,12 +42,11 @@
 	// Report state
 	let reportDialogOpen = false;
 	let reportTarget: { type: 'post' | 'comment'; id: number } | null = null;
-	let reportReason = 'inappropriate';
-	let reportDescription = '';
-	let submittingReport = false;
 
 	// Record detail dialog state
 	let recordDialogOpen = false;
+	let recordDetailUid = '';
+	let recordDetailLevelID = 0;
 
 	// @ mention state
 	let showMentionDropdown = false;
@@ -61,9 +58,6 @@
 
 	// Level tagging state
 	let showLevelPicker = false;
-	let levelSearchQuery = '';
-	let levelSearchResults: any[] = [];
-	let levelSearchTimer: ReturnType<typeof setTimeout>;
 	let commentAttachedLevel: any = null;
 
 	const typeIcons: Record<string, any> = {
@@ -293,42 +287,7 @@
 			return;
 		}
 		reportTarget = { type, id };
-		reportReason = 'inappropriate';
-		reportDescription = '';
 		reportDialogOpen = true;
-	}
-
-	async function submitReport() {
-		if (!reportTarget) return;
-		submittingReport = true;
-		const headers = await getHeaders();
-
-		try {
-			const endpoint = reportTarget.type === 'post'
-				? `${import.meta.env.VITE_API_URL}/community/posts/${reportTarget.id}/report`
-				: `${import.meta.env.VITE_API_URL}/community/comments/${reportTarget.id}/report`;
-
-			const res = await fetch(endpoint, {
-				method: 'POST',
-				headers,
-				body: JSON.stringify({
-					reason: reportReason,
-					description: reportDescription || undefined
-				})
-			});
-
-			if (!res.ok) {
-				const err = await res.json();
-				throw new Error(err.error || 'Failed to report');
-			}
-
-			toast.success($_('community.report.success'));
-			reportDialogOpen = false;
-		} catch (e: any) {
-			toast.error(e.message);
-		} finally {
-			submittingReport = false;
-		}
 	}
 
 	// @ Mention handling
@@ -406,39 +365,10 @@
 	// Level tagging for comments
 	function toggleLevelPicker() {
 		showLevelPicker = !showLevelPicker;
-		if (showLevelPicker) {
-			levelSearchQuery = '';
-			levelSearchResults = [];
-		}
 	}
 
-	function searchLevelsForComment() {
-		clearTimeout(levelSearchTimer);
-		levelSearchTimer = setTimeout(async () => {
-			if (!levelSearchQuery.trim()) {
-				levelSearchResults = [];
-				return;
-			}
-			try {
-				const res = await fetch(`https://gdbrowser.com/api/search/${encodeURIComponent(levelSearchQuery)}?page=0&count=5&diff=-2`);
-				if (!res.ok) throw new Error();
-				levelSearchResults = await res.json();
-			} catch {
-				levelSearchResults = [];
-			}
-		}, 400);
-	}
-
-	function selectLevelForComment(level: any) {
-		commentAttachedLevel = {
-			id: level.id || level.levelID,
-			name: level.name,
-			creator: level.author || level.creator,
-			isPlatformer: level.platformer === true
-		};
-		showLevelPicker = false;
-		levelSearchQuery = '';
-		levelSearchResults = [];
+	function handleLevelSelect(e: CustomEvent<any>) {
+		commentAttachedLevel = e.detail;
 	}
 
 	function clearCommentLevel() {
@@ -652,26 +582,12 @@
 								on:input={handleCommentInput}
 								on:keydown={handleCommentKeydown}
 							></textarea>
-							{#if showMentionDropdown && mentionSuggestions.length > 0}
-								<div class="mentionDropdown">
-									{#each mentionSuggestions as player, i}
-										<!-- svelte-ignore a11y-click-events-have-key-events -->
-										<!-- svelte-ignore a11y-no-static-element-interactions -->
-										<div
-											class="mentionOption"
-											class:active={i === mentionIndex}
-											on:click={() => selectMention(player)}
-										>
-											<img
-												src="https://cdn.gdvn.net/avatar/{player.uid || 'default'}{player.isAvatarGif ? '.gif' : '.webp'}?v={player.avatarVersion || 0}"
-												alt=""
-												class="mentionAvatar"
-											/>
-											<span class="mentionName">{player.name}</span>
-										</div>
-									{/each}
-								</div>
-							{/if}
+							<MentionDropdown
+								show={showMentionDropdown}
+								suggestions={mentionSuggestions}
+								activeIndex={mentionIndex}
+								on:select={(e) => selectMention(e.detail)}
+							/>
 						</div>
 						{#if commentAttachedLevel}
 							<div class="commentLevelTag">
@@ -699,35 +615,7 @@
 								{submittingComment ? $_('community.comment.submitting') : $_('community.comment.submit')}
 							</Button>
 						</div>
-						{#if showLevelPicker}
-							<div class="levelPickerDropdown">
-								<div class="levelPickerSearch">
-									<Search class="h-4 w-4 text-muted-foreground" />
-									<input
-										type="text"
-										bind:value={levelSearchQuery}
-										on:input={searchLevelsForComment}
-										placeholder={$_('community.comment.search_levels')}
-										class="levelPickerInput"
-									/>
-								</div>
-								{#if levelSearchResults.length > 0}
-									<div class="levelPickerResults">
-										{#each levelSearchResults as level}
-											<!-- svelte-ignore a11y-click-events-have-key-events -->
-											<!-- svelte-ignore a11y-no-static-element-interactions -->
-											<div class="levelPickerOption" on:click={() => selectLevelForComment(level)}>
-												<Gamepad2 class="h-4 w-4 text-emerald-500" />
-												<div class="levelPickerInfo">
-													<span class="levelPickerName">{level.name}</span>
-													<span class="levelPickerCreator">{level.author || level.creator}</span>
-												</div>
-											</div>
-										{/each}
-									</div>
-								{/if}
-							</div>
-						{/if}
+						<LevelPicker bind:show={showLevelPicker} on:select={handleLevelSelect} />
 					</div>
 				</div>
 			{:else}
@@ -826,128 +714,17 @@
 	{/if}
 </div>
 
-<!-- Record Detail Dialog -->
+<!-- Record Detail -->
 {#if post?.attached_record}
-<Dialog.Root bind:open={recordDialogOpen}>
-	<Dialog.Content class="max-w-md">
-		<Dialog.Header>
-			<Dialog.Title>{$_('community.record_detail.title')}</Dialog.Title>
-		</Dialog.Header>
-
-		<div class="recordDetail">
-			<div class="recordDetailRow">
-				<Trophy class="h-5 w-5 text-amber-500" />
-				<div class="recordDetailInfo">
-					<span class="recordDetailLabel">{$_('community.record_detail.level')}</span>
-					<strong class="recordDetailValue">{post.attached_record.levelName}</strong>
-				</div>
-			</div>
-			<div class="recordDetailRow">
-				<span class="recordDetailIcon">🎨</span>
-				<div class="recordDetailInfo">
-					<span class="recordDetailLabel">{$_('community.record_detail.creator')}</span>
-					<span class="recordDetailValue">{post.attached_record.creator}</span>
-				</div>
-			</div>
-			<div class="recordDetailRow">
-				<span class="recordDetailIcon">📊</span>
-				<div class="recordDetailInfo">
-					<span class="recordDetailLabel">{$_('community.record_detail.progress')}</span>
-					<div class="recordProgress">
-						<div class="recordProgressBar">
-							<div class="recordProgressFill" style="width: {post.attached_record.progress}%"></div>
-						</div>
-						<span class="recordProgressText">{post.attached_record.progress}%</span>
-					</div>
-				</div>
-			</div>
-			{#if post.attached_record.difficulty}
-				<div class="recordDetailRow">
-					<span class="recordDetailIcon">⭐</span>
-					<div class="recordDetailInfo">
-						<span class="recordDetailLabel">{$_('community.record_detail.difficulty')}</span>
-						<span class="recordDetailValue">{post.attached_record.difficulty}</span>
-					</div>
-				</div>
-			{/if}
-			{#if post.attached_record.isPlatformer}
-				<div class="recordDetailRow">
-					<Gamepad2 class="h-5 w-5 text-emerald-500" />
-					<div class="recordDetailInfo">
-						<span class="recordDetailValue">Platformer</span>
-					</div>
-				</div>
-			{/if}
-			{#if post.attached_record.mobile}
-				<div class="recordDetailRow">
-					<Smartphone class="h-5 w-5 text-blue-500" />
-					<div class="recordDetailInfo">
-						<span class="recordDetailValue">{$_('community.record_detail.mobile')}</span>
-					</div>
-				</div>
-			{/if}
-			{#if post.attached_record.videoLink}
-				<a href={post.attached_record.videoLink} target="_blank" rel="noopener" class="recordVideoBtn">
-					<Video class="h-4 w-4" />
-					{$_('community.record_detail.watch_video')}
-					<ExternalLink class="h-3.5 w-3.5" />
-				</a>
-			{/if}
-		</div>
-
-		<Dialog.Footer>
-			<Button variant="outline" on:click={() => (recordDialogOpen = false)}>
-				{$_('general.close')}
-			</Button>
-		</Dialog.Footer>
-	</Dialog.Content>
-</Dialog.Root>
+	<RecordDetail
+		uid={post.uid}
+		levelID={post.attached_record.levelid}
+		bind:open={recordDialogOpen}
+	/>
 {/if}
 
 <!-- Report Dialog -->
-<Dialog.Root bind:open={reportDialogOpen}>
-	<Dialog.Content class="max-w-md">
-		<Dialog.Header>
-			<Dialog.Title>{$_('community.report.title')}</Dialog.Title>
-			<Dialog.Description>{$_('community.report.description')}</Dialog.Description>
-		</Dialog.Header>
-
-		<div class="reportForm">
-			<div class="reportField">
-				<span class="reportLabel">{$_('community.report.reason')}</span>
-				<Select.Root
-					onSelectedChange={(v) => {
-						if (v) reportReason = String(v.value);
-					}}
-				>
-					<Select.Trigger>
-						<Select.Value placeholder={$_('community.report.reasons.inappropriate')} />
-					</Select.Trigger>
-					<Select.Content>
-						<Select.Item value="inappropriate">{$_('community.report.reasons.inappropriate')}</Select.Item>
-						<Select.Item value="spam">{$_('community.report.reasons.spam')}</Select.Item>
-						<Select.Item value="harassment">{$_('community.report.reasons.harassment')}</Select.Item>
-						<Select.Item value="misinformation">{$_('community.report.reasons.misinformation')}</Select.Item>
-						<Select.Item value="other">{$_('community.report.reasons.other')}</Select.Item>
-					</Select.Content>
-				</Select.Root>
-			</div>
-			<div class="reportField">
-				<label for="report-desc">{$_('community.report.details')} ({$_('community.create.optional')})</label>
-				<Textarea id="report-desc" bind:value={reportDescription} placeholder={$_('community.report.details_placeholder')} rows={3} />
-			</div>
-		</div>
-
-		<Dialog.Footer>
-			<Button variant="outline" on:click={() => (reportDialogOpen = false)}>
-				{$_('general.close')}
-			</Button>
-			<Button variant="destructive" on:click={submitReport} disabled={submittingReport}>
-				{submittingReport ? $_('community.report.submitting') : $_('community.report.submit')}
-			</Button>
-		</Dialog.Footer>
-	</Dialog.Content>
-</Dialog.Root>
+<ReportDialog bind:open={reportDialogOpen} target={reportTarget} />
 
 <style lang="scss">
 	.postPage {
@@ -1430,110 +1207,6 @@
 		}
 	}
 
-	/* Record Detail Dialog */
-	.recordDetail {
-		display: flex;
-		flex-direction: column;
-		gap: 16px;
-		padding: 8px 0;
-	}
-
-	.recordDetailRow {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-	}
-
-	.recordDetailIcon {
-		font-size: 20px;
-		width: 20px;
-		text-align: center;
-	}
-
-	.recordDetailInfo {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-	}
-
-	.recordDetailLabel {
-		font-size: 11px;
-		font-weight: 500;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-		color: hsl(var(--muted-foreground));
-	}
-
-	.recordDetailValue {
-		font-size: 14px;
-		font-weight: 500;
-	}
-
-	.recordProgress {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-	}
-
-	.recordProgressBar {
-		flex: 1;
-		height: 8px;
-		border-radius: 4px;
-		background: hsl(var(--muted));
-		overflow: hidden;
-	}
-
-	.recordProgressFill {
-		height: 100%;
-		border-radius: 4px;
-		background: hsl(var(--primary));
-		transition: width 0.3s ease;
-	}
-
-	.recordProgressText {
-		font-size: 14px;
-		font-weight: 600;
-		min-width: 40px;
-	}
-
-	.recordVideoBtn {
-		display: inline-flex;
-		align-items: center;
-		gap: 8px;
-		padding: 10px 16px;
-		border-radius: 8px;
-		background: hsl(var(--primary) / 0.1);
-		color: hsl(var(--primary));
-		font-size: 13px;
-		font-weight: 600;
-		text-decoration: none;
-		transition: all 0.15s;
-
-		&:hover {
-			background: hsl(var(--primary) / 0.2);
-		}
-	}
-
-	/* Report Dialog */
-	.reportForm {
-		display: flex;
-		flex-direction: column;
-		gap: 16px;
-		padding: 8px 0;
-	}
-
-	.reportField {
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-
-		label, .reportLabel {
-			font-size: 13px;
-			font-weight: 500;
-		}
-	}
-
 	/* Mention dropdown */
 	.commentInputWrapper {
 		position: relative;
@@ -1558,46 +1231,6 @@
 			border-color: hsl(var(--primary));
 			box-shadow: 0 0 0 2px hsl(var(--primary) / 0.1);
 		}
-	}
-
-	.mentionDropdown {
-		position: absolute;
-		bottom: 100%;
-		left: 0;
-		right: 0;
-		max-height: 200px;
-		overflow-y: auto;
-		background: hsl(var(--card));
-		border: 1px solid hsl(var(--border));
-		border-radius: 8px;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-		z-index: 50;
-		margin-bottom: 4px;
-	}
-
-	.mentionOption {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 8px 12px;
-		cursor: pointer;
-		transition: background 0.1s;
-
-		&:hover, &.active {
-			background: hsl(var(--accent));
-		}
-	}
-
-	.mentionAvatar {
-		width: 24px;
-		height: 24px;
-		border-radius: 50%;
-		object-fit: cover;
-	}
-
-	.mentionName {
-		font-size: 13px;
-		font-weight: 500;
 	}
 
 	/* Comment actions row */
@@ -1652,65 +1285,6 @@
 			background: hsl(var(--muted));
 			color: hsl(var(--foreground));
 		}
-	}
-
-	/* Level picker dropdown */
-	.levelPickerDropdown {
-		border: 1px solid hsl(var(--border));
-		border-radius: 8px;
-		background: hsl(var(--card));
-		overflow: hidden;
-	}
-
-	.levelPickerSearch {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 8px 12px;
-		border-bottom: 1px solid hsl(var(--border));
-	}
-
-	.levelPickerInput {
-		flex: 1;
-		border: none;
-		background: transparent;
-		font-size: 13px;
-		color: hsl(var(--foreground));
-		outline: none;
-	}
-
-	.levelPickerResults {
-		max-height: 200px;
-		overflow-y: auto;
-	}
-
-	.levelPickerOption {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-		padding: 8px 12px;
-		cursor: pointer;
-		transition: background 0.1s;
-
-		&:hover {
-			background: hsl(var(--accent));
-		}
-	}
-
-	.levelPickerInfo {
-		display: flex;
-		flex-direction: column;
-		gap: 1px;
-	}
-
-	.levelPickerName {
-		font-size: 13px;
-		font-weight: 500;
-	}
-
-	.levelPickerCreator {
-		font-size: 11px;
-		color: hsl(var(--muted-foreground));
 	}
 
 	/* Comment level attachment */
