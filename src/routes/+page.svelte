@@ -139,7 +139,9 @@
 		});
 
 		// Fetch community posts
-		fetch(`${import.meta.env.VITE_API_URL}/community/posts?limit=6&sortBy=created_at&ascending=false`)
+		fetch(
+			`${import.meta.env.VITE_API_URL}/community/posts?limit=6&sortBy=created_at&ascending=false`
+		)
 			.then((res) => res.json())
 			.then((data) => {
 				communityPosts = data?.data || [];
@@ -318,6 +320,36 @@
 			</div>
 		</div>
 	</section>
+	<!-- Community Hub -->
+	<section class="section">
+		<div class="sectionHeader">
+			<div class="flex items-center gap-2">
+				<Users class="h-5 w-5 text-indigo-500" />
+				<h4>{$_('community.hub_title')}</h4>
+			</div>
+			<a href="/community" class="viewAllBtn">
+				{$_('community.view_all')}
+				<ArrowRight class="ml-1 h-4 w-4" />
+			</a>
+		</div>
+		<div class="communityGrid">
+			{#if communityPosts}
+				{#if communityPosts.length > 0}
+					{#each communityPosts as post}
+						<CommunityPostCard {post} compact={true} />
+					{/each}
+				{:else}
+					<div class="communityEmpty">
+						<p>{$_('community.no_posts')}</p>
+					</div>
+				{/if}
+			{:else}
+				{#each { length: 6 } as _}
+					<CommunityPostCard post={null} />
+				{/each}
+			{/if}
+		</div>
+	</section>
 	<!-- Latest Levels with Tabs -->
 	<section class="section">
 		<div class="sectionHeader">
@@ -382,37 +414,6 @@
 				{$_('home.view_all')}
 				<ArrowRight class="ml-1 h-4 w-4" />
 			</a>
-		</div>
-	</section>
-
-	<!-- Community Hub -->
-	<section class="section">
-		<div class="sectionHeader">
-			<div class="flex items-center gap-2">
-				<Users class="h-5 w-5 text-indigo-500" />
-				<h4>{$_('community.hub_title')}</h4>
-			</div>
-			<a href="/community" class="viewAllBtn">
-				{$_('community.view_all')}
-				<ArrowRight class="ml-1 h-4 w-4" />
-			</a>
-		</div>
-		<div class="communityGrid">
-			{#if communityPosts}
-				{#if communityPosts.length > 0}
-					{#each communityPosts as post}
-						<CommunityPostCard {post} compact={true} />
-					{/each}
-				{:else}
-					<div class="communityEmpty">
-						<p>{$_('community.no_posts')}</p>
-					</div>
-				{/if}
-			{:else}
-				{#each { length: 6 } as _}
-					<CommunityPostCard post={null} />
-				{/each}
-			{/if}
 		</div>
 	</section>
 </div>
