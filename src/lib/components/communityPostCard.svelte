@@ -339,7 +339,7 @@
 
 	.postImage {
 		width: 120px;
-		height: 80px;
+		align-self: stretch;
 		flex-shrink: 0;
 		border-radius: 8px;
 		overflow: hidden;
