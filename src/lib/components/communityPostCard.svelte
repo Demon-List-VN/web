@@ -1,11 +1,15 @@
 <script lang="ts">
-	import { ThumbsUp, MessageSquare, Pin, Image, BookOpen, Megaphone, MessageCircle, Play, Trophy, Gamepad2, Star, ThumbsDown } from 'lucide-svelte';
+	import { ThumbsUp, MessageSquare, Pin, Image, BookOpen, Megaphone, MessageCircle, Play, Trophy, Gamepad2, Star, ThumbsDown, Flag } from 'lucide-svelte';
 	import { _, locale } from 'svelte-i18n';
 	import { isActive } from '$lib/client/isSupporterActive';
+	import { user } from '$lib/client';
 	import PlayerLink from '$lib/components/playerLink.svelte';
+	import { createEventDispatcher } from 'svelte';
 
 	export let post: any;
 	export let compact: boolean = false;
+
+	const dispatch = createEventDispatcher();
 
 	const typeIcons: Record<string, any> = {
 		discussion: MessageCircle,
@@ -164,14 +168,23 @@
 			</div>
 		{/if}
 		<div class="postFooter">
-			<div class="postStat" class:liked={post.liked}>
-				<ThumbsUp class="h-4 w-4" />
-				<span>{post.likes_count}</span>
+			<div class="postStats">
+				<div class="postStat" class:liked={post.liked}>
+					<ThumbsUp class="h-4 w-4" />
+					<span>{post.likes_count}</span>
+				</div>
+				<div class="postStat">
+					<MessageSquare class="h-4 w-4" />
+					<span>{post.comments_count}</span>
+				</div>
 			</div>
-			<div class="postStat">
-				<MessageSquare class="h-4 w-4" />
-				<span>{post.comments_count}</span>
-			</div>
+			{#if $user.loggedIn && $user.data?.uid !== post.uid}
+				<!-- svelte-ignore a11y-click-events-have-key-events -->
+				<!-- svelte-ignore a11y-no-static-element-interactions -->
+				<div class="reportBtn" on:click|stopPropagation|preventDefault={() => dispatch('report', post.id)} title={$_('community.report.button')}>
+					<Flag class="h-3.5 w-3.5" />
+				</div>
+			{/if}
 		</div>
 	</a>
 {:else}
@@ -382,10 +395,17 @@
 
 	.postFooter {
 		display: flex;
+		justify-content: space-between;
+		align-items: center;
 		gap: 16px;
 		padding: 10px 16px;
 		border-top: 1px solid hsl(var(--border) / 0.5);
 		margin-top: auto;
+	}
+
+	.postStats {
+		display: flex;
+		gap: 16px;
 	}
 
 	.postStat {
@@ -395,6 +415,27 @@
 		font-size: 12px;
 		color: hsl(var(--muted-foreground));
 		&.liked { color: hsl(var(--primary)); }
+	}
+
+	.reportBtn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 4px;
+		border-radius: 4px;
+		color: hsl(var(--muted-foreground));
+		cursor: pointer;
+		opacity: 0;
+		transition: all 0.15s;
+
+		&:hover {
+			color: hsl(0 84% 60%);
+			background: hsl(0 84% 60% / 0.1);
+		}
+	}
+
+	.communityPost:hover .reportBtn {
+		opacity: 1;
 	}
 
 	/* Attachment bar */

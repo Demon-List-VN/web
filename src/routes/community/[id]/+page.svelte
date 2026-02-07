@@ -30,7 +30,9 @@
 		Smartphone,
 		Play,
 		Star,
-		ThumbsDown
+		ThumbsDown,
+		Search,
+		X
 	} from 'lucide-svelte';
 
 	let post: any = null;
@@ -48,6 +50,21 @@
 
 	// Record detail dialog state
 	let recordDialogOpen = false;
+
+	// @ mention state
+	let showMentionDropdown = false;
+	let mentionQuery = '';
+	let mentionSuggestions: any[] = [];
+	let mentionTimer: ReturnType<typeof setTimeout>;
+	let mentionIndex = 0;
+	let commentTextarea: HTMLTextAreaElement;
+
+	// Level tagging state
+	let showLevelPicker = false;
+	let levelSearchQuery = '';
+	let levelSearchResults: any[] = [];
+	let levelSearchTimer: ReturnType<typeof setTimeout>;
+	let commentAttachedLevel: any = null;
 
 	const typeIcons: Record<string, any> = {
 		discussion: MessageCircle,
@@ -173,12 +190,17 @@
 		const headers = await getHeaders();
 
 		try {
+			const body: any = { content: newComment };
+			if (commentAttachedLevel) {
+				body.attached_level = commentAttachedLevel;
+			}
+
 			const res = await fetch(
 				`${import.meta.env.VITE_API_URL}/community/posts/${post.id}/comments`,
 				{
 					method: 'POST',
 					headers,
-					body: JSON.stringify({ content: newComment })
+					body: JSON.stringify(body)
 				}
 			);
 
@@ -188,6 +210,7 @@
 			comments = [...(comments || []), comment];
 			post.comments_count++;
 			newComment = '';
+			commentAttachedLevel = null;
 			toast.success($_('community.comment.success'));
 		} catch {
 			toast.error($_('community.comment.error'));
@@ -306,6 +329,120 @@
 		} finally {
 			submittingReport = false;
 		}
+	}
+
+	// @ Mention handling
+	function handleCommentInput(e: Event) {
+		const textarea = e.target as HTMLTextAreaElement;
+		const value = textarea.value;
+		const cursorPos = textarea.selectionStart;
+
+		// Find @ trigger
+		const beforeCursor = value.slice(0, cursorPos);
+		const atMatch = beforeCursor.match(/@(\w*)$/);
+
+		if (atMatch) {
+			mentionQuery = atMatch[1];
+			if (mentionQuery.length >= 1) {
+				clearTimeout(mentionTimer);
+				mentionTimer = setTimeout(() => searchMentions(mentionQuery), 300);
+			} else {
+				showMentionDropdown = true;
+				mentionSuggestions = [];
+			}
+		} else {
+			showMentionDropdown = false;
+			mentionSuggestions = [];
+		}
+	}
+
+	async function searchMentions(query: string) {
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/players/search?q=${encodeURIComponent(query)}`);
+			mentionSuggestions = await res.json();
+			showMentionDropdown = mentionSuggestions.length > 0;
+			mentionIndex = 0;
+		} catch {
+			mentionSuggestions = [];
+			showMentionDropdown = false;
+		}
+	}
+
+	function selectMention(player: any) {
+		const cursorPos = commentTextarea.selectionStart;
+		const beforeCursor = newComment.slice(0, cursorPos);
+		const afterCursor = newComment.slice(cursorPos);
+		const atIndex = beforeCursor.lastIndexOf('@');
+
+		newComment = beforeCursor.slice(0, atIndex) + `@[${player.name}](${player.uid}) ` + afterCursor;
+		showMentionDropdown = false;
+		mentionSuggestions = [];
+
+		// Refocus textarea
+		setTimeout(() => {
+			commentTextarea.focus();
+			const newPos = atIndex + `@[${player.name}](${player.uid}) `.length;
+			commentTextarea.setSelectionRange(newPos, newPos);
+		}, 0);
+	}
+
+	function handleCommentKeydown(e: KeyboardEvent) {
+		if (showMentionDropdown && mentionSuggestions.length > 0) {
+			if (e.key === 'ArrowDown') {
+				e.preventDefault();
+				mentionIndex = (mentionIndex + 1) % mentionSuggestions.length;
+			} else if (e.key === 'ArrowUp') {
+				e.preventDefault();
+				mentionIndex = (mentionIndex - 1 + mentionSuggestions.length) % mentionSuggestions.length;
+			} else if (e.key === 'Enter' || e.key === 'Tab') {
+				e.preventDefault();
+				selectMention(mentionSuggestions[mentionIndex]);
+			} else if (e.key === 'Escape') {
+				showMentionDropdown = false;
+			}
+		}
+	}
+
+	// Level tagging for comments
+	function toggleLevelPicker() {
+		showLevelPicker = !showLevelPicker;
+		if (showLevelPicker) {
+			levelSearchQuery = '';
+			levelSearchResults = [];
+		}
+	}
+
+	function searchLevelsForComment() {
+		clearTimeout(levelSearchTimer);
+		levelSearchTimer = setTimeout(async () => {
+			if (!levelSearchQuery.trim()) {
+				levelSearchResults = [];
+				return;
+			}
+			try {
+				const res = await fetch(`https://gdbrowser.com/api/search/${encodeURIComponent(levelSearchQuery)}?page=0&count=5&diff=-2`);
+				if (!res.ok) throw new Error();
+				levelSearchResults = await res.json();
+			} catch {
+				levelSearchResults = [];
+			}
+		}, 400);
+	}
+
+	function selectLevelForComment(level: any) {
+		commentAttachedLevel = {
+			id: level.id || level.levelID,
+			name: level.name,
+			creator: level.author || level.creator,
+			isPlatformer: level.platformer === true
+		};
+		showLevelPicker = false;
+		levelSearchQuery = '';
+		levelSearchResults = [];
+	}
+
+	function clearCommentLevel() {
+		commentAttachedLevel = null;
 	}
 
 	onMount(() => {
@@ -454,11 +591,7 @@
 
 				{#if post.content}
 					<div class="postText">
-						{#if post.type === 'announcement'}
-							<Markdown content={post.content} />
-						{:else}
-							{post.content}
-						{/if}
+						<Markdown content={post.content} />
 					</div>
 				{/if}
 			</div>
@@ -509,19 +642,92 @@
 			{#if $user.loggedIn}
 				<div class="commentInput">
 					<div class="commentForm">
-						<Textarea
-							bind:value={newComment}
-							placeholder={$_('community.comment.placeholder')}
-							rows={2}
-						/>
-						<Button
-							size="sm"
-							on:click={submitComment}
-							disabled={submittingComment || !newComment.trim()}
-						>
-							<Send class="mr-1 h-3.5 w-3.5" />
-							{submittingComment ? $_('community.comment.submitting') : $_('community.comment.submit')}
-						</Button>
+						<div class="commentInputWrapper">
+							<textarea
+								class="commentTextarea"
+								bind:value={newComment}
+								bind:this={commentTextarea}
+								placeholder={$_('community.comment.placeholder')}
+								rows={2}
+								on:input={handleCommentInput}
+								on:keydown={handleCommentKeydown}
+							></textarea>
+							{#if showMentionDropdown && mentionSuggestions.length > 0}
+								<div class="mentionDropdown">
+									{#each mentionSuggestions as player, i}
+										<!-- svelte-ignore a11y-click-events-have-key-events -->
+										<!-- svelte-ignore a11y-no-static-element-interactions -->
+										<div
+											class="mentionOption"
+											class:active={i === mentionIndex}
+											on:click={() => selectMention(player)}
+										>
+											<img
+												src="https://cdn.gdvn.net/avatar/{player.uid || 'default'}{player.isAvatarGif ? '.gif' : '.webp'}?v={player.avatarVersion || 0}"
+												alt=""
+												class="mentionAvatar"
+											/>
+											<span class="mentionName">{player.name}</span>
+										</div>
+									{/each}
+								</div>
+							{/if}
+						</div>
+						{#if commentAttachedLevel}
+							<div class="commentLevelTag">
+								<Gamepad2 class="h-3.5 w-3.5 text-emerald-500" />
+								<span>{commentAttachedLevel.name}</span>
+								<button class="clearLevelBtn" on:click={clearCommentLevel}>
+									<X class="h-3 w-3" />
+								</button>
+							</div>
+						{/if}
+						<div class="commentActions">
+							<button
+								class="commentToolBtn"
+								on:click={toggleLevelPicker}
+								title={$_('community.comment.attach_level')}
+							>
+								<Gamepad2 class="h-4 w-4" />
+							</button>
+							<Button
+								size="sm"
+								on:click={submitComment}
+								disabled={submittingComment || !newComment.trim()}
+							>
+								<Send class="mr-1 h-3.5 w-3.5" />
+								{submittingComment ? $_('community.comment.submitting') : $_('community.comment.submit')}
+							</Button>
+						</div>
+						{#if showLevelPicker}
+							<div class="levelPickerDropdown">
+								<div class="levelPickerSearch">
+									<Search class="h-4 w-4 text-muted-foreground" />
+									<input
+										type="text"
+										bind:value={levelSearchQuery}
+										on:input={searchLevelsForComment}
+										placeholder={$_('community.comment.search_levels')}
+										class="levelPickerInput"
+									/>
+								</div>
+								{#if levelSearchResults.length > 0}
+									<div class="levelPickerResults">
+										{#each levelSearchResults as level}
+											<!-- svelte-ignore a11y-click-events-have-key-events -->
+											<!-- svelte-ignore a11y-no-static-element-interactions -->
+											<div class="levelPickerOption" on:click={() => selectLevelForComment(level)}>
+												<Gamepad2 class="h-4 w-4 text-emerald-500" />
+												<div class="levelPickerInfo">
+													<span class="levelPickerName">{level.name}</span>
+													<span class="levelPickerCreator">{level.author || level.creator}</span>
+												</div>
+											</div>
+										{/each}
+									</div>
+								{/if}
+							</div>
+						{/if}
 					</div>
 				</div>
 			{:else}
@@ -545,7 +751,14 @@
 										</div>
 										<span class="commentTime">{timeAgo(comment.created_at)}</span>
 									</div>
-									<p class="commentText">{comment.content}</p>
+									<p class="commentText"><Markdown content={comment.content} /></p>
+									{#if comment.attached_level}
+										<a href="/level/{comment.attached_level.id}" class="commentLevelAttachment">
+											<Gamepad2 class="h-3.5 w-3.5 text-emerald-500" />
+											<span>{comment.attached_level.name}</span>
+											<span class="attachedMeta">{comment.attached_level.creator}</span>
+										</a>
+									{/if}
 									<div class="commentActions">
 										<button
 											class="commentAction"
@@ -1318,6 +1531,210 @@
 		label, .reportLabel {
 			font-size: 13px;
 			font-weight: 500;
+		}
+	}
+
+	/* Mention dropdown */
+	.commentInputWrapper {
+		position: relative;
+		width: 100%;
+	}
+
+	.commentTextarea {
+		width: 100%;
+		min-height: 60px;
+		padding: 8px 12px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		background: hsl(var(--background));
+		color: hsl(var(--foreground));
+		font-size: 14px;
+		line-height: 1.5;
+		resize: vertical;
+		font-family: inherit;
+
+		&:focus {
+			outline: none;
+			border-color: hsl(var(--primary));
+			box-shadow: 0 0 0 2px hsl(var(--primary) / 0.1);
+		}
+	}
+
+	.mentionDropdown {
+		position: absolute;
+		bottom: 100%;
+		left: 0;
+		right: 0;
+		max-height: 200px;
+		overflow-y: auto;
+		background: hsl(var(--card));
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+		z-index: 50;
+		margin-bottom: 4px;
+	}
+
+	.mentionOption {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 8px 12px;
+		cursor: pointer;
+		transition: background 0.1s;
+
+		&:hover, &.active {
+			background: hsl(var(--accent));
+		}
+	}
+
+	.mentionAvatar {
+		width: 24px;
+		height: 24px;
+		border-radius: 50%;
+		object-fit: cover;
+	}
+
+	.mentionName {
+		font-size: 13px;
+		font-weight: 500;
+	}
+
+	/* Comment actions row */
+	.commentActions {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.commentToolBtn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 32px;
+		height: 32px;
+		border-radius: 6px;
+		border: 1px solid hsl(var(--border));
+		background: transparent;
+		color: hsl(var(--muted-foreground));
+		cursor: pointer;
+		transition: all 0.15s;
+
+		&:hover {
+			background: hsl(var(--muted));
+			color: hsl(var(--foreground));
+		}
+	}
+
+	/* Comment level tag */
+	.commentLevelTag {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 4px 10px;
+		border-radius: 6px;
+		background: hsl(var(--muted) / 0.5);
+		font-size: 12px;
+		font-weight: 500;
+	}
+
+	.clearLevelBtn {
+		display: inline-flex;
+		align-items: center;
+		padding: 2px;
+		border-radius: 50%;
+		border: none;
+		background: transparent;
+		color: hsl(var(--muted-foreground));
+		cursor: pointer;
+
+		&:hover {
+			background: hsl(var(--muted));
+			color: hsl(var(--foreground));
+		}
+	}
+
+	/* Level picker dropdown */
+	.levelPickerDropdown {
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		background: hsl(var(--card));
+		overflow: hidden;
+	}
+
+	.levelPickerSearch {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 8px 12px;
+		border-bottom: 1px solid hsl(var(--border));
+	}
+
+	.levelPickerInput {
+		flex: 1;
+		border: none;
+		background: transparent;
+		font-size: 13px;
+		color: hsl(var(--foreground));
+		outline: none;
+	}
+
+	.levelPickerResults {
+		max-height: 200px;
+		overflow-y: auto;
+	}
+
+	.levelPickerOption {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 8px 12px;
+		cursor: pointer;
+		transition: background 0.1s;
+
+		&:hover {
+			background: hsl(var(--accent));
+		}
+	}
+
+	.levelPickerInfo {
+		display: flex;
+		flex-direction: column;
+		gap: 1px;
+	}
+
+	.levelPickerName {
+		font-size: 13px;
+		font-weight: 500;
+	}
+
+	.levelPickerCreator {
+		font-size: 11px;
+		color: hsl(var(--muted-foreground));
+	}
+
+	/* Comment level attachment */
+	.commentLevelAttachment {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 4px 10px;
+		border-radius: 6px;
+		background: hsl(var(--muted) / 0.3);
+		font-size: 12px;
+		font-weight: 500;
+		text-decoration: none;
+		color: inherit;
+		margin-bottom: 4px;
+		transition: background 0.15s;
+
+		&:hover {
+			background: hsl(var(--muted) / 0.6);
+		}
+
+		.attachedMeta {
+			font-size: 11px;
+			color: hsl(var(--muted-foreground));
 		}
 	}
 </style>

@@ -2,6 +2,7 @@
 	import * as Card from '$lib/components/ui/card';
 	import * as Table from '$lib/components/ui/table';
 	import RecordDetail from '$lib/components/recordDetail.svelte';
+	import CommunityPostCard from '$lib/components/communityPostCard.svelte';
 	import type { PageData } from './$types';
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import { fade } from 'svelte/transition';
@@ -13,6 +14,7 @@
 	import * as Tabs from '$lib/components/ui/tabs';
 	import { goto } from '$app/navigation';
 	import { _ } from 'svelte-i18n';
+	import { MessageSquare } from 'lucide-svelte';
 
 	export let data: PageData;
 	let levelAPI: any = null;
@@ -22,6 +24,7 @@
 	let loaded = false;
 	let recordDetailOpened = false;
 	let selectedRecord: any = null;
+	let relatedPosts: any[] = [];
 
 	function getTimeString(ms: number) {
 		const minutes = Math.floor(ms / 60000);
@@ -87,6 +90,7 @@
 		levelAPI = null;
 		records = [];
 		deathCount = [];
+		relatedPosts = [];
 
 		fetch(`${import.meta.env.VITE_API_URL}/levels/${$page.params.id}?fromGD=1`)
 			.then((res) => res.json())
@@ -101,6 +105,11 @@
 			.then((res: any) => {
 				deathCount = res.count;
 			});
+
+		fetch(`${import.meta.env.VITE_API_URL}/community/levels/${$page.params.id}/posts?limit=5`)
+			.then((res) => res.json())
+			.then((res: any) => (relatedPosts = res))
+			.catch(() => (relatedPosts = []));
 	}
 
 	function getList() {
@@ -372,6 +381,19 @@
 			</Table.Body>
 		</Table.Root>
 	</div>
+	{#if relatedPosts.length > 0}
+		<div class="cardWrapper1 relatedPosts">
+			<h3 class="relatedTitle">
+				<MessageSquare class="h-5 w-5" />
+				{$_('community.related_posts')}
+			</h3>
+			<div class="relatedGrid">
+				{#each relatedPosts as post}
+					<CommunityPostCard {post} compact />
+				{/each}
+			</div>
+		</div>
+	{/if}
 </div>
 
 {#if !records}
@@ -507,5 +529,24 @@
 		.detail {
 			grid-template-columns: 100%;
 		}
+	}
+
+	.relatedPosts {
+		padding-bottom: 20px;
+	}
+
+	.relatedTitle {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 18px;
+		font-weight: 600;
+		margin: 0 0 16px;
+	}
+
+	.relatedGrid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+		gap: 12px;
 	}
 </style>

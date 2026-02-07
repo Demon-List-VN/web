@@ -728,12 +728,14 @@
       "no_levels": "No levels found"
     },
     "comment": {
-      "placeholder": "Write a comment...",
+      "placeholder": "Write a comment... Use @ to mention someone",
       "submit": "Comment",
       "submitting": "Posting...",
       "success": "Comment added",
       "error": "Failed to add comment",
-      "none": "No comments yet"
+      "none": "No comments yet",
+      "attach_level": "Attach Level",
+      "search_levels": "Search levels..."
     },
     "comments": "Comments",
     "attachment": {
@@ -774,7 +776,9 @@
         "misinformation": "Misinformation",
         "other": "Other"
       }
-    }
+    },
+    "search_placeholder": "Search posts...",
+    "related_posts": "Community Posts"
   },
   "orders": {
     "title": "Orders",

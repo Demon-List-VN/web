@@ -23,7 +23,9 @@
 		ExternalLink,
 		Flag,
 		Check,
-		Star
+		Star,
+		EyeOff,
+		Eye
 	} from 'lucide-svelte';
 
 	let posts: any[] | null = null;
@@ -36,6 +38,7 @@
 
 	// Tab state
 	let activeTab: 'posts' | 'reports' = 'posts';
+	let showHidden = false;
 
 	// Reports state
 	let reports: any[] | null = null;
@@ -76,6 +79,7 @@
 			offset: String(currentPage * PAGE_SIZE)
 		});
 		if (filterType) params.set('type', filterType);
+		if (showHidden) params.set('hidden', 'true');
 
 		try {
 			const headers = await getAuthHeaders();
@@ -238,6 +242,23 @@
 		misinformation: 'Misinformation',
 		other: 'Other'
 	};
+
+	async function togglePostHidden(post: any) {
+		try {
+			const headers = await getAuthHeaders();
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/admin/posts/${post.id}/hidden`, {
+				method: 'PUT',
+				headers,
+				body: JSON.stringify({ hidden: !post.hidden })
+			});
+			if (!res.ok) throw new Error();
+			post.hidden = !post.hidden;
+			posts = posts;
+			toast.success(post.hidden ? 'Post hidden' : 'Post unhidden');
+		} catch {
+			toast.error('Failed to update post');
+		}
+	}
 </script>
 
 <Title value="Community Admin" />
@@ -273,6 +294,22 @@
 		</div>
 
 		<div class="filters">
+			<Button
+				variant={showHidden ? 'outline' : 'default'}
+				size="sm"
+				on:click={() => { showHidden = false; currentPage = 0; fetchPosts(); }}
+			>
+				<Eye class="mr-1 h-3.5 w-3.5" />
+				Visible
+			</Button>
+			<Button
+				variant={showHidden ? 'default' : 'outline'}
+				size="sm"
+				on:click={() => { showHidden = true; currentPage = 0; fetchPosts(); }}
+			>
+				<EyeOff class="mr-1 h-3.5 w-3.5" />
+				Hidden
+			</Button>
 			<Select.Root
 				onSelectedChange={(v) => {
 					filterType = v ? String(v.value) : null;
@@ -314,7 +351,7 @@
 				{#if posts}
 					{#each posts as post}
 						{@const TypeIcon = typeIcons[post.type] || MessageCircle}
-						<tr class:pinned={post.pinned}>
+						<tr class:pinned={post.pinned} class:hiddenPost={post.hidden}>
 							<td class="idCol">{post.id}</td>
 							<td>
 								<div class="typeBadge {typeColors[post.type]}">
@@ -326,6 +363,9 @@
 								<div class="titleWrap">
 									{#if post.pinned}
 										<Pin class="h-3 w-3 text-primary flex-shrink-0" />
+									{/if}
+									{#if post.hidden}
+										<EyeOff class="h-3 w-3 text-red-500 flex-shrink-0" />
 									{/if}
 									<a href="/community/{post.id}" target="_blank" class="titleLink">
 										{post.title}
@@ -353,6 +393,18 @@
 											<PinOff class="h-4 w-4" />
 										{:else}
 											<Pin class="h-4 w-4" />
+										{/if}
+									</button>
+									<button
+										class="actionBtn"
+										class:danger={!post.hidden}
+										on:click={() => togglePostHidden(post)}
+										title={post.hidden ? 'Unhide' : 'Hide'}
+									>
+										{#if post.hidden}
+											<Eye class="h-4 w-4" />
+										{:else}
+											<EyeOff class="h-4 w-4" />
 										{/if}
 									</button>
 									<button class="actionBtn danger" on:click={() => deletePost(post.id)} title="Delete">
@@ -653,6 +705,11 @@
 
 		tr.pinned {
 			background: hsl(var(--primary) / 0.05);
+		}
+
+		tr.hiddenPost {
+			background: hsl(0 84% 60% / 0.05);
+			opacity: 0.7;
 		}
 	}
 
