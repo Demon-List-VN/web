@@ -56,7 +56,7 @@
 			name: $locale === 'en' ? 'Mod' : 'Mod'
 		},
 		{ route: '/discord', name: 'Discord' },
-		{ route: '/rules', name: $locale === 'en' ? 'Rules' : 'Luật' },
+		{ route: '/wiki', name: 'Wiki' },
 		{ route: '/store', name: $locale === 'en' ? 'Store' : 'Cửa hàng' },
 		{
 			name: $locale === 'en' ? 'Misc' : 'Khác',

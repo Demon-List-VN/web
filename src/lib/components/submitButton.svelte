@@ -360,7 +360,7 @@
 				<Alert.Description>
 					{#if submissionType === 'record'}
 						{#if $locale == 'vi'}
-							- Đọc <button on:click={() => (open = false)}><a href="/rules"><u>luật</u></a></button>
+							- Đọc <button on:click={() => (open = false)}><a href={`/wiki/${$locale}/rules`}><u>luật</u></a></button>
 							trước khi nộp.<br />
 							- Điểm đề xuất là điểm của DLVN, không phải sao hay thứ hạng của level.
 							<br />
@@ -372,7 +372,7 @@
 							</a> trong khi chơi level để có cơ hội chấp nhận cao hơn.
 						{:else}
 							- Read the <button on:click={() => (open = false)}
-								><a href="/rules"><u>rules</u></a></button
+								><a href={`/wiki/${$locale}/rules`}><u>rules</u></a></button
 							>
 							before submitting.<br />
 							- Suggested rating is Geometry Dash VN level's rating, not level's stars or placement.
