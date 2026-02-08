@@ -140,7 +140,7 @@
 
 		// Fetch community posts
 		fetch(
-			`${import.meta.env.VITE_API_URL}/community/posts?limit=6&sortBy=created_at&ascending=false`
+			`${import.meta.env.VITE_API_URL}/community/posts?limit=4&sortBy=created_at&ascending=false`
 		)
 			.then((res) => res.json())
 			.then((data) => {
@@ -636,7 +636,7 @@
 	/* Community Hub */
 	.communityGrid {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+		grid-template-columns: repeat(auto-fill, minmax(max(340px, calc((100% - 42px) / 4)), 1fr));
 		gap: 14px;
 		padding-inline: 50px;
 		margin-top: 20px;
