@@ -396,7 +396,7 @@
 </script>
 
 <svelte:head>
-	<title>{post?.title || $_('community.title')} - Geometry Dash VN</title>
+	<title>{post?.title || 'Cộng đồng'} - Geometry Dash VN</title>
 	{#if post}
 		<meta property="og:title" content="{post.title} - Geometry Dash VN" />
 		<meta property="og:type" content="article" />
