@@ -54,6 +54,7 @@
 	let pendingPage = 0;
 	let moderationDetailOpen = false;
 	let moderationDetailPost: any = null;
+	let showModerationRaw = false;
 
 	const PAGE_SIZE = 20;
 
@@ -92,10 +93,9 @@
 
 		try {
 			const headers = await getAuthHeaders();
-			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/community/admin/posts?${params}`,
-				{ headers }
-			);
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/admin/posts?${params}`, {
+				headers
+			});
 			const json = await res.json();
 			posts = json.data;
 			total = json.total;
@@ -225,10 +225,9 @@
 
 		try {
 			const headers = await getAuthHeaders();
-			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/community/admin/reports?${params}`,
-				{ headers }
-			);
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/admin/reports?${params}`, {
+				headers
+			});
 			const json = await res.json();
 			reports = json.data;
 			reportsTotal = json.total;
@@ -241,10 +240,13 @@
 	async function resolveReport(id: number) {
 		try {
 			const headers = await getAuthHeaders();
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/admin/reports/${id}/resolve`, {
-				method: 'PUT',
-				headers
-			});
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/community/admin/reports/${id}/resolve`,
+				{
+					method: 'PUT',
+					headers
+				}
+			);
 			if (!res.ok) throw new Error();
 			toast.success('Report resolved');
 			await fetchReports();
@@ -274,11 +276,14 @@
 	async function togglePostHidden(post: any) {
 		try {
 			const headers = await getAuthHeaders();
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/admin/posts/${post.id}/hidden`, {
-				method: 'PUT',
-				headers,
-				body: JSON.stringify({ hidden: !post.hidden })
-			});
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/community/admin/posts/${post.id}/hidden`,
+				{
+					method: 'PUT',
+					headers,
+					body: JSON.stringify({ hidden: !post.hidden })
+				}
+			);
 			if (!res.ok) throw new Error();
 			post.hidden = !post.hidden;
 			posts = posts;
@@ -315,10 +320,13 @@
 	async function approvePendingPost(id: number) {
 		try {
 			const headers = await getAuthHeaders();
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/admin/moderation/${id}/approve`, {
-				method: 'PUT',
-				headers
-			});
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/community/admin/moderation/${id}/approve`,
+				{
+					method: 'PUT',
+					headers
+				}
+			);
 			if (!res.ok) throw new Error();
 			toast.success('Post approved');
 			moderationDetailOpen = false;
@@ -333,10 +341,13 @@
 		if (!confirm('Are you sure you want to reject this post?')) return;
 		try {
 			const headers = await getAuthHeaders();
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/admin/moderation/${id}/reject`, {
-				method: 'PUT',
-				headers
-			});
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/community/admin/moderation/${id}/reject`,
+				{
+					method: 'PUT',
+					headers
+				}
+			);
 			if (!res.ok) throw new Error();
 			toast.success('Post rejected');
 			moderationDetailOpen = false;
@@ -367,6 +378,11 @@
 			.map(([name, score]) => ({ name, score: score as number }))
 			.sort((a, b) => b.score - a.score);
 	}
+
+	// Derived moderation view state for the detail dialog
+	$: modResult = moderationDetailPost?.community_posts_admin?.moderation_result;
+	$: modFlagged = getFlaggedCategories(modResult);
+	$: modScores = getCategoryScores(modResult);
 </script>
 
 <Title value="Community Admin" />
@@ -383,11 +399,19 @@
 			<MessageCircle class="h-4 w-4" />
 			Posts
 		</button>
-		<button class="tab" class:active={activeTab === 'reports'} on:click={() => switchTab('reports')}>
+		<button
+			class="tab"
+			class:active={activeTab === 'reports'}
+			on:click={() => switchTab('reports')}
+		>
 			<Flag class="h-4 w-4" />
 			Reports
 		</button>
-		<button class="tab" class:active={activeTab === 'moderation'} on:click={() => switchTab('moderation')}>
+		<button
+			class="tab"
+			class:active={activeTab === 'moderation'}
+			on:click={() => switchTab('moderation')}
+		>
 			<Shield class="h-4 w-4" />
 			Moderation
 			{#if pendingTotal > 0}
@@ -397,405 +421,469 @@
 	</div>
 
 	{#if activeTab === 'posts'}
-	<!-- Toolbar -->
-	<div class="toolbar">
-		<div class="searchBox">
-			<Search class="h-4 w-4 text-muted-foreground" />
-			<Input
-				bind:value={searchQuery}
-				placeholder="Search posts..."
-				class="border-0 bg-transparent focus-visible:ring-0"
-			/>
+		<!-- Toolbar -->
+		<div class="toolbar">
+			<div class="searchBox">
+				<Search class="h-4 w-4 text-muted-foreground" />
+				<Input
+					bind:value={searchQuery}
+					placeholder="Search posts..."
+					class="border-0 bg-transparent focus-visible:ring-0"
+				/>
+			</div>
+
+			<div class="filters">
+				<Button
+					variant={showHidden ? 'outline' : 'default'}
+					size="sm"
+					on:click={() => {
+						showHidden = false;
+						currentPage = 0;
+						fetchPosts();
+					}}
+				>
+					<Eye class="mr-1 h-3.5 w-3.5" />
+					Visible
+				</Button>
+				<Button
+					variant={showHidden ? 'default' : 'outline'}
+					size="sm"
+					on:click={() => {
+						showHidden = true;
+						currentPage = 0;
+						fetchPosts();
+					}}
+				>
+					<EyeOff class="mr-1 h-3.5 w-3.5" />
+					Hidden
+				</Button>
+				<Select.Root
+					onSelectedChange={(v) => {
+						filterType = v ? String(v.value) : null;
+						currentPage = 0;
+						fetchPosts();
+					}}
+				>
+					<Select.Trigger class="w-[140px]">
+						<Select.Value placeholder="All types" />
+					</Select.Trigger>
+					<Select.Content>
+						<Select.Item value="">All types</Select.Item>
+						<Select.Item value="discussion">Discussion</Select.Item>
+						<Select.Item value="media">Media</Select.Item>
+						<Select.Item value="guide">Guide</Select.Item>
+						<Select.Item value="review">Review</Select.Item>
+						<Select.Item value="announcement">Announcement</Select.Item>
+					</Select.Content>
+				</Select.Root>
+			</div>
 		</div>
 
-		<div class="filters">
-			<Button
-				variant={showHidden ? 'outline' : 'default'}
-				size="sm"
-				on:click={() => { showHidden = false; currentPage = 0; fetchPosts(); }}
-			>
-				<Eye class="mr-1 h-3.5 w-3.5" />
-				Visible
-			</Button>
-			<Button
-				variant={showHidden ? 'default' : 'outline'}
-				size="sm"
-				on:click={() => { showHidden = true; currentPage = 0; fetchPosts(); }}
-			>
-				<EyeOff class="mr-1 h-3.5 w-3.5" />
-				Hidden
-			</Button>
-			<Select.Root
-				onSelectedChange={(v) => {
-					filterType = v ? String(v.value) : null;
-					currentPage = 0;
-					fetchPosts();
-				}}
-			>
-				<Select.Trigger class="w-[140px]">
-					<Select.Value placeholder="All types" />
-				</Select.Trigger>
-				<Select.Content>
-					<Select.Item value="">All types</Select.Item>
-					<Select.Item value="discussion">Discussion</Select.Item>
-					<Select.Item value="media">Media</Select.Item>
-					<Select.Item value="guide">Guide</Select.Item>
-					<Select.Item value="review">Review</Select.Item>
-					<Select.Item value="announcement">Announcement</Select.Item>
-				</Select.Content>
-			</Select.Root>
-		</div>
-	</div>
-
-	<!-- Posts Table -->
-	<div class="tableContainer">
-		<table class="postsTable">
-			<thead>
-				<tr>
-					<th>ID</th>
-					<th>Type</th>
-					<th>Title</th>
-					<th>Author</th>
-					<th>Likes</th>
-					<th>Comments</th>
-					<th>Date</th>
-					<th>Actions</th>
-				</tr>
-			</thead>
-			<tbody>
-				{#if posts}
-					{#each posts as post}
-						{@const TypeIcon = typeIcons[post.type] || MessageCircle}
-						<tr class:pinned={post.pinned} class:hiddenPost={post.hidden}>
-							<td class="idCol">{post.id}</td>
-							<td>
-								<div class="typeBadge {typeColors[post.type]}">
-									<svelte:component this={TypeIcon} class="h-3.5 w-3.5" />
-									<span>{post.type}</span>
-								</div>
-							</td>
-							<td class="titleCol">
-								<div class="titleWrap">
-									{#if post.pinned}
-										<Pin class="h-3 w-3 text-primary flex-shrink-0" />
-									{/if}
-									{#if post.hidden}
-										<EyeOff class="h-3 w-3 text-red-500 flex-shrink-0" />
-									{/if}
-									<a href="/community/{post.id}" target="_blank" class="titleLink">
-										{post.title}
-										<ExternalLink class="h-3 w-3 inline ml-1" />
-									</a>
-								</div>
-							</td>
-							<td class="authorCol">
-								{post.players?.name || post.uid}
-							</td>
-							<td class="center">{post.likes_count}</td>
-							<td class="center">{post.comments_count}</td>
-							<td class="dateCol">{formatDate(post.created_at)}</td>
-							<td>
-								<div class="actions">
-									<button class="actionBtn" on:click={() => openEdit(post)} title="Edit">
-										<Pencil class="h-4 w-4" />
-									</button>
-									<button
-										class="actionBtn"
-										on:click={() => togglePin(post)}
-										title={post.pinned ? 'Unpin' : 'Pin'}
-									>
+		<!-- Posts Table -->
+		<div class="tableContainer">
+			<table class="postsTable">
+				<thead>
+					<tr>
+						<th>ID</th>
+						<th>Type</th>
+						<th>Title</th>
+						<th>Author</th>
+						<th>Likes</th>
+						<th>Comments</th>
+						<th>Date</th>
+						<th>Actions</th>
+					</tr>
+				</thead>
+				<tbody>
+					{#if posts}
+						{#each posts as post}
+							{@const TypeIcon = typeIcons[post.type] || MessageCircle}
+							<tr class:pinned={post.pinned} class:hiddenPost={post.hidden}>
+								<td class="idCol">{post.id}</td>
+								<td>
+									<div class="typeBadge {typeColors[post.type]}">
+										<svelte:component this={TypeIcon} class="h-3.5 w-3.5" />
+										<span>{post.type}</span>
+									</div>
+								</td>
+								<td class="titleCol">
+									<div class="titleWrap">
 										{#if post.pinned}
-											<PinOff class="h-4 w-4" />
-										{:else}
-											<Pin class="h-4 w-4" />
+											<Pin class="h-3 w-3 flex-shrink-0 text-primary" />
 										{/if}
-									</button>
-									<button
-										class="actionBtn"
-										class:danger={!post.hidden}
-										on:click={() => togglePostHidden(post)}
-										title={post.hidden ? 'Unhide' : 'Hide'}
-									>
 										{#if post.hidden}
-											<Eye class="h-4 w-4" />
-										{:else}
-											<EyeOff class="h-4 w-4" />
+											<EyeOff class="h-3 w-3 flex-shrink-0 text-red-500" />
 										{/if}
-									</button>
-									<button class="actionBtn danger" on:click={() => deletePost(post.id)} title="Delete">
-										<Trash2 class="h-4 w-4" />
-									</button>
-								</div>
-							</td>
-						</tr>
-					{/each}
-					{#if posts.length === 0}
-						<tr>
-							<td colspan="8" class="emptyRow">No posts found</td>
-						</tr>
+										<a href="/community/{post.id}" target="_blank" class="titleLink">
+											{post.title}
+											<ExternalLink class="ml-1 inline h-3 w-3" />
+										</a>
+									</div>
+								</td>
+								<td class="authorCol">
+									{post.players?.name || post.uid}
+								</td>
+								<td class="center">{post.likes_count}</td>
+								<td class="center">{post.comments_count}</td>
+								<td class="dateCol">{formatDate(post.created_at)}</td>
+								<td>
+									<div class="actions">
+										<button class="actionBtn" on:click={() => openEdit(post)} title="Edit">
+											<Pencil class="h-4 w-4" />
+										</button>
+										<button
+											class="actionBtn"
+											on:click={() => togglePin(post)}
+											title={post.pinned ? 'Unpin' : 'Pin'}
+										>
+											{#if post.pinned}
+												<PinOff class="h-4 w-4" />
+											{:else}
+												<Pin class="h-4 w-4" />
+											{/if}
+										</button>
+										<button
+											class="actionBtn"
+											class:danger={!post.hidden}
+											on:click={() => togglePostHidden(post)}
+											title={post.hidden ? 'Unhide' : 'Hide'}
+										>
+											{#if post.hidden}
+												<Eye class="h-4 w-4" />
+											{:else}
+												<EyeOff class="h-4 w-4" />
+											{/if}
+										</button>
+										<button
+											class="actionBtn danger"
+											on:click={() => deletePost(post.id)}
+											title="Delete"
+										>
+											<Trash2 class="h-4 w-4" />
+										</button>
+									</div>
+								</td>
+							</tr>
+						{/each}
+						{#if posts.length === 0}
+							<tr>
+								<td colspan="8" class="emptyRow">No posts found</td>
+							</tr>
+						{/if}
+					{:else}
+						{#each { length: 5 } as _}
+							<tr class="skeleton">
+								<td colspan="8"><div class="skeletonLine"></div></td>
+							</tr>
+						{/each}
 					{/if}
-				{:else}
-					{#each { length: 5 } as _}
-						<tr class="skeleton">
-							<td colspan="8"><div class="skeletonLine"></div></td>
-						</tr>
-					{/each}
-				{/if}
-			</tbody>
-		</table>
-	</div>
-
-	<!-- Pagination -->
-	{#if posts && total > PAGE_SIZE}
-		<div class="pagination">
-			<Button
-				variant="outline"
-				size="sm"
-				disabled={currentPage === 0}
-				on:click={() => { currentPage--; fetchPosts(); }}
-			>
-				<ChevronLeft class="h-4 w-4" />
-			</Button>
-			<span class="pageInfo">
-				{currentPage * PAGE_SIZE + 1}-{Math.min((currentPage + 1) * PAGE_SIZE, total)} of {total}
-			</span>
-			<Button
-				variant="outline"
-				size="sm"
-				disabled={(currentPage + 1) * PAGE_SIZE >= total}
-				on:click={() => { currentPage++; fetchPosts(); }}
-			>
-				<ChevronRight class="h-4 w-4" />
-			</Button>
+				</tbody>
+			</table>
 		</div>
-	{/if}
+
+		<!-- Pagination -->
+		{#if posts && total > PAGE_SIZE}
+			<div class="pagination">
+				<Button
+					variant="outline"
+					size="sm"
+					disabled={currentPage === 0}
+					on:click={() => {
+						currentPage--;
+						fetchPosts();
+					}}
+				>
+					<ChevronLeft class="h-4 w-4" />
+				</Button>
+				<span class="pageInfo">
+					{currentPage * PAGE_SIZE + 1}-{Math.min((currentPage + 1) * PAGE_SIZE, total)} of {total}
+				</span>
+				<Button
+					variant="outline"
+					size="sm"
+					disabled={(currentPage + 1) * PAGE_SIZE >= total}
+					on:click={() => {
+						currentPage++;
+						fetchPosts();
+					}}
+				>
+					<ChevronRight class="h-4 w-4" />
+				</Button>
+			</div>
+		{/if}
 	{/if}
 
 	{#if activeTab === 'reports'}
-	<!-- Reports Toolbar -->
-	<div class="toolbar">
-		<div class="filters">
-			<Button
-				variant={showResolved ? 'outline' : 'default'}
-				size="sm"
-				on:click={() => { showResolved = false; reportsPage = 0; fetchReports(); }}
-			>
-				Pending
-			</Button>
-			<Button
-				variant={showResolved ? 'default' : 'outline'}
-				size="sm"
-				on:click={() => { showResolved = true; reportsPage = 0; fetchReports(); }}
-			>
-				Resolved
-			</Button>
+		<!-- Reports Toolbar -->
+		<div class="toolbar">
+			<div class="filters">
+				<Button
+					variant={showResolved ? 'outline' : 'default'}
+					size="sm"
+					on:click={() => {
+						showResolved = false;
+						reportsPage = 0;
+						fetchReports();
+					}}
+				>
+					Pending
+				</Button>
+				<Button
+					variant={showResolved ? 'default' : 'outline'}
+					size="sm"
+					on:click={() => {
+						showResolved = true;
+						reportsPage = 0;
+						fetchReports();
+					}}
+				>
+					Resolved
+				</Button>
+			</div>
 		</div>
-	</div>
 
-	<!-- Reports Table -->
-	<div class="tableContainer">
-		<table class="postsTable">
-			<thead>
-				<tr>
-					<th>ID</th>
-					<th>Reason</th>
-					<th>Target</th>
-					<th>Reporter</th>
-					<th>Description</th>
-					<th>Date</th>
-					<th>Actions</th>
-				</tr>
-			</thead>
-			<tbody>
-				{#if reports}
-					{#each reports as report}
-						<tr>
-							<td class="idCol">{report.id}</td>
-							<td>
-								<span class="reasonBadge">{reasonLabels[report.reason] || report.reason}</span>
-							</td>
-							<td class="titleCol">
-								{#if report.community_posts}
-									<a href="/community/{report.community_posts.id}" target="_blank" class="titleLink">
-										Post: {report.community_posts.title}
-										<ExternalLink class="h-3 w-3 inline ml-1" />
-									</a>
-								{:else if report.community_comments}
-									<span class="commentRef">Comment: {report.community_comments.content?.slice(0, 60)}...</span>
-								{/if}
-							</td>
-							<td class="authorCol">{report.players?.name || report.uid}</td>
-							<td class="descCol">{report.description || '—'}</td>
-							<td class="dateCol">{formatDate(report.created_at)}</td>
-							<td>
-								<div class="actions">
-									{#if !report.resolved}
-										<button class="actionBtn resolve" on:click={() => resolveReport(report.id)} title="Resolve">
-											<Check class="h-4 w-4" />
-										</button>
-									{:else}
-										<span class="resolvedBadge">✓</span>
+		<!-- Reports Table -->
+		<div class="tableContainer">
+			<table class="postsTable">
+				<thead>
+					<tr>
+						<th>ID</th>
+						<th>Reason</th>
+						<th>Target</th>
+						<th>Reporter</th>
+						<th>Description</th>
+						<th>Date</th>
+						<th>Actions</th>
+					</tr>
+				</thead>
+				<tbody>
+					{#if reports}
+						{#each reports as report}
+							<tr>
+								<td class="idCol">{report.id}</td>
+								<td>
+									<span class="reasonBadge">{reasonLabels[report.reason] || report.reason}</span>
+								</td>
+								<td class="titleCol">
+									{#if report.community_posts}
+										<a
+											href="/community/{report.community_posts.id}"
+											target="_blank"
+											class="titleLink"
+										>
+											Post: {report.community_posts.title}
+											<ExternalLink class="ml-1 inline h-3 w-3" />
+										</a>
+									{:else if report.community_comments}
+										<span class="commentRef"
+											>Comment: {report.community_comments.content?.slice(0, 60)}...</span
+										>
 									{/if}
-									{#if report.post_id}
-										<button class="actionBtn danger" on:click={() => deletePost(report.post_id)} title="Delete Post">
-											<Trash2 class="h-4 w-4" />
-										</button>
-									{/if}
-								</div>
-							</td>
-						</tr>
-					{/each}
-					{#if reports.length === 0}
-						<tr>
-							<td colspan="7" class="emptyRow">No reports found</td>
-						</tr>
+								</td>
+								<td class="authorCol">{report.players?.name || report.uid}</td>
+								<td class="descCol">{report.description || '—'}</td>
+								<td class="dateCol">{formatDate(report.created_at)}</td>
+								<td>
+									<div class="actions">
+										{#if !report.resolved}
+											<button
+												class="actionBtn resolve"
+												on:click={() => resolveReport(report.id)}
+												title="Resolve"
+											>
+												<Check class="h-4 w-4" />
+											</button>
+										{:else}
+											<span class="resolvedBadge">✓</span>
+										{/if}
+										{#if report.post_id}
+											<button
+												class="actionBtn danger"
+												on:click={() => deletePost(report.post_id)}
+												title="Delete Post"
+											>
+												<Trash2 class="h-4 w-4" />
+											</button>
+										{/if}
+									</div>
+								</td>
+							</tr>
+						{/each}
+						{#if reports.length === 0}
+							<tr>
+								<td colspan="7" class="emptyRow">No reports found</td>
+							</tr>
+						{/if}
+					{:else}
+						{#each { length: 3 } as _}
+							<tr class="skeleton">
+								<td colspan="7"><div class="skeletonLine"></div></td>
+							</tr>
+						{/each}
 					{/if}
-				{:else}
-					{#each { length: 3 } as _}
-						<tr class="skeleton">
-							<td colspan="7"><div class="skeletonLine"></div></td>
-						</tr>
-					{/each}
-				{/if}
-			</tbody>
-		</table>
-	</div>
-
-	<!-- Reports Pagination -->
-	{#if reports && reportsTotal > PAGE_SIZE}
-		<div class="pagination">
-			<Button
-				variant="outline"
-				size="sm"
-				disabled={reportsPage === 0}
-				on:click={() => { reportsPage--; fetchReports(); }}
-			>
-				<ChevronLeft class="h-4 w-4" />
-			</Button>
-			<span class="pageInfo">
-				{reportsPage * PAGE_SIZE + 1}-{Math.min((reportsPage + 1) * PAGE_SIZE, reportsTotal)} of {reportsTotal}
-			</span>
-			<Button
-				variant="outline"
-				size="sm"
-				disabled={(reportsPage + 1) * PAGE_SIZE >= reportsTotal}
-				on:click={() => { reportsPage++; fetchReports(); }}
-			>
-				<ChevronRight class="h-4 w-4" />
-			</Button>
+				</tbody>
+			</table>
 		</div>
-	{/if}
+
+		<!-- Reports Pagination -->
+		{#if reports && reportsTotal > PAGE_SIZE}
+			<div class="pagination">
+				<Button
+					variant="outline"
+					size="sm"
+					disabled={reportsPage === 0}
+					on:click={() => {
+						reportsPage--;
+						fetchReports();
+					}}
+				>
+					<ChevronLeft class="h-4 w-4" />
+				</Button>
+				<span class="pageInfo">
+					{reportsPage * PAGE_SIZE + 1}-{Math.min((reportsPage + 1) * PAGE_SIZE, reportsTotal)} of {reportsTotal}
+				</span>
+				<Button
+					variant="outline"
+					size="sm"
+					disabled={(reportsPage + 1) * PAGE_SIZE >= reportsTotal}
+					on:click={() => {
+						reportsPage++;
+						fetchReports();
+					}}
+				>
+					<ChevronRight class="h-4 w-4" />
+				</Button>
+			</div>
+		{/if}
 	{/if}
 
 	{#if activeTab === 'moderation'}
-	<!-- Moderation: Pending Posts -->
-	<div class="tableContainer">
-		<table class="postsTable">
-			<thead>
-				<tr>
-					<th>ID</th>
-					<th>Type</th>
-					<th>Title</th>
-					<th>Author</th>
-					<th>Flagged Categories</th>
-					<th>Date</th>
-					<th>Actions</th>
-				</tr>
-			</thead>
-			<tbody>
-				{#if pendingPosts}
-					{#each pendingPosts as post}
-						{@const TypeIcon = typeIcons[post.type] || MessageCircle}
-						{@const flagged = getFlaggedCategories(post.moderation_result)}
-						<tr>
-							<td class="idCol">{post.id}</td>
-							<td>
-								<div class="typeBadge {typeColors[post.type]}">
-									<svelte:component this={TypeIcon} class="h-3.5 w-3.5" />
-									<span>{post.type}</span>
-								</div>
-							</td>
-							<td class="titleCol">
-								<a href="/community/{post.id}" target="_blank" class="titleLink">
-									{post.title}
-									<ExternalLink class="h-3 w-3 inline ml-1" />
-								</a>
-							</td>
-							<td class="authorCol">
-								{post.players?.name || post.uid}
-							</td>
-							<td>
-								<div class="flaggedCats">
-									{#each flagged as cat}
-										<span class="flagBadge">{cat}</span>
-									{/each}
-									{#if flagged.length === 0}
-										<span class="text-muted-foreground text-xs">API error</span>
-									{/if}
-								</div>
-							</td>
-							<td class="dateCol">{formatDate(post.created_at)}</td>
-							<td>
-								<div class="actions">
-									<button class="actionBtn" on:click={() => openModerationDetail(post)} title="View Details">
-										<Eye class="h-4 w-4" />
-									</button>
-									<button class="actionBtn resolve" on:click={() => approvePendingPost(post.id)} title="Approve">
-										<Check class="h-4 w-4" />
-									</button>
-									<button class="actionBtn danger" on:click={() => rejectPendingPost(post.id)} title="Reject">
-										<X class="h-4 w-4" />
-									</button>
-								</div>
-							</td>
-						</tr>
-					{/each}
-					{#if pendingPosts.length === 0}
-						<tr>
-							<td colspan="7" class="emptyRow">No posts pending moderation</td>
-						</tr>
+		<!-- Moderation: Pending Posts -->
+		<div class="tableContainer">
+			<table class="postsTable">
+				<thead>
+					<tr>
+						<th>ID</th>
+						<th>Type</th>
+						<th>Title</th>
+						<th>Author</th>
+						<th>Flagged Categories</th>
+						<th>Date</th>
+						<th>Actions</th>
+					</tr>
+				</thead>
+				<tbody>
+					{#if pendingPosts}
+						{#each pendingPosts as post}
+							{@const TypeIcon = typeIcons[post.type] || MessageCircle}
+							{@const flagged = getFlaggedCategories(post.moderation_result)}
+							<tr>
+								<td class="idCol">{post.id}</td>
+								<td>
+									<div class="typeBadge {typeColors[post.type]}">
+										<svelte:component this={TypeIcon} class="h-3.5 w-3.5" />
+										<span>{post.type}</span>
+									</div>
+								</td>
+								<td class="titleCol">
+									<a href="/community/{post.id}" target="_blank" class="titleLink">
+										{post.title}
+										<ExternalLink class="ml-1 inline h-3 w-3" />
+									</a>
+								</td>
+								<td class="authorCol">
+									{post.players?.name || post.uid}
+								</td>
+								<td>
+									<div class="flaggedCats">
+										{#each flagged as cat}
+											<span class="flagBadge" on:click={() => openModerationDetail(post)} title="View moderation details">{cat}</span>
+										{/each}
+										{#if flagged.length === 0}
+											<span class="text-xs text-muted-foreground">API error</span>
+										{/if}
+									</div>
+								</td>
+								<td class="dateCol">{formatDate(post.created_at)}</td>
+								<td>
+									<div class="actions">
+										<button
+											class="actionBtn"
+											on:click={() => openModerationDetail(post)}
+											title="View Details"
+										>
+											<Eye class="h-4 w-4" />
+										</button>
+										<button
+											class="actionBtn resolve"
+											on:click={() => approvePendingPost(post.id)}
+											title="Approve"
+										>
+											<Check class="h-4 w-4" />
+										</button>
+										<button
+											class="actionBtn danger"
+											on:click={() => rejectPendingPost(post.id)}
+											title="Reject"
+										>
+											<X class="h-4 w-4" />
+										</button>
+									</div>
+								</td>
+							</tr>
+						{/each}
+						{#if pendingPosts.length === 0}
+							<tr>
+								<td colspan="7" class="emptyRow">No posts pending moderation</td>
+							</tr>
+						{/if}
+					{:else}
+						{#each { length: 3 } as _}
+							<tr class="skeleton">
+								<td colspan="7"><div class="skeletonLine"></div></td>
+							</tr>
+						{/each}
 					{/if}
-				{:else}
-					{#each { length: 3 } as _}
-						<tr class="skeleton">
-							<td colspan="7"><div class="skeletonLine"></div></td>
-						</tr>
-					{/each}
-				{/if}
-			</tbody>
-		</table>
-	</div>
-
-	<!-- Moderation Pagination -->
-	{#if pendingPosts && pendingTotal > PAGE_SIZE}
-		<div class="pagination">
-			<Button
-				variant="outline"
-				size="sm"
-				disabled={pendingPage === 0}
-				on:click={() => { pendingPage--; fetchPendingPosts(); }}
-			>
-				<ChevronLeft class="h-4 w-4" />
-			</Button>
-			<span class="pageInfo">
-				{pendingPage * PAGE_SIZE + 1}-{Math.min((pendingPage + 1) * PAGE_SIZE, pendingTotal)} of {pendingTotal}
-			</span>
-			<Button
-				variant="outline"
-				size="sm"
-				disabled={(pendingPage + 1) * PAGE_SIZE >= pendingTotal}
-				on:click={() => { pendingPage++; fetchPendingPosts(); }}
-			>
-				<ChevronRight class="h-4 w-4" />
-			</Button>
+				</tbody>
+			</table>
 		</div>
-	{/if}
+
+		<!-- Moderation Pagination -->
+		{#if pendingPosts && pendingTotal > PAGE_SIZE}
+			<div class="pagination">
+				<Button
+					variant="outline"
+					size="sm"
+					disabled={pendingPage === 0}
+					on:click={() => {
+						pendingPage--;
+						fetchPendingPosts();
+					}}
+				>
+					<ChevronLeft class="h-4 w-4" />
+				</Button>
+				<span class="pageInfo">
+					{pendingPage * PAGE_SIZE + 1}-{Math.min((pendingPage + 1) * PAGE_SIZE, pendingTotal)} of {pendingTotal}
+				</span>
+				<Button
+					variant="outline"
+					size="sm"
+					disabled={(pendingPage + 1) * PAGE_SIZE >= pendingTotal}
+					on:click={() => {
+						pendingPage++;
+						fetchPendingPosts();
+					}}
+				>
+					<ChevronRight class="h-4 w-4" />
+				</Button>
+			</div>
+		{/if}
 	{/if}
 </div>
 
 <!-- Moderation Detail Dialog -->
 <Dialog.Root bind:open={moderationDetailOpen}>
-	<Dialog.Content class="max-w-2xl max-h-[80vh] overflow-y-auto">
+	<Dialog.Content class="max-h-[80vh] max-w-2xl overflow-y-auto">
 		<Dialog.Header>
 			<Dialog.Title>Moderation Details — Post #{moderationDetailPost?.id}</Dialog.Title>
 		</Dialog.Header>
@@ -818,7 +906,11 @@
 				{#if moderationDetailPost.image_url}
 					<div class="field">
 						<span class="fieldLabel">Image</span>
-						<img src={moderationDetailPost.image_url} alt="Post attachment" class="moderationImage" />
+						<img
+							src={moderationDetailPost.image_url}
+							alt="Post attachment"
+							class="moderationImage"
+						/>
 					</div>
 				{/if}
 
@@ -826,54 +918,44 @@
 
 				<h3 class="sectionTitle">OpenAI Moderation Result</h3>
 
-				{#if moderationDetailPost.moderation_result}
-					{@const flaggedCats = getFlaggedCategories(moderationDetailPost.moderation_result)}
-					{@const scores = getCategoryScores(moderationDetailPost.moderation_result)}
+				<div class="field">
+					<span class="fieldLabel">Status</span>
+					<span class="flagStatus {modFlagged.length ? 'flagged' : ''}">{modFlagged.length ? 'Flagged' : 'No flags'}</span>
+				</div>
 
-					<div class="field">
-						<span class="fieldLabel">Flagged</span>
-						<span class="flagStatus flagged">Yes</span>
-					</div>
-
-					{#if flaggedCats.length > 0}
-						<div class="field">
-							<span class="fieldLabel">Flagged Categories</span>
-							<div class="flaggedCats">
-								{#each flaggedCats as cat}
-									<span class="flagBadge">{cat}</span>
-								{/each}
-							</div>
+				<div class="scoresList">
+					{#each modScores as s}
+						<div class="scoreRow">
+							<div class="scoreName">{s.name}</div>
+							<div class="scoreBar"><div class="scoreBarFill {s.score >= 0.7 ? 'high' : s.score >= 0.4 ? 'medium' : ''}" style="width: {Math.round(s.score * 100)}%"></div></div>
+							<div class="scoreValue">{s.score.toFixed(2)}</div>
 						</div>
+					{/each}
+					{#if modScores.length === 0}
+						<div class="text-xs text-muted-foreground">No score data available</div>
 					{/if}
+				</div>
 
-					<div class="field">
-						<span class="fieldLabel">Category Scores</span>
-						<div class="scoresList">
-							{#each scores as { name, score }}
-								<div class="scoreRow">
-									<span class="scoreName">{name}</span>
-									<div class="scoreBar">
-										<div
-											class="scoreBarFill"
-											class:high={score > 0.5}
-											class:medium={score > 0.1 && score <= 0.5}
-											style="width: {Math.min(score * 100, 100)}%"
-										></div>
-									</div>
-									<span class="scoreValue">{(score * 100).toFixed(2)}%</span>
-								</div>
-							{/each}
-						</div>
-					</div>
-				{:else}
-					<p class="text-muted-foreground">No moderation data available (API may have failed).</p>
+				<div class="field">
+					<button class="actionBtn" on:click={() => (showModerationRaw = !showModerationRaw)}>{showModerationRaw ? 'Hide raw JSON' : 'Show raw JSON'}</button>
+				</div>
+
+				{#if showModerationRaw}
+					<pre><code class="json">{JSON.stringify(modResult, null, 2)}</code></pre>
 				{/if}
 			</div>
 		{/if}
 
 		<Dialog.Footer>
-			<Button variant="outline" on:click={() => { moderationDetailOpen = false; }}>Close</Button>
-			<Button variant="destructive" on:click={() => rejectPendingPost(moderationDetailPost?.id)}>Reject</Button>
+			<Button
+				variant="outline"
+				on:click={() => {
+					moderationDetailOpen = false;
+				}}>Close</Button
+			>
+			<Button variant="destructive" on:click={() => rejectPendingPost(moderationDetailPost?.id)}
+				>Reject</Button
+			>
 			<Button on:click={() => approvePendingPost(moderationDetailPost?.id)}>Approve</Button>
 		</Dialog.Footer>
 	</Dialog.Content>
@@ -921,7 +1003,11 @@
 				</div>
 				<div class="field">
 					<label for="edit-video">Video URL</label>
-					<Input id="edit-video" bind:value={editPost.video_url} placeholder="https://youtube.com/watch?v=..." />
+					<Input
+						id="edit-video"
+						bind:value={editPost.video_url}
+						placeholder="https://youtube.com/watch?v=..."
+					/>
 				</div>
 			</div>
 		{/if}
@@ -1129,7 +1215,8 @@
 		flex-direction: column;
 		gap: 4px;
 
-		label, .fieldLabel {
+		label,
+		.fieldLabel {
 			font-size: 13px;
 			font-weight: 500;
 		}
@@ -1147,12 +1234,19 @@
 	}
 
 	@keyframes pulse {
-		0%, 100% { opacity: 1; }
-		50% { opacity: 0.5; }
+		0%,
+		100% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0.5;
+		}
 	}
 
 	@media screen and (max-width: 768px) {
-		.wrapper { padding: 1rem; }
+		.wrapper {
+			padding: 1rem;
+		}
 	}
 
 	.tabs {
@@ -1179,7 +1273,9 @@
 		cursor: pointer;
 		transition: all 0.2s;
 
-		&:hover { color: hsl(var(--foreground)); }
+		&:hover {
+			color: hsl(var(--foreground));
+		}
 		&.active {
 			background: hsl(var(--background));
 			color: hsl(var(--foreground));
@@ -1252,6 +1348,7 @@
 		background: hsl(30 90% 50% / 0.15);
 		color: hsl(30 90% 40%);
 		white-space: nowrap;
+		cursor: pointer;
 	}
 
 	.moderationDetail {
