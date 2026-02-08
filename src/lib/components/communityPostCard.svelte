@@ -173,8 +173,8 @@
 						{/if}
 					</div>
 				</div>
-				{#if thumbnail && !compact}
-					<div class="postImage">
+				{#if thumbnail}
+					<div class="postImage" class:compactImage={compact}>
 						<img src={thumbnail} alt="" loading="lazy" />
 						{#if post.video_url && !post.image_url}
 							<div class="videoOverlay">
@@ -581,6 +581,15 @@
 	}
 
 	@media screen and (max-width: 640px) {
-		.postImage { display: none; }
+		.postImage {
+			width: 80px;
+			height: 80px;
+			max-height: 80px;
+		}
+		.postImage.compactImage {
+			width: 60px;
+			height: 60px;
+			max-height: 60px;
+		}
 	}
 </style>
