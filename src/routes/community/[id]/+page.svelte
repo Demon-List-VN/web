@@ -535,7 +535,7 @@
 </script>
 
 <svelte:head>
-	<title>{headPost?.title || 'Cộng đồng'} - Geometry Dash VN</title>
+	<title>{headPost?.title || 'Cộng đồng'} - Bài viết cộng đồng - Geometry Dash VN</title>
 	{#if headPost}
 		<meta property="og:title" content="{headPost.title} - Geometry Dash VN" />
 		<meta property="og:type" content="article" />
