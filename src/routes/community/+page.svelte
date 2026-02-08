@@ -1,6 +1,5 @@
 <script lang="ts">
 	import CommunityPostCard from '$lib/components/communityPostCard.svelte';
-	import CreatePostDialog from './createPostDialog.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import * as Dialog from '$lib/components/ui/dialog';
@@ -27,7 +26,6 @@
 	let currentPage = 0;
 	let activeType: string | null = null;
 	let sortMode: 'newest' | 'best' = 'newest';
-	let createDialogOpen = false;
 
 	// Search state
 	let searchQuery = '';
@@ -93,11 +91,6 @@
 		if (e.key === 'Enter') {
 			handleSearch();
 		}
-	}
-
-	function handlePostCreated() {
-		currentPage = 0;
-		fetchPosts();
 	}
 
 	function handleReport(e: CustomEvent<number>) {
@@ -203,10 +196,12 @@
 		<div class="toolbar">
 			<div class="toolbarTop">
 				{#if $user.loggedIn}
-					<Button on:click={() => (createDialogOpen = true)} class="createBtn">
-						<Plus class="mr-1 h-4 w-4" />
-						{$_('community.create.button')}
-					</Button>
+					<a href="/community/create" class="createBtnLink">
+						<Button class="createBtn">
+							<Plus class="mr-1 h-4 w-4" />
+							{$_('community.create.button')}
+						</Button>
+					</a>
 				{/if}
 				<div class="searchWrapper">
 					<div class="searchBox">
@@ -296,9 +291,6 @@
 	</div>
 </div>
 
-<!-- Create Post Dialog -->
-<CreatePostDialog bind:open={createDialogOpen} on:created={handlePostCreated} />
-
 <!-- Report Dialog -->
 <Dialog.Root bind:open={reportDialogOpen}>
 	<Dialog.Content class="max-w-md">
@@ -383,6 +375,11 @@
 	}
 
 	:global(.createBtn) {
+		flex-shrink: 0;
+	}
+
+	.createBtnLink {
+		text-decoration: none;
 		flex-shrink: 0;
 	}
 
@@ -547,6 +544,10 @@
 		}
 		
 		:global(.createBtn) {
+			width: 100%;
+		}
+
+		.createBtnLink {
 			width: 100%;
 		}
 		

@@ -4,6 +4,7 @@
 	import { isActive } from '$lib/client/isSupporterActive';
 	import { user } from '$lib/client';
 	import PlayerLink from '$lib/components/playerLink.svelte';
+	import Markdown from '$lib/components/markdown.svelte';
 	import { createEventDispatcher } from 'svelte';
 	import { toast } from 'svelte-sonner';
 
@@ -168,7 +169,7 @@
 							<h3 class="postTitle">{post.title}</h3>
 						</div>
 						{#if !compact && post.content}
-							<p class="postExcerpt">{post.content.slice(0, 300)}{post.content.length > 300 ? '...' : ''}</p>
+							<div class="postExcerpt"><Markdown content={post.content.length > 300 ? post.content.slice(0, 300) + '...' : post.content} /></div>
 						{/if}
 					</div>
 				</div>
@@ -371,6 +372,30 @@
 		line-clamp: 3;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
+		max-height: 4.5em;
+
+		:global(p) {
+			margin: 0;
+		}
+
+		:global(img) {
+			display: none;
+		}
+
+		:global(h1), :global(h2), :global(h3), :global(h4), :global(h5), :global(h6) {
+			font-size: inherit;
+			font-weight: inherit;
+			margin: 0;
+		}
+
+		:global(pre) {
+			display: none;
+		}
+
+		:global(ul), :global(ol) {
+			margin: 0;
+			padding-left: 16px;
+		}
 	}
 
 	.postImage {
