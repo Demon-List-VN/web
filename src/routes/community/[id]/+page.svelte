@@ -571,7 +571,7 @@
 		{/if}
 		<meta property="og:site_name" content="Geometry Dash VN" />
 		<meta property="article:published_time" content="{headPost.created_at}" />
-		{#if headPost.updated_at !== headPost.created_at}
+		{#if headPost.updated_at}
 			<meta property="article:modified_time" content="{headPost.updated_at}" />
 		{/if}
 		{#if headPost.players}
@@ -665,7 +665,7 @@
 					</div>
 					<span class="metaDot">·</span>
 					<span class="metaDate">{formatDate(post.created_at)}</span>
-					{#if post.updated_at !== post.created_at}
+					{#if post.updated_at}
 						<span class="metaDot">·</span>
 						<span class="metaEdited">({$_('community.edited')})</span>
 					{/if}
