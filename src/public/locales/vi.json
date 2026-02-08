@@ -727,6 +727,16 @@
       "no_records": "Không tìm thấy record đã xác minh",
       "no_levels": "Không tìm thấy level"
     },
+    "write": "Viết",
+    "preview": "Xem trước",
+    "preview_empty": "Chưa có gì để xem trước",
+    "edit": {
+      "button": "Chỉnh sửa",
+      "save": "Lưu",
+      "saving": "Đang lưu...",
+      "success": "Đã cập nhật bài viết!",
+      "error": "Không thể cập nhật bài viết"
+    },
     "comment": {
       "placeholder": "Viết bình luận... Dùng @ để nhắc đến ai đó",
       "submit": "Bình luận",
@@ -735,6 +745,7 @@
       "error": "Không thể thêm bình luận",
       "none": "Chưa có bình luận",
       "attach_level": "Đính kèm Level",
+      "attach_image": "Đính kèm hình ảnh",
       "search_levels": "Tìm kiếm level..."
     },
     "comments": "Bình luận",

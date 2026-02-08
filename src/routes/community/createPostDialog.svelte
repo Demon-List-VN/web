@@ -9,6 +9,7 @@
 	import { upload } from '$lib/client/storage';
 	import { toast } from 'svelte-sonner';
 	import imageCompression from 'browser-image-compression';
+	import Markdown from '$lib/components/markdown.svelte';
 	import {
 		Upload,
 		Link,
@@ -19,7 +20,8 @@
 		Play,
 		Star,
 		ThumbsUp,
-		ThumbsDown
+		ThumbsDown,
+		Eye
 	} from 'lucide-svelte';
 	import { createEventDispatcher } from 'svelte';
 
@@ -39,6 +41,9 @@
 	let imageFile: File | null = null;
 	let imagePreview: string | null = null;
 	let fileInput: HTMLInputElement;
+
+	// Content preview state
+	let contentPreviewMode = false;
 
 	// Attachment picker state
 	let attachmentType: 'none' | 'record' | 'level' = 'none';
@@ -302,6 +307,7 @@
 			isRecommended = true;
 			reviewLevels = [];
 			reviewLevelSearch = '';
+			contentPreviewMode = false;
 			dispatch('created');
 		} catch (e: any) {
 			toast.error(e.message);
@@ -428,12 +434,31 @@
 
 			<div class="formField">
 				<label for="post-content">{$_('community.create.post_content')}</label>
-				<Textarea
-					id="post-content"
-					bind:value={newPost.content}
-					placeholder={$_('community.create.content_placeholder')}
-					rows={6}
-				/>
+				<div class="contentTabBar">
+					<button class="contentTab" class:active={!contentPreviewMode} on:click={() => contentPreviewMode = false}>
+						{$_('community.write') || 'Write'}
+					</button>
+					<button class="contentTab" class:active={contentPreviewMode} on:click={() => contentPreviewMode = true}>
+						<Eye class="h-3.5 w-3.5" />
+						{$_('community.preview') || 'Preview'}
+					</button>
+				</div>
+				{#if contentPreviewMode}
+					<div class="contentPreviewBox">
+						{#if newPost.content.trim()}
+							<Markdown content={newPost.content} />
+						{:else}
+							<p class="previewEmpty">{$_('community.preview_empty') || 'Nothing to preview'}</p>
+						{/if}
+					</div>
+				{:else}
+					<Textarea
+						id="post-content"
+						bind:value={newPost.content}
+						placeholder={$_('community.create.content_placeholder')}
+						rows={6}
+					/>
+				{/if}
 			</div>
 
 			<!-- Image Upload -->
@@ -898,5 +923,53 @@
 		text-align: center;
 		font-size: 12px;
 		color: hsl(var(--muted-foreground));
+	}
+
+	/* Content Write/Preview tabs */
+	.contentTabBar {
+		display: flex;
+		gap: 2px;
+		border-bottom: 1px solid hsl(var(--border));
+		margin-bottom: 4px;
+	}
+
+	.contentTab {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 6px 12px;
+		font-size: 13px;
+		font-weight: 500;
+		color: hsl(var(--muted-foreground));
+		background: transparent;
+		border: none;
+		border-bottom: 2px solid transparent;
+		cursor: pointer;
+		transition: all 0.15s;
+
+		&:hover {
+			color: hsl(var(--foreground));
+		}
+
+		&.active {
+			color: hsl(var(--primary));
+			border-bottom-color: hsl(var(--primary));
+		}
+	}
+
+	.contentPreviewBox {
+		min-height: 140px;
+		padding: 12px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		background: hsl(var(--muted) / 0.2);
+		font-size: 14px;
+		line-height: 1.6;
+	}
+
+	.previewEmpty {
+		color: hsl(var(--muted-foreground));
+		font-style: italic;
+		font-size: 13px;
 	}
 </style>

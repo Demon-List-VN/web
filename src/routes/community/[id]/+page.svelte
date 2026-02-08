@@ -2,10 +2,12 @@
 	import { Button } from '$lib/components/ui/button';
 	import { _, locale } from 'svelte-i18n';
 	import { user } from '$lib/client';
+	import { upload } from '$lib/client/storage';
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
+	import imageCompression from 'browser-image-compression';
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import Markdown from '$lib/components/markdown.svelte';
 	import RecordDetail from '$lib/components/recordDetail.svelte';
@@ -30,11 +32,17 @@
 		Play,
 		Star,
 		ThumbsDown,
-		X
+		X,
+		Pencil,
+		Check,
+		Upload,
+		Eye
 	} from 'lucide-svelte';
 
-	let post: any = null;
-	let comments: any[] | null = null;
+	export let data: any;
+
+	let post: any = data.post || null;
+	let comments: any[] | null = data.comments || null;
 	let newComment = '';
 	let submittingComment = false;
 	let likingPost = false;
@@ -59,6 +67,21 @@
 	// Level tagging state
 	let showLevelPicker = false;
 	let commentAttachedLevel: any = null;
+
+	// Comment image upload state
+	let commentImageFile: File | null = null;
+	let commentImagePreview: string | null = null;
+	let commentUploading = false;
+	let commentFileInput: HTMLInputElement;
+
+	// Post edit state
+	let editing = false;
+	let editTitle = '';
+	let editContent = '';
+	let editSaving = false;
+
+	// Comment preview state
+	let commentPreviewMode = false;
 
 	const typeIcons: Record<string, any> = {
 		discussion: MessageCircle,
@@ -173,8 +196,56 @@
 		}
 	}
 
+	// Comment image handling
+	function handleCommentImageSelect(e: Event) {
+		const target = e.target as HTMLInputElement;
+		const file = target.files?.[0];
+		if (!file) return;
+		commentImageFile = file;
+		const reader = new FileReader();
+		reader.onload = () => {
+			commentImagePreview = reader.result as string;
+		};
+		reader.readAsDataURL(file);
+	}
+
+	function clearCommentImage() {
+		commentImageFile = null;
+		commentImagePreview = null;
+		if (commentFileInput) commentFileInput.value = '';
+	}
+
+	async function uploadCommentImage(): Promise<string | undefined> {
+		if (!commentImageFile) return undefined;
+		commentUploading = true;
+		try {
+			const token = (await $user.token())!;
+			const uid = $user.data.uid;
+			const timestamp = Date.now();
+			const ext = commentImageFile.name.endsWith('.gif') ? 'gif' : 'jpg';
+			const path = `community/${uid}/comment_${timestamp}.${ext}`;
+
+			let fileToUpload: File | Blob = commentImageFile;
+			if (ext !== 'gif') {
+				fileToUpload = await imageCompression(commentImageFile, {
+					maxSizeMB: 1,
+					maxWidthOrHeight: 1920,
+					useWebWorker: true
+				});
+			}
+
+			await upload(path, fileToUpload, token);
+			return `https://cdn.gdvn.net/${path}`;
+		} catch {
+			toast.error($_('community.create.upload_failed'));
+			return undefined;
+		} finally {
+			commentUploading = false;
+		}
+	}
+
 	async function submitComment() {
-		if (!newComment.trim()) return;
+		if (!newComment.trim() && !commentImageFile) return;
 		if (!$user.loggedIn) {
 			toast.error($_('community.login_required'));
 			return;
@@ -184,7 +255,17 @@
 		const headers = await getHeaders();
 
 		try {
-			const body: any = { content: newComment };
+			let content = newComment;
+
+			// Upload image and append as markdown
+			if (commentImageFile) {
+				const imageUrl = await uploadCommentImage();
+				if (imageUrl) {
+					content = content.trim() ? `${content.trim()}\n\n![image](${imageUrl})` : `![image](${imageUrl})`;
+				}
+			}
+
+			const body: any = { content };
 			if (commentAttachedLevel) {
 				body.attached_level = commentAttachedLevel;
 			}
@@ -205,6 +286,8 @@
 			post.comments_count++;
 			newComment = '';
 			commentAttachedLevel = null;
+			clearCommentImage();
+			commentPreviewMode = false;
 			toast.success($_('community.comment.success'));
 		} catch {
 			toast.error($_('community.comment.error'));
@@ -288,6 +371,48 @@
 		}
 		reportTarget = { type, id };
 		reportDialogOpen = true;
+	}
+
+	// Post editing
+	function startEditPost() {
+		editing = true;
+		editTitle = post.title;
+		editContent = post.content || '';
+	}
+
+	function cancelEditPost() {
+		editing = false;
+		editTitle = '';
+		editContent = '';
+	}
+
+	async function saveEditPost() {
+		if (!editTitle.trim()) {
+			toast.error($_('community.create.validation_error'));
+			return;
+		}
+		editSaving = true;
+		const headers = await getHeaders();
+
+		try {
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/community/posts/${post.id}`,
+				{
+					method: 'PUT',
+					headers,
+					body: JSON.stringify({ title: editTitle, content: editContent })
+				}
+			);
+			if (!res.ok) throw new Error();
+			const updated = await res.json();
+			post = { ...post, ...updated };
+			editing = false;
+			toast.success($_('community.edit.success'));
+		} catch {
+			toast.error($_('community.edit.error'));
+		} finally {
+			editSaving = false;
+		}
 	}
 
 	// @ Mention handling
@@ -375,13 +500,23 @@
 		commentAttachedLevel = null;
 	}
 
+	// Re-fetch with auth when user logs in (to get like status etc.)
 	onMount(() => {
+		if ($user.loggedIn) {
+			fetchPost();
+			fetchComments();
+		}
+	});
+
+	// React to user auth changes
+	$: if ($user.loggedIn && post && !post.liked && post.liked !== false) {
 		fetchPost();
 		fetchComments();
-	});
+	}
 
 	$: author = post?.players;
 	$: TypeIcon = post ? typeIcons[post.type] || MessageCircle : MessageCircle;
+	$: canEdit = $user.loggedIn && post && $user.data?.uid === post.uid;
 	$: canDelete =
 		$user.loggedIn && post && ($user.data?.uid === post.uid || $user.data?.isAdmin);
 	$: canPin = $user.loggedIn && $user.data?.isAdmin;
@@ -393,39 +528,44 @@
 	}
 
 	$: youtubeId = post?.video_url ? getYouTubeId(post.video_url) : null;
+
+	// For SSR head tags - use data.post as fallback before client fetch
+	$: headPost = post || data.post;
+	$: headYtId = headPost?.video_url ? getYouTubeId(headPost.video_url) : null;
 </script>
 
 <svelte:head>
-	<title>{post?.title || 'Cộng đồng'} - Geometry Dash VN</title>
-	{#if post}
-		<meta property="og:title" content="{post.title} - Geometry Dash VN" />
+	<title>{headPost?.title || 'Cộng đồng'} - Geometry Dash VN</title>
+	{#if headPost}
+		<meta property="og:title" content="{headPost.title} - Geometry Dash VN" />
 		<meta property="og:type" content="article" />
-		<meta property="og:url" content="{import.meta.env.VITE_SITE_URL || 'https://demonlist.vn'}/community/{post.id}" />
-		{#if post.content}
-			<meta property="og:description" content="{post.content.slice(0, 160)}" />
+		<meta property="og:url" content="{import.meta.env.VITE_SITE_URL || 'https://demonlist.vn'}/community/{headPost.id}" />
+		{#if headPost.content}
+			<meta property="og:description" content="{headPost.content.slice(0, 160)}" />
+			<meta name="description" content="{headPost.content.slice(0, 160)}" />
 		{/if}
-		{#if post.image_url}
-			<meta property="og:image" content="{post.image_url}" />
-		{:else if youtubeId}
-			<meta property="og:image" content="https://img.youtube.com/vi/{youtubeId}/maxresdefault.jpg" />
+		{#if headPost.image_url}
+			<meta property="og:image" content="{headPost.image_url}" />
+		{:else if headYtId}
+			<meta property="og:image" content="https://img.youtube.com/vi/{headYtId}/maxresdefault.jpg" />
 		{/if}
 		<meta property="og:site_name" content="Geometry Dash VN" />
-		<meta property="article:published_time" content="{post.created_at}" />
-		{#if post.updated_at !== post.created_at}
-			<meta property="article:modified_time" content="{post.updated_at}" />
+		<meta property="article:published_time" content="{headPost.created_at}" />
+		{#if headPost.updated_at !== headPost.created_at}
+			<meta property="article:modified_time" content="{headPost.updated_at}" />
 		{/if}
-		{#if post.players}
-			<meta property="article:author" content="{post.players.name}" />
+		{#if headPost.players}
+			<meta property="article:author" content="{headPost.players.name}" />
 		{/if}
-		<meta name="twitter:card" content="{post.image_url || youtubeId ? 'summary_large_image' : 'summary'}" />
-		<meta name="twitter:title" content="{post.title} - Geometry Dash VN" />
-		{#if post.content}
-			<meta name="twitter:description" content="{post.content.slice(0, 160)}" />
+		<meta name="twitter:card" content="{headPost.image_url || headYtId ? 'summary_large_image' : 'summary'}" />
+		<meta name="twitter:title" content="{headPost.title} - Geometry Dash VN" />
+		{#if headPost.content}
+			<meta name="twitter:description" content="{headPost.content.slice(0, 160)}" />
 		{/if}
-		{#if post.image_url}
-			<meta name="twitter:image" content="{post.image_url}" />
-		{:else if youtubeId}
-			<meta name="twitter:image" content="https://img.youtube.com/vi/{youtubeId}/maxresdefault.jpg" />
+		{#if headPost.image_url}
+			<meta name="twitter:image" content="{headPost.image_url}" />
+		{:else if headYtId}
+			<meta name="twitter:image" content="https://img.youtube.com/vi/{headYtId}/maxresdefault.jpg" />
 		{/if}
 	{/if}
 </svelte:head>
@@ -467,7 +607,11 @@
 					</div>
 				{/if}
 
-				<h1 class="postTitle">{post.title}</h1>
+				{#if editing}
+					<input class="editTitleInput" bind:value={editTitle} placeholder={$_('community.create.title_placeholder')} />
+				{:else}
+					<h1 class="postTitle">{post.title}</h1>
+				{/if}
 
 				<div class="postMeta">
 					<div class="authorChip">
@@ -550,7 +694,17 @@
 					</div>
 				{/if}
 
-				{#if post.content}
+				{#if editing}
+					<div class="editContentArea">
+						<textarea class="editContentTextarea" bind:value={editContent} rows={8} placeholder={$_('community.create.content_placeholder')}></textarea>
+						{#if editContent}
+							<div class="editPreviewLabel">{$_('community.preview') || 'Preview'}</div>
+							<div class="postText">
+								<Markdown content={editContent} />
+							</div>
+						{/if}
+					</div>
+				{:else if post.content}
 					<div class="postText">
 						<Markdown content={post.content} />
 					</div>
@@ -560,35 +714,54 @@
 			<!-- Post Actions -->
 			<div class="postActions">
 				<div class="actionGroup">
-					<button class="actionBtn" class:liked={post.liked} on:click={toggleLike}>
-						<ThumbsUp class="h-4 w-4" />
-						<span>{post.likes_count}</span>
-					</button>
-					<div class="actionBtn">
-						<MessageSquare class="h-4 w-4" />
-						<span>{post.comments_count}</span>
+					{#if editing}
+						<Button size="sm" on:click={saveEditPost} disabled={editSaving}>
+							<Check class="mr-1 h-3.5 w-3.5" />
+							{editSaving ? $_('community.edit.saving') || 'Saving...' : $_('community.edit.save') || 'Save'}
+						</Button>
+						<Button size="sm" variant="outline" on:click={cancelEditPost}>
+							<X class="mr-1 h-3.5 w-3.5" />
+							{$_('general.close') || 'Cancel'}
+						</Button>
+					{:else}
+						<button class="actionBtn" class:liked={post.liked} on:click={toggleLike}>
+							<ThumbsUp class="h-4 w-4" />
+							<span>{post.likes_count}</span>
+						</button>
+						<div class="actionBtn">
+							<MessageSquare class="h-4 w-4" />
+							<span>{post.comments_count}</span>
+						</div>
+					{/if}
+				</div>
+				{#if !editing}
+					<div class="actionGroup">
+						{#if canEdit}
+							<button class="actionBtn" on:click={startEditPost}>
+								<Pencil class="h-4 w-4" />
+								<span>{$_('community.edit.button') || 'Edit'}</span>
+							</button>
+						{/if}
+						{#if canPin}
+							<button class="actionBtn" on:click={togglePin}>
+								<Pin class="h-4 w-4" />
+								<span>{post.pinned ? $_('community.unpin') : $_('community.pin')}</span>
+							</button>
+						{/if}
+						{#if $user.loggedIn && $user.data?.uid !== post.uid}
+							<button class="actionBtn" on:click={() => openReport('post', post.id)}>
+								<Flag class="h-4 w-4" />
+								<span>{$_('community.report.button')}</span>
+							</button>
+						{/if}
+						{#if canDelete}
+							<button class="actionBtn danger" on:click={deletePost}>
+								<Trash2 class="h-4 w-4" />
+								<span>{$_('community.delete')}</span>
+							</button>
+						{/if}
 					</div>
-				</div>
-				<div class="actionGroup">
-					{#if canPin}
-						<button class="actionBtn" on:click={togglePin}>
-							<Pin class="h-4 w-4" />
-							<span>{post.pinned ? $_('community.unpin') : $_('community.pin')}</span>
-						</button>
-					{/if}
-					{#if $user.loggedIn && $user.data?.uid !== post.uid}
-						<button class="actionBtn" on:click={() => openReport('post', post.id)}>
-							<Flag class="h-4 w-4" />
-							<span>{$_('community.report.button')}</span>
-						</button>
-					{/if}
-					{#if canDelete}
-						<button class="actionBtn danger" on:click={deletePost}>
-							<Trash2 class="h-4 w-4" />
-							<span>{$_('community.delete')}</span>
-						</button>
-					{/if}
-				</div>
+				{/if}
 			</div>
 		</article>
 
@@ -603,23 +776,55 @@
 			{#if $user.loggedIn}
 				<div class="commentInput">
 					<div class="commentForm">
-						<div class="commentInputWrapper">
-							<textarea
-								class="commentTextarea"
-								bind:value={newComment}
-								bind:this={commentTextarea}
-								placeholder={$_('community.comment.placeholder')}
-								rows={2}
-								on:input={handleCommentInput}
-								on:keydown={handleCommentKeydown}
-							></textarea>
-							<MentionDropdown
-								show={showMentionDropdown}
-								suggestions={mentionSuggestions}
-								activeIndex={mentionIndex}
-								on:select={(e) => selectMention(e.detail)}
-							/>
+						<!-- Write / Preview tabs -->
+						<div class="commentTabBar">
+							<button class="commentTab" class:active={!commentPreviewMode} on:click={() => commentPreviewMode = false}>
+								{$_('community.write') || 'Write'}
+							</button>
+							<button class="commentTab" class:active={commentPreviewMode} on:click={() => commentPreviewMode = true}>
+								<Eye class="h-3.5 w-3.5" />
+								{$_('community.preview') || 'Preview'}
+							</button>
 						</div>
+
+						{#if commentPreviewMode}
+							<div class="commentPreviewBox">
+								{#if newComment.trim() || commentImagePreview}
+									<Markdown content={newComment} />
+									{#if commentImagePreview}
+										<img src={commentImagePreview} alt="Preview" class="commentPreviewImage" />
+									{/if}
+								{:else}
+									<p class="previewEmpty">{$_('community.preview_empty') || 'Nothing to preview'}</p>
+								{/if}
+							</div>
+						{:else}
+							<div class="commentInputWrapper">
+								<textarea
+									class="commentTextarea"
+									bind:value={newComment}
+									bind:this={commentTextarea}
+									placeholder={$_('community.comment.placeholder')}
+									rows={2}
+									on:input={handleCommentInput}
+									on:keydown={handleCommentKeydown}
+								></textarea>
+								<MentionDropdown
+									show={showMentionDropdown}
+									suggestions={mentionSuggestions}
+									activeIndex={mentionIndex}
+									on:select={(e) => selectMention(e.detail)}
+								/>
+							</div>
+						{/if}
+						{#if commentImagePreview && !commentPreviewMode}
+							<div class="commentImagePreview">
+								<img src={commentImagePreview} alt="Upload preview" />
+								<button class="removeBtn" on:click={clearCommentImage}>
+									<X class="h-4 w-4" />
+								</button>
+							</div>
+						{/if}
 						{#if commentAttachedLevel}
 							<div class="commentLevelTag">
 								<Gamepad2 class="h-3.5 w-3.5 text-emerald-500" />
@@ -637,13 +842,33 @@
 							>
 								<Gamepad2 class="h-4 w-4" />
 							</button>
+							<button
+								class="commentToolBtn"
+								on:click={() => commentFileInput.click()}
+								title={$_('community.comment.attach_image') || 'Attach image'}
+							>
+								<Image class="h-4 w-4" />
+							</button>
+							<input
+								bind:this={commentFileInput}
+								type="file"
+								accept="image/*"
+								class="hidden"
+								on:change={handleCommentImageSelect}
+							/>
 							<Button
 								size="sm"
 								on:click={submitComment}
-								disabled={submittingComment || !newComment.trim()}
+								disabled={submittingComment || commentUploading || (!newComment.trim() && !commentImageFile)}
 							>
 								<Send class="mr-1 h-3.5 w-3.5" />
-								{submittingComment ? $_('community.comment.submitting') : $_('community.comment.submit')}
+								{#if commentUploading}
+									{$_('community.create.uploading') || 'Uploading...'}
+								{:else if submittingComment}
+									{$_('community.comment.submitting')}
+								{:else}
+									{$_('community.comment.submit')}
+								{/if}
 							</Button>
 						</div>
 						<LevelPicker bind:show={showLevelPicker} on:select={handleLevelSelect} />
@@ -1341,5 +1566,150 @@
 			font-size: 11px;
 			color: hsl(var(--muted-foreground));
 		}
+	}
+
+	/* Edit mode */
+	.editTitleInput {
+		width: 100%;
+		font-size: 24px;
+		font-weight: 700;
+		line-height: 1.3;
+		margin: 0 0 12px;
+		padding: 8px 12px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		background: hsl(var(--background));
+		color: hsl(var(--foreground));
+		font-family: inherit;
+
+		&:focus {
+			outline: none;
+			border-color: hsl(var(--primary));
+			box-shadow: 0 0 0 2px hsl(var(--primary) / 0.1);
+		}
+	}
+
+	.editContentArea {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.editContentTextarea {
+		width: 100%;
+		min-height: 160px;
+		padding: 12px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		background: hsl(var(--background));
+		color: hsl(var(--foreground));
+		font-size: 14px;
+		line-height: 1.6;
+		resize: vertical;
+		font-family: inherit;
+
+		&:focus {
+			outline: none;
+			border-color: hsl(var(--primary));
+			box-shadow: 0 0 0 2px hsl(var(--primary) / 0.1);
+		}
+	}
+
+	.editPreviewLabel {
+		font-size: 12px;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		color: hsl(var(--muted-foreground));
+	}
+
+	/* Comment tabs */
+	.commentTabBar {
+		display: flex;
+		gap: 2px;
+		border-bottom: 1px solid hsl(var(--border));
+		margin-bottom: 8px;
+	}
+
+	.commentTab {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 6px 12px;
+		font-size: 13px;
+		font-weight: 500;
+		color: hsl(var(--muted-foreground));
+		background: transparent;
+		border: none;
+		border-bottom: 2px solid transparent;
+		cursor: pointer;
+		transition: all 0.15s;
+
+		&:hover {
+			color: hsl(var(--foreground));
+		}
+
+		&.active {
+			color: hsl(var(--primary));
+			border-bottom-color: hsl(var(--primary));
+		}
+	}
+
+	.commentPreviewBox {
+		min-height: 60px;
+		padding: 8px 12px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		background: hsl(var(--muted) / 0.2);
+		font-size: 14px;
+		line-height: 1.5;
+	}
+
+	.commentPreviewImage {
+		max-width: 100%;
+		max-height: 200px;
+		border-radius: 8px;
+		margin-top: 8px;
+		object-fit: contain;
+	}
+
+	.previewEmpty {
+		color: hsl(var(--muted-foreground));
+		font-style: italic;
+		font-size: 13px;
+	}
+
+	/* Comment image upload */
+	.commentImagePreview {
+		position: relative;
+		display: inline-block;
+		border-radius: 8px;
+		overflow: hidden;
+
+		img {
+			max-width: 200px;
+			max-height: 120px;
+			object-fit: cover;
+			border-radius: 8px;
+		}
+
+		.removeBtn {
+			position: absolute;
+			top: 4px;
+			right: 4px;
+			padding: 4px;
+			border-radius: 50%;
+			background: rgba(0, 0, 0, 0.6);
+			color: white;
+			border: none;
+			cursor: pointer;
+			transition: background 0.15s;
+
+			&:hover { background: rgba(0, 0, 0, 0.8); }
+		}
+	}
+
+	.hidden {
+		display: none;
 	}
 </style>

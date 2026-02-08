@@ -728,6 +728,16 @@
       "no_records": "No verified records found",
       "no_levels": "No levels found"
     },
+    "write": "Write",
+    "preview": "Preview",
+    "preview_empty": "Nothing to preview",
+    "edit": {
+      "button": "Edit",
+      "save": "Save",
+      "saving": "Saving...",
+      "success": "Post updated!",
+      "error": "Failed to update post"
+    },
     "comment": {
       "placeholder": "Write a comment... Use @ to mention someone",
       "submit": "Comment",
@@ -736,6 +746,7 @@
       "error": "Failed to add comment",
       "none": "No comments yet",
       "attach_level": "Attach Level",
+      "attach_image": "Attach image",
       "search_levels": "Search levels..."
     },
     "comments": "Comments",
