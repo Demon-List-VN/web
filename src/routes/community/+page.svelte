@@ -7,7 +7,9 @@
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { _, locale } from 'svelte-i18n';
 	import { user } from '$lib/client';
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy, tick } from 'svelte';
+	import { browser } from '$app/environment';
+	import { getCommunityCache, setCommunityCache } from '$lib/client/communityCache';
 	import { toast } from 'svelte-sonner';
 	import {
 		Plus,
@@ -234,13 +236,48 @@
 	}
 
 	onMount(() => {
-		fetchPosts();
+		if (browser) {
+			const cached = getCommunityCache();
+			if (cached) {
+				posts = cached.posts as any[];
+				total = cached.total;
+				offset = cached.offset;
+				hasMore = cached.hasMore;
+				activeType = cached.activeType;
+				sortMode = cached.sortMode;
+				searchQuery = cached.searchQuery;
+
+				// Restore scroll position after DOM updates
+				tick().then(() => {
+					window.scrollTo(0, cached.scrollY);
+				});
+			} else {
+				fetchPosts();
+			}
+		} else {
+			fetchPosts();
+		}
 
 		return () => {
 			if (loadMoreObserver) {
 				loadMoreObserver.disconnect();
 			}
 		};
+	});
+
+	onDestroy(() => {
+		if (!browser) return;
+
+		setCommunityCache({
+			posts: posts,
+			total,
+			offset,
+			hasMore,
+			activeType,
+			sortMode,
+			searchQuery,
+			scrollY: window.scrollY
+		});
 	});
 </script>
 
