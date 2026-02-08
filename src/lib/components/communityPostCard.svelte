@@ -436,7 +436,7 @@
 	.mediaImage {
 		width: 100%;
 		aspect-ratio: 16 / 9;
-		max-height: 220px;
+		max-height: 310px;
 		overflow: hidden;
 		position: relative;
 		background: hsl(var(--muted));

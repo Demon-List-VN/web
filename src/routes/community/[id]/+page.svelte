@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
+	import * as Select from '$lib/components/ui/select';
 	import { _, locale } from 'svelte-i18n';
 	import { user } from '$lib/client';
 	import { upload } from '$lib/client/storage';
@@ -78,6 +79,7 @@
 	let editing = false;
 	let editTitle = '';
 	let editContent = '';
+	let editType = '';
 	let editSaving = false;
 
 	// Comment preview state
@@ -378,16 +380,19 @@
 		editing = true;
 		editTitle = post.title;
 		editContent = post.content || '';
+		editType = post.type || 'discussion';
 	}
 
 	function cancelEditPost() {
 		editing = false;
 		editTitle = '';
 		editContent = '';
+		editType = '';
 	}
 
 	async function saveEditPost() {
-		if (!editTitle.trim()) {
+		// Validate based on role
+		if (isOwner && !editTitle.trim()) {
 			toast.error($_('community.create.validation_error'));
 			return;
 		}
@@ -395,12 +400,25 @@
 		const headers = await getHeaders();
 
 		try {
+			const body: any = {};
+			// Owner can edit title and content
+			if (isOwner) {
+				body.title = editTitle;
+				body.content = editContent;
+			}
+			// Admin (not owner) can only edit type
+			if (isAdminNotOwner) {
+				body.type = editType;
+			}
+			const endpoint = isAdminNotOwner
+				? `${import.meta.env.VITE_API_URL}/community/admin/posts/${post.id}`
+				: `${import.meta.env.VITE_API_URL}/community/posts/${post.id}`;
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/community/posts/${post.id}`,
+				endpoint,
 				{
 					method: 'PUT',
 					headers,
-					body: JSON.stringify({ title: editTitle, content: editContent })
+					body: JSON.stringify(body)
 				}
 			);
 			if (!res.ok) throw new Error();
@@ -516,7 +534,10 @@
 
 	$: author = post?.players;
 	$: TypeIcon = post ? typeIcons[post.type] || MessageCircle : MessageCircle;
-	$: canEdit = $user.loggedIn && post && $user.data?.uid === post.uid;
+	$: isOwner = $user.loggedIn && post && $user.data?.uid === post.uid;
+	$: isAdmin = $user.loggedIn && $user.data?.isAdmin;
+	$: isAdminNotOwner = isAdmin && !isOwner;
+	$: canEdit = $user.loggedIn && post && (isOwner || isAdmin);
 	$: canDelete =
 		$user.loggedIn && post && ($user.data?.uid === post.uid || $user.data?.isAdmin);
 	$: canPin = $user.loggedIn && $user.data?.isAdmin;
@@ -608,12 +629,34 @@
 				{/if}
 
 				{#if editing}
-					<input class="editTitleInput" bind:value={editTitle} placeholder={$_('community.create.title_placeholder')} />
-				{:else}
-					<h1 class="postTitle">{post.title}</h1>
+				{#if isAdminNotOwner}
+					<div class="editTypeSelector">
+						<span class="editLabel">Change Post Type</span>
+						<Select.Root
+							selected={{ value: editType, label: editType.charAt(0).toUpperCase() + editType.slice(1) }}
+							onSelectedChange={(v) => { if (v) editType = String(v.value); }}
+						>
+							<Select.Trigger class="w-[180px]">
+								<Select.Value placeholder="Post type" />
+							</Select.Trigger>
+							<Select.Content>
+								<Select.Item value="discussion">Discussion</Select.Item>
+								<Select.Item value="media">Media</Select.Item>
+								<Select.Item value="guide">Guide</Select.Item>
+								<Select.Item value="review">Review</Select.Item>
+								<Select.Item value="announcement">Announcement</Select.Item>
+							</Select.Content>
+						</Select.Root>
+					</div>
 				{/if}
+				{#if isOwner}
+					<input class="editTitleInput" bind:value={editTitle} placeholder={$_('community.create.title_placeholder')} />
+				{/if}
+			{:else}
+				<h1 class="postTitle">{post.title}</h1>
+			{/if}
 
-				<div class="postMeta">
+			<div class="postMeta">
 					<div class="authorChip">
 						{#if author}
 							<PlayerLink player={author} showAvatar />
@@ -694,7 +737,7 @@
 					</div>
 				{/if}
 
-				{#if editing}
+				{#if editing && isOwner}
 					<div class="editContentArea">
 						<textarea class="editContentTextarea" bind:value={editContent} rows={8} placeholder={$_('community.create.content_placeholder')}></textarea>
 						{#if editContent}
@@ -1569,6 +1612,20 @@
 	}
 
 	/* Edit mode */
+	.editTypeSelector {
+		margin-bottom: 12px;
+		
+		.editLabel {
+			display: block;
+			font-size: 12px;
+			font-weight: 600;
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+			color: hsl(var(--muted-foreground));
+			margin-bottom: 6px;
+		}
+	}
+
 	.editTitleInput {
 		width: 100%;
 		font-size: 24px;
