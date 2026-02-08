@@ -397,6 +397,37 @@
 
 <svelte:head>
 	<title>{post?.title || $_('community.title')} - Geometry Dash VN</title>
+	{#if post}
+		<meta property="og:title" content="{post.title} - Geometry Dash VN" />
+		<meta property="og:type" content="article" />
+		<meta property="og:url" content="{import.meta.env.VITE_SITE_URL || 'https://demonlist.vn'}/community/{post.id}" />
+		{#if post.content}
+			<meta property="og:description" content="{post.content.slice(0, 160)}" />
+		{/if}
+		{#if post.image_url}
+			<meta property="og:image" content="{post.image_url}" />
+		{:else if youtubeId}
+			<meta property="og:image" content="https://img.youtube.com/vi/{youtubeId}/maxresdefault.jpg" />
+		{/if}
+		<meta property="og:site_name" content="Geometry Dash VN" />
+		<meta property="article:published_time" content="{post.created_at}" />
+		{#if post.updated_at !== post.created_at}
+			<meta property="article:modified_time" content="{post.updated_at}" />
+		{/if}
+		{#if post.players}
+			<meta property="article:author" content="{post.players.name}" />
+		{/if}
+		<meta name="twitter:card" content="{post.image_url || youtubeId ? 'summary_large_image' : 'summary'}" />
+		<meta name="twitter:title" content="{post.title} - Geometry Dash VN" />
+		{#if post.content}
+			<meta name="twitter:description" content="{post.content.slice(0, 160)}" />
+		{/if}
+		{#if post.image_url}
+			<meta name="twitter:image" content="{post.image_url}" />
+		{:else if youtubeId}
+			<meta name="twitter:image" content="https://img.youtube.com/vi/{youtubeId}/maxresdefault.jpg" />
+		{/if}
+	{/if}
 </svelte:head>
 
 <div class="postPage">

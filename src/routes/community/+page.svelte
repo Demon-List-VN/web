@@ -179,6 +179,14 @@
 
 <svelte:head>
 	<title>{$_('community.title')} - Geometry Dash VN</title>
+	<meta property="og:title" content="{$_('community.title')} - Geometry Dash VN" />
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content="{import.meta.env.VITE_SITE_URL || 'https://demonlist.vn'}/community" />
+	<meta property="og:description" content="{$_('community.subtitle')}" />
+	<meta property="og:site_name" content="Geometry Dash VN" />
+	<meta name="twitter:card" content="summary" />
+	<meta name="twitter:title" content="{$_('community.title')} - Geometry Dash VN" />
+	<meta name="twitter:description" content="{$_('community.subtitle')}" />
 </svelte:head>
 
 <div class="communityPage">
