@@ -688,7 +688,8 @@
     "login_to_comment": "Đăng nhập để bình luận",
     "sort": {
       "newest": "Mới nhất",
-      "best": "Nổi bật"
+      "best": "Nổi bật",
+      "recommended": "Dành cho bạn"
     },
     "type": {
       "all": "Tất cả",

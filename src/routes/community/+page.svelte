@@ -16,14 +16,15 @@
 		BookOpen,
 		Megaphone,
 		Search,
-		Star
+		Star,
+		Sparkles
 	} from 'lucide-svelte';
 
 	let posts: any[] = [];
 	let total = 0;
 	let offset = 0;
 	let activeType: string | null = null;
-	let sortMode: 'newest' | 'best' = 'newest';
+	let sortMode: 'newest' | 'best' | 'recommended' = 'recommended';
 	let loading = false;
 	let hasMore = true;
 	let loadMoreObserver: IntersectionObserver;
@@ -53,29 +54,49 @@
 		if (loading) return;
 		loading = true;
 
-		const params = new URLSearchParams({
-			limit: String(PAGE_SIZE),
-			offset: String(offset),
-			sortBy: sortMode === 'best' ? 'likes_count' : 'created_at',
-			ascending: 'false'
-		});
-
-		if (activeType) {
-			params.set('type', activeType);
-		}
-
-		if (searchQuery.trim()) {
-			params.set('search', searchQuery.trim());
-		}
-
-		const token = await $user.token();
-		const headers: Record<string, string> = {};
-		if (token) headers['Authorization'] = `Bearer ${token}`;
-
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/posts?${params}`, {
-				headers
-			});
+			const token = await $user.token();
+			const headers: Record<string, string> = {};
+			if (token) headers['Authorization'] = `Bearer ${token}`;
+
+			let res: Response;
+
+			if (sortMode === 'recommended') {
+				// Use the recommendation endpoint
+				const params = new URLSearchParams({
+					limit: String(PAGE_SIZE),
+					offset: String(offset)
+				});
+
+				if (activeType) {
+					params.set('type', activeType);
+				}
+
+				res = await fetch(`${import.meta.env.VITE_API_URL}/community/posts/recommended?${params}`, {
+					headers
+				});
+			} else {
+				// Use the standard endpoint
+				const params = new URLSearchParams({
+					limit: String(PAGE_SIZE),
+					offset: String(offset),
+					sortBy: sortMode === 'best' ? 'likes_count' : 'created_at',
+					ascending: 'false'
+				});
+
+				if (activeType) {
+					params.set('type', activeType);
+				}
+
+				if (searchQuery.trim()) {
+					params.set('search', searchQuery.trim());
+				}
+
+				res = await fetch(`${import.meta.env.VITE_API_URL}/community/posts?${params}`, {
+					headers
+				});
+			}
+
 			const json = await res.json();
 			
 			if (append) {
@@ -87,6 +108,19 @@
 			total = json.total;
 			hasMore = posts.length < total;
 			offset += json.data.length;
+
+			// Record views for logged-in users (fire-and-forget)
+			if (token && json.data.length > 0) {
+				const viewPostIds = json.data.map((p: any) => p.id);
+				fetch(`${import.meta.env.VITE_API_URL}/community/posts/views`, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'Authorization': `Bearer ${token}`
+					},
+					body: JSON.stringify({ postIds: viewPostIds })
+				}).catch(() => {});
+			}
 		} catch {
 			if (!append) {
 				posts = [];
@@ -106,6 +140,10 @@
 	}
 
 	function handleSearch() {
+		// Search is not supported in recommended mode, switch to newest
+		if (sortMode === 'recommended' && searchQuery.trim()) {
+			sortMode = 'newest';
+		}
 		resetAndFetch();
 	}
 
@@ -166,7 +204,7 @@
 		resetAndFetch();
 	}
 
-	function switchSort(mode: 'newest' | 'best') {
+	function switchSort(mode: 'newest' | 'best' | 'recommended') {
 		sortMode = mode;
 		resetAndFetch();
 	}
@@ -273,6 +311,10 @@
 				</div>
 
 				<div class="sortFilters">
+					<button class="sortBtn recommended" class:active={sortMode === 'recommended'} on:click={() => switchSort('recommended')}>
+						<Sparkles class="h-3.5 w-3.5" />
+						{$_('community.sort.recommended')}
+					</button>
 					<button class="sortBtn" class:active={sortMode === 'newest'} on:click={() => switchSort('newest')}>
 						{$_('community.sort.newest')}
 					</button>
@@ -478,6 +520,9 @@
 		border: none;
 		cursor: pointer;
 		transition: all 0.2s ease;
+		display: flex;
+		align-items: center;
+		gap: 5px;
 
 		&:hover { color: hsl(var(--foreground)); }
 
@@ -485,6 +530,10 @@
 			background: hsl(var(--background));
 			color: hsl(var(--foreground));
 			box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+		}
+
+		&.recommended.active {
+			color: hsl(var(--primary));
 		}
 	}
 

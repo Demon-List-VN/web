@@ -689,7 +689,8 @@
     "login_to_comment": "Log in to leave a comment",
     "sort": {
       "newest": "Newest",
-      "best": "Best"
+      "best": "Best",
+      "recommended": "For You"
     },
     "type": {
       "all": "All",
