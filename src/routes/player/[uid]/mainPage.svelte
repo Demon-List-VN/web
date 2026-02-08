@@ -22,6 +22,7 @@
 	import EventTab from './tabs/EventsTab.svelte';
 	import CardCollectionTab from './tabs/CardCollectionTab.svelte';
 	import CreatedChallengesTab from './tabs/CreatedChallengesTab.svelte';
+	import CommunityPostsTab from './tabs/CommunityPostsTab.svelte';
 
 	export let data: PageData;
 	let list: 'dl' | 'fl' | 'pl' | 'cl' | '' = '';
@@ -217,6 +218,12 @@
 					<Tabs.Trigger value="fl" on:click={() => (list = 'fl')}
 						>{$_('player.tabs.fl')}</Tabs.Trigger
 					>
+					<Tabs.Trigger value="created-challenges" on:click={() => (list = '')}>
+						{$_('player.tabs.created_challenges')}
+					</Tabs.Trigger>
+					<Tabs.Trigger value="community-posts" on:click={() => (list = '')}>
+						{$_('player.tabs.community_posts')}
+					</Tabs.Trigger>
 					<Tabs.Trigger value="medals" on:click={() => (list = '')}
 						>{$_('player.tabs.medals')}</Tabs.Trigger
 					>
@@ -225,9 +232,8 @@
 					>
 					<Tabs.Trigger value="cards" on:click={() => (list = '')}>
 						{$_('player.tabs.cards')}
-					</Tabs.Trigger>				<Tabs.Trigger value="created-challenges" on:click={() => (list = '')}>
-					{$_('player.tabs.created_challenges')}
-				</Tabs.Trigger>				</Tabs.List>
+					</Tabs.Trigger>
+				</Tabs.List>
 				<Tabs.Content value="events" class="w-[1200px] max-w-full">
 					<EventTab {data} />
 				</Tabs.Content>
@@ -242,6 +248,9 @@
 				</Tabs.Content>
 				<Tabs.Content value="created-challenges" class="w-[1200px] max-w-full">
 					<CreatedChallengesTab userID={data.player.uid} />
+				</Tabs.Content>
+				<Tabs.Content value="community-posts" class="w-[1200px] max-w-full">
+					<CommunityPostsTab userID={data.player.uid} />
 				</Tabs.Content>
 			</div>
 		</Tabs.Root>

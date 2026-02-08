@@ -838,7 +838,8 @@
       "overview": "Overview",
       "events": "Events",
       "cards": "Card collection",
-      "created_challenges": "Created Challenges"
+      "created_challenges": "Created Challenges",
+      "community_posts": "Posts"
     },
     "filter": {
       "sort_by": "Sort by",
@@ -858,6 +859,7 @@
     },
     "no_events": "No events participated yet",
     "no_created_challenges": "No created challenges yet",
+    "no_community_posts": "No community posts yet",
     "medals": {
       "achieved_on": "Achieved on"
     },
