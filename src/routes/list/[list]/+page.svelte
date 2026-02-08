@@ -35,7 +35,8 @@
 				: $page.params.list === 'cl'
 					? 'created_at'
 					: 'dlTop',
-		ascending: $page.params.list !== 'cl'
+		ascending: $page.params.list !== 'cl',
+		tagIds: null as string | null
 	};
 
 	function getCacheKey() {
@@ -77,6 +78,7 @@
 		if (filters.creatorSearch) query.set('creatorSearch', filters.creatorSearch);
 		if (filters.sortBy) query.set('sortBy', filters.sortBy);
 		if (filters.ascending) query.set('ascending', String(filters.ascending));
+		if (filters.tagIds) query.set('tagIds', filters.tagIds);
 
 		const res = await (
 			await fetch(`${import.meta.env.VITE_API_URL}/list/${$page.params.list}?${query.toString()}`)

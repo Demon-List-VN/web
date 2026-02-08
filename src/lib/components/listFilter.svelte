@@ -5,8 +5,9 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Select from '$lib/components/ui/select';
 	import { Switch } from '$lib/components/ui/switch';
-	import { createEventDispatcher } from 'svelte';
-	import { Pin, ChevronDown, ChevronUp, Lock, Filter, Funnel } from 'lucide-svelte';
+	import { Badge } from '$lib/components/ui/badge';
+	import { createEventDispatcher, onMount } from 'svelte';
+	import { Pin, ChevronDown, ChevronUp, Lock, Filter, Funnel, X } from 'lucide-svelte';
 	import { browser } from '$app/environment';
 	import { user } from '$lib/client';
 	import { isActive } from '$lib/client/isSupporterActive';
@@ -25,6 +26,34 @@
 	let isPinned = false;
 	let isCollapsed = true;
 	let ascending = listType !== 'cl';
+
+	// Tag system
+	interface LevelTag {
+		id: number;
+		name: string;
+		color: string | null;
+	}
+	let availableTags: LevelTag[] = [];
+	let selectedTagIds: number[] = [];
+
+	onMount(async () => {
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/levels/tags`);
+			if (res.ok) {
+				availableTags = await res.json();
+			}
+		} catch (e) {
+			// Tags are optional, silently fail
+		}
+	});
+
+	function toggleTag(tagId: number) {
+		if (selectedTagIds.includes(tagId)) {
+			selectedTagIds = selectedTagIds.filter((id) => id !== tagId);
+		} else {
+			selectedTagIds = [...selectedTagIds, tagId];
+		}
+	}
 
 	$: defaultTopColumn =
 		listType === 'fl' ? 'flTop' : listType === 'cl' ? 'created_at' : 'dlTop';
@@ -53,7 +82,8 @@
 			nameSearch: nameSearch.trim(),
 			creatorSearch: creatorSearch.trim(),
 			sortBy: sortBy.trim() === '' ? null : sortBy,
-			ascending: ascending
+			ascending: ascending,
+			tagIds: selectedTagIds.length > 0 ? selectedTagIds.join(',') : null
 		});
 	}
 
@@ -66,6 +96,7 @@
 		creatorSearch = '';
 		sortBy = '';
 		ascending = listType !== 'cl';
+		selectedTagIds = [];
 
 		dispatch('filter', {
 			topStart: null,
@@ -75,7 +106,8 @@
 			nameSearch: '',
 			creatorSearch: '',
 			sortBy: defaultTopColumn,
-			ascending
+			ascending,
+			tagIds: null
 		});
 	}
 </script>
@@ -214,6 +246,28 @@
 							</div>
 						</div>
 					</div>
+					{#if availableTags.length > 0}
+						<div class="filterRow" style="grid-template-columns: 1fr;">
+							<div class="filterGroup">
+								<Label>{$_('list_filter.tags', { default: 'Tags' })}</Label>
+								<div class="tagList">
+									{#each availableTags as tag}
+										<button
+											class="tagChip"
+											class:selected={selectedTagIds.includes(tag.id)}
+											style={tag.color ? `--tag-color: ${tag.color}` : ''}
+											on:click={() => toggleTag(tag.id)}
+										>
+											<span>{tag.name}</span>
+											{#if selectedTagIds.includes(tag.id)}
+												<X size={12} />
+											{/if}
+										</button>
+									{/each}
+								</div>
+							</div>
+						</div>
+					{/if}
 				</div>
 				<div class="filterActions">
 					<Button on:click={handleApplyFilters}>{$_('list_filter.apply')}</Button>
@@ -362,5 +416,37 @@
 			justify-content: stretch;
 			flex-direction: column;
 		}
+	}
+
+	.tagList {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+
+	.tagChip {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 4px 10px;
+		border-radius: 9999px;
+		font-size: 0.8rem;
+		font-weight: 500;
+		cursor: pointer;
+		border: 1.5px solid var(--border);
+		background: transparent;
+		color: var(--foreground);
+		transition: all 0.15s ease;
+	}
+
+	.tagChip:hover {
+		border-color: var(--tag-color, var(--primary));
+		background: color-mix(in srgb, var(--tag-color, var(--primary)) 10%, transparent);
+	}
+
+	.tagChip.selected {
+		border-color: var(--tag-color, var(--primary));
+		background: color-mix(in srgb, var(--tag-color, var(--primary)) 20%, transparent);
+		color: var(--tag-color, var(--primary));
 	}
 </style>
