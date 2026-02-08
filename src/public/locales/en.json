@@ -791,6 +791,7 @@
     },
     "search": "Search",
     "search_placeholder": "Search posts...",
+    "all_loaded": "All {total} posts loaded",
     "related_posts": "Community Posts"
   },
   "orders": {

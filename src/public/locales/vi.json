@@ -790,6 +790,7 @@
     },
     "search": "Tìm kiếm",
     "search_placeholder": "Tìm kiếm bài viết...",
+    "all_loaded": "Đã tải tất cả {total} bài viết",
     "related_posts": "Bài viết cộng đồng"
   },
   "orders": {

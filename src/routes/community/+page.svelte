@@ -15,17 +15,18 @@
 		Image,
 		BookOpen,
 		Megaphone,
-		ArrowLeft,
-		ArrowRight,
 		Search,
 		Star
 	} from 'lucide-svelte';
 
-	let posts: any[] | null = null;
+	let posts: any[] = [];
 	let total = 0;
-	let currentPage = 0;
+	let offset = 0;
 	let activeType: string | null = null;
 	let sortMode: 'newest' | 'best' = 'newest';
+	let loading = false;
+	let hasMore = true;
+	let loadMoreObserver: IntersectionObserver;
 
 	// Search state
 	let searchQuery = '';
@@ -37,7 +38,7 @@
 	let reportDescription = '';
 	let submittingReport = false;
 
-	const PAGE_SIZE = 15;
+	const PAGE_SIZE = 25;
 
 	const types = [
 		{ value: null, label: 'all', icon: null },
@@ -48,11 +49,13 @@
 		{ value: 'announcement', label: 'announcement', icon: Megaphone }
 	];
 
-	async function fetchPosts() {
-		posts = null;
+	async function fetchPosts(append = false) {
+		if (loading) return;
+		loading = true;
+
 		const params = new URLSearchParams({
 			limit: String(PAGE_SIZE),
-			offset: String(currentPage * PAGE_SIZE),
+			offset: String(offset),
 			sortBy: sortMode === 'best' ? 'likes_count' : 'created_at',
 			ascending: 'false'
 		});
@@ -74,17 +77,36 @@
 				headers
 			});
 			const json = await res.json();
-			posts = json.data;
+			
+			if (append) {
+				posts = [...posts, ...json.data];
+			} else {
+				posts = json.data;
+			}
+			
 			total = json.total;
+			hasMore = posts.length < total;
+			offset += json.data.length;
 		} catch {
-			posts = [];
-			total = 0;
+			if (!append) {
+				posts = [];
+				total = 0;
+			}
+			hasMore = false;
+		} finally {
+			loading = false;
 		}
 	}
 
-	function handleSearch() {
-		currentPage = 0;
+	function resetAndFetch() {
+		posts = [];
+		offset = 0;
+		hasMore = true;
 		fetchPosts();
+	}
+
+	function handleSearch() {
+		resetAndFetch();
 	}
 
 	function handleSearchKeydown(e: KeyboardEvent) {
@@ -141,32 +163,46 @@
 
 	function switchType(type: string | null) {
 		activeType = type;
-		currentPage = 0;
-		fetchPosts();
+		resetAndFetch();
 	}
 
 	function switchSort(mode: 'newest' | 'best') {
 		sortMode = mode;
-		currentPage = 0;
-		fetchPosts();
+		resetAndFetch();
 	}
 
-	function nextPage() {
-		if ((currentPage + 1) * PAGE_SIZE < total) {
-			currentPage++;
-			fetchPosts();
+	function setupIntersectionObserver() {
+		const sentinel = document.querySelector('#loadMoreSentinel');
+		if (!sentinel) return;
+
+		if (loadMoreObserver) {
+			loadMoreObserver.disconnect();
 		}
+
+		loadMoreObserver = new IntersectionObserver(
+			(entries) => {
+				if (entries[0].isIntersecting && hasMore && !loading) {
+					fetchPosts(true);
+				}
+			},
+			{ rootMargin: '200px' }
+		);
+
+		loadMoreObserver.observe(sentinel);
 	}
 
-	function prevPage() {
-		if (currentPage > 0) {
-			currentPage--;
-			fetchPosts();
-		}
+	$: if (posts.length > 0) {
+		setTimeout(setupIntersectionObserver, 100);
 	}
 
 	onMount(() => {
 		fetchPosts();
+
+		return () => {
+			if (loadMoreObserver) {
+				loadMoreObserver.disconnect();
+			}
+		};
 	});
 </script>
 
@@ -249,44 +285,37 @@
 
 		<!-- Posts Grid -->
 		<div class="postsGrid">
-			{#if posts}
-				{#if posts.length > 0}
-					{#each posts as post}
-						<CommunityPostCard {post} on:report={handleReport} />
-					{/each}
-				{:else}
-					<div class="emptyState">
-						<MessageCircle class="h-12 w-12 text-muted-foreground opacity-50" />
-						<p>{$_('community.no_posts')}</p>
-					</div>
-				{/if}
-			{:else}
-				{#each { length: 6 } as _}
+			{#if posts.length > 0}
+				{#each posts as post}
+					<CommunityPostCard {post} on:report={handleReport} />
+				{/each}
+			{:else if !loading}
+				<div class="emptyState">
+					<MessageCircle class="h-12 w-12 text-muted-foreground opacity-50" />
+					<p>{$_('community.no_posts')}</p>
+				</div>
+			{/if}
+
+			{#if loading && posts.length === 0}
+				{#each { length: 12 } as _}
 					<CommunityPostCard post={null} />
 				{/each}
 			{/if}
 		</div>
 
-		<!-- Pagination -->
-		{#if posts && total > PAGE_SIZE}
-			<div class="pagination">
-				<Button variant="outline" size="sm" disabled={currentPage === 0} on:click={prevPage}>
-					<ArrowLeft class="mr-1 h-4 w-4" />
-					{$_('general.back')}
-				</Button>
-				<span class="pageInfo">
-					{currentPage * PAGE_SIZE + 1} - {Math.min((currentPage + 1) * PAGE_SIZE, total)} / {total}
-				</span>
-				<Button
-					variant="outline"
-					size="sm"
-					disabled={(currentPage + 1) * PAGE_SIZE >= total}
-					on:click={nextPage}
-				>
-					{$_('general.next')}
-					<ArrowRight class="ml-1 h-4 w-4" />
-				</Button>
-			</div>
+		<!-- Load More Sentinel and Loading Indicator -->
+		{#if posts.length > 0}
+			<div id="loadMoreSentinel" class="loadMoreSentinel"></div>
+			{#if loading}
+				<div class="loadingMore">
+					<div class="spinner"></div>
+					<span>{$_('general.loading')}</span>
+				</div>
+			{:else if !hasMore && total > PAGE_SIZE}
+				<div class="endMessage">
+					<span>{$_('community.all_loaded', { values: { total } })}</span>
+				</div>
+			{/if}
 		{/if}
 	</div>
 </div>
@@ -475,17 +504,40 @@
 		p { color: hsl(var(--muted-foreground)); font-size: 14px; }
 	}
 
-	.pagination {
+	.loadMoreSentinel {
+		height: 1px;
+		margin-top: 16px;
+	}
+
+	.loadingMore {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		gap: 16px;
-		margin-top: 32px;
+		gap: 12px;
+		padding: 24px 0;
+		color: hsl(var(--muted-foreground));
+		font-size: 14px;
 	}
 
-	.pageInfo {
-		font-size: 13px;
+	.spinner {
+		width: 20px;
+		height: 20px;
+		border: 2px solid hsl(var(--border));
+		border-top-color: hsl(var(--primary));
+		border-radius: 50%;
+		animation: spin 0.8s linear infinite;
+	}
+
+	@keyframes spin {
+		to { transform: rotate(360deg); }
+	}
+
+	.endMessage {
+		display: flex;
+		justify-content: center;
+		padding: 24px 0;
 		color: hsl(var(--muted-foreground));
+		font-size: 13px;
 	}
 
 	.searchBox {
