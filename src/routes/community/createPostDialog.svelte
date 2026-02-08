@@ -299,7 +299,12 @@
 				throw new Error(err.error || 'Failed to create post');
 			}
 
-			toast.success($_('community.create.success'));
+			const created = await res.json();
+			if (created.moderation_status === 'pending') {
+				toast.success($_('community.create.pending_review'));
+			} else {
+				toast.success($_('community.create.success'));
+			}
 			open = false;
 			newPost = { title: '', content: '', type: 'discussion', image_url: '', video_url: '' };
 			clearImage();

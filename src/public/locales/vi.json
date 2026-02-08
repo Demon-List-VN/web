@@ -719,6 +719,7 @@
       "submitting": "Đang đăng...",
       "uploading": "Đang tải lên...",
       "success": "Đã tạo bài viết!",
+      "pending_review": "Bài viết của bạn đang chờ duyệt và sẽ hiển thị sau khi admin phê duyệt.",
       "validation_error": "Tiêu đề là bắt buộc",
       "attachment": "Đính kèm",
       "my_records": "Record của tôi",

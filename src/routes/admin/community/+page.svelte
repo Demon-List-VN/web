@@ -25,7 +25,9 @@
 		Check,
 		Star,
 		EyeOff,
-		Eye
+		Eye,
+		Shield,
+		X
 	} from 'lucide-svelte';
 
 	let posts: any[] | null = null;
@@ -37,7 +39,7 @@
 	let editPost: any = null;
 
 	// Tab state
-	let activeTab: 'posts' | 'reports' = 'posts';
+	let activeTab: 'posts' | 'reports' | 'moderation' = 'posts';
 	let showHidden = false;
 
 	// Reports state
@@ -45,6 +47,13 @@
 	let reportsTotal = 0;
 	let reportsPage = 0;
 	let showResolved = false;
+
+	// Moderation state
+	let pendingPosts: any[] | null = null;
+	let pendingTotal = 0;
+	let pendingPage = 0;
+	let moderationDetailOpen = false;
+	let moderationDetailPost: any = null;
 
 	const PAGE_SIZE = 20;
 
@@ -188,7 +197,23 @@
 
 	onMount(() => {
 		fetchPosts();
+		// Fetch pending count for badge
+		fetchPendingCount();
 	});
+
+	async function fetchPendingCount() {
+		try {
+			const headers = await getAuthHeaders();
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/community/admin/moderation/pending?limit=1&offset=0`,
+				{ headers }
+			);
+			const json = await res.json();
+			pendingTotal = json.total;
+		} catch {
+			// ignore
+		}
+	}
 
 	async function fetchReports() {
 		reports = null;
@@ -228,10 +253,13 @@
 		}
 	}
 
-	function switchTab(tab: 'posts' | 'reports') {
+	function switchTab(tab: 'posts' | 'reports' | 'moderation') {
 		activeTab = tab;
 		if (tab === 'reports' && !reports) {
 			fetchReports();
+		}
+		if (tab === 'moderation' && !pendingPosts) {
+			fetchPendingPosts();
 		}
 	}
 
@@ -259,6 +287,86 @@
 			toast.error('Failed to update post');
 		}
 	}
+
+	// ---- Moderation ----
+
+	async function fetchPendingPosts() {
+		pendingPosts = null;
+		const params = new URLSearchParams({
+			limit: String(PAGE_SIZE),
+			offset: String(pendingPage * PAGE_SIZE)
+		});
+
+		try {
+			const headers = await getAuthHeaders();
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/community/admin/moderation/pending?${params}`,
+				{ headers }
+			);
+			const json = await res.json();
+			pendingPosts = json.data;
+			pendingTotal = json.total;
+		} catch {
+			pendingPosts = [];
+			pendingTotal = 0;
+		}
+	}
+
+	async function approvePendingPost(id: number) {
+		try {
+			const headers = await getAuthHeaders();
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/admin/moderation/${id}/approve`, {
+				method: 'PUT',
+				headers
+			});
+			if (!res.ok) throw new Error();
+			toast.success('Post approved');
+			moderationDetailOpen = false;
+			moderationDetailPost = null;
+			await fetchPendingPosts();
+		} catch {
+			toast.error('Failed to approve post');
+		}
+	}
+
+	async function rejectPendingPost(id: number) {
+		if (!confirm('Are you sure you want to reject this post?')) return;
+		try {
+			const headers = await getAuthHeaders();
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/admin/moderation/${id}/reject`, {
+				method: 'PUT',
+				headers
+			});
+			if (!res.ok) throw new Error();
+			toast.success('Post rejected');
+			moderationDetailOpen = false;
+			moderationDetailPost = null;
+			await fetchPendingPosts();
+		} catch {
+			toast.error('Failed to reject post');
+		}
+	}
+
+	function openModerationDetail(post: any) {
+		moderationDetailPost = post;
+		moderationDetailOpen = true;
+	}
+
+	function getFlaggedCategories(moderationResult: any): string[] {
+		if (!moderationResult?.results?.[0]?.categories) return [];
+		const cats = moderationResult.results[0].categories;
+		return Object.entries(cats)
+			.filter(([_, v]) => v === true)
+			.map(([k]) => k);
+	}
+
+	function getCategoryScores(moderationResult: any): Array<{ name: string; score: number }> {
+		if (!moderationResult?.results?.[0]?.category_scores) return [];
+		const scores = moderationResult.results[0].category_scores;
+		return Object.entries(scores)
+			.map(([name, score]) => ({ name, score: score as number }))
+			.sort((a, b) => b.score - a.score);
+	}
 </script>
 
 <Title value="Community Admin" />
@@ -278,6 +386,13 @@
 		<button class="tab" class:active={activeTab === 'reports'} on:click={() => switchTab('reports')}>
 			<Flag class="h-4 w-4" />
 			Reports
+		</button>
+		<button class="tab" class:active={activeTab === 'moderation'} on:click={() => switchTab('moderation')}>
+			<Shield class="h-4 w-4" />
+			Moderation
+			{#if pendingTotal > 0}
+				<span class="badge">{pendingTotal}</span>
+			{/if}
 		</button>
 	</div>
 
@@ -571,7 +686,198 @@
 		</div>
 	{/if}
 	{/if}
+
+	{#if activeTab === 'moderation'}
+	<!-- Moderation: Pending Posts -->
+	<div class="tableContainer">
+		<table class="postsTable">
+			<thead>
+				<tr>
+					<th>ID</th>
+					<th>Type</th>
+					<th>Title</th>
+					<th>Author</th>
+					<th>Flagged Categories</th>
+					<th>Date</th>
+					<th>Actions</th>
+				</tr>
+			</thead>
+			<tbody>
+				{#if pendingPosts}
+					{#each pendingPosts as post}
+						{@const TypeIcon = typeIcons[post.type] || MessageCircle}
+						{@const flagged = getFlaggedCategories(post.moderation_result)}
+						<tr>
+							<td class="idCol">{post.id}</td>
+							<td>
+								<div class="typeBadge {typeColors[post.type]}">
+									<svelte:component this={TypeIcon} class="h-3.5 w-3.5" />
+									<span>{post.type}</span>
+								</div>
+							</td>
+							<td class="titleCol">
+								<a href="/community/{post.id}" target="_blank" class="titleLink">
+									{post.title}
+									<ExternalLink class="h-3 w-3 inline ml-1" />
+								</a>
+							</td>
+							<td class="authorCol">
+								{post.players?.name || post.uid}
+							</td>
+							<td>
+								<div class="flaggedCats">
+									{#each flagged as cat}
+										<span class="flagBadge">{cat}</span>
+									{/each}
+									{#if flagged.length === 0}
+										<span class="text-muted-foreground text-xs">API error</span>
+									{/if}
+								</div>
+							</td>
+							<td class="dateCol">{formatDate(post.created_at)}</td>
+							<td>
+								<div class="actions">
+									<button class="actionBtn" on:click={() => openModerationDetail(post)} title="View Details">
+										<Eye class="h-4 w-4" />
+									</button>
+									<button class="actionBtn resolve" on:click={() => approvePendingPost(post.id)} title="Approve">
+										<Check class="h-4 w-4" />
+									</button>
+									<button class="actionBtn danger" on:click={() => rejectPendingPost(post.id)} title="Reject">
+										<X class="h-4 w-4" />
+									</button>
+								</div>
+							</td>
+						</tr>
+					{/each}
+					{#if pendingPosts.length === 0}
+						<tr>
+							<td colspan="7" class="emptyRow">No posts pending moderation</td>
+						</tr>
+					{/if}
+				{:else}
+					{#each { length: 3 } as _}
+						<tr class="skeleton">
+							<td colspan="7"><div class="skeletonLine"></div></td>
+						</tr>
+					{/each}
+				{/if}
+			</tbody>
+		</table>
+	</div>
+
+	<!-- Moderation Pagination -->
+	{#if pendingPosts && pendingTotal > PAGE_SIZE}
+		<div class="pagination">
+			<Button
+				variant="outline"
+				size="sm"
+				disabled={pendingPage === 0}
+				on:click={() => { pendingPage--; fetchPendingPosts(); }}
+			>
+				<ChevronLeft class="h-4 w-4" />
+			</Button>
+			<span class="pageInfo">
+				{pendingPage * PAGE_SIZE + 1}-{Math.min((pendingPage + 1) * PAGE_SIZE, pendingTotal)} of {pendingTotal}
+			</span>
+			<Button
+				variant="outline"
+				size="sm"
+				disabled={(pendingPage + 1) * PAGE_SIZE >= pendingTotal}
+				on:click={() => { pendingPage++; fetchPendingPosts(); }}
+			>
+				<ChevronRight class="h-4 w-4" />
+			</Button>
+		</div>
+	{/if}
+	{/if}
 </div>
+
+<!-- Moderation Detail Dialog -->
+<Dialog.Root bind:open={moderationDetailOpen}>
+	<Dialog.Content class="max-w-2xl max-h-[80vh] overflow-y-auto">
+		<Dialog.Header>
+			<Dialog.Title>Moderation Details — Post #{moderationDetailPost?.id}</Dialog.Title>
+		</Dialog.Header>
+
+		{#if moderationDetailPost}
+			<div class="moderationDetail">
+				<div class="field">
+					<span class="fieldLabel">Author</span>
+					<span>{moderationDetailPost.players?.name || moderationDetailPost.uid}</span>
+				</div>
+				<div class="field">
+					<span class="fieldLabel">Title</span>
+					<span class="postTitle">{moderationDetailPost.title}</span>
+				</div>
+				<div class="field">
+					<span class="fieldLabel">Content</span>
+					<div class="postContent">{moderationDetailPost.content || '(empty)'}</div>
+				</div>
+
+				{#if moderationDetailPost.image_url}
+					<div class="field">
+						<span class="fieldLabel">Image</span>
+						<img src={moderationDetailPost.image_url} alt="Post attachment" class="moderationImage" />
+					</div>
+				{/if}
+
+				<hr class="divider" />
+
+				<h3 class="sectionTitle">OpenAI Moderation Result</h3>
+
+				{#if moderationDetailPost.moderation_result}
+					{@const flaggedCats = getFlaggedCategories(moderationDetailPost.moderation_result)}
+					{@const scores = getCategoryScores(moderationDetailPost.moderation_result)}
+
+					<div class="field">
+						<span class="fieldLabel">Flagged</span>
+						<span class="flagStatus flagged">Yes</span>
+					</div>
+
+					{#if flaggedCats.length > 0}
+						<div class="field">
+							<span class="fieldLabel">Flagged Categories</span>
+							<div class="flaggedCats">
+								{#each flaggedCats as cat}
+									<span class="flagBadge">{cat}</span>
+								{/each}
+							</div>
+						</div>
+					{/if}
+
+					<div class="field">
+						<span class="fieldLabel">Category Scores</span>
+						<div class="scoresList">
+							{#each scores as { name, score }}
+								<div class="scoreRow">
+									<span class="scoreName">{name}</span>
+									<div class="scoreBar">
+										<div
+											class="scoreBarFill"
+											class:high={score > 0.5}
+											class:medium={score > 0.1 && score <= 0.5}
+											style="width: {Math.min(score * 100, 100)}%"
+										></div>
+									</div>
+									<span class="scoreValue">{(score * 100).toFixed(2)}%</span>
+								</div>
+							{/each}
+						</div>
+					</div>
+				{:else}
+					<p class="text-muted-foreground">No moderation data available (API may have failed).</p>
+				{/if}
+			</div>
+		{/if}
+
+		<Dialog.Footer>
+			<Button variant="outline" on:click={() => { moderationDetailOpen = false; }}>Close</Button>
+			<Button variant="destructive" on:click={() => rejectPendingPost(moderationDetailPost?.id)}>Reject</Button>
+			<Button on:click={() => approvePendingPost(moderationDetailPost?.id)}>Approve</Button>
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>
 
 <!-- Edit Dialog -->
 <Dialog.Root bind:open={editDialogOpen}>
@@ -915,5 +1221,139 @@
 		&:hover {
 			background: hsl(var(--primary) / 0.1);
 		}
+	}
+
+	.badge {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 18px;
+		height: 18px;
+		padding: 0 5px;
+		border-radius: 9px;
+		font-size: 11px;
+		font-weight: 700;
+		background: hsl(0 84% 60%);
+		color: white;
+	}
+
+	.flaggedCats {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px;
+	}
+
+	.flagBadge {
+		display: inline-block;
+		padding: 2px 6px;
+		border-radius: 4px;
+		font-size: 10px;
+		font-weight: 600;
+		background: hsl(30 90% 50% / 0.15);
+		color: hsl(30 90% 40%);
+		white-space: nowrap;
+	}
+
+	.moderationDetail {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		padding: 8px 0;
+	}
+
+	.postTitle {
+		font-weight: 600;
+	}
+
+	.postContent {
+		padding: 8px 12px;
+		border-radius: 6px;
+		background: hsl(var(--muted) / 0.5);
+		font-size: 13px;
+		white-space: pre-wrap;
+		max-height: 200px;
+		overflow-y: auto;
+	}
+
+	.moderationImage {
+		max-width: 300px;
+		max-height: 200px;
+		border-radius: 8px;
+		object-fit: cover;
+	}
+
+	.divider {
+		border: none;
+		border-top: 1px solid hsl(var(--border));
+		margin: 4px 0;
+	}
+
+	.sectionTitle {
+		font-size: 14px;
+		font-weight: 600;
+		margin: 0;
+	}
+
+	.flagStatus {
+		font-weight: 600;
+		font-size: 13px;
+
+		&.flagged {
+			color: hsl(0 84% 60%);
+		}
+	}
+
+	.scoresList {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.scoreRow {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 12px;
+	}
+
+	.scoreName {
+		width: 180px;
+		flex-shrink: 0;
+		color: hsl(var(--muted-foreground));
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.scoreBar {
+		flex: 1;
+		height: 6px;
+		border-radius: 3px;
+		background: hsl(var(--muted));
+		overflow: hidden;
+	}
+
+	.scoreBarFill {
+		height: 100%;
+		border-radius: 3px;
+		background: hsl(var(--primary));
+		transition: width 0.3s ease;
+
+		&.high {
+			background: hsl(0 84% 60%);
+		}
+
+		&.medium {
+			background: hsl(30 90% 50%);
+		}
+	}
+
+	.scoreValue {
+		width: 55px;
+		text-align: right;
+		flex-shrink: 0;
+		font-family: monospace;
+		font-size: 11px;
+		color: hsl(var(--muted-foreground));
 	}
 </style>

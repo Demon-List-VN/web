@@ -296,8 +296,13 @@
 			}
 
 			const created = await res.json();
-			toast.success($_('community.create.success'));
-			goto(`/community/${created.id}`);
+			if (created.moderation_status === 'pending') {
+				toast.success($_('community.create.pending_review'));
+				goto('/community');
+			} else {
+				toast.success($_('community.create.success'));
+				goto(`/community/${created.id}`);
+			}
 		} catch (e: any) {
 			toast.error(e.message);
 		} finally {

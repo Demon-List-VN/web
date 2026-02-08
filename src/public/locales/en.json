@@ -720,6 +720,7 @@
       "submitting": "Posting...",
       "uploading": "Uploading...",
       "success": "Post created!",
+      "pending_review": "Your post is under review and will be visible after admin approval.",
       "validation_error": "Title is required",
       "attachment": "Attachment",
       "my_records": "My Records",
