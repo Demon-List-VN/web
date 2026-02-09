@@ -409,7 +409,7 @@
 				<div class="formField">
 					<span class="fieldLabel">
 						<Tag class="inline h-3.5 w-3.5 text-blue-500" />
-						{$_('community.create.tags') || 'Tags'} ({$_('community.create.optional')})
+						Tags ({$_('community.create.optional')})
 					</span>
 					<div class="tagPicker">
 						{#each availableTags as tag}
@@ -425,7 +425,7 @@
 						{/each}
 					</div>
 					{#if selectedTagIds.length > 0}
-						<p class="tagHint">{selectedTagIds.length}/5 {$_('community.create.tags_selected') || 'tags selected'}</p>
+						<p class="tagHint">{selectedTagIds.length}/5</p>
 					{/if}
 				</div>
 			{/if}
