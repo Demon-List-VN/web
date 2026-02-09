@@ -423,8 +423,10 @@
 									<Table.Cell class="font-medium">
 										#{index + 1}
 									</Table.Cell>
-									<Table.Cell on:click={(e) => e.stopPropagation()}>
-										<PlayerLink player={record.players} />
+									<Table.Cell>
+										<div on:click={(e) => e.stopPropagation()}>
+											<PlayerLink player={record.players} />
+										</div>
 									</Table.Cell>
 									<Table.Cell class="text-center">
 										{new Date(record.timestamp).toLocaleString('vi-VN')}
