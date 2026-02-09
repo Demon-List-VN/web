@@ -64,98 +64,102 @@
 								class="absolute inset-0 z-10"
 								data-sveltekit-preload-data="tap"
 							></a>
-								{#if !hideTop}
-									{#if top}
-										<div class="top">#{top}</div>
-									{:else}
-										<div class="top">#{level[`${type == 'fl' ? 'fl' : 'dl'}Top`]}</div>
-									{/if}
+							{#if !hideTop}
+								{#if top}
+									<div class="top">#{top}</div>
+								{:else}
+									<div class="top">#{level[`${type == 'fl' ? 'fl' : 'dl'}Top`]}</div>
 								{/if}
-								<div class="info">
-									<div class="levelName">
-										<div class="name">
-											{#if top && !hideTop}
-												#{level[`${type == 'fl' ? 'fl' : 'dl'}Top`]}
-											{/if}
-											{level.name}
-										</div>
-										<div class="pt">
-											{#if type == 'fl'}
-												{level.flPt}pt
-											{:else}
-												{level.rating}pt
-											{/if}
-										</div>
-										{#key $user}
-											{#if $user.loggedIn && isActive($user.data.supporterUntil) && type == 'dl'}
-												{#if !level.record}
-													<Tooltip.Root>
-														<div class="relative z-20">
-															<Tooltip.Trigger>
-																<div class="pt">
-																	+{calcRating($user.ratings, level.rating) - $user.data.rating}
-																</div>
-															</Tooltip.Trigger>
-														</div>
-														<Tooltip.Content>
-															<p>
-																{$user.data.rating} -> {calcRating($user.ratings, level.rating)}
-															</p>
-														</Tooltip.Content>
-													</Tooltip.Root>
-												{/if}
-											{/if}
-										{/key}
-										{#if level.minProgress}
-											{#if type == 'dl' && level.minProgress != 100}
-												<div class="pt">
-													{level.minProgress}% Min
-												</div>
-											{:else if type == 'pl'}
-												<div class="pt">
-													{getTimeString(level.minProgress)} Base
-												</div>
-											{/if}
+							{/if}
+							<div class="info">
+								<div class="levelName">
+									<div class="name">
+										{#if top && !hideTop}
+											#{level[`${type == 'fl' ? 'fl' : 'dl'}Top`]}
 										{/if}
+										{level.name}
 									</div>
-									<div class="creator flex gap-[5px]">
-										by
-										{#if level.creatorId}
-											<div class="relative z-20">
-												<PlayerLink player={level.creatorData} />
-											</div>
+									<div class="pt">
+										{#if type == 'fl'}
+											{level.flPt}pt
 										{:else}
-											{level.creator}
+											{level.rating}pt
 										{/if}
 									</div>
+									{#key $user}
+										{#if $user.loggedIn && isActive($user.data.supporterUntil) && type == 'dl'}
+											{#if !level.record}
+												<Tooltip.Root>
+													<div class="relative z-20">
+														<Tooltip.Trigger>
+															<div class="pt">
+																+{calcRating($user.ratings, level.rating) - $user.data.rating}
+															</div>
+														</Tooltip.Trigger>
+													</div>
+													<Tooltip.Content>
+														<p>
+															{$user.data.rating} -> {calcRating($user.ratings, level.rating)}
+														</p>
+													</Tooltip.Content>
+												</Tooltip.Root>
+											{/if}
+										{/if}
+									{/key}
+									{#if level.minProgress}
+										{#if type == 'dl' && level.minProgress != 100}
+											<div class="pt">
+												{level.minProgress}% Min
+											</div>
+										{:else if type == 'pl'}
+											<div class="pt">
+												{getTimeString(level.minProgress)} Base
+											</div>
+										{/if}
+									{/if}
+								</div>
+								<div class="creator flex gap-[5px]">
+									by
+									{#if level.creatorId}
+										<div class="relative z-20">
+											<PlayerLink player={level.creatorData} />
+										</div>
+									{:else}
+										{level.creator}
+									{/if}
 									{#if levelTags.length > 0}
 										<div class="levelTags">
 											{#each levelTags as tag}
-												<span class="levelTag" style="background: {tag.color || '#666'}18; color: {tag.color || '#666'}; border-color: {tag.color || '#666'}30">
+												<span
+													class="levelTag"
+													style="background: {tag.color || '#666'}18; color: {tag.color ||
+														'#666'}; border-color: {tag.color || '#666'}30"
+												>
 													{tag.name}
 												</span>
 											{/each}
 										</div>
 									{/if}
 								</div>
-								{#if level.record}
-									<div class="progress">
-										{#if level.record.isChecked}
-											{#if !level.isPlatformer}
-												{#if level.record.progress == 100}
-													<Check />
-												{:else}
-													{level.record.progress}%
-												{/if}
+							</div>
+							{#if level.record}
+								<div class="progress">
+									{#if level.record.isChecked}
+										{#if !level.isPlatformer}
+											{#if level.record.progress == 100}
+												<Check />
 											{:else}
-												{getTimeString(level.record.progress)}
+												{level.record.progress}%
 											{/if}
 										{:else}
-											<Clock />
+											{getTimeString(level.record.progress)}
 										{/if}
-									</div>
-								{/if}
-							</div>
+									{:else}
+										<Clock />
+									{/if}
+								</div>
+							{/if}
+						</div>
 					</ContextMenu.Trigger>
 					<ContextMenu.Content class="w-64">
 						<ContextMenu.Item
