@@ -746,11 +746,12 @@
       "submit": "Comment",
       "submitting": "Posting...",
       "success": "Comment added",
-      "error": "Comment is under review",
+      "error": "Unable to create comment",
       "none": "No comments yet",
       "attach_level": "Attach Level",
       "attach_image": "Attach image",
-      "search_levels": "Search levels..."
+      "search_levels": "Search levels...",
+      "forbidden": "Your comment has been forwarded to the moderation team due to signs of violation"
     },
     "comments": "Comments",
     "attachment": {

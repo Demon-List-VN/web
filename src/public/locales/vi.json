@@ -745,11 +745,12 @@
       "submit": "Bình luận",
       "submitting": "Đang đăng...",
       "success": "Đã thêm bình luận",
-      "error": "Bình luận đã được chuyển sang đội ngũ kiểm duyệt",
+      "error": "Không thể tạo bình luận",
       "none": "Chưa có bình luận",
       "attach_level": "Đính kèm Level",
       "attach_image": "Đính kèm hình ảnh",
-      "search_levels": "Tìm kiếm level..."
+      "search_levels": "Tìm kiếm level...",
+      "forbidden": "Bình luận của bạn đã được chuyển tới đội ngũ kiểm duyệt do có dấu hiệu vi phạm"
     },
     "comments": "Bình luận",
     "attachment": {

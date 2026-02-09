@@ -189,10 +189,10 @@
 		const headers = await getHeaders();
 
 		try {
-			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/community/posts/${post.id}/like`,
-				{ method: 'POST', headers }
-			);
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/posts/${post.id}/like`, {
+				method: 'POST',
+				headers
+			});
 			const result = await res.json();
 			post.liked = result.liked;
 			post.likes_count += result.liked ? 1 : -1;
@@ -268,7 +268,9 @@
 			if (commentImageFile) {
 				const imageUrl = await uploadCommentImage();
 				if (imageUrl) {
-					content = content.trim() ? `${content.trim()}\n\n![image](${imageUrl})` : `![image](${imageUrl})`;
+					content = content.trim()
+						? `${content.trim()}\n\n![image](${imageUrl})`
+						: `![image](${imageUrl})`;
 				}
 			}
 
@@ -286,7 +288,15 @@
 				}
 			);
 
-			if (!res.ok) throw new Error();
+			if (!res.ok) {
+				if (res.status == 400) {
+					toast.error($_('community.comment.error'));
+				} else {
+					toast.error($_('community.comment.forbidden'));
+				}
+
+				throw new Error();
+			}
 
 			const comment = await res.json();
 			comments = [...(comments || []), comment];
@@ -296,8 +306,6 @@
 			clearCommentImage();
 			commentPreviewMode = false;
 			toast.success($_('community.comment.success'));
-		} catch {
-			toast.error($_('community.comment.error'));
 		} finally {
 			submittingComment = false;
 		}
@@ -360,10 +368,10 @@
 		const headers = await getHeaders();
 
 		try {
-			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/community/posts/${post.id}/pin`,
-				{ method: 'POST', headers }
-			);
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/posts/${post.id}/pin`, {
+				method: 'POST',
+				headers
+			});
 			const updated = await res.json();
 			post.pinned = updated.pinned;
 		} catch {
@@ -451,14 +459,11 @@
 			const endpoint = isAdminNotOwner
 				? `${import.meta.env.VITE_API_URL}/community/admin/posts/${post.id}`
 				: `${import.meta.env.VITE_API_URL}/community/posts/${post.id}`;
-			const res = await fetch(
-				endpoint,
-				{
-					method: 'PUT',
-					headers,
-					body: JSON.stringify(body)
-				}
-			);
+			const res = await fetch(endpoint, {
+				method: 'PUT',
+				headers,
+				body: JSON.stringify(body)
+			});
 			if (!res.ok) throw new Error();
 			const updated = await res.json();
 			post = { ...post, ...updated };
@@ -516,7 +521,9 @@
 
 	async function searchMentions(query: string) {
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/players/search?q=${encodeURIComponent(query)}`);
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/community/players/search?q=${encodeURIComponent(query)}`
+			);
 			mentionSuggestions = await res.json();
 			showMentionDropdown = mentionSuggestions.length > 0;
 			mentionIndex = 0;
@@ -595,13 +602,14 @@
 	$: isAdmin = $user.loggedIn && $user.data?.isAdmin;
 	$: isAdminNotOwner = isAdmin && !isOwner;
 	$: canEdit = $user.loggedIn && post && (isOwner || isAdmin);
-	$: canDelete =
-		$user.loggedIn && post && ($user.data?.uid === post.uid || $user.data?.isAdmin);
+	$: canDelete = $user.loggedIn && post && ($user.data?.uid === post.uid || $user.data?.isAdmin);
 	$: canPin = $user.loggedIn && $user.data?.isAdmin;
 
 	function getYouTubeId(url: string): string | null {
 		if (!url) return null;
-		const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+		const match = url.match(
+			/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/
+		);
 		return match ? match[1] : null;
 	}
 
@@ -617,33 +625,42 @@
 	{#if headPost}
 		<meta property="og:title" content="{headPost.title} - Geometry Dash VN" />
 		<meta property="og:type" content="article" />
-		<meta property="og:url" content="{import.meta.env.VITE_SITE_URL || 'https://demonlist.vn'}/community/{headPost.id}" />
+		<meta
+			property="og:url"
+			content="{import.meta.env.VITE_SITE_URL || 'https://demonlist.vn'}/community/{headPost.id}"
+		/>
 		{#if headPost.content}
-			<meta property="og:description" content="{headPost.content.slice(0, 160)}" />
-			<meta name="description" content="{headPost.content.slice(0, 160)}" />
+			<meta property="og:description" content={headPost.content.slice(0, 160)} />
+			<meta name="description" content={headPost.content.slice(0, 160)} />
 		{/if}
 		{#if headPost.image_url}
-			<meta property="og:image" content="{headPost.image_url}" />
+			<meta property="og:image" content={headPost.image_url} />
 		{:else if headYtId}
 			<meta property="og:image" content="https://img.youtube.com/vi/{headYtId}/maxresdefault.jpg" />
 		{/if}
 		<meta property="og:site_name" content="Geometry Dash VN" />
-		<meta property="article:published_time" content="{headPost.created_at}" />
+		<meta property="article:published_time" content={headPost.created_at} />
 		{#if headPost.updated_at}
-			<meta property="article:modified_time" content="{headPost.updated_at}" />
+			<meta property="article:modified_time" content={headPost.updated_at} />
 		{/if}
 		{#if headPost.players}
-			<meta property="article:author" content="{headPost.players.name}" />
+			<meta property="article:author" content={headPost.players.name} />
 		{/if}
-		<meta name="twitter:card" content="{headPost.image_url || headYtId ? 'summary_large_image' : 'summary'}" />
+		<meta
+			name="twitter:card"
+			content={headPost.image_url || headYtId ? 'summary_large_image' : 'summary'}
+		/>
 		<meta name="twitter:title" content="{headPost.title} - Geometry Dash VN" />
 		{#if headPost.content}
-			<meta name="twitter:description" content="{headPost.content.slice(0, 160)}" />
+			<meta name="twitter:description" content={headPost.content.slice(0, 160)} />
 		{/if}
 		{#if headPost.image_url}
-			<meta name="twitter:image" content="{headPost.image_url}" />
+			<meta name="twitter:image" content={headPost.image_url} />
 		{:else if headYtId}
-			<meta name="twitter:image" content="https://img.youtube.com/vi/{headYtId}/maxresdefault.jpg" />
+			<meta
+				name="twitter:image"
+				content="https://img.youtube.com/vi/{headYtId}/maxresdefault.jpg"
+			/>
 		{/if}
 	{/if}
 </svelte:head>
@@ -674,7 +691,11 @@
 				</div>
 
 				{#if post.type === 'review' && post.is_recommended !== null && post.is_recommended !== undefined}
-					<div class="recommendBadgeDetail" class:recommended={post.is_recommended} class:notRecommended={!post.is_recommended}>
+					<div
+						class="recommendBadgeDetail"
+						class:recommended={post.is_recommended}
+						class:notRecommended={!post.is_recommended}
+					>
 						{#if post.is_recommended}
 							<ThumbsUp class="h-4 w-4" />
 							<span>{$_('community.review.recommended')}</span>
@@ -700,34 +721,43 @@
 				{/if}
 
 				{#if editing}
-				{#if isAdminNotOwner}
-					<div class="editTypeSelector">
-						<span class="editLabel">Change Post Type</span>
-						<Select.Root
-							selected={{ value: editType, label: editType.charAt(0).toUpperCase() + editType.slice(1) }}
-							onSelectedChange={(v) => { if (v) editType = String(v.value); }}
-						>
-							<Select.Trigger class="w-[180px]">
-								<Select.Value placeholder="Post type" />
-							</Select.Trigger>
-							<Select.Content>
-								<Select.Item value="discussion">Discussion</Select.Item>
-								<Select.Item value="media">Media</Select.Item>
-								<Select.Item value="guide">Guide</Select.Item>
-								<Select.Item value="review">Review</Select.Item>
-								<Select.Item value="announcement">Announcement</Select.Item>
-							</Select.Content>
-						</Select.Root>
-					</div>
+					{#if isAdminNotOwner}
+						<div class="editTypeSelector">
+							<span class="editLabel">Change Post Type</span>
+							<Select.Root
+								selected={{
+									value: editType,
+									label: editType.charAt(0).toUpperCase() + editType.slice(1)
+								}}
+								onSelectedChange={(v) => {
+									if (v) editType = String(v.value);
+								}}
+							>
+								<Select.Trigger class="w-[180px]">
+									<Select.Value placeholder="Post type" />
+								</Select.Trigger>
+								<Select.Content>
+									<Select.Item value="discussion">Discussion</Select.Item>
+									<Select.Item value="media">Media</Select.Item>
+									<Select.Item value="guide">Guide</Select.Item>
+									<Select.Item value="review">Review</Select.Item>
+									<Select.Item value="announcement">Announcement</Select.Item>
+								</Select.Content>
+							</Select.Root>
+						</div>
+					{/if}
+					{#if isOwner}
+						<input
+							class="editTitleInput"
+							bind:value={editTitle}
+							placeholder={$_('community.create.title_placeholder')}
+						/>
+					{/if}
+				{:else}
+					<h1 class="postTitle">{post.title}</h1>
 				{/if}
-				{#if isOwner}
-					<input class="editTitleInput" bind:value={editTitle} placeholder={$_('community.create.title_placeholder')} />
-				{/if}
-			{:else}
-				<h1 class="postTitle">{post.title}</h1>
-			{/if}
 
-			<div class="postMeta">
+				<div class="postMeta">
 					<div class="authorChip">
 						{#if author}
 							<PlayerLink player={author} showAvatar />
@@ -772,12 +802,20 @@
 						<div class="attachedInfo">
 							<strong>{post.attached_record.levelName}</strong>
 							<span class="attachedMeta">
-								{$_('community.attachment.by')} {post.attached_record.creator} · {post.attached_record.progress}%
-								{#if post.attached_record.mobile} · 📱{/if}
+								{$_('community.attachment.by')}
+								{post.attached_record.creator} · {post.attached_record.progress}%
+								{#if post.attached_record.mobile}
+									· 📱{/if}
 							</span>
 						</div>
 						{#if post.attached_record.videoLink}
-							<a href={post.attached_record.videoLink} target="_blank" rel="noopener" class="attachedLink" on:click|stopPropagation>
+							<a
+								href={post.attached_record.videoLink}
+								target="_blank"
+								rel="noopener"
+								class="attachedLink"
+								on:click|stopPropagation
+							>
 								<ExternalLink class="h-4 w-4" />
 							</a>
 						{/if}
@@ -791,8 +829,10 @@
 						<div class="attachedInfo">
 							<strong>{post.attached_level.name}</strong>
 							<span class="attachedMeta">
-								{$_('community.attachment.by')} {post.attached_level.creator}
-								{#if post.attached_level.isPlatformer} · Platformer{/if}
+								{$_('community.attachment.by')}
+								{post.attached_level.creator}
+								{#if post.attached_level.isPlatformer}
+									· Platformer{/if}
 							</span>
 						</div>
 						<a href="/level/{post.attached_level.id}" class="attachedLink">
@@ -826,7 +866,12 @@
 						{/if}
 					</div>
 					<div class="editContentArea">
-						<textarea class="editContentTextarea" bind:value={editContent} rows={8} placeholder={$_('community.create.content_placeholder')}></textarea>
+						<textarea
+							class="editContentTextarea"
+							bind:value={editContent}
+							rows={8}
+							placeholder={$_('community.create.content_placeholder')}
+						></textarea>
 						{#if editContent}
 							<div class="editPreviewLabel">{$_('community.preview') || 'Preview'}</div>
 							<div class="postText">
@@ -847,7 +892,9 @@
 					{#if editing}
 						<Button size="sm" on:click={saveEditPost} disabled={editSaving}>
 							<Check class="mr-1 h-3.5 w-3.5" />
-							{editSaving ? $_('community.edit.saving') || 'Saving...' : $_('community.edit.save') || 'Save'}
+							{editSaving
+								? $_('community.edit.saving') || 'Saving...'
+								: $_('community.edit.save') || 'Save'}
 						</Button>
 						<Button size="sm" variant="outline" on:click={cancelEditPost}>
 							<X class="mr-1 h-3.5 w-3.5" />
@@ -908,10 +955,18 @@
 					<div class="commentForm">
 						<!-- Write / Preview tabs -->
 						<div class="commentTabBar">
-							<button class="commentTab" class:active={!commentPreviewMode} on:click={() => commentPreviewMode = false}>
+							<button
+								class="commentTab"
+								class:active={!commentPreviewMode}
+								on:click={() => (commentPreviewMode = false)}
+							>
 								{$_('community.write') || 'Write'}
 							</button>
-							<button class="commentTab" class:active={commentPreviewMode} on:click={() => commentPreviewMode = true}>
+							<button
+								class="commentTab"
+								class:active={commentPreviewMode}
+								on:click={() => (commentPreviewMode = true)}
+							>
 								<Eye class="h-3.5 w-3.5" />
 								{$_('community.preview') || 'Preview'}
 							</button>
@@ -925,7 +980,9 @@
 										<img src={commentImagePreview} alt="Preview" class="commentPreviewImage" />
 									{/if}
 								{:else}
-									<p class="previewEmpty">{$_('community.preview_empty') || 'Nothing to preview'}</p>
+									<p class="previewEmpty">
+										{$_('community.preview_empty') || 'Nothing to preview'}
+									</p>
 								{/if}
 							</div>
 						{:else}
@@ -989,7 +1046,9 @@
 							<Button
 								size="sm"
 								on:click={submitComment}
-								disabled={submittingComment || commentUploading || (!newComment.trim() && !commentImageFile)}
+								disabled={submittingComment ||
+									commentUploading ||
+									(!newComment.trim() && !commentImageFile)}
 							>
 								<Send class="mr-1 h-3.5 w-3.5" />
 								{#if commentUploading}
@@ -1083,9 +1142,9 @@
 		<!-- Loading skeleton -->
 		<div class="postArticle skeleton">
 			<div class="postHeader">
-				<div class="skeletonLine w-20 h-6"></div>
-				<div class="skeletonLine w-3/4 h-8 mt-3"></div>
-				<div class="flex gap-2 mt-3">
+				<div class="skeletonLine h-6 w-20"></div>
+				<div class="skeletonLine mt-3 h-8 w-3/4"></div>
+				<div class="mt-3 flex gap-2">
 					<div class="skeletonCircle"></div>
 					<div class="skeletonLine w-24"></div>
 					<div class="skeletonLine w-32"></div>
@@ -1737,7 +1796,7 @@
 	/* Edit mode */
 	.editTypeSelector {
 		margin-bottom: 12px;
-		
+
 		.editLabel {
 			display: block;
 			font-size: 12px;
@@ -1885,7 +1944,9 @@
 			cursor: pointer;
 			transition: background 0.15s;
 
-			&:hover { background: rgba(0, 0, 0, 0.8); }
+			&:hover {
+				background: rgba(0, 0, 0, 0.8);
+			}
 		}
 	}
 
