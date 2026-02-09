@@ -118,7 +118,9 @@
 
 		fetch(`${import.meta.env.VITE_API_URL}/levels/${$page.params.id}/tags`)
 			.then((res) => res.json())
-			.then((res: any) => (levelTags = (res || []).map((t: any) => t.level_tags || t).filter(Boolean)))
+			.then(
+				(res: any) => (levelTags = (res || []).map((t: any) => t.level_tags || t).filter(Boolean))
+			)
 			.catch(() => (levelTags = []));
 
 		fetch(`${import.meta.env.VITE_API_URL}/levels/${$page.params.id}/variants`)
@@ -222,7 +224,11 @@
 						{#if levelTags.length > 0}
 							<div class="levelTagsRow">
 								{#each levelTags as tag}
-									<span class="levelTagBadge" style="background: {tag.color || '#666'}18; color: {tag.color || '#666'}; border: 1px solid {tag.color || '#666'}30">
+									<span
+										class="levelTagBadge"
+										style="background: {tag.color || '#666'}18; color: {tag.color ||
+											'#666'}; border: 1px solid {tag.color || '#666'}30"
+									>
 										<Tag class="h-3 w-3" />
 										{tag.name}
 									</span>
@@ -349,19 +355,13 @@
 						</h3>
 						<div class="variantsList">
 							{#each levelVariants as variant}
-								<a href="/level/{variant.id}" class="variantCard" data-sveltekit-preload-data="tap">
-									<img
-										src="https://img.youtube.com/vi/{variant.videoID}/mqdefault.jpg"
-										alt={variant.name}
-										class="variantThumb"
-										loading="lazy"
-									/>
+								<div class="variantCard">
 									<div class="variantDetails">
 										<span class="variantName">{variant.name}</span>
 										<span class="variantCreator">by {variant.creator}</span>
 										<span class="variantId">ID: {variant.id}</span>
 									</div>
-								</a>
+								</div>
 							{/each}
 						</div>
 					</div>
@@ -384,7 +384,7 @@
 			<Tabs.List class="grid h-[50px] w-full grid-cols-2">
 				<Tabs.Trigger class="h-[40px]" value="records">{$_('level.records')}</Tabs.Trigger>
 				<Tabs.Trigger class="h-[40px]" value="community">
-					<MessageSquare class="h-4 w-4 mr-2" />
+					<MessageSquare class="mr-2 h-4 w-4" />
 					{$_('community.related_posts')}
 				</Tabs.Trigger>
 			</Tabs.List>
@@ -454,7 +454,7 @@
 						{/each}
 					</div>
 				{:else}
-					<p class="text-center text-muted-foreground py-8">{$_('community.no_posts')}</p>
+					<p class="py-8 text-center text-muted-foreground">{$_('community.no_posts')}</p>
 				{/if}
 			</Tabs.Content>
 		</Tabs.Root>

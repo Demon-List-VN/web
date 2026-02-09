@@ -593,7 +593,8 @@
     "platformer_rating": "Platformer rating",
     "classic_rating": "Classic rating",
     "featured_list_point": "Featured List point",
-    "challenge_rating": "Challenge rating"
+    "challenge_rating": "Challenge rating",
+    "low_detail_variants": "Low detail variants"
   },
   "discord_link": {
     "loading": "Linking your Discord account",

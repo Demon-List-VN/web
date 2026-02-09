@@ -592,7 +592,8 @@
     "platformer_rating": "Điểm Platformer",
     "classic_rating": "Điểm Classic",
     "featured_list_point": "Điểm Featured List",
-    "challenge_rating": "Điểm thử thách"
+    "challenge_rating": "Điểm thử thách",
+    "low_detail_variants": "Các biến thể có độ chi tiết thấp"
   },
   "discord_link": {
     "loading": "Đang liên kết tài khoản Discord của bạn",
