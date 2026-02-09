@@ -750,7 +750,7 @@
       "attach_level": "Đính kèm Level",
       "attach_image": "Đính kèm hình ảnh",
       "search_levels": "Tìm kiếm level...",
-      "forbidden": "Bình luận của bạn đã được chuyển tới đội ngũ kiểm duyệt do có dấu hiệu vi phạm"
+      "forbidden": "Bình luận của bạn cần được kiểm duyệt trước khi hiện thị công khai"
     },
     "comments": "Bình luận",
     "attachment": {
