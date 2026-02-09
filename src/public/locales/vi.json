@@ -745,7 +745,7 @@
       "submit": "Bình luận",
       "submitting": "Đang đăng...",
       "success": "Đã thêm bình luận",
-      "error": "Không thể thêm bình luận",
+      "error": "Bình luận đã được chuyển sang đội ngũ kiểm duyệt",
       "none": "Chưa có bình luận",
       "attach_level": "Đính kèm Level",
       "attach_image": "Đính kèm hình ảnh",

@@ -746,7 +746,7 @@
       "submit": "Comment",
       "submitting": "Posting...",
       "success": "Comment added",
-      "error": "Failed to add comment",
+      "error": "Comment is under review",
       "none": "No comments yet",
       "attach_level": "Attach Level",
       "attach_image": "Attach image",
