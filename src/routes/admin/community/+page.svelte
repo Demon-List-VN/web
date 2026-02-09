@@ -44,7 +44,7 @@
 	let editPost: any = null;
 
 	// Tab state
-	let activeTab: 'posts' | 'reports' | 'moderation' | 'tags' = 'posts';
+	let activeTab: 'posts' | 'reports' | 'moderation' | 'comment-moderation' | 'tags' = 'posts';
 	let showHidden = false;
 
 	// Tags state
@@ -72,6 +72,14 @@
 	let moderationDetailOpen = false;
 	let moderationDetailPost: any = null;
 	let showModerationRaw = false;
+
+	// Comment moderation state
+	let pendingComments: any[] | null = null;
+	let pendingCommentsTotal = 0;
+	let pendingCommentsPage = 0;
+	let commentModerationDetailOpen = false;
+	let commentModerationDetailComment: any = null;
+	let showCommentModerationRaw = false;
 
 	const PAGE_SIZE = 20;
 
@@ -215,12 +223,13 @@
 	onMount(() => {
 		// Check for tab query param
 		const tabParam = $page.url.searchParams.get('tab');
-		if (tabParam === 'tags' || tabParam === 'reports' || tabParam === 'moderation') {
+		if (tabParam === 'tags' || tabParam === 'reports' || tabParam === 'moderation' || tabParam === 'comment-moderation') {
 			switchTab(tabParam as any);
 		}
 		fetchPosts();
 		// Fetch pending count for badge
 		fetchPendingCount();
+		fetchPendingCommentsCount();
 	});
 
 	async function fetchPendingCount() {
@@ -232,6 +241,20 @@
 			);
 			const json = await res.json();
 			pendingTotal = json.total;
+		} catch {
+			// ignore
+		}
+	}
+
+	async function fetchPendingCommentsCount() {
+		try {
+			const headers = await getAuthHeaders();
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/community/admin/moderation/comments/pending?limit=1&offset=0`,
+				{ headers }
+			);
+			const json = await res.json();
+			pendingCommentsTotal = json.total;
 		} catch {
 			// ignore
 		}
@@ -277,13 +300,16 @@
 		}
 	}
 
-	function switchTab(tab: 'posts' | 'reports' | 'moderation' | 'tags') {
+	function switchTab(tab: 'posts' | 'reports' | 'moderation' | 'comment-moderation' | 'tags') {
 		activeTab = tab;
 		if (tab === 'reports' && !reports) {
 			fetchReports();
 		}
 		if (tab === 'moderation' && !pendingPosts) {
 			fetchPendingPosts();
+		}
+		if (tab === 'comment-moderation' && !pendingComments) {
+			fetchPendingComments();
 		}
 		if (tab === 'tags' && !tags) {
 			fetchTags();
@@ -494,6 +520,76 @@
 		moderationDetailOpen = true;
 	}
 
+	// ---- Comment Moderation ----
+
+	async function fetchPendingComments() {
+		pendingComments = null;
+		const params = new URLSearchParams({
+			limit: String(PAGE_SIZE),
+			offset: String(pendingCommentsPage * PAGE_SIZE)
+		});
+
+		try {
+			const headers = await getAuthHeaders();
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/community/admin/moderation/comments/pending?${params}`,
+				{ headers }
+			);
+			const json = await res.json();
+			pendingComments = json.data;
+			pendingCommentsTotal = json.total;
+		} catch {
+			pendingComments = [];
+			pendingCommentsTotal = 0;
+		}
+	}
+
+	async function approvePendingComment(id: number) {
+		try {
+			const headers = await getAuthHeaders();
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/community/admin/moderation/comments/${id}/approve`,
+				{
+					method: 'PUT',
+					headers
+				}
+			);
+			if (!res.ok) throw new Error();
+			toast.success('Comment approved');
+			commentModerationDetailOpen = false;
+			commentModerationDetailComment = null;
+			await fetchPendingComments();
+		} catch {
+			toast.error('Failed to approve comment');
+		}
+	}
+
+	async function rejectPendingComment(id: number) {
+		if (!confirm('Are you sure you want to reject this comment? It will be deleted.')) return;
+		try {
+			const headers = await getAuthHeaders();
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/community/admin/moderation/comments/${id}/reject`,
+				{
+					method: 'PUT',
+					headers
+				}
+			);
+			if (!res.ok) throw new Error();
+			toast.success('Comment rejected');
+			commentModerationDetailOpen = false;
+			commentModerationDetailComment = null;
+			await fetchPendingComments();
+		} catch {
+			toast.error('Failed to reject comment');
+		}
+	}
+
+	function openCommentModerationDetail(comment: any) {
+		commentModerationDetailComment = comment;
+		commentModerationDetailOpen = true;
+	}
+
 	function getFlaggedCategories(moderationResult: any): string[] {
 		if (!moderationResult?.results?.[0]?.categories) return [];
 		const cats = moderationResult.results[0].categories;
@@ -514,6 +610,11 @@
 	$: modResult = moderationDetailPost?.community_posts_admin?.moderation_result;
 	$: modFlagged = getFlaggedCategories(modResult);
 	$: modScores = getCategoryScores(modResult);
+
+	// Derived comment moderation view state
+	$: commentModResult = commentModerationDetailComment?.community_comments_admin?.moderation_result;
+	$: commentModFlagged = getFlaggedCategories(commentModResult);
+	$: commentModScores = getCategoryScores(commentModResult);
 </script>
 
 <Title value="Community Admin" />
@@ -547,6 +648,17 @@
 			Moderation
 			{#if pendingTotal > 0}
 				<span class="badge">{pendingTotal}</span>
+			{/if}
+		</button>
+		<button
+			class="tab"
+			class:active={activeTab === 'comment-moderation'}
+			on:click={() => switchTab('comment-moderation')}
+		>
+			<MessageCircle class="h-4 w-4" />
+			Comment Mod
+			{#if pendingCommentsTotal > 0}
+				<span class="badge">{pendingCommentsTotal}</span>
 			{/if}
 		</button>
 		<button class="tab" class:active={activeTab === 'tags'} on:click={() => switchTab('tags')}>
@@ -1026,6 +1138,133 @@
 		{/if}
 	{/if}
 
+	{#if activeTab === 'comment-moderation'}
+		<!-- Comment Moderation: Pending Comments -->
+		<div class="tableContainer">
+			<table class="postsTable">
+				<thead>
+					<tr>
+						<th>ID</th>
+						<th>Post</th>
+						<th>Content</th>
+						<th>Author</th>
+						<th>Flagged Categories</th>
+						<th>Date</th>
+						<th>Actions</th>
+					</tr>
+				</thead>
+				<tbody>
+					{#if pendingComments}
+						{#each pendingComments as comment}
+							{@const flagged = getFlaggedCategories(comment.community_comments_admin?.moderation_result)}
+							<tr>
+								<td class="idCol">{comment.id}</td>
+								<td class="titleCol">
+									{#if comment.community_posts}
+										<a href="/community/{comment.community_posts.id}" target="_blank" class="titleLink">
+											{comment.community_posts.title}
+											<ExternalLink class="ml-1 inline h-3 w-3" />
+										</a>
+									{:else}
+										<span class="text-xs text-muted-foreground">Post #{comment.post_id}</span>
+									{/if}
+								</td>
+								<td class="titleCol">
+									<span class="commentContent">{comment.content?.slice(0, 100)}{comment.content?.length > 100 ? '...' : ''}</span>
+								</td>
+								<td class="authorCol">
+									{comment.players?.name || comment.uid}
+								</td>
+								<td>
+									<div class="flaggedCats">
+										{#each flagged as cat}
+											<span
+												class="flagBadge"
+												on:click={() => openCommentModerationDetail(comment)}
+												title="View moderation details">{cat}</span
+											>
+										{/each}
+										{#if flagged.length === 0}
+											<span class="text-xs text-muted-foreground">API error</span>
+										{/if}
+									</div>
+								</td>
+								<td class="dateCol">{formatDate(comment.created_at)}</td>
+								<td>
+									<div class="actions">
+										<button
+											class="actionBtn"
+											on:click={() => openCommentModerationDetail(comment)}
+											title="View Details"
+										>
+											<Eye class="h-4 w-4" />
+										</button>
+										<button
+											class="actionBtn resolve"
+											on:click={() => approvePendingComment(comment.id)}
+											title="Approve"
+										>
+											<Check class="h-4 w-4" />
+										</button>
+										<button
+											class="actionBtn danger"
+											on:click={() => rejectPendingComment(comment.id)}
+											title="Reject"
+										>
+											<X class="h-4 w-4" />
+										</button>
+									</div>
+								</td>
+							</tr>
+						{/each}
+						{#if pendingComments.length === 0}
+							<tr>
+								<td colspan="7" class="emptyRow">No comments pending moderation</td>
+							</tr>
+						{/if}
+					{:else}
+						{#each { length: 3 } as _}
+							<tr class="skeleton">
+								<td colspan="7"><div class="skeletonLine"></div></td>
+							</tr>
+						{/each}
+					{/if}
+				</tbody>
+			</table>
+		</div>
+
+		<!-- Comment Moderation Pagination -->
+		{#if pendingComments && pendingCommentsTotal > PAGE_SIZE}
+			<div class="pagination">
+				<Button
+					variant="outline"
+					size="sm"
+					disabled={pendingCommentsPage === 0}
+					on:click={() => {
+						pendingCommentsPage--;
+						fetchPendingComments();
+					}}
+				>
+					<ChevronLeft class="h-4 w-4" />
+				</Button>
+				<span class="pageInfo">
+					{pendingCommentsPage * PAGE_SIZE + 1}-{Math.min((pendingCommentsPage + 1) * PAGE_SIZE, pendingCommentsTotal)} of {pendingCommentsTotal}
+				</span>
+				<Button
+					variant="outline"
+					size="sm"
+					disabled={(pendingCommentsPage + 1) * PAGE_SIZE >= pendingCommentsTotal}
+					on:click={() => {
+						pendingCommentsPage++;
+						fetchPendingComments();
+					}}
+				>
+					<ChevronRight class="h-4 w-4" />
+				</Button>
+			</div>
+		{/if}
+	{/if}
+
 	{#if activeTab === 'tags'}
 		<!-- Tags Management -->
 		<div class="tagsSection">
@@ -1247,6 +1486,89 @@
 				>Reject</Button
 			>
 			<Button on:click={() => approvePendingPost(moderationDetailPost?.id)}>Approve</Button>
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>
+
+<!-- Comment Moderation Detail Dialog -->
+<Dialog.Root bind:open={commentModerationDetailOpen}>
+	<Dialog.Content class="max-h-[80vh] max-w-2xl overflow-y-auto">
+		<Dialog.Header>
+			<Dialog.Title>Comment Moderation — Comment #{commentModerationDetailComment?.id}</Dialog.Title>
+		</Dialog.Header>
+
+		{#if commentModerationDetailComment}
+			<div class="moderationDetail">
+				<div class="field">
+					<span class="fieldLabel">Author</span>
+					<span>{commentModerationDetailComment.players?.name || commentModerationDetailComment.uid}</span>
+				</div>
+				{#if commentModerationDetailComment.community_posts}
+					<div class="field">
+						<span class="fieldLabel">Post</span>
+						<a href="/community/{commentModerationDetailComment.community_posts.id}" target="_blank" class="titleLink">
+							{commentModerationDetailComment.community_posts.title}
+							<ExternalLink class="ml-1 inline h-3 w-3" />
+						</a>
+					</div>
+				{/if}
+				<div class="field">
+					<span class="fieldLabel">Content</span>
+					<div class="postContent">{commentModerationDetailComment.content || '(empty)'}</div>
+				</div>
+
+				<hr class="divider" />
+
+				<h3 class="sectionTitle">OpenAI Moderation Result</h3>
+
+				<div class="field">
+					<span class="fieldLabel">Status</span>
+					<span class="flagStatus {commentModFlagged.length ? 'flagged' : ''}"
+						>{commentModFlagged.length ? 'Flagged' : 'No flags'}</span
+					>
+				</div>
+
+				<div class="scoresList">
+					{#each commentModScores as s}
+						<div class="scoreRow">
+							<div class="scoreName">{s.name}</div>
+							<div class="scoreBar">
+								<div
+									class="scoreBarFill {s.score >= 0.7 ? 'high' : s.score >= 0.4 ? 'medium' : ''}"
+									style="width: {Math.round(s.score * 100)}%"
+								></div>
+							</div>
+							<div class="scoreValue">{s.score.toFixed(2)}</div>
+						</div>
+					{/each}
+					{#if commentModScores.length === 0}
+						<div class="text-xs text-muted-foreground">No score data available</div>
+					{/if}
+				</div>
+
+				<div class="field">
+					<button class="actionBtn" on:click={() => (showCommentModerationRaw = !showCommentModerationRaw)}
+						>{showCommentModerationRaw ? 'Hide raw JSON' : 'Show raw JSON'}</button
+					>
+				</div>
+
+				{#if showCommentModerationRaw}
+					<pre><code class="json">{JSON.stringify(commentModResult, null, 2)}</code></pre>
+				{/if}
+			</div>
+		{/if}
+
+		<Dialog.Footer>
+			<Button
+				variant="outline"
+				on:click={() => {
+					commentModerationDetailOpen = false;
+				}}>Close</Button
+			>
+			<Button variant="destructive" on:click={() => rejectPendingComment(commentModerationDetailComment?.id)}
+				>Reject</Button
+			>
+			<Button on:click={() => approvePendingComment(commentModerationDetailComment?.id)}>Approve</Button>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
@@ -1591,6 +1913,16 @@
 	.commentRef {
 		font-size: 12px;
 		color: hsl(var(--muted-foreground));
+	}
+
+	.commentContent {
+		font-size: 12px;
+		color: hsl(var(--foreground));
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
 	}
 
 	.descCol {
