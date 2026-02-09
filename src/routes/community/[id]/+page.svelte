@@ -293,9 +293,9 @@
 					toast.error($_('community.comment.forbidden'));
 				} else {
 					toast.error($_('community.comment.error'));
-				}
 
-				throw new Error();
+					throw new Error();
+				}
 			}
 
 			const comment = await res.json();
@@ -305,7 +305,10 @@
 			commentAttachedLevel = null;
 			clearCommentImage();
 			commentPreviewMode = false;
-			toast.success($_('community.comment.success'));
+
+			if (res.ok) {
+				toast.success($_('community.comment.success'));
+			}
 		} finally {
 			submittingComment = false;
 		}
