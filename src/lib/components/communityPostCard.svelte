@@ -98,6 +98,7 @@
 	$: TypeIcon = typeIcons[post?.type] || MessageCircle;
 	$: thumbnail = post?.image_url || (post?.video_url ? getYouTubeThumbnail(post.video_url) : null);
 	$: isMedia = post?.type === 'media';
+	$: postTags = (post?.community_posts_tags || []).map((pt: any) => pt.post_tags).filter(Boolean);
 </script>
 
 {#if post}
@@ -164,6 +165,15 @@
 										<ThumbsDown class="h-3 w-3" />
 									{/if}
 									<span>{post.is_recommended ? $_('community.review.recommended') : $_('community.review.not_recommended')}</span>
+								</div>
+							{/if}
+							{#if postTags.length > 0}
+								<div class="postTags">
+									{#each postTags as tag}
+										<span class="postTag" style="background: {tag.color}18; color: {tag.color}; border-color: {tag.color}30">
+											{tag.name}
+										</span>
+									{/each}
 								</div>
 							{/if}
 							<h3 class="postTitle">{post.title}</h3>
@@ -566,6 +576,25 @@
 			background: rgba(239, 68, 68, 0.1);
 			color: rgb(239, 68, 68);
 		}
+	}
+
+	.postTags {
+		display: flex;
+		gap: 4px;
+		flex-wrap: wrap;
+	}
+
+	.postTag {
+		display: inline-flex;
+		align-items: center;
+		padding: 1px 7px;
+		border-radius: 10px;
+		font-size: 10px;
+		font-weight: 600;
+		white-space: nowrap;
+		flex-shrink: 0;
+		border: 1px solid;
+		line-height: 1.5;
 	}
 
 	.skeletonLine {

@@ -19,7 +19,9 @@
 		Megaphone,
 		Search,
 		Star,
-		Sparkles
+		Sparkles,
+		Tag,
+		X
 	} from 'lucide-svelte';
 
 	let posts: any[] = [];
@@ -34,6 +36,10 @@
 	// Search state
 	let searchQuery = '';
 
+	// Tags state
+	let availableTags: any[] = [];
+	let activeTagId: number | null = null;
+
 	// Report state
 	let reportDialogOpen = false;
 	let reportPostId: number | null = null;
@@ -42,6 +48,15 @@
 	let submittingReport = false;
 
 	const PAGE_SIZE = 25;
+
+	async function fetchAvailableTags() {
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/tags`);
+			availableTags = await res.json();
+		} catch {
+			availableTags = [];
+		}
+	}
 
 	const types = [
 		{ value: null, label: 'all', icon: null },
@@ -92,6 +107,10 @@
 
 				if (searchQuery.trim()) {
 					params.set('search', searchQuery.trim());
+				}
+
+				if (activeTagId) {
+					params.set('tagId', String(activeTagId));
 				}
 
 				res = await fetch(`${import.meta.env.VITE_API_URL}/community/posts?${params}`, {
@@ -211,6 +230,15 @@
 		resetAndFetch();
 	}
 
+	function switchTag(tagId: number | null) {
+		activeTagId = tagId;
+		// Tag filter doesn't work with recommended, switch to newest
+		if (activeTagId && sortMode === 'recommended') {
+			sortMode = 'newest';
+		}
+		resetAndFetch();
+	}
+
 	function setupIntersectionObserver() {
 		const sentinel = document.querySelector('#loadMoreSentinel');
 		if (!sentinel) return;
@@ -236,6 +264,7 @@
 	}
 
 	onMount(() => {
+		fetchAvailableTags();
 		if (browser) {
 			const cached = getCommunityCache();
 			if (cached) {
@@ -361,6 +390,33 @@
 				</div>
 			</div>
 		</div>
+
+		<!-- Tag Filters -->
+		{#if availableTags.length > 0}
+			<div class="tagFilters">
+				<Tag class="h-3.5 w-3.5 tagIcon" />
+				<button
+					class="tagFilterBtn"
+					class:active={activeTagId === null}
+					on:click={() => switchTag(null)}
+				>
+					{$_('community.type.all')}
+				</button>
+				{#each availableTags.filter(t => !t.admin_only) as tag}
+					<button
+						class="tagFilterBtn"
+						class:active={activeTagId === tag.id}
+						style="--tag-color: {tag.color}"
+						on:click={() => switchTag(tag.id)}
+					>
+						{tag.name}
+						{#if activeTagId === tag.id}
+							<X class="h-3 w-3" />
+						{/if}
+					</button>
+				{/each}
+			</div>
+		{/if}
 
 		<!-- Posts Grid -->
 		<div class="postsGrid">
@@ -571,6 +627,46 @@
 
 		&.recommended.active {
 			color: hsl(var(--primary));
+		}
+	}
+
+	.tagFilters {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		flex-wrap: wrap;
+		margin-bottom: 4px;
+	}
+
+	:global(.tagIcon) {
+		color: hsl(var(--muted-foreground));
+		flex-shrink: 0;
+	}
+
+	.tagFilterBtn {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 4px 12px;
+		border-radius: 16px;
+		font-size: 12px;
+		font-weight: 600;
+		border: 1.5px solid hsl(var(--border));
+		background: transparent;
+		color: hsl(var(--muted-foreground));
+		cursor: pointer;
+		transition: all 0.15s ease;
+		white-space: nowrap;
+
+		&:hover {
+			border-color: var(--tag-color, hsl(var(--foreground) / 0.3));
+			color: var(--tag-color, hsl(var(--foreground)));
+		}
+
+		&.active {
+			border-color: var(--tag-color, hsl(var(--primary)));
+			color: var(--tag-color, hsl(var(--primary)));
+			background: color-mix(in srgb, var(--tag-color, hsl(var(--primary))) 10%, transparent);
 		}
 	}
 

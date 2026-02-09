@@ -22,7 +22,8 @@
 		ThumbsUp,
 		ThumbsDown,
 		Eye,
-		ArrowLeft
+		ArrowLeft,
+		Tag
 	} from 'lucide-svelte';
 
 	let newPost = {
@@ -56,6 +57,42 @@
 	let reviewLevels: any[] = [];
 	let reviewLevelSearch = '';
 	let loadingReviewLevels = false;
+
+	// Tags state
+	let availableTags: any[] = [];
+	let selectedTagIds: number[] = [];
+	let loadingTags = false;
+
+	async function fetchTags() {
+		loadingTags = true;
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/tags`);
+			const allTags = await res.json();
+			// Filter out admin-only tags for non-admins
+			availableTags = $user.data?.isAdmin ? allTags : allTags.filter((t: any) => !t.admin_only);
+		} catch {
+			availableTags = [];
+		} finally {
+			loadingTags = false;
+		}
+	}
+
+	function toggleTag(tagId: number) {
+		if (selectedTagIds.includes(tagId)) {
+			selectedTagIds = selectedTagIds.filter(id => id !== tagId);
+		} else {
+			if (selectedTagIds.length >= 5) {
+				toast.error($_('community.create.max_tags') || 'Maximum 5 tags allowed');
+				return;
+			}
+			selectedTagIds = [...selectedTagIds, tagId];
+		}
+	}
+
+	import { onMount } from 'svelte';
+	onMount(() => {
+		fetchTags();
+	});
 
 	function getYouTubeId(url: string): string | null {
 		if (!url) return null;
@@ -281,6 +318,10 @@
 				body.is_recommended = isRecommended;
 			}
 
+			if (selectedTagIds.length > 0) {
+				body.tag_ids = selectedTagIds;
+			}
+
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/posts`, {
 				method: 'POST',
 				headers: {
@@ -362,6 +403,32 @@
 					</Select.Content>
 				</Select.Root>
 			</div>
+
+			<!-- Tags Picker -->
+			{#if availableTags.length > 0}
+				<div class="formField">
+					<span class="fieldLabel">
+						<Tag class="inline h-3.5 w-3.5 text-blue-500" />
+						{$_('community.create.tags') || 'Tags'} ({$_('community.create.optional')})
+					</span>
+					<div class="tagPicker">
+						{#each availableTags as tag}
+							<button
+								class="tagOption"
+								class:selected={selectedTagIds.includes(tag.id)}
+								style="--tag-color: {tag.color}"
+								on:click={() => toggleTag(tag.id)}
+								type="button"
+							>
+								{tag.name}
+							</button>
+						{/each}
+					</div>
+					{#if selectedTagIds.length > 0}
+						<p class="tagHint">{selectedTagIds.length}/5 {$_('community.create.tags_selected') || 'tags selected'}</p>
+					{/if}
+				</div>
+			{/if}
 
 			{#if newPost.type === 'review'}
 				<!-- Review: Level Selection -->
@@ -1050,6 +1117,45 @@
 		color: hsl(var(--muted-foreground));
 		font-style: italic;
 		font-size: 13px;
+	}
+
+	/* Tag Picker */
+	.tagPicker {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+
+	.tagOption {
+		display: inline-flex;
+		align-items: center;
+		padding: 4px 12px;
+		border-radius: 16px;
+		font-size: 12px;
+		font-weight: 600;
+		border: 1.5px solid hsl(var(--border));
+		background: transparent;
+		color: hsl(var(--muted-foreground));
+		cursor: pointer;
+		transition: all 0.15s ease;
+
+		&:hover {
+			border-color: var(--tag-color);
+			color: var(--tag-color);
+			background: color-mix(in srgb, var(--tag-color) 8%, transparent);
+		}
+
+		&.selected {
+			border-color: var(--tag-color);
+			color: var(--tag-color);
+			background: color-mix(in srgb, var(--tag-color) 12%, transparent);
+		}
+	}
+
+	.tagHint {
+		font-size: 11px;
+		color: hsl(var(--muted-foreground));
+		margin: 0;
 	}
 
 	@media screen and (max-width: 900px) {

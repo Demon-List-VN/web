@@ -27,6 +27,8 @@
 	export let type: string;
 	export let top: number | null = null;
 	export let hideTop: boolean = false;
+
+	$: levelTags = (level?.levels_tags || []).map((lt: any) => lt.level_tags).filter(Boolean);
 </script>
 
 {#if level}
@@ -126,6 +128,15 @@
 											{level.creator}
 										{/if}
 									</div>
+									{#if levelTags.length > 0}
+										<div class="levelTags">
+											{#each levelTags as tag}
+												<span class="levelTag" style="background: {tag.color || '#666'}18; color: {tag.color || '#666'}; border-color: {tag.color || '#666'}30">
+													{tag.name}
+												</span>
+											{/each}
+										</div>
+									{/if}
 								</div>
 								{#if level.record}
 									<div class="progress">
@@ -250,6 +261,23 @@
 
 				.creator {
 					color: var(--textColor2);
+				}
+
+				.levelTags {
+					display: flex;
+					flex-wrap: wrap;
+					gap: 3px;
+					margin-top: 2px;
+				}
+
+				.levelTag {
+					display: inline-flex;
+					padding: 1px 6px;
+					border-radius: 8px;
+					font-size: 10px;
+					font-weight: 600;
+					line-height: 1.3;
+					border: 1px solid;
 				}
 			}
 

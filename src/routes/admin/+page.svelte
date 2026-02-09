@@ -41,6 +41,7 @@
 			icon: '📝',
 			items: [
 				{ name: 'Level Manager', href: '/admin/level' },
+				{ name: 'Level Tags', href: '/admin/level?tab=tags' },
 				{ name: 'New Levels', href: '/admin/newLevels' },
 				{ name: 'Rating Estimator', href: '/admin/ratingEstimator' },
 				{ name: 'Map Pack', href: '/admin/mappack' }
@@ -76,7 +77,10 @@
 		{
 			title: 'Community',
 			icon: '💬',
-			items: [{ name: 'Community Posts', href: '/admin/community' }]
+			items: [
+				{ name: 'Community Posts', href: '/admin/community' },
+				{ name: 'Post Tags', href: '/admin/community?tab=tags' }
+			]
 		}
 	];
 </script>

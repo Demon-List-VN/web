@@ -36,7 +36,8 @@
 		Pencil,
 		Check,
 		Upload,
-		Eye
+		Eye,
+		Tag
 	} from 'lucide-svelte';
 
 	export let data: any;
@@ -80,6 +81,11 @@
 	let editContent = '';
 	let editType = '';
 	let editSaving = false;
+
+	// Tag edit state
+	let availableTags: any[] = [];
+	let editTagIds: number[] = [];
+	let loadingTags = false;
 
 	// Comment preview state
 	let commentPreviewMode = false;
@@ -374,12 +380,45 @@
 		reportDialogOpen = true;
 	}
 
+	async function fetchAvailableTags() {
+		if (availableTags.length > 0) return;
+		loadingTags = true;
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/tags`);
+			if (res.ok) {
+				let tags = await res.json();
+				if (!$user.data?.isAdmin) {
+					tags = tags.filter((t: any) => !t.admin_only);
+				}
+				availableTags = tags;
+			}
+		} catch {
+			// ignore
+		} finally {
+			loadingTags = false;
+		}
+	}
+
+	function toggleEditTag(tagId: number) {
+		if (editTagIds.includes(tagId)) {
+			editTagIds = editTagIds.filter((id) => id !== tagId);
+		} else {
+			if (editTagIds.length >= 5) {
+				toast.error('Maximum 5 tags');
+				return;
+			}
+			editTagIds = [...editTagIds, tagId];
+		}
+	}
+
 	// Post editing
 	function startEditPost() {
 		editing = true;
 		editTitle = post.title;
 		editContent = post.content || '';
 		editType = post.type || 'discussion';
+		editTagIds = (post?.community_posts_tags || []).map((pt: any) => pt.tag_id);
+		fetchAvailableTags();
 	}
 
 	function cancelEditPost() {
@@ -423,6 +462,24 @@
 			if (!res.ok) throw new Error();
 			const updated = await res.json();
 			post = { ...post, ...updated };
+
+			// Save tags
+			try {
+				const tagRes = await fetch(
+					`${import.meta.env.VITE_API_URL}/community/posts/${post.id}/tags`,
+					{
+						method: 'PUT',
+						headers,
+						body: JSON.stringify({ tag_ids: editTagIds })
+					}
+				);
+				if (tagRes.ok) {
+					await fetchPost();
+				}
+			} catch {
+				// Tag save failed but post save succeeded
+			}
+
 			editing = false;
 			toast.success($_('community.edit.success'));
 		} catch {
@@ -533,6 +590,7 @@
 
 	$: author = post?.players;
 	$: TypeIcon = post ? typeIcons[post.type] || MessageCircle : MessageCircle;
+	$: postTags = (post?.community_posts_tags || []).map((pt: any) => pt.post_tags).filter(Boolean);
 	$: isOwner = $user.loggedIn && post && $user.data?.uid === post.uid;
 	$: isAdmin = $user.loggedIn && $user.data?.isAdmin;
 	$: isAdminNotOwner = isAdmin && !isOwner;
@@ -624,6 +682,20 @@
 							<ThumbsDown class="h-4 w-4" />
 							<span>{$_('community.review.not_recommended')}</span>
 						{/if}
+					</div>
+				{/if}
+
+				{#if postTags.length > 0}
+					<div class="postDetailTags">
+						{#each postTags as tag}
+							<span
+								class="postDetailTag"
+								style="background: {tag.color}18; color: {tag.color}; border: 1px solid {tag.color}30"
+							>
+								<Tag class="h-3 w-3" />
+								{tag.name}
+							</span>
+						{/each}
 					</div>
 				{/if}
 
@@ -730,6 +802,29 @@
 				{/if}
 
 				{#if editing && isOwner}
+					<div class="editTagPicker">
+						<span class="editLabel"><Tag class="h-3.5 w-3.5" style="display:inline" /> Tags</span>
+						{#if loadingTags}
+							<span class="tagHint">Loading tags...</span>
+						{:else}
+							<div class="editTagOptions">
+								{#each availableTags as tag}
+									<button
+										type="button"
+										class="editTagOption"
+										class:selected={editTagIds.includes(tag.id)}
+										style="--tag-color: {tag.color}"
+										on:click={() => toggleEditTag(tag.id)}
+									>
+										{tag.name}
+									</button>
+								{/each}
+							</div>
+							{#if availableTags.length > 0}
+								<span class="tagHint">{editTagIds.length}/5</span>
+							{/if}
+						{/if}
+					</div>
 					<div class="editContentArea">
 						<textarea class="editContentTextarea" bind:value={editContent} rows={8} placeholder={$_('community.create.content_placeholder')}></textarea>
 						{#if editContent}
@@ -1565,6 +1660,78 @@
 			font-size: 11px;
 			color: hsl(var(--muted-foreground));
 		}
+	}
+
+	/* Post detail tags */
+	.postDetailTags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+		margin-top: 4px;
+	}
+
+	.postDetailTag {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 3px 10px;
+		border-radius: 10px;
+		font-size: 12px;
+		font-weight: 600;
+		line-height: 1;
+	}
+
+	/* Edit tag picker */
+	.editTagPicker {
+		margin-bottom: 12px;
+
+		.editLabel {
+			display: flex;
+			align-items: center;
+			gap: 4px;
+			font-size: 12px;
+			font-weight: 600;
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+			color: hsl(var(--muted-foreground));
+			margin-bottom: 6px;
+		}
+	}
+
+	.editTagOptions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+
+	.editTagOption {
+		display: inline-flex;
+		align-items: center;
+		padding: 4px 12px;
+		border-radius: 16px;
+		font-size: 12px;
+		font-weight: 600;
+		cursor: pointer;
+		border: 1px solid color-mix(in srgb, var(--tag-color) 40%, transparent);
+		background: transparent;
+		color: var(--tag-color);
+		transition: all 0.15s;
+
+		&:hover {
+			background: color-mix(in srgb, var(--tag-color) 15%, transparent);
+		}
+
+		&.selected {
+			background: color-mix(in srgb, var(--tag-color) 20%, transparent);
+			border-color: var(--tag-color);
+		}
+	}
+
+	.tagHint {
+		display: block;
+		font-size: 11px;
+		color: hsl(var(--muted-foreground));
+		margin-top: 4px;
 	}
 
 	/* Edit mode */

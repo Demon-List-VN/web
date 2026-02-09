@@ -15,7 +15,7 @@
 	import { onMount } from 'svelte';
 	import { locale } from 'svelte-i18n';
 	import { _ } from 'svelte-i18n';
-	import { Lightbulb } from 'lucide-svelte';
+	import { Lightbulb, Link } from 'lucide-svelte';
 
 	// Submission type: 'record' for normal record submission, 'level' for challenge level submission
 	let submissionType: 'record' | 'level' = 'record';
@@ -85,6 +85,10 @@
 		ms: null
 	};
 
+	// Variant state
+	let levelVariants: any[] = [];
+	let selectedVariantId: number | null = null;
+
 	function getMs() {
 		return parseInt(time.m! || 0) * 60000 + parseInt(time.s! || 0) * 1000 + parseInt(time.ms! || 0);
 	}
@@ -114,11 +118,18 @@
 			submission.mobile = submission.mobile.value;
 		}
 
+		// If user selected a variant, submit with the variant's level ID
+		// The API will redirect the record to the main level automatically
+		const submitData = { ...submission };
+		if (selectedVariantId) {
+			submitData.levelid = selectedVariantId;
+		}
+
 		submitId = new Date().getTime();
 
 		fetch(`${import.meta.env.VITE_API_URL}/submission?id=${submitId}`, {
 			method: 'POST',
-			body: JSON.stringify(submission),
+			body: JSON.stringify(submitData),
 			headers: {
 				Authorization: `Bearer ${await $user.token()}`,
 				'Content-Type': 'application/json'
@@ -201,6 +212,18 @@
 		apiLevel = await (
 			await fetch(`${import.meta.env.VITE_API_URL}/levels/${levelId}?fromGD=1`)
 		).json();
+
+		// Fetch variants for the level
+		levelVariants = [];
+		selectedVariantId = null;
+		if (submissionType === 'record') {
+			try {
+				const varRes = await fetch(`${import.meta.env.VITE_API_URL}/levels/${levelId}/variants`);
+				if (varRes.ok) {
+					levelVariants = await varRes.json();
+				}
+			} catch {}
+		}
 	}
 
 	function next() {
@@ -317,6 +340,8 @@
 				step = 0;
 				apiLevel = null;
 				level = null;
+				levelVariants = [];
+				selectedVariantId = null;
 				time = {
 					m: null,
 					s: null,
@@ -471,6 +496,33 @@
 									by {apiLevel.author}
 								{/if}
 							</div>
+							{#if levelVariants.length > 0}
+								<div class="variantPicker">
+									<Label class="text-sm font-medium">
+										<Link class="h-3.5 w-3.5 inline" />
+										{$locale == 'vi' ? 'Bạn chơi bản nào?' : 'Which version did you play?'}
+									</Label>
+									<div class="variantOptions">
+										<button
+											class="variantOption"
+											class:selected={selectedVariantId === null}
+											on:click={() => selectedVariantId = null}
+										>
+											{apiLevel.name} ({$locale == 'vi' ? 'Bản gốc' : 'Original'})
+										</button>
+										{#each levelVariants as variant}
+											<button
+												class="variantOption"
+												class:selected={selectedVariantId === variant.id}
+												on:click={() => selectedVariantId = variant.id}
+											>
+												{variant.name}
+												<span class="variantOptionId">ID: {variant.id}</span>
+											</button>
+										{/each}
+									</div>
+								</div>
+							{/if}
 						{/if}
 					{:else}
 						<!-- Level submission step 2: confirm level and add comment -->
@@ -856,5 +908,50 @@
 <style lang="scss">
 	a {
 		text-decoration: underline;
+	}
+
+	.variantPicker {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		margin-top: 8px;
+		padding: 10px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		background: hsl(var(--muted) / 0.2);
+	}
+
+	.variantOptions {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.variantOption {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 8px 12px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 6px;
+		background: transparent;
+		cursor: pointer;
+		font-size: 13px;
+		text-align: left;
+		transition: all 0.15s;
+
+		&:hover {
+			background: hsl(var(--muted) / 0.3);
+		}
+
+		&.selected {
+			border-color: hsl(var(--primary));
+			background: hsl(var(--primary) / 0.1);
+		}
+	}
+
+	.variantOptionId {
+		font-size: 11px;
+		color: hsl(var(--muted-foreground));
 	}
 </style>

@@ -14,7 +14,7 @@
 	import * as Tabs from '$lib/components/ui/tabs';
 	import { goto } from '$app/navigation';
 	import { _ } from 'svelte-i18n';
-	import { MessageSquare } from 'lucide-svelte';
+	import { MessageSquare, Tag, Link } from 'lucide-svelte';
 
 	export let data: PageData;
 	let levelAPI: any = null;
@@ -26,6 +26,8 @@
 	let selectedRecord: any = null;
 	let relatedPosts: any[] = [];
 	let activeTab = 'records';
+	let levelTags: any[] = [];
+	let levelVariants: any[] = [];
 
 	function getTimeString(ms: number) {
 		const minutes = Math.floor(ms / 60000);
@@ -92,6 +94,8 @@
 		records = [];
 		deathCount = [];
 		relatedPosts = [];
+		levelTags = [];
+		levelVariants = [];
 
 		fetch(`${import.meta.env.VITE_API_URL}/levels/${$page.params.id}?fromGD=1`)
 			.then((res) => res.json())
@@ -111,6 +115,16 @@
 			.then((res) => res.json())
 			.then((res: any) => (relatedPosts = res))
 			.catch(() => (relatedPosts = []));
+
+		fetch(`${import.meta.env.VITE_API_URL}/levels/${$page.params.id}/tags`)
+			.then((res) => res.json())
+			.then((res: any) => (levelTags = (res || []).map((t: any) => t.level_tags || t).filter(Boolean)))
+			.catch(() => (levelTags = []));
+
+		fetch(`${import.meta.env.VITE_API_URL}/levels/${$page.params.id}/variants`)
+			.then((res) => res.json())
+			.then((res: any) => (levelVariants = res || []))
+			.catch(() => (levelVariants = []));
 	}
 
 	function getList() {
@@ -204,6 +218,16 @@
 									{data.level.creator}
 								{/if}
 							</span>
+						{/if}
+						{#if levelTags.length > 0}
+							<div class="levelTagsRow">
+								{#each levelTags as tag}
+									<span class="levelTagBadge" style="background: {tag.color || '#666'}18; color: {tag.color || '#666'}; border: 1px solid {tag.color || '#666'}30">
+										<Tag class="h-3 w-3" />
+										{tag.name}
+									</span>
+								{/each}
+							</div>
 						{/if}
 					</div>
 				</div>
@@ -314,6 +338,37 @@
 			</Card.Content>
 		</Card.Root>
 	</div>
+	{#if levelVariants.length > 0}
+		<div class="cardWrapper1 variantsSection">
+			<Card.Root>
+				<Card.Content>
+					<div class="content">
+						<h3 class="variantsTitle">
+							<Link class="h-4 w-4" />
+							{$_('level.low_detail_variants', { default: 'Low Detail Variants' })}
+						</h3>
+						<div class="variantsList">
+							{#each levelVariants as variant}
+								<a href="/level/{variant.id}" class="variantCard" data-sveltekit-preload-data="tap">
+									<img
+										src="https://img.youtube.com/vi/{variant.videoID}/mqdefault.jpg"
+										alt={variant.name}
+										class="variantThumb"
+										loading="lazy"
+									/>
+									<div class="variantDetails">
+										<span class="variantName">{variant.name}</span>
+										<span class="variantCreator">by {variant.creator}</span>
+										<span class="variantId">ID: {variant.id}</span>
+									</div>
+								</a>
+							{/each}
+						</div>
+					</div>
+				</Card.Content>
+			</Card.Root>
+		</div>
+	{/if}
 	<Ads />
 	{#if 'level' in data && !data.level.isPlatformer}
 		<div class="chartWrapper cardWrapper1">
@@ -545,5 +600,88 @@
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
 		gap: 12px;
+	}
+
+	.levelTagsRow {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+		margin-top: 6px;
+	}
+
+	.levelTagBadge {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 3px 10px;
+		border-radius: 10px;
+		font-size: 12px;
+		font-weight: 600;
+		line-height: 1;
+	}
+
+	.variantsSection {
+		margin-top: 0;
+	}
+
+	.variantsTitle {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 16px;
+		font-weight: 600;
+		margin-bottom: 12px;
+	}
+
+	.variantsList {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+		gap: 12px;
+	}
+
+	.variantCard {
+		display: flex;
+		gap: 12px;
+		padding: 10px;
+		border: 1px solid var(--border1);
+		border-radius: var(--radius);
+		text-decoration: none;
+		color: inherit;
+		transition: background 0.15s;
+
+		&:hover {
+			background: hsl(var(--muted) / 0.3);
+		}
+	}
+
+	.variantThumb {
+		width: 120px;
+		height: 68px;
+		object-fit: cover;
+		border-radius: calc(var(--radius) - 2px);
+		flex-shrink: 0;
+	}
+
+	.variantDetails {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		justify-content: center;
+	}
+
+	.variantName {
+		font-weight: 600;
+		font-size: 14px;
+	}
+
+	.variantCreator {
+		color: var(--textColor2);
+		font-size: 13px;
+	}
+
+	.variantId {
+		color: var(--textColor2);
+		font-size: 12px;
+		opacity: 0.7;
 	}
 </style>

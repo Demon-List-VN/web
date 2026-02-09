@@ -8,6 +8,7 @@
 	import { user } from '$lib/client';
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
+	import { page } from '$app/stores';
 	import {
 		Trash2,
 		Pin,
@@ -27,7 +28,10 @@
 		EyeOff,
 		Eye,
 		Shield,
-		X
+		X,
+		Tag,
+		Plus,
+		Palette
 	} from 'lucide-svelte';
 
 	let posts: any[] | null = null;
@@ -39,8 +43,17 @@
 	let editPost: any = null;
 
 	// Tab state
-	let activeTab: 'posts' | 'reports' | 'moderation' = 'posts';
+	let activeTab: 'posts' | 'reports' | 'moderation' | 'tags' = 'posts';
 	let showHidden = false;
+
+	// Tags state
+	let tags: any[] | null = null;
+	let newTagName = '';
+	let newTagColor = '#3b82f6';
+	let newTagAdminOnly = false;
+	let creatingTag = false;
+	let editingTag: any = null;
+	let editTagDialogOpen = false;
 
 	// Reports state
 	let reports: any[] | null = null;
@@ -196,6 +209,11 @@
 	}
 
 	onMount(() => {
+		// Check for tab query param
+		const tabParam = $page.url.searchParams.get('tab');
+		if (tabParam === 'tags' || tabParam === 'reports' || tabParam === 'moderation') {
+			switchTab(tabParam as any);
+		}
 		fetchPosts();
 		// Fetch pending count for badge
 		fetchPendingCount();
@@ -255,13 +273,73 @@
 		}
 	}
 
-	function switchTab(tab: 'posts' | 'reports' | 'moderation') {
+	function switchTab(tab: 'posts' | 'reports' | 'moderation' | 'tags') {
 		activeTab = tab;
 		if (tab === 'reports' && !reports) {
 			fetchReports();
 		}
 		if (tab === 'moderation' && !pendingPosts) {
 			fetchPendingPosts();
+		}
+		if (tab === 'tags' && !tags) {
+			fetchTags();
+		}
+	}
+
+	// ---- Tags Management ----
+
+	async function fetchTags() {
+		tags = null;
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/tags`);
+			tags = await res.json();
+		} catch {
+			tags = [];
+		}
+	}
+
+	async function createTag() {
+		if (!newTagName.trim()) {
+			toast.error('Tag name is required');
+			return;
+		}
+		creatingTag = true;
+		try {
+			const headers = await getAuthHeaders();
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/tags`, {
+				method: 'POST',
+				headers,
+				body: JSON.stringify({ name: newTagName.trim(), color: newTagColor, admin_only: newTagAdminOnly })
+			});
+			if (!res.ok) {
+				const err = await res.json();
+				throw new Error(err.error || 'Failed to create tag');
+			}
+			toast.success('Tag created');
+			newTagName = '';
+			newTagColor = '#3b82f6';
+			newTagAdminOnly = false;
+			await fetchTags();
+		} catch (e: any) {
+			toast.error(e.message);
+		} finally {
+			creatingTag = false;
+		}
+	}
+
+	async function deleteTag(id: number) {
+		if (!confirm('Delete this tag? It will be removed from all posts.')) return;
+		try {
+			const headers = await getAuthHeaders();
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/tags/${id}`, {
+				method: 'DELETE',
+				headers
+			});
+			if (!res.ok) throw new Error();
+			toast.success('Tag deleted');
+			await fetchTags();
+		} catch {
+			toast.error('Failed to delete tag');
 		}
 	}
 
@@ -417,6 +495,14 @@
 			{#if pendingTotal > 0}
 				<span class="badge">{pendingTotal}</span>
 			{/if}
+		</button>
+		<button
+			class="tab"
+			class:active={activeTab === 'tags'}
+			on:click={() => switchTab('tags')}
+		>
+			<Tag class="h-4 w-4" />
+			Tags
 		</button>
 	</div>
 
@@ -879,9 +965,94 @@
 			</div>
 		{/if}
 	{/if}
-</div>
 
-<!-- Moderation Detail Dialog -->
+	{#if activeTab === 'tags'}
+		<!-- Tags Management -->
+		<div class="tagsSection">
+			<div class="createTagForm">
+				<h3 class="sectionTitle">Create New Tag</h3>
+				<div class="tagFormRow">
+					<Input bind:value={newTagName} placeholder="Tag name..." class="flex-1" />
+					<div class="colorPicker">
+						<label for="tag-color" class="colorLabel">
+							<Palette class="h-3.5 w-3.5" />
+							Color
+						</label>
+						<input id="tag-color" type="color" bind:value={newTagColor} class="colorInput" />
+						<div class="colorPreview" style="background: {newTagColor}"></div>
+					</div>
+					<label class="adminOnlyToggle">
+						<input type="checkbox" bind:checked={newTagAdminOnly} />
+						<span>Admin only</span>
+					</label>
+					<Button size="sm" on:click={createTag} disabled={creatingTag}>
+						<Plus class="mr-1 h-3.5 w-3.5" />
+						{creatingTag ? 'Creating...' : 'Create'}
+					</Button>
+				</div>
+			</div>
+
+			<div class="tableContainer">
+				<table class="postsTable">
+					<thead>
+						<tr>
+							<th>ID</th>
+							<th>Preview</th>
+							<th>Name</th>
+							<th>Color</th>
+							<th>Admin Only</th>
+							<th>Actions</th>
+						</tr>
+					</thead>
+					<tbody>
+						{#if tags}
+							{#each tags as tag}
+								<tr>
+									<td class="idCol">{tag.id}</td>
+									<td>
+										<span class="tagPreview" style="background: {tag.color}20; color: {tag.color}; border: 1px solid {tag.color}40">
+											{tag.name}
+										</span>
+									</td>
+									<td>{tag.name}</td>
+									<td>
+										<div class="colorCell">
+											<div class="colorDot" style="background: {tag.color}"></div>
+											<code>{tag.color}</code>
+										</div>
+									</td>
+									<td class="center">{tag.admin_only ? '✓' : '—'}</td>
+									<td>
+										<div class="actions">
+											<button
+												class="actionBtn danger"
+												on:click={() => deleteTag(tag.id)}
+												title="Delete tag"
+											>
+												<Trash2 class="h-4 w-4" />
+											</button>
+										</div>
+									</td>
+								</tr>
+							{/each}
+							{#if tags.length === 0}
+								<tr>
+									<td colspan="6" class="emptyRow">No tags created yet</td>
+								</tr>
+							{/if}
+						{:else}
+							{#each { length: 3 } as _}
+								<tr class="skeleton">
+									<td colspan="6"><div class="skeletonLine"></div></td>
+								</tr>
+							{/each}
+						{/if}
+					</tbody>
+				</table>
+			</div>
+		</div>
+	{/if}
+</div>
 <Dialog.Root bind:open={moderationDetailOpen}>
 	<Dialog.Content class="max-h-[80vh] max-w-2xl overflow-y-auto">
 		<Dialog.Header>
@@ -1452,5 +1623,103 @@
 		font-family: monospace;
 		font-size: 11px;
 		color: hsl(var(--muted-foreground));
+	}
+
+	/* Tags Management */
+	.tagsSection {
+		display: flex;
+		flex-direction: column;
+		gap: 20px;
+	}
+
+	.createTagForm {
+		padding: 20px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 12px;
+		background: hsl(var(--card));
+	}
+
+	.tagFormRow {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		margin-top: 12px;
+		flex-wrap: wrap;
+	}
+
+	.colorPicker {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.colorLabel {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		font-size: 13px;
+		font-weight: 500;
+		color: hsl(var(--muted-foreground));
+		white-space: nowrap;
+	}
+
+	.colorInput {
+		width: 32px;
+		height: 32px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 6px;
+		cursor: pointer;
+		background: transparent;
+		padding: 2px;
+	}
+
+	.colorPreview {
+		width: 24px;
+		height: 24px;
+		border-radius: 4px;
+	}
+
+	.adminOnlyToggle {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 13px;
+		color: hsl(var(--muted-foreground));
+		cursor: pointer;
+		white-space: nowrap;
+
+		input[type="checkbox"] {
+			width: 16px;
+			height: 16px;
+			cursor: pointer;
+		}
+	}
+
+	.tagPreview {
+		display: inline-flex;
+		align-items: center;
+		padding: 2px 10px;
+		border-radius: 12px;
+		font-size: 12px;
+		font-weight: 600;
+		white-space: nowrap;
+	}
+
+	.colorCell {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+
+		code {
+			font-size: 11px;
+			color: hsl(var(--muted-foreground));
+		}
+	}
+
+	.colorDot {
+		width: 14px;
+		height: 14px;
+		border-radius: 50%;
+		flex-shrink: 0;
 	}
 </style>
