@@ -400,7 +400,7 @@
 							<!-- Video Links Section -->
 							<div class="detail-section">
 								<div class="detail-row">
-									<span class="detail-label">{$_('record_detail.title')}</span>
+									<span class="detail-label">Video</span>
 									<a href={record.data.videoLink} target="_blank" class="detail-link">
 										{record.data.videoLink.slice(0, 40)}...
 									</a>
@@ -413,6 +413,12 @@
 										</a>
 									</div>
 								{/if}
+								<div class="detail-row">
+									<span class="detail-label">LDM</span>
+									<span class="detail-value">
+										{record.data.variant_id ?? 'N/a'}
+									</span>
+								</div>
 							</div>
 
 							<!-- Submission Info Section -->
