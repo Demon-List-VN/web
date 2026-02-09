@@ -313,7 +313,11 @@
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/tags`, {
 				method: 'POST',
 				headers,
-				body: JSON.stringify({ name: newTagName.trim(), color: newTagColor, admin_only: newTagAdminOnly })
+				body: JSON.stringify({
+					name: newTagName.trim(),
+					color: newTagColor,
+					admin_only: newTagAdminOnly
+				})
 			});
 			if (!res.ok) {
 				const err = await res.json();
@@ -366,18 +370,15 @@
 		savingTagEdit = true;
 		try {
 			const headers = await getAuthHeaders();
-			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/community/tags/${editingTag.id}`,
-				{
-					method: 'PUT',
-					headers,
-					body: JSON.stringify({
-						name: editTagName.trim(),
-						color: editTagColor,
-						admin_only: editTagAdminOnly
-					})
-				}
-			);
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/tags/${editingTag.id}`, {
+				method: 'PUT',
+				headers,
+				body: JSON.stringify({
+					name: editTagName.trim(),
+					color: editTagColor,
+					admin_only: editTagAdminOnly
+				})
+			});
 			if (res.ok) {
 				toast.success('Tag updated');
 				cancelEditPostTag();
@@ -548,11 +549,7 @@
 				<span class="badge">{pendingTotal}</span>
 			{/if}
 		</button>
-		<button
-			class="tab"
-			class:active={activeTab === 'tags'}
-			on:click={() => switchTab('tags')}
-		>
+		<button class="tab" class:active={activeTab === 'tags'} on:click={() => switchTab('tags')}>
 			<Tag class="h-4 w-4" />
 			Tags
 		</button>
@@ -666,6 +663,13 @@
 								<td class="dateCol">{formatDate(post.created_at)}</td>
 								<td>
 									<div class="actions">
+										<button
+											class="actionBtn"
+											on:click={() => openModerationDetail(post)}
+											title="View Details"
+										>
+											<Shield class="h-4 w-4" />
+										</button>
 										<button class="actionBtn" on:click={() => openEdit(post)} title="Edit">
 											<Pencil class="h-4 w-4" />
 										</button>
@@ -935,7 +939,11 @@
 								<td>
 									<div class="flaggedCats">
 										{#each flagged as cat}
-											<span class="flagBadge" on:click={() => openModerationDetail(post)} title="View moderation details">{cat}</span>
+											<span
+												class="flagBadge"
+												on:click={() => openModerationDetail(post)}
+												title="View moderation details">{cat}</span
+											>
 										{/each}
 										{#if flagged.length === 0}
 											<span class="text-xs text-muted-foreground">API error</span>
@@ -1063,7 +1071,10 @@
 									<td class="idCol">{tag.id}</td>
 									{#if editingTag && editingTag.id === tag.id}
 										<td>
-											<span class="tagPreview" style="background: {editTagColor}20; color: {editTagColor}; border: 1px solid {editTagColor}40">
+											<span
+												class="tagPreview"
+												style="background: {editTagColor}20; color: {editTagColor}; border: 1px solid {editTagColor}40"
+											>
 												{editTagName || 'Preview'}
 											</span>
 										</td>
@@ -1091,18 +1102,17 @@
 												>
 													<Save class="h-4 w-4" />
 												</button>
-												<button
-													class="actionBtn"
-													on:click={cancelEditPostTag}
-													title="Cancel"
-												>
+												<button class="actionBtn" on:click={cancelEditPostTag} title="Cancel">
 													<X class="h-4 w-4" />
 												</button>
 											</div>
 										</td>
 									{:else}
 										<td>
-											<span class="tagPreview" style="background: {tag.color}20; color: {tag.color}; border: 1px solid {tag.color}40">
+											<span
+												class="tagPreview"
+												style="background: {tag.color}20; color: {tag.color}; border: 1px solid {tag.color}40"
+											>
 												{tag.name}
 											</span>
 										</td>
@@ -1191,14 +1201,21 @@
 
 				<div class="field">
 					<span class="fieldLabel">Status</span>
-					<span class="flagStatus {modFlagged.length ? 'flagged' : ''}">{modFlagged.length ? 'Flagged' : 'No flags'}</span>
+					<span class="flagStatus {modFlagged.length ? 'flagged' : ''}"
+						>{modFlagged.length ? 'Flagged' : 'No flags'}</span
+					>
 				</div>
 
 				<div class="scoresList">
 					{#each modScores as s}
 						<div class="scoreRow">
 							<div class="scoreName">{s.name}</div>
-							<div class="scoreBar"><div class="scoreBarFill {s.score >= 0.7 ? 'high' : s.score >= 0.4 ? 'medium' : ''}" style="width: {Math.round(s.score * 100)}%"></div></div>
+							<div class="scoreBar">
+								<div
+									class="scoreBarFill {s.score >= 0.7 ? 'high' : s.score >= 0.4 ? 'medium' : ''}"
+									style="width: {Math.round(s.score * 100)}%"
+								></div>
+							</div>
 							<div class="scoreValue">{s.score.toFixed(2)}</div>
 						</div>
 					{/each}
@@ -1208,7 +1225,9 @@
 				</div>
 
 				<div class="field">
-					<button class="actionBtn" on:click={() => (showModerationRaw = !showModerationRaw)}>{showModerationRaw ? 'Hide raw JSON' : 'Show raw JSON'}</button>
+					<button class="actionBtn" on:click={() => (showModerationRaw = !showModerationRaw)}
+						>{showModerationRaw ? 'Hide raw JSON' : 'Show raw JSON'}</button
+					>
 				</div>
 
 				{#if showModerationRaw}
@@ -1788,7 +1807,7 @@
 		cursor: pointer;
 		white-space: nowrap;
 
-		input[type="checkbox"] {
+		input[type='checkbox'] {
 			width: 16px;
 			height: 16px;
 			cursor: pointer;
