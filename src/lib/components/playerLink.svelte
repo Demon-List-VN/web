@@ -44,11 +44,14 @@
 
 <div class="wrapper">
 	{#if showAvatar}
-		<img
-			class="playerAvatar"
-			src={`https://cdn.gdvn.net/avatars/${player.uid}${isActive(player.supporterUntil) && player.isAvatarGif ? '.gif' : '.jpg'}?version=${player.avatarVersion}`}
-			alt={player.name}
-		/>
+		<Avatar.Root class='h-[30px] w-[30px]'>
+			<Avatar.Image
+				class="playerAvatar"
+				src={`https://cdn.gdvn.net/avatars/${player.uid}${isActive(player.supporterUntil) && player.isAvatarGif ? '.gif' : '.jpg'}?version=${player.avatarVersion}`}
+				alt={player.name}
+			/>
+			<Avatar.Fallback class="playerAvatar">{player.name[0]}</Avatar.Fallback>
+		</Avatar.Root>
 	{/if}
 	<Popover.Root bind:open={isPopoverOpen}>
 		{#if showTitle && getTitle(titleType, player)?.title}
