@@ -44,7 +44,7 @@
 	let editPost: any = null;
 
 	// Tab state
-	let activeTab: 'posts' | 'reports' | 'moderation' | 'comment-moderation' | 'tags' = 'posts';
+	let activeTab: 'posts' | 'comments' | 'reports' | 'moderation' | 'comment-moderation' | 'tags' = 'posts';
 	let showHidden = false;
 
 	// Tags state
@@ -80,6 +80,16 @@
 	let commentModerationDetailOpen = false;
 	let commentModerationDetailComment: any = null;
 	let showCommentModerationRaw = false;
+
+	// All comments state
+	let allComments: any[] | null = null;
+	let allCommentsTotal = 0;
+	let allCommentsPage = 0;
+	let allCommentsSearch = '';
+	let showHiddenComments = false;
+	let commentDetailOpen = false;
+	let commentDetailComment: any = null;
+	let showCommentDetailRaw = false;
 
 	const PAGE_SIZE = 20;
 
@@ -223,7 +233,7 @@
 	onMount(() => {
 		// Check for tab query param
 		const tabParam = $page.url.searchParams.get('tab');
-		if (tabParam === 'tags' || tabParam === 'reports' || tabParam === 'moderation' || tabParam === 'comment-moderation') {
+		if (tabParam === 'tags' || tabParam === 'reports' || tabParam === 'moderation' || tabParam === 'comment-moderation' || tabParam === 'comments') {
 			switchTab(tabParam as any);
 		}
 		fetchPosts();
@@ -300,7 +310,7 @@
 		}
 	}
 
-	function switchTab(tab: 'posts' | 'reports' | 'moderation' | 'comment-moderation' | 'tags') {
+	function switchTab(tab: 'posts' | 'comments' | 'reports' | 'moderation' | 'comment-moderation' | 'tags') {
 		activeTab = tab;
 		if (tab === 'reports' && !reports) {
 			fetchReports();
@@ -310,6 +320,9 @@
 		}
 		if (tab === 'comment-moderation' && !pendingComments) {
 			fetchPendingComments();
+		}
+		if (tab === 'comments' && !allComments) {
+			fetchAllComments();
 		}
 		if (tab === 'tags' && !tags) {
 			fetchTags();
@@ -606,6 +619,74 @@
 			.sort((a, b) => b.score - a.score);
 	}
 
+	// ---- All Comments ----
+
+	async function fetchAllComments() {
+		allComments = null;
+		const params = new URLSearchParams({
+			limit: String(PAGE_SIZE),
+			offset: String(allCommentsPage * PAGE_SIZE)
+		});
+		if (allCommentsSearch.trim()) params.set('search', allCommentsSearch.trim());
+		if (showHiddenComments) params.set('hidden', 'true');
+
+		try {
+			const headers = await getAuthHeaders();
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/community/admin/comments?${params}`,
+				{ headers }
+			);
+			const json = await res.json();
+			allComments = json.data;
+			allCommentsTotal = json.total;
+		} catch {
+			allComments = [];
+			allCommentsTotal = 0;
+		}
+	}
+
+	async function adminDeleteComment(id: number) {
+		if (!confirm('Are you sure you want to delete this comment?')) return;
+		try {
+			const headers = await getAuthHeaders();
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/admin/comments/${id}`, {
+				method: 'DELETE',
+				headers
+			});
+			if (!res.ok) throw new Error();
+			toast.success('Comment deleted');
+			await fetchAllComments();
+		} catch {
+			toast.error('Failed to delete comment');
+		}
+	}
+
+	async function toggleAdminCommentHidden(comment: any) {
+		try {
+			const headers = await getAuthHeaders();
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/community/admin/comments/${comment.id}/hidden`,
+				{
+					method: 'PUT',
+					headers,
+					body: JSON.stringify({ hidden: !comment.community_comments_admin?.hidden })
+				}
+			);
+			if (!res.ok) throw new Error();
+			const isHidden = !comment.community_comments_admin?.hidden;
+			comment.community_comments_admin = { ...comment.community_comments_admin, hidden: isHidden };
+			allComments = allComments;
+			toast.success(isHidden ? 'Comment hidden' : 'Comment unhidden');
+		} catch {
+			toast.error('Failed to update comment');
+		}
+	}
+
+	function openCommentDetail(comment: any) {
+		commentDetailComment = comment;
+		commentDetailOpen = true;
+	}
+
 	// Derived moderation view state for the detail dialog
 	$: modResult = moderationDetailPost?.community_posts_admin?.moderation_result;
 	$: modFlagged = getFlaggedCategories(modResult);
@@ -615,6 +696,11 @@
 	$: commentModResult = commentModerationDetailComment?.community_comments_admin?.moderation_result;
 	$: commentModFlagged = getFlaggedCategories(commentModResult);
 	$: commentModScores = getCategoryScores(commentModResult);
+
+	// Derived comment detail view state (for Comments tab)
+	$: commentDetailModResult = commentDetailComment?.community_comments_admin?.moderation_result;
+	$: commentDetailFlagged = getFlaggedCategories(commentDetailModResult);
+	$: commentDetailScores = getCategoryScores(commentDetailModResult);
 </script>
 
 <Title value="Community Admin" />
@@ -630,6 +716,10 @@
 		<button class="tab" class:active={activeTab === 'posts'} on:click={() => switchTab('posts')}>
 			<MessageCircle class="h-4 w-4" />
 			Posts
+		</button>
+		<button class="tab" class:active={activeTab === 'comments'} on:click={() => switchTab('comments')}>
+			<MessageCircle class="h-4 w-4" />
+			Comments
 		</button>
 		<button
 			class="tab"
@@ -859,6 +949,191 @@
 					on:click={() => {
 						currentPage++;
 						fetchPosts();
+					}}
+				>
+					<ChevronRight class="h-4 w-4" />
+				</Button>
+			</div>
+		{/if}
+	{/if}
+
+	{#if activeTab === 'comments'}
+		<!-- Comments Toolbar -->
+		<div class="toolbar">
+			<div class="searchBox">
+				<Search class="h-4 w-4 text-muted-foreground" />
+				<Input
+					bind:value={allCommentsSearch}
+					placeholder="Search comments..."
+					class="border-0 bg-transparent focus-visible:ring-0"
+					on:keydown={(e) => {
+						if (e.key === 'Enter') {
+							allCommentsPage = 0;
+							fetchAllComments();
+						}
+					}}
+				/>
+			</div>
+
+			<div class="filters">
+				<Button
+					variant={showHiddenComments ? 'outline' : 'default'}
+					size="sm"
+					on:click={() => {
+						showHiddenComments = false;
+						allCommentsPage = 0;
+						fetchAllComments();
+					}}
+				>
+					<Eye class="mr-1 h-3.5 w-3.5" />
+					Visible
+				</Button>
+				<Button
+					variant={showHiddenComments ? 'default' : 'outline'}
+					size="sm"
+					on:click={() => {
+						showHiddenComments = true;
+						allCommentsPage = 0;
+						fetchAllComments();
+					}}
+				>
+					<EyeOff class="mr-1 h-3.5 w-3.5" />
+					Hidden
+				</Button>
+			</div>
+		</div>
+
+		<!-- Comments Table -->
+		<div class="tableContainer">
+			<table class="postsTable">
+				<thead>
+					<tr>
+						<th>ID</th>
+						<th>Post</th>
+						<th>Content</th>
+						<th>Author</th>
+						<th>Status</th>
+						<th>Date</th>
+						<th>Actions</th>
+					</tr>
+				</thead>
+				<tbody>
+					{#if allComments}
+						{#each allComments as comment}
+							{@const isHidden = comment.community_comments_admin?.hidden}
+							{@const modStatus = comment.community_comments_admin?.moderation_status}
+							<tr class:hiddenPost={isHidden}>
+								<td class="idCol">{comment.id}</td>
+								<td class="titleCol">
+									<a
+										href="/community/{comment.post_id}"
+										target="_blank"
+										class="titleLink"
+									>
+										{comment.community_posts?.title || `Post #${comment.post_id}`}
+										<ExternalLink class="ml-1 inline h-3 w-3" />
+									</a>
+								</td>
+								<td class="titleCol">
+									<div
+										class="contentPreview"
+										style="display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; max-width: 300px;"
+									>
+										{comment.content}
+									</div>
+								</td>
+								<td class="authorCol">
+									{comment.players?.name || comment.uid}
+								</td>
+								<td>
+									<div
+										class="typeBadge"
+										class:approved={modStatus === 'approved'}
+										class:pending={modStatus === 'pending'}
+										class:rejected={modStatus === 'rejected'}
+									>
+										{#if isHidden}
+											<EyeOff class="h-3.5 w-3.5 text-red-500" />
+										{/if}
+										<span>{modStatus || 'approved'}</span>
+									</div>
+								</td>
+								<td class="dateCol">{formatDate(comment.created_at)}</td>
+								<td>
+									<div class="actions">
+										<button
+											class="actionBtn"
+											on:click={() => openCommentDetail(comment)}
+											title="View Details"
+										>
+											<Shield class="h-4 w-4" />
+										</button>
+										<button
+											class="actionBtn"
+											class:danger={!isHidden}
+											on:click={() => toggleAdminCommentHidden(comment)}
+											title={isHidden ? 'Unhide' : 'Hide'}
+										>
+											{#if isHidden}
+												<Eye class="h-4 w-4" />
+											{:else}
+												<EyeOff class="h-4 w-4" />
+											{/if}
+										</button>
+										<button
+											class="actionBtn danger"
+											on:click={() => adminDeleteComment(comment.id)}
+											title="Delete"
+										>
+											<Trash2 class="h-4 w-4" />
+										</button>
+									</div>
+								</td>
+							</tr>
+						{/each}
+						{#if allComments.length === 0}
+							<tr>
+								<td colspan="7" class="emptyRow">No comments found</td>
+							</tr>
+						{/if}
+					{:else}
+						{#each { length: 5 } as _}
+							<tr class="skeleton">
+								<td colspan="7"><div class="skeletonLine"></div></td>
+							</tr>
+						{/each}
+					{/if}
+				</tbody>
+			</table>
+		</div>
+
+		<!-- Comments Pagination -->
+		{#if allComments && allCommentsTotal > PAGE_SIZE}
+			<div class="pagination">
+				<Button
+					variant="outline"
+					size="sm"
+					disabled={allCommentsPage === 0}
+					on:click={() => {
+						allCommentsPage--;
+						fetchAllComments();
+					}}
+				>
+					<ChevronLeft class="h-4 w-4" />
+				</Button>
+				<span class="pageInfo">
+					{allCommentsPage * PAGE_SIZE + 1}-{Math.min(
+						(allCommentsPage + 1) * PAGE_SIZE,
+						allCommentsTotal
+					)} of {allCommentsTotal}
+				</span>
+				<Button
+					variant="outline"
+					size="sm"
+					disabled={(allCommentsPage + 1) * PAGE_SIZE >= allCommentsTotal}
+					on:click={() => {
+						allCommentsPage++;
+						fetchAllComments();
 					}}
 				>
 					<ChevronRight class="h-4 w-4" />
@@ -1573,6 +1848,97 @@
 	</Dialog.Content>
 </Dialog.Root>
 
+<!-- Comment Detail Dialog (Comments tab) -->
+<Dialog.Root bind:open={commentDetailOpen}>
+	<Dialog.Content class="max-h-[80vh] max-w-2xl overflow-y-auto">
+		<Dialog.Header>
+			<Dialog.Title>Comment Detail — Comment #{commentDetailComment?.id}</Dialog.Title>
+		</Dialog.Header>
+
+		{#if commentDetailComment}
+			<div class="moderationDetail">
+				<div class="field">
+					<span class="fieldLabel">Author</span>
+					<span>{commentDetailComment.players?.name || commentDetailComment.uid}</span>
+				</div>
+				{#if commentDetailComment.community_posts}
+					<div class="field">
+						<span class="fieldLabel">Post</span>
+						<a href="/community/{commentDetailComment.community_posts.id}" target="_blank" class="titleLink">
+							{commentDetailComment.community_posts.title}
+							<ExternalLink class="ml-1 inline h-3 w-3" />
+						</a>
+					</div>
+				{/if}
+				<div class="field">
+					<span class="fieldLabel">Content</span>
+					<div class="postContent">{commentDetailComment.content || '(empty)'}</div>
+				</div>
+				<div class="field">
+					<span class="fieldLabel">Status</span>
+					<span>{commentDetailComment.community_comments_admin?.moderation_status || 'approved'}</span>
+				</div>
+				<div class="field">
+					<span class="fieldLabel">Hidden</span>
+					<span>{commentDetailComment.community_comments_admin?.hidden ? 'Yes' : 'No'}</span>
+				</div>
+				<div class="field">
+					<span class="fieldLabel">Created</span>
+					<span>{formatDate(commentDetailComment.created_at)}</span>
+				</div>
+
+				<hr class="divider" />
+
+				<h3 class="sectionTitle">OpenAI Moderation Result</h3>
+
+				<div class="field">
+					<span class="fieldLabel">Flagged</span>
+					<span class="flagStatus {commentDetailFlagged.length ? 'flagged' : ''}"
+						>{commentDetailFlagged.length ? 'Flagged' : 'No flags'}</span
+					>
+				</div>
+
+				<div class="scoresList">
+					{#each commentDetailScores as s}
+						<div class="scoreRow">
+							<div class="scoreName">{s.name}</div>
+							<div class="scoreBar">
+								<div
+									class="scoreBarFill {s.score >= 0.7 ? 'high' : s.score >= 0.4 ? 'medium' : ''}"
+									style="width: {Math.round(s.score * 100)}%"
+								></div>
+							</div>
+							<div class="scoreValue">{s.score.toFixed(2)}</div>
+						</div>
+					{/each}
+					{#if commentDetailScores.length === 0}
+						<div class="text-xs text-muted-foreground">No score data available</div>
+					{/if}
+				</div>
+
+				<div class="field">
+					<button class="actionBtn" on:click={() => (showCommentDetailRaw = !showCommentDetailRaw)}
+						>{showCommentDetailRaw ? 'Hide raw JSON' : 'Show raw JSON'}</button
+					>
+				</div>
+
+				{#if showCommentDetailRaw}
+					<pre><code class="json">{JSON.stringify(commentDetailModResult, null, 2)}</code></pre>
+				{/if}
+			</div>
+		{/if}
+
+		<Dialog.Footer>
+			<Button
+				variant="outline"
+				on:click={() => {
+					commentDetailOpen = false;
+				}}>Close</Button
+			>
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>
+
 <!-- Edit Dialog -->
 <Dialog.Root bind:open={editDialogOpen}>
 	<Dialog.Content class="max-w-lg">
@@ -1730,6 +2096,18 @@
 		font-size: 12px;
 		font-weight: 500;
 		text-transform: capitalize;
+	}
+
+	.typeBadge.approved {
+		color: hsl(142 76% 36%);
+	}
+
+	.typeBadge.pending {
+		color: hsl(38 92% 50%);
+	}
+
+	.typeBadge.rejected {
+		color: hsl(0 84% 60%);
 	}
 
 	.titleCol {
