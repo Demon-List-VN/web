@@ -604,19 +604,15 @@
 	}
 
 	function getFlaggedCategories(moderationResult: any): string[] {
-		if (!moderationResult?.results?.[0]?.categories) return [];
-		const cats = moderationResult.results[0].categories;
-		return Object.entries(cats)
-			.filter(([_, v]) => v === true)
-			.map(([k]) => k);
+		if (!moderationResult?.categories || !moderationResult?.scores) return [];
+		return moderationResult.categories.filter((_: string, i: number) => moderationResult.scores[i] > 0.5);
 	}
 
 	function getCategoryScores(moderationResult: any): Array<{ name: string; score: number }> {
-		if (!moderationResult?.results?.[0]?.category_scores) return [];
-		const scores = moderationResult.results[0].category_scores;
-		return Object.entries(scores)
-			.map(([name, score]) => ({ name, score: score as number }))
-			.sort((a, b) => b.score - a.score);
+		if (!moderationResult?.categories || !moderationResult?.scores) return [];
+		return moderationResult.categories
+			.map((name: string, i: number) => ({ name, score: moderationResult.scores[i] as number }))
+			.sort((a: { score: number }, b: { score: number }) => b.score - a.score);
 	}
 
 	// ---- All Comments ----
