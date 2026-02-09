@@ -290,9 +290,9 @@
 
 			if (!res.ok) {
 				if (res.status == 400) {
-					toast.error($_('community.comment.error'));
-				} else {
 					toast.error($_('community.comment.forbidden'));
+				} else {
+					toast.error($_('community.comment.error'));
 				}
 
 				throw new Error();
