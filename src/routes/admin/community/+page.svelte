@@ -31,7 +31,8 @@
 		X,
 		Tag,
 		Plus,
-		Palette
+		Palette,
+		Save
 	} from 'lucide-svelte';
 
 	let posts: any[] | null = null;
@@ -53,7 +54,10 @@
 	let newTagAdminOnly = false;
 	let creatingTag = false;
 	let editingTag: any = null;
-	let editTagDialogOpen = false;
+	let editTagName = '';
+	let editTagColor = '';
+	let editTagAdminOnly = false;
+	let savingTagEdit = false;
 
 	// Reports state
 	let reports: any[] | null = null;
@@ -340,6 +344,54 @@
 			await fetchTags();
 		} catch {
 			toast.error('Failed to delete tag');
+		}
+	}
+
+	function startEditPostTag(tag: any) {
+		editingTag = tag;
+		editTagName = tag.name;
+		editTagColor = tag.color || '#3b82f6';
+		editTagAdminOnly = tag.admin_only || false;
+	}
+
+	function cancelEditPostTag() {
+		editingTag = null;
+		editTagName = '';
+		editTagColor = '';
+		editTagAdminOnly = false;
+	}
+
+	async function saveEditPostTag() {
+		if (!editTagName.trim() || !editingTag) return;
+		savingTagEdit = true;
+		try {
+			const headers = await getAuthHeaders();
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/community/tags/${editingTag.id}`,
+				{
+					method: 'PUT',
+					headers,
+					body: JSON.stringify({
+						name: editTagName.trim(),
+						color: editTagColor,
+						admin_only: editTagAdminOnly
+					})
+				}
+			);
+			if (res.ok) {
+				toast.success('Tag updated');
+				cancelEditPostTag();
+				await fetchTags();
+			} else if (res.status === 409) {
+				toast.error('Tag name already exists');
+			} else {
+				const err = await res.json().catch(() => ({}));
+				toast.error(err.error || 'Failed to update tag');
+			}
+		} catch {
+			toast.error('Failed to update tag');
+		} finally {
+			savingTagEdit = false;
 		}
 	}
 
@@ -1009,30 +1061,78 @@
 							{#each tags as tag}
 								<tr>
 									<td class="idCol">{tag.id}</td>
-									<td>
-										<span class="tagPreview" style="background: {tag.color}20; color: {tag.color}; border: 1px solid {tag.color}40">
-											{tag.name}
-										</span>
-									</td>
-									<td>{tag.name}</td>
-									<td>
-										<div class="colorCell">
-											<div class="colorDot" style="background: {tag.color}"></div>
-											<code>{tag.color}</code>
-										</div>
-									</td>
-									<td class="center">{tag.admin_only ? '✓' : '—'}</td>
-									<td>
-										<div class="actions">
-											<button
-												class="actionBtn danger"
-												on:click={() => deleteTag(tag.id)}
-												title="Delete tag"
-											>
-												<Trash2 class="h-4 w-4" />
-											</button>
-										</div>
-									</td>
+									{#if editingTag && editingTag.id === tag.id}
+										<td>
+											<span class="tagPreview" style="background: {editTagColor}20; color: {editTagColor}; border: 1px solid {editTagColor}40">
+												{editTagName || 'Preview'}
+											</span>
+										</td>
+										<td>
+											<Input bind:value={editTagName} placeholder="Tag name..." class="w-[140px]" />
+										</td>
+										<td>
+											<div class="colorCell">
+												<input type="color" bind:value={editTagColor} class="colorInput" />
+												<code>{editTagColor}</code>
+											</div>
+										</td>
+										<td class="center">
+											<label class="adminOnlyToggle">
+												<input type="checkbox" bind:checked={editTagAdminOnly} />
+											</label>
+										</td>
+										<td>
+											<div class="actions">
+												<button
+													class="actionBtn"
+													on:click={saveEditPostTag}
+													disabled={savingTagEdit || !editTagName.trim()}
+													title="Save"
+												>
+													<Save class="h-4 w-4" />
+												</button>
+												<button
+													class="actionBtn"
+													on:click={cancelEditPostTag}
+													title="Cancel"
+												>
+													<X class="h-4 w-4" />
+												</button>
+											</div>
+										</td>
+									{:else}
+										<td>
+											<span class="tagPreview" style="background: {tag.color}20; color: {tag.color}; border: 1px solid {tag.color}40">
+												{tag.name}
+											</span>
+										</td>
+										<td>{tag.name}</td>
+										<td>
+											<div class="colorCell">
+												<div class="colorDot" style="background: {tag.color}"></div>
+												<code>{tag.color}</code>
+											</div>
+										</td>
+										<td class="center">{tag.admin_only ? '✓' : '—'}</td>
+										<td>
+											<div class="actions">
+												<button
+													class="actionBtn"
+													on:click={() => startEditPostTag(tag)}
+													title="Edit tag"
+												>
+													<Pencil class="h-4 w-4" />
+												</button>
+												<button
+													class="actionBtn danger"
+													on:click={() => deleteTag(tag.id)}
+													title="Delete tag"
+												>
+													<Trash2 class="h-4 w-4" />
+												</button>
+											</div>
+										</td>
+									{/if}
 								</tr>
 							{/each}
 							{#if tags.length === 0}

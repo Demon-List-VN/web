@@ -7,7 +7,7 @@
 	import * as Alert from '$lib/components/ui/alert';
 	import { user } from '$lib/client';
 	import { toast } from 'svelte-sonner';
-	import { Tag, Plus, X, Palette, Link, Trash2 } from 'lucide-svelte';
+	import { Tag, Plus, X, Palette, Link, Trash2, Pencil } from 'lucide-svelte';
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 
@@ -33,6 +33,10 @@
 	let newTagName = '';
 	let newTagColor = '#3b82f6';
 	let creatingTag = false;
+	let editingLevelTag: any = null;
+	let editLevelTagName = '';
+	let editLevelTagColor = '';
+	let savingLevelTagEdit = false;
 
 	// Level tag assignment state
 	let levelTags: any[] = [];
@@ -101,6 +105,46 @@
 			}
 		} catch {
 			toast.error('Failed to delete tag');
+		}
+	}
+
+	function startEditTag(tag: any) {
+		editingLevelTag = tag;
+		editLevelTagName = tag.name;
+		editLevelTagColor = tag.color || '#3b82f6';
+	}
+
+	function cancelEditTag() {
+		editingLevelTag = null;
+		editLevelTagName = '';
+		editLevelTagColor = '';
+	}
+
+	async function saveEditTag() {
+		if (!editLevelTagName.trim() || !editingLevelTag) return;
+		savingLevelTagEdit = true;
+		try {
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/levels/tags/${editingLevelTag.id}`,
+				{
+					method: 'PUT',
+					headers: await getHeaders(),
+					body: JSON.stringify({ name: editLevelTagName.trim(), color: editLevelTagColor })
+				}
+			);
+			if (res.ok) {
+				toast.success('Tag updated');
+				cancelEditTag();
+				await fetchAllTags();
+			} else if (res.status === 409) {
+				toast.error('Tag name already exists');
+			} else {
+				toast.error('Failed to update tag');
+			}
+		} catch {
+			toast.error('Failed to update tag');
+		} finally {
+			savingLevelTagEdit = false;
 		}
 	}
 
@@ -333,16 +377,38 @@
 				<div class="tagGrid">
 					{#each allTags as tag}
 						<div class="tagItem">
-							<span
-								class="tagBadge"
-								style="background: {tag.color || '#666'}18; color: {tag.color ||
-									'#666'}; border: 1px solid {tag.color || '#666'}30"
-							>
-								{tag.name}
-							</span>
-							<button class="deleteTagBtn" on:click={() => deleteTag(tag.id)} title="Delete tag">
-								<Trash2 class="h-3.5 w-3.5" />
-							</button>
+							{#if editingLevelTag && editingLevelTag.id === tag.id}
+								<div class="editTagRow">
+									<Input placeholder="Tag name" bind:value={editLevelTagName} class="w-[140px]" />
+									<input type="color" bind:value={editLevelTagColor} class="colorInput" />
+									<span
+										class="tagPreview"
+										style="background: {editLevelTagColor}18; color: {editLevelTagColor}; border: 1px solid {editLevelTagColor}30"
+									>
+										{editLevelTagName || 'Preview'}
+									</span>
+									<Button on:click={saveEditTag} disabled={savingLevelTagEdit || !editLevelTagName.trim()} size="sm">
+										{savingLevelTagEdit ? 'Saving...' : 'Save'}
+									</Button>
+									<button class="deleteTagBtn" on:click={cancelEditTag} title="Cancel">
+										<X class="h-3.5 w-3.5" />
+									</button>
+								</div>
+							{:else}
+								<span
+									class="tagBadge"
+									style="background: {tag.color || '#666'}18; color: {tag.color ||
+										'#666'}; border: 1px solid {tag.color || '#666'}30"
+								>
+									{tag.name}
+								</span>
+								<button class="editTagBtn" on:click={() => startEditTag(tag)} title="Edit tag">
+									<Pencil class="h-3.5 w-3.5" />
+								</button>
+								<button class="deleteTagBtn" on:click={() => deleteTag(tag.id)} title="Delete tag">
+									<Trash2 class="h-3.5 w-3.5" />
+								</button>
+							{/if}
 						</div>
 					{/each}
 				</div>
@@ -670,6 +736,31 @@
 			background: hsl(var(--destructive) / 0.1);
 			color: hsl(var(--destructive));
 		}
+	}
+
+	.editTagBtn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 24px;
+		height: 24px;
+		border-radius: 50%;
+		border: none;
+		background: transparent;
+		color: hsl(var(--muted-foreground));
+		cursor: pointer;
+		transition: all 0.15s;
+
+		&:hover {
+			background: hsl(var(--primary) / 0.1);
+			color: hsl(var(--primary));
+		}
+	}
+
+	.editTagRow {
+		display: flex;
+		align-items: center;
+		gap: 6px;
 	}
 
 	.tagPickerRow {
