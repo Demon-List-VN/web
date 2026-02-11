@@ -2,7 +2,7 @@
 	import * as Pagination from '$lib/components/ui/pagination';
 	import * as Table from '$lib/components/ui/table';
 	import * as Tooltip from '$lib/components/ui/tooltip';
-	import PlayerHoverCard from '$lib/components/playerLink.svelte';
+	import PlayerLink from '$lib/components/playerLink.svelte';
 
 	import { getTitle } from '$lib/client';
 	import { onMount } from 'svelte';
@@ -55,7 +55,9 @@
 				<Table.Head class="w-[55px]">{$_('list.tabs.rank')}</Table.Head>
 				<Table.Head>{$_('list.tabs.player')}</Table.Head>
 				<Table.Head class="w-[70px] text-right">
-					{$page.params.list == 'dl' || $page.params.list == 'pl' || $page.params.list == 'cl' ? $_('list.tabs.rating') : $_('list.tabs.total_point')}
+					{$page.params.list == 'dl' || $page.params.list == 'pl' || $page.params.list == 'cl'
+						? $_('list.tabs.rating')
+						: $_('list.tabs.total_point')}
 				</Table.Head>
 			</Table.Row>
 		</Table.Header>
@@ -73,7 +75,7 @@
 					</Table.Cell>
 					<Table.Cell>
 						<div class="playerNameWrapper">
-							<PlayerHoverCard {player} showTitle={$page.params.list != 'pl'} />
+							<PlayerLink {player} showTitle={$page.params.list != 'pl'} titleType={$page.params.list}  />
 						</div>
 					</Table.Cell>
 					<Table.Cell class="text-right">

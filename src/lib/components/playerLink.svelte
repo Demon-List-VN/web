@@ -12,7 +12,7 @@
 	export let player: any;
 	export let showTitle = false;
 	export let showAvatar = false;
-	export let titleType: 'dl' | 'pl' | 'elo' = 'dl';
+	export let titleType: string = 'dl';
 	export let truncate: number | null = null;
 
 	let exp = player.exp + player.extraExp;
