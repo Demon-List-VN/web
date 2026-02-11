@@ -311,15 +311,15 @@
 </script>
 
 <svelte:head>
-	<title>Cộng đồng - Geometry Dash VN</title>
-	<meta property="og:title" content="Cộng đồng - Geometry Dash VN" />
+	<title>Cộng đồng - Geometry Dash Việt Nam</title>
+	<meta property="og:title" content="Cộng đồng - Geometry Dash Việt Nam" />
 	<meta property="og:type" content="website" />
 	<meta property="og:url" content="{import.meta.env.VITE_SITE_URL || 'https://demonlist.vn'}/community" />
-	<meta property="og:description" content="Chia sẻ, thảo luận và kết nối với cộng đồng Geometry Dash VN" />
-	<meta property="og:site_name" content="Geometry Dash VN" />
+	<meta property="og:description" content="Chia sẻ, thảo luận và kết nối với cộng đồng Geometry Dash Việt Nam" />
+	<meta property="og:site_name" content="Geometry Dash Việt Nam" />
 	<meta name="twitter:card" content="summary" />
-	<meta name="twitter:title" content="Cộng đồng - Geometry Dash VN" />
-	<meta name="twitter:description" content="Chia sẻ, thảo luận và kết nối với cộng đồng Geometry Dash VN" />
+	<meta name="twitter:title" content="Cộng đồng - Geometry Dash Việt Nam" />
+	<meta name="twitter:description" content="Chia sẻ, thảo luận và kết nối với cộng đồng Geometry Dash Việt Nam" />
 </svelte:head>
 
 <div class="communityPage">

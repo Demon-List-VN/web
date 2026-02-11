@@ -109,7 +109,7 @@
 </script>
 
 <svelte:head>
-	<title>Hội - Geometry Dash VN</title>
+	<title>Hội - Geometry Dash Việt Nam</title>
 </svelte:head>
 
 <div class="titleWrapper">

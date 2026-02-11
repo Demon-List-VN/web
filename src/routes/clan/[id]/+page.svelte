@@ -355,8 +355,8 @@
 </script>
 
 <svelte:head>
-	<title>Hội {data.name} - Geometry Dash VN</title>
-	<meta property="og:title" content={`Hội ${data.name} - Geometry Dash VN`} />
+	<title>Hội {data.name} - Geometry Dash Việt Nam</title>
+	<meta property="og:title" content={`Hội ${data.name} - Geometry Dash Việt Nam`} />
 	<meta
 		property="og:image"
 		content={`https://cdn.gdvn.net/clan-photos/${$page.params.id}.jpg?version=${data.imageVersion}`}

@@ -36,8 +36,8 @@
 </script>
 
 <svelte:head>
-	<title>{data.name} - Geometry Dash VN</title>
-	<meta property="og:title" content={`${data.name} - Geometry Dash VN`} />
+	<title>{data.name} - Geometry Dash Việt Nam</title>
+	<meta property="og:title" content={`${data.name} - Geometry Dash Việt Nam`} />
 	<meta property="og:description" content={getFirstLine(data.description)} />
 	<meta
 		property="og:image"

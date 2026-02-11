@@ -43,7 +43,7 @@
 </script>
 
 <svelte:head>
-	<title>Bảng xếp hạng - {getListTitle()} - Geometry Dash VN</title>
+	<title>Bảng xếp hạng - {getListTitle()} - Geometry Dash Việt Nam</title>
 </svelte:head>
 
 <Ads dataAdFormat="rectangle" />

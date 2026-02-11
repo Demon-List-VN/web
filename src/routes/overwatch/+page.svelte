@@ -44,7 +44,7 @@
 </script>
 
 <svelte:head>
-	<title>Overwatch - Geometry Dash VN</title>
+	<title>Overwatch - Geometry Dash Việt Nam</title>
 </svelte:head>
 
 <RecordDetail bind:open={isOpen} uid={userID} {levelID} />
@@ -55,7 +55,7 @@
 		<h2>Overview</h2>
 		<ul>
 			<li>
-				Overwatch allows the Geometry Dash VN and Geometry Dash VN community to regulate itself by
+				Overwatch allows the Geometry Dash Việt Nam and Geometry Dash Việt Nam community to regulate itself by
 				providing method for qualified and experienced members of community to review submitted
 				records.
 			</li>

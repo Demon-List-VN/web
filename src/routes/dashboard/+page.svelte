@@ -71,7 +71,7 @@
 </script>
 
 <svelte:head>
-	<title>Dashboard - Geometry Dash VN</title>
+	<title>Dashboard - Geometry Dash Việt Nam</title>
 </svelte:head>
 
 <Dashboard {events} />

@@ -21,7 +21,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.title} - Geometry Dash VN</title>
+	<title>{data.title} - Geometry Dash Việt Nam</title>
 </svelte:head>
 
 {#if tab == 'detail'}

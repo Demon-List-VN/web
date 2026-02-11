@@ -24,7 +24,7 @@
 </script>
 
 <svelte:head>
-	<title>{$_('battlepass.title')} - Geometry Dash VN</title>
+	<title>{$_('battlepass.title')} - Geometry Dash Việt Nam</title>
 </svelte:head>
 
 {#if !data.season}

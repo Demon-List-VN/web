@@ -394,20 +394,20 @@
 							<br />
 							- Sử dụng
 							<a href="https://github.com/NamPE286/DemonListVN-geode-mod/releases">
-								<u>Geometry Dash VN's geode mod</u>
+								<u>Geometry Dash Việt Nam's geode mod</u>
 							</a> trong khi chơi level để có cơ hội chấp nhận cao hơn.
 						{:else}
 							- Read the <button on:click={() => (open = false)}
 								><a href={`/wiki/${$locale}/rules`}><u>rules</u></a></button
 							>
 							before submitting.<br />
-							- Suggested rating is Geometry Dash VN level's rating, not level's stars or placement.
+							- Suggested rating is Geometry Dash Việt Nam level's rating, not level's stars or placement.
 							<br />
 							- Raw is recording from the beginning to the end of the recording session without editing.
 							<br />
 							- Use
 							<a href="https://github.com/NamPE286/DemonListVN-geode-mod/releases">
-								<u>Geometry Dash VN's geode mod</u>
+								<u>Geometry Dash Việt Nam's geode mod</u>
 							</a> while beating level to have higher chance of acceptance.
 						{/if}
 					{:else}

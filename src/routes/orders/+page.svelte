@@ -41,7 +41,7 @@
 </script>
 
 <svelte:head>
-	<title>Đơn hàng - Geometry Dash VN</title>
+	<title>Đơn hàng - Geometry Dash Việt Nam</title>
 </svelte:head>
 
 {#if $user.loggedIn}

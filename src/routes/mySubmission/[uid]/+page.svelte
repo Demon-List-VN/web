@@ -99,7 +99,7 @@
 </script>
 
 <svelte:head>
-	<title>Bản nộp của tôi - Geometry Dash VN</title>
+	<title>Bản nộp của tôi - Geometry Dash Việt Nam</title>
 </svelte:head>
 
 <Ads unit="leaderboard" />

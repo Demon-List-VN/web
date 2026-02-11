@@ -624,9 +624,9 @@
 </script>
 
 <svelte:head>
-	<title>{headPost?.title || 'Cộng đồng'} - Bài viết cộng đồng - Geometry Dash VN</title>
+	<title>{headPost?.title || 'Cộng đồng'} - Bài viết cộng đồng - Geometry Dash Việt Nam</title>
 	{#if headPost}
-		<meta property="og:title" content="{headPost.title} - Geometry Dash VN" />
+		<meta property="og:title" content="{headPost.title} - Geometry Dash Việt Nam" />
 		<meta property="og:type" content="article" />
 		<meta
 			property="og:url"
@@ -641,7 +641,7 @@
 		{:else if headYtId}
 			<meta property="og:image" content="https://img.youtube.com/vi/{headYtId}/maxresdefault.jpg" />
 		{/if}
-		<meta property="og:site_name" content="Geometry Dash VN" />
+		<meta property="og:site_name" content="Geometry Dash Việt Nam" />
 		<meta property="article:published_time" content={headPost.created_at} />
 		{#if headPost.updated_at}
 			<meta property="article:modified_time" content={headPost.updated_at} />
@@ -653,7 +653,7 @@
 			name="twitter:card"
 			content={headPost.image_url || headYtId ? 'summary_large_image' : 'summary'}
 		/>
-		<meta name="twitter:title" content="{headPost.title} - Geometry Dash VN" />
+		<meta name="twitter:title" content="{headPost.title} - Geometry Dash Việt Nam" />
 		{#if headPost.content}
 			<meta name="twitter:description" content={headPost.content.slice(0, 160)} />
 		{/if}

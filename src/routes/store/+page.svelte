@@ -14,7 +14,7 @@
 </script>
 
 <svelte:head>
-	<title>Cửa hàng - Geometry Dash VN</title>
+	<title>Cửa hàng - Geometry Dash Việt Nam</title>
 </svelte:head>
 
 <div

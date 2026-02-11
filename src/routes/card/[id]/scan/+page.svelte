@@ -70,7 +70,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.name} - Geometry Dash VN</title>
+	<title>{data.name} - Geometry Dash Việt Nam</title>
 </svelte:head>
 
 <div

@@ -70,10 +70,10 @@
 </script>
 
 <svelte:head>
-	<title>Wiki - Geometry Dash VN</title>
+	<title>Wiki - Geometry Dash Việt Nam</title>
 	<meta
 		name="description"
-		content="Khám phá Wiki của Geometry Dash VN - hướng dẫn, luật lệ, tin tức và cập nhật"
+		content="Khám phá Wiki của Geometry Dash Việt Nam - hướng dẫn, luật lệ, tin tức và cập nhật"
 	/>
 </svelte:head>
 

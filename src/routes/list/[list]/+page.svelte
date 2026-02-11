@@ -188,7 +188,7 @@
 </script>
 
 <svelte:head>
-	<title>{getTitle()} - Geometry Dash VN</title>
+	<title>{getTitle()} - Geometry Dash Việt Nam</title>
 </svelte:head>
 
 <div class="levelsWrapper">

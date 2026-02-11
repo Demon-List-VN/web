@@ -68,7 +68,7 @@
 </script>
 
 <svelte:head>
-	<title>Sự kiện - Geometry Dash VN</title>
+	<title>Sự kiện - Geometry Dash Việt Nam</title>
 </svelte:head>
 
 <div class="mx-auto mt-[20px] w-full max-w-[1500px] px-1">

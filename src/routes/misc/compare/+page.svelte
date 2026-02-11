@@ -111,7 +111,7 @@
 </script>
 
 <svelte:head>
-	<title>{$_('compare.title')} - Geometry Dash VN</title>
+	<title>{$_('compare.title')} - Geometry Dash Việt Nam</title>
 </svelte:head>
 
 <div class="wrapper">

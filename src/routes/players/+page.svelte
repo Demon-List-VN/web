@@ -63,7 +63,7 @@
 </script>
 
 <svelte:head>
-	<title>Người chơi - Geometry Dash VN</title>
+	<title>Người chơi - Geometry Dash Việt Nam</title>
 </svelte:head>
 
 <div class="wrapper">

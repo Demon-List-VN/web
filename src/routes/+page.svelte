@@ -153,7 +153,7 @@
 </script>
 
 <svelte:head>
-	<title>Geometry Dash VN</title>
+	<title>Geometry Dash Việt Nam</title>
 	<meta name="description" content="Website dành cho cộng đồng Geometry Dash Việt Nam" />
 </svelte:head>
 

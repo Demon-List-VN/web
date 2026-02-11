@@ -80,10 +80,10 @@
 </script>
 
 <svelte:head>
-	<title>Nhận quà - Geometry Dash VN</title>
+	<title>Nhận quà - Geometry Dash Việt Nam</title>
 	<meta
 		property="og:title"
-		content={`Nhận quà - Geometry Dash VN`}
+		content={`Nhận quà - Geometry Dash Việt Nam`}
 	/>
 </svelte:head>
 

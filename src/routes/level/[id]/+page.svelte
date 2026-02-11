@@ -156,17 +156,17 @@
 
 <svelte:head>
 	{#if 'gdbrowser' in data}
-		<title>{data.gdbrowser.name} by {data.gdbrowser.author} - Geometry Dash VN</title>
+		<title>{data.gdbrowser.name} by {data.gdbrowser.author} - Geometry Dash Việt Nam</title>
 		<meta
 			property="og:title"
-			content={`${data.gdbrowser.name} by {data.gdbrowser.author} - Geometry Dash VN`}
+			content={`${data.gdbrowser.name} by {data.gdbrowser.author} - Geometry Dash Việt Nam`}
 		/>
 		<meta property="og:description" content={data.gdbrowser.description} />
 	{:else}
-		<title>{data.level.name} by {data.level.creator} - Geometry Dash VN</title>
+		<title>{data.level.name} by {data.level.creator} - Geometry Dash Việt Nam</title>
 		<meta
 			property="og:title"
-			content={`${data.level.name} by ${data.level.creator} - Geometry Dash VN`}
+			content={`${data.level.name} by ${data.level.creator} - Geometry Dash Việt Nam`}
 		/>
 		<meta
 			property="og:description"
@@ -244,7 +244,7 @@
 				<Tabs.Trigger
 					class="h-[40px]"
 					value="dlvn"
-					on:click={() => goto(`/level/${$page.params.id}`)}>Geometry Dash VN</Tabs.Trigger
+					on:click={() => goto(`/level/${$page.params.id}`)}>Geometry Dash Việt Nam</Tabs.Trigger
 				>
 				<Tabs.Trigger
 					class="h-[40px]"

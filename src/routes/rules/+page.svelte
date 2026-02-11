@@ -13,7 +13,7 @@
 </script>
 
 <svelte:head>
-	<title>Luật - Geometry Dash VN</title>
+	<title>Luật - Geometry Dash Việt Nam</title>
 </svelte:head>
 {#if $locale == 'vi'}
 	<BigTitle value="Luật" description="Đọc luật" />

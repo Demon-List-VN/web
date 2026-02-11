@@ -353,7 +353,7 @@
 </script>
 
 <svelte:head>
-	<title>{$_('community.create.title')} - Geometry Dash VN</title>
+	<title>{$_('community.create.title')} - Geometry Dash Việt Nam</title>
 </svelte:head>
 
 <div class="createPage">
