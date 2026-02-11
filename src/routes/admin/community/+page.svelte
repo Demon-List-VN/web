@@ -44,7 +44,8 @@
 	let editPost: any = null;
 
 	// Tab state
-	let activeTab: 'posts' | 'comments' | 'reports' | 'moderation' | 'comment-moderation' | 'tags' = 'posts';
+	let activeTab: 'posts' | 'comments' | 'reports' | 'moderation' | 'comment-moderation' | 'tags' =
+		'posts';
 	let showHidden = false;
 
 	// Tags state
@@ -233,7 +234,13 @@
 	onMount(() => {
 		// Check for tab query param
 		const tabParam = $page.url.searchParams.get('tab');
-		if (tabParam === 'tags' || tabParam === 'reports' || tabParam === 'moderation' || tabParam === 'comment-moderation' || tabParam === 'comments') {
+		if (
+			tabParam === 'tags' ||
+			tabParam === 'reports' ||
+			tabParam === 'moderation' ||
+			tabParam === 'comment-moderation' ||
+			tabParam === 'comments'
+		) {
 			switchTab(tabParam as any);
 		}
 		fetchPosts();
@@ -310,7 +317,9 @@
 		}
 	}
 
-	function switchTab(tab: 'posts' | 'comments' | 'reports' | 'moderation' | 'comment-moderation' | 'tags') {
+	function switchTab(
+		tab: 'posts' | 'comments' | 'reports' | 'moderation' | 'comment-moderation' | 'tags'
+	) {
 		activeTab = tab;
 		if (tab === 'reports' && !reports) {
 			fetchReports();
@@ -603,9 +612,17 @@
 		commentModerationDetailOpen = true;
 	}
 
-	function getFlaggedCategories(moderationResult: any): string[] {
-		if (!moderationResult?.categories || !moderationResult?.scores) return [];
-		return moderationResult.categories.filter((_: string, i: number) => moderationResult.scores[i] > 0.5);
+	function getFlaggedCategories(moderationResult: any): string[] | null {
+		if (!moderationResult) {
+			return null;
+		}
+		if (!moderationResult?.categories || !moderationResult?.scores) {
+			return null;
+		}
+
+		return moderationResult.categories.filter(
+			(_: string, i: number) => moderationResult.scores[i] > 0.5
+		);
 	}
 
 	function getCategoryScores(moderationResult: any): Array<{ name: string; score: number }> {
@@ -713,7 +730,11 @@
 			<MessageCircle class="h-4 w-4" />
 			Posts
 		</button>
-		<button class="tab" class:active={activeTab === 'comments'} on:click={() => switchTab('comments')}>
+		<button
+			class="tab"
+			class:active={activeTab === 'comments'}
+			on:click={() => switchTab('comments')}
+		>
 			<MessageCircle class="h-4 w-4" />
 			Comments
 		</button>
@@ -1021,11 +1042,7 @@
 							<tr class:hiddenPost={isHidden}>
 								<td class="idCol">{comment.id}</td>
 								<td class="titleCol">
-									<a
-										href="/community/{comment.post_id}"
-										target="_blank"
-										class="titleLink"
-									>
+									<a href="/community/{comment.post_id}" target="_blank" class="titleLink">
 										{comment.community_posts?.title || `Post #${comment.post_id}`}
 										<ExternalLink class="ml-1 inline h-3 w-3" />
 									</a>
@@ -1321,14 +1338,15 @@
 								</td>
 								<td>
 									<div class="flaggedCats">
-										{#each flagged as cat}
-											<span
-												class="flagBadge"
-												on:click={() => openModerationDetail(post)}
-												title="View moderation details">{cat}</span
-											>
-										{/each}
-										{#if flagged.length === 0}
+										{#if flagged != null}
+											{#each flagged as cat}
+												<span
+													class="flagBadge"
+													on:click={() => openModerationDetail(post)}
+													title="View moderation details">{cat}</span
+												>
+											{/each}
+										{:else}
 											<span class="text-xs text-muted-foreground">API error</span>
 										{/if}
 									</div>
@@ -1427,12 +1445,18 @@
 				<tbody>
 					{#if pendingComments}
 						{#each pendingComments as comment}
-							{@const flagged = getFlaggedCategories(comment.community_comments_admin?.moderation_result)}
+							{@const flagged = getFlaggedCategories(
+								comment.community_comments_admin?.moderation_result
+							)}
 							<tr>
 								<td class="idCol">{comment.id}</td>
 								<td class="titleCol">
 									{#if comment.community_posts}
-										<a href="/community/{comment.community_posts.id}" target="_blank" class="titleLink">
+										<a
+											href="/community/{comment.community_posts.id}"
+											target="_blank"
+											class="titleLink"
+										>
 											{comment.community_posts.title}
 											<ExternalLink class="ml-1 inline h-3 w-3" />
 										</a>
@@ -1441,21 +1465,26 @@
 									{/if}
 								</td>
 								<td class="titleCol">
-									<span class="commentContent">{comment.content?.slice(0, 100)}{comment.content?.length > 100 ? '...' : ''}</span>
+									<span class="commentContent"
+										>{comment.content?.slice(0, 100)}{comment.content?.length > 100
+											? '...'
+											: ''}</span
+									>
 								</td>
 								<td class="authorCol">
 									{comment.players?.name || comment.uid}
 								</td>
 								<td>
 									<div class="flaggedCats">
-										{#each flagged as cat}
-											<span
-												class="flagBadge"
-												on:click={() => openCommentModerationDetail(comment)}
-												title="View moderation details">{cat}</span
-											>
-										{/each}
-										{#if flagged.length === 0}
+										{#if flagged != null}
+											{#each flagged as cat}
+												<span
+													class="flagBadge"
+													on:click={() => openCommentModerationDetail(comment)}
+													title="View moderation details">{cat}</span
+												>
+											{/each}
+										{:else}
 											<span class="text-xs text-muted-foreground">API error</span>
 										{/if}
 									</div>
@@ -1519,7 +1548,10 @@
 					<ChevronLeft class="h-4 w-4" />
 				</Button>
 				<span class="pageInfo">
-					{pendingCommentsPage * PAGE_SIZE + 1}-{Math.min((pendingCommentsPage + 1) * PAGE_SIZE, pendingCommentsTotal)} of {pendingCommentsTotal}
+					{pendingCommentsPage * PAGE_SIZE + 1}-{Math.min(
+						(pendingCommentsPage + 1) * PAGE_SIZE,
+						pendingCommentsTotal
+					)} of {pendingCommentsTotal}
 				</span>
 				<Button
 					variant="outline"
@@ -1711,9 +1743,13 @@
 
 				<div class="field">
 					<span class="fieldLabel">Status</span>
-					<span class="flagStatus {modFlagged.length ? 'flagged' : ''}"
-						>{modFlagged.length ? 'Flagged' : 'No flags'}</span
-					>
+					{#if modFlagged == null}
+						<span class="flagStatus">API error</span>
+					{:else}
+						<span class="flagStatus {modFlagged.length ? 'flagged' : ''}"
+							>{modFlagged.length ? 'Flagged' : 'No flags'}</span
+						>
+					{/if}
 				</div>
 
 				<div class="scoresList">
@@ -1765,19 +1801,27 @@
 <Dialog.Root bind:open={commentModerationDetailOpen}>
 	<Dialog.Content class="max-h-[80vh] max-w-2xl overflow-y-auto">
 		<Dialog.Header>
-			<Dialog.Title>Comment Moderation — Comment #{commentModerationDetailComment?.id}</Dialog.Title>
+			<Dialog.Title>Comment Moderation — Comment #{commentModerationDetailComment?.id}</Dialog.Title
+			>
 		</Dialog.Header>
 
 		{#if commentModerationDetailComment}
 			<div class="moderationDetail">
 				<div class="field">
 					<span class="fieldLabel">Author</span>
-					<span>{commentModerationDetailComment.players?.name || commentModerationDetailComment.uid}</span>
+					<span
+						>{commentModerationDetailComment.players?.name ||
+							commentModerationDetailComment.uid}</span
+					>
 				</div>
 				{#if commentModerationDetailComment.community_posts}
 					<div class="field">
 						<span class="fieldLabel">Post</span>
-						<a href="/community/{commentModerationDetailComment.community_posts.id}" target="_blank" class="titleLink">
+						<a
+							href="/community/{commentModerationDetailComment.community_posts.id}"
+							target="_blank"
+							class="titleLink"
+						>
 							{commentModerationDetailComment.community_posts.title}
 							<ExternalLink class="ml-1 inline h-3 w-3" />
 						</a>
@@ -1794,9 +1838,12 @@
 
 				<div class="field">
 					<span class="fieldLabel">Status</span>
-					<span class="flagStatus {commentModFlagged.length ? 'flagged' : ''}"
-						>{commentModFlagged.length ? 'Flagged' : 'No flags'}</span
-					>
+					{#if commentModFlagged == null}
+						<span class="flagStatus">API error</span>
+					{:else}
+						<span class="flagStatus {commentModFlagged.length ? 'flagged' : ''}"
+							>{commentModFlagged.length ? 'Flagged' : 'No flags'}</span
+						>{/if}
 				</div>
 
 				<div class="scoresList">
@@ -1818,7 +1865,9 @@
 				</div>
 
 				<div class="field">
-					<button class="actionBtn" on:click={() => (showCommentModerationRaw = !showCommentModerationRaw)}
+					<button
+						class="actionBtn"
+						on:click={() => (showCommentModerationRaw = !showCommentModerationRaw)}
 						>{showCommentModerationRaw ? 'Hide raw JSON' : 'Show raw JSON'}</button
 					>
 				</div>
@@ -1836,10 +1885,13 @@
 					commentModerationDetailOpen = false;
 				}}>Close</Button
 			>
-			<Button variant="destructive" on:click={() => rejectPendingComment(commentModerationDetailComment?.id)}
-				>Reject</Button
+			<Button
+				variant="destructive"
+				on:click={() => rejectPendingComment(commentModerationDetailComment?.id)}>Reject</Button
 			>
-			<Button on:click={() => approvePendingComment(commentModerationDetailComment?.id)}>Approve</Button>
+			<Button on:click={() => approvePendingComment(commentModerationDetailComment?.id)}
+				>Approve</Button
+			>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
@@ -1860,7 +1912,11 @@
 				{#if commentDetailComment.community_posts}
 					<div class="field">
 						<span class="fieldLabel">Post</span>
-						<a href="/community/{commentDetailComment.community_posts.id}" target="_blank" class="titleLink">
+						<a
+							href="/community/{commentDetailComment.community_posts.id}"
+							target="_blank"
+							class="titleLink"
+						>
 							{commentDetailComment.community_posts.title}
 							<ExternalLink class="ml-1 inline h-3 w-3" />
 						</a>
@@ -1872,7 +1928,9 @@
 				</div>
 				<div class="field">
 					<span class="fieldLabel">Status</span>
-					<span>{commentDetailComment.community_comments_admin?.moderation_status || 'approved'}</span>
+					<span
+						>{commentDetailComment.community_comments_admin?.moderation_status || 'approved'}</span
+					>
 				</div>
 				<div class="field">
 					<span class="fieldLabel">Hidden</span>
@@ -1889,9 +1947,13 @@
 
 				<div class="field">
 					<span class="fieldLabel">Flagged</span>
-					<span class="flagStatus {commentDetailFlagged.length ? 'flagged' : ''}"
-						>{commentDetailFlagged.length ? 'Flagged' : 'No flags'}</span
-					>
+					{#if commentDetailFlagged == null}
+						<span class="flagStatus">API error</span>
+					{:else}
+						<span class="flagStatus {commentDetailFlagged.length ? 'flagged' : ''}"
+							>{commentDetailFlagged.length ? 'Flagged' : 'No flags'}</span
+						>
+					{/if}
 				</div>
 
 				<div class="scoresList">
