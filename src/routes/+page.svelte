@@ -236,10 +236,8 @@
 <Ads dataAdFormat="auto" unit="leaderboard" />
 
 <div class="wrapper">
-	<!-- News & Changelogs -->
-	<section class="section">
+	<!-- <section class="section">
 		<div class="panelsGrid">
-			<!-- News Panel -->
 			<div class="panel">
 				<div class="panelHeader">
 					<div class="panelTitleRow">
@@ -279,7 +277,6 @@
 				</div>
 			</div>
 
-			<!-- Changelogs Panel -->
 			<div class="panel">
 				<div class="panelHeader">
 					<div class="panelTitleRow">
@@ -319,7 +316,7 @@
 				</div>
 			</div>
 		</div>
-	</section>
+	</section> -->
 	<!-- Community Hub -->
 	<section class="section">
 		<div class="sectionHeader">
