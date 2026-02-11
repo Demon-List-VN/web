@@ -1070,6 +1070,17 @@
     "title": "Cửa hàng",
     "view_cart": "Giỏ hàng của tôi",
     "all_products": "Tất cả sản phẩm",
+    "product": {
+      "added_to_cart": "Đã thêm {quantity} {product} vào giỏ hàng!",
+      "out_of_stock": "Hết hàng",
+      "in_stock": "Còn {stock} trong kho",
+      "go_to_supporter": "Đến trang ủng hộ",
+      "quantity": "Số lượng",
+      "image_alt": "Ảnh của {product}",
+      "thumbnail_alt": "Ảnh thu nhỏ sản phẩm {index}",
+      "added": "Đã thêm {quantity} vào giỏ hàng",
+      "add_to_cart": "Thêm vào giỏ"
+    },
     "cart": {
       "title": "Giỏ hàng",
       "discord_required": "Bạn cần liên kết tài khoản với Discord để có thể thanh toán. Vào Cài đặt > Discord để liên kết.",

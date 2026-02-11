@@ -1050,6 +1050,17 @@
     "title": "Store",
     "view_cart": "View my cart",
     "all_products": "All products",
+    "product": {
+      "added_to_cart": "Added {quantity} {product} to cart!",
+      "out_of_stock": "Out of stock",
+      "in_stock": "{stock} in stock",
+      "go_to_supporter": "Go to Supporter Page",
+      "quantity": "Quantity",
+      "image_alt": "Image of {product}",
+      "thumbnail_alt": "Product thumbnail {index}",
+      "added": "Added {quantity} to cart",
+      "add_to_cart": "Add to Cart"
+    },
     "cart": {
       "title": "Cart",
       "discord_required": "You need to link your account to a Discord account in order to checkout. Go to Settings > Discord to link.",

@@ -6,6 +6,14 @@
 	import Markdown from '$lib/components/markdown.svelte';
 	import { toast } from 'svelte-sonner';
 	import { cart } from '$lib/client/cart';
+	import { _ } from 'svelte-i18n';
+	import { get } from 'svelte/store';
+
+	// helper to call the i18n function without using the `$_` auto-subscription
+	const t = (key: string, opts?: any) => get(_)(key, opts);
+
+	let cartValue: any;
+	$: cartValue = $cart;
 
 	export let data: PageData;
 
@@ -26,8 +34,8 @@
 	}
 
 	function addToCart() {
-		$cart.addItem(data.id, quantity);
-		toast.success(`Added ${quantity} ${data.name} to cart!`);
+		cartValue.addItem(data.id, quantity);
+		toast.success(t('store.product.added_to_cart', { values: { quantity, product: data.name } }));
 	}
 
 	function getFirstLine(str: string) {
@@ -49,11 +57,11 @@
 	class="mb-[50px] ml-auto mr-auto mt-[30px] flex w-[1200px] max-w-full items-center pl-[15px] pr-[15px]"
 >
 	<a href="/store">
-		<h2>Store</h2>
+		<h2>{t('store.title')}</h2>
 	</a>
 	<a href="/store/cart" class="ml-auto">
 		<Button>
-			View my cart
+			{t('store.view_cart')}
 			{#if $cart.items.length}
 				({$cart.items.length})
 			{/if}
@@ -71,11 +79,11 @@
 			<img
 				class="h-full w-full object-cover"
 				src={`https://cdn.gdvn.net/products/${data.id}/${selectedImageIndex}.webp`}
-				alt="product"
+				alt={t('store.product.image_alt', { values: { product: data.name } })}
 			/>
 		</button>
 		<div class="flex justify-center gap-[10px]">
-			{#each { length: data.imgCount } as _, index}
+				{#each { length: data.imgCount } as _, index}
 				<button
 					class="h-[75px] w-[75px] overflow-hidden rounded-lg border-2 transition-all duration-200
                     {selectedImageIndex === index
@@ -86,7 +94,7 @@
 					<img
 						class="h-full w-full object-cover"
 						src={`https://cdn.gdvn.net/products/${data.id}/${index}.webp`}
-						alt="product thumbnail {index + 1}"
+						alt={t('store.product.thumbnail_alt', { values: { index: index + 1, product: data.name } })}
 					/>
 				</button>
 			{/each}
@@ -100,10 +108,10 @@
 			</h3>
 			{#if data.stock !== null}
 				<p class="text-center lg:text-left">
-					{#if data.stock === 0}
-						Out of stock
+						{#if data.stock === 0}
+						{t('store.product.out_of_stock')}
 					{:else}
-						{data.stock} in stock
+						{t('store.product.in_stock', { values: { stock: data.stock } })}
 					{/if}
 				</p>
 			{/if}
@@ -112,13 +120,13 @@
 		{#if data.id == 1}
 			<a href="/supporter">
 				<Button class="h-[50px] w-[260px] text-[16px] font-semibold" size="lg">
-					Go to Supporter Page
+					{t('store.product.go_to_supporter')}
 				</Button>
 			</a>
 		{:else}
 			<div class="mt-auto flex flex-col gap-[15px]">
 				<div class="flex items-center gap-[8px]">
-					<Label for="quantity" class="text-[16px] font-medium">Quantity</Label>
+					<Label for="quantity" class="text-[16px] font-medium">{t('store.product.quantity')}</Label>
 					<div class="flex items-center gap-[10px]">
 						<Button
 							variant="outline"
@@ -155,12 +163,12 @@
 					class="h-[50px] w-[260px] text-[16px] font-semibold"
 					size="lg"
 				>
-					{#if $cart.getItem(data.id).productID != -1}
-						Added {$cart.getItem(data.id).quantity} to cart
+						{#if $cart.getItem(data.id).productID != -1}
+						{t('store.product.added', { values: { quantity: $cart.getItem(data.id).quantity } })}
 					{:else if data.stock == 0}
-						Out of stock
+						{t('store.product.out_of_stock')}
 					{:else}
-						Add to Cart
+						{t('store.product.add_to_cart')}
 					{/if}
 				</Button>
 			</div>
@@ -184,12 +192,12 @@
 				✕
 			</button>
 			<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-			<img
-				class="max-h-[700px] max-w-full rounded-lg object-contain"
-				src={`https://cdn.gdvn.net/products/${data.id}/${selectedImageIndex}.webp`}
-				alt=""
-				on:click|stopPropagation
-			/>
+				<img
+					class="max-h-[700px] max-w-full rounded-lg object-contain"
+					src={`https://cdn.gdvn.net/products/${data.id}/${selectedImageIndex}.webp`}
+					alt={t('store.product.image_alt', { values: { product: data.name } })}
+					on:click|stopPropagation
+				/>
 		</div>
 	</div>
 {/if}
