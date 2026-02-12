@@ -1389,6 +1389,17 @@
       "double_rewards": "Nhận gấp đôi phần thưởng ở mỗi cấp"
     }
   },
+  "otp": {
+    "title": "Cấp quyền OTP",
+    "description": "Xác nhận mã OTP này để cấp quyền truy cập tài khoản của bạn.",
+    "code_label": "Mã:",
+    "grant": "Cấp quyền",
+    "granting": "Đang cấp...",
+    "granted": "OTP đã được cấp quyền thành công.",
+    "not_logged_in": "Vui lòng đăng nhập để cấp quyền OTP.",
+    "success": "Cấp quyền OTP thành công!",
+    "error": "Không thể cấp quyền OTP."
+  },
   "wiki": {
     "created_at": "Được tạo lúc:",
     "last_updated": "Cập nhật lần cuối:",

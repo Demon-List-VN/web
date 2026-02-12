@@ -1390,6 +1390,17 @@
       "double_rewards": "Double rewards at every tier"
     }
   },
+  "otp": {
+    "title": "Grant OTP",
+    "description": "Authorize this OTP code to grant access to your account.",
+    "code_label": "Code:",
+    "grant": "Grant Access",
+    "granting": "Granting...",
+    "granted": "OTP has been granted successfully.",
+    "not_logged_in": "Please log in to grant this OTP.",
+    "success": "OTP granted successfully!",
+    "error": "Failed to grant OTP."
+  },
   "wiki": {
     "created_at": "Created at:",
     "last_updated": "Last updated at:",
