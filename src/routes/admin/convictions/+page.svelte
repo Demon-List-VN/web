@@ -10,15 +10,40 @@
 	import { toast } from 'svelte-sonner';
 	import { _ } from 'svelte-i18n';
 
+	interface ConvictionData {
+		id: number;
+		content: string;
+		creditReduce: number;
+		created_at: string;
+		isHidden?: boolean;
+		createdAtInput?: string;
+		saving?: boolean;
+	}
+
 	let selectedPlayer: any = null;
 	let isLoading = false;
 	let loadingList = false;
-	let convictions: any[] = [];
+	let convictions: ConvictionData[] = [];
 
 	let form = {
 		content: '',
 		creditReduce: 0
 	};
+
+	function toDateTimeLocal(isoDate: string) {
+		const date = new Date(isoDate);
+		return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+			.toISOString()
+			.slice(0, 16);
+	}
+
+	async function getAuthHeaders(contentType = false) {
+		const token = $user ? await $user.token() : null;
+		return {
+			...(token ? { Authorization: `Bearer ${token}` } : {}),
+			...(contentType ? { 'Content-Type': 'application/json' } : {})
+		};
+	}
 
 	$: if (selectedPlayer?.uid) {
 		fetchConvictions(selectedPlayer.uid);
@@ -29,16 +54,59 @@
 	async function fetchConvictions(uid: string) {
 		loadingList = true;
 		try {
-			const response = await fetch(`${import.meta.env.VITE_API_URL}/players/${uid}/convictions`);
+			const response = await fetch(`${import.meta.env.VITE_API_URL}/players/${uid}/convictions`, {
+				headers: await getAuthHeaders()
+			});
 			if (!response.ok) {
 				throw new Error($_('admin_convictions.toast.fetch_error'));
 			}
 
-			convictions = await response.json();
+			const data = await response.json();
+			convictions = (data ?? []).map((item: ConvictionData) => ({
+				...item,
+				isHidden: !!item.isHidden,
+				createdAtInput: toDateTimeLocal(item.created_at),
+				saving: false
+			}));
 		} catch (error: any) {
 			toast.error(error?.message || $_('admin_convictions.toast.fetch_error'));
 		} finally {
 			loadingList = false;
+		}
+	}
+
+	async function saveConviction(conviction: ConvictionData) {
+		if (!selectedPlayer?.uid || !conviction.id) {
+			return;
+		}
+
+		conviction.saving = true;
+		try {
+			const response = await fetch(
+				`${import.meta.env.VITE_API_URL}/players/${selectedPlayer.uid}/convictions/${conviction.id}`,
+				{
+					method: 'PATCH',
+					headers: await getAuthHeaders(true),
+					body: JSON.stringify({
+						createdAt: conviction.createdAtInput,
+						isHidden: !!conviction.isHidden
+					})
+				}
+			);
+
+			if (!response.ok) {
+				throw new Error('Failed to update conviction');
+			}
+
+			const updated = await response.json();
+			conviction.created_at = updated.created_at;
+			conviction.createdAtInput = toDateTimeLocal(updated.created_at);
+			conviction.isHidden = !!updated.isHidden;
+			toast.success('Conviction updated');
+		} catch (error: any) {
+			toast.error(error?.message || 'Failed to update conviction');
+		} finally {
+			conviction.saving = false;
 		}
 	}
 
@@ -59,10 +127,7 @@
 				`${import.meta.env.VITE_API_URL}/players/${selectedPlayer.uid}/convictions`,
 				{
 					method: 'POST',
-					headers: {
-						Authorization: `Bearer ${await $user.token()}`,
-						'Content-Type': 'application/json'
-					},
+					headers: await getAuthHeaders(true),
 					body: JSON.stringify({
 						content: form.content.trim(),
 						creditReduce: Number(form.creditReduce) || 0
@@ -140,6 +205,8 @@
 							<Table.Head class="w-[220px] text-center"
 								>{$_('admin_convictions.created_at')}</Table.Head
 							>
+							<Table.Head class="w-[100px] text-center">Hidden</Table.Head>
+							<Table.Head class="w-[120px] text-center">Actions</Table.Head>
 						</Table.Row>
 					</Table.Header>
 					<Table.Body>
@@ -147,9 +214,30 @@
 							<Table.Row>
 								<Table.Cell>{conviction.content}</Table.Cell>
 								<Table.Cell class="text-center">{conviction.creditReduce ?? 0}</Table.Cell>
-								<Table.Cell class="text-center"
-									>{new Date(conviction.created_at).toLocaleString('vi-VN')}</Table.Cell
-								>
+								<Table.Cell class="text-center">
+									<Input
+										type="datetime-local"
+										bind:value={conviction.createdAtInput}
+										disabled={!!conviction.saving}
+									/>
+								</Table.Cell>
+								<Table.Cell class="text-center">
+									<input
+										type="checkbox"
+										bind:checked={conviction.isHidden}
+										disabled={!!conviction.saving}
+									/>
+								</Table.Cell>
+								<Table.Cell class="text-center">
+									<Button
+										variant="outline"
+										size="sm"
+										on:click={() => saveConviction(conviction)}
+										disabled={!!conviction.saving}
+									>
+										{conviction.saving ? 'Saving...' : 'Save'}
+									</Button>
+								</Table.Cell>
 							</Table.Row>
 						{/each}
 					</Table.Body>
