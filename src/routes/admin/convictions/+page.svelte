@@ -27,7 +27,8 @@
 
 	let form = {
 		content: '',
-		creditReduce: 0
+		creditReduce: 0,
+		createdAt: ''
 	};
 
 	function toDateTimeLocal(isoDate: string) {
@@ -130,7 +131,8 @@
 					headers: await getAuthHeaders(true),
 					body: JSON.stringify({
 						content: form.content.trim(),
-						creditReduce: Number(form.creditReduce) || 0
+						creditReduce: Number(form.creditReduce) || 0,
+						createdAt: form.createdAt
 					})
 				}
 			);
@@ -142,6 +144,7 @@
 			toast.success($_('admin_convictions.toast.add_success'));
 			form.content = '';
 			form.creditReduce = 0;
+			form.createdAt = '';
 			await fetchConvictions(selectedPlayer.uid);
 		} catch (error: any) {
 			toast.error(error?.message || $_('admin_convictions.toast.add_error'));
@@ -178,6 +181,16 @@
 				type="number"
 				inputmode="numeric"
 				bind:value={form.creditReduce}
+				disabled={isLoading}
+			/>
+		</div>
+
+		<div class="form-group">
+			<Label for="createdAt">{$_('admin_convictions.created_at')}</Label>
+			<Input
+				id="createdAt"
+				type="datetime-local"
+				bind:value={form.createdAt}
 				disabled={isLoading}
 			/>
 		</div>
