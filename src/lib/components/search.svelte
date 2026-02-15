@@ -7,6 +7,7 @@
 	import * as ContextMenu from '$lib/components/ui/context-menu';
 	import { toast } from 'svelte-sonner';
 	import { isActive } from '$lib/client/isSupporterActive';
+	import { user } from '$lib/client';
 	import { _ } from 'svelte-i18n';
 
 	export let open: boolean;
@@ -38,13 +39,26 @@
 		state = 0;
 	}
 
+	async function getSearchAuthHeaders(): Promise<Record<string, string>> {
+		const token = $user ? await $user.token() : null;
+		const headers: Record<string, string> = {};
+
+		if (token) {
+			headers.Authorization = `Bearer ${token}`;
+		}
+
+		return headers;
+	}
+
 	async function search() {
 		if (value == '') {
 			return;
 		}
 
 		const promises = [
-			fetch(`${import.meta.env.VITE_API_URL}/search/${value}`).then((res) => res.json()),
+			fetch(`${import.meta.env.VITE_API_URL}/search/${value}`, {
+				headers: await getSearchAuthHeaders()
+			}).then((res) => res.json()),
 			fetch(`https://gdbrowser.com/api/search/${value}?page=0&count=5&diff=-2`) // TODO: Migrate to own GD API
 				.then((res) => res.json())
 				.catch((err) => [])

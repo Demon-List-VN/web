@@ -3,6 +3,7 @@
 	import * as Avatar from '$lib/components/ui/avatar';
 	import { Input } from '$lib/components/ui/input';
 	import Loading from '$lib/components/animation/loading.svelte';
+	import { user } from '$lib/client';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import { Search, X, ChevronDown } from 'lucide-svelte';
 	import { t } from 'svelte-i18n';
@@ -21,6 +22,17 @@
 
 	const dispatch = createEventDispatcher();
 
+	async function getSearchAuthHeaders(): Promise<Record<string, string>> {
+		const token = $user ? await $user.token() : null;
+		const headers: Record<string, string> = {};
+
+		if (token) {
+			headers.Authorization = `Bearer ${token}`;
+		}
+
+		return headers;
+	}
+
 	async function searchPlayers() {
 		if (searchValue.length < 2) {
 			searchResults = [];
@@ -29,7 +41,9 @@
 
 		isSearching = true;
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/search/${searchValue}`);
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/search/${searchValue}`, {
+				headers: await getSearchAuthHeaders()
+			});
 			const data = await res.json();
 			searchResults = data.players || [];
 		} catch (err) {
@@ -179,20 +193,6 @@
 	.input-wrapper {
 		position: relative;
 		width: 100%;
-
-		.input-icon {
-			position: absolute;
-			top: 50%;
-			transform: translateY(-50%);
-			pointer-events: none;
-			color: hsl(var(--muted-foreground));
-
-			&.left {
-				left: 0.75rem;
-				width: 1rem;
-				height: 1rem;
-			}
-		}
 
 		.input-actions {
 			position: absolute;
