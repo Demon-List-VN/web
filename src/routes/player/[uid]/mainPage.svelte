@@ -23,6 +23,7 @@
 	import CardCollectionTab from './tabs/CardCollectionTab.svelte';
 	import CreatedChallengesTab from './tabs/CreatedChallengesTab.svelte';
 	import CommunityPostsTab from './tabs/CommunityPostsTab.svelte';
+	import ConvictionsTab from './tabs/ConvictionsTab.svelte';
 
 	export let data: PageData;
 	let list: 'dl' | 'fl' | 'pl' | 'cl' | '' = '';
@@ -224,6 +225,9 @@
 					<Tabs.Trigger value="community-posts" on:click={() => (list = '')}>
 						{$_('player.tabs.community_posts')}
 					</Tabs.Trigger>
+					<Tabs.Trigger value="convictions" on:click={() => (list = '')}>
+						{$_('player.tabs.convictions')}
+					</Tabs.Trigger>
 					<Tabs.Trigger value="medals" on:click={() => (list = '')}
 						>{$_('player.tabs.medals')}</Tabs.Trigger
 					>
@@ -251,6 +255,9 @@
 				</Tabs.Content>
 				<Tabs.Content value="community-posts" class="w-[1200px] max-w-full">
 					<CommunityPostsTab userID={data.player.uid} />
+				</Tabs.Content>
+				<Tabs.Content value="convictions" class="w-[1200px] max-w-full">
+					<ConvictionsTab userID={data.player.uid} />
 				</Tabs.Content>
 			</div>
 		</Tabs.Root>

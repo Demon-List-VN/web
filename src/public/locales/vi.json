@@ -854,7 +854,8 @@
       "events": "Sự kiện",
       "cards": "Bộ sưu tập thẻ",
       "created_challenges": "Challenge đã tạo",
-      "community_posts": "Bài viết"
+      "community_posts": "Bài viết",
+      "convictions": "Án tích"
     },
     "filter": {
       "sort_by": "Sắp xếp theo",
@@ -870,11 +871,18 @@
       "point": "Điểm",
       "time": "Thời gian",
       "progress": "Tiến độ",
-      "total_created_challenges": "Tổng số challenge đã tạo"
+      "total_created_challenges": "Tổng số challenge đã tạo",
+      "total_convictions": "Tổng số án tích"
     },
     "no_events": "Chưa tham gia sự kiện nào",
     "no_created_challenges": "Chưa tạo challenge nào",
     "no_community_posts": "Chưa có bài viết nào",
+    "no_convictions": "Chưa có án tích nào",
+    "convictions": {
+      "content": "Nội dung",
+      "credit_reduce": "Điểm trừ",
+      "created_at": "Thời gian"
+    },
     "medals": {
       "achieved_on": "Đạt được vào"
     },
@@ -965,6 +973,25 @@
       "title": "Ủng hộ Geometry Dash Việt Nam 💖",
       "description": "Trở thành Supporter để ủng hộ và giúp DLVN phát triển hơn, đồng thời nhận các quyền lợi độc quyền!",
       "learn_more": "Tìm hiểu thêm"
+    }
+  },
+  "admin_convictions": {
+    "title": "án tích người chơi",
+    "player": "Người chơi",
+    "content": "Nội dung",
+    "content_placeholder": "Nhập nội dung án tích",
+    "credit_reduce": "Điểm trừ",
+    "submit": "Thêm án tích",
+    "submitting": "Đang thêm...",
+    "empty": "Không có dữ liệu án tích",
+    "total": "Tổng số án tích",
+    "created_at": "Thời gian",
+    "toast": {
+      "select_player": "Vui lòng chọn người chơi",
+      "content_required": "Nội dung án tích là bắt buộc",
+      "fetch_error": "Không thể tải danh sách án tích",
+      "add_success": "Đã thêm án tích",
+      "add_error": "Không thể thêm án tích"
     },
     "top_supporters": {
       "title": "Supporter Hàng Đầu (30 Ngày Qua)",

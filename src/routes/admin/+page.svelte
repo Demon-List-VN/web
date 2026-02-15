@@ -67,7 +67,10 @@
 		{
 			title: 'User Management',
 			icon: '👥',
-			items: [{ name: 'Account Merger', href: '/admin/accountMerger' }]
+			items: [
+				{ name: 'Account Merger', href: '/admin/accountMerger' },
+				{ name: 'Player Convictions', href: '/admin/convictions' }
+			]
 		},
 		{
 			title: 'Features',

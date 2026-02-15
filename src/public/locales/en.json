@@ -855,7 +855,8 @@
       "events": "Events",
       "cards": "Card collection",
       "created_challenges": "Created Challenges",
-      "community_posts": "Posts"
+      "community_posts": "Posts",
+      "convictions": "Convictions"
     },
     "filter": {
       "sort_by": "Sort by",
@@ -871,11 +872,18 @@
       "point": "Point",
       "time": "Time",
       "progress": "Progress",
-      "total_created_challenges": "Total created challenges"
+      "total_created_challenges": "Total created challenges",
+      "total_convictions": "Total convictions"
     },
     "no_events": "No events participated yet",
     "no_created_challenges": "No created challenges yet",
     "no_community_posts": "No community posts yet",
+    "no_convictions": "No convictions yet",
+    "convictions": {
+      "content": "Content",
+      "credit_reduce": "Credit Reduce",
+      "created_at": "Created at"
+    },
     "medals": {
       "achieved_on": "Achieved on"
     },
@@ -945,6 +953,25 @@
       "title": "Support Geometry Dash Việt Nam 💖",
       "description": "Consider becoming a Supporter to help DLVN grow and get exclusive perks!",
       "learn_more": "Learn more"
+    }
+  },
+  "admin_convictions": {
+    "title": "Player Convictions",
+    "player": "Player",
+    "content": "Content",
+    "content_placeholder": "Enter conviction content",
+    "credit_reduce": "Credit Reduce",
+    "submit": "Add Conviction",
+    "submitting": "Adding...",
+    "empty": "No convictions found",
+    "total": "Total convictions",
+    "created_at": "Created at",
+    "toast": {
+      "select_player": "Please select a player",
+      "content_required": "Conviction content is required",
+      "fetch_error": "Failed to fetch convictions",
+      "add_success": "Conviction added successfully",
+      "add_error": "Failed to add conviction"
     },
     "top_supporters": {
       "title": "Top Supporters (Last 30 Days)",
