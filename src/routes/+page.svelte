@@ -260,7 +260,7 @@
 											<span class="listItemDesc">{getDescription(item, $locale || 'vi')}</span>
 										{/if}
 									</div>
-									<span class="listItemDate">{formatDate(item.created_at)}</span>
+									<span class="listItemDate">{formatDate(item.createdAt)}</span>
 								</a>
 							{/each}
 						{:else}
@@ -299,7 +299,7 @@
 											<span class="listItemDesc">{getDescription(item, $locale || 'vi')}</span>
 										{/if}
 									</div>
-									<span class="listItemDate">{formatDate(item.created_at)}</span>
+									<span class="listItemDate">{formatDate(item.createdAt)}</span>
 								</a>
 							{/each}
 						{:else}

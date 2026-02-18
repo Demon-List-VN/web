@@ -74,7 +74,7 @@
 			<CardContent>
 				<div class="flex items-center gap-2 text-sm text-foreground/70">
 					<Calendar class="h-4 w-4" />
-					<span>{formatDate(item.created_at)}</span>
+					<span>{formatDate(item.createdAt)}</span>
 				</div>
 			</CardContent>
 		</Card>

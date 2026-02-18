@@ -18,7 +18,7 @@
 			<p class="text-center">{medal.content}</p>
 		{/if}
 		<p class="mt-[10px] text-[var(--textColor2)]">
-			{$_("player.medals.achieved_on")} {new Date(medal.created_at).toLocaleDateString('vi-vn')}
+			{$_("player.medals.achieved_on")} {new Date(medal.createdAt).toLocaleDateString('vi-vn')}
 		</p>
 	</div>
 </a>

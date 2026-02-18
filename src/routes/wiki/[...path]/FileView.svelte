@@ -77,7 +77,7 @@
 		<Card.Title class="text-3xl">{metadata.title}</Card.Title>
 		<Card.Description>
 			{$_('wiki.created_at')}
-			{new Date(metadata.created_at).toLocaleString(locale || 'vi-vn')}, {$_('wiki.last_updated')}
+			{new Date(metadata.createdAt).toLocaleString(locale || 'vi-vn')}, {$_('wiki.last_updated')}
 			{new Date(metadata.modifiedAt).toLocaleString(locale || 'vi-vn')}
 		</Card.Description>
 	</Card.Header>

@@ -36,7 +36,7 @@
 					<Table.Body>
 						{#each proofs as proof}
 							<Table.Row>
-								<Table.Cell>{new Date(proof.created_at).toLocaleString()}</Table.Cell>
+								<Table.Cell>{new Date(proof.createdAt).toLocaleString()}</Table.Cell>
 								<Table.Cell>
 									<a href={`/players/${proof.players.name}`}>{proof.players.name}</a>
 								</Table.Cell>

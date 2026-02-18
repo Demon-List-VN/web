@@ -195,7 +195,7 @@
 			});
 			const result = await res.json();
 			post.liked = result.liked;
-			post.likes_count += result.liked ? 1 : -1;
+			post.likesCount += result.liked ? 1 : -1;
 		} catch {
 			toast.error('Failed to like post');
 		} finally {
@@ -300,7 +300,7 @@
 
 			const comment = await res.json();
 			comments = [...(comments || []), comment];
-			post.comments_count++;
+			post.commentsCount++;
 			newComment = '';
 			commentAttachedLevel = null;
 			clearCommentImage();
@@ -323,7 +323,7 @@
 				headers
 			});
 			comments = (comments || []).filter((c) => c.id !== commentId);
-			post.comments_count--;
+			post.commentsCount--;
 		} catch {
 			toast.error('Failed to delete comment');
 		}
@@ -344,7 +344,7 @@
 			);
 			const result = await res.json();
 			comment.liked = result.liked;
-			comment.likes_count += result.liked ? 1 : -1;
+			comment.likesCount += result.liked ? 1 : -1;
 			comments = comments;
 		} catch {
 			toast.error('Failed to like comment');
@@ -428,7 +428,7 @@
 		editTitle = post.title;
 		editContent = post.content || '';
 		editType = post.type || 'discussion';
-		editTagIds = (post?.community_posts_tags || []).map((pt: any) => pt.tag_id);
+		editTagIds = (post?.communityPostsTags || []).map((pt: any) => pt.tagId);
 		fetchAvailableTags();
 	}
 
@@ -600,7 +600,7 @@
 
 	$: author = post?.players;
 	$: TypeIcon = post ? typeIcons[post.type] || MessageCircle : MessageCircle;
-	$: postTags = (post?.community_posts_tags || []).map((pt: any) => pt.post_tags).filter(Boolean);
+	$: postTags = (post?.communityPostsTags || []).map((pt: any) => pt.postTags).filter(Boolean);
 	$: isOwner = $user.loggedIn && post && $user.data?.uid === post.uid;
 	$: isAdmin = $user.loggedIn && $user.data?.isAdmin;
 	$: isAdminNotOwner = isAdmin && !isOwner;
@@ -616,11 +616,11 @@
 		return match ? match[1] : null;
 	}
 
-	$: youtubeId = post?.video_url ? getYouTubeId(post.video_url) : null;
+	$: youtubeId = post?.videoUrl ? getYouTubeId(post.videoUrl) : null;
 
 	// For SSR head tags - use data.post as fallback before client fetch
 	$: headPost = post || data.post;
-	$: headYtId = headPost?.video_url ? getYouTubeId(headPost.video_url) : null;
+	$: headYtId = headPost?.videoUrl ? getYouTubeId(headPost.videoUrl) : null;
 </script>
 
 <svelte:head>
@@ -636,29 +636,29 @@
 			<meta property="og:description" content={headPost.content.slice(0, 160)} />
 			<meta name="description" content={headPost.content.slice(0, 160)} />
 		{/if}
-		{#if headPost.image_url}
-			<meta property="og:image" content={headPost.image_url} />
+		{#if headPost.imageUrl}
+			<meta property="og:image" content={headPost.imageUrl} />
 		{:else if headYtId}
 			<meta property="og:image" content="https://img.youtube.com/vi/{headYtId}/maxresdefault.jpg" />
 		{/if}
 		<meta property="og:site_name" content="Geometry Dash Việt Nam" />
-		<meta property="article:published_time" content={headPost.created_at} />
-		{#if headPost.updated_at}
-			<meta property="article:modified_time" content={headPost.updated_at} />
+		<meta property="article:published_time" content={headPost.createdAt} />
+		{#if headPost.updatedAt}
+			<meta property="article:modified_time" content={headPost.updatedAt} />
 		{/if}
 		{#if headPost.players}
 			<meta property="article:author" content={headPost.players.name} />
 		{/if}
 		<meta
 			name="twitter:card"
-			content={headPost.image_url || headYtId ? 'summary_large_image' : 'summary'}
+			content={headPost.imageUrl || headYtId ? 'summary_large_image' : 'summary'}
 		/>
 		<meta name="twitter:title" content="{headPost.title} - Geometry Dash Việt Nam" />
 		{#if headPost.content}
 			<meta name="twitter:description" content={headPost.content.slice(0, 160)} />
 		{/if}
-		{#if headPost.image_url}
-			<meta name="twitter:image" content={headPost.image_url} />
+		{#if headPost.imageUrl}
+			<meta name="twitter:image" content={headPost.imageUrl} />
 		{:else if headYtId}
 			<meta
 				name="twitter:image"
@@ -693,13 +693,13 @@
 					<span class={typeColors[post.type]}>{$_(`community.type.${post.type}`)}</span>
 				</div>
 
-				{#if post.type === 'review' && post.is_recommended !== null && post.is_recommended !== undefined}
+				{#if post.type === 'review' && post.isRecommended !== null && post.isRecommended !== undefined}
 					<div
 						class="recommendBadgeDetail"
-						class:recommended={post.is_recommended}
-						class:notRecommended={!post.is_recommended}
+						class:recommended={post.isRecommended}
+						class:notRecommended={!post.isRecommended}
 					>
-						{#if post.is_recommended}
+						{#if post.isRecommended}
 							<ThumbsUp class="h-4 w-4" />
 							<span>{$_('community.review.recommended')}</span>
 						{:else}
@@ -769,8 +769,8 @@
 						{/if}
 					</div>
 					<span class="metaDot">·</span>
-					<span class="metaDate">{formatDate(post.created_at)}</span>
-					{#if post.updated_at}
+					<span class="metaDate">{formatDate(post.createdAt)}</span>
+					{#if post.updatedAt}
 						<span class="metaDot">·</span>
 						<span class="metaEdited">({$_('community.edited')})</span>
 					{/if}
@@ -779,9 +779,9 @@
 
 			<!-- Post Body -->
 			<div class="postBody">
-				{#if post.image_url}
+				{#if post.imageUrl}
 					<div class="postImageFull">
-						<img src={post.image_url} alt="" />
+						<img src={post.imageUrl} alt="" />
 					</div>
 				{/if}
 				{#if youtubeId}
@@ -797,23 +797,23 @@
 				{/if}
 
 				<!-- Attached Record -->
-				{#if post.attached_record}
+				{#if post.attachedRecord}
 					<!-- svelte-ignore a11y-click-events-have-key-events -->
 					<!-- svelte-ignore a11y-no-static-element-interactions -->
 					<div class="attachedCard clickable" on:click={() => (recordDialogOpen = true)}>
 						<Trophy class="h-5 w-5 text-amber-500" />
 						<div class="attachedInfo">
-							<strong>{post.attached_record.levelName}</strong>
+							<strong>{post.attachedRecord.levelName}</strong>
 							<span class="attachedMeta">
 								{$_('community.attachment.by')}
-								{post.attached_record.creator} · {post.attached_record.progress}%
-								{#if post.attached_record.mobile}
+								{post.attachedRecord.creator} · {post.attachedRecord.progress}%
+								{#if post.attachedRecord.mobile}
 									· 📱{/if}
 							</span>
 						</div>
-						{#if post.attached_record.videoLink}
+						{#if post.attachedRecord.videoLink}
 							<a
-								href={post.attached_record.videoLink}
+								href={post.attachedRecord.videoLink}
 								target="_blank"
 								rel="noopener"
 								class="attachedLink"
@@ -826,19 +826,19 @@
 				{/if}
 
 				<!-- Attached Level -->
-				{#if post.attached_level}
+				{#if post.attachedLevel}
 					<div class="attachedCard">
 						<Gamepad2 class="h-5 w-5 text-emerald-500" />
 						<div class="attachedInfo">
-							<strong>{post.attached_level.name}</strong>
+							<strong>{post.attachedLevel.name}</strong>
 							<span class="attachedMeta">
 								{$_('community.attachment.by')}
-								{post.attached_level.creator}
-								{#if post.attached_level.isPlatformer}
+								{post.attachedLevel.creator}
+								{#if post.attachedLevel.isPlatformer}
 									· Platformer{/if}
 							</span>
 						</div>
-						<a href="/level/{post.attached_level.id}" class="attachedLink">
+						<a href="/level/{post.attachedLevel.id}" class="attachedLink">
 							<ExternalLink class="h-4 w-4" />
 						</a>
 					</div>
@@ -906,11 +906,11 @@
 					{:else}
 						<button class="actionBtn" class:liked={post.liked} on:click={toggleLike}>
 							<ThumbsUp class="h-4 w-4" />
-							<span>{post.likes_count}</span>
+							<span>{post.likesCount}</span>
 						</button>
 						<div class="actionBtn">
 							<MessageSquare class="h-4 w-4" />
-							<span>{post.comments_count}</span>
+							<span>{post.commentsCount}</span>
 						</div>
 					{/if}
 				</div>
@@ -949,7 +949,7 @@
 		<section class="commentsSection">
 			<h2 class="commentsTitle">
 				<MessageSquare class="h-5 w-5" />
-				{$_('community.comments')} ({post.comments_count})
+				{$_('community.comments')} ({post.commentsCount})
 			</h2>
 
 			<!-- Comment Input -->
@@ -1085,14 +1085,14 @@
 												<span>Unknown</span>
 											{/if}
 										</div>
-										<span class="commentTime">{timeAgo(comment.created_at)}</span>
+										<span class="commentTime">{timeAgo(comment.createdAt)}</span>
 									</div>
 									<p class="commentText"><Markdown content={comment.content} /></p>
-									{#if comment.attached_level}
-										<a href="/level/{comment.attached_level.id}" class="commentLevelAttachment">
+									{#if comment.attachedLevel}
+										<a href="/level/{comment.attachedLevel.id}" class="commentLevelAttachment">
 											<Gamepad2 class="h-3.5 w-3.5 text-emerald-500" />
-											<span>{comment.attached_level.name}</span>
-											<span class="attachedMeta">{comment.attached_level.creator}</span>
+											<span>{comment.attachedLevel.name}</span>
+											<span class="attachedMeta">{comment.attachedLevel.creator}</span>
 										</a>
 									{/if}
 									<div class="commentActions">
@@ -1102,7 +1102,7 @@
 											on:click={() => toggleCommentLike(comment)}
 										>
 											<ThumbsUp class="h-3.5 w-3.5" />
-											<span>{comment.likes_count}</span>
+											<span>{comment.likesCount}</span>
 										</button>
 										{#if $user.loggedIn && $user.data?.uid !== comment.uid}
 											<button
@@ -1163,10 +1163,10 @@
 </div>
 
 <!-- Record Detail -->
-{#if post?.attached_record}
+{#if post?.attachedRecord}
 	<RecordDetail
 		uid={post.uid}
-		levelID={post.attached_record.levelid}
+		levelID={post.attachedRecord.levelid}
 		bind:open={recordDialogOpen}
 	/>
 {/if}

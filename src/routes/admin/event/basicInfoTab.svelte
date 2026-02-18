@@ -34,7 +34,7 @@
 			type="datetime-local"
 			class="w-[300px]"
 			placeholder="Required"
-			bind:value={event.created_at}
+			bind:value={event.createdAt}
 		/>
 		<span class="text-xs">default to now</span>
 	</div>

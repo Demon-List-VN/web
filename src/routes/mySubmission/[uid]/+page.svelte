@@ -143,7 +143,7 @@
 								</a>
 							</Table.Cell>
 							<Table.Cell class="text-center">
-								{new Date(submission.created_at).toLocaleString('vi-VN')}
+								{new Date(submission.createdAt).toLocaleString('vi-VN')}
 							</Table.Cell>
 							<Table.Cell class="text-center">
 								<span class="flex items-center justify-center gap-1"> Chờ duyệt </span>

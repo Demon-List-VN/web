@@ -43,7 +43,7 @@
 			value: updateData.accepted
 		};
 
-		updateData.created_at = new Date(updateData.created_at).toISOString().slice(0, 16);
+		updateData.createdAt = new Date(updateData.createdAt).toISOString().slice(0, 16);
 	}
 
 	function convertToRate(arr: number[]) {
@@ -232,7 +232,7 @@
 				<div class="flex flex-col gap-0">
 					<section>
 						<span class="font-bold">{$_('contest.leaderboard.submitted_at')}: </span>
-						{new Date(record.created_at).toLocaleString('vi-vn')}
+						{new Date(record.createdAt).toLocaleString('vi-vn')}
 					</section>
 					<section>
 						<span class="font-bold">{$_('contest.leaderboard.video_link')}: </span><a
@@ -270,7 +270,7 @@
 								>
 								<Input
 									type="datetime-local"
-									bind:value={updateData.created_at}
+									bind:value={updateData.createdAt}
 									class="col-span-3"
 								/>
 							</div>

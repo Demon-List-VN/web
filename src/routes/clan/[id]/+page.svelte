@@ -168,7 +168,7 @@
 
 	async function updateClan() {
 		delete editedData.id;
-		delete editedData.created_at;
+		delete editedData.createdAt;
 		delete editedData.players;
 		delete editedData.boostedUntil;
 
@@ -234,7 +234,7 @@
 		const cImg = await imageCompression(image, options);
 		const handleUpload = async () => {
 			delete editedData.id;
-			delete editedData.created_at;
+			delete editedData.createdAt;
 			delete editedData.players;
 			delete editedData.boostedUntil;
 
@@ -676,7 +676,7 @@
 									<PlayerHoverCard player={invitation.players} />
 								</Table.Cell>
 								<Table.Cell>
-									{new Date(invitation.created_at).toLocaleString('vi-VN')}
+									{new Date(invitation.createdAt).toLocaleString('vi-VN')}
 								</Table.Cell>
 								<Table.Cell class="text-right">
 									<Button

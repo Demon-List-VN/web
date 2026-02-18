@@ -49,7 +49,7 @@
 				continue;
 			}
 
-			res += new Date(i.created_at).getTime() - new Date(event.start).getTime();
+			res += new Date(i.createdAt).getTime() - new Date(event.start).getTime();
 		}
 
 		return Math.round(res / divide);
