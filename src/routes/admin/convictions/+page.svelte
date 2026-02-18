@@ -14,7 +14,7 @@
 		id: number;
 		content: string;
 		creditReduce: number;
-		created_at: string;
+		createdAt: string;
 		isHidden?: boolean;
 		createdAtInput?: string;
 		saving?: boolean;
@@ -66,7 +66,7 @@
 			convictions = (data ?? []).map((item: ConvictionData) => ({
 				...item,
 				isHidden: !!item.isHidden,
-				createdAtInput: toDateTimeLocal(item.created_at),
+				createdAtInput: toDateTimeLocal(item.createdAt),
 				saving: false
 			}));
 		} catch (error: any) {
@@ -100,8 +100,8 @@
 			}
 
 			const updated = await response.json();
-			conviction.created_at = updated.created_at;
-			conviction.createdAtInput = toDateTimeLocal(updated.created_at);
+			conviction.createdAt = updated.createdAt;
+			conviction.createdAtInput = toDateTimeLocal(updated.createdAt);
 			conviction.isHidden = !!updated.isHidden;
 			toast.success('Conviction updated');
 		} catch (error: any) {

@@ -292,7 +292,7 @@
 										{key.key}
 									</button>
 								</Table.Cell>
-								<Table.Cell>{new Date(key.created_at).toLocaleString('vi-VN')}</Table.Cell>
+								<Table.Cell>{new Date(key.createdAt).toLocaleString('vi-VN')}</Table.Cell>
 								<Table.Cell class="text-right">
 									<AlertDialog.Root>
 										<AlertDialog.Trigger asChild let:builder>

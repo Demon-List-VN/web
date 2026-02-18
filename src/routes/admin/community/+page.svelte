@@ -181,8 +181,8 @@
 			title: post.title,
 			content: post.content,
 			type: post.type,
-			image_url: post.image_url || '',
-			video_url: post.video_url || '',
+			imageUrl: post.imageUrl || '',
+			videoUrl: post.videoUrl || '',
 			pinned: post.pinned
 		};
 		editDialogOpen = true;
@@ -199,8 +199,8 @@
 				type: editPost.type,
 				pinned: editPost.pinned
 			};
-			if (editPost.image_url) body.image_url = editPost.image_url;
-			if (editPost.video_url) body.video_url = editPost.video_url;
+			if (editPost.imageUrl) body.image_url = editPost.imageUrl;
+			if (editPost.videoUrl) body.video_url = editPost.videoUrl;
 
 			const res = await fetch(
 				`${import.meta.env.VITE_API_URL}/community/admin/posts/${editPost.id}`,
@@ -877,9 +877,9 @@
 								<td class="authorCol">
 									{post.players?.name || post.uid}
 								</td>
-								<td class="center">{post.likes_count}</td>
-								<td class="center">{post.comments_count}</td>
-								<td class="dateCol">{formatDate(post.created_at)}</td>
+								<td class="center">{post.likesCount}</td>
+								<td class="center">{post.commentsCount}</td>
+								<td class="dateCol">{formatDate(post.createdAt)}</td>
 								<td>
 									<div class="actions">
 										<button
@@ -1071,7 +1071,7 @@
 										<span>{modStatus || 'approved'}</span>
 									</div>
 								</td>
-								<td class="dateCol">{formatDate(comment.created_at)}</td>
+								<td class="dateCol">{formatDate(comment.createdAt)}</td>
 								<td>
 									<div class="actions">
 										<button
@@ -1224,7 +1224,7 @@
 								</td>
 								<td class="authorCol">{report.players?.name || report.uid}</td>
 								<td class="descCol">{report.description || '—'}</td>
-								<td class="dateCol">{formatDate(report.created_at)}</td>
+								<td class="dateCol">{formatDate(report.createdAt)}</td>
 								<td>
 									<div class="actions">
 										{#if !report.resolved}
@@ -1351,7 +1351,7 @@
 										{/if}
 									</div>
 								</td>
-								<td class="dateCol">{formatDate(post.created_at)}</td>
+								<td class="dateCol">{formatDate(post.createdAt)}</td>
 								<td>
 									<div class="actions">
 										<button
@@ -1489,7 +1489,7 @@
 										{/if}
 									</div>
 								</td>
-								<td class="dateCol">{formatDate(comment.created_at)}</td>
+								<td class="dateCol">{formatDate(comment.createdAt)}</td>
 								<td>
 									<div class="actions">
 										<button
@@ -1726,11 +1726,11 @@
 					<div class="postContent">{moderationDetailPost.content || '(empty)'}</div>
 				</div>
 
-				{#if moderationDetailPost.image_url}
+				{#if moderationDetailPost.imageUrl}
 					<div class="field">
 						<span class="fieldLabel">Image</span>
 						<img
-							src={moderationDetailPost.image_url}
+							src={moderationDetailPost.imageUrl}
 							alt="Post attachment"
 							class="moderationImage"
 						/>
@@ -1938,7 +1938,7 @@
 				</div>
 				<div class="field">
 					<span class="fieldLabel">Created</span>
-					<span>{formatDate(commentDetailComment.created_at)}</span>
+					<span>{formatDate(commentDetailComment.createdAt)}</span>
 				</div>
 
 				<hr class="divider" />
@@ -2035,13 +2035,13 @@
 				</div>
 				<div class="field">
 					<label for="edit-image">Image URL</label>
-					<Input id="edit-image" bind:value={editPost.image_url} placeholder="https://..." />
+					<Input id="edit-image" bind:value={editPost.imageUrl} placeholder="https://..." />
 				</div>
 				<div class="field">
 					<label for="edit-video">Video URL</label>
 					<Input
 						id="edit-video"
-						bind:value={editPost.video_url}
+						bind:value={editPost.videoUrl}
 						placeholder="https://youtube.com/watch?v=..."
 					/>
 				</div>

@@ -73,7 +73,7 @@
 
 			event.start = convertTime(event.start);
 			event.end = convertTime(event.end);
-			event.created_at = convertTime(event.created_at);
+			event.createdAt = convertTime(event.createdAt);
 			event.freeze = convertTime(event.freeze);
 
 			if (event.isContest) {
@@ -133,11 +133,11 @@
 			event.exp = Number(event.exp);
 		}
 
-		if (event.created_at) {
-			event.created_at = new Date(event.created_at).toISOString();
+		if (event.createdAt) {
+			event.createdAt = new Date(event.createdAt).toISOString();
 		} else {
 			// @ts-ignore
-			delete event.created_at;
+			delete event.createdAt;
 		}
 
 		if (event.start) {
@@ -345,7 +345,7 @@
 	function exportToCSV() {
 		const headers = ['Created At', 'Player Name', 'Player ID', 'Content', 'Accepted', 'Data', 'Diff'];
 		const rows = proofs.map((proof) => [
-			new Date(proof.created_at).toLocaleString(),
+			new Date(proof.createdAt).toLocaleString(),
 			proof.players?.name || 'Unknown',
 			proof.userid,
 			proof.content,

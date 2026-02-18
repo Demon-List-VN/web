@@ -47,7 +47,7 @@
 		).json();
 
 		data.orderTracking.push({
-			created_at: data.created_at,
+			createdAt: data.createdAt,
 			content: 'Order created'
 		});
 	}
@@ -202,8 +202,8 @@
 								</div>
 								<div class="flex-1 pb-4">
 									<p class="text-sm text-muted-foreground">
-										{new Date(item.created_at).toLocaleDateString('vi-VN')} -
-										{new Date(item.created_at).toLocaleTimeString('vi-VN')}
+										{new Date(item.createdAt).toLocaleDateString('vi-VN')} -
+										{new Date(item.createdAt).toLocaleTimeString('vi-VN')}
 									</p>
 									{#if item.link}
 										<a href={item.link}>

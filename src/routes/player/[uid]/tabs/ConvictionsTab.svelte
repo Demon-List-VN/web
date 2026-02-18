@@ -9,7 +9,7 @@
 		id: number;
 		content: string;
 		creditReduce: number;
-		created_at: string;
+		createdAt: string;
 	}
 
 	let convictions: ConvictionData[] = [];
@@ -53,7 +53,7 @@
 					<Table.Cell class="font-medium">{conviction.content}</Table.Cell>
 					<Table.Cell class="text-center">{conviction.creditReduce ?? 0}</Table.Cell>
 					<Table.Cell class="text-center">
-						{new Date(conviction.created_at).toLocaleString('vi-VN')}
+						{new Date(conviction.createdAt).toLocaleString('vi-VN')}
 					</Table.Cell>
 				</Table.Row>
 			{/each}

@@ -170,7 +170,7 @@
 				{/if}
 				<div class="grid grid-cols-4 items-center gap-4">
 					<Label class="text-right font-bold">Submitted at</Label>
-					<div class="col-span-3 text-sm">{formatDate(selectedSubmission.created_at)}</div>
+					<div class="col-span-3 text-sm">{formatDate(selectedSubmission.createdAt)}</div>
 				</div>
 				<hr />
 				<div class="grid grid-cols-4 items-center gap-4">
@@ -248,7 +248,7 @@
 							</a>
 						</Table.Cell>
 						<Table.Cell class="text-center text-sm">
-							{formatDate(submission.created_at)}
+							{formatDate(submission.createdAt)}
 						</Table.Cell>
 						<Table.Cell class="text-center">
 							{#if submission.accepted}

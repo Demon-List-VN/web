@@ -5,7 +5,7 @@
 
 	interface CardData {
 		id: string;
-		created_at: string;
+		createdAt: string;
 		supporterIncluded: number;
 		owner: string;
 		activationDate: string;
