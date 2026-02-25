@@ -73,13 +73,13 @@
 	let mapPackLinkForm = {
 		mapPackId: '' as any,
 		unlockWeek: 1,
-		order: 0
+		sortOrder: 0
 	};
 
 	let mapPackEditForm = {
 		id: null as number | null,
 		unlockWeek: 1,
-		order: 0
+		sortOrder: 0
 	};
 
 	let rewardForm = {
@@ -368,7 +368,7 @@
 				body: JSON.stringify({
 					mapPackId: Number(mapPackLinkForm.mapPackId),
 					unlockWeek: mapPackLinkForm.unlockWeek,
-					order: mapPackLinkForm.order
+					sortOrder: mapPackLinkForm.sortOrder
 				}),
 				headers: {
 					Authorization: `Bearer ${await $user.token()}`,
@@ -414,7 +414,7 @@
 				method: 'PATCH',
 				body: JSON.stringify({
 					unlockWeek: mapPackEditForm.unlockWeek,
-					order: mapPackEditForm.order
+					sortOrder: mapPackEditForm.sortOrder
 				}),
 				headers: {
 					Authorization: `Bearer ${await $user.token()}`,
@@ -789,7 +789,7 @@
 	}
 
 	function openLinkMapPack() {
-		mapPackLinkForm = { mapPackId: '', unlockWeek: 1, order: 0 };
+		mapPackLinkForm = { mapPackId: '', unlockWeek: 1, sortOrder: 0 };
 		showLinkMapPackDialog = true;
 	}
 
@@ -797,7 +797,7 @@
 		mapPackEditForm = {
 			id: pack.id,
 			unlockWeek: pack.unlockWeek,
-			order: pack.order
+			sortOrder: pack.sortOrder
 		};
 		showEditMapPackDialog = true;
 	}
@@ -969,7 +969,7 @@
 												<Table.Cell>{pack.mapPacks?.name || '-'}</Table.Cell>
 												<Table.Cell>{pack.mapPacks?.difficulty || '-'}</Table.Cell>
 												<Table.Cell class="text-yellow-400">{pack.mapPacks?.xp || 0}</Table.Cell>
-												<Table.Cell>{pack.order}</Table.Cell>
+												<Table.Cell>{pack.sortOrder}</Table.Cell>
 												<Table.Cell>
 													<div class="flex gap-2">
 														<Button
@@ -1243,7 +1243,7 @@
 				</div>
 				<div>
 					<Label for="packOrder">Order</Label>
-					<Input id="packOrder" type="number" bind:value={mapPackLinkForm.order} min="0" />
+					<Input id="packOrder" type="number" bind:value={mapPackLinkForm.sortOrder} min="0" />
 				</div>
 			</div>
 		</div>
@@ -1615,7 +1615,7 @@
 			</div>
 			<div>
 				<Label for="editOrder">Order</Label>
-				<Input id="editOrder" type="number" min="0" bind:value={mapPackEditForm.order} />
+				<Input id="editOrder" type="number" min="0" bind:value={mapPackEditForm.sortOrder} />
 			</div>
 		</div>
 		<Dialog.Footer>
