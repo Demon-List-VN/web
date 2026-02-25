@@ -181,8 +181,8 @@
 			title: post.title,
 			content: post.content,
 			type: post.type,
-			image_url: post.image_url || '',
-			video_url: post.video_url || '',
+			imageUrl: post.imageUrl || '',
+			videoUrl: post.videoUrl || '',
 			pinned: post.pinned
 		};
 		editDialogOpen = true;
@@ -199,8 +199,8 @@
 				type: editPost.type,
 				pinned: editPost.pinned
 			};
-			if (editPost.image_url) body.image_url = editPost.image_url;
-			if (editPost.video_url) body.video_url = editPost.video_url;
+			if (editPost.imageUrl) body.imageUrl = editPost.imageUrl;
+			if (editPost.videoUrl) body.videoUrl = editPost.videoUrl;
 
 			const res = await fetch(
 				`${import.meta.env.VITE_API_URL}/community/admin/posts/${editPost.id}`,
@@ -364,7 +364,7 @@
 				body: JSON.stringify({
 					name: newTagName.trim(),
 					color: newTagColor,
-					admin_only: newTagAdminOnly
+					adminOnly: newTagAdminOnly
 				})
 			});
 			if (!res.ok) {
@@ -403,7 +403,7 @@
 		editingTag = tag;
 		editTagName = tag.name;
 		editTagColor = tag.color || '#3b82f6';
-		editTagAdminOnly = tag.admin_only || false;
+		editTagAdminOnly = tag.adminOnly || false;
 	}
 
 	function cancelEditPostTag() {
@@ -424,7 +424,7 @@
 				body: JSON.stringify({
 					name: editTagName.trim(),
 					color: editTagColor,
-					admin_only: editTagAdminOnly
+					adminOnly: editTagAdminOnly
 				})
 			});
 			if (res.ok) {
@@ -682,12 +682,12 @@
 				{
 					method: 'PUT',
 					headers,
-					body: JSON.stringify({ hidden: !comment.community_comments_admin?.hidden })
+					body: JSON.stringify({ hidden: !comment.communityCommentsAdmin?.hidden })
 				}
 			);
 			if (!res.ok) throw new Error();
-			const isHidden = !comment.community_comments_admin?.hidden;
-			comment.community_comments_admin = { ...comment.community_comments_admin, hidden: isHidden };
+			const isHidden = !comment.communityCommentsAdmin?.hidden;
+			comment.communityCommentsAdmin = { ...comment.communityCommentsAdmin, hidden: isHidden };
 			allComments = allComments;
 			toast.success(isHidden ? 'Comment hidden' : 'Comment unhidden');
 		} catch {
@@ -701,17 +701,17 @@
 	}
 
 	// Derived moderation view state for the detail dialog
-	$: modResult = moderationDetailPost?.community_posts_admin?.moderation_result;
+	$: modResult = moderationDetailPost?.communityPostsAdmin?.moderationResult;
 	$: modFlagged = getFlaggedCategories(modResult);
 	$: modScores = getCategoryScores(modResult);
 
 	// Derived comment moderation view state
-	$: commentModResult = commentModerationDetailComment?.community_comments_admin?.moderation_result;
+	$: commentModResult = commentModerationDetailComment?.communityCommentsAdmin?.moderationResult;
 	$: commentModFlagged = getFlaggedCategories(commentModResult);
 	$: commentModScores = getCategoryScores(commentModResult);
 
 	// Derived comment detail view state (for Comments tab)
-	$: commentDetailModResult = commentDetailComment?.community_comments_admin?.moderation_result;
+	$: commentDetailModResult = commentDetailComment?.communityCommentsAdmin?.moderationResult;
 	$: commentDetailFlagged = getFlaggedCategories(commentDetailModResult);
 	$: commentDetailScores = getCategoryScores(commentDetailModResult);
 </script>
@@ -877,9 +877,9 @@
 								<td class="authorCol">
 									{post.players?.name || post.uid}
 								</td>
-								<td class="center">{post.likes_count}</td>
-								<td class="center">{post.comments_count}</td>
-								<td class="dateCol">{formatDate(post.created_at)}</td>
+								<td class="center">{post.likesCount}</td>
+								<td class="center">{post.commentsCount}</td>
+								<td class="dateCol">{formatDate(post.createdAt)}</td>
 								<td>
 									<div class="actions">
 										<button
@@ -1037,13 +1037,13 @@
 				<tbody>
 					{#if allComments}
 						{#each allComments as comment}
-							{@const isHidden = comment.community_comments_admin?.hidden}
-							{@const modStatus = comment.community_comments_admin?.moderation_status}
+							{@const isHidden = comment.communityCommentsAdmin?.hidden}
+							{@const modStatus = comment.communityCommentsAdmin?.moderationStatus}
 							<tr class:hiddenPost={isHidden}>
 								<td class="idCol">{comment.id}</td>
 								<td class="titleCol">
-									<a href="/community/{comment.post_id}" target="_blank" class="titleLink">
-										{comment.community_posts?.title || `Post #${comment.post_id}`}
+									<a href="/community/{comment.postId}" target="_blank" class="titleLink">
+										{comment.communityPosts?.title || `Post #${comment.postId}`}
 										<ExternalLink class="ml-1 inline h-3 w-3" />
 									</a>
 								</td>
@@ -1071,7 +1071,7 @@
 										<span>{modStatus || 'approved'}</span>
 									</div>
 								</td>
-								<td class="dateCol">{formatDate(comment.created_at)}</td>
+								<td class="dateCol">{formatDate(comment.createdAt)}</td>
 								<td>
 									<div class="actions">
 										<button
@@ -1207,24 +1207,24 @@
 									<span class="reasonBadge">{reasonLabels[report.reason] || report.reason}</span>
 								</td>
 								<td class="titleCol">
-									{#if report.community_posts}
+									{#if report.communityPosts}
 										<a
-											href="/community/{report.community_posts.id}"
+											href="/community/{report.communityPosts.id}"
 											target="_blank"
 											class="titleLink"
 										>
-											Post: {report.community_posts.title}
+											Post: {report.communityPosts.title}
 											<ExternalLink class="ml-1 inline h-3 w-3" />
 										</a>
-									{:else if report.community_comments}
+									{:else if report.communityComments}
 										<span class="commentRef"
-											>Comment: {report.community_comments.content?.slice(0, 60)}...</span
+											>Comment: {report.communityComments.content?.slice(0, 60)}...</span
 										>
 									{/if}
 								</td>
 								<td class="authorCol">{report.players?.name || report.uid}</td>
 								<td class="descCol">{report.description || '—'}</td>
-								<td class="dateCol">{formatDate(report.created_at)}</td>
+								<td class="dateCol">{formatDate(report.createdAt)}</td>
 								<td>
 									<div class="actions">
 										{#if !report.resolved}
@@ -1238,10 +1238,10 @@
 										{:else}
 											<span class="resolvedBadge">✓</span>
 										{/if}
-										{#if report.post_id}
+										{#if report.postId}
 											<button
 												class="actionBtn danger"
-												on:click={() => deletePost(report.post_id)}
+												on:click={() => deletePost(report.postId)}
 												title="Delete Post"
 											>
 												<Trash2 class="h-4 w-4" />
@@ -1318,7 +1318,7 @@
 					{#if pendingPosts}
 						{#each pendingPosts as post}
 							{@const TypeIcon = typeIcons[post.type] || MessageCircle}
-							{@const flagged = getFlaggedCategories(post.moderation_result)}
+							{@const flagged = getFlaggedCategories(post.moderationResult)}
 							<tr>
 								<td class="idCol">{post.id}</td>
 								<td>
@@ -1351,7 +1351,7 @@
 										{/if}
 									</div>
 								</td>
-								<td class="dateCol">{formatDate(post.created_at)}</td>
+								<td class="dateCol">{formatDate(post.createdAt)}</td>
 								<td>
 									<div class="actions">
 										<button
@@ -1446,22 +1446,22 @@
 					{#if pendingComments}
 						{#each pendingComments as comment}
 							{@const flagged = getFlaggedCategories(
-								comment.community_comments_admin?.moderation_result
+								comment.communityCommentsAdmin?.moderationResult
 							)}
 							<tr>
 								<td class="idCol">{comment.id}</td>
 								<td class="titleCol">
-									{#if comment.community_posts}
+									{#if comment.communityPosts}
 										<a
-											href="/community/{comment.community_posts.id}"
+											href="/community/{comment.communityPosts.id}"
 											target="_blank"
 											class="titleLink"
 										>
-											{comment.community_posts.title}
+											{comment.communityPosts.title}
 											<ExternalLink class="ml-1 inline h-3 w-3" />
 										</a>
 									{:else}
-										<span class="text-xs text-muted-foreground">Post #{comment.post_id}</span>
+										<span class="text-xs text-muted-foreground">Post #{comment.postId}</span>
 									{/if}
 								</td>
 								<td class="titleCol">
@@ -1489,7 +1489,7 @@
 										{/if}
 									</div>
 								</td>
-								<td class="dateCol">{formatDate(comment.created_at)}</td>
+								<td class="dateCol">{formatDate(comment.createdAt)}</td>
 								<td>
 									<div class="actions">
 										<button
@@ -1665,7 +1665,7 @@
 												<code>{tag.color}</code>
 											</div>
 										</td>
-										<td class="center">{tag.admin_only ? '✓' : '—'}</td>
+										<td class="center">{tag.adminOnly ? '✓' : '—'}</td>
 										<td>
 											<div class="actions">
 												<button
@@ -1726,11 +1726,11 @@
 					<div class="postContent">{moderationDetailPost.content || '(empty)'}</div>
 				</div>
 
-				{#if moderationDetailPost.image_url}
+				{#if moderationDetailPost.imageUrl}
 					<div class="field">
 						<span class="fieldLabel">Image</span>
 						<img
-							src={moderationDetailPost.image_url}
+							src={moderationDetailPost.imageUrl}
 							alt="Post attachment"
 							class="moderationImage"
 						/>
@@ -1814,15 +1814,15 @@
 							commentModerationDetailComment.uid}</span
 					>
 				</div>
-				{#if commentModerationDetailComment.community_posts}
+				{#if commentModerationDetailComment.communityPosts}
 					<div class="field">
 						<span class="fieldLabel">Post</span>
 						<a
-							href="/community/{commentModerationDetailComment.community_posts.id}"
+							href="/community/{commentModerationDetailComment.communityPosts.id}"
 							target="_blank"
 							class="titleLink"
 						>
-							{commentModerationDetailComment.community_posts.title}
+							{commentModerationDetailComment.communityPosts.title}
 							<ExternalLink class="ml-1 inline h-3 w-3" />
 						</a>
 					</div>
@@ -1909,15 +1909,15 @@
 					<span class="fieldLabel">Author</span>
 					<span>{commentDetailComment.players?.name || commentDetailComment.uid}</span>
 				</div>
-				{#if commentDetailComment.community_posts}
+				{#if commentDetailComment.communityPosts}
 					<div class="field">
 						<span class="fieldLabel">Post</span>
 						<a
-							href="/community/{commentDetailComment.community_posts.id}"
+							href="/community/{commentDetailComment.communityPosts.id}"
 							target="_blank"
 							class="titleLink"
 						>
-							{commentDetailComment.community_posts.title}
+							{commentDetailComment.communityPosts.title}
 							<ExternalLink class="ml-1 inline h-3 w-3" />
 						</a>
 					</div>
@@ -1929,16 +1929,16 @@
 				<div class="field">
 					<span class="fieldLabel">Status</span>
 					<span
-						>{commentDetailComment.community_comments_admin?.moderation_status || 'approved'}</span
+						>{commentDetailComment.communityCommentsAdmin?.moderationStatus || 'approved'}</span
 					>
 				</div>
 				<div class="field">
 					<span class="fieldLabel">Hidden</span>
-					<span>{commentDetailComment.community_comments_admin?.hidden ? 'Yes' : 'No'}</span>
+					<span>{commentDetailComment.communityCommentsAdmin?.hidden ? 'Yes' : 'No'}</span>
 				</div>
 				<div class="field">
 					<span class="fieldLabel">Created</span>
-					<span>{formatDate(commentDetailComment.created_at)}</span>
+					<span>{formatDate(commentDetailComment.createdAt)}</span>
 				</div>
 
 				<hr class="divider" />
@@ -2035,13 +2035,13 @@
 				</div>
 				<div class="field">
 					<label for="edit-image">Image URL</label>
-					<Input id="edit-image" bind:value={editPost.image_url} placeholder="https://..." />
+					<Input id="edit-image" bind:value={editPost.imageUrl} placeholder="https://..." />
 				</div>
 				<div class="field">
 					<label for="edit-video">Video URL</label>
 					<Input
 						id="edit-video"
-						bind:value={editPost.video_url}
+						bind:value={editPost.videoUrl}
 						placeholder="https://youtube.com/watch?v=..."
 					/>
 				</div>
