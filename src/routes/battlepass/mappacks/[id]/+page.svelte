@@ -206,7 +206,7 @@
           {#each mapPack?.mapPackLevels || [] as level, i}
             {@const levelCompleted = isLevelCompleted(level.levelID)}
             {@const levelProg = getMapPackLevelProgress(level.levelID)}
-            <div class="group relative overflow-hidden rounded-xl border bg-card shadow-sm transition-all duration-300 hover:scale-[1.02] hover:shadow-xl {levelCompleted ? 'border-green-500/50 bg-gradient-to-br from-green-500/5 to-green-500/0' : ''}">
+            <div class="relative overflow-hidden rounded-xl border bg-card shadow-sm transition-all duration-300 {levelCompleted ? 'border-green-500/50 bg-gradient-to-br from-green-500/5 to-green-500/0' : ''}">
               {#if levelCompleted}
                 <div class="absolute right-0 top-0 h-20 w-20 translate-x-8 -translate-y-8 rounded-full bg-gradient-to-br from-green-500/30 to-green-500/0 blur-2xl" />
               {/if}
@@ -214,7 +214,7 @@
               <div class="relative p-5">
                 <div class="mb-4 flex items-start justify-between">
                   <div class="flex items-start gap-3">
-                    <div class="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-lg font-bold transition-transform duration-300 group-hover:scale-110 {levelCompleted ? 'bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/50' : 'bg-muted text-muted-foreground'}">
+                    <div class="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-lg font-bold transition-transform duration-300 {levelCompleted ? 'bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/50' : 'bg-muted text-muted-foreground'}">
                       {#if levelCompleted}
                         <Check class="h-6 w-6" />
                         <div class="absolute -inset-1 animate-pulse rounded-xl bg-green-500/30 blur" />

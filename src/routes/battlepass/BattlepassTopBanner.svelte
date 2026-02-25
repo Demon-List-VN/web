@@ -15,11 +15,13 @@
 	export let season: any;
 	export let primaryColor = '#8b5cf6';
 	export let purchaseDialogOpen = false; // bindable from parent
+	export let progressRefreshKey = 0;
 
 	let loading = true;
 	let progress: any = null;
 	let claimableRewards: any[] = [];
 	let mounted = false;
+	let lastProgressRefreshKey = 0;
 
 	// Helper function to convert hex to RGB
 	function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
@@ -46,6 +48,11 @@
 	$: daysRemaining = season
 		? Math.max(0, Math.ceil((new Date(season.end).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
 		: 0;
+
+	$: if (mounted && progressRefreshKey !== lastProgressRefreshKey) {
+		lastProgressRefreshKey = progressRefreshKey;
+		fetchProgress();
+	}
 
 	function formatCurrency(amount: number): string {
 		return new Intl.NumberFormat('vi-VN', {

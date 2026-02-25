@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { _ } from 'svelte-i18n';
 	import { user } from '$lib/client';
+	import { createEventDispatcher } from 'svelte';
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { Button } from '$lib/components/ui/button';
@@ -55,6 +56,10 @@
 			}
 		: defaultLevel;
 
+	const dispatch = createEventDispatcher<{
+		xpClaimed: { xp: number; levelId: number };
+	}>();
+
 	function getDifficultyColor(difficulty: string): string {
 		return DIFFICULTY_COLORS[difficulty?.toLowerCase()] || '#6b7280';
 	}
@@ -100,6 +105,7 @@
 				const result = await res.json();
 				toast.success($_('battlepass.xp_claimed', { values: { xp: result.xp } }));
 				await fetchDailyWeeklyProgress();
+				dispatch('xpClaimed', { xp: result.xp, levelId });
 			} else {
 				const errorData = await res.json();
 				toast.error(errorData.message || $_('battlepass.claim_failed'));

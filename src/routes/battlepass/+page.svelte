@@ -18,9 +18,14 @@
 	export let data: PageData;
 
 	let purchaseDialogOpen = false;
+	let progressRefreshKey = 0;
 
 	// Primary color from season (default to purple if not set)
 	$: primaryColor = data.season?.primaryColor || '#8b5cf6';
+
+	function handleXpClaimed() {
+		progressRefreshKey += 1;
+	}
 </script>
 
 <svelte:head>
@@ -37,6 +42,7 @@
 	<BattlepassTopBanner
 		season={data.season}
 		{primaryColor}
+		{progressRefreshKey}
 		bind:purchaseDialogOpen
 	/>
 
@@ -73,7 +79,7 @@
 
 			<!-- Daily/Weekly Tab -->
 			<Tabs.Content value="daily" class="w-full">
-				<DailyTab {primaryColor} />
+				<DailyTab {primaryColor} on:xpClaimed={handleXpClaimed} />
 			</Tabs.Content>
 
 			<!-- Levels Tab -->
