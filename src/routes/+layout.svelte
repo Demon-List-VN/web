@@ -42,7 +42,7 @@
 				{ route: '/list/cl', name: 'Challenge' }
 			]
 		},
-		// { route: '/battlepass', name: 'Battle Pass' },
+		{ route: '/battlepass', name: 'Pass' },
 		{ route: '/events', name: $locale === 'en' ? 'Event' : 'Sự kiện' },
 		{
 			name: $locale === 'en' ? 'Community' : 'Cộng đồng',
