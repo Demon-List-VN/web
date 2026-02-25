@@ -64,8 +64,14 @@ export const MISSION_CONDITION_TYPES = [
 
 // Map Pack difficulty options
 export const MAP_PACK_DIFFICULTY_OPTIONS = [
-	{ value: 'easier', label: 'Easier' },
+	{ value: 'easy', label: 'Easy' },
+	{ value: 'normal', label: 'Normal' },
+	{ value: 'hard', label: 'Hard' },
 	{ value: 'harder', label: 'Harder' },
+	{ value: 'insane', label: 'Insane' },
+	{ value: 'easy_demon', label: 'Easy Demon' },
 	{ value: 'medium_demon', label: 'Medium Demon' },
-	{ value: 'insane_demon', label: 'Insane Demon' }
+	{ value: 'hard_demon', label: 'Hard Demon' },
+	{ value: 'insane_demon', label: 'Insane Demon' },
+	{ value: 'extreme_demon', label: 'Extreme Demon' }
 ];

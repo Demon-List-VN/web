@@ -27,7 +27,7 @@
 		id: null as number | null,
 		name: '',
 		description: '',
-		difficulty: 'harder' as any,
+		difficulty: '-' as any,
 		xp: 200
 	};
 
@@ -154,7 +154,7 @@
 
 	// Reset form functions
 	function openNewGeneralMapPack() {
-		generalMapPackForm = { id: null, name: '', description: '', difficulty: 'harder', xp: 200 };
+		generalMapPackForm = { id: null, name: '', description: '', difficulty: '-', xp: 200 };
 		showGeneralMapPackDialog = true;
 	}
 
@@ -186,6 +186,12 @@
 <Title value="Map Pack Manager" />
 
 <div class="wrapper">
+	<div class="mb-4 flex justify-end">
+		<Button on:click={openNewGeneralMapPack}>
+			<Plus class="mr-1 h-4 w-4" />
+			Add New Map Pack
+		</Button>
+	</div>
 	<div class="flex flex-col gap-4">
 		{#each generalMapPacks as pack}
 			<Card.Root class="border">
@@ -267,7 +273,7 @@
 				<div>
 					<Label for="packDifficulty">Difficulty</Label>
 					<Select.Root
-						onSelectedChange={(v) => (generalMapPackForm.difficulty = v?.value || 'harder')}
+						onSelectedChange={(v) => (generalMapPackForm.difficulty = v?.value || '-')}
 					>
 						<Select.Trigger>
 							<Select.Value placeholder={generalMapPackForm.difficulty} />
