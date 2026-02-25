@@ -140,7 +140,7 @@
 
 		// Fetch community posts
 		fetch(
-			`${import.meta.env.VITE_API_URL}/community/posts?limit=4&sortBy=created_at&ascending=false`
+			`${import.meta.env.VITE_API_URL}/community/posts?limit=4&sortBy=createdAt&ascending=false`
 		)
 			.then((res) => res.json())
 			.then((data) => {
