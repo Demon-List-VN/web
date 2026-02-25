@@ -37,7 +37,7 @@
 			);
 			const result = await res.json();
 			post.liked = result.liked;
-			post.likes_count += result.liked ? 1 : -1;
+			post.likesCount += result.liked ? 1 : -1;
 			post = post; // trigger reactivity
 		} catch {
 			toast.error('Failed to like post');
@@ -96,9 +96,9 @@
 
 	$: author = post?.players;
 	$: TypeIcon = typeIcons[post?.type] || MessageCircle;
-	$: thumbnail = post?.image_url || (post?.video_url ? getYouTubeThumbnail(post.video_url) : null);
+	$: thumbnail = post?.imageUrl || (post?.videoUrl ? getYouTubeThumbnail(post.videoUrl) : null);
 	$: isMedia = post?.type === 'media';
-	$: postTags = (post?.community_posts_tags || []).map((pt: any) => pt.post_tags).filter(Boolean);
+	$: postTags = (post?.communityPostsTags || []).map((pt: any) => pt.postTags).filter(Boolean);
 </script>
 
 {#if post}
@@ -114,7 +114,7 @@
 			<!-- Media layout: full-width image on top, then title below -->
 			<div class="mediaImage">
 				<img src={thumbnail} alt="" loading="lazy" />
-				{#if post.video_url && !post.image_url}
+				{#if post.videoUrl && !post.imageUrl}
 					<div class="videoOverlay">
 						<Play class="h-6 w-6" />
 					</div>
@@ -131,7 +131,7 @@
 							<span>Unknown</span>
 						{/if}
 					</div>
-					<span class="postTime">{timeAgo(post.created_at)}</span>
+					<span class="postTime">{timeAgo(post.createdAt)}</span>
 				</div>
 				<h3 class="postTitle">{post.title}</h3>
 			</div>
@@ -149,7 +149,7 @@
 								<span>Unknown</span>
 							{/if}
 						</div>
-						<span class="postTime">{timeAgo(post.created_at)}</span>
+						<span class="postTime">{timeAgo(post.createdAt)}</span>
 					</div>
 					<div class="postContent">
 						<div class="postTitleRow">
@@ -157,14 +157,14 @@
 								<svelte:component this={TypeIcon} class="h-3.5 w-3.5 {typeColors[post.type]}" />
 								<span class={typeColors[post.type]}>{$_(`community.type.${post.type}`)}</span>
 							</div>
-							{#if post.type === 'review' && post.is_recommended !== null}
-								<div class="recommendBadge" class:recommended={post.is_recommended} class:notRecommended={!post.is_recommended}>
-									{#if post.is_recommended}
+							{#if post.type === 'review' && post.isRecommended !== null}
+								<div class="recommendBadge" class:recommended={post.isRecommended} class:notRecommended={!post.isRecommended}>
+									{#if post.isRecommended}
 										<ThumbsUp class="h-3 w-3" />
 									{:else}
 										<ThumbsDown class="h-3 w-3" />
 									{/if}
-									<span>{post.is_recommended ? $_('community.review.recommended') : $_('community.review.not_recommended')}</span>
+									<span>{post.isRecommended ? $_('community.review.recommended') : $_('community.review.not_recommended')}</span>
 								</div>
 							{/if}
 							{#if postTags.length > 0}
@@ -186,7 +186,7 @@
 				{#if thumbnail}
 					<div class="postImage" class:compactImage={compact}>
 						<img src={thumbnail} alt="" loading="lazy" />
-						{#if post.video_url && !post.image_url}
+						{#if post.videoUrl && !post.imageUrl}
 							<div class="videoOverlay">
 								<Play class="h-5 w-5" />
 							</div>
@@ -195,19 +195,19 @@
 				{/if}
 			</div>
 		{/if}
-		{#if post.attached_record || post.attached_level}
+		{#if post.attachedRecord || post.attachedLevel}
 			<div class="attachmentBar">
-				{#if post.attached_record}
+				{#if post.attachedRecord}
 					<div class="attachmentChip">
 						<Trophy class="h-3.5 w-3.5 text-amber-500" />
-						<span class="attachmentName">{post.attached_record.levelName}</span>
-						<span class="attachmentMeta">{post.attached_record.progress}%</span>
+						<span class="attachmentName">{post.attachedRecord.levelName}</span>
+						<span class="attachmentMeta">{post.attachedRecord.progress}%</span>
 					</div>
-				{:else if post.attached_level}
+				{:else if post.attachedLevel}
 					<div class="attachmentChip">
 						<Gamepad2 class="h-3.5 w-3.5 text-emerald-500" />
-						<span class="attachmentName">{post.attached_level.name}</span>
-						<span class="attachmentMeta">{post.attached_level.creator}</span>
+						<span class="attachmentName">{post.attachedLevel.name}</span>
+						<span class="attachmentMeta">{post.attachedLevel.creator}</span>
 					</div>
 				{/if}
 			</div>
@@ -218,11 +218,11 @@
 				<!-- svelte-ignore a11y-no-static-element-interactions -->
 				<div class="postStat likeBtn" class:liked={post.liked} on:click|stopPropagation|preventDefault={toggleLike}>
 					<ThumbsUp class="h-4 w-4" />
-					<span>{post.likes_count}</span>
+					<span>{post.likesCount}</span>
 				</div>
 				<div class="postStat">
 					<MessageSquare class="h-4 w-4" />
-					<span>{post.comments_count}</span>
+					<span>{post.commentsCount}</span>
 				</div>
 			</div>
 			{#if $user.loggedIn && $user.data?.uid !== post.uid}

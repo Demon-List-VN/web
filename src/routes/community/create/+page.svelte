@@ -30,8 +30,8 @@
 		title: '',
 		content: '',
 		type: 'discussion',
-		image_url: '',
-		video_url: ''
+		imageUrl: '',
+		videoUrl: ''
 	};
 	let submitting = false;
 	let uploading = false;
@@ -69,7 +69,7 @@
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/tags`);
 			const allTags = await res.json();
 			// Filter out admin-only tags for non-admins
-			availableTags = $user.data?.isAdmin ? allTags : allTags.filter((t: any) => !t.admin_only);
+			availableTags = $user.data?.isAdmin ? allTags : allTags.filter((t: any) => !t.adminOnly);
 		} catch {
 			availableTags = [];
 		} finally {
@@ -100,7 +100,7 @@
 		return match ? match[1] : null;
 	}
 
-	$: videoPreviewId = getYouTubeId(newPost.video_url);
+	$: videoPreviewId = getYouTubeId(newPost.videoUrl);
 
 	function handleImageSelect(e: Event) {
 		const target = e.target as HTMLInputElement;
@@ -118,7 +118,7 @@
 	function clearImage() {
 		imageFile = null;
 		imagePreview = null;
-		newPost.image_url = '';
+		newPost.imageUrl = '';
 		if (fileInput) fileInput.value = '';
 	}
 
@@ -283,17 +283,17 @@
 
 			if (imageFile) {
 				const url = await uploadImage();
-				if (url) body.image_url = url;
-			} else if (newPost.image_url.trim()) {
-				body.image_url = newPost.image_url;
+				if (url) body.imageUrl = url;
+			} else if (newPost.imageUrl.trim()) {
+				body.imageUrl = newPost.imageUrl;
 			}
 
-			if (newPost.video_url.trim()) {
-				body.video_url = newPost.video_url;
+			if (newPost.videoUrl.trim()) {
+				body.videoUrl = newPost.videoUrl;
 			}
 
 			if (selectedRecord) {
-				body.attached_record = {
+				body.attachedRecord = {
 					levelid: selectedRecord.levelid,
 					levelName: selectedRecord.levels?.name,
 					creator: selectedRecord.levels?.creator,
@@ -304,7 +304,7 @@
 					mobile: selectedRecord.mobile
 				};
 			} else if (selectedLevel) {
-				body.attached_level = {
+				body.attachedLevel = {
 					id: selectedLevel.id,
 					name: selectedLevel.name,
 					creator: selectedLevel.creator,
@@ -315,11 +315,11 @@
 			}
 
 			if (newPost.type === 'review') {
-				body.is_recommended = isRecommended;
+				body.isRecommended = isRecommended;
 			}
 
 			if (selectedTagIds.length > 0) {
-				body.tag_ids = selectedTagIds;
+				body.tagIds = selectedTagIds;
 			}
 
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/posts`, {
@@ -337,7 +337,7 @@
 			}
 
 			const created = await res.json();
-			if (created.moderation_status === 'pending') {
+			if (created.moderationStatus === 'pending') {
 				toast.success($_('community.create.pending_review'));
 				goto('/community');
 			} else {
@@ -557,7 +557,7 @@
 							on:change={handleImageSelect}
 						/>
 						<div class="orDivider">{$_('community.create.or_url')}</div>
-						<Input bind:value={newPost.image_url} placeholder="https://..." />
+						<Input bind:value={newPost.imageUrl} placeholder="https://..." />
 					{/if}
 				</div>
 			</div>
@@ -568,7 +568,7 @@
 					<Link class="inline h-3.5 w-3.5" />
 					{$_('community.create.video_url')} ({$_('community.create.optional')})
 				</label>
-				<Input id="post-video" bind:value={newPost.video_url} placeholder="https://youtube.com/watch?v=..." />
+				<Input id="post-video" bind:value={newPost.videoUrl} placeholder="https://youtube.com/watch?v=..." />
 				{#if videoPreviewId}
 					<div class="videoPreview">
 						<div class="videoPreviewThumb">

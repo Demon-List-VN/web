@@ -97,7 +97,7 @@
 				const params = new URLSearchParams({
 					limit: String(PAGE_SIZE),
 					offset: String(offset),
-					sortBy: sortMode === 'best' ? 'likes_count' : 'created_at',
+					sortBy: sortMode === 'best' ? 'likesCount' : 'createdAt',
 					ascending: 'false'
 				});
 
@@ -402,7 +402,7 @@
 				>
 					{$_('community.type.all')}
 				</button>
-				{#each availableTags.filter(t => !t.admin_only) as tag}
+				{#each availableTags.filter(t => !t.adminOnly) as tag}
 					<button
 						class="tagFilterBtn"
 						class:active={activeTagId === tag.id}
