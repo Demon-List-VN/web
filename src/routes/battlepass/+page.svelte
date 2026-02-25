@@ -1,12 +1,15 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
+	import * as Alert from '$lib/components/ui/alert/index.js';
 	import { _ } from 'svelte-i18n';
+	import { onMount } from 'svelte';
 	import Star from 'lucide-svelte/icons/star';
 	import Gift from 'lucide-svelte/icons/gift';
 	import Target from 'lucide-svelte/icons/target';
 	import Map from 'lucide-svelte/icons/map';
 	import Sun from 'lucide-svelte/icons/sun';
+	import X from 'lucide-svelte/icons/x';
 	import PremiumPurchaseDialog from './PremiumPurchaseDialog.svelte';
 	import RewardsTab from './RewardsTab.svelte';
 	import DailyTab from './DailyTab.svelte';
@@ -19,6 +22,8 @@
 
 	let purchaseDialogOpen = false;
 	let progressRefreshKey = 0;
+	let showGeodeInstallAlert = false;
+	const geodeAlertStorageKey = 'battlepass.geodeInstallAlert.dismissed.v1';
 
 	// Primary color from season (default to purple if not set)
 	$: primaryColor = data.season?.primaryColor || '#8b5cf6';
@@ -26,6 +31,15 @@
 	function handleXpClaimed() {
 		progressRefreshKey += 1;
 	}
+
+	function dismissGeodeInstallAlert() {
+		showGeodeInstallAlert = false;
+		localStorage.setItem(geodeAlertStorageKey, '1');
+	}
+
+	onMount(() => {
+		showGeodeInstallAlert = localStorage.getItem(geodeAlertStorageKey) !== '1';
+	});
 </script>
 
 <svelte:head>
@@ -45,6 +59,32 @@
 		{progressRefreshKey}
 		bind:purchaseDialogOpen
 	/>
+
+	{#if showGeodeInstallAlert}
+		<div class="mx-auto mt-6 w-full max-w-6xl px-4">
+			<Alert.Root class="relative border-yellow-300 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/40">
+				<Alert.Title class="pr-8">{$_('battlepass.geode_alert.title')}</Alert.Title>
+				<Alert.Description class="pr-8">
+					{$_('battlepass.geode_alert.description')}
+					<a
+						href="https://github.com/Demon-List-VN/geode-mod/releases"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="ml-1 font-semibold underline"
+					>
+						{$_('battlepass.geode_alert.download')}
+					</a>
+				</Alert.Description>
+				<button
+					on:click={dismissGeodeInstallAlert}
+					class="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100"
+					aria-label={$_('battlepass.geode_alert.dismiss')}
+				>
+					<X class="h-4 w-4" />
+				</button>
+			</Alert.Root>
+		</div>
+	{/if}
 
 	<!-- Main Content Tabs -->
 	<div class="mx-auto max-w-6xl px-4 py-8">

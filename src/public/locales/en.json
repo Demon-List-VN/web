@@ -1364,6 +1364,12 @@
     "rewards_ready": "{count} rewards ready to claim!",
     "sign_in_to_track": "Sign in to track your progress",
     "sign_in_description": "Log in to see your Battle Pass progress and claim rewards",
+    "geode_alert": {
+      "title": "Geode mod required",
+      "description": "Install the Geode mod to play Battle Pass.",
+      "download": "Download Geode mod",
+      "dismiss": "Dismiss"
+    },
     "tabs": {
       "rewards": "Rewards",
       "daily": "Daily",

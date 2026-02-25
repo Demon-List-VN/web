@@ -1363,6 +1363,12 @@
     "rewards_ready": "{count} phần thưởng có thể nhận!",
     "sign_in_to_track": "Đăng nhập để theo dõi tiến độ",
     "sign_in_description": "Đăng nhập để xem tiến độ Battle Pass và nhận phần thưởng",
+    "geode_alert": {
+      "title": "Cần cài mod Geode",
+      "description": "Bạn cần cài mod Geode để chơi Battle Pass.",
+      "download": "Tải mod Geode",
+      "dismiss": "Đóng"
+    },
     "tabs": {
       "rewards": "Phần thưởng",
       "daily": "Hàng ngày",
