@@ -10,11 +10,16 @@
 	import Map from 'lucide-svelte/icons/map';
 	import Lock from 'lucide-svelte/icons/lock';
 	import Check from 'lucide-svelte/icons/check';
+
 	import { DIFFICULTY_COLORS, DIFFICULTY_NAMES } from '$lib/battlepass/constants';
+	import UnlockTimer from './UnlockTimer.svelte';
+
 
 	export let primaryColor: string = '#8b5cf6';
+	export let seasonStart: string | null = null; // ISO string
 
 	let mapPacks: any[] = [];
+	let nextLockedMapPack: any | null = null;
 	let loading = true;
 	let mounted = false;
 
@@ -79,6 +84,21 @@
 		}
 	}
 
+	async function fetchNextLockedMapPack() {
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/mappacks/next-locked`);
+			if (res.ok) {
+				const payload = await res.json();
+				nextLockedMapPack = payload?.nextLockedMapPack ?? null;
+			} else {
+				nextLockedMapPack = null;
+			}
+		} catch (e) {
+			console.error('Failed to fetch next locked map pack:', e);
+			nextLockedMapPack = null;
+		}
+	}
+
 	async function claimMapPack(mapPackId: number) {
 		try {
 			const res = await fetch(
@@ -106,7 +126,7 @@
 
 	async function loadData() {
 		loading = true;
-		await fetchMapPacks();
+		await Promise.all([fetchMapPacks(), fetchNextLockedMapPack()]);
 		loading = false;
 	}
 
@@ -114,12 +134,12 @@
 		mounted = true;
 		loadData();
 
-		const unsubscribe = user.subscribe(async (value) => {
+		const unsubscribe = user.subscribe(async () => {
 			if (!mounted) return;
 
 			// Reload when login state changes to get/clear progress
             // Always fetch map packs to get updated progress data
-            await fetchMapPacks();
+			await Promise.all([fetchMapPacks(), fetchNextLockedMapPack()]);
 		});
 
 		return () => {
@@ -142,6 +162,15 @@
 	</div>
 {:else}
 	<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+		{#if nextLockedMapPack && seasonStart}
+			{@const startDate = new Date(seasonStart)}
+				<Card.Root class="h-full border-2 border-dashed border-primary/40 bg-muted/50 flex flex-col items-center justify-center p-6 col-span-1">
+					<Lock class="h-8 w-8 mb-2 text-muted-foreground" />
+					<div class="text-lg font-bold mb-1">{nextLockedMapPack.mapPacks?.name || 'Map Pack Locked'}</div>
+					<div class="mb-2 text-sm text-muted-foreground">{nextLockedMapPack.mapPacks?.description}</div>
+					<UnlockTimer {startDate} unlockWeek={nextLockedMapPack.unlockWeek} />
+				</Card.Root>
+		{/if}
 		{#each mapPacks as pack}
 			{@const mapPack = pack.mapPacks}
 			{@const completionPercent = getMapPackCompletionPercent(pack)}
@@ -184,8 +213,6 @@
 						{#if mapPack?.description}
 							<p class="mb-3 text-sm text-muted-foreground">{mapPack.description}</p>
 						{/if}
-						
-						<!-- Map Pack Progress Bar -->
 						{#if $user.loggedIn}
 							<div class="mb-3 flex flex-col gap-2">
 								<div class="flex justify-between text-sm">
@@ -200,7 +227,6 @@
 								</div>
 							</div>
 						{/if}
-
 						<div class="flex items-center justify-between">
 							<span class="text-sm text-muted-foreground">
 								{mapPack?.mapPackLevels?.length || 0}

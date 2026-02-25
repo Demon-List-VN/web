@@ -129,7 +129,7 @@
 
 			<!-- Map Packs Tab -->
 			<Tabs.Content value="mappacks" class="w-full">
-				<MapPacksTab {primaryColor} />
+				<MapPacksTab {primaryColor} seasonStart={data.season?.start} />
 			</Tabs.Content>
 
 			<!-- Missions Tab (Planned) -->
