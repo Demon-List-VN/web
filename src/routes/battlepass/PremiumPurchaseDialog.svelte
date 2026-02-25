@@ -159,10 +159,6 @@
 						</li>
 						<li class="flex items-center gap-2">
 							<Check class="h-4 w-4 flex-shrink-0 text-green-400" />
-							<span>{$_('battlepass.premium_benefits.exclusive_items')}</span>
-						</li>
-						<li class="flex items-center gap-2">
-							<Check class="h-4 w-4 flex-shrink-0 text-green-400" />
 							<span>{$_('battlepass.premium_benefits.double_rewards')}</span>
 						</li>
 					</ul>
