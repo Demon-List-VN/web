@@ -973,39 +973,6 @@
       "title": "Ủng hộ Geometry Dash Việt Nam 💖",
       "description": "Trở thành Supporter để ủng hộ và giúp DLVN phát triển hơn, đồng thời nhận các quyền lợi độc quyền!",
       "learn_more": "Tìm hiểu thêm"
-    }
-  },
-  "admin_convictions": {
-    "title": "Án tích người chơi",
-    "player": "Người chơi",
-    "content": "Nội dung",
-    "content_placeholder": "Nhập nội dung án tích",
-    "credit_reduce": "Điểm trừ",
-    "submit": "Thêm án tích",
-    "submitting": "Đang thêm...",
-    "empty": "Không có dữ liệu án tích",
-    "total": "Tổng số án tích",
-    "created_at": "Thời gian",
-    "toast": {
-      "select_player": "Vui lòng chọn người chơi",
-      "content_required": "Nội dung án tích là bắt buộc",
-      "fetch_error": "Không thể tải danh sách án tích",
-      "add_success": "Đã thêm án tích",
-      "add_error": "Không thể thêm án tích"
-    },
-    "top_supporters": {
-      "title": "Supporter Hàng Đầu (30 Ngày Qua)",
-      "view_leaderboard": "Xem bảng xếp hạng đầy đủ →",
-      "page_title": "Supporter Hàng Đầu",
-      "last_30_days": "30 Ngày Qua",
-      "last_14_days": "14 Ngày Qua",
-      "last_7_days": "7 Ngày Qua",
-      "total_revenue": "Tổng Doanh Thu",
-      "from_all_supporters": "Từ tất cả supporters",
-      "top_supporter": "Supporter Hàng Đầu",
-      "average_spending": "Chi Tiêu Trung Bình",
-      "supporters": "supporters",
-      "no_buyers_found": "Không tìm thấy người mua"
     },
     "why_support": {
       "title": "Tại sao bạn nên ủng hộ Geometry Dash Việt Nam",
@@ -1091,6 +1058,39 @@
       "non_refundable": "Geometry Dash Việt Nam Supporter không thể hoàn tiền.",
       "extension": "Nếu bạn mua Supporter khi vẫn còn Supporter đang hoạt động, thời gian sẽ được cộng thêm thêm.",
       "duration": "1 Tháng = 30 Ngày."
+    }
+  },
+  "admin_convictions": {
+    "title": "Án tích người chơi",
+    "player": "Người chơi",
+    "content": "Nội dung",
+    "content_placeholder": "Nhập nội dung án tích",
+    "credit_reduce": "Điểm trừ",
+    "submit": "Thêm án tích",
+    "submitting": "Đang thêm...",
+    "empty": "Không có dữ liệu án tích",
+    "total": "Tổng số án tích",
+    "created_at": "Thời gian",
+    "toast": {
+      "select_player": "Vui lòng chọn người chơi",
+      "content_required": "Nội dung án tích là bắt buộc",
+      "fetch_error": "Không thể tải danh sách án tích",
+      "add_success": "Đã thêm án tích",
+      "add_error": "Không thể thêm án tích"
+    },
+    "top_supporters": {
+      "title": "Supporter Hàng Đầu (30 Ngày Qua)",
+      "view_leaderboard": "Xem bảng xếp hạng đầy đủ →",
+      "page_title": "Supporter Hàng Đầu",
+      "last_30_days": "30 Ngày Qua",
+      "last_14_days": "14 Ngày Qua",
+      "last_7_days": "7 Ngày Qua",
+      "total_revenue": "Tổng Doanh Thu",
+      "from_all_supporters": "Từ tất cả supporters",
+      "top_supporter": "Supporter Hàng Đầu",
+      "average_spending": "Chi Tiêu Trung Bình",
+      "supporters": "supporters",
+      "no_buyers_found": "Không tìm thấy người mua"
     }
   },
   "store": {

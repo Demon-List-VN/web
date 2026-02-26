@@ -953,39 +953,6 @@
       "title": "Support Geometry Dash Việt Nam 💖",
       "description": "Consider becoming a Supporter to help DLVN grow and get exclusive perks!",
       "learn_more": "Learn more"
-    }
-  },
-  "admin_convictions": {
-    "title": "Player Convictions",
-    "player": "Player",
-    "content": "Content",
-    "content_placeholder": "Enter conviction content",
-    "credit_reduce": "Credit Reduce",
-    "submit": "Add Conviction",
-    "submitting": "Adding...",
-    "empty": "No convictions found",
-    "total": "Total convictions",
-    "created_at": "Created at",
-    "toast": {
-      "select_player": "Please select a player",
-      "content_required": "Conviction content is required",
-      "fetch_error": "Failed to fetch convictions",
-      "add_success": "Conviction added successfully",
-      "add_error": "Failed to add conviction"
-    },
-    "top_supporters": {
-      "title": "Top Supporters (Last 30 Days)",
-      "view_leaderboard": "View full leaderboard →",
-      "page_title": "Top Supporter",
-      "last_30_days": "Last 30 Days",
-      "last_14_days": "Last 14 Days",
-      "last_7_days": "Last 7 Days",
-      "total_revenue": "Total Revenue",
-      "from_all_supporters": "From all supporters",
-      "top_supporter": "Top Supporter",
-      "average_spending": "Average Spending",
-      "supporters": "supporters",
-      "no_buyers_found": "No buyers found"
     },
     "why_support": {
       "title": "Why should you support Geometry Dash Việt Nam",
@@ -1071,6 +1038,39 @@
       "non_refundable": "Geometry Dash Việt Nam Supporter roles are non-refundable.",
       "extension": "If you buy one while you still have an active roles, it will extend the duration in addition to any remaining time.",
       "duration": "1 Month = 30 Days."
+    }
+  },
+  "admin_convictions": {
+    "title": "Player Convictions",
+    "player": "Player",
+    "content": "Content",
+    "content_placeholder": "Enter conviction content",
+    "credit_reduce": "Credit Reduce",
+    "submit": "Add Conviction",
+    "submitting": "Adding...",
+    "empty": "No convictions found",
+    "total": "Total convictions",
+    "created_at": "Created at",
+    "toast": {
+      "select_player": "Please select a player",
+      "content_required": "Conviction content is required",
+      "fetch_error": "Failed to fetch convictions",
+      "add_success": "Conviction added successfully",
+      "add_error": "Failed to add conviction"
+    },
+    "top_supporters": {
+      "title": "Top Supporters (Last 30 Days)",
+      "view_leaderboard": "View full leaderboard →",
+      "page_title": "Top Supporter",
+      "last_30_days": "Last 30 Days",
+      "last_14_days": "Last 14 Days",
+      "last_7_days": "Last 7 Days",
+      "total_revenue": "Total Revenue",
+      "from_all_supporters": "From all supporters",
+      "top_supporter": "Top Supporter",
+      "average_spending": "Average Spending",
+      "supporters": "supporters",
+      "no_buyers_found": "No buyers found"
     }
   },
   "store": {
