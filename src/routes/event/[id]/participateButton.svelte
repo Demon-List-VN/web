@@ -20,6 +20,18 @@
 		return new Date(data.end) < new Date();
 	}
 
+	function canCancelParticipation() {
+		if (data.type === 'basic') {
+			return true;
+		}
+
+		if (data.type === 'contest' || data.type === 'raid') {
+			return new Date(data.start) > new Date();
+		}
+
+		return false;
+	}
+
 	function getRewardState() {
 		if (data.end && new Date().getTime() > new Date(data.end).getTime()) {
 			rewardState = 4;
@@ -112,7 +124,7 @@
 			{:else if rewardState == 1}
 				<Button class="w-[200px]" disabled>{$_('contest.participate.reward_claimed')}</Button>
 			{:else if rewardState == 2}
-				{#if new Date(data.start) > new Date()}
+				{#if canCancelParticipation()}
 					<Dialog.Root bind:open={cancelOpened}>
 						<Dialog.Trigger>
 							<Button class="w-[200px]" variant="destructive">{$_('contest.participate.cancel_participation')}</Button>
