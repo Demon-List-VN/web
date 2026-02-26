@@ -1038,6 +1038,20 @@
       "non_refundable": "Geometry Dash Việt Nam Supporter roles are non-refundable.",
       "extension": "If you buy one while you still have an active roles, it will extend the duration in addition to any remaining time.",
       "duration": "1 Month = 30 Days."
+    },
+    "top_supporters": {
+      "title": "Top Supporters (Last 30 Days)",
+      "view_leaderboard": "View full leaderboard →",
+      "page_title": "Top Supporter",
+      "last_30_days": "Last 30 Days",
+      "last_14_days": "Last 14 Days",
+      "last_7_days": "Last 7 Days",
+      "total_revenue": "Total Revenue",
+      "from_all_supporters": "From all supporters",
+      "top_supporter": "Top Supporter",
+      "average_spending": "Average Spending",
+      "supporters": "supporters",
+      "no_buyers_found": "No buyers found"
     }
   },
   "admin_convictions": {
@@ -1057,20 +1071,6 @@
       "fetch_error": "Failed to fetch convictions",
       "add_success": "Conviction added successfully",
       "add_error": "Failed to add conviction"
-    },
-    "top_supporters": {
-      "title": "Top Supporters (Last 30 Days)",
-      "view_leaderboard": "View full leaderboard →",
-      "page_title": "Top Supporter",
-      "last_30_days": "Last 30 Days",
-      "last_14_days": "Last 14 Days",
-      "last_7_days": "Last 7 Days",
-      "total_revenue": "Total Revenue",
-      "from_all_supporters": "From all supporters",
-      "top_supporter": "Top Supporter",
-      "average_spending": "Average Spending",
-      "supporters": "supporters",
-      "no_buyers_found": "No buyers found"
     }
   },
   "store": {
