@@ -56,7 +56,7 @@
 	}
 
 	$: defaultTopColumn =
-		listType === 'fl' ? 'flTop' : listType === 'cl' ? 'created_at' : 'dlTop';
+		listType === 'fl' ? 'flTop' : 'dlTop';
 
 	const dispatch = createEventDispatcher();
 

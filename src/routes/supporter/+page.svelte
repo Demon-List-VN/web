@@ -8,6 +8,13 @@
 	import TopSupporters from '$lib/components/topSupporters.svelte';
 
 	export let data: any;
+
+	$: serverCostPercent = Number(data?.progress?.serverCostPercent || 0);
+	$: minecraftServerPercent = Number(data?.progress?.minecraftServerPercent || 0);
+
+	function toBarWidth(percent: number) {
+		return `${Math.max(0, Math.min(100, percent))}%`;
+	}
 </script>
 
 <svelte:head>
@@ -33,6 +40,28 @@
 		</div>
 
 		<TopSupporters topBuyers={data.topBuyers} />
+
+		<div class="goalWrapper">
+			<h2 class="goalTitle">Progress toward monthly goals</h2>
+			<div class="goalRow">
+				<div class="goalHeader">
+					<span>Server cost (1.5M VND)</span>
+					<span>{serverCostPercent}%</span>
+				</div>
+				<div class="goalBar">
+					<div class="goalBarFill" style={`width: ${toBarWidth(serverCostPercent)}`}></div>
+				</div>
+			</div>
+			<div class="goalRow">
+				<div class="goalHeader">
+					<span>Minecraft server (2M VND)</span>
+					<span>{minecraftServerPercent}%</span>
+				</div>
+				<div class="goalBar">
+					<div class="goalBarFill" style={`width: ${toBarWidth(minecraftServerPercent)}`}></div>
+				</div>
+			</div>
+		</div>
 
 		<h1 class="mb-[40px] mt-[75px] text-center text-3xl font-bold">
 			{$_('supporter.why_support.title')}
@@ -202,5 +231,43 @@
 		filter: blur(175px);
 		margin-top: -55px;
 		mask-image: linear-gradient(rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%);
+	}
+
+	.goalWrapper {
+		width: 100%;
+		max-width: 700px;
+		margin-top: 24px;
+	}
+
+	.goalTitle {
+		font-size: 1.25rem;
+		font-weight: 700;
+		margin-bottom: 16px;
+		text-align: center;
+	}
+
+	.goalRow {
+		margin-bottom: 16px;
+	}
+
+	.goalHeader {
+		display: flex;
+		justify-content: space-between;
+		font-weight: 600;
+		margin-bottom: 8px;
+	}
+
+	.goalBar {
+		height: 12px;
+		width: 100%;
+		border-radius: 999px;
+		background: hsl(var(--muted));
+		overflow: hidden;
+	}
+
+	.goalBarFill {
+		height: 100%;
+		background: hsl(var(--primary));
+		transition: width 0.3s ease;
 	}
 </style>

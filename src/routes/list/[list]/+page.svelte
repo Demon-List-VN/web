@@ -77,7 +77,7 @@
 		if (filters.nameSearch) query.set('nameSearch', filters.nameSearch);
 		if (filters.creatorSearch) query.set('creatorSearch', filters.creatorSearch);
 		if (filters.sortBy) query.set('sortBy', filters.sortBy);
-		if (filters.ascending) query.set('ascending', String(filters.ascending));
+		query.set('ascending', String(filters.ascending));
 		if (filters.tagIds) query.set('tagIds', filters.tagIds);
 
 		const res = await (

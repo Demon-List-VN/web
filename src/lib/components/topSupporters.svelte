@@ -71,12 +71,6 @@
 								</div>
 								<PlayerLink player={buyer.player} />
 							</div>
-							<div class="text-base font-semibold text-green-600">
-								{new Intl.NumberFormat('vi-VN', {
-									style: 'currency',
-									currency: 'VND'
-								}).format(buyer.totalAmount)}
-							</div>
 						</div>
 					</Card.Header>
 				</Card.Root>
