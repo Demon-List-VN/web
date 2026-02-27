@@ -1,7 +1,7 @@
 <script lang="ts">
 	import * as Carousel from '$lib/components/ui/carousel/index.js';
 	import LevelCard from '$lib/components/levelCard.svelte';
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import Autoplay from 'embla-carousel-autoplay';
 	import EventBanner from './event/eventBanner.svelte';
 	import Ads from '$lib/components/ads.svelte';
@@ -30,6 +30,9 @@
 	let changelogArticles: any[] | null = null;
 	let showDashboardAlert = false;
 	let communityPosts: any[] | null = null;
+	let eventCarouselApi: any = null;
+	let selectedEventIndex = 0;
+	let cleanupEventCarouselListeners = () => {};
 
 	function getTitle(item: any, loc: string) {
 		const metadata =
@@ -96,6 +99,33 @@
 		showDiscordAlert = false;
 		localStorage.setItem('discordAlertDismissed', 'true');
 	}
+
+	function getEventThumbnail(item: any) {
+		return item?.imgUrl ? item.imgUrl : `https://cdn.gdvn.net/event-banner/${item?.id}.webp`;
+	}
+
+	function goToEventSlide(index: number) {
+		if (!eventCarouselApi) return;
+		eventCarouselApi.scrollTo(index);
+	}
+
+	$: if (eventCarouselApi) {
+		cleanupEventCarouselListeners();
+		const syncSelected = () => {
+			selectedEventIndex = eventCarouselApi.selectedScrollSnap();
+		};
+		syncSelected();
+		eventCarouselApi.on('select', syncSelected);
+		eventCarouselApi.on('reInit', syncSelected);
+		cleanupEventCarouselListeners = () => {
+			eventCarouselApi.off('select', syncSelected);
+			eventCarouselApi.off('reInit', syncSelected);
+		};
+	}
+
+	onDestroy(() => {
+		cleanupEventCarouselListeners();
+	});
 
 	onMount(() => {
 		visible = true;
@@ -212,7 +242,7 @@
 
 <!-- Events Carousel -->
 <div class="promotionWrapper mt-[20px] w-full pl-[50px] pr-[50px]">
-	<Carousel.Root class="h-fit w-full" plugins={[Autoplay({ delay: 10000 })]}>
+	<Carousel.Root class="h-fit w-full" plugins={[Autoplay({ delay: 10000 })]} bind:api={eventCarouselApi}>
 		<Carousel.Content>
 			{#if events}
 				{#each events as item}
@@ -231,6 +261,21 @@
 		<Carousel.Previous />
 		<Carousel.Next />
 	</Carousel.Root>
+	{#if events && events.length > 0}
+		<div class="eventThumbRow">
+			{#each events as item, index}
+				<button
+					type="button"
+					class="eventThumb"
+					class:eventThumbActive={index === selectedEventIndex}
+					on:click={() => goToEventSlide(index)}
+					aria-label={`Go to event ${item.title}`}
+				>
+					<img src={getEventThumbnail(item)} alt={item.title} loading="lazy" />
+				</button>
+			{/each}
+		</div>
+	{/if}
 </div>
 
 <Ads dataAdFormat="auto" unit="leaderboard" />
@@ -679,5 +724,42 @@
 			width: 100%;
 			overflow-x: auto;
 		}
+	}
+
+	.eventThumbRow {
+		display: flex;
+		justify-content: center;
+		flex-wrap: wrap;
+		gap: 8px;
+		margin-top: 10px;
+		padding-bottom: 4px;
+	}
+
+	.eventThumb {
+		padding: 0;
+		border: 2px solid transparent;
+		border-radius: 8px;
+		overflow: hidden;
+		opacity: 0.75;
+		transition: opacity 0.2s ease, border-color 0.2s ease;
+		background: transparent;
+		cursor: pointer;
+		flex: 0 0 auto;
+
+		&:hover {
+			opacity: 1;
+		}
+
+		img {
+			display: block;
+			width: 120px;
+			height: 42px;
+			object-fit: cover;
+		}
+	}
+
+	.eventThumbActive {
+		opacity: 1;
+		border-color: hsl(var(--primary));
 	}
 </style>
