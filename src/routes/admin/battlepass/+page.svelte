@@ -41,6 +41,8 @@
 	let battlePassMapPacks: any[] = [];
 	let rewards: any[] = [];
 	let missions: any[] = [];
+	let courses: any[] = [];
+	let courseEntries: any[] = [];
 
 	// Dialog states
 	let showSeasonDialog = false;
@@ -51,6 +53,8 @@
 	let showLinkMapPackDialog = false;
 	let showEditMapPackDialog = false;
 	let showMissionRewardDialog = false;
+	let showCourseDialog = false;
+	let showCourseEntryDialog = false;
 
 	// Form states
 	let seasonForm = {
@@ -59,7 +63,24 @@
 		description: '',
 		start: '',
 		end: '',
-		primaryColor: '#8b5cf6'
+		primaryColor: '#8b5cf6',
+		courseId: '' as any
+	};
+
+	let courseForm = {
+		id: null as number | null,
+		title: '',
+		description: ''
+	};
+
+	let courseEntryForm = {
+		id: null as number | null,
+		type: 'level' as 'level' | 'mappack',
+		refId: '' as any,
+		sortOrder: 0,
+		rewardXp: 0,
+		rewardItemId: '' as any,
+		rewardQuantity: 1
 	};
 
 	let levelForm = {
@@ -167,10 +188,8 @@
 			if (res.ok) {
 				const season = await res.json();
 				seasons = [season];
-				if (!selectedSeason) {
-					selectedSeason = season;
-					await fetchSeasonData();
-				}
+				selectedSeason = season;
+				await fetchSeasonData();
 			}
 		} catch (e) {
 			console.error('Failed to fetch seasons:', e);
@@ -179,7 +198,39 @@
 
 	async function fetchSeasonData() {
 		if (!selectedSeason) return;
-		await Promise.all([fetchLevels(), fetchBattlePassMapPacks(), fetchRewards(), fetchMissions()]);
+		await Promise.all([
+			fetchLevels(),
+			fetchBattlePassMapPacks(),
+			fetchRewards(),
+			fetchMissions(),
+			selectedSeason.courseId ? fetchCourseEntries(selectedSeason.courseId) : Promise.resolve((courseEntries = []))
+		]);
+	}
+
+	async function fetchCourses() {
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/courses`, {
+				headers: { Authorization: `Bearer ${await $user.token()}` }
+			});
+			if (res.ok) {
+				courses = await res.json();
+			}
+		} catch (e) {
+			console.error('Failed to fetch courses:', e);
+		}
+	}
+
+	async function fetchCourseEntries(courseId: number) {
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/course/${courseId}/entries`, {
+				headers: { Authorization: `Bearer ${await $user.token()}` }
+			});
+			if (res.ok) {
+				courseEntries = await res.json();
+			}
+		} catch (e) {
+			console.error('Failed to fetch course entries:', e);
+		}
 	}
 
 	async function fetchLevels() {
@@ -258,7 +309,8 @@
 		const body: any = {
 			title: seasonForm.title,
 			description: seasonForm.description,
-			primaryColor: seasonForm.primaryColor
+			primaryColor: seasonForm.primaryColor,
+			courseId: seasonForm.courseId ? Number(seasonForm.courseId) : null
 		};
 
 		if (seasonForm.start) body.start = new Date(seasonForm.start).toISOString();
@@ -616,9 +668,122 @@
 		);
 	}
 
+	async function saveCourse() {
+		const isNew = !courseForm.id;
+		const url = isNew
+			? `${import.meta.env.VITE_API_URL}/battlepass/courses`
+			: `${import.meta.env.VITE_API_URL}/battlepass/course/${courseForm.id}`;
+
+		toast.promise(
+			fetch(url, {
+				method: isNew ? 'POST' : 'PATCH',
+				body: JSON.stringify({
+					title: courseForm.title,
+					description: courseForm.description
+				}),
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`,
+					'Content-Type': 'application/json'
+				}
+			}),
+			{
+				success: () => {
+					showCourseDialog = false;
+					fetchCourses();
+					return isNew ? 'Course created!' : 'Course updated!';
+				},
+				loading: 'Saving...',
+				error: 'Failed to save course'
+			}
+		);
+	}
+
+	async function removeCourse(id: number) {
+		if (!confirm('Delete this course?')) return;
+
+		toast.promise(
+			fetch(`${import.meta.env.VITE_API_URL}/battlepass/course/${id}`, {
+				method: 'DELETE',
+				headers: { Authorization: `Bearer ${await $user.token()}` }
+			}),
+			{
+				success: () => {
+					if (selectedSeason?.courseId === id) {
+						selectedSeason.courseId = null;
+						seasonForm.courseId = '';
+					}
+					fetchCourses();
+					courseEntries = [];
+					return 'Course deleted!';
+				},
+				loading: 'Deleting...',
+				error: 'Failed to delete course'
+			}
+		);
+	}
+
+	async function saveCourseEntry() {
+		if (!selectedSeason?.courseId) {
+			toast.error('Select a linked course first');
+			return;
+		}
+
+		const isNew = !courseEntryForm.id;
+		const url = isNew
+			? `${import.meta.env.VITE_API_URL}/battlepass/course/${selectedSeason.courseId}/entries`
+			: `${import.meta.env.VITE_API_URL}/battlepass/course/entry/${courseEntryForm.id}`;
+
+		toast.promise(
+			fetch(url, {
+				method: isNew ? 'POST' : 'PATCH',
+				body: JSON.stringify({
+					type: courseEntryForm.type,
+					refId: Number(courseEntryForm.refId),
+					sortOrder: Number(courseEntryForm.sortOrder),
+					rewardXp: Number(courseEntryForm.rewardXp || 0),
+					rewardItemId: courseEntryForm.rewardItemId ? Number(courseEntryForm.rewardItemId) : null,
+					rewardQuantity: Number(courseEntryForm.rewardQuantity || 1)
+				}),
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`,
+					'Content-Type': 'application/json'
+				}
+			}),
+			{
+				success: () => {
+					showCourseEntryDialog = false;
+					fetchCourseEntries(selectedSeason.courseId);
+					return isNew ? 'Entry created!' : 'Entry updated!';
+				},
+				loading: 'Saving...',
+				error: 'Failed to save entry'
+			}
+		);
+	}
+
+	async function removeCourseEntry(id: number) {
+		if (!selectedSeason?.courseId) return;
+		if (!confirm('Delete this course entry?')) return;
+
+		toast.promise(
+			fetch(`${import.meta.env.VITE_API_URL}/battlepass/course/entry/${id}`, {
+				method: 'DELETE',
+				headers: { Authorization: `Bearer ${await $user.token()}` }
+			}),
+			{
+				success: () => {
+					fetchCourseEntries(selectedSeason.courseId);
+					return 'Entry deleted!';
+				},
+				loading: 'Deleting...',
+				error: 'Failed to delete entry'
+			}
+		);
+	}
+
 	// Reset form functions
 	function openNewSeason() {
-		seasonForm = { id: null, title: '', description: '', start: '', end: '', primaryColor: '#8b5cf6' };
+		seasonForm = { id: null, title: '', description: '', start: '', end: '', primaryColor: '#8b5cf6', courseId: '' };
 		showSeasonDialog = true;
 	}
 
@@ -629,9 +794,50 @@
 			description: season.description,
 			start: convertTime(season.start),
 			end: convertTime(season.end),
-			primaryColor: season.primaryColor || '#8b5cf6'
+			primaryColor: season.primaryColor || '#8b5cf6',
+			courseId: season.courseId ?? ''
 		};
 		showSeasonDialog = true;
+	}
+
+	function openNewCourse() {
+		courseForm = { id: null, title: '', description: '' };
+		showCourseDialog = true;
+	}
+
+	function openEditCourse(course: any) {
+		courseForm = {
+			id: course.id,
+			title: course.title,
+			description: course.description || ''
+		};
+		showCourseDialog = true;
+	}
+
+	function openNewCourseEntry() {
+		courseEntryForm = {
+			id: null,
+			type: 'level',
+			refId: '',
+			sortOrder: 0,
+			rewardXp: 0,
+			rewardItemId: '',
+			rewardQuantity: 1
+		};
+		showCourseEntryDialog = true;
+	}
+
+	function openEditCourseEntry(entry: any) {
+		courseEntryForm = {
+			id: entry.id,
+			type: entry.type,
+			refId: entry.refId,
+			sortOrder: entry.sortOrder,
+			rewardXp: entry.rewardXp || 0,
+			rewardItemId: entry.rewardItemId ?? '',
+			rewardQuantity: entry.rewardQuantity || 1
+		};
+		showCourseEntryDialog = true;
 	}
 
 	function openNewLevel() {
@@ -827,6 +1033,7 @@
 
 	onMount(() => {
 		fetchSeasons();
+		fetchCourses();
 	});
 </script>
 
@@ -871,6 +1078,7 @@
 			<Tabs.List class="mb-4">
 				<Tabs.Trigger value="levels">Levels</Tabs.Trigger>
 				<Tabs.Trigger value="mappacks">Map Packs</Tabs.Trigger>
+				<Tabs.Trigger value="courses">Courses</Tabs.Trigger>
 				<Tabs.Trigger value="rewards">Tier Rewards</Tabs.Trigger>
 				<Tabs.Trigger value="missions">Missions</Tabs.Trigger>
 			</Tabs.List>
@@ -1002,6 +1210,102 @@
 						</Card.Root>
 					{/each}
 				</div>
+			</Tabs.Content>
+
+			<!-- Tier Rewards Tab -->
+			<Tabs.Content value="courses">
+				<div class="mb-4 flex items-center justify-between">
+					<div>
+						<h2 class="text-2xl font-bold">Course Mode</h2>
+						<p class="text-sm text-muted-foreground">Create course flow and link it to this season.</p>
+					</div>
+					<div class="flex gap-2">
+						<Button size="sm" variant="outline" on:click={openNewCourse}>
+							<Plus class="mr-1 h-4 w-4" />
+							New Course
+						</Button>
+						<Button size="sm" on:click={openNewCourseEntry} disabled={!selectedSeason?.courseId}>
+							<Plus class="mr-1 h-4 w-4" />
+							Add Entry
+						</Button>
+					</div>
+				</div>
+
+				<Card.Root class="mb-4">
+					<Card.Header>
+						<Card.Title>Linked Course</Card.Title>
+					</Card.Header>
+					<Card.Content>
+						<div class="flex flex-wrap items-center gap-2">
+							{#if selectedSeason?.courseId}
+								{@const linked = courses.find((c) => c.id === selectedSeason.courseId)}
+								<div class="rounded border px-3 py-2">
+									<div class="font-semibold">{linked?.title || `Course #${selectedSeason.courseId}`}</div>
+									{#if linked?.description}
+										<div class="text-xs text-muted-foreground">{linked.description}</div>
+									{/if}
+								</div>
+								<Button size="sm" variant="outline" on:click={() => linked && openEditCourse(linked)}>
+									<Edit class="mr-1 h-4 w-4" />
+									Edit
+								</Button>
+							{:else}
+								<span class="text-sm text-muted-foreground">No course linked. Edit season to link one.</span>
+							{/if}
+						</div>
+					</Card.Content>
+				</Card.Root>
+
+				<Card.Root>
+					<Card.Header>
+						<Card.Title>Course Entries</Card.Title>
+					</Card.Header>
+					<Card.Content>
+						<Table.Root>
+							<Table.Header>
+								<Table.Row>
+									<Table.Head>Order</Table.Head>
+									<Table.Head>Type</Table.Head>
+									<Table.Head>Reference</Table.Head>
+									<Table.Head>Reward</Table.Head>
+									<Table.Head>Actions</Table.Head>
+								</Table.Row>
+							</Table.Header>
+							<Table.Body>
+								{#each courseEntries as entry}
+									<Table.Row>
+										<Table.Cell>{entry.sortOrder}</Table.Cell>
+										<Table.Cell>{entry.type}</Table.Cell>
+										<Table.Cell>{entry.refId}</Table.Cell>
+										<Table.Cell>
+											{entry.rewardXp > 0 ? `+${entry.rewardXp} XP` : ''}
+											{#if entry.rewardXp > 0 && entry.rewardItemId}
+												 •
+											{/if}
+											{entry.rewardItemId ? `Item #${entry.rewardItemId} x${entry.rewardQuantity}` : ''}
+										</Table.Cell>
+										<Table.Cell>
+											<div class="flex gap-2">
+												<Button variant="outline" size="icon" on:click={() => openEditCourseEntry(entry)}>
+													<Edit class="h-4 w-4" />
+												</Button>
+												<Button variant="destructive" size="icon" on:click={() => removeCourseEntry(entry.id)}>
+													<Trash2 class="h-4 w-4" />
+												</Button>
+											</div>
+										</Table.Cell>
+									</Table.Row>
+								{:else}
+									<Table.Row>
+										<Table.Cell colspan={5} class="text-center text-muted-foreground">
+											No course entries
+										</Table.Cell>
+									</Table.Row>
+								{/each}
+							</Table.Body>
+						</Table.Root>
+					</Card.Content>
+				</Card.Root>
 			</Tabs.Content>
 
 			<!-- Tier Rewards Tab -->
@@ -1172,6 +1476,24 @@
 						class="flex-1"
 					/>
 				</div>
+			</div>
+			<div>
+				<Label for="seasonCourse">Linked Course</Label>
+				<div class="mt-2 flex gap-2">
+					<Input
+						id="seasonCourse"
+						type="number"
+						bind:value={seasonForm.courseId}
+						placeholder="Course ID (optional)"
+					/>
+					<Button type="button" variant="outline" on:click={openNewCourse}>New</Button>
+				</div>
+				{#if courses.length > 0}
+					<div class="mt-2 text-xs text-muted-foreground">
+						Available:
+						{courses.map((c) => `${c.id}: ${c.title}`).join(' • ')}
+					</div>
+				{/if}
 			</div>
 		</div>
 		<Dialog.Footer>
@@ -1650,6 +1972,93 @@
 		<Dialog.Footer>
 			<Button variant="outline" on:click={() => (showMissionRewardDialog = false)}>Cancel</Button>
 			<Button on:click={addMissionReward}>Add</Button>
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>
+
+<Dialog.Root bind:open={showCourseDialog}>
+	<Dialog.Content class="max-w-lg">
+		<Dialog.Header>
+			<Dialog.Title>{courseForm.id ? 'Edit Course' : 'New Course'}</Dialog.Title>
+		</Dialog.Header>
+		<div class="flex flex-col gap-4">
+			<div>
+				<Label for="courseTitle">Title</Label>
+				<Input id="courseTitle" bind:value={courseForm.title} placeholder="Starter Course" />
+			</div>
+			<div>
+				<Label for="courseDesc">Description</Label>
+				<Textarea id="courseDesc" bind:value={courseForm.description} placeholder="Course mode description" />
+			</div>
+		</div>
+		<Dialog.Footer>
+			<div class="flex w-full items-center justify-between">
+				<div>
+					{#if courseForm.id}
+						<Button variant="destructive" on:click={() => removeCourse(Number(courseForm.id))}>
+							<Trash2 class="mr-1 h-4 w-4" />
+							Delete
+						</Button>
+					{/if}
+				</div>
+				<div class="flex gap-2">
+					<Button variant="outline" on:click={() => (showCourseDialog = false)}>Cancel</Button>
+					<Button on:click={saveCourse}>Save</Button>
+				</div>
+			</div>
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>
+
+<Dialog.Root bind:open={showCourseEntryDialog}>
+	<Dialog.Content class="max-w-lg">
+		<Dialog.Header>
+			<Dialog.Title>{courseEntryForm.id ? 'Edit Course Entry' : 'Add Course Entry'}</Dialog.Title>
+		</Dialog.Header>
+		<div class="flex flex-col gap-4">
+			<div class="grid grid-cols-2 gap-4">
+				<div>
+					<Label for="entryType">Type</Label>
+					<Select.Root
+						selected={{ value: courseEntryForm.type, label: courseEntryForm.type }}
+						onSelectedChange={(v) => {
+							if (v) courseEntryForm.type = v.value;
+						}}
+					>
+						<Select.Trigger id="entryType"><Select.Value placeholder="Type" /></Select.Trigger>
+						<Select.Content>
+							<Select.Item value="level" label="level">level</Select.Item>
+							<Select.Item value="mappack" label="mappack">mappack</Select.Item>
+						</Select.Content>
+					</Select.Root>
+				</div>
+				<div>
+					<Label for="entryRef">Reference ID</Label>
+					<Input id="entryRef" type="number" bind:value={courseEntryForm.refId} />
+				</div>
+			</div>
+			<div>
+				<Label for="entryOrder">Sort Order</Label>
+				<Input id="entryOrder" type="number" bind:value={courseEntryForm.sortOrder} />
+			</div>
+			<div class="grid grid-cols-3 gap-4">
+				<div>
+					<Label for="entryRewardXp">Reward XP</Label>
+					<Input id="entryRewardXp" type="number" bind:value={courseEntryForm.rewardXp} />
+				</div>
+				<div>
+					<Label for="entryRewardItem">Reward Item ID</Label>
+					<Input id="entryRewardItem" type="number" bind:value={courseEntryForm.rewardItemId} />
+				</div>
+				<div>
+					<Label for="entryRewardQty">Item Qty</Label>
+					<Input id="entryRewardQty" type="number" min="1" bind:value={courseEntryForm.rewardQuantity} />
+				</div>
+			</div>
+		</div>
+		<Dialog.Footer>
+			<Button variant="outline" on:click={() => (showCourseEntryDialog = false)}>Cancel</Button>
+			<Button on:click={saveCourseEntry}>Save</Button>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>

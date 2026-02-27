@@ -10,11 +10,13 @@
 	import Map from 'lucide-svelte/icons/map';
 	import Sun from 'lucide-svelte/icons/sun';
 	import X from 'lucide-svelte/icons/x';
+	import Route from 'lucide-svelte/icons/route';
 	import PremiumPurchaseDialog from './PremiumPurchaseDialog.svelte';
 	import RewardsTab from './RewardsTab.svelte';
 	import DailyTab from './DailyTab.svelte';
 	import LevelsTab from './LevelsTab.svelte';
 	import MapPacksTab from './MapPacksTab.svelte';
+	import CourseTab from './CourseTab.svelte';
 	import MissionsTab from './MissionsTab.svelte';
 	import BattlepassTopBanner from './BattlepassTopBanner.svelte';
 
@@ -89,7 +91,7 @@
 	<!-- Main Content Tabs -->
 	<div class="mx-auto max-w-6xl px-4 py-8">
 		<Tabs.Root value="rewards" class="flex flex-col items-center">
-			<Tabs.List class="mb-6 grid w-full max-w-2xl grid-cols-4">
+			<Tabs.List class="mb-6 grid w-full max-w-3xl grid-cols-5">
 				<Tabs.Trigger value="rewards" class="flex items-center gap-2">
 					<Gift class="h-4 w-4" />
 					<span class="hidden sm:inline">{$_('battlepass.tabs.rewards')}</span>
@@ -105,6 +107,10 @@
 				<Tabs.Trigger value="mappacks" class="flex items-center gap-2">
 					<Map class="h-4 w-4" />
 					<span class="hidden sm:inline">{$_('battlepass.tabs.mappacks')}</span>
+				</Tabs.Trigger>
+				<Tabs.Trigger value="course" class="flex items-center gap-2">
+					<Route class="h-4 w-4" />
+					<span class="hidden sm:inline">Course</span>
 				</Tabs.Trigger>
 				<!-- <Tabs.Trigger value="missions" class="flex items-center gap-2">
 					<Target class="h-4 w-4" />
@@ -130,6 +136,10 @@
 			<!-- Map Packs Tab -->
 			<Tabs.Content value="mappacks" class="w-full">
 				<MapPacksTab {primaryColor} seasonStart={data.season?.start} />
+			</Tabs.Content>
+
+			<Tabs.Content value="course" class="w-full">
+				<CourseTab />
 			</Tabs.Content>
 
 			<!-- Missions Tab (Planned) -->
