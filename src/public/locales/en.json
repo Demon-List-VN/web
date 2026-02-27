@@ -1032,6 +1032,11 @@
       "title": "So... Have you made your decision?",
       "button": "Support us with just 49.000₫/month"
     },
+    "goals": {
+      "title": "Progress toward monthly goals",
+      "server_cost": "Server cost",
+      "minecraft_server": "Minecraft server"
+    },
     "notes": {
       "title": "Note:",
       "non_recurring": "Geometry Dash Việt Nam Supporter roles are non-recurring payments.",

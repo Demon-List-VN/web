@@ -1052,6 +1052,11 @@
       "title": "Vậy... Bạn đã quyết định chưa?",
       "button": "Ủng hộ chúng tôi chỉ với 49.000₫/tháng"
     },
+    "goals": {
+      "title": "Tiến độ mục tiêu hàng tháng",
+      "server_cost": "Chi phí máy chủ",
+      "minecraft_server": "Máy chủ Minecraft"
+    },
     "notes": {
       "title": "Lưu ý:",
       "non_recurring": "Geometry Dash Việt Nam Supporter không tự động gia hạn.",

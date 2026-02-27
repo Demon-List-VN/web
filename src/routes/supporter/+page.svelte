@@ -42,23 +42,23 @@
 		<TopSupporters topBuyers={data.topBuyers} />
 
 		<div class="goalWrapper">
-			<h2 class="goalTitle">Progress toward monthly goals</h2>
+			<h2 class="goalTitle">{$_('supporter.goals.title')}</h2>
 			<div class="goalRow">
 				<div class="goalHeader">
-					<span>Server cost (1.5M VND)</span>
+					<span>{$_('supporter.goals.server_cost')}</span>
 					<span>{serverCostPercent}%</span>
 				</div>
 				<div class="goalBar">
-					<div class="goalBarFill" style={`width: ${toBarWidth(serverCostPercent)}`}></div>
+					<div class="goalBarFill bg-green-600" style={`width: ${toBarWidth(serverCostPercent)}`}></div>
 				</div>
 			</div>
 			<div class="goalRow">
 				<div class="goalHeader">
-					<span>Minecraft server (2M VND)</span>
+					<span>{$_('supporter.goals.minecraft_server')}</span>
 					<span>{minecraftServerPercent}%</span>
 				</div>
 				<div class="goalBar">
-					<div class="goalBarFill" style={`width: ${toBarWidth(minecraftServerPercent)}`}></div>
+					<div class="goalBarFill bg-green-600" style={`width: ${toBarWidth(minecraftServerPercent)}`}></div>
 				</div>
 			</div>
 		</div>
@@ -267,7 +267,6 @@
 
 	.goalBarFill {
 		height: 100%;
-		background: hsl(var(--primary));
 		transition: width 0.3s ease;
 	}
 </style>
