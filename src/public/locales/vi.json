@@ -1379,6 +1379,7 @@
       "daily": "Hàng ngày",
       "levels": "Level",
       "mappacks": "Gói",
+      "course": "Course",
       "missions": "Nhiệm vụ"
     },
     "tier_rewards": "Phần thưởng theo cấp",
@@ -1418,6 +1419,18 @@
     "completion_reward": "Hoàn thành 100%",
     "xp_claimed": "Đã nhận {xp} XP!",
     "claim_failed": "Không thể nhận phần thưởng",
+    "course": {
+      "title": "Chế độ Course",
+      "description": "Hoàn thành từng level hoặc gói map đã mở khóa để mở khóa mục tiếp theo.",
+      "no_course": "Mùa này chưa liên kết course",
+      "fallback_name": "Course",
+      "entry_level": "Level",
+      "entry_mappack": "Gói Map",
+      "on_clear": "Khi hoàn thành: +{xp} XP",
+      "bonus_item": "Vật phẩm thưởng: #{itemId} x{quantity}",
+      "completed": "Đã hoàn thành (+{xp} XP)",
+      "in_progress": "Đang thực hiện"
+    },
     "upgrade_to_premium": "Nâng cấp lên Premium",
     "premium_pass": "Pass Premium",
     "premium_description": "Mở khóa tất cả phần thưởng premium và nhận ngay các vật phẩm độc quyền!",

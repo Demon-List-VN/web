@@ -1380,6 +1380,7 @@
       "daily": "Daily",
       "levels": "Levels",
       "mappacks": "Packs",
+      "course": "Course",
       "missions": "Missions"
     },
     "tier_rewards": "Tier Rewards",
@@ -1419,6 +1420,18 @@
     "completion_reward": "Complete 100%",
     "xp_claimed": "Claimed {xp} XP!",
     "claim_failed": "Failed to claim reward",
+    "course": {
+      "title": "Course Mode",
+      "description": "Clear each unlocked level or map pack to unlock the next one.",
+      "no_course": "No course linked to this season",
+      "fallback_name": "Course",
+      "entry_level": "Level",
+      "entry_mappack": "Map Pack",
+      "on_clear": "On clear: +{xp} XP",
+      "bonus_item": "Bonus item: #{itemId} x{quantity}",
+      "completed": "Completed (+{xp} XP)",
+      "in_progress": "In Progress"
+    },
     "upgrade_to_premium": "Upgrade to Premium",
     "premium_pass": "Premium Pass",
     "premium_description": "Unlock all premium rewards and get instant access to exclusive items!",

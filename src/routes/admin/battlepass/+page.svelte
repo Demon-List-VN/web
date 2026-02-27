@@ -78,7 +78,7 @@
 		type: 'level' as 'level' | 'mappack',
 		refId: '' as any,
 		sortOrder: 0,
-		rewardXp: 0,
+		rewardXp: 100,
 		rewardItemId: '' as any,
 		rewardQuantity: 1
 	};
@@ -740,7 +740,7 @@
 					type: courseEntryForm.type,
 					refId: Number(courseEntryForm.refId),
 					sortOrder: Number(courseEntryForm.sortOrder),
-					rewardXp: Number(courseEntryForm.rewardXp || 0),
+					rewardXp: 100,
 					rewardItemId: courseEntryForm.rewardItemId ? Number(courseEntryForm.rewardItemId) : null,
 					rewardQuantity: Number(courseEntryForm.rewardQuantity || 1)
 				}),
@@ -820,7 +820,7 @@
 			type: 'level',
 			refId: '',
 			sortOrder: 0,
-			rewardXp: 0,
+			rewardXp: 100,
 			rewardItemId: '',
 			rewardQuantity: 1
 		};
@@ -833,7 +833,7 @@
 			type: entry.type,
 			refId: entry.refId,
 			sortOrder: entry.sortOrder,
-			rewardXp: entry.rewardXp || 0,
+			rewardXp: 100,
 			rewardItemId: entry.rewardItemId ?? '',
 			rewardQuantity: entry.rewardQuantity || 1
 		};
@@ -1278,8 +1278,8 @@
 										<Table.Cell>{entry.type}</Table.Cell>
 										<Table.Cell>{entry.refId}</Table.Cell>
 										<Table.Cell>
-											{entry.rewardXp > 0 ? `+${entry.rewardXp} XP` : ''}
-											{#if entry.rewardXp > 0 && entry.rewardItemId}
+											+100 XP
+											{#if entry.rewardItemId}
 												 •
 											{/if}
 											{entry.rewardItemId ? `Item #${entry.rewardItemId} x${entry.rewardQuantity}` : ''}
@@ -2041,11 +2041,7 @@
 				<Label for="entryOrder">Sort Order</Label>
 				<Input id="entryOrder" type="number" bind:value={courseEntryForm.sortOrder} />
 			</div>
-			<div class="grid grid-cols-3 gap-4">
-				<div>
-					<Label for="entryRewardXp">Reward XP</Label>
-					<Input id="entryRewardXp" type="number" bind:value={courseEntryForm.rewardXp} />
-				</div>
+			<div class="grid grid-cols-2 gap-4">
 				<div>
 					<Label for="entryRewardItem">Reward Item ID</Label>
 					<Input id="entryRewardItem" type="number" bind:value={courseEntryForm.rewardItemId} />
@@ -2055,6 +2051,7 @@
 					<Input id="entryRewardQty" type="number" min="1" bind:value={courseEntryForm.rewardQuantity} />
 				</div>
 			</div>
+			<div class="text-xs text-muted-foreground">XP reward is fixed: +100 XP when this entry is cleared.</div>
 		</div>
 		<Dialog.Footer>
 			<Button variant="outline" on:click={() => (showCourseEntryDialog = false)}>Cancel</Button>

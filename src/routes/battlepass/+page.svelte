@@ -110,7 +110,7 @@
 				</Tabs.Trigger>
 				<Tabs.Trigger value="course" class="flex items-center gap-2">
 					<Route class="h-4 w-4" />
-					<span class="hidden sm:inline">Course</span>
+					<span class="hidden sm:inline">{$_('battlepass.tabs.course')}</span>
 				</Tabs.Trigger>
 				<!-- <Tabs.Trigger value="missions" class="flex items-center gap-2">
 					<Target class="h-4 w-4" />
