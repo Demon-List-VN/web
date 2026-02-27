@@ -1043,6 +1043,9 @@
 	<div class="mb-6 flex items-center gap-4">
 		<Crown class="h-8 w-8 text-yellow-400" />
 		<h1 class="text-2xl font-bold">Battle Pass Manager</h1>
+		<a href="/admin/battlepass/course">
+			<Button variant="outline" size="sm">Course Manager</Button>
+		</a>
 		<Button
 			variant="outline"
 			size="icon"
@@ -1078,7 +1081,6 @@
 			<Tabs.List class="mb-4">
 				<Tabs.Trigger value="levels">Levels</Tabs.Trigger>
 				<Tabs.Trigger value="mappacks">Map Packs</Tabs.Trigger>
-				<Tabs.Trigger value="courses">Courses</Tabs.Trigger>
 				<Tabs.Trigger value="rewards">Tier Rewards</Tabs.Trigger>
 				<Tabs.Trigger value="missions">Missions</Tabs.Trigger>
 			</Tabs.List>
@@ -1210,102 +1212,6 @@
 						</Card.Root>
 					{/each}
 				</div>
-			</Tabs.Content>
-
-			<!-- Tier Rewards Tab -->
-			<Tabs.Content value="courses">
-				<div class="mb-4 flex items-center justify-between">
-					<div>
-						<h2 class="text-2xl font-bold">Course Mode</h2>
-						<p class="text-sm text-muted-foreground">Create course flow and link it to this season.</p>
-					</div>
-					<div class="flex gap-2">
-						<Button size="sm" variant="outline" on:click={openNewCourse}>
-							<Plus class="mr-1 h-4 w-4" />
-							New Course
-						</Button>
-						<Button size="sm" on:click={openNewCourseEntry} disabled={!selectedSeason?.courseId}>
-							<Plus class="mr-1 h-4 w-4" />
-							Add Entry
-						</Button>
-					</div>
-				</div>
-
-				<Card.Root class="mb-4">
-					<Card.Header>
-						<Card.Title>Linked Course</Card.Title>
-					</Card.Header>
-					<Card.Content>
-						<div class="flex flex-wrap items-center gap-2">
-							{#if selectedSeason?.courseId}
-								{@const linked = courses.find((c) => c.id === selectedSeason.courseId)}
-								<div class="rounded border px-3 py-2">
-									<div class="font-semibold">{linked?.title || `Course #${selectedSeason.courseId}`}</div>
-									{#if linked?.description}
-										<div class="text-xs text-muted-foreground">{linked.description}</div>
-									{/if}
-								</div>
-								<Button size="sm" variant="outline" on:click={() => linked && openEditCourse(linked)}>
-									<Edit class="mr-1 h-4 w-4" />
-									Edit
-								</Button>
-							{:else}
-								<span class="text-sm text-muted-foreground">No course linked. Edit season to link one.</span>
-							{/if}
-						</div>
-					</Card.Content>
-				</Card.Root>
-
-				<Card.Root>
-					<Card.Header>
-						<Card.Title>Course Entries</Card.Title>
-					</Card.Header>
-					<Card.Content>
-						<Table.Root>
-							<Table.Header>
-								<Table.Row>
-									<Table.Head>Order</Table.Head>
-									<Table.Head>Type</Table.Head>
-									<Table.Head>Reference</Table.Head>
-									<Table.Head>Reward</Table.Head>
-									<Table.Head>Actions</Table.Head>
-								</Table.Row>
-							</Table.Header>
-							<Table.Body>
-								{#each courseEntries as entry}
-									<Table.Row>
-										<Table.Cell>{entry.sortOrder}</Table.Cell>
-										<Table.Cell>{entry.type}</Table.Cell>
-										<Table.Cell>{entry.refId}</Table.Cell>
-										<Table.Cell>
-											+100 XP
-											{#if entry.rewardItemId}
-												 •
-											{/if}
-											{entry.rewardItemId ? `Item #${entry.rewardItemId} x${entry.rewardQuantity}` : ''}
-										</Table.Cell>
-										<Table.Cell>
-											<div class="flex gap-2">
-												<Button variant="outline" size="icon" on:click={() => openEditCourseEntry(entry)}>
-													<Edit class="h-4 w-4" />
-												</Button>
-												<Button variant="destructive" size="icon" on:click={() => removeCourseEntry(entry.id)}>
-													<Trash2 class="h-4 w-4" />
-												</Button>
-											</div>
-										</Table.Cell>
-									</Table.Row>
-								{:else}
-									<Table.Row>
-										<Table.Cell colspan={5} class="text-center text-muted-foreground">
-											No course entries
-										</Table.Cell>
-									</Table.Row>
-								{/each}
-							</Table.Body>
-						</Table.Root>
-					</Card.Content>
-				</Card.Root>
 			</Tabs.Content>
 
 			<!-- Tier Rewards Tab -->
@@ -1480,20 +1386,44 @@
 			<div>
 				<Label for="seasonCourse">Linked Course</Label>
 				<div class="mt-2 flex gap-2">
-					<Input
-						id="seasonCourse"
-						type="number"
-						bind:value={seasonForm.courseId}
-						placeholder="Course ID (optional)"
-					/>
-					<Button type="button" variant="outline" on:click={openNewCourse}>New</Button>
-				</div>
-				{#if courses.length > 0}
-					<div class="mt-2 text-xs text-muted-foreground">
-						Available:
-						{courses.map((c) => `${c.id}: ${c.title}`).join(' • ')}
+					<div class="flex-1">
+						<Select.Root
+							selected={{
+								value: seasonForm.courseId ? String(seasonForm.courseId) : 'none',
+								label: seasonForm.courseId
+									? (courses.find((c) => String(c.id) === String(seasonForm.courseId))?.title ||
+										`Course #${seasonForm.courseId}`)
+									: 'No linked course'
+							}}
+							onSelectedChange={(v) => {
+								if (!v || v.value === 'none') {
+									seasonForm.courseId = '';
+									return;
+								}
+
+								seasonForm.courseId = Number(v.value);
+							}}
+						>
+							<Select.Trigger id="seasonCourse">
+								<Select.Value placeholder="Select course (optional)" />
+							</Select.Trigger>
+							<Select.Content>
+								<Select.Item value="none" label="No linked course">No linked course</Select.Item>
+								{#each courses as course}
+									<Select.Item value={String(course.id)} label={course.title}>
+										#{course.id} - {course.title}
+									</Select.Item>
+								{/each}
+							</Select.Content>
+						</Select.Root>
 					</div>
-				{/if}
+					<a href="/admin/battlepass/course">
+						<Button type="button" variant="outline">Manage</Button>
+					</a>
+				</div>
+				<div class="mt-2 text-xs text-muted-foreground">
+					Choose an existing course to attach to this season.
+				</div>
 			</div>
 		</div>
 		<Dialog.Footer>

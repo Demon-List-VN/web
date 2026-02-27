@@ -75,7 +75,10 @@
 		{
 			title: 'Features',
 			icon: '✨',
-			items: [{ name: 'Battlepass', href: '/admin/battlepass' }]
+			items: [
+				{ name: 'Battlepass', href: '/admin/battlepass' },
+				{ name: 'Battlepass Courses', href: '/admin/battlepass/course' }
+			]
 		},
 		{
 			title: 'Community',
