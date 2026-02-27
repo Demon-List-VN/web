@@ -15,6 +15,7 @@
 	export let isClaimed: boolean = false;
 	export let isClaiming: boolean = false;
 	export let editable: boolean = false;
+	export let showGiftIcon: boolean = true;
 	export let onRewardClick: (() => void) | null = null;
 	export let onClaimReward: (() => void) | null = null;
 
@@ -108,7 +109,7 @@
 					>
 						<Lock class="h-6 w-6" color="white" />
 					</div>
-				{:else if isClaimable}
+				{:else if isClaimable && showGiftIcon}
 					<div
 						class="absolute inset-0 left-1 top-1 z-20 h-fit w-fit items-center justify-center rounded-xl bg-green-500/50 p-1 pl-[4px]"
 					>

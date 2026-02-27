@@ -278,13 +278,15 @@
 								{#if entry.type === 'level'}
 									{getLevelName(entry)}
 									{#if getLevelCreator(entry)}
-										<span class="opacity-60 font-light"> by {getLevelCreator(entry)}</span>
+										<span class="opacity-60 font-light text-sm"> by {getLevelCreator(entry)}</span>
 									{/if}
 								{:else}
 									{getMapPackData(entry)?.name || 'Unknown map pack'}
 								{/if}
 							</div>
 							<div class="text-xs text-muted-foreground">
+                                ID: {entry.refId}
+                                <br>
 								{#if entry.type === 'mappack'}
 									{getMapPackLevelNames(entry) || '-'}
 									 •
@@ -314,6 +316,7 @@
 									isClaimed={false}
 									isClaiming={false}
 									editable={false}
+                                    showGiftIcon={false}
 								/>
 							</div>
 						{/if}
