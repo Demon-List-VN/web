@@ -108,15 +108,17 @@
 		const nextMapPackProgressMap: Record<number, number> = {};
 
 		if (levelRes?.ok) {
-			const rows = await levelRes.json();
-			(rows || []).forEach((row: any) => {
+			const data = await levelRes.json();
+			const rows = Array.isArray(data) ? data : (data ? [data] : []);
+			rows.forEach((row: any) => {
 				nextLevelProgressMap[Number(row.battlePassLevelId)] = Number(row.progress || 0);
 			});
 		}
 
 		if (mapPackRes?.ok) {
-			const rows = await mapPackRes.json();
-			(rows || []).forEach((row: any) => {
+			const data = await mapPackRes.json();
+			const rows = Array.isArray(data) ? data : (data ? [data] : []);
+			rows.forEach((row: any) => {
 				nextMapPackProgressMap[Number(row.battlePassMapPackId)] = Number(row.progress || 0);
 			});
 		}
@@ -244,18 +246,8 @@
 		await fetchCourse();
 	}
 
-	onMount(() => {
-		mounted = true;
-
-		const unsub = user.subscribe(async () => {
-			if (!mounted) return;
-			await refreshCourse();
-		});
-
-		return () => {
-			mounted = false;
-			unsub();
-		};
+	onMount(async () => {
+		await refreshCourse();
 	});
 </script>
 
