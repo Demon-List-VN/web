@@ -93,7 +93,7 @@
 				{#each shortcuts as shortcut}
 					<a
 						href={shortcut.url}
-						target="_blank"
+						target={openInNewTab ? '_blank' : undefined}
 						rel="noopener noreferrer"
 						class="flex flex-col items-center gap-1 rounded-lg bg-background/60 p-2 backdrop-blur-md transition-all hover:scale-105 hover:bg-background/80 sm:gap-1.5 sm:rounded-xl sm:p-3"
 					>
