@@ -247,8 +247,13 @@
 	}
 
 	onMount(async () => {
+		mounted = true;
 		await refreshCourse();
 	});
+
+	$: if (mounted) {
+		void refreshCourse();
+	}
 </script>
 
 <div class="mb-4 text-center">
