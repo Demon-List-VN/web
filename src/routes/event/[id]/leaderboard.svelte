@@ -376,7 +376,7 @@
 				<Table.Head class="w-[100px]">{$_('contest.leaderboard.rank')}</Table.Head>
 				<Table.Head class="min-w-[200px]">{$_('contest.leaderboard.player')}</Table.Head>
 				<Table.Head class="w-[75px] text-center">{$_('contest.leaderboard.total')}</Table.Head>
-				{#if event.type == 'basic'}
+				{#if event.type !== 'basic'}
 					<Table.Head class="w-[75px] text-center">{$_('contest.leaderboard.penalty')}</Table.Head>
 				{/if}
 				{#each levels as level, index}
@@ -429,7 +429,7 @@
 							{getTotalPoint(player.eventRecords)}
 						{/if}
 					</Table.Cell>
-					{#if event.type == 'basic'}
+					{#if event.type !== 'basic'}
 						<Table.Cell class="w-[75px] text-center">
 							<Tooltip.Root>
 								<Tooltip.Trigger>
