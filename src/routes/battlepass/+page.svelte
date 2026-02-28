@@ -138,9 +138,9 @@
 				<MapPacksTab {primaryColor} seasonStart={data.season?.start} />
 			</Tabs.Content>
 
-			<Tabs.Content value="course" class="w-full">
+			<!-- <Tabs.Content value="course" class="w-full">
 				<CourseTab />
-			</Tabs.Content>
+			</Tabs.Content> -->
 
 			<!-- Missions Tab (Planned) -->
 			<!-- <Tabs.Content value="missions" class="w-full">
