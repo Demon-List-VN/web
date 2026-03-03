@@ -6,33 +6,12 @@
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import { goto } from '$app/navigation';
-	import { fade } from 'svelte/transition';
 
 	export let data: any;
 
 	function handleIntervalChange(value: string) {
 		goto(`/supporter/top?interval=${value}`);
 	}
-
-	function formatTotalAmount(buyers: any[]): string {
-		const total = buyers.reduce((sum, buyer) => sum + buyer.totalAmount, 0);
-		return new Intl.NumberFormat('vi-VN', {
-			style: 'currency',
-			currency: 'VND'
-		}).format(total);
-	}
-
-	$: totalRevenue = formatTotalAmount(data.buyers);
-	$: topBuyer = data.buyers[0];
-	$: averageSpending =
-		data.buyers.length > 0
-			? new Intl.NumberFormat('vi-VN', {
-					style: 'currency',
-					currency: 'VND'
-				}).format(
-					data.buyers.reduce((sum: number, b: any) => sum + b.totalAmount, 0) / data.buyers.length
-				)
-			: '0 ₫';
 </script>
 
 <svelte:head>
