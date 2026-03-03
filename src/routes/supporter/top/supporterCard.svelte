@@ -6,13 +6,6 @@
 	export let buyer: any;
 	export let rank: number;
 
-	function formatAmount(amount: number): string {
-		return new Intl.NumberFormat('vi-VN', {
-			style: 'currency',
-			currency: 'VND'
-		}).format(amount);
-	}
-
 	function getRankColor(rank: number): string {
 		if (rank === 1) return 'text-yellow-500';
 		if (rank === 2) return 'text-gray-400';
@@ -37,9 +30,6 @@
 				<Star class="h-4 w-4" />
 			{/if}
 			#{rank}
-		</Badge>
-		<Badge variant="default" class="bg-green-600 text-white hover:bg-green-700">
-			{formatAmount(buyer.totalAmount)}
 		</Badge>
 	</div>
 	<PlayerCard player={buyer.player} />
