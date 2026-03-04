@@ -352,13 +352,6 @@
 								/>
 							</div>
 						{/if}
-
-						{#if entry.completed}
-							<div class="flex items-center gap-1 text-sm text-green-500">
-								<Check class="h-4 w-4" />
-								{$_('battlepass.course.completed', { values: { xp: COURSE_CLEAR_XP } })}
-							</div>
-						{/if}
 					</div>
 				</Card.Content>
 			</Card.Root>
