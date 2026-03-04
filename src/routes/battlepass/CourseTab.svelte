@@ -346,7 +346,6 @@
 									isClaimed={!!entry.claimed}
 									isClaiming={isEntryClaiming(entry)}
 									editable={false}
-									showGiftIcon={false}
 									onClaimReward={() => claimCourseEntryReward(entry)}
 								/>
 							</div>

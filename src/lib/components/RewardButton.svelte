@@ -64,9 +64,7 @@
 				{...builder}
 				use:builder.action
 				class="reward-slot relative flex h-20 w-20 items-center justify-center rounded-xl border-2 transition-all"
-				style="border-color: {borderColorRgba}; background-color: {isPremiumTrack
-					? 'rgb(234 179 8 / 0.1)'
-					: 'transparent'}"
+				style="border-color: {borderColorRgba}"
 				class:reward-claimable={isClaimable && !isClaiming}
 				disabled={isClaiming}
 				on:click={async () => {
@@ -91,23 +89,11 @@
 						{reward.quantity}
 					</span>
 				{/if}
-				{#if isPremiumLocked}
-					<div
-						class="absolute inset-0 z-20 flex items-center justify-center rounded-xl bg-black/50"
-					>
-						<Lock class="h-6 w-6" color="white" />
-					</div>
-				{:else if isClaimed}
+				{#if isClaimed}
 					<div
 						class="absolute inset-0 z-20 flex items-center justify-center rounded-xl bg-black/50"
 					>
 						<Check class="h-6 w-6" color="white" />
-					</div>
-				{:else if !isClaimable}
-					<div
-						class="absolute inset-0 z-20 flex items-center justify-center rounded-xl bg-black/50"
-					>
-						<Lock class="h-6 w-6" color="white" />
 					</div>
 				{:else if isClaimable && showGiftIcon}
 					<div
