@@ -134,7 +134,6 @@
 				}
 
 				updateEntryClaimed(entryId);
-				await fetchCourse();
 				return true;
 			})();
 
