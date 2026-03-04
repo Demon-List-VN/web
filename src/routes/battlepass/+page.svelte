@@ -91,7 +91,7 @@
 	<!-- Main Content Tabs -->
 	<div class="mx-auto max-w-6xl px-4 py-8">
 		<Tabs.Root value="rewards" class="flex flex-col items-center">
-			<Tabs.List class="mb-6 grid w-full max-w-3xl grid-cols-4">
+			<Tabs.List class="mb-6 grid w-full max-w-3xl grid-cols-5">
 				<Tabs.Trigger value="rewards" class="flex items-center gap-2">
 					<Gift class="h-4 w-4" />
 					<span class="hidden sm:inline">{$_('battlepass.tabs.rewards')}</span>
@@ -138,9 +138,9 @@
 				<MapPacksTab {primaryColor} seasonStart={data.season?.start} />
 			</Tabs.Content>
 
-			<!-- <Tabs.Content value="course" class="w-full">
+			<Tabs.Content value="course" class="w-full">
 				<CourseTab />
-			</Tabs.Content> -->
+			</Tabs.Content>
 
 			<!-- Missions Tab (Planned) -->
 			<!-- <Tabs.Content value="missions" class="w-full">

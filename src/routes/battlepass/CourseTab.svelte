@@ -2,6 +2,7 @@
 	import { _ } from 'svelte-i18n';
 	import { onMount } from 'svelte';
 	import { user } from '$lib/client';
+	import { toast } from 'svelte-sonner';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
 	import RewardButton from '$lib/components/RewardButton.svelte';
@@ -16,13 +17,13 @@
 	let courseInFlight: Promise<any> | null = null;
 	let levelDetails: Record<number, any> = {};
 	let mapPackDetails: Record<number, any> = {};
-	let levelProgressMap: Record<number, number> = {};
-	let mapPackProgressMap: Record<number, number> = {};
+	let claimingEntryIds = new Set<number>();
 	const COURSE_CLEAR_XP = 100;
 
 	$: entries = courseData?.entries || [];
 	$: visibleEntries = entries.filter((entry: any) => entry.completed || entry.unlocked);
-	$: showUnknownRow = entries.some((entry: any) => !entry.unlocked) && visibleEntries.length < entries.length;
+	$: showUnknownRow =
+		entries.some((entry: any) => !entry.unlocked) && visibleEntries.length < entries.length;
 
 	function getLevelData(entry: any) {
 		return entry?.levelData || levelDetails[Number(entry.refId)] || null;
@@ -59,17 +60,7 @@
 	}
 
 	function getEntryProgressPercent(entry: any) {
-		if (entry?.completed) return 100;
-
-		if (entry?.type === 'level') {
-			return Math.max(0, Math.min(100, Number(levelProgressMap[Number(entry.refId)] || 0)));
-		}
-
-		if (entry?.type === 'mappack') {
-			return Math.max(0, Math.min(100, Number(mapPackProgressMap[Number(entry.refId)] || 0)));
-		}
-
-		return 0;
+		return entry?.progress;
 	}
 
 	function getCourseReward(entry: any) {
@@ -81,50 +72,87 @@
 		};
 	}
 
-	async function fetchEntryProgress(payload: any) {
-		if (!$user.loggedIn || !payload?.entries?.length) {
-			levelProgressMap = {};
-			mapPackProgressMap = {};
+	function isEntryClaiming(entry: any) {
+		return claimingEntryIds.has(Number(entry?.id));
+	}
+
+	function isEntryClaimable(entry: any) {
+		return $user.loggedIn && !!entry?.unlocked && !!entry?.completed && !entry?.claimed;
+	}
+
+	function updateEntryClaimed(entryId: number) {
+		if (!courseData?.entries?.length) return;
+
+		courseData = {
+			...courseData,
+			entries: courseData.entries.map((entry: any) =>
+				Number(entry.id) === entryId
+					? {
+							...entry,
+							claimed: true
+						}
+					: entry
+			)
+		};
+	}
+
+	async function claimCourseEntryReward(entry: any) {
+		const entryId = Number(entry?.id);
+
+		if (!Number.isFinite(entryId) || isEntryClaiming(entry) || !isEntryClaimable(entry)) {
 			return;
 		}
 
-		const visible = (payload.entries || []).filter((entry: any) => entry.completed || entry.unlocked);
-		const levelIds = [...new Set(visible.filter((entry: any) => entry.type === 'level').map((entry: any) => Number(entry.refId)))];
-		const mapPackIds = [...new Set(visible.filter((entry: any) => entry.type === 'mappack').map((entry: any) => Number(entry.refId)))];
+		claimingEntryIds = new Set([...claimingEntryIds, entryId]);
 
-		const token = await $user.token();
-		const headers: HeadersInit = { Authorization: `Bearer ${token}` };
+		try {
+			const claimPromise = (async () => {
+				const res = await fetch(
+					`${import.meta.env.VITE_API_URL}/battlepass/course/entry/${entryId}/claim`,
+					{
+						method: 'POST',
+						headers: {
+							Authorization: `Bearer ${await $user.token()}`
+						}
+					}
+				);
 
-		const [levelRes, mapPackRes] = await Promise.all([
-			levelIds.length > 0
-				? fetch(`${import.meta.env.VITE_API_URL}/battlepass/levels/progress?ids=${levelIds.join(',')}`, { headers })
-				: Promise.resolve(null),
-			mapPackIds.length > 0
-				? fetch(`${import.meta.env.VITE_API_URL}/battlepass/mappacks/progress?ids=${mapPackIds.join(',')}`, { headers })
-				: Promise.resolve(null)
-		]);
+				if (!res.ok) {
+					let errorMessage = $_('battlepass.claim_failed');
+					const rawBody = await res.text();
 
-		const nextLevelProgressMap: Record<number, number> = {};
-		const nextMapPackProgressMap: Record<number, number> = {};
+					if (rawBody) {
+						try {
+							const parsed = JSON.parse(rawBody);
+							errorMessage = parsed?.message || rawBody;
+						} catch {
+							errorMessage = rawBody;
+						}
+					}
 
-		if (levelRes?.ok) {
-			const data = await levelRes.json();
-			const rows = Array.isArray(data) ? data : (data ? [data] : []);
-			rows.forEach((row: any) => {
-				nextLevelProgressMap[Number(row.battlePassLevelId)] = Number(row.progress || 0);
+					throw new Error(errorMessage);
+				}
+
+				updateEntryClaimed(entryId);
+				await fetchCourse();
+				return true;
+			})();
+
+			toast.promise(claimPromise, {
+				loading: $_('battlepass.claiming'),
+				success: $_('battlepass.reward_claimed'),
+				error: (err: unknown) =>
+					err instanceof Error ? err.message : $_('battlepass.claim_failed')
 			});
-		}
 
-		if (mapPackRes?.ok) {
-			const data = await mapPackRes.json();
-			const rows = Array.isArray(data) ? data : (data ? [data] : []);
-			rows.forEach((row: any) => {
-				nextMapPackProgressMap[Number(row.battlePassMapPackId)] = Number(row.progress || 0);
-			});
+			await claimPromise;
+		} catch (e) {
+			console.error('Failed to claim course reward:', e);
+		} finally {
+			const next = new Set(claimingEntryIds);
+			next.delete(entryId);
+			claimingEntryIds = next;
 		}
-
-		levelProgressMap = nextLevelProgressMap;
-		mapPackProgressMap = nextMapPackProgressMap;
 	}
 
 	async function fetchBatchDetails(payload: any) {
@@ -190,14 +218,13 @@
 	async function fetchCourse() {
 		loading = true;
 		try {
-			const token = $user.loggedIn ? await $user.token() : null;
+			const token = await $user.token();
 			const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
 
 			if (courseInFlight) {
 				const payload = await courseInFlight;
 				courseData = payload;
 				await fetchBatchDetails(payload);
-				await fetchEntryProgress(payload);
 				return;
 			}
 
@@ -214,46 +241,33 @@
 
 			if (payload) {
 				await fetchBatchDetails(payload);
-				await fetchEntryProgress(payload);
 			} else {
 				levelDetails = {};
 				mapPackDetails = {};
-				levelProgressMap = {};
-				mapPackProgressMap = {};
 			}
 		} catch (e) {
 			console.error('Failed to fetch course:', e);
 			courseData = null;
 			levelDetails = {};
 			mapPackDetails = {};
-			levelProgressMap = {};
-			mapPackProgressMap = {};
+			claimingEntryIds = new Set<number>();
 			courseInFlight = null;
 		} finally {
 			loading = false;
 		}
 	}
 
-	async function refreshCourse() {
-		const authKey = $user.loggedIn ? 'auth' : 'guest';
-
-		if (hasFetched && authKey === lastAuthKey) {
-			return;
-		}
-
-		lastAuthKey = authKey;
-		hasFetched = true;
-		await fetchCourse();
-	}
-
 	onMount(async () => {
 		mounted = true;
-		await refreshCourse();
-	});
 
-	$: if (mounted) {
-		void refreshCourse();
-	}
+		user.subscribe(async (x) => {
+			if (!x.checked) {
+				return;
+			}
+
+			await fetchCourse();
+		});
+	});
 </script>
 
 <div class="mb-4 text-center">
@@ -268,14 +282,24 @@
 		<Skeleton class="h-28 w-full" />
 	</div>
 {:else if !courseData}
-	<div class="rounded-lg border p-6 text-center text-muted-foreground">{$_('battlepass.course.no_course')}</div>
+	<div class="rounded-lg border p-6 text-center text-muted-foreground">
+		{$_('battlepass.course.no_course')}
+	</div>
 {:else}
 	<div class="flex flex-col gap-3">
 		{#each visibleEntries as entry, index}
-			<Card.Root class="border-2 {entry.completed ? 'border-green-500/40' : entry.unlocked ? 'border-primary/40' : 'border-border'}">
+			<Card.Root
+				class="border-2 {entry.completed
+					? 'border-green-500/40'
+					: entry.unlocked
+						? 'border-primary/40'
+						: 'border-border'}"
+			>
 				<Card.Content class="flex items-center justify-between p-4">
-					<div class="flex items-center gap-3 min-w-0">
-						<div class="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-sm font-bold">
+					<div class="flex min-w-0 items-center gap-3">
+						<div
+							class="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-sm font-bold"
+						>
 							{index + 1}
 						</div>
 						<div class="min-w-0">
@@ -283,18 +307,18 @@
 								{#if entry.type === 'level'}
 									{getLevelName(entry)}
 									{#if getLevelCreator(entry)}
-										<span class="opacity-60 font-light text-sm"> by {getLevelCreator(entry)}</span>
+										<span class="text-sm font-light opacity-60"> by {getLevelCreator(entry)}</span>
 									{/if}
 								{:else}
 									{getMapPackData(entry)?.name || 'Unknown map pack'}
 								{/if}
 							</div>
 							<div class="text-xs text-muted-foreground">
-                                ID: {entry.refId}
-                                <br>
+								ID: {entry.refId}
+								<br />
 								{#if entry.type === 'mappack'}
 									{getMapPackLevelNames(entry) || '-'}
-									 •
+									•
 								{/if}
 								{$_('battlepass.course.on_clear', { values: { xp: COURSE_CLEAR_XP } })}
 							</div>
@@ -306,22 +330,25 @@
 										style="width: {getEntryProgressPercent(entry)}%"
 									/>
 								</div>
-								<span class="text-xs text-muted-foreground">{Math.round(getEntryProgressPercent(entry))}%</span>
+								<span class="text-xs text-muted-foreground"
+									>{Math.round(getEntryProgressPercent(entry))}%</span
+								>
 							</div>
 						</div>
 					</div>
-					<div class="flex items-center gap-2 shrink-0">
+					<div class="flex shrink-0 items-center gap-2">
 						{#if getCourseReward(entry)}
-							<div class="scale-90 origin-right">
+							<div class="origin-right scale-90">
 								<RewardButton
 									reward={getCourseReward(entry)}
 									isPremiumActivated={true}
 									isPremiumTrack={false}
-									isClaimable={true}
-									isClaimed={false}
-									isClaiming={false}
+									isClaimable={isEntryClaimable(entry)}
+									isClaimed={!!entry.claimed}
+									isClaiming={isEntryClaiming(entry)}
 									editable={false}
-                                    showGiftIcon={false}
+									showGiftIcon={false}
+									onClaimReward={() => claimCourseEntryReward(entry)}
 								/>
 							</div>
 						{/if}
@@ -341,7 +368,11 @@
 			<Card.Root class="border-2 border-border">
 				<Card.Content class="flex items-center justify-between p-4">
 					<div class="flex items-center gap-3">
-						<div class="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-sm font-bold">?</div>
+						<div
+							class="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-sm font-bold"
+						>
+							?
+						</div>
 						<div>
 							<div class="font-semibold">?</div>
 							<div class="text-xs text-muted-foreground">{$_('battlepass.locked')}</div>
