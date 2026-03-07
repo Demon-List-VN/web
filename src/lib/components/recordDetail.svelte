@@ -116,7 +116,6 @@
 			tmp.deathCount = Array(100).fill(0);
 		}
 
-		//@ts-expect-error
 		record = tmp;
 	}
 	async function getEstimatedQueueNo(
