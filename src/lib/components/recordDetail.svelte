@@ -99,7 +99,7 @@
 			return;
 		}
 		record = null;
-		let tmp: any = {
+		const tmp: any = {
 			data: null,
 			deathCount: null
 		};
@@ -116,7 +116,7 @@
 			tmp.deathCount = Array(100).fill(0);
 		}
 
-		//@ts-ignore
+		//@ts-expect-error
 		record = tmp;
 	}
 	async function getEstimatedQueueNo(
@@ -922,23 +922,6 @@
 
 		.detail-label {
 			min-width: auto;
-		}
-	}
-
-	.comment-text {
-		font-size: 0.875rem;
-		line-height: 1.5;
-		padding: 0.75rem;
-		background: rgba(0, 0, 0, 0.02);
-		border-radius: 0.375rem;
-		border-left: 3px solid rgba(255, 255, 255, 0.5);
-		margin: 0;
-		color: rgba(255, 255, 255, 0.9);
-
-		:global(.dark) & {
-			background: rgba(255, 255, 255, 0.02);
-			border-left-color: rgba(255, 255, 255, 0.5);
-			color: rgba(255, 255, 255, 0.9);
 		}
 	}
 

@@ -30,7 +30,7 @@
 
 	$: clanId = $page.url.searchParams.get('clanId');
 
-	let newPost = {
+	const newPost = {
 		title: '',
 		content: '',
 		type: 'discussion',

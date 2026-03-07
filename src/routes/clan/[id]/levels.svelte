@@ -9,7 +9,7 @@
 	
 	export let clan: any;
 
-	let filter = {
+	const filter = {
 		dl: {
 			from: 0,
 			to: 49
@@ -23,7 +23,7 @@
 			to: 49
 		}
 	};
-	let levels: {
+	const levels: {
 		dl: any[];
 		fl: any[];
 		pl: any[];
@@ -37,7 +37,7 @@
 
 	async function fetchLevels() {
 		fetch(
-			// @ts-ignore
+			// @ts-expect-error
 			`${import.meta.env.VITE_API_URL}/clans/${clan.id}/list/${list}?${new URLSearchParams(filter[list]).toString()}`
 		)
 			.then((res) => res.json())
@@ -67,7 +67,7 @@
 					value: 'string'
 				}}
 				onSelectedChange={(e) => {
-					// @ts-ignore
+					// @ts-expect-error
 					selectedList = e?.value;
 				}}
 			>

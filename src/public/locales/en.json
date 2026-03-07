@@ -692,7 +692,7 @@
     "sort": {
       "newest": "Newest",
       "best": "Best",
-      "recommended": "For You"
+      "recent": "Recent Activity"
     },
     "type": {
       "all": "All",

@@ -136,33 +136,33 @@
 		if (event.created_at) {
 			event.created_at = new Date(event.created_at).toISOString();
 		} else {
-			// @ts-ignore
+			// @ts-expect-error
 			delete event.created_at;
 		}
 
 		if (event.start) {
 			event.start = new Date(event.start).toISOString();
 		} else {
-			// @ts-ignore
+			// @ts-expect-error
 			delete event.start;
 		}
 
 		if (event.end) {
 			event.end = new Date(event.end).toISOString();
 		} else {
-			// @ts-ignore
+			// @ts-expect-error
 			delete event.end;
 		}
 
 		if (event.freeze) {
 			event.freeze = new Date(event.freeze).toISOString();
 		} else {
-			// @ts-ignore
+			// @ts-expect-error
 			delete event.freeze;
 		}
 
 		if(!event.id) {
-			// @ts-ignore
+			// @ts-expect-error
 			delete event.id
 		}
 	}

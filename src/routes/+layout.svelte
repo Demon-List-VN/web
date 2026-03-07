@@ -594,9 +594,6 @@
 				color: var(--textColor1);
 			}
 
-			.logo {
-				margin-right: 15px;
-			}
 		}
 
 		.left {
@@ -617,10 +614,6 @@
 			padding-inline: 15px;
 			.right {
 				.links {
-					display: none;
-				}
-
-				#logo-name {
 					display: none;
 				}
 			}

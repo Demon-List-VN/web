@@ -16,13 +16,13 @@
 	}
 
 	function monthOffset(year: number, month: number) {
-		let x = new Date(year, month, 1).getDay();
+		const x = new Date(year, month, 1).getDay();
 		return (x - 1 + 7) % 7;
 	}
 
 	function dayOfYear(year: number, month: number, date: number) {
-		let x = new Date(year, 0, 1).getTime();
-		let y = new Date(year, month, date).getTime();
+		const x = new Date(year, 0, 1).getTime();
+		const y = new Date(year, month, date).getTime();
 
 		return Math.floor((y - x) / 86400000);
 	}
@@ -63,7 +63,7 @@
 					value: new Date().getFullYear()
 				}}
 				onSelectedChange={(e) => {
-					// @ts-ignore
+					// @ts-expect-error
 					year = e.value;
 					fetchData();
 				}}

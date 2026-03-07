@@ -25,7 +25,7 @@
 	let loadingList = false;
 	let convictions: ConvictionData[] = [];
 
-	let form = {
+	const form = {
 		content: '',
 		creditReduce: 0,
 		createdAt: ''

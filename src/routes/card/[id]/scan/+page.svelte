@@ -18,7 +18,7 @@
 	export let data: PageData;
 
 	let isBannerFailedToLoad = false;
-	let exp = data.owner ? data.players.exp + data.players.extraExp : 0;
+	const exp = data.owner ? data.players.exp + data.players.extraExp : 0;
 	let editMode = false;
 	let previewMode = false;
 	let editedContent = data.content || '';

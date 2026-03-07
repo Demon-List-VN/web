@@ -25,7 +25,7 @@
 	// Check if user is a supporter
 	$: isSupporter = $user.loggedIn && isActive($user.data?.supporterUntil);
 
-	let selectedSubmission: any = null;
+	const selectedSubmission: any = null;
 	let recordDetailOpen = false;
 
 	let dashboardBg: string = '';

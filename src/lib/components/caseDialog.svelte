@@ -100,7 +100,7 @@
 		baseSeq.push(resultItem);
 		baseSeq.push(...pickRandom(randomizedEntries, 4).map((e: any) => e.item));
 
-		let displayEntries: any[] = [];
+		const displayEntries: any[] = [];
 
 		for (let i = 0; i < copies; i++) {
 			displayEntries.push(...baseSeq);

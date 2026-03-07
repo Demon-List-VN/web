@@ -282,9 +282,9 @@
 		}
 
 		for (const i in level) {
-			// @ts-ignore
+			// @ts-expect-error
 			if (level[i] === '') {
-				// @ts-ignore
+				// @ts-expect-error
 				level[i] = null;
 			}
 		}
@@ -841,14 +841,8 @@
 		}
 	}
 
-	.mb-2 {
-		margin-bottom: 8px;
-	}
 	.mb-3 {
 		margin-bottom: 12px;
-	}
-	.mt-2 {
-		margin-top: 8px;
 	}
 	.mt-8 {
 		margin-top: 32px;

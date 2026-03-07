@@ -13,7 +13,7 @@ class Settings {
 
     set(key: string, val: string) {
         localStorage.setItem('settings.'+ key, val);
-        // @ts-ignore
+        // @ts-expect-error
         settingsValue[key] = val
         this.value.set(settingsValue)
     }

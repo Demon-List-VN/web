@@ -23,7 +23,7 @@
 		end: string;
 	}
 
-	let defaultFilter: Filter = {
+	const defaultFilter: Filter = {
 		search: '',
 		eventType: 'all',
 		contestType: 'all',

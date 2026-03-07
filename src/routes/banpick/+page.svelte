@@ -11,12 +11,12 @@
 
 	export let data: PageData;
 
-	let banned = Array(data.levels.length).fill(false);
-	let order = Array(data.levels.length).fill(0);
+	const banned = Array(data.levels.length).fill(false);
+	const order = Array(data.levels.length).fill(0);
 	let phase = 0;
-	let levels: any[] = [null, null, null];
-	let logs: any[] = Array(data.levels.length).fill(null);
-	let pickedBy: any[] = [null, null, null];
+	const levels: any[] = [null, null, null];
+	const logs: any[] = Array(data.levels.length).fill(null);
+	const pickedBy: any[] = [null, null, null];
 	let turn = 0;
 	let coinFlipped = false;
 	let isCoinFlipping = false;

@@ -140,7 +140,7 @@
 	<div class="custom-image-card">
 		{#if customImageUrl}
 			<div class="image-container">
-				<img src={customImageUrl} alt="Custom player image" />
+				<img src={customImageUrl} alt="Custom player banner" />
 				{#if isOwner && !saving}
 					<div class="image-overlay">
 						<div class="overlay-buttons">

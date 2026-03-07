@@ -94,16 +94,6 @@
 		background-color: rgba(34, 197, 94, 0.1);
 	}
 
-	.content-cell {
-		max-width: 400px;
-		word-break: break-word;
-	}
-
-	.content-cell a {
-		color: var(--primary);
-		text-decoration: underline;
-	}
-
 	.status-badge {
 		padding: 4px 12px;
 		border-radius: 12px;

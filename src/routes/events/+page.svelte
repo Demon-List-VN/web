@@ -49,7 +49,7 @@
 	};
 
 	async function fetchData() {
-		// @ts-ignore
+		// @ts-expect-error
 		const query = new URLSearchParams({ ...filter, from: 0, to: 49 }).toString();
 		const res = await (await fetch(`${import.meta.env.VITE_API_URL}/events?${query}`)).json();
 

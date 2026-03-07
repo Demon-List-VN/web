@@ -4,7 +4,7 @@ export async function load({ params, url, fetch }) {
 	const { id } = params;
 
 	if (url.searchParams.get('list') == 'other') {
-		let gdbrowserLevel: any = await (await fetch(`${import.meta.env.VITE_API_URL}/levels/${id}?fromGD=1`)).json();
+		const gdbrowserLevel: any = await (await fetch(`${import.meta.env.VITE_API_URL}/levels/${id}?fromGD=1`)).json();
 
 		if (!('demonList' in gdbrowserLevel)) {
 			return {
@@ -16,7 +16,7 @@ export async function load({ params, url, fetch }) {
 			};
 		}
 
-		let pointercrateLevel: any = await (
+		const pointercrateLevel: any = await (
 			await fetch(`https://pointercrate.com/api/v2/demons/listed?name=${gdbrowserLevel.name}`)
 		).json();
 

@@ -4,7 +4,7 @@ export type CommunityCacheEntry = {
 	offset: number;
 	hasMore: boolean;
 	activeType: string | null;
-	sortMode: 'newest' | 'best' | 'recommended';
+	sortMode: 'newest' | 'best' | 'recent';
 	searchQuery: string;
 	scrollY: number;
 };

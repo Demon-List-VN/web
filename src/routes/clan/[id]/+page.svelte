@@ -37,19 +37,19 @@
 	import { _ } from 'svelte-i18n';
 
 	export let data: PageData;
-	let editedData = structuredClone(data);
+	const editedData = structuredClone(data);
 	let transferUID = '';
 	let currentTab: string = isActive(data.boostedUntil) && data.homeContent ? 'home' : 'members';
 	let members: any[] = [];
 	let records: any[] = [];
 	let invitations: any[] = [];
-	let membersFilter: any = {
+	const membersFilter: any = {
 		start: 0,
 		end: 49,
 		sortBy: 'name',
 		ascending: true
 	};
-	let recordsFilter: any = {
+	const recordsFilter: any = {
 		start: 0,
 		end: 49,
 		sortBy: 'timestamp',
@@ -225,7 +225,7 @@
 	}
 
 	async function getImage(e: any) {
-		let image = e.target.files[0];
+		const image = e.target.files[0];
 		const options = {
 			maxSizeMB: 0.5,
 			maxWidthOrHeight: 480,
@@ -628,7 +628,7 @@
 						{#each records as item, index}
 							<Table.Row
 								on:click={(e) => {
-									// @ts-ignore
+									// @ts-expect-error
 									if (e.target.nodeName != 'TD') {
 										return;
 									}

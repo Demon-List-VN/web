@@ -163,12 +163,6 @@
 		align-items: center;
 	}
 
-	.folders-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-		gap: 16px;
-	}
-
 	.carouselWrapper {
 		max-width: 100%;
 	}

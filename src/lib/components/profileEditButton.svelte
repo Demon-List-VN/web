@@ -45,7 +45,7 @@
 			return;
 		}
 
-		let image = e.target.files[0];
+		const image = e.target.files[0];
 
 		if (image.name.endsWith('.gif')) {
 			const handleUpload = async () => {
@@ -104,7 +104,7 @@
 			return;
 		}
 
-		let image = e.target.files[0];
+		const image = e.target.files[0];
 
 		if (image.name.endsWith('.gif')) {
 			const handleUpload = async () => {

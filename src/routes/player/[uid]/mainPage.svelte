@@ -29,7 +29,7 @@
 	let list: 'dl' | 'fl' | 'pl' | 'cl' | '' = '';
 	let recordDetailOpened = false;
 	let selectedRecord: any = null;
-	let filter = {
+	const filter = {
 		sortBy: 'pt',
 		ascending: false
 	};
@@ -183,7 +183,6 @@
 						</a>
 					{/if}
 					{#if data.player.discord}
-						<!-- svelte-ignore a11y-click-events-have-key-events -->
 						<button
 							class="clickable"
 							on:click={() => {
@@ -271,7 +270,7 @@
 							value: 'pt'
 						}}
 						onSelectedChange={(e) => {
-							// @ts-ignore
+							// @ts-expect-error
 							filter.sortBy = e.value;
 						}}
 					>
@@ -312,7 +311,7 @@
 					{#each data.records[list] as record}
 						<Table.Row
 							on:click={(e) => {
-								// @ts-ignore
+								// @ts-expect-error
 								if (e.target.nodeName == 'A') {
 									return;
 								}

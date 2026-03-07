@@ -94,7 +94,7 @@
 
 							return player[
 								'total' +
-									// @ts-ignore
+									// @ts-expect-error
 									$page.params.list.toUpperCase() +
 									'pt'
 							];
@@ -149,15 +149,6 @@
 	.playerNameWrapper {
 		display: flex;
 		gap: 10px;
-
-		.rank {
-			color: white;
-			font-size: 10px;
-			width: fit-content;
-			padding-inline: 5px;
-			border-radius: 5px;
-			font-weight: 600;
-		}
 	}
 
 	.tableWrapper {

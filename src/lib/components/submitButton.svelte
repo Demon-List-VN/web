@@ -32,7 +32,7 @@
 		comment: ''
 	};
 
-	let submission: any = {
+	const submission: any = {
 		levelid: NaN,
 		userid: $user.data.uid,
 		progress: NaN,
@@ -335,7 +335,7 @@
 		class={buttonVariants({ variant: 'outline' })}
 		on:click={() => {
 			for (const i in submission) {
-				// @ts-ignore
+				// @ts-expect-error
 				submission[i] = defaultValue[i];
 				step = 0;
 				apiLevel = null;

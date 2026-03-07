@@ -16,7 +16,7 @@
   export let data: PageData;
   export let primaryColor: string = '#8b5cf6';
 
-  let loading = false;
+  const loading = false;
   let mounted = false;
 
   let localMapPackWrapper: any = null;

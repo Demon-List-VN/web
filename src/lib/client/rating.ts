@@ -31,7 +31,7 @@ export function calcRating(ratings: Rating[], newRating: number | null = null) {
 
 	for (let i = 0; i < data.length; i++) {
 		let tmp = data[i].rating;
-		let top = i + 1;
+		const top = i + 1;
 
 		if (top == 1) {
 			tmp *= 5 / 10;

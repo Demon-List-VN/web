@@ -64,8 +64,8 @@
 
 	// Record detail dialog state
 	let recordDialogOpen = false;
-	let recordDetailUid = '';
-	let recordDetailLevelID = 0;
+	const recordDetailUid = '';
+	const recordDetailLevelID = 0;
 
 	// @ mention state
 	let showMentionDropdown = false;

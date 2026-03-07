@@ -1340,10 +1340,10 @@
 									<div class="flaggedCats">
 										{#if flagged != null}
 											{#each flagged as cat}
-												<span
+												<button
 													class="flagBadge"
 													on:click={() => openModerationDetail(post)}
-													title="View moderation details">{cat}</span
+													title="View moderation details">{cat}</button
 												>
 											{/each}
 										{:else}
@@ -1478,10 +1478,10 @@
 									<div class="flaggedCats">
 										{#if flagged != null}
 											{#each flagged as cat}
-												<span
+												<button
 													class="flagBadge"
 													on:click={() => openCommentModerationDetail(comment)}
-													title="View moderation details">{cat}</span
+													title="View moderation details">{cat}</button
 												>
 											{/each}
 										{:else}

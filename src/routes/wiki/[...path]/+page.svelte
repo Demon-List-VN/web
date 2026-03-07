@@ -16,19 +16,19 @@
 	$: folderTitle = isFolder ? getFolderTitle(detail.path) : '';
 
 	function getBreadcrumbs(data: any) {
-		let path = data.path;
+		const path = data.path;
 
 		if (!path) {
 			return [];
 		}
 
-		let parts: string[] = path.split('/');
+		const parts: string[] = path.split('/');
 
 		if (parts.at(-1)?.endsWith('.md')) {
 			parts[parts.length - 1] = parts[parts.length - 1].replace('.md', '');
 		}
 
-		let res = [
+		const res = [
 			{
 				title: 'Wiki',
 				link: `/wiki/${locale}`

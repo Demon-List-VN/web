@@ -82,7 +82,7 @@
 					players: res[0].players
 				};
 
-				for (let i of res[1]) {
+				for (const i of res[1]) {
 					result.gdBrowserLevels.push({
 						id: i.id,
 						name: i.name,

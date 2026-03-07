@@ -8,7 +8,7 @@
 
 	export let topBuyers: any[];
 
-	let isBannerFailedToLoad: boolean[] = [];
+	const isBannerFailedToLoad: boolean[] = [];
 </script>
 
 {#if topBuyers && topBuyers.length > 0}

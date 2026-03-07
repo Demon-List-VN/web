@@ -6,13 +6,14 @@ interface ExpLevel {
 }
 
 export function getExpLevel(exp: number) {
-    let res: ExpLevel = {
+    const res: ExpLevel = {
         level: 0,
         lowerBound: 0,
         upperBound: 0,
         progress: 0
     }
 
+    // eslint-disable-next-line no-constant-condition
     while (true) {
         if (res.level == 0) {
             res.upperBound = 50

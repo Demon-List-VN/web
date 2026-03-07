@@ -37,7 +37,7 @@
 	let seasons: any[] = [];
 	let selectedSeason: any = null;
 	let levels: any[] = [];
-	let mapPacks: any[] = [];
+	const mapPacks: any[] = [];
 	let battlePassMapPacks: any[] = [];
 	let rewards: any[] = [];
 	let missions: any[] = [];
@@ -47,7 +47,7 @@
 	// Dialog states
 	let showSeasonDialog = false;
 	let showLevelDialog = false;
-	let showMapPackDialog = false;
+	const showMapPackDialog = false;
 	let showRewardDialog = false;
 	let showMissionDialog = false;
 	let showLinkMapPackDialog = false;

@@ -7,54 +7,27 @@
 	import Ads from '$lib/components/ads.svelte';
 	import { _, locale } from 'svelte-i18n';
 	import * as Alert from '$lib/components/ui/alert';
-	import { X, Newspaper, History, ArrowRight, Users } from 'lucide-svelte';
+	import { X, ArrowRight, Users } from 'lucide-svelte';
 	import { goto } from '$app/navigation';
 	import { user } from '$lib/client';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import { browser } from '$app/environment';
 	import CommunityPostCard from '$lib/components/communityPostCard.svelte';
 
-	let visible = false;
 	let showDiscordAlert = false;
-	let dashboardEnabled = false;
-	let userChecked = false;
 	let activeTab: 'dl' | 'fl' | 'pl' | 'cl' = 'dl';
-	let recent: any = {
+	const recent: any = {
 		dl: null,
 		fl: null,
 		pl: null,
 		cl: null
 	};
 	let events: any = null;
-	let newsArticles: any[] | null = null;
-	let changelogArticles: any[] | null = null;
 	let showDashboardAlert = false;
 	let communityPosts: any[] | null = null;
 	let eventCarouselApi: any = null;
 	let selectedEventIndex = 0;
 	let cleanupEventCarouselListeners = () => {};
-
-	function getTitle(item: any, loc: string) {
-		const metadata =
-			item?.metadata?.[loc] || (item?.metadata ? Object.values(item.metadata)[0] : null);
-		if (metadata?.title) return metadata.title;
-		const pathParts = item.path.split('/');
-		const name = pathParts[pathParts.length - 1].replace('.md', '');
-		return name
-			.split('-')
-			.map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
-			.join(' ');
-	}
-
-	function getDescription(item: any, loc: string) {
-		const metadata =
-			item?.metadata?.[loc] || (item?.metadata ? Object.values(item.metadata)[0] : null);
-		return metadata?.description || '';
-	}
-
-	function formatDate(dateString: string) {
-		return new Date(dateString).toLocaleDateString($locale || 'vi-VN');
-	}
 
 	function dismissDashboardAlert() {
 		showDashboardAlert = false;
@@ -80,19 +53,6 @@
 
 	async function getEvents() {
 		return await (await fetch(`${import.meta.env.VITE_API_URL}/events/ongoing`)).json();
-	}
-
-	async function getWikiFiles(path: string, limit: number = 5) {
-		const loc = $locale || 'vi';
-		const query = new URLSearchParams({
-			locale: loc,
-			sortBy: 'created_at',
-			ascending: 'false',
-			limit: String(limit)
-		});
-		return await (
-			await fetch(`${import.meta.env.VITE_API_URL}/wiki/files/${path}?${query.toString()}`)
-		).json();
 	}
 
 	function dismissDiscordAlert() {
@@ -128,8 +88,6 @@
 	});
 
 	onMount(() => {
-		visible = true;
-
 		if (localStorage.getItem('dashboardAlertDismissed') === null) {
 			localStorage.setItem('dashboardAlertDismissed', 'false');
 		}
@@ -144,11 +102,9 @@
 
 		const dashboardAlertDismissed = localStorage.getItem('dashboardAlertDismissed') === 'true';
 		showDiscordAlert = localStorage.getItem('discordAlertDismissed') == 'false';
-		dashboardEnabled = localStorage.getItem('settings.dashboardEnabled') === 'true';
 
 		user.subscribe((u) => {
 			if (!u.loggedIn) return;
-			userChecked = true;
 			if (!dashboardAlertDismissed && isActive(u.data.supporterUntil)) {
 				showDashboardAlert = true;
 			} else {
@@ -161,12 +117,6 @@
 		fetchLevels('pl').then((data) => (recent.pl = data));
 		fetchLevels('cl').then((data) => (recent.cl = data));
 		getEvents().then((data) => (events = data));
-		getWikiFiles('news', 5).then((data) => {
-			newsArticles = Array.isArray(data) ? data : data?.items || [];
-		});
-		getWikiFiles('changelogs', 5).then((data) => {
-			changelogArticles = Array.isArray(data) ? data : data?.items || [];
-		});
 
 		// Fetch community posts
 		fetch(
@@ -542,139 +492,6 @@
 		}
 	}
 
-	/* Panels */
-	.panelsGrid {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 20px;
-		padding-inline: 50px;
-		margin-top: 20px;
-	}
-
-	.panel {
-		border: 1px solid hsl(var(--border));
-		border-radius: 12px;
-		background: hsl(var(--card));
-		overflow: hidden;
-	}
-
-	.panelHeader {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 16px 20px;
-		border-bottom: 1px solid hsl(var(--border));
-	}
-
-	.panelTitleRow {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-
-		h4 {
-			margin: 0;
-			font-weight: 600;
-			font-size: 16px;
-		}
-	}
-
-	.panelContent {
-		display: flex;
-		flex-direction: column;
-	}
-
-	.listItem {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 12px;
-		padding: 14px 20px;
-		border-bottom: 1px solid hsl(var(--border) / 0.5);
-		transition: background 0.15s ease;
-		text-decoration: none;
-		color: inherit;
-
-		&:last-child {
-			border-bottom: none;
-		}
-
-		&:hover {
-			background: hsl(var(--muted) / 0.5);
-		}
-	}
-
-	.listItemContent {
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-		min-width: 0;
-		flex: 1;
-	}
-
-	.listItemTitle {
-		font-weight: 500;
-		font-size: 14px;
-		line-height: 1.4;
-		display: -webkit-box;
-		-webkit-line-clamp: 1;
-		line-clamp: 1;
-		-webkit-box-orient: vertical;
-		overflow: hidden;
-	}
-
-	.listItemDesc {
-		font-size: 12px;
-		color: hsl(var(--muted-foreground));
-		line-height: 1.4;
-		display: -webkit-box;
-		-webkit-line-clamp: 1;
-		line-clamp: 1;
-		-webkit-box-orient: vertical;
-		overflow: hidden;
-	}
-
-	.listItemDate {
-		font-size: 12px;
-		color: hsl(var(--muted-foreground));
-		white-space: nowrap;
-		padding-top: 2px;
-	}
-
-	.listItemSkeleton {
-		display: flex;
-		justify-content: space-between;
-		padding: 14px 20px;
-		border-bottom: 1px solid hsl(var(--border) / 0.5);
-
-		&:last-child {
-			border-bottom: none;
-		}
-	}
-
-	.skeletonLine {
-		height: 16px;
-		border-radius: 4px;
-		background: hsl(var(--muted));
-		animation: pulse 1.5s ease-in-out infinite;
-	}
-
-	@keyframes pulse {
-		0%,
-		100% {
-			opacity: 1;
-		}
-		50% {
-			opacity: 0.5;
-		}
-	}
-
-	.noArticles {
-		text-align: center;
-		padding: 40px 0;
-		color: hsl(var(--muted-foreground));
-		font-size: 14px;
-	}
-
 	/* Community Hub */
 	.communityGrid {
 		display: grid;
@@ -702,11 +519,6 @@
 		}
 
 		.viewAllLink {
-			padding-inline: 16px;
-		}
-
-		.panelsGrid {
-			grid-template-columns: 1fr;
 			padding-inline: 16px;
 		}
 

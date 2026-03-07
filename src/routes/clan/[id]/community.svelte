@@ -15,7 +15,7 @@
 		BookOpen,
 		Search,
 		Star,
-		Sparkles,
+		Activity,
 		Tag,
 		X,
 		Users
@@ -29,7 +29,7 @@
 	let total = 0;
 	let offset = 0;
 	let activeType: string | null = null;
-	let sortMode: 'newest' | 'best' | 'recommended' = 'recommended';
+	let sortMode: 'newest' | 'best' | 'recent' = 'recent';
 	let loading = false;
 	let hasMore = true;
 	let loadMoreObserver: IntersectionObserver;
@@ -77,45 +77,28 @@
 			const headers: Record<string, string> = {};
 			if (token) headers['Authorization'] = `Bearer ${token}`;
 
-			let res: Response;
+			const params = new URLSearchParams({
+				limit: String(PAGE_SIZE),
+				offset: String(offset),
+				sortBy: sortMode === 'best' ? 'likesCount' : 'createdAt',
+				ascending: 'false'
+			});
 
-			if (sortMode === 'recommended') {
-				const params = new URLSearchParams({
-					limit: String(PAGE_SIZE),
-					offset: String(offset)
-				});
-
-				if (activeType) {
-					params.set('type', activeType);
-				}
-
-				res = await fetch(`${API_PREFIX}/posts/recommended?${params}`, {
-					headers
-				});
-			} else {
-				const params = new URLSearchParams({
-					limit: String(PAGE_SIZE),
-					offset: String(offset),
-					sortBy: sortMode === 'best' ? 'likesCount' : 'createdAt',
-					ascending: 'false'
-				});
-
-				if (activeType) {
-					params.set('type', activeType);
-				}
-
-				if (searchQuery.trim()) {
-					params.set('search', searchQuery.trim());
-				}
-
-				if (activeTagId) {
-					params.set('tagId', String(activeTagId));
-				}
-
-				res = await fetch(`${API_PREFIX}/posts?${params}`, {
-					headers
-				});
+			if (activeType) {
+				params.set('type', activeType);
 			}
+
+			if (searchQuery.trim()) {
+				params.set('search', searchQuery.trim());
+			}
+
+			if (activeTagId) {
+				params.set('tagId', String(activeTagId));
+			}
+
+			const res = await fetch(`${API_PREFIX}/posts?${params}`, {
+				headers
+			});
 
 			const json = await res.json();
 
@@ -160,9 +143,6 @@
 	}
 
 	function handleSearch() {
-		if (sortMode === 'recommended' && searchQuery.trim()) {
-			sortMode = 'newest';
-		}
 		resetAndFetch();
 	}
 
@@ -223,16 +203,13 @@
 		resetAndFetch();
 	}
 
-	function switchSort(mode: 'newest' | 'best' | 'recommended') {
+	function switchSort(mode: 'newest' | 'best' | 'recent') {
 		sortMode = mode;
 		resetAndFetch();
 	}
 
 	function switchTag(tagId: number | null) {
 		activeTagId = tagId;
-		if (activeTagId && sortMode === 'recommended') {
-			sortMode = 'newest';
-		}
 		resetAndFetch();
 	}
 
@@ -319,12 +296,12 @@
 
 			<div class="sortFilters">
 				<button
-					class="sortBtn recommended"
-					class:active={sortMode === 'recommended'}
-					on:click={() => switchSort('recommended')}
+					class="sortBtn"
+					class:active={sortMode === 'recent'}
+					on:click={() => switchSort('recent')}
 				>
-					<Sparkles class="h-3.5 w-3.5" />
-					{$_('community.sort.recommended')}
+					<Activity class="h-3.5 w-3.5" />
+					{$_('community.sort.recent')}
 				</button>
 				<button class="sortBtn" class:active={sortMode === 'newest'} on:click={() => switchSort('newest')}>
 					{$_('community.sort.newest')}
@@ -566,10 +543,6 @@
 			color: hsl(var(--foreground));
 			box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 		}
-
-		&.recommended.active {
-			color: hsl(var(--primary));
-		}
 	}
 
 	.tagFilters {
@@ -689,11 +662,6 @@
 	:global(.searchButton) {
 		flex-shrink: 0;
 		white-space: nowrap;
-	}
-
-	.searchIcon {
-		color: hsl(var(--muted-foreground));
-		flex-shrink: 0;
 	}
 
 	.searchInput {

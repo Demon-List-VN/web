@@ -146,10 +146,6 @@
 		}
 	}
 
-	.exp-text {
-		font-size: 0.85rem;
-	}
-
 	.ratings-grid {
 		display: grid;
 		grid-template-columns: repeat(5, 1fr);

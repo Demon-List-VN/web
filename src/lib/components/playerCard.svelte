@@ -10,7 +10,7 @@
 
 	export let player: any;
 
-	let exp = player.exp + player.extraExp;
+	const exp = player.exp + player.extraExp;
 	let isBannerFailedToLoad = false;
 </script>
 

@@ -10,7 +10,7 @@
 	import { _ } from 'svelte-i18n';
 
 	let events: any = null;
-	let recent: any = {
+	const recent: any = {
 		dl: null,
 		fl: null,
 		pl: null

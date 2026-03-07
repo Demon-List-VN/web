@@ -12,16 +12,13 @@
 		<div class="c_flexCol">
 			<p class="c_name">{staffName}</p>
 			<div class="c_flexRow">
-				<!-- svelte-ignore empty-block -->
-				{#if staffYT == "#!" || staffYT == ""}{:else}
+				{#if staffYT !== "#!" && staffYT !== ""}
 					<a href={staffYT} target="_blank"><img class="c_icon" src="../youtube.svg" alt="youtube" /></a>
 				{/if}
-				<!-- svelte-ignore empty-block -->
-				{#if staffFB == "#!" || staffFB == ""}{:else}
+				{#if staffFB !== "#!" && staffFB !== ""}
 					<a href={staffFB} target="_blank"><img class="c_icon" src="../facebook.svg" alt="facebook" /></a>
 				{/if}
-				<!-- svelte-ignore empty-block -->
-				{#if staffGH == "#!" || staffGH == ""}{:else}
+				{#if staffGH !== "#!" && staffGH !== ""}
 					<a href={staffGH} target="_blank"><img class="c_icon" src="../github.svg" alt="github" /></a>
 				{/if}
 			</div>

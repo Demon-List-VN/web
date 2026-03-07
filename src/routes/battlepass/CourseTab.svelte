@@ -11,8 +11,8 @@
 
 	let loading = true;
 	let mounted = false;
-	let hasFetched = false;
-	let lastAuthKey = '';
+	const hasFetched = false;
+	const lastAuthKey = '';
 	let courseData: any = null;
 	let courseInFlight: Promise<any> | null = null;
 	let levelDetails: Record<number, any> = {};

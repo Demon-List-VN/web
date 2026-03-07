@@ -193,7 +193,7 @@
 				{#each data.records as record}
 					<Table.Row
 						on:click={(e) => {
-							// @ts-ignore
+							// @ts-expect-error
 							if (e.target.nodeName != 'TD') {
 								return;
 							}

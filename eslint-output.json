@@ -1,0 +1,18 @@
+
+Oops! Something went wrong! :(
+
+ESLint: 8.57.1
+
+TypeError: Cannot read properties of undefined (reading 'type')
+Occurred while linting C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\battlepass\MapPacksTab.svelte:1
+Rule: "@typescript-eslint/no-unused-vars"
+    at getDefinedMessageData (C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\node_modules\@typescript-eslint\eslint-plugin\dist\rules\no-unused-vars.js:572:103)
+    at Program:exit (C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\node_modules\@typescript-eslint\eslint-plugin\dist\rules\no-unused-vars.js:834:35)
+    at ruleErrorHandler (C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\node_modules\eslint\lib\linter\linter.js:1076:28)
+    at C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\node_modules\eslint\lib\linter\safe-emitter.js:45:58
+    at Array.forEach (<anonymous>)
+    at Object.emit (C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\node_modules\eslint\lib\linter\safe-emitter.js:45:38)
+    at NodeEventGenerator.applySelector (C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\node_modules\eslint\lib\linter\node-event-generator.js:297:26)
+    at NodeEventGenerator.applySelectors (C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\node_modules\eslint\lib\linter\node-event-generator.js:326:22)
+    at NodeEventGenerator.leaveNode (C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\node_modules\eslint\lib\linter\node-event-generator.js:349:14)
+    at CodePathAnalyzer.leaveNode (C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\node_modules\eslint\lib\linter\code-path-analysis\code-path-analyzer.js:824:23)

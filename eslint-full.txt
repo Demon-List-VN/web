@@ -1,0 +1,980 @@
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\client\cart.ts
+  45:5   error  'data' is never reassigned. Use 'const' instead  prefer-const
+  48:13  error  'res' is never reassigned. Use 'const' instead   prefer-const
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\client\getExpLevel.ts
+   9:9   error  'res' is never reassigned. Use 'const' instead  prefer-const
+  16:12  error  Unexpected constant condition                   no-constant-condition
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\client\getTitle.ts
+  1:48  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\client\rating.ts
+  34:7  error  'top' is never reassigned. Use 'const' instead  prefer-const
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\client\settings.ts
+  16:9  error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\client\storage.ts
+  1:50  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\client\user.ts
+   10:8   error  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+   20:8   error  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+   49:51  error  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+   91:5   error  'userData' is never reassigned. Use 'const' instead  prefer-const
+  146:17  error  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  166:20  error  Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\RewardButton.svelte
+  11:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\RewardItemDetails.svelte
+  5:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\Staff.svelte
+  15:24  error  svelte-ignore comment is used, but not warned  svelte/no-unused-svelte-ignore
+  16:5   error  Empty block(empty-block)                       svelte/valid-compile
+  19:24  error  svelte-ignore comment is used, but not warned  svelte/no-unused-svelte-ignore
+  20:5   error  Empty block(empty-block)                       svelte/valid-compile
+  23:24  error  svelte-ignore comment is used, but not warned  svelte/no-unused-svelte-ignore
+  24:5   error  Empty block(empty-block)                       svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\TierRewardTrack.svelte
+   6:22  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   9:31  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  11:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  16:52  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  17:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  20:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  21:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  24:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  25:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  32:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  36:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  43:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  47:45  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\ads.svelte
+  19:4  error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\caseDialog.svelte
+   11:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   12:24  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   19:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   21:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   34:27  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   35:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   62:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   73:59  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   78:12  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   97:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   99:61  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  101:60  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  103:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\communityPostCard.svelte
+   11:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   50:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  105:58  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\community\LevelPicker.svelte
+   8:51  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  11:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  33:30  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\community\MentionDropdown.svelte
+   6:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   9:51  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  11:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\community\PostDetail.svelte
+   49:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   50:30  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   55:12  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   56:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   73:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   80:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   96:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  104:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  110:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  293:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  348:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  418:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  447:58  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  468:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  555:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  595:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  644:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  665:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  690:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  699:52  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  700:51  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  722:58  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\community\ReportDialog.svelte
+  52:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\dashboard.svelte
+   20:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   28:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   34:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  188:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\folderCard.svelte
+  8:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\heatmap.svelte
+  45:16  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  66:6   error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\levelCard.svelte
+  26:20  error  Unexpected any. Specify a different type                           @typescript-eslint/no-explicit-any
+  31:53  error  Unexpected any. Specify a different type                           @typescript-eslint/no-explicit-any
+  62:8   error  A11y: <a> element should have child content(a11y-missing-content)  svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\notificationButton.svelte
+  10:21  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  12:27  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  42:11  error  Empty block statement                                                  no-empty
+  69:5   error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\paymentButton.svelte
+  18:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  45:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\playerCard.svelte
+  11:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\playerLink.svelte
+   12:21  error  Unexpected any. Specify a different type                           @typescript-eslint/no-explicit-any
+  132:3   error  Unused CSS selector ".progressBar b"(css-unused-selector)          svelte/valid-compile
+  137:3   error  Unused CSS selector ".progressBar .progress"(css-unused-selector)  svelte/valid-compile
+  179:3   error  Unused CSS selector ".rankWrapper .rank"(css-unused-selector)      svelte/valid-compile
+  190:3   error  Unused CSS selector ".rating .title"(css-unused-selector)          svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\playerSelector.svelte
+  12:20  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  16:21  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  18:21  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  63:38  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  95:5   error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\profileEditButton.svelte
+   19:19  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+   23:17  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+   24:18  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+   25:17  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+   37:5   error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+   43:30  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  102:30  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\recordDetail.svelte
+   27:14  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   28:13  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   37:27  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   59:29  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  102:12  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  119:3   error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  343:14  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  360:5   error  Expected an assignment or function call and instead saw an expression                                                @typescript-eslint/no-unused-expressions
+  928:2   error  Unused CSS selector ".comment-text"(css-unused-selector)                                                             svelte/valid-compile
+  938:3   error  Unused CSS selector ":global(.dark) .comment-text"(css-unused-selector)                                              svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\search.svelte
+  16:14  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  24:5   error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  25:5   error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  74:16  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\settingButton.svelte
+  25:15  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  93:5   error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\submitButton.svelte
+   23:22  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   35:18  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   72:16  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   73:13  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   89:21  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  210:11  error  Empty block statement                                                                                                no-empty
+  225:12  error  Empty block statement                                                                                                no-empty
+  311:29  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  338:5   error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  880:19  error  Empty block statement                                                                                                no-empty
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\topSupporters.svelte
+  9:24  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\widgets\dashboardEvents.svelte
+   8:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  11:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\widgets\dashboardSearch.svelte
+  68:72  error  'EventListener' is not defined  no-undef
+  73:94  error  'EventListener' is not defined  no-undef
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\widgets\dashboardSettings.svelte
+   67:11  error  Empty block statement  no-empty
+  204:12  error  Empty block statement  no-empty
+  209:12  error  Empty block statement  no-empty
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\widgets\dashboardSubmissions.svelte
+  6:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\widgets\dashboardWeather.svelte
+   62:40  error  'GeolocationPosition' is not defined  no-undef
+  204:73  error  'EventListener' is not defined        no-undef
+  210:77  error  'EventListener' is not defined        no-undef
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\wikiCard.svelte
+  14:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  24:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  24:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\+layout.svelte
+  597:4  error  Unused CSS selector ".navbarWrapper .right .logo"(css-unused-selector)       svelte/valid-compile
+  623:5  error  Unused CSS selector ".navbarWrapper .right #logo-name"(css-unused-selector)  svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\+page.svelte
+   22:14  error  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+   28:14  error  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+   29:20  error  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+   30:25  error  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+   32:22  error  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+   33:24  error  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+   37:26  error  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+   49:32  error  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  103:35  error  Unexpected any. Specify a different type                                 @typescript-eslint/no-explicit-any
+  546:2   error  Unused CSS selector ".panelsGrid"(css-unused-selector)                   svelte/valid-compile
+  554:2   error  Unused CSS selector ".panel"(css-unused-selector)                        svelte/valid-compile
+  561:2   error  Unused CSS selector ".panelHeader"(css-unused-selector)                  svelte/valid-compile
+  569:2   error  Unused CSS selector ".panelTitleRow"(css-unused-selector)                svelte/valid-compile
+  574:3   error  Unused CSS selector ".panelTitleRow h4"(css-unused-selector)             svelte/valid-compile
+  581:2   error  Unused CSS selector ".panelContent"(css-unused-selector)                 svelte/valid-compile
+  586:2   error  Unused CSS selector ".listItem"(css-unused-selector)                     svelte/valid-compile
+  597:3   error  Unused CSS selector ".listItem:last-child"(css-unused-selector)          svelte/valid-compile
+  601:3   error  Unused CSS selector ".listItem:hover"(css-unused-selector)               svelte/valid-compile
+  606:2   error  Unused CSS selector ".listItemContent"(css-unused-selector)              svelte/valid-compile
+  614:2   error  Unused CSS selector ".listItemTitle"(css-unused-selector)                svelte/valid-compile
+  625:2   error  Unused CSS selector ".listItemDesc"(css-unused-selector)                 svelte/valid-compile
+  636:2   error  Unused CSS selector ".listItemDate"(css-unused-selector)                 svelte/valid-compile
+  643:2   error  Unused CSS selector ".listItemSkeleton"(css-unused-selector)             svelte/valid-compile
+  649:3   error  Unused CSS selector ".listItemSkeleton:last-child"(css-unused-selector)  svelte/valid-compile
+  654:2   error  Unused CSS selector ".skeletonLine"(css-unused-selector)                 svelte/valid-compile
+  671:2   error  Unused CSS selector ".noArticles"(css-unused-selector)                   svelte/valid-compile
+  708:3   error  Unused CSS selector ".panelsGrid"(css-unused-selector)                   svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\@[username]\+page.ts
+  8:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\admin\+page.svelte
+  132:2  error  Unused CSS selector ".header"(css-unused-selector)            svelte/valid-compile
+  136:3  error  Unused CSS selector ".header h1"(css-unused-selector)         svelte/valid-compile
+  146:3  error  Unused CSS selector ".header .subtitle"(css-unused-selector)  svelte/valid-compile
+  228:3  error  Unused CSS selector ".header h1"(css-unused-selector)         svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\admin\api\+page.svelte
+  123:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  172:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\admin\battlepass\+page.svelte
+    37:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+    38:22  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+    39:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+    40:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+    41:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+    42:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+    43:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+    44:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+    45:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+    67:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+    79:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+    82:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+    95:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   117:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   118:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   120:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   133:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   135:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   309:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   553:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   790:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   808:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   830:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   848:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   867:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   916:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   941:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   961:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1002:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1016:52  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1017:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1018:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1018:47  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\admin\battlepass\course\+page.svelte
+   20:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   21:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   36:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   38:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  232:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  253:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\admin\community\+page.svelte
+    38:13  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+    44:16  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+    52:12  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+    57:18  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+    64:15  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+    70:20  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+    74:28  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+    78:23  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+    82:38  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+    86:19  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+    92:28  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+    97:34  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+   161:33  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+   178:26  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+   196:16  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+   244:26  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+   379:15  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+   402:33  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+   455:40  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+   540:38  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+   610:48  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+   615:50  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+   628:47  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+   677:51  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+   698:38  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+  1343:13  error  A11y: visible, non-interactive elements with an on:click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as <button type="button"> or <a> might be more appropriate. See https://svelte.dev/docs/accessibility-warnings#a11y-click-events-have-key-events for more details.(a11y-click-events-have-key-events)  svelte/valid-compile
+  1343:13  error  A11y: <span> with click handler must have an ARIA role(a11y-no-static-element-interactions)                                                                                                                                                                                                                                                                         svelte/valid-compile
+  1481:13  error  A11y: visible, non-interactive elements with an on:click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as <button type="button"> or <a> might be more appropriate. See https://svelte.dev/docs/accessibility-warnings#a11y-click-events-have-key-events for more details.(a11y-click-events-have-key-events)  svelte/valid-compile
+  1481:13  error  A11y: <span> with click handler must have an ARIA role(a11y-no-static-element-interactions)                                                                                                                                                                                                                                                                         svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\admin\convictions\+page.svelte
+   23:22  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   72:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  107:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  149:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\admin\eventProofs\+page.svelte
+  11:30  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  44:30  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\admin\event\+page.svelte
+   26:14  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   27:14  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  101:20  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  109:22  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  139:4   error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  146:4   error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  153:4   error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  160:4   error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  165:4   error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  177:17  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  210:17  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  236:33  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  250:12  error  Empty block statement                                                                                                no-empty
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\admin\event\basicInfoTab.svelte
+   9:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  13:31  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\admin\event\contestTab.svelte
+  10:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  11:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\admin\event\proofsTab.svelte
+    6:20  error  Unexpected any. Specify a different type                    @typescript-eslint/no-explicit-any
+    7:21  error  Unexpected any. Specify a different type                    @typescript-eslint/no-explicit-any
+   97:2   error  Unused CSS selector ".content-cell"(css-unused-selector)    svelte/valid-compile
+  102:2   error  Unused CSS selector ".content-cell a"(css-unused-selector)  svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\admin\event\putLevelDialog.svelte
+  10:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  12:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\admin\event\questsTab.svelte
+  12:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  14:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  94:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\admin\event\quests\AddQuestDialog.svelte
+  10:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\admin\event\quests\EditConditionDialog.svelte
+  10:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  11:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  20:9   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\admin\event\quests\SelectItemDialog.svelte
+  11:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  12:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  17:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  18:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  21:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  83:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\admin\levelSubmissions\+page.svelte
+   15:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   17:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  129:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\admin\level\+page.svelte
+   18:13  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   32:15  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   36:23  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   42:17  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   49:16  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   66:11  error  Empty block statement                                                                                                no-empty
+  111:29  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  158:30  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  160:11  error  Empty block statement                                                                                                no-empty
+  167:31  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  205:11  error  Empty block statement                                                                                                no-empty
+  260:16  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  270:18  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  285:4   error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  287:5   error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  844:2   error  Unused CSS selector ".mb-2"(css-unused-selector)                                                                     svelte/valid-compile
+  850:2   error  Unused CSS selector ".mt-2"(css-unused-selector)                                                                     svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\admin\mappack\+page.svelte
+   19:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   30:22  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  161:40  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\admin\newLevels\+page.ts
+  2:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\admin\notification\+page.svelte
+  20:22  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  46:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  78:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\admin\ratingEstimator\+page.svelte
+  13:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  14:10  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  16:13  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\admin\submission\+page.svelte
+   31:47  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   67:47  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  203:7   error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\admin\submission\+page.ts
+  7:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\banpick\+page.svelte
+  17:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  18:12  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  19:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\banpick\+page.ts
+   7:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  21:99  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\battlepass\BattlepassTopBanner.svelte
+   15:21  error  Unexpected any. Specify a different type                 @typescript-eslint/no-explicit-any
+   21:16  error  Unexpected any. Specify a different type                 @typescript-eslint/no-explicit-any
+   22:24  error  Unexpected any. Specify a different type                 @typescript-eslint/no-explicit-any
+  276:2   error  Unused CSS selector ".desc-shadow"(css-unused-selector)  svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\battlepass\CourseTab.svelte
+   16:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   17:30  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   18:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   19:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   24:45  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   26:24  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   28:31  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   32:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   36:31  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   41:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   46:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   56:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   56:22  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   57:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   58:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   62:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   66:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   75:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   79:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   88:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   99:47  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  157:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  159:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  164:22  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  165:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  173:22  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  174:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  196:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  197:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  201:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  208:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  221:19  error  'HeadersInit' is not defined              no-undef
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\battlepass\DailyTab.svelte
+  20:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  20:45  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\battlepass\LevelsTab.svelte
+  12:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  32:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  44:30  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\battlepass\MapPacksTab.svelte
+  21:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  22:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  39:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  61:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  65:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  69:45  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  76:28  error  'HeadersInit' is not defined              no-undef
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\battlepass\MissionsTab.svelte
+  18:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  49:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\battlepass\PremiumPurchaseDialog.svelte
+  14:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  18:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\battlepass\RewardsTab.svelte
+  10:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  11:24  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\battlepass\UnlockTimer.svelte
+  7:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\battlepass\mappacks\[id]\+page.svelte
+  22:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  30:68  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\battlepass\mappacks\[id]\+page.ts
+  18:45  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\card\[id]\scan\+page.ts
+  3:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\case\[id]\+page.ts
+  3:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\clan\[id]\+page.svelte
+   43:15  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   44:15  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   45:19  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   46:21  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   52:21  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   62:17  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   65:18  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   67:27  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   88:16  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  103:27  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  124:16  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  142:16  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  227:29  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  279:36  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  292:35  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  328:5   error  Expected an assignment or function call and instead saw an expression                                                @typescript-eslint/no-unused-expressions
+  631:10  error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\clan\[id]\+page.ts
+  3:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\clan\[id]\boostButton.svelte
+  10:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  28:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\clan\[id]\community.svelte
+   24:19  error  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+   28:13  error  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+   39:21  error  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+  117:43  error  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+  194:15  error  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+  667:2   error  Unused CSS selector ".searchIcon"(css-unused-selector)  svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\clan\[id]\inviteButton.svelte
+  10:22  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\clan\[id]\levels.svelte
+  10:19  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  27:7   error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  28:7   error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  29:7   error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  40:4   error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  44:16  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  70:6   error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\clans\+page.svelte
+  30:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\clans\+page.ts
+  2:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\community\+page.svelte
+   28:13  error  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+   41:21  error  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+  118:43  error  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+  195:15  error  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+  246:29  error  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+  720:2   error  Unused CSS selector ".searchIcon"(css-unused-selector)  svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\community\[id]\+page.svelte
+  6:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\community\[id]\+page.ts
+  20:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\community\[id]\LevelPicker.svelte
+   8:51  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  11:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  33:30  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\community\[id]\MentionDropdown.svelte
+   6:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   9:51  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  11:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\community\[id]\ReportDialog.svelte
+  51:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\community\create\+page.svelte
+   51:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   52:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   56:22  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   57:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   61:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   66:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   79:71  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  173:61  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  188:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  194:30  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  214:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  223:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  235:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  293:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  373:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\dashboard\+page.svelte
+  12:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  13:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\event\[id]\+page.ts
+  5:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\event\[id]\cup\+page.ts
+  3:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\event\[id]\leaderboard.svelte
+   22:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   24:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   25:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   44:31  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   58:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   68:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   86:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  108:46  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  170:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  191:27  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  216:41  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  216:53  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  253:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  253:55  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  253:67  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  262:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  262:55  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  262:67  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\event\[id]\levelCard.svelte
+   25:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   29:31  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   43:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   44:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  167:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\event\[id]\levelTab.svelte
+  16:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  18:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\event\[id]\participateButton.svelte
+   12:19  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+   53:16  error  Unexpected any. Specify a different type                               @typescript-eslint/no-explicit-any
+  112:5   error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\event\[id]\quest.svelte
+  13:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\event\[id]\questTab.svelte
+  10:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  11:12  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\event\[id]\recordDetailDialog.svelte
+   15:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   17:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   18:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   19:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   22:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   25:13  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  102:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\event\eventBanner.svelte
+  8:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\events\+page.svelte
+   7:19  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  11:49  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  16:48  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  22:50  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  26:45  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  52:3   error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\events\+page.ts
+  2:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\events\eventCard.svelte
+  13:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\inventory\+page.svelte
+  87:10  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  92:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\level\[id]\+page.svelte
+   20:16  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+   21:15  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+   22:18  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+   23:13  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+   26:22  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+   27:20  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+   29:17  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+   30:21  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+   50:29  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+  106:16  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+  110:16  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+  116:16  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+  122:11  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+  122:52  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+  128:16  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+  141:5   error  Expected an assignment or function call and instead saw an expression                                                                                                                                                                                                                                                                                               @typescript-eslint/no-unused-expressions
+  180:6   error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free                                                                                                                                                                                                                                                 @typescript-eslint/ban-ts-comment
+  414:11  error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free                                                                                                                                                                                                                                                 @typescript-eslint/ban-ts-comment
+  427:11  error  A11y: visible, non-interactive elements with an on:click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as <button type="button"> or <a> might be more appropriate. See https://svelte.dev/docs/accessibility-warnings#a11y-click-events-have-key-events for more details.(a11y-click-events-have-key-events)  svelte/valid-compile
+  427:11  error  A11y: <div> with click handler must have an ARIA role(a11y-no-static-element-interactions)                                                                                                                                                                                                                                                                          svelte/valid-compile
+  659:2   error  Unused CSS selector ".variantThumb"(css-unused-selector)                                                                                                                                                                                                                                                                                                            svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\level\[id]\+page.ts
+   7:7   error  'gdbrowserLevel' is never reassigned. Use 'const' instead     prefer-const
+   7:23  error  Unexpected any. Specify a different type                      @typescript-eslint/no-explicit-any
+  19:7   error  'pointercrateLevel' is never reassigned. Use 'const' instead  prefer-const
+  19:26  error  Unexpected any. Specify a different type                      @typescript-eslint/no-explicit-any
+  31:91  error  Unexpected any. Specify a different type                      @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\link\discord\+page.svelte
+  35:5  error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\list\[list]\+layout.svelte
+  16:5  error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\list\[list]\+page.svelte
+  149:5  error  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\list\[list]\+page.ts
+   1:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  16:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\list\[list]\leaderboard\+page.svelte
+   38:5   error  Expected an assignment or function call and instead saw an expression                                                @typescript-eslint/no-unused-expressions
+   97:10  error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  153:3   error  Unused CSS selector ".playerNameWrapper .rank"(css-unused-selector)                                                  svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\list\[list]\leaderboard\+page.ts
+   1:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  18:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\merchant\orders\+page.svelte
+  7:12  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\misc\compare\+page.svelte
+  12:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  13:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  14:22  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  15:22  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  56:49  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  75:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  78:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  84:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  84:47  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  91:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  95:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  99:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  99:50  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\misc\roulette-v2\+page.svelte
+   95:62  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  147:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\mySubmission\[uid]\+page.svelte
+  196:8  error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\mySubmission\[uid]\+page.ts
+  7:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  8:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\orders\+page.svelte
+  11:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  25:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  30:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\orders\[id]\+page.svelte
+  14:12  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\orders\[id]\addTrackingButton.svelte
+  10:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  16:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\overwatch\+page.svelte
+  10:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  10:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  71:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  72:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\player\[uid]\+page.ts
+  8:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\player\[uid]\getPlayerData.ts
+  1:45  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  1:57  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  2:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  7:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\player\[uid]\mainPage.svelte
+   31:22  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   48:18  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  186:26  error  svelte-ignore comment is used, but not warned                                                                        svelte/no-unused-svelte-ignore
+  274:8   error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  315:9   error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\player\[uid]\medal.svelte
+  4:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\player\[uid]\tabs\CommunityPostsTab.svelte
+  11:13  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\player\[uid]\tabs\EventsTab.svelte
+  6:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\player\[uid]\tabs\MedalsTab.svelte
+  7:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\player\[uid]\tabs\OverviewTab\cards\CustomImageCard.svelte
+   10:19  error  Unexpected any. Specify a different type                                                  @typescript-eslint/no-explicit-any
+  143:5   error  A11y: Screenreaders already announce <img> elements as an image.(a11y-img-redundant-alt)  svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\player\[uid]\tabs\OverviewTab\cards\CustomMarkdownCard.svelte
+  11:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\player\[uid]\tabs\OverviewTab\cards\DeviceStatsCard.svelte
+  9:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\player\[uid]\tabs\OverviewTab\cards\EventRatingChart.svelte
+  14:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  20:13  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  38:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  91:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\player\[uid]\tabs\OverviewTab\cards\HardestDemonCard.svelte
+  10:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\player\[uid]\tabs\OverviewTab\cards\HeatmapCard.svelte
+  6:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\player\[uid]\tabs\OverviewTab\cards\RatingsCard.svelte
+   12:19  error  Unexpected any. Specify a different type              @typescript-eslint/no-explicit-any
+  149:2   error  Unused CSS selector ".exp-text"(css-unused-selector)  svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\player\[uid]\tabs\OverviewTab\cards\RecentActivityCard.svelte
+  9:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\player\[uid]\tabs\OverviewTab\cards\TotalRecordsCard.svelte
+  9:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\player\[uid]\tabs\OverviewTab\cards\getBorderStyle.ts
+  3:40  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\player\[uid]\tabs\OverviewTab\index.svelte
+  108:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  152:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\players\+page.svelte
+  17:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  19:22  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  37:12  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\players\+page.ts
+  2:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  9:31  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  9:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\redeem\[code]\+page.svelte
+  11:12  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\rules\+page.svelte
+  10:45  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  11:45  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  12:48  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\store\+page.ts
+  2:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  8:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\store\cart\+page.svelte
+  14:12  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\store\cart\checkoutButton.svelte
+  12:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  24:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  62:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\store\product\[id]\+page.svelte
+  13:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  15:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\store\product\[id]\+page.ts
+  3:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\supporter\+page.svelte
+  10:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\supporter\top\+page.svelte
+  10:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\supporter\top\+page.ts
+  9:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\supporter\top\supporterCard.svelte
+  6:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\wiki\+page.svelte
+   20:29  error  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+  166:2   error  Unused CSS selector ".folders-grid"(css-unused-selector)  svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\wiki\[...path]\+page.svelte
+   6:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  18:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\wiki\[...path]\+page.ts
+  9:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\wiki\[...path]\FileView.svelte
+  11:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\wiki\[...path]\FolderView.svelte
+   9:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  14:57  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  15:55  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+Ô£û 648 problems (648 errors, 0 warnings)
+  7 errors and 0 warnings potentially fixable with the `--fix` option.
+

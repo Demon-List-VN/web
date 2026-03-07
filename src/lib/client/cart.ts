@@ -42,10 +42,10 @@ const saveItems = (items: Item[]): void => {
     }
 };
 
-let data: Data = {
+const data: Data = {
     items: getStoredItems(),
     queryArray: () => {
-        let res = [];
+        const res = [];
 
         for (const i of data.items) {
             res.push(i.productID);

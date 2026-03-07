@@ -1,0 +1,203 @@
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\client\getExpLevel.ts
+  16:12  warning  Unexpected constant condition  no-constant-condition
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\client\settings.ts
+  16:9  warning  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\Staff.svelte
+  15:24  warning  svelte-ignore comment is used, but not warned  svelte/no-unused-svelte-ignore
+  16:5   warning  Empty block(empty-block)                       svelte/valid-compile
+  19:24  warning  svelte-ignore comment is used, but not warned  svelte/no-unused-svelte-ignore
+  20:5   warning  Empty block(empty-block)                       svelte/valid-compile
+  23:24  warning  svelte-ignore comment is used, but not warned  svelte/no-unused-svelte-ignore
+  24:5   warning  Empty block(empty-block)                       svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\ads.svelte
+  19:4  warning  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\heatmap.svelte
+  66:6  warning  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\levelCard.svelte
+  62:8  warning  A11y: <a> element should have child content(a11y-missing-content)  svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\notificationButton.svelte
+  42:11  warning  Empty block statement                                                  no-empty
+  69:5   warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\playerLink.svelte
+  132:3  warning  Unused CSS selector ".progressBar b"(css-unused-selector)          svelte/valid-compile
+  137:3  warning  Unused CSS selector ".progressBar .progress"(css-unused-selector)  svelte/valid-compile
+  179:3  warning  Unused CSS selector ".rankWrapper .rank"(css-unused-selector)      svelte/valid-compile
+  190:3  warning  Unused CSS selector ".rating .title"(css-unused-selector)          svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\playerSelector.svelte
+  95:5  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\profileEditButton.svelte
+  37:5  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\recordDetail.svelte
+  119:3  warning  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  360:5  warning  Expected an assignment or function call and instead saw an expression                                                @typescript-eslint/no-unused-expressions
+  928:2  warning  Unused CSS selector ".comment-text"(css-unused-selector)                                                             svelte/valid-compile
+  938:3  warning  Unused CSS selector ":global(.dark) .comment-text"(css-unused-selector)                                              svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\search.svelte
+  24:5  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  25:5  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\settingButton.svelte
+  93:5  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\submitButton.svelte
+  210:11  warning  Empty block statement                                                                                                no-empty
+  225:12  warning  Empty block statement                                                                                                no-empty
+  338:5   warning  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  880:19  warning  Empty block statement                                                                                                no-empty
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\widgets\dashboardSearch.svelte
+  68:72  warning  'EventListener' is not defined  no-undef
+  73:94  warning  'EventListener' is not defined  no-undef
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\widgets\dashboardSettings.svelte
+   67:11  warning  Empty block statement  no-empty
+  204:12  warning  Empty block statement  no-empty
+  209:12  warning  Empty block statement  no-empty
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\lib\components\widgets\dashboardWeather.svelte
+   62:40  warning  'GeolocationPosition' is not defined  no-undef
+  204:73  warning  'EventListener' is not defined        no-undef
+  210:77  warning  'EventListener' is not defined        no-undef
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\+layout.svelte
+  597:4  warning  Unused CSS selector ".navbarWrapper .right .logo"(css-unused-selector)       svelte/valid-compile
+  623:5  warning  Unused CSS selector ".navbarWrapper .right #logo-name"(css-unused-selector)  svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\+page.svelte
+  546:2  warning  Unused CSS selector ".panelsGrid"(css-unused-selector)                   svelte/valid-compile
+  554:2  warning  Unused CSS selector ".panel"(css-unused-selector)                        svelte/valid-compile
+  561:2  warning  Unused CSS selector ".panelHeader"(css-unused-selector)                  svelte/valid-compile
+  569:2  warning  Unused CSS selector ".panelTitleRow"(css-unused-selector)                svelte/valid-compile
+  574:3  warning  Unused CSS selector ".panelTitleRow h4"(css-unused-selector)             svelte/valid-compile
+  581:2  warning  Unused CSS selector ".panelContent"(css-unused-selector)                 svelte/valid-compile
+  586:2  warning  Unused CSS selector ".listItem"(css-unused-selector)                     svelte/valid-compile
+  597:3  warning  Unused CSS selector ".listItem:last-child"(css-unused-selector)          svelte/valid-compile
+  601:3  warning  Unused CSS selector ".listItem:hover"(css-unused-selector)               svelte/valid-compile
+  606:2  warning  Unused CSS selector ".listItemContent"(css-unused-selector)              svelte/valid-compile
+  614:2  warning  Unused CSS selector ".listItemTitle"(css-unused-selector)                svelte/valid-compile
+  625:2  warning  Unused CSS selector ".listItemDesc"(css-unused-selector)                 svelte/valid-compile
+  636:2  warning  Unused CSS selector ".listItemDate"(css-unused-selector)                 svelte/valid-compile
+  643:2  warning  Unused CSS selector ".listItemSkeleton"(css-unused-selector)             svelte/valid-compile
+  649:3  warning  Unused CSS selector ".listItemSkeleton:last-child"(css-unused-selector)  svelte/valid-compile
+  654:2  warning  Unused CSS selector ".skeletonLine"(css-unused-selector)                 svelte/valid-compile
+  671:2  warning  Unused CSS selector ".noArticles"(css-unused-selector)                   svelte/valid-compile
+  708:3  warning  Unused CSS selector ".panelsGrid"(css-unused-selector)                   svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\admin\+page.svelte
+  132:2  warning  Unused CSS selector ".header"(css-unused-selector)            svelte/valid-compile
+  136:3  warning  Unused CSS selector ".header h1"(css-unused-selector)         svelte/valid-compile
+  146:3  warning  Unused CSS selector ".header .subtitle"(css-unused-selector)  svelte/valid-compile
+  228:3  warning  Unused CSS selector ".header h1"(css-unused-selector)         svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\admin\community\+page.svelte
+  1343:13  warning  A11y: visible, non-interactive elements with an on:click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as <button type="button"> or <a> might be more appropriate. See https://svelte.dev/docs/accessibility-warnings#a11y-click-events-have-key-events for more details.(a11y-click-events-have-key-events)  svelte/valid-compile
+  1343:13  warning  A11y: <span> with click handler must have an ARIA role(a11y-no-static-element-interactions)                                                                                                                                                                                                                                                                         svelte/valid-compile
+  1481:13  warning  A11y: visible, non-interactive elements with an on:click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as <button type="button"> or <a> might be more appropriate. See https://svelte.dev/docs/accessibility-warnings#a11y-click-events-have-key-events for more details.(a11y-click-events-have-key-events)  svelte/valid-compile
+  1481:13  warning  A11y: <span> with click handler must have an ARIA role(a11y-no-static-element-interactions)                                                                                                                                                                                                                                                                         svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\admin\event\+page.svelte
+  139:4   warning  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  146:4   warning  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  153:4   warning  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  160:4   warning  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  165:4   warning  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  250:12  warning  Empty block statement                                                                                                no-empty
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\admin\event\proofsTab.svelte
+   97:2  warning  Unused CSS selector ".content-cell"(css-unused-selector)    svelte/valid-compile
+  102:2  warning  Unused CSS selector ".content-cell a"(css-unused-selector)  svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\admin\level\+page.svelte
+   66:11  warning  Empty block statement                                                                                                no-empty
+  160:11  warning  Empty block statement                                                                                                no-empty
+  205:11  warning  Empty block statement                                                                                                no-empty
+  285:4   warning  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  287:5   warning  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  844:2   warning  Unused CSS selector ".mb-2"(css-unused-selector)                                                                     svelte/valid-compile
+  850:2   warning  Unused CSS selector ".mt-2"(css-unused-selector)                                                                     svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\admin\submission\+page.svelte
+  203:7  warning  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\battlepass\BattlepassTopBanner.svelte
+  276:2  warning  Unused CSS selector ".desc-shadow"(css-unused-selector)  svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\battlepass\CourseTab.svelte
+  221:19  warning  'HeadersInit' is not defined  no-undef
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\battlepass\MapPacksTab.svelte
+  76:28  warning  'HeadersInit' is not defined  no-undef
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\clan\[id]\+page.svelte
+  328:5   warning  Expected an assignment or function call and instead saw an expression                                                @typescript-eslint/no-unused-expressions
+  631:10  warning  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\clan\[id]\community.svelte
+  667:2  warning  Unused CSS selector ".searchIcon"(css-unused-selector)  svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\clan\[id]\levels.svelte
+  40:4  warning  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  70:6  warning  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\community\+page.svelte
+  720:2  warning  Unused CSS selector ".searchIcon"(css-unused-selector)  svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\event\[id]\participateButton.svelte
+  112:5  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\events\+page.svelte
+  52:3  warning  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\level\[id]\+page.svelte
+  141:5   warning  Expected an assignment or function call and instead saw an expression                                                                                                                                                                                                                                                                                               @typescript-eslint/no-unused-expressions
+  180:6   warning  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free                                                                                                                                                                                                                                                 @typescript-eslint/ban-ts-comment
+  414:11  warning  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free                                                                                                                                                                                                                                                 @typescript-eslint/ban-ts-comment
+  427:11  warning  A11y: visible, non-interactive elements with an on:click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as <button type="button"> or <a> might be more appropriate. See https://svelte.dev/docs/accessibility-warnings#a11y-click-events-have-key-events for more details.(a11y-click-events-have-key-events)  svelte/valid-compile
+  427:11  warning  A11y: <div> with click handler must have an ARIA role(a11y-no-static-element-interactions)                                                                                                                                                                                                                                                                          svelte/valid-compile
+  659:2   warning  Unused CSS selector ".variantThumb"(css-unused-selector)                                                                                                                                                                                                                                                                                                            svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\link\discord\+page.svelte
+  35:5  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\list\[list]\+layout.svelte
+  16:5  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\list\[list]\+page.svelte
+  149:5  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\list\[list]\leaderboard\+page.svelte
+   38:5   warning  Expected an assignment or function call and instead saw an expression                                                @typescript-eslint/no-unused-expressions
+   97:10  warning  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  153:3   warning  Unused CSS selector ".playerNameWrapper .rank"(css-unused-selector)                                                  svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\mySubmission\[uid]\+page.svelte
+  196:8  warning  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\player\[uid]\mainPage.svelte
+  186:26  warning  svelte-ignore comment is used, but not warned                                                                        svelte/no-unused-svelte-ignore
+  274:8   warning  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  315:9   warning  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\player\[uid]\tabs\OverviewTab\cards\CustomImageCard.svelte
+  143:5  warning  A11y: Screenreaders already announce <img> elements as an image.(a11y-img-redundant-alt)  svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\player\[uid]\tabs\OverviewTab\cards\RatingsCard.svelte
+  149:2  warning  Unused CSS selector ".exp-text"(css-unused-selector)  svelte/valid-compile
+
+C:\Users\nambu\Desktop\DLVN\code\DemonListVN-v3\src\routes\wiki\+page.svelte
+  166:2  warning  Unused CSS selector ".folders-grid"(css-unused-selector)  svelte/valid-compile
+
+Ô£û 112 problems (0 errors, 112 warnings)
+

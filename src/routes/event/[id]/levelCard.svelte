@@ -32,7 +32,7 @@
 	$: hpPercentage = totalHP > 0 ? (hpRemaining / totalHP) * 100 : 100;
 	$: isBeaten = !isEventEnded() && level && type === 'raid' && hpRemaining <= 0;
 
-	let submitData: SubmitData = {
+	const submitData: SubmitData = {
 		levelID: level ? level.id : 0,
 		progress: null,
 		videoLink: '',

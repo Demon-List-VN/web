@@ -129,26 +129,6 @@
 		margin: 0 auto;
 	}
 
-	.header {
-		margin-bottom: 3rem;
-		text-align: center;
-
-		h1 {
-			font-size: 2.5rem;
-			font-weight: 700;
-			margin-bottom: 0.5rem;
-			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-			-webkit-background-clip: text;
-			-webkit-text-fill-color: transparent;
-			background-clip: text;
-		}
-
-		.subtitle {
-			font-size: 1.1rem;
-			color: #888;
-		}
-	}
-
 	.categories-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -223,10 +203,6 @@
 	@media (max-width: 768px) {
 		.wrapper {
 			padding: 1rem;
-		}
-
-		.header h1 {
-			font-size: 2rem;
 		}
 
 		.categories-grid {

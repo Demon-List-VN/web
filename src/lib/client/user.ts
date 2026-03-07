@@ -88,7 +88,7 @@ async function addNewUser() {
 	});
 }
 
-let userData: userType = {
+const userData: userType = {
 	data: undefined,
 	ratings: [],
 	token: async () => {

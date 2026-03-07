@@ -62,8 +62,7 @@
 							<a
 								href={`/level/${level.id}`}
 								class="absolute inset-0 z-10"
-								data-sveltekit-preload-data="tap"
-							></a>
+								data-sveltekit-preload-data="tap"							aria-label={level.name || 'Level details'}							></a>
 							{#if !hideTop}
 								{#if top}
 									<div class="top">#{top}</div>

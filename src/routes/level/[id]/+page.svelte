@@ -177,7 +177,7 @@
 		property="og:image"
 		content={'pointercrate' in data
 			? `https://img.youtube.com/vi/${new URL(
-					// @ts-ignore
+					// @ts-expect-error
 					data.pointercrate.video
 				).searchParams.get('v')}/0.jpg`
 			: `https://img.youtube.com/vi/${data.level.videoID}/mqdefault.jpg`}
@@ -411,7 +411,7 @@
 							{#each records as record, index}
 								<Table.Row
 									on:click={(e) => {
-										// @ts-ignore
+										// @ts-expect-error
 										if (e.target.nodeName == 'A') {
 											return;
 										}
@@ -424,6 +424,7 @@
 										#{index + 1}
 									</Table.Cell>
 									<Table.Cell>
+										<!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
 										<div on:click={(e) => e.stopPropagation()}>
 											<PlayerLink player={record.players} />
 										</div>
@@ -654,14 +655,6 @@
 		&:hover {
 			background: hsl(var(--muted) / 0.3);
 		}
-	}
-
-	.variantThumb {
-		width: 120px;
-		height: 68px;
-		object-fit: cover;
-		border-radius: calc(var(--radius) - 2px);
-		flex-shrink: 0;
 	}
 
 	.variantDetails {

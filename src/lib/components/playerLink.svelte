@@ -15,8 +15,8 @@
 	export let titleType: string = 'dl';
 	export let truncate: number | null = null;
 
-	let exp = player.exp + player.extraExp;
-	let isBannerFailedToLoad = false;
+	const exp = player.exp + player.extraExp;
+	const isBannerFailedToLoad = false;
 	let isPopoverOpen = false;
 
 	function truncateText(str: string) {
@@ -123,23 +123,6 @@
 		margin-top: -50px;
 		mask-image: linear-gradient(rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 25%, rgba(0, 0, 0, 0) 100%);
 	}
-	.progressBar {
-		background-color: gray;
-		width: 100%;
-		border-radius: 10px;
-		overflow: hidden;
-		scale: 0.7;
-		b {
-			color: var(--textColorInverted);
-			margin-right: 5px;
-		}
-
-		.progress {
-			background-color: var(--textColor);
-			text-align: right;
-			border-radius: 10px;
-		}
-	}
 
 	.wrapper {
 		display: flex;
@@ -175,28 +158,9 @@
 	.rankWrapper {
 		display: flex;
 		gap: 5px;
-
-		.rank {
-			background-color: var(--textColor);
-			color: var(--textColorInverted);
-			padding-inline: 6px;
-			height: fit-content;
-			border-radius: 5px;
-			font-weight: 600;
-		}
 	}
 
 	.rating {
-		.title {
-			padding: 2px;
-			padding-inline: 5px;
-			border-radius: 5px;
-			font-weight: bold;
-			font-size: 12px;
-			user-select: none;
-			width: fit-content;
-		}
-
 		display: flex;
 		gap: 10px;
 		align-items: center;
