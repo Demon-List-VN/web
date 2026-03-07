@@ -33,6 +33,7 @@
 	import { isActive } from '$lib/client/isSupporterActive';
 	import * as RadioGroup from '$lib/components/ui/radio-group/index.js';
 	import Levels from './levels.svelte';
+	import ClanCommunity from './community.svelte';
 	import { _ } from 'svelte-i18n';
 
 	export let data: PageData;
@@ -459,6 +460,7 @@
 			<Tabs.List class="mb-[5px] w-fit">
 				{#if isActive(data.boostedUntil)}
 					<Tabs.Trigger value="home">{$_('clan.tabs.home')}</Tabs.Trigger>
+					<Tabs.Trigger value="community">{$_('clan.tabs.community')}</Tabs.Trigger>
 					<Tabs.Trigger value="levels">{$_('clan.tabs.levels')}</Tabs.Trigger>
 				{/if}
 				<Tabs.Trigger value="records">{$_('clan.tabs.records')}</Tabs.Trigger>
@@ -481,6 +483,9 @@
 					{/if}
 				</Tabs.Content>
 			{/if}
+			<Tabs.Content value="community" class="w-full">
+				<ClanCommunity clan={data} />
+			</Tabs.Content>
 			<Tabs.Content value="levels" class="w-full">
 				<Levels clan={data} />
 			</Tabs.Content>

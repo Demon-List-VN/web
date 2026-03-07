@@ -8,6 +8,7 @@
 	import { upload } from '$lib/client/storage';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import imageCompression from 'browser-image-compression';
 	import Markdown from '$lib/components/markdown.svelte';
 	import {
@@ -26,6 +27,8 @@
 		Tag,
 		Users
 	} from 'lucide-svelte';
+
+	$: clanId = $page.url.searchParams.get('clanId');
 
 	let newPost = {
 		title: '',
@@ -341,7 +344,11 @@
 				}
 			}
 
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/posts`, {
+			const apiUrl = clanId
+				? `${import.meta.env.VITE_API_URL}/clans/${clanId}/community/posts`
+				: `${import.meta.env.VITE_API_URL}/community/posts`;
+
+			const res = await fetch(apiUrl, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -358,7 +365,7 @@
 			const created = await res.json();
 			if (created.moderationStatus === 'pending') {
 				toast.success($_('community.create.pending_review'));
-				goto('/community');
+				goto(clanId ? `/clan/${clanId}` : '/community');
 			} else {
 				toast.success($_('community.create.success'));
 				goto(`/community/${created.id}`);
@@ -377,9 +384,9 @@
 
 <div class="createPage">
 	<div class="backNav">
-		<a href="/community" class="backLink">
+		<a href={clanId ? `/clan/${clanId}` : '/community'} class="backLink">
 			<ArrowLeft class="h-4 w-4" />
-			<span>{$_('community.title')}</span>
+			<span>{clanId ? $_('clan.tabs.community') : $_('community.title')}</span>
 		</a>
 	</div>
 

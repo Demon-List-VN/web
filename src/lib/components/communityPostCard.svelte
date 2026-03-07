@@ -10,6 +10,7 @@
 
 	export let post: any;
 	export let compact: boolean = false;
+	export let apiPrefix: string = `${import.meta.env.VITE_API_URL}/community`;
 
 	const dispatch = createEventDispatcher();
 
@@ -26,7 +27,7 @@
 		try {
 			const token = await $user.token();
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/community/posts/${post.id}/like`,
+				`${apiPrefix}/posts/${post.id}/like`,
 				{
 					method: 'POST',
 					headers: {
@@ -103,10 +104,11 @@
 	$: isMedia = post?.type === 'media';
 	$: postTags = (post?.communityPostsTags || []).map((pt: any) => pt.postTags).filter(Boolean);
 	$: isParticipantsFull = post?.type === 'collab' && post?.participantsCount >= post?.maxParticipants;
+	$: postHref = post ? (post.clanId ? `/clan/${post.clanId}/community/${post.id}` : `/community/${post.id}`) : '#';
 </script>
 
 {#if post}
-	<a href="/community/{post.id}" class="communityPost" class:compact class:pinned={post.pinned} class:mediaPost={isMedia && thumbnail && !compact} class:participantsFull={isParticipantsFull}>
+	<a href={postHref} class="communityPost" class:compact class:pinned={post.pinned} class:mediaPost={isMedia && thumbnail && !compact} class:participantsFull={isParticipantsFull}>
 		{#if post.pinned}
 			<div class="pinnedBadge">
 				<Pin class="h-3 w-3" />
