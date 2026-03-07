@@ -177,7 +177,6 @@
 		property="og:image"
 		content={'pointercrate' in data
 			? `https://img.youtube.com/vi/${new URL(
-					// @ts-expect-error
 					data.pointercrate.video
 				).searchParams.get('v')}/0.jpg`
 			: `https://img.youtube.com/vi/${data.level.videoID}/mqdefault.jpg`}

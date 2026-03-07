@@ -282,9 +282,7 @@
 		}
 
 		for (const i in level) {
-			// @ts-expect-error
 			if (level[i] === '') {
-				// @ts-expect-error
 				level[i] = null;
 			}
 		}

@@ -335,7 +335,6 @@
 		class={buttonVariants({ variant: 'outline' })}
 		on:click={() => {
 			for (const i in submission) {
-				// @ts-expect-error
 				submission[i] = defaultValue[i];
 				step = 0;
 				apiLevel = null;
