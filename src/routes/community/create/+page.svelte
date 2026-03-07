@@ -23,7 +23,8 @@
 		ThumbsDown,
 		Eye,
 		ArrowLeft,
-		Tag
+		Tag,
+		Users
 	} from 'lucide-svelte';
 
 	let newPost = {
@@ -62,6 +63,9 @@
 	let availableTags: any[] = [];
 	let selectedTagIds: number[] = [];
 	let loadingTags = false;
+
+	// Participants state
+	let maxParticipants: string = '';
 
 	async function fetchTags() {
 		loadingTags = true;
@@ -271,6 +275,14 @@
 			return;
 		}
 
+		if (newPost.type === 'collab') {
+			const parsed = parseInt(maxParticipants);
+			if (!maxParticipants || isNaN(parsed) || parsed < 1 || parsed > 100) {
+				toast.error($_('community.participants.placeholder'));
+				return;
+			}
+		}
+
 		submitting = true;
 		const token = await $user.token();
 
@@ -320,6 +332,13 @@
 
 			if (selectedTagIds.length > 0) {
 				body.tagIds = selectedTagIds;
+			}
+
+			if (newPost.type === 'collab' && maxParticipants) {
+				const parsed = parseInt(maxParticipants);
+				if (parsed >= 1 && parsed <= 100) {
+					body.maxParticipants = parsed;
+				}
 			}
 
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/posts`, {
@@ -396,6 +415,7 @@
 						<Select.Item value="discussion">{$_('community.type.discussion')}</Select.Item>
 						<Select.Item value="media">{$_('community.type.media')}</Select.Item>
 						<Select.Item value="guide">{$_('community.type.guide')}</Select.Item>
+						<Select.Item value="collab">{$_('community.type.collab')}</Select.Item>
 						<Select.Item value="review">{$_('community.type.review')}</Select.Item>
 						{#if $user.data?.isAdmin}
 							<Select.Item value="announcement">{$_('community.type.announcement')}</Select.Item>
@@ -427,6 +447,24 @@
 					{#if selectedTagIds.length > 0}
 						<p class="tagHint">{selectedTagIds.length}/5</p>
 					{/if}
+				</div>
+			{/if}
+
+			<!-- Participant Limit (collab only) -->
+			{#if newPost.type === 'collab'}
+				<div class="formField">
+					<span class="fieldLabel">
+						<Users class="inline h-3.5 w-3.5 text-indigo-500" />
+						{$_('community.participants.label')} <span class="text-red-500">*</span>
+					</span>
+					<Input
+						type="number"
+						bind:value={maxParticipants}
+						placeholder={$_('community.participants.placeholder')}
+						min="1"
+						max="100"
+					/>
+					<p class="participantHint">{$_('community.participants.hint')}</p>
 				</div>
 			{/if}
 
@@ -1156,6 +1194,13 @@
 		font-size: 11px;
 		color: hsl(var(--muted-foreground));
 		margin: 0;
+	}
+
+	.participantHint {
+		font-size: 11px;
+		color: hsl(var(--muted-foreground));
+		margin: 0;
+		font-style: italic;
 	}
 
 	@media screen and (max-width: 900px) {

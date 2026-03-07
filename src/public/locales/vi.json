@@ -698,7 +698,8 @@
       "media": "Phương tiện",
       "guide": "Kiến thức",
       "announcement": "Thông báo",
-      "review": "Đánh giá"
+      "review": "Đánh giá",
+      "collab": "Collab"
     },
     "create": {
       "button": "Bài mới",
@@ -795,7 +796,32 @@
     "search": "Tìm kiếm",
     "search_placeholder": "Tìm kiếm bài viết...",
     "all_loaded": "Đã tải tất cả {total} bài viết",
-    "related_posts": "Bài viết cộng đồng"
+    "related_posts": "Bài viết cộng đồng",
+    "participants": {
+      "label": "Số người tham gia",
+      "placeholder": "Nhập số lượng (1-100)",
+      "hint": "Không thể thay đổi sau khi đăng",
+      "count": "{current}/{max} người tham gia",
+      "full": "Đã đủ người",
+      "join": "Yêu cầu tham gia",
+      "cancel": "Hủy yêu cầu",
+      "leave": "Rời khỏi",
+      "pending": "Đang chờ duyệt",
+      "approved": "Đã được duyệt",
+      "rejected": "Đã bị từ chối",
+      "approve": "Duyệt",
+      "reject": "Từ chối",
+      "revoke": "Hủy quyền",
+      "manage": "Quản lý người tham gia",
+      "no_requests": "Chưa có yêu cầu nào",
+      "request_sent": "Đã gửi yêu cầu tham gia!",
+      "request_cancelled": "Đã hủy yêu cầu",
+      "approved_success": "Đã duyệt người tham gia",
+      "rejected_success": "Đã từ chối yêu cầu",
+      "revoked_success": "Đã hủy quyền tham gia",
+      "left_success": "Đã rời khỏi",
+      "enable": "Bật giới hạn người tham gia"
+    }
   },
   "orders": {
     "title": "Đơn hàng",

@@ -37,7 +37,13 @@
 		Check,
 		Upload,
 		Eye,
-		Tag
+		Tag,
+		Users,
+		UserPlus,
+		UserMinus,
+		UserCheck,
+		UserX,
+		Clock
 	} from 'lucide-svelte';
 
 	export let data: any;
@@ -90,12 +96,20 @@
 	// Comment preview state
 	let commentPreviewMode = false;
 
+	// Participant state
+	let participants: any[] = [];
+	let myParticipantStatus: string | null = null;
+	let loadingParticipants = false;
+	let participantActionLoading = false;
+	let showParticipantsPanel = false;
+
 	const typeIcons: Record<string, any> = {
 		discussion: MessageCircle,
 		media: Image,
 		guide: BookOpen,
 		announcement: Megaphone,
-		review: Star
+		review: Star,
+		collab: Users
 	};
 
 	const typeColors: Record<string, string> = {
@@ -584,6 +598,105 @@
 		commentAttachedLevel = null;
 	}
 
+	// Participant functions
+	async function fetchParticipants() {
+		if (!post || post.type !== 'collab') return;
+		loadingParticipants = true;
+		try {
+			const headers = await getHeaders();
+			delete headers['Content-Type'];
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/community/posts/${post.id}/participants`,
+				{ headers }
+			);
+			if (res.ok) {
+				const data = await res.json();
+				participants = data.participants || [];
+				myParticipantStatus = data.myStatus;
+			}
+		} catch {
+			participants = [];
+		} finally {
+			loadingParticipants = false;
+		}
+	}
+
+	async function requestJoin() {
+		if (!$user.loggedIn) {
+			toast.error($_('community.login_required'));
+			return;
+		}
+		participantActionLoading = true;
+		try {
+			const headers = await getHeaders();
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/community/posts/${post.id}/participants`,
+				{ method: 'POST', headers }
+			);
+			if (!res.ok) {
+				const err = await res.json();
+				throw new Error(err.error);
+			}
+			toast.success($_('community.participants.request_sent'));
+			await fetchParticipants();
+		} catch (e: any) {
+			toast.error(e.message);
+		} finally {
+			participantActionLoading = false;
+		}
+	}
+
+	async function cancelJoinRequest() {
+		participantActionLoading = true;
+		try {
+			const headers = await getHeaders();
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/community/posts/${post.id}/participants/cancel`,
+				{ method: 'POST', headers }
+			);
+			if (!res.ok) {
+				const err = await res.json();
+				throw new Error(err.error);
+			}
+			toast.success($_('community.participants.request_cancelled'));
+			await fetchParticipants();
+		} catch (e: any) {
+			toast.error(e.message);
+		} finally {
+			participantActionLoading = false;
+		}
+	}
+
+	async function handleParticipantAction(action: 'approve' | 'reject' | 'revoke', uid: string) {
+		participantActionLoading = true;
+		try {
+			const headers = await getHeaders();
+			const method = action === 'revoke' ? 'DELETE' : 'PUT';
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/community/posts/${post.id}/participants/${uid}/${action}`,
+				{ method, headers }
+			);
+			if (!res.ok) {
+				const err = await res.json();
+				throw new Error(err.error);
+			}
+			const msgKey = `community.participants.${action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'revoked'}_success`;
+			toast.success($_(msgKey));
+			await fetchParticipants();
+			// Refresh post to get updated participantsCount
+			await fetchPost();
+		} catch (e: any) {
+			toast.error(e.message);
+		} finally {
+			participantActionLoading = false;
+		}
+	}
+
+	$: hasParticipants = post && post.type === 'collab';
+	$: isFull = hasParticipants && post.participantsCount >= post.maxParticipants;
+	$: approvedParticipants = participants.filter((p: any) => p.status === 'approved');
+	$: pendingParticipants = participants.filter((p: any) => p.status === 'pending');
+
 	// Re-fetch with auth when user logs in (to get like status etc.)
 	onMount(() => {
 		if ($user.loggedIn) {
@@ -607,6 +720,11 @@
 	$: canEdit = $user.loggedIn && post && (isOwner || isAdmin);
 	$: canDelete = $user.loggedIn && post && ($user.data?.uid === post.uid || $user.data?.isAdmin);
 	$: canPin = $user.loggedIn && $user.data?.isAdmin;
+
+	// Fetch participants when collab post loads
+	$: if (post && post.type === 'collab') {
+		fetchParticipants();
+	}
 
 	function getYouTubeId(url: string): string | null {
 		if (!url) return null;
@@ -888,6 +1006,158 @@
 					</div>
 				{/if}
 			</div>
+
+			<!-- Participants Section -->
+			{#if hasParticipants}
+				<div class="participantsSection">
+					<div class="participantsHeader">
+						<div class="participantsInfo">
+							<Users class="h-4 w-4 text-indigo-500" />
+							<span class="participantsCount">
+								{$_('community.participants.count', { values: { current: post.participantsCount, max: post.maxParticipants } })}
+							</span>
+							{#if isFull}
+								<span class="participantsFull">{$_('community.participants.full')}</span>
+							{/if}
+						</div>
+						<div class="participantsBar">
+							<div
+								class="participantsBarFill"
+								class:full={isFull}
+								style="width: {Math.min(100, (post.participantsCount / post.maxParticipants) * 100)}%"
+							></div>
+						</div>
+					</div>
+
+					{#if $user.loggedIn && !isOwner}
+						<div class="participantAction">
+							{#if myParticipantStatus === null && !isFull}
+								<Button size="sm" on:click={requestJoin} disabled={participantActionLoading}>
+									<UserPlus class="mr-1 h-3.5 w-3.5" />
+									{$_('community.participants.join')}
+								</Button>
+							{:else if myParticipantStatus === 'pending'}
+								<div class="participantStatusChip pending">
+									<Clock class="h-3.5 w-3.5" />
+									<span>{$_('community.participants.pending')}</span>
+								</div>
+								<Button size="sm" variant="outline" on:click={cancelJoinRequest} disabled={participantActionLoading}>
+									<X class="mr-1 h-3.5 w-3.5" />
+									{$_('community.participants.cancel')}
+								</Button>
+							{:else if myParticipantStatus === 'approved'}
+								<div class="participantStatusChip approved">
+									<UserCheck class="h-3.5 w-3.5" />
+									<span>{$_('community.participants.approved')}</span>
+								</div>
+								{#if !isFull}
+									<Button size="sm" variant="outline" on:click={cancelJoinRequest} disabled={participantActionLoading}>
+										<UserMinus class="mr-1 h-3.5 w-3.5" />
+										{$_('community.participants.leave')}
+									</Button>
+								{/if}
+							{:else if myParticipantStatus === 'rejected'}
+								<div class="participantStatusChip rejected">
+									<UserX class="h-3.5 w-3.5" />
+									<span>{$_('community.participants.rejected')}</span>
+								</div>
+								{#if !isFull}
+									<Button size="sm" on:click={requestJoin} disabled={participantActionLoading}>
+										<UserPlus class="mr-1 h-3.5 w-3.5" />
+										{$_('community.participants.join')}
+									</Button>
+								{/if}
+							{/if}
+						</div>
+					{/if}
+
+					{#if isOwner}
+						<button class="manageParticipantsBtn" on:click={() => showParticipantsPanel = !showParticipantsPanel}>
+							<Users class="h-3.5 w-3.5" />
+							{$_('community.participants.manage')}
+							{#if pendingParticipants.length > 0}
+								<span class="pendingBadge">{pendingParticipants.length}</span>
+							{/if}
+						</button>
+
+						{#if showParticipantsPanel}
+							<div class="participantsPanel">
+								{#if pendingParticipants.length > 0}
+									<div class="participantGroup">
+										<h4 class="participantGroupTitle">
+											<Clock class="h-3.5 w-3.5" />
+											{$_('community.participants.pending')} ({pendingParticipants.length})
+										</h4>
+										{#each pendingParticipants as p}
+											<div class="participantRow">
+												<div class="participantUser">
+													<PlayerLink player={p.players} showAvatar />
+												</div>
+												<div class="participantBtns">
+													<button
+														class="participantActionBtn approve"
+														on:click={() => handleParticipantAction('approve', p.uid)}
+														disabled={participantActionLoading || isFull}
+														title={$_('community.participants.approve')}
+													>
+														<Check class="h-3.5 w-3.5" />
+													</button>
+													<button
+														class="participantActionBtn reject"
+														on:click={() => handleParticipantAction('reject', p.uid)}
+														disabled={participantActionLoading}
+														title={$_('community.participants.reject')}
+													>
+														<X class="h-3.5 w-3.5" />
+													</button>
+												</div>
+											</div>
+										{/each}
+									</div>
+								{/if}
+
+								{#if approvedParticipants.length > 0}
+									<div class="participantGroup">
+										<h4 class="participantGroupTitle">
+											<UserCheck class="h-3.5 w-3.5" />
+											{$_('community.participants.approved')} ({approvedParticipants.length})
+										</h4>
+										{#each approvedParticipants as p}
+											<div class="participantRow">
+												<div class="participantUser">
+													<PlayerLink player={p.players} showAvatar />
+												</div>
+												{#if !isFull}
+													<button
+														class="participantActionBtn revoke"
+														on:click={() => handleParticipantAction('revoke', p.uid)}
+														disabled={participantActionLoading}
+														title={$_('community.participants.revoke')}
+													>
+														<UserMinus class="h-3.5 w-3.5" />
+													</button>
+												{/if}
+											</div>
+										{/each}
+									</div>
+								{/if}
+
+								{#if pendingParticipants.length === 0 && approvedParticipants.length === 0}
+									<p class="noParticipants">{$_('community.participants.no_requests')}</p>
+								{/if}
+							</div>
+						{/if}
+					{:else if approvedParticipants.length > 0}
+						<div class="participantsListCompact">
+							{#each approvedParticipants as p}
+								<div class="participantChip">
+									<PlayerLink player={p.players} showAvatar />
+								</div>
+							{/each}
+						</div>
+					{/if}
+				</div>
+			{/if}
 
 			<!-- Post Actions -->
 			<div class="postActions">
@@ -1955,5 +2225,229 @@
 
 	.hidden {
 		display: none;
+	}
+
+	/* Participants */
+	.participantsSection {
+		padding: 16px 24px;
+		border-top: 1px solid hsl(var(--border));
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.participantsHeader {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.participantsInfo {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 13px;
+		font-weight: 500;
+	}
+
+	.participantsCount {
+		color: hsl(var(--foreground));
+	}
+
+	.participantsFull {
+		padding: 2px 8px;
+		border-radius: 10px;
+		font-size: 11px;
+		font-weight: 600;
+		background: hsl(0 84% 60% / 0.1);
+		color: hsl(0 84% 60%);
+	}
+
+	.participantsBar {
+		height: 6px;
+		background: hsl(var(--muted));
+		border-radius: 3px;
+		overflow: hidden;
+	}
+
+	.participantsBarFill {
+		height: 100%;
+		background: hsl(var(--primary));
+		border-radius: 3px;
+		transition: width 0.3s ease;
+
+		&.full {
+			background: hsl(0 84% 60%);
+		}
+	}
+
+	.participantAction {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.participantStatusChip {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 4px 10px;
+		border-radius: 6px;
+		font-size: 12px;
+		font-weight: 500;
+
+		&.pending {
+			background: hsl(45 93% 47% / 0.1);
+			color: hsl(45 93% 47%);
+		}
+
+		&.approved {
+			background: hsl(142 71% 45% / 0.1);
+			color: hsl(142 71% 45%);
+		}
+
+		&.rejected {
+			background: hsl(0 84% 60% / 0.1);
+			color: hsl(0 84% 60%);
+		}
+	}
+
+	.manageParticipantsBtn {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 8px 14px;
+		border-radius: 8px;
+		font-size: 13px;
+		font-weight: 500;
+		border: 1px solid hsl(var(--border));
+		background: hsl(var(--muted) / 0.5);
+		color: hsl(var(--foreground));
+		cursor: pointer;
+		transition: all 0.15s;
+		align-self: flex-start;
+
+		&:hover {
+			background: hsl(var(--muted));
+		}
+	}
+
+	.pendingBadge {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 18px;
+		height: 18px;
+		padding: 0 5px;
+		border-radius: 9px;
+		font-size: 11px;
+		font-weight: 700;
+		background: hsl(var(--primary));
+		color: hsl(var(--primary-foreground));
+	}
+
+	.participantsPanel {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		padding: 12px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		background: hsl(var(--muted) / 0.3);
+	}
+
+	.participantGroup {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.participantGroupTitle {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 12px;
+		font-weight: 600;
+		color: hsl(var(--muted-foreground));
+		margin: 0;
+		text-transform: uppercase;
+		letter-spacing: 0.3px;
+	}
+
+	.participantRow {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 6px 8px;
+		border-radius: 6px;
+
+		&:hover {
+			background: hsl(var(--muted) / 0.5);
+		}
+	}
+
+	.participantUser {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 13px;
+	}
+
+	.participantBtns {
+		display: flex;
+		gap: 4px;
+	}
+
+	.participantActionBtn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 28px;
+		height: 28px;
+		border-radius: 6px;
+		border: 1px solid hsl(var(--border));
+		background: transparent;
+		cursor: pointer;
+		transition: all 0.15s;
+
+		&.approve {
+			color: hsl(142 71% 45%);
+			&:hover {
+				background: hsl(142 71% 45% / 0.1);
+			}
+		}
+
+		&.reject, &.revoke {
+			color: hsl(0 84% 60%);
+			&:hover {
+				background: hsl(0 84% 60% / 0.1);
+			}
+		}
+
+		&:disabled {
+			opacity: 0.5;
+			cursor: not-allowed;
+		}
+	}
+
+	.noParticipants {
+		text-align: center;
+		font-size: 13px;
+		color: hsl(var(--muted-foreground));
+		padding: 12px;
+		margin: 0;
+	}
+
+	.participantsListCompact {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+
+	.participantChip {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		font-size: 12px;
 	}
 </style>

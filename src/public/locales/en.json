@@ -699,7 +699,8 @@
       "media": "Media",
       "guide": "Knowledge",
       "announcement": "Announcement",
-      "review": "Review"
+      "review": "Review",
+      "collab": "Collab"
     },
     "create": {
       "button": "New Post",
@@ -796,7 +797,32 @@
     "search": "Search",
     "search_placeholder": "Search posts...",
     "all_loaded": "All {total} posts loaded",
-    "related_posts": "Community Posts"
+    "related_posts": "Community Posts",
+    "participants": {
+      "label": "Participant Limit",
+      "placeholder": "Enter a number (1-100)",
+      "hint": "Cannot be changed after posting",
+      "count": "{current}/{max} participants",
+      "full": "Full",
+      "join": "Request to Join",
+      "cancel": "Cancel Request",
+      "leave": "Leave",
+      "pending": "Pending approval",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "approve": "Approve",
+      "reject": "Reject",
+      "revoke": "Revoke",
+      "manage": "Manage Participants",
+      "no_requests": "No requests yet",
+      "request_sent": "Join request sent!",
+      "request_cancelled": "Request cancelled",
+      "approved_success": "Participant approved",
+      "rejected_success": "Request rejected",
+      "revoked_success": "Participant revoked",
+      "left_success": "You have left",
+      "enable": "Enable participant limit"
+    }
   },
   "orders": {
     "title": "Orders",

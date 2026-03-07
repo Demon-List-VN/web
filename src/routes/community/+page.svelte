@@ -21,7 +21,8 @@
 		Star,
 		Sparkles,
 		Tag,
-		X
+		X,
+		Users
 	} from 'lucide-svelte';
 
 	let posts: any[] = [];
@@ -63,6 +64,7 @@
 		{ value: 'discussion', label: 'discussion', icon: MessageCircle },
 		{ value: 'media', label: 'media', icon: Image },
 		{ value: 'guide', label: 'guide', icon: BookOpen },
+		{ value: 'collab', label: 'collab', icon: Users },
 		{ value: 'review', label: 'review', icon: Star },
 		{ value: 'announcement', label: 'announcement', icon: Megaphone }
 	];

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ThumbsUp, MessageSquare, Pin, Image, BookOpen, Megaphone, MessageCircle, Play, Trophy, Gamepad2, Star, ThumbsDown, Flag } from 'lucide-svelte';
+	import { ThumbsUp, MessageSquare, Pin, Image, BookOpen, Megaphone, MessageCircle, Play, Trophy, Gamepad2, Star, ThumbsDown, Flag, Users } from 'lucide-svelte';
 	import { _, locale } from 'svelte-i18n';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import { user } from '$lib/client';
@@ -51,7 +51,8 @@
 		media: Image,
 		guide: BookOpen,
 		announcement: Megaphone,
-		review: Star
+		review: Star,
+		collab: Users
 	};
 
 	const typeColors: Record<string, string> = {
@@ -59,7 +60,8 @@
 		media: 'text-purple-500',
 		guide: 'text-emerald-500',
 		announcement: 'text-amber-500',
-		review: 'text-yellow-500'
+		review: 'text-yellow-500',
+		collab: 'text-indigo-500'
 	};
 
 	const typeBgColors: Record<string, string> = {
@@ -67,7 +69,8 @@
 		media: 'bg-purple-500/10',
 		guide: 'bg-emerald-500/10',
 		announcement: 'bg-amber-500/10',
-		review: 'bg-yellow-500/10'
+		review: 'bg-yellow-500/10',
+		collab: 'bg-indigo-500/10'
 	};
 
 	function timeAgo(dateStr: string) {
@@ -99,10 +102,11 @@
 	$: thumbnail = post?.imageUrl || (post?.videoUrl ? getYouTubeThumbnail(post.videoUrl) : null);
 	$: isMedia = post?.type === 'media';
 	$: postTags = (post?.communityPostsTags || []).map((pt: any) => pt.postTags).filter(Boolean);
+	$: isParticipantsFull = post?.type === 'collab' && post?.participantsCount >= post?.maxParticipants;
 </script>
 
 {#if post}
-	<a href="/community/{post.id}" class="communityPost" class:compact class:pinned={post.pinned} class:mediaPost={isMedia && thumbnail && !compact}>
+	<a href="/community/{post.id}" class="communityPost" class:compact class:pinned={post.pinned} class:mediaPost={isMedia && thumbnail && !compact} class:participantsFull={isParticipantsFull}>
 		{#if post.pinned}
 			<div class="pinnedBadge">
 				<Pin class="h-3 w-3" />
@@ -224,6 +228,12 @@
 					<MessageSquare class="h-4 w-4" />
 					<span>{post.commentsCount}</span>
 				</div>
+							{#if post.type === 'collab'}
+					<div class="postStat participantStat" class:participantFull={post.participantsCount >= post.maxParticipants}>
+						<Users class="h-4 w-4" />
+						<span>{post.participantsCount}/{post.maxParticipants}</span>
+					</div>
+				{/if}
 			</div>
 			{#if $user.loggedIn && $user.data?.uid !== post.uid}
 				<!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -288,6 +298,11 @@
 			min-height: auto;
 			height: auto;
 			.postContent { margin-top: 4px; }
+		}
+
+		&.participantsFull {
+			opacity: 0.6;
+			order: 1;
 		}
 	}
 
@@ -500,6 +515,14 @@
 				color: hsl(var(--primary));
 				background: hsl(var(--primary) / 0.1);
 			}
+		}
+	}
+
+	.participantStat {
+		color: rgb(99, 102, 241);
+
+		&.participantFull {
+			color: hsl(0 84% 60%);
 		}
 	}
 
