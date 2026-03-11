@@ -144,8 +144,6 @@
 										</Carousel.Item>
 									{/each}
 								</Carousel.Content>
-								<Carousel.Previous />
-								<Carousel.Next />
 							</Carousel.Root>
 						{:else}
 							<Carousel.Root>
@@ -156,8 +154,6 @@
 										</Carousel.Item>
 									{/each}
 								</Carousel.Content>
-								<Carousel.Previous />
-								<Carousel.Next />
 							</Carousel.Root>
 						{/if}
 					{/key}
