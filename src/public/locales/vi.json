@@ -673,6 +673,78 @@
       "link": "Đi tới dashboard"
     }
   },
+  "homepage": {
+    "hero": {
+      "bp_title": "Mở khóa phần thưởng độc quyền mùa này",
+      "bp_subtitle": "Nâng cấp Battle Pass và nhận cosmetics, huy hiệu độc quyền và hơn thế nữa.",
+      "get_premium": "Mua Premium",
+      "view_rewards": "Xem phần thưởng",
+      "supporter_badge": "Supporter",
+      "supporter_title": "Ủng hộ cộng đồng bạn yêu thích",
+      "supporter_subtitle": "Nhận đặc quyền, tùy chỉnh hồ sơ, ảnh GIF và hơn thế nữa.",
+      "become_supporter": "Trở thành Supporter",
+      "month": "tháng",
+      "visit_store": "Ghé cửa hàng",
+      "welcome_back": "Chào mừng trở lại, {name}!",
+      "supporter_bp_subtitle": "Tiếp tục hành trình Battle Pass hoặc kiểm tra kho đồ.",
+      "continue_bp": "Tiếp tục Battle Pass",
+      "inventory": "Kho đồ",
+      "active_supporter": "Supporter đang hoạt động",
+      "supporter_welcome_subtitle": "Cảm ơn bạn đã ủng hộ! Đây là các liên kết nhanh.",
+      "my_profile": "Hồ sơ",
+      "submissions": "Submissions"
+    },
+    "events": {
+      "title": "Sự kiện đang diễn ra",
+      "view_all": "Xem tất cả sự kiện",
+      "contest": "Cuộc thi",
+      "ranked": "Xếp hạng",
+      "supporter_only": "Supporter"
+    },
+    "battlepass": {
+      "go_to_pass": "Đi tới Battle Pass",
+      "description": "Nhận phần thưởng bằng cách hoàn thành thử thách và lên cấp pass.",
+      "exclusive_rewards": "Phần thưởng độc quyền",
+      "weekly_challenges": "Thử thách hàng tuần",
+      "get_premium": "Mua Premium"
+    },
+    "clans": {
+      "title": "Top Clan",
+      "view_all": "Xem tất cả clan",
+      "members": "thành viên",
+      "join_prompt": "Tham gia clan và thi đấu cùng mọi người!",
+      "browse_clans": "Duyệt Clan",
+      "my_clan": "Clan của tôi"
+    },
+    "supporters": {
+      "title": "Top Supporter",
+      "view_leaderboard": "Xem bảng xếp hạng",
+      "server_cost": "Chi phí máy chủ",
+      "help_reach": "Giúp chúng tôi duy trì server"
+    },
+    "features": {
+      "title": "Khám phá tính năng Premium",
+      "supporter_title": "Supporter",
+      "supporter_desc": "Mở khóa hồ sơ tùy chỉnh, avatar GIF, huy hiệu độc quyền và hỗ trợ ưu tiên.",
+      "supporter_b1": "Tùy chỉnh màu hồ sơ & banner",
+      "supporter_b2": "Avatar & banner động GIF",
+      "supporter_b3": "Huy hiệu supporter độc quyền",
+      "bp_title": "Battle Pass",
+      "bp_desc": "Hoàn thành thử thách, kiếm XP và mở khóa phần thưởng theo mùa.",
+      "bp_b1": "100 cấp phần thưởng",
+      "bp_b2": "Thử thách hàng tuần & hàng ngày",
+      "bp_b3": "Cosmetics độc quyền",
+      "boost_title": "Queue Boost",
+      "boost_desc": "Bỏ qua hàng đợi và submission được xét duyệt nhanh hơn.",
+      "boost_b1": "Hàng đợi ưu tiên",
+      "boost_b2": "Áp dụng cho mọi submission",
+      "boost_b3": "Kích hoạt ngay lập tức",
+      "month": "tháng",
+      "season": "mùa",
+      "day": "ngày",
+      "learn_more": "Tìm hiểu thêm"
+    }
+  },
   "community": {
     "title": "Cộng đồng",
     "subtitle": "Chia sẻ, thảo luận và kết nối với cộng đồng Geometry Dash Việt Nam",

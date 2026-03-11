@@ -369,7 +369,7 @@
 	<div class="filler"></div>
 {/if}
 
-{#if !supporterAlertDismissed && $user.checked && isVisible && (!$user.loggedIn || !isActive($user.data.supporterUntil)) && pathname !== '/supporter' && !pathname.startsWith('/player/') && !pathname.startsWith('/@')}
+{#if !supporterAlertDismissed && $user.checked && isVisible && (!$user.loggedIn || !isActive($user.data.supporterUntil)) && pathname !== '/supporter' && pathname !== '/' && !pathname.startsWith('/player/') && !pathname.startsWith('/@')}
 	<div class="px-[5px] pt-[20px] md:px-[55px]">
 		<Alert.Root
 			class="relative mb-[10px] flex items-center gap-[10px] border-pink-200 bg-pink-50 pb-[7px] dark:border-pink-800 dark:bg-pink-950"

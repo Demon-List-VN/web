@@ -674,6 +674,78 @@
       "link": "Go to dashboard"
     }
   },
+  "homepage": {
+    "hero": {
+      "bp_title": "Unlock exclusive rewards this season",
+      "bp_subtitle": "Level up your Battle Pass and earn unique cosmetics, badges, and more.",
+      "get_premium": "Get Premium",
+      "view_rewards": "View Rewards",
+      "supporter_badge": "Supporter",
+      "supporter_title": "Support the community you love",
+      "supporter_subtitle": "Get exclusive perks, custom profile, GIF avatar, and more.",
+      "become_supporter": "Become a Supporter",
+      "month": "month",
+      "visit_store": "Visit Store",
+      "welcome_back": "Welcome back, {name}!",
+      "supporter_bp_subtitle": "Continue your Battle Pass journey or check your inventory.",
+      "continue_bp": "Continue Battle Pass",
+      "inventory": "Inventory",
+      "active_supporter": "Active Supporter",
+      "supporter_welcome_subtitle": "Thank you for supporting us! Here are your quick links.",
+      "my_profile": "My Profile",
+      "submissions": "Submissions"
+    },
+    "events": {
+      "title": "Active Events",
+      "view_all": "View all events",
+      "contest": "Contest",
+      "ranked": "Ranked",
+      "supporter_only": "Supporter"
+    },
+    "battlepass": {
+      "go_to_pass": "Go to Battle Pass",
+      "description": "Earn rewards by completing challenges and leveling up your pass.",
+      "exclusive_rewards": "Exclusive Rewards",
+      "weekly_challenges": "Weekly Challenges",
+      "get_premium": "Get Premium"
+    },
+    "clans": {
+      "title": "Top Clans",
+      "view_all": "View all clans",
+      "members": "members",
+      "join_prompt": "Join a clan and compete with others!",
+      "browse_clans": "Browse Clans",
+      "my_clan": "My Clan"
+    },
+    "supporters": {
+      "title": "Top Supporters",
+      "view_leaderboard": "View leaderboard",
+      "server_cost": "Server Cost",
+      "help_reach": "Help us keep the lights on"
+    },
+    "features": {
+      "title": "Explore Premium Features",
+      "supporter_title": "Supporter",
+      "supporter_desc": "Unlock custom profiles, GIF avatars, exclusive badge, and priority support.",
+      "supporter_b1": "Custom profile colors & banner",
+      "supporter_b2": "GIF avatar & animated banner",
+      "supporter_b3": "Exclusive supporter badge",
+      "bp_title": "Battle Pass",
+      "bp_desc": "Complete challenges, earn XP, and unlock exclusive seasonal rewards.",
+      "bp_b1": "100 tiers of rewards",
+      "bp_b2": "Weekly & daily challenges",
+      "bp_b3": "Exclusive cosmetics",
+      "boost_title": "Queue Boost",
+      "boost_desc": "Skip the queue and get your submissions reviewed faster.",
+      "boost_b1": "Priority review queue",
+      "boost_b2": "Works for all submissions",
+      "boost_b3": "Instant activation",
+      "month": "month",
+      "season": "season",
+      "day": "day",
+      "learn_more": "Learn More"
+    }
+  },
   "community": {
     "title": "Community Hub",
     "subtitle": "Share, discuss, and connect with the Geometry Dash Việt Nam community",

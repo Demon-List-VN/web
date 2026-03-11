@@ -1,135 +1,50 @@
 <script lang="ts">
 	import * as Carousel from '$lib/components/ui/carousel/index.js';
 	import LevelCard from '$lib/components/levelCard.svelte';
-	import { onDestroy, onMount } from 'svelte';
-	import Autoplay from 'embla-carousel-autoplay';
-	import EventBanner from './event/eventBanner.svelte';
 	import Ads from '$lib/components/ads.svelte';
 	import { _, locale } from 'svelte-i18n';
-	import * as Alert from '$lib/components/ui/alert';
-	import { X, ArrowRight, Users } from 'lucide-svelte';
-	import { goto } from '$app/navigation';
+	import { ArrowRight, Users } from 'lucide-svelte';
 	import { user } from '$lib/client';
-	import { isActive } from '$lib/client/isSupporterActive';
-	import { browser } from '$app/environment';
 	import CommunityPostCard from '$lib/components/communityPostCard.svelte';
+	import HeroBanner from '$lib/components/homepage/HeroBanner.svelte';
+	import ActiveEventsStrip from '$lib/components/homepage/ActiveEventsStrip.svelte';
+	import BattlepassHomeWidget from '$lib/components/homepage/BattlepassHomeWidget.svelte';
+	import ClanSpotlight from '$lib/components/homepage/ClanSpotlight.svelte';
+	import SupporterSocialProof from '$lib/components/homepage/SupporterSocialProof.svelte';
+	import FeatureDiscovery from '$lib/components/homepage/FeatureDiscovery.svelte';
 
-	let showDiscordAlert = false;
 	let activeTab: 'dl' | 'fl' | 'pl' | 'cl' = 'dl';
-	const recent: any = {
-		dl: null,
-		fl: null,
-		pl: null,
-		cl: null
-	};
-	let events: any = null;
-	let showDashboardAlert = false;
-	let communityPosts: any[] | null = null;
-	let eventCarouselApi: any = null;
-	let selectedEventIndex = 0;
-	let cleanupEventCarouselListeners = () => {};
 
-	function dismissDashboardAlert() {
-		showDashboardAlert = false;
-		if (browser) localStorage.setItem('dashboardAlertDismissed', 'true');
+	let homeData: any = null;
+	let loaded = false;
+	$: events = homeData?.events ?? null;
+	$: levels = homeData?.levels ?? { dl: null, fl: null, pl: null, cl: null };
+	$: communityPosts = homeData?.communityPosts ?? null;
+	$: topClans = homeData?.topClans ?? null;
+	$: topSupporters = homeData?.topSupporters ?? null;
+	$: serverProgress = homeData?.serverProgress ?? null;
+	$: activeSeason = homeData?.activeSeason ?? null;
+	$: battlepassProgress = homeData?.battlepassProgress ?? null;
+
+	$: if ($user.checked && !loaded) {
+		loaded = true;
+		loadHomepage();
 	}
 
-	async function goToDashboard(e: Event) {
-		e.preventDefault();
-		dismissDashboardAlert();
-		await goto('/dashboard');
-	}
-
-	async function fetchLevels(list: string) {
-		const query = new URLSearchParams({
-			end: '9',
-			sortBy: 'created_at',
-			ascending: 'false'
-		});
-		return await (
-			await fetch(`${import.meta.env.VITE_API_URL}/list/${list}?${query.toString()}`)
-		).json();
-	}
-
-	async function getEvents() {
-		return await (await fetch(`${import.meta.env.VITE_API_URL}/events/ongoing`)).json();
-	}
-
-	function dismissDiscordAlert() {
-		showDiscordAlert = false;
-		localStorage.setItem('discordAlertDismissed', 'true');
-	}
-
-	function getEventThumbnail(item: any) {
-		return item?.imgUrl ? item.imgUrl : `https://cdn.gdvn.net/event-banner/${item?.id}.webp`;
-	}
-
-	function goToEventSlide(index: number) {
-		if (!eventCarouselApi) return;
-		eventCarouselApi.scrollTo(index);
-	}
-
-	$: if (eventCarouselApi) {
-		cleanupEventCarouselListeners();
-		const syncSelected = () => {
-			selectedEventIndex = eventCarouselApi.selectedScrollSnap();
-		};
-		syncSelected();
-		eventCarouselApi.on('select', syncSelected);
-		eventCarouselApi.on('reInit', syncSelected);
-		cleanupEventCarouselListeners = () => {
-			eventCarouselApi.off('select', syncSelected);
-			eventCarouselApi.off('reInit', syncSelected);
-		};
-	}
-
-	onDestroy(() => {
-		cleanupEventCarouselListeners();
-	});
-
-	onMount(() => {
-		if (localStorage.getItem('dashboardAlertDismissed') === null) {
-			localStorage.setItem('dashboardAlertDismissed', 'false');
+	async function loadHomepage() {
+		const headers: Record<string, string> = {};
+		if ($user.loggedIn) {
+			try {
+				headers['Authorization'] = `Bearer ${await $user.token()}`;
+			} catch {}
 		}
-
-		if (localStorage.getItem('discordAlertDismissed') == null) {
-			localStorage.setItem('discordAlertDismissed', 'false');
-		}
-
-		if (localStorage.getItem('settings.dashboardEnabled') === null) {
-			localStorage.setItem('settings.dashboardEnabled', 'true');
-		}
-
-		const dashboardAlertDismissed = localStorage.getItem('dashboardAlertDismissed') === 'true';
-		showDiscordAlert = localStorage.getItem('discordAlertDismissed') == 'false';
-
-		user.subscribe((u) => {
-			if (!u.loggedIn) return;
-			if (!dashboardAlertDismissed && isActive(u.data.supporterUntil)) {
-				showDashboardAlert = true;
-			} else {
-				showDashboardAlert = false;
-			}
-		});
-
-		fetchLevels('dl').then((data) => (recent.dl = data));
-		fetchLevels('fl').then((data) => (recent.fl = data));
-		fetchLevels('pl').then((data) => (recent.pl = data));
-		fetchLevels('cl').then((data) => (recent.cl = data));
-		getEvents().then((data) => (events = data));
-
-		// Fetch community posts
-		fetch(
-			`${import.meta.env.VITE_API_URL}/community/posts?limit=4&sortBy=createdAt&ascending=false`
-		)
+		fetch(`${import.meta.env.VITE_API_URL}/homepage`, { headers })
 			.then((res) => res.json())
 			.then((data) => {
-				communityPosts = data?.data || [];
+				homeData = data;
 			})
-			.catch(() => {
-				communityPosts = [];
-			});
-	});
+			.catch(() => {});
+	}
 </script>
 
 <svelte:head>
@@ -137,284 +52,211 @@
 	<meta name="description" content="Website dành cho cộng đồng Geometry Dash Việt Nam" />
 </svelte:head>
 
-<!-- Alerts -->
-{#if showDashboardAlert}
-	<div class="px-[5px] pt-[20px] md:px-[55px]">
-		<Alert.Root
-			class="relative flex items-center gap-[10px] border-amber-200 bg-amber-50 pb-[7px] dark:border-amber-800 dark:bg-amber-950"
-		>
-			<div>
-				<Alert.Title class="pr-8">{$_('home.dashboard_alert.title')}</Alert.Title>
-				<Alert.Description>
-					{$_('home.dashboard_alert.description')}
-					<a
-						href="/dashboard"
-						on:click={goToDashboard}
-						class="font-semibold underline hover:text-amber-600"
-					>
-						{$_('home.dashboard_alert.link')}
-					</a>
-				</Alert.Description>
-			</div>
-		</Alert.Root>
-	</div>
-{/if}
+<!-- Hero Banner (personalized CTA) -->
+<HeroBanner />
 
-{#if showDiscordAlert}
-	<div class="px-[5px] pt-[20px] md:px-[55px]">
-		<Alert.Root
-			class="relative flex items-center gap-[10px] border-blue-200 bg-blue-50 pb-[7px] dark:border-blue-800 dark:bg-blue-950"
-		>
-			<img src="/discord.svg" alt="Discord" class="mt-[-4px] scale-75 invert dark:invert-0" />
-			<div>
-				<Alert.Title class="pr-8">{$_('home.discord_alert.title')}</Alert.Title>
-				<Alert.Description>
-					{$_('home.discord_alert.description')}
-					<a
-						href="https://discord.gg/gdvn"
-						target="_blank"
-						class="font-semibold underline hover:text-blue-600"
-					>
-						{$_('home.discord_alert.join_now')}
-					</a>
-				</Alert.Description>
-				<button
-					on:click={dismissDiscordAlert}
-					class="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100"
-					aria-label="Dismiss"
-				>
-					<X class="h-4 w-4" />
-				</button>
-			</div>
-		</Alert.Root>
-	</div>
-{/if}
-
-<!-- Events Carousel -->
-<div class="promotionWrapper mt-[20px] w-full pl-[50px] pr-[50px]">
-	<Carousel.Root class="h-fit w-full" plugins={[Autoplay({ delay: 10000 })]} bind:api={eventCarouselApi}>
-		<Carousel.Content>
-			{#if events}
-				{#each events as item}
-					<Carousel.Item>
-						<a href={`/event/${item.id}`}>
-							<EventBanner data={item} />
-						</a>
-					</Carousel.Item>
-				{/each}
-			{:else}
-				<Carousel.Item>
-					<EventBanner data={null} />
-				</Carousel.Item>
-			{/if}
-		</Carousel.Content>
-		<Carousel.Previous />
-		<Carousel.Next />
-	</Carousel.Root>
-	{#if events && events.length > 0}
-		<div class="eventThumbRow">
-			{#each events as item, index}
-				<button
-					type="button"
-					class="eventThumb"
-					class:eventThumbActive={index === selectedEventIndex}
-					on:click={() => goToEventSlide(index)}
-					aria-label={`Go to event ${item.title}`}
-				>
-					<img src={getEventThumbnail(item)} alt={item.title} loading="lazy" />
-				</button>
-			{/each}
-		</div>
-	{/if}
+<!-- Active Events Strip -->
+<div class="postHeroSpacing">
+	<ActiveEventsStrip {events} />
 </div>
 
 <Ads dataAdFormat="auto" unit="leaderboard" />
 
 <div class="wrapper">
-	<!-- <section class="section">
-		<div class="panelsGrid">
-			<div class="panel">
-				<div class="panelHeader">
-					<div class="panelTitleRow">
-						<Newspaper class="h-5 w-5 text-blue-500" />
-						<h4>{$_('home.news_title')}</h4>
+	<!-- Full-width top: Battlepass + Supporter -->
+	<div class="topRow">
+		<BattlepassHomeWidget {activeSeason} {battlepassProgress} />
+		<SupporterSocialProof {topSupporters} {serverProgress} />
+	</div>
+
+	<!-- 2-Column Desktop Layout: Community+Levels | Clans -->
+	<div class="twoColGrid">
+		<!-- Main Column: Community + Levels -->
+		<div class="mainCol">
+			<!-- Community Hub -->
+			<section class="section">
+				<div class="sectionHeader">
+					<div class="flex items-center gap-2">
+						<Users class="h-5 w-5 text-indigo-500" />
+						<h4>{$_('community.hub_title')}</h4>
 					</div>
-					<a href={`/wiki/${$locale}/news`} class="viewAllBtn">
+					<a href="/community" class="viewAllBtn">
+						{$_('community.view_all')}
+						<ArrowRight class="ml-1 h-4 w-4" />
+					</a>
+				</div>
+				<div class="communityGrid">
+					{#if communityPosts}
+						{#if communityPosts.length > 0}
+							{#each communityPosts as post}
+								<CommunityPostCard {post} compact={true} />
+							{/each}
+						{:else}
+							<div class="communityEmpty">
+								<p>{$_('community.no_posts')}</p>
+							</div>
+						{/if}
+					{:else}
+						{#each { length: 3 } as _}
+							<CommunityPostCard post={null} />
+						{/each}
+					{/if}
+				</div>
+			</section>
+
+			<!-- Latest Levels with Tabs -->
+			<section class="section">
+				<div class="sectionHeader">
+					<h4>{$_('home.latest_levels')}</h4>
+					<div class="tabGroup">
+						<button
+							class="tab"
+							class:tabActive={activeTab === 'dl'}
+							on:click={() => (activeTab = 'dl')}
+						>
+							Demon List
+						</button>
+						<button
+							class="tab"
+							class:tabActive={activeTab === 'fl'}
+							on:click={() => (activeTab = 'fl')}
+						>
+							Featured List
+						</button>
+						<button
+							class="tab"
+							class:tabActive={activeTab === 'pl'}
+							on:click={() => (activeTab = 'pl')}
+						>
+							Platformer List
+						</button>
+					</div>
+				</div>
+
+				<div class="carouselWrapper">
+					{#key activeTab}
+						{#if levels[activeTab]}
+							<Carousel.Root>
+								<Carousel.Content>
+									{#each levels[activeTab] as level}
+										<Carousel.Item class="sm:basis-1/1 md:basis-1/2 lg:basis-1/3">
+											<LevelCard {level} type={activeTab} />
+										</Carousel.Item>
+									{/each}
+								</Carousel.Content>
+								<Carousel.Previous />
+								<Carousel.Next />
+							</Carousel.Root>
+						{:else}
+							<Carousel.Root>
+								<Carousel.Content>
+									{#each { length: 4 } as _}
+										<Carousel.Item class="sm:basis-1/1 md:basis-1/2 lg:basis-1/3">
+											<LevelCard level={null} type={activeTab} />
+										</Carousel.Item>
+									{/each}
+								</Carousel.Content>
+								<Carousel.Previous />
+								<Carousel.Next />
+							</Carousel.Root>
+						{/if}
+					{/key}
+				</div>
+
+				<div class="viewAllLink">
+					<a href="/list/{activeTab}" class="viewAllBtn">
 						{$_('home.view_all')}
 						<ArrowRight class="ml-1 h-4 w-4" />
 					</a>
 				</div>
-				<div class="panelContent">
-					{#if newsArticles}
-						{#if newsArticles.length > 0}
-							{#each newsArticles.slice(0, 5) as item}
-								<a href={`/wiki/${$locale}/${item.path}`} class="listItem">
-									<div class="listItemContent">
-										<span class="listItemTitle">{getTitle(item, $locale || 'vi')}</span>
-										{#if getDescription(item, $locale || 'vi')}
-											<span class="listItemDesc">{getDescription(item, $locale || 'vi')}</span>
-										{/if}
-									</div>
-									<span class="listItemDate">{formatDate(item.created_at)}</span>
-								</a>
-							{/each}
-						{:else}
-							<p class="noArticles">{$_('home.no_articles')}</p>
-						{/if}
-					{:else}
-						{#each { length: 3 } as _}
-							<div class="listItemSkeleton">
-								<div class="skeletonLine w-3/4"></div>
-								<div class="skeletonLine w-1/4"></div>
-							</div>
-						{/each}
-					{/if}
-				</div>
-			</div>
-
-			<div class="panel">
-				<div class="panelHeader">
-					<div class="panelTitleRow">
-						<History class="h-5 w-5 text-green-500" />
-						<h4>{$_('home.changelogs_title')}</h4>
-					</div>
-					<a href={`/wiki/${$locale}/changelogs`} class="viewAllBtn">
-						{$_('home.view_all')}
-						<ArrowRight class="ml-1 h-4 w-4" />
-					</a>
-				</div>
-				<div class="panelContent">
-					{#if changelogArticles}
-						{#if changelogArticles.length > 0}
-							{#each changelogArticles.slice(0, 5) as item}
-								<a href={`/wiki/${$locale}/${item.path}`} class="listItem">
-									<div class="listItemContent">
-										<span class="listItemTitle">{getTitle(item, $locale || 'vi')}</span>
-										{#if getDescription(item, $locale || 'vi')}
-											<span class="listItemDesc">{getDescription(item, $locale || 'vi')}</span>
-										{/if}
-									</div>
-									<span class="listItemDate">{formatDate(item.created_at)}</span>
-								</a>
-							{/each}
-						{:else}
-							<p class="noArticles">{$_('home.no_articles')}</p>
-						{/if}
-					{:else}
-						{#each { length: 3 } as _}
-							<div class="listItemSkeleton">
-								<div class="skeletonLine w-3/4"></div>
-								<div class="skeletonLine w-1/4"></div>
-							</div>
-						{/each}
-					{/if}
-				</div>
-			</div>
-		</div>
-	</section> -->
-	<!-- Community Hub -->
-	<section class="section">
-		<div class="sectionHeader">
-			<div class="flex items-center gap-2">
-				<Users class="h-5 w-5 text-indigo-500" />
-				<h4>{$_('community.hub_title')}</h4>
-			</div>
-			<a href="/community" class="viewAllBtn">
-				{$_('community.view_all')}
-				<ArrowRight class="ml-1 h-4 w-4" />
-			</a>
-		</div>
-		<div class="communityGrid">
-			{#if communityPosts}
-				{#if communityPosts.length > 0}
-					{#each communityPosts as post}
-						<CommunityPostCard {post} compact={true} />
-					{/each}
-				{:else}
-					<div class="communityEmpty">
-						<p>{$_('community.no_posts')}</p>
-					</div>
-				{/if}
-			{:else}
-				{#each { length: 6 } as _}
-					<CommunityPostCard post={null} />
-				{/each}
-			{/if}
-		</div>
-	</section>
-	<!-- Latest Levels with Tabs -->
-	<section class="section">
-		<div class="sectionHeader">
-			<h4>{$_('home.latest_levels')}</h4>
-			<div class="tabGroup">
-				<button
-					class="tab"
-					class:tabActive={activeTab === 'dl'}
-					on:click={() => (activeTab = 'dl')}
-				>
-					Demon List
-				</button>
-				<button
-					class="tab"
-					class:tabActive={activeTab === 'fl'}
-					on:click={() => (activeTab = 'fl')}
-				>
-					Featured List
-				</button>
-				<button
-					class="tab"
-					class:tabActive={activeTab === 'pl'}
-					on:click={() => (activeTab = 'pl')}
-				>
-					Platformer List
-				</button>
-			</div>
+			</section>
 		</div>
 
-		<div class="carouselWrapper">
-			{#key activeTab}
-				{#if recent[activeTab]}
-					<Carousel.Root>
-						<Carousel.Content>
-							{#each recent[activeTab] as level}
-								<Carousel.Item class="sm:basis-1/1 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-									<LevelCard {level} type={activeTab} />
-								</Carousel.Item>
-							{/each}
-						</Carousel.Content>
-						<Carousel.Previous />
-						<Carousel.Next />
-					</Carousel.Root>
-				{:else}
-					<Carousel.Root>
-						<Carousel.Content>
-							{#each { length: 5 } as _}
-								<Carousel.Item class="sm:basis-1/1 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-									<LevelCard level={null} type={activeTab} />
-								</Carousel.Item>
-							{/each}
-						</Carousel.Content>
-						<Carousel.Previous />
-						<Carousel.Next />
-					</Carousel.Root>
-				{/if}
-			{/key}
+		<!-- Side Column: Clans -->
+		<div class="sideCol">
+			<ClanSpotlight {topClans} />
 		</div>
+	</div>
 
-		<div class="viewAllLink">
-			<a href="/list/{activeTab}" class="viewAllBtn">
-				{$_('home.view_all')}
-				<ArrowRight class="ml-1 h-4 w-4" />
-			</a>
-		</div>
+	<!-- Feature Discovery (non-supporters only) — full width -->
+	<section class="section fullWidthSection">
+		<FeatureDiscovery />
 	</section>
 </div>
 
+<Ads dataAdFormat="auto" unit="leaderboard" />
+
 <style lang="scss">
+	.postHeroSpacing {
+		padding-top: 20px;
+	}
+
 	.wrapper {
 		position: relative;
 		z-index: 1;
 		background-color: hsl(var(--background));
+	}
+
+	.section {
+		padding-top: 30px;
+	}
+
+	/* Full-width top row: BP + Supporter side by side */
+	.topRow {
+		display: flex;
+		gap: 24px;
+		padding: 20px 50px 0;
+	}
+
+	.topRow :global(.bpWidget),
+	.topRow :global(.supporterProof) {
+		flex: 1;
+		padding: 0 !important;
+		min-width: 0;
+	}
+
+	/* 2-Column Desktop Grid */
+	.twoColGrid {
+		display: grid;
+		grid-template-columns: 1fr 360px;
+		gap: 0 24px;
+		padding: 0 50px;
+	}
+
+	.mainCol {
+		min-width: 0;
+
+		.sectionHeader {
+			padding-inline: 0;
+		}
+		.carouselWrapper {
+			padding-inline: 0;
+		}
+		.viewAllLink {
+			padding-inline: 0;
+		}
+		.communityGrid {
+			padding-inline: 0;
+		}
+	}
+
+	.sideCol {
+		display: flex;
+		flex-direction: column;
+		gap: 24px;
+		padding-top: 30px;
+	}
+
+	.sideCol :global(.clanSpotlight) {
+		padding: 0 !important;
+	}
+
+	.sideCol :global(.clanGrid) {
+		grid-template-columns: 1fr !important;
+	}
+
+	.fullWidthSection {
+		padding-bottom: 30px;
 	}
 
 	.sectionHeader {
@@ -422,7 +264,6 @@
 		align-items: center;
 		justify-content: space-between;
 		padding-inline: 50px;
-		padding-top: 30px;
 		flex-wrap: wrap;
 		gap: 12px;
 	}
@@ -495,7 +336,7 @@
 	/* Community Hub */
 	.communityGrid {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(max(340px, calc((100% - 42px) / 4)), 1fr));
+		grid-template-columns: repeat(3, 1fr);
 		gap: 14px;
 		padding-inline: 50px;
 		margin-top: 20px;
@@ -509,7 +350,84 @@
 		font-size: 14px;
 	}
 
+	@media screen and (max-width: 1100px) {
+		.topRow {
+			flex-direction: column;
+			padding: 20px 50px 0;
+		}
+
+		.twoColGrid {
+			grid-template-columns: 1fr;
+			padding: 0;
+		}
+
+		.mainCol {
+			.sectionHeader {
+				padding-inline: 50px;
+			}
+			.carouselWrapper {
+				padding-inline: 50px;
+			}
+			.viewAllLink {
+				padding-inline: 50px;
+			}
+			.communityGrid {
+				grid-template-columns: repeat(2, 1fr);
+				padding-inline: 50px;
+			}
+		}
+
+		.sideCol {
+			padding: 0;
+		}
+
+		.sideCol :global(.clanSpotlight) {
+			padding: 0 50px !important;
+		}
+
+		.sideCol :global(.clanGrid) {
+			grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)) !important;
+		}
+	}
+
 	@media screen and (max-width: 900px) {
+		.topRow {
+			padding: 20px 16px 0;
+		}
+
+		.topRow :global(.topSupportersSection) {
+			grid-template-columns: 1fr !important;
+		}
+
+		.twoColGrid {
+			padding: 0;
+		}
+
+		.mainCol {
+			.sectionHeader {
+				padding-inline: 16px;
+			}
+			.carouselWrapper {
+				padding-inline: 16px;
+			}
+			.viewAllLink {
+				padding-inline: 16px;
+			}
+			.communityGrid {
+				grid-template-columns: 1fr;
+				padding-inline: 16px;
+			}
+
+		}
+
+		.sideCol :global(.clanSpotlight) {
+			padding: 0 16px !important;
+		}
+
+		.sideCol :global(.clanGrid) {
+			grid-template-columns: 1fr !important;
+		}
+
 		.sectionHeader {
 			padding-inline: 16px;
 		}
@@ -527,51 +445,9 @@
 			padding-inline: 16px;
 		}
 
-		.promotionWrapper {
-			margin-left: -50px;
-			width: calc(100% + 104px);
-		}
-
 		.tabGroup {
 			width: 100%;
 			overflow-x: auto;
 		}
-	}
-
-	.eventThumbRow {
-		display: flex;
-		justify-content: center;
-		flex-wrap: wrap;
-		gap: 8px;
-		margin-top: 10px;
-		padding-bottom: 4px;
-	}
-
-	.eventThumb {
-		padding: 0;
-		border: 2px solid transparent;
-		border-radius: 8px;
-		overflow: hidden;
-		opacity: 0.75;
-		transition: opacity 0.2s ease, border-color 0.2s ease;
-		background: transparent;
-		cursor: pointer;
-		flex: 0 0 auto;
-
-		&:hover {
-			opacity: 1;
-		}
-
-		img {
-			display: block;
-			width: 120px;
-			height: 42px;
-			object-fit: cover;
-		}
-	}
-
-	.eventThumbActive {
-		opacity: 1;
-		border-color: hsl(var(--primary));
 	}
 </style>
