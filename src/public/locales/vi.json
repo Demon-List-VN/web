@@ -412,7 +412,7 @@
       "listing": "Danh sách hội",
       "invitations": "Lời mời"
     },
-    "search_placeholder": "Tìm kiếm",
+    "search_placeholder": "Tìm kiếm hội...",
     "owned_by": "Sở hữu bởi",
     "create": {
       "title": "Tạo hội mới",
@@ -425,7 +425,45 @@
       "member_limit_placeholder": "Nhập 0 để không giới hạn",
       "public": "Công khai",
       "create_button": "Tạo"
-    }
+    },
+    "my_clan": {
+      "title": "Hội của tôi",
+      "view": "Xem hội",
+      "invite": "Mời thành viên",
+      "boost_active": "Nâng cấp đến",
+      "not_boosted": "Chưa nâng cấp"
+    },
+    "find_community": {
+      "title": "Tìm cộng đồng của bạn",
+      "description": "Tham gia hội để thi đấu, hợp tác và leo hạng cùng nhau"
+    },
+    "boost_cta": {
+      "title": "Nâng cấp hội",
+      "description": "Mở khóa tính năng cao cấp cho hội của bạn",
+      "feature_community": "Cộng đồng hội",
+      "feature_levels": "Trưng bày Levels",
+      "feature_home": "Trang chủ tùy chỉnh",
+      "feature_tags": "Màu tag tùy chỉnh",
+      "login_required": "Đăng nhập để nâng cấp hội",
+      "no_clan": "Hãy tạo hoặc tham gia hội trước",
+      "price_per_day": "/ngày",
+      "proceed": "Tiến hành thanh toán",
+      "select_duration": "Chọn thời gian nâng cấp"
+    },
+    "featured": "Hội nổi bật",
+    "all": "Tất cả hội",
+    "sort": {
+      "label": "Sắp xếp theo",
+      "rating": "Điểm",
+      "members": "Thành viên",
+      "name": "Tên",
+      "newest": "Mới nhất",
+      "boosted": "Được nâng cấp"
+    },
+    "loading": "Đang tải thêm...",
+    "no_more": "Không còn hội nào",
+    "empty": "Không tìm thấy hội nào",
+    "members_count": "thành viên"
   },
   "events": {
     "contest": "Cuộc thi",

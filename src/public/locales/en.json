@@ -413,7 +413,7 @@
       "listing": "Clan listing",
       "invitations": "Invitations"
     },
-    "search_placeholder": "Search",
+    "search_placeholder": "Search clans...",
     "owned_by": "Owned by",
     "create": {
       "title": "Create new clan",
@@ -426,7 +426,45 @@
       "member_limit_placeholder": "Enter 0 for unlimited",
       "public": "Public",
       "create_button": "Create"
-    }
+    },
+    "my_clan": {
+      "title": "My Clan",
+      "view": "View Clan",
+      "invite": "Invite Members",
+      "boost_active": "Boosted until",
+      "not_boosted": "Not boosted"
+    },
+    "find_community": {
+      "title": "Find your community",
+      "description": "Join a clan to compete, collaborate, and climb the ranks together"
+    },
+    "boost_cta": {
+      "title": "Boost Your Clan",
+      "description": "Unlock premium features for your clan",
+      "feature_community": "Clan Community",
+      "feature_levels": "Levels Showcase",
+      "feature_home": "Custom Home Page",
+      "feature_tags": "Custom Tag Colors",
+      "login_required": "Log in to boost a clan",
+      "no_clan": "Create or join a clan first",
+      "price_per_day": "/day",
+      "proceed": "Proceed to Payment",
+      "select_duration": "Select boost duration"
+    },
+    "featured": "Featured Clans",
+    "all": "All Clans",
+    "sort": {
+      "label": "Sort by",
+      "rating": "Rating",
+      "members": "Members",
+      "name": "Name",
+      "newest": "Newest",
+      "boosted": "Boosted"
+    },
+    "loading": "Loading more clans...",
+    "no_more": "No more clans to show",
+    "empty": "No clans found",
+    "members_count": "members"
   },
   "events": {
     "contest": "Contest",

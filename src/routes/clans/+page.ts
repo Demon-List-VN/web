@@ -1,7 +1,10 @@
+const PAGE_SIZE = 24;
+
 export async function load({ params, url, fetch }) {
-    const clan: any = await (await fetch(`${import.meta.env.VITE_API_URL}/clans`)).json()
+    const clan: any = await (await fetch(`${import.meta.env.VITE_API_URL}/clans?start=0&end=${PAGE_SIZE - 1}&sortBy=boostedUntil&ascending=false`)).json()
 
     return {
-        data: clan
+        data: clan,
+        pageSize: PAGE_SIZE
     }
 };
