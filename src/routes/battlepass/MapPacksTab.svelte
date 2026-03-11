@@ -201,12 +201,15 @@
 									</p>
 								</div>
 							</div>
+							<div class="text-right">
 							<div
 								class="rounded-full px-3 py-1 text-sm font-bold"
 								style="background-color: rgba(var(--primary-color), 0.2); color: {primaryColor}"
 							>
 								+{mapPack?.xp || 0} XP
 							</div>
+							<div class="mt-1 text-xs text-muted-foreground">+25 XP / level</div>
+						</div>
 						</div>
 					</Card.Header>
 					<Card.Content>

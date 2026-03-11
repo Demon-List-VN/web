@@ -149,6 +149,7 @@
                   <div class="text-center">
                     <div class="text-3xl font-black" style="color: {primaryColor};">+{mapPack?.xp || 0}</div>
                     <div class="text-xs font-medium uppercase tracking-wider opacity-60">XP Reward</div>
+                    <div class="mt-1 text-xs opacity-50">+25 XP / level</div>
                   </div>
                 </div>
               </div>
@@ -228,11 +229,17 @@
                     </div>
                   </div>
                   
-                  {#if levelCompleted}
-                    <div class="rounded-full bg-green-500/20 px-2 py-1 text-xs font-semibold text-green-600">
-                      ✓ Done
-                    </div>
-                  {/if}
+                  <div class="flex items-center gap-1.5">
+                    {#if levelCompleted}
+                      <div class="rounded-full bg-green-500/20 px-2 py-1 text-xs font-semibold text-green-600">
+                        +25 XP ✓
+                      </div>
+                    {:else}
+                      <div class="rounded-full bg-muted px-2 py-1 text-xs font-semibold text-muted-foreground">
+                        +25 XP
+                      </div>
+                    {/if}
+                  </div>
                 </div>
 
                 {#if $user.loggedIn}
