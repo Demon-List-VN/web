@@ -256,7 +256,7 @@
 			);
 			if (res.ok) battlePassMapPacks = await res.json();
 		} catch (e) {
-			console.error('Failed to fetch battle pass map packs:', e);
+			console.error('Failed to fetch Pass map packs:', e);
 		}
 	}
 
@@ -1037,12 +1037,12 @@
 	});
 </script>
 
-<Title value="Battle Pass Manager" />
+<Title value="Pass Manager" />
 
 <div class="wrapper">
 	<div class="mb-6 flex items-center gap-4">
 		<Crown class="h-8 w-8 text-yellow-400" />
-		<h1 class="text-2xl font-bold">Battle Pass Manager</h1>
+		<h1 class="text-2xl font-bold">Pass Manager</h1>
 		<a href="/admin/battlepass/course">
 			<Button variant="outline" size="sm">Course Manager</Button>
 		</a>
@@ -1089,7 +1089,7 @@
 			<Tabs.Content value="levels">
 				<Card.Root>
 					<Card.Header class="flex flex-row items-center justify-between">
-						<Card.Title>Battle Pass Levels</Card.Title>
+						<Card.Title>Pass Levels</Card.Title>
 						<Button size="sm" on:click={openNewLevel}>
 							<Plus class="mr-1 h-4 w-4" />
 							Add Level
@@ -1353,7 +1353,7 @@
 				<Textarea
 					id="seasonDesc"
 					bind:value={seasonForm.description}
-					placeholder="The first battle pass season"
+					placeholder="The first Pass season"
 				/>
 			</div>
 			<div class="grid grid-cols-2 gap-4">

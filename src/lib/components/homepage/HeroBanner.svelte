@@ -20,10 +20,6 @@
 	<div class="heroContent">
 		{#if !isLoggedIn || !isSupporter}
 			<!-- Anonymous / Free users -->
-			<div class="heroBadge supporterBadge">
-				<Crown class="h-4 w-4" />
-				<span>{$_('homepage.hero.supporter_badge')}</span>
-			</div>
 			<h1 class="heroTitle">{$_('homepage.hero.supporter_title')}</h1>
 			<p class="heroSubtitle">{$_('homepage.hero.supporter_subtitle')}</p>
 			<div class="heroCtas">

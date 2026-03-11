@@ -36,7 +36,7 @@
 				</Card.Content>
 			</Card.Root>
 
-			<!-- Battle Pass -->
+			<!-- Pass -->
 			<Card.Root class="featureCard bpFeature">
 				<Card.Content class="p-5">
 					<div class="featureIcon bpIcon">

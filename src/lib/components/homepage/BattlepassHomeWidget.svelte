@@ -21,7 +21,7 @@
 	<div class="bpHeader">
 		<div class="flex items-center gap-2">
 			<Zap class="h-5 w-5" style="color: var(--bp-color)" />
-			<h4>{activeSeason ? `Battle Pass — ${activeSeason.title}` : 'Battle Pass'}</h4>
+			<h4>{activeSeason ? `Pass — ${activeSeason.title}` : 'Pass'}</h4>
 		</div>
 		<a href="/battlepass" class="viewAllBtn">
 			{$_('homepage.battlepass.go_to_pass')}

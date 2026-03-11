@@ -273,17 +273,17 @@
 	});
 </script>
 
-<Title value="Battle Pass Course Manager" />
+<Title value="Pass Course Manager" />
 
 <div class="wrapper">
 	<div class="mb-6 flex items-center gap-4">
 		<Crown class="h-8 w-8 text-yellow-400" />
-		<h1 class="text-2xl font-bold">Battle Pass Course Manager</h1>
+		<h1 class="text-2xl font-bold">Pass Course Manager</h1>
 		<Button variant="outline" size="icon" on:click={fetchCourses}>
 			<RefreshCw class="h-4 w-4" />
 		</Button>
 		<a href="/admin/battlepass" class="ml-auto">
-			<Button variant="outline" size="sm">Back to Battle Pass</Button>
+			<Button variant="outline" size="sm">Back to Pass</Button>
 		</a>
 	</div>
 

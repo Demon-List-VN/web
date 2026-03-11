@@ -1,4 +1,4 @@
-// Battle Pass Constants
+// Pass Constants
 export const XP_PER_TIER = 100;
 export const MAX_TIER = 100;
 export const PREMIUM_PRICE = 99000; // VND

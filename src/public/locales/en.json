@@ -677,7 +677,7 @@
   "homepage": {
     "hero": {
       "bp_title": "Unlock exclusive rewards this season",
-      "bp_subtitle": "Level up your Battle Pass and earn unique cosmetics, badges, and more.",
+      "bp_subtitle": "Level up your Pass and earn unique cosmetics, badges, and more.",
       "get_premium": "Get Premium",
       "view_rewards": "View Rewards",
       "supporter_badge": "Supporter",
@@ -687,8 +687,8 @@
       "month": "month",
       "visit_store": "Visit Store",
       "welcome_back": "Welcome back, {name}!",
-      "supporter_bp_subtitle": "Continue your Battle Pass journey or check your inventory.",
-      "continue_bp": "Continue Battle Pass",
+      "supporter_bp_subtitle": "Continue your Pass journey or check your inventory.",
+      "continue_bp": "Continue Pass",
       "inventory": "Inventory",
       "active_supporter": "Active Supporter",
       "supporter_welcome_subtitle": "Thank you for supporting us! Here are your quick links.",
@@ -703,7 +703,7 @@
       "supporter_only": "Supporter"
     },
     "battlepass": {
-      "go_to_pass": "Go to Battle Pass",
+      "go_to_pass": "Go to Pass",
       "description": "Earn rewards by completing challenges and leveling up your pass.",
       "exclusive_rewards": "Exclusive Rewards",
       "weekly_challenges": "Weekly Challenges",
@@ -730,7 +730,7 @@
       "supporter_b1": "Custom profile colors & banner",
       "supporter_b2": "GIF avatar & animated banner",
       "supporter_b3": "Exclusive supporter badge",
-      "bp_title": "Battle Pass",
+      "bp_title": "Pass",
       "bp_desc": "Complete challenges, earn XP, and unlock exclusive seasonal rewards.",
       "bp_b1": "100 tiers of rewards",
       "bp_b2": "Weekly & daily challenges",
@@ -1457,9 +1457,9 @@
     "clear": "Clear Filters"
   },
   "battlepass": {
-    "title": "Battle Pass",
+    "title": "Pass",
     "no_active_season": "No Active Season",
-    "check_back_later": "Check back later for the next Battle Pass season!",
+    "check_back_later": "Check back later for the next Pass season!",
     "days_remaining": "{count} days remaining",
     "tier": "Tier",
     "total": "Total",
@@ -1467,10 +1467,10 @@
     "progress_to_tier": "Progress to Tier {tier}",
     "rewards_ready": "{count} rewards ready to claim!",
     "sign_in_to_track": "Sign in to track your progress",
-    "sign_in_description": "Log in to see your Battle Pass progress and claim rewards",
+    "sign_in_description": "Log in to see your Pass progress and claim rewards",
     "geode_alert": {
       "title": "Geode mod required",
-      "description": "Install the Geode mod to play Battle Pass.",
+      "description": "Install the Geode mod to play Pass.",
       "download": "Download Geode mod",
       "dismiss": "Dismiss"
     },

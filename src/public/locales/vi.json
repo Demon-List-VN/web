@@ -676,23 +676,23 @@
   "homepage": {
     "hero": {
       "bp_title": "Mở khóa phần thưởng độc quyền mùa này",
-      "bp_subtitle": "Nâng cấp Battle Pass và nhận cosmetics, huy hiệu độc quyền và hơn thế nữa.",
+      "bp_subtitle": "Nâng cấp Pass và nhận cosmetics, huy hiệu độc quyền và hơn thế nữa.",
       "get_premium": "Mua Premium",
       "view_rewards": "Xem phần thưởng",
       "supporter_badge": "Supporter",
-      "supporter_title": "Ủng hộ cộng đồng bạn yêu thích",
+      "supporter_title": "Ủng hộ cộng đồng mà bạn yêu thích",
       "supporter_subtitle": "Nhận đặc quyền, tùy chỉnh hồ sơ, ảnh GIF và hơn thế nữa.",
       "become_supporter": "Trở thành Supporter",
       "month": "tháng",
       "visit_store": "Ghé cửa hàng",
       "welcome_back": "Chào mừng trở lại, {name}!",
-      "supporter_bp_subtitle": "Tiếp tục hành trình Battle Pass hoặc kiểm tra kho đồ.",
-      "continue_bp": "Tiếp tục Battle Pass",
+      "supporter_bp_subtitle": "Tiếp tục hành trình Pass hoặc kiểm tra kho đồ.",
+      "continue_bp": "Tiếp tục Pass",
       "inventory": "Kho đồ",
       "active_supporter": "Supporter đang hoạt động",
       "supporter_welcome_subtitle": "Cảm ơn bạn đã ủng hộ! Đây là các liên kết nhanh.",
       "my_profile": "Hồ sơ",
-      "submissions": "Submissions"
+      "submissions": "Bản nộp"
     },
     "events": {
       "title": "Sự kiện đang diễn ra",
@@ -702,7 +702,7 @@
       "supporter_only": "Supporter"
     },
     "battlepass": {
-      "go_to_pass": "Đi tới Battle Pass",
+      "go_to_pass": "Đi tới Pass",
       "description": "Nhận phần thưởng bằng cách hoàn thành thử thách và lên cấp pass.",
       "exclusive_rewards": "Phần thưởng độc quyền",
       "weekly_challenges": "Thử thách hàng tuần",
@@ -729,7 +729,7 @@
       "supporter_b1": "Tùy chỉnh màu hồ sơ & banner",
       "supporter_b2": "Avatar & banner động GIF",
       "supporter_b3": "Huy hiệu supporter độc quyền",
-      "bp_title": "Battle Pass",
+      "bp_title": "Pass",
       "bp_desc": "Hoàn thành thử thách, kiếm XP và mở khóa phần thưởng theo mùa.",
       "bp_b1": "100 cấp phần thưởng",
       "bp_b2": "Thử thách hàng tuần & hàng ngày",
@@ -1456,9 +1456,9 @@
     "clear": "Xóa bộ lọc"
   },
   "battlepass": {
-    "title": "Battle Pass",
+    "title": "Pass",
     "no_active_season": "Không có mùa đang hoạt động",
-    "check_back_later": "Quay lại sau để xem mùa Battle Pass tiếp theo!",
+    "check_back_later": "Quay lại sau để xem mùa Pass tiếp theo!",
     "days_remaining": "Còn {count} ngày",
     "tier": "Cấp",
     "total": "Tổng",
@@ -1466,10 +1466,10 @@
     "progress_to_tier": "Tiến độ đến Cấp {tier}",
     "rewards_ready": "{count} phần thưởng có thể nhận!",
     "sign_in_to_track": "Đăng nhập để theo dõi tiến độ",
-    "sign_in_description": "Đăng nhập để xem tiến độ Battle Pass và nhận phần thưởng",
+    "sign_in_description": "Đăng nhập để xem tiến độ Pass và nhận phần thưởng",
     "geode_alert": {
       "title": "Cần cài mod Geode",
-      "description": "Bạn cần cài mod Geode để chơi Battle Pass.",
+      "description": "Bạn cần cài mod Geode để chơi Pass.",
       "download": "Tải mod Geode",
       "dismiss": "Đóng"
     },
