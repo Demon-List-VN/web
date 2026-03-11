@@ -1,7 +1,7 @@
 // Battle Pass Constants
 export const XP_PER_TIER = 100;
 export const MAX_TIER = 100;
-export const PREMIUM_PRICE = 149000; // VND
+export const PREMIUM_PRICE = 99000; // VND
 
 // Difficulty colors for map packs
 export const DIFFICULTY_COLORS: Record<string, string> = {
