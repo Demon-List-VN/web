@@ -1,14 +1,14 @@
 import type { ApiFetch, ApiListResponse, ListEntry } from '$lib/client/apiTypes';
 import * as sdk from '$lib/client/sdk';
 async function getTotalPage(fetch: ApiFetch, list: string) {
-	const query = new URLSearchParams({
+	const query = {
 		start: '0',
 		end: '0',
 		sortBy: list == 'fl' ? 'flTop' : list == 'cl' ? 'created_at' : 'dlTop',
 		ascending: list == 'cl' ? 'false' : 'true'
-	});
+	};
 
-	const res = await sdk.get<ListEntry[]>(`/list/${list}?${query.toString()}`, { fetch });
+	const res = await sdk.getList(list, query, { fetch });
 
 	return res[0][list == 'fl' ? 'flTop' : 'dlTop'];
 }
@@ -20,15 +20,15 @@ async function getLevels(fetch: ApiFetch, list: string, page: number, uid: strin
 		sortBy = 'created_at';
 	}
 
-	const query = new URLSearchParams({
+	const query = {
 		start: String((page - 1) * 50),
 		end: String(page * 50 - 1),
 		sortBy: sortBy,
 		ascending: list == 'cl' ? 'false' : 'true',
 		uid: !uid ? '' : uid
-	});
+	};
 
-	const res = await sdk.get<ApiListResponse>(`/list/${list}?${query.toString()}`, { fetch });
+	const res = await sdk.getList(list, query, { fetch });
 
 	return res;
 }

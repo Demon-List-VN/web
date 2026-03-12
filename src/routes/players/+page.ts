@@ -1,7 +1,7 @@
-import type { Province, ProvinceMap } from '$lib/client/apiTypes';
+import type { Province } from '$lib/client/apiTypes';
 import * as sdk from '$lib/client/sdk';
 export async function load({ fetch }) {
-    const res = await sdk.get<ProvinceMap>(`/provinces`, { fetch })
+    const res = await sdk.getProvinces({ fetch })
 
     return {
         provinces: {

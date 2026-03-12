@@ -1,12 +1,12 @@
 import { error } from '@sveltejs/kit';
-import type { ApiObject, GdBrowserLevel, PointercrateLevel } from '$lib/client/apiTypes';
+import type { GdBrowserLevel, PointercrateLevel } from '$lib/client/apiTypes';
 import * as sdk from '$lib/client/sdk';
 
 export async function load({ params, url, fetch }) {
 	const { id } = params;
 
 	if (url.searchParams.get('list') == 'other') {
-		const gdbrowserLevel = await sdk.get<GdBrowserLevel>(`/levels/${id}?fromGD=1`, { fetch });
+		const gdbrowserLevel = await sdk.getLevelFromGD(id, { fetch });
 
 		if (!('demonList' in gdbrowserLevel)) {
 			return {
@@ -30,7 +30,7 @@ export async function load({ params, url, fetch }) {
 
 	try {
 		return {
-			level: await sdk.get<ApiObject>(`/levels/${id}`, { fetch })
+			level: await sdk.getLevel(id, { fetch })
 		};
 	} catch {
 		throw error(404, 'Level does not exist');

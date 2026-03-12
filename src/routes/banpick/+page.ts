@@ -7,21 +7,12 @@ export async function load({ params, url, fetch }) {
     const levels: ApiObject[] = [];
 
     const players: ApiListResponse =
-        await (await sdk.fetch(`/players/batch`, {
-            fetch,
-            method: "POST",
-            body: JSON.stringify({
-                batch: [uidA, uidB],
-            }),
-            headers: {
-                "Content-Type": "application/json",
-            },
-        }))
+        await (await sdk.postPlayersBatch([uidA, uidB], { fetch }))
             .json();
 
     for (const i of levelIDs) {
         levels.push(
-            await sdk.get<ApiObject>(`/levels/${i}?fromGD=1`, { fetch }),
+            await sdk.getLevelFromGD(i, { fetch }),
         );
     }
 

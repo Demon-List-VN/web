@@ -1,19 +1,10 @@
-import type { EventResponse, PlayerSummary } from '$lib/client/apiTypes';
+import type { PlayerSummary } from '$lib/client/apiTypes';
 import * as sdk from '$lib/client/sdk';
 export async function load({ params, url, fetch }) {
     const { id } = params;
-    const event = await sdk.get<EventResponse>(`/events/${id}`, { fetch });
+    const event = await sdk.getEvent(id, { fetch });
     event.data.players =
-        await (await sdk.fetch(`/players/batch`, {
-            fetch,
-            method: "POST",
-            body: JSON.stringify({
-                batch: event.data.players,
-            }),
-            headers: {
-                "Content-Type": "application/json",
-            },
-        })).json() as PlayerSummary[];
+        await (await sdk.postPlayersBatch(event.data.players as string[], { fetch })).json() as PlayerSummary[];
 
     const mp = new Map();
 

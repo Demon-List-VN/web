@@ -7,14 +7,14 @@ export const load: PageLoad = async ({ params, fetch }) => {
 
   try {
     // Try dedicated detail endpoint first
-    const res = await sdk.fetch(`/battlepass/mappack/${id}`, { fetch });
+    const res = await sdk.fetchBattlepassMappack(id, { fetch });
     if (res.ok) {
       const mapPackWrapper = (await res.json()) as MapPackWrapper;
       return { mapPackWrapper };
     }
     
     // Fallback: fetch list and pick by id
-    const listRes = await sdk.fetch(`/battlepass/mappacks`, { fetch });
+    const listRes = await sdk.fetchBattlepassMappacks({ fetch });
     if (listRes.ok) {
       const packs = (await listRes.json()) as MapPackWrapper[];
       const mapPackWrapper = packs.find((p) => p.id === id) ?? null;

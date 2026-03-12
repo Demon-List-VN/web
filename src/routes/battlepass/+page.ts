@@ -1,10 +1,9 @@
 import type { PageLoad } from './$types';
-import type { ApiObject } from '$lib/client/apiTypes';
 import * as sdk from '$lib/client/sdk';
 
 export const load: PageLoad = async ({ fetch }) => {
 	try {
-		const seasonRes = await sdk.fetch(`/battlepass`, { fetch });
+		const seasonRes = await sdk.fetchBattlepass({ fetch });
 
 		if (!seasonRes.ok) {
 			return {
@@ -12,7 +11,7 @@ export const load: PageLoad = async ({ fetch }) => {
 			};
 		}
 
-		const season = (await seasonRes.json()) as ApiObject;
+		const season = await seasonRes.json();
 
 		return {
 			season

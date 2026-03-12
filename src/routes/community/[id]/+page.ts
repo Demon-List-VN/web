@@ -7,8 +7,8 @@ export async function load({ params, fetch }) {
 
 	try {
 		const [postRes, commentsRes] = await Promise.all([
-			sdk.fetch(`/community/posts/${id}`, { fetch }),
-			sdk.fetch(`/community/posts/${id}/comments`, { fetch })
+			sdk.fetchCommunityPost(id, { fetch }),
+			sdk.fetchCommunityPostComments(id, { fetch })
 		]);
 
 		if (!postRes.ok) {

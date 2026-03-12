@@ -1,8 +1,9 @@
 import * as sdk from '$lib/client/sdk';
+import * as sdk from '$lib/client/sdk';
+
 export async function upload(path: string, data: any, token: string) {
 	const url = await (
-		await sdk.fetch(`/storage/presign?path=${path}`, {
-			method: 'GET',
+		await sdk.fetchStoragePresign(path, {
 			headers: {
 				Authorization: 'Bearer ' + token
 			}

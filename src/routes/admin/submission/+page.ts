@@ -1,4 +1,3 @@
-import type { ApiListResponse } from '$lib/client/apiTypes';
 import * as sdk from '$lib/client/sdk';
 export async function load({ params, fetch }) {
     const query = new URLSearchParams({
@@ -6,7 +5,7 @@ export async function load({ params, fetch }) {
         isChecked: 'false',
     })
 
-    const res = await sdk.get<ApiListResponse>(`/records?${query.toString()}`, { fetch })
+    const res = await sdk.getRecords(Object.fromEntries(query), { fetch })
 
     return {
         data: res

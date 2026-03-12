@@ -81,8 +81,7 @@ async function addNewUser() {
 		throw new Error(error.message);
 	}
 
-	await sdk.fetch(`/players`, {
-		method: 'POST',
+	await sdk.createPlayer({
 		headers: {
 			Authorization: `Bearer ${await userData.token()}`,
 			'Content-Type': 'application/json'
@@ -109,8 +108,7 @@ const userData: userType = {
 			return;
 		}
 
-		await sdk.fetch(`/players/syncRole`, {
-			method: 'PATCH',
+		await sdk.syncPlayerRole({
 			headers: {
 				Authorization: 'Bearer ' + (await userData.token())
 			}
@@ -138,10 +136,10 @@ const userData: userType = {
 		}
 
 		const tmp = Promise.all([
-			sdk.get<PlayerSummary>(`/players/${userId}?cached=true`).then((res) => {
+			sdk.getCachedPlayer(userId).then((res) => {
 				userData.data = res;
 			}),
-			sdk.get<Rating[]>(`/players/${userId}/records?ratingOnly=true`).then((res) => {
+			sdk.getPlayerRatings(userId).then((res) => {
 				userData.ratings = res;
 			})
 		])
@@ -154,10 +152,10 @@ const userData: userType = {
 			.catch((err) => {
 				addNewUser().then(() => {
 					Promise.all([
-						sdk.get<PlayerSummary>(`/players/${userId}?cached=true`).then((res) => {
+						sdk.getCachedPlayer(userId).then((res) => {
 							userData.data = res;
 						}),
-						sdk.get<Rating[]>(`/players/${userId}/records?ratingOnly=true`).then((res) => {
+						sdk.getPlayerRatings(userId).then((res) => {
 							userData.ratings = res;
 						})
 					]).then(() => {

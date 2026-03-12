@@ -1,7 +1,6 @@
-import type { StoreProduct } from '$lib/client/apiTypes';
 import * as sdk from '$lib/client/sdk';
 export async function load({ params, url, fetch }) {
-    const data = await sdk.get<StoreProduct[]>(`/store/products`, { fetch });
+    const data = await sdk.getStoreProducts({ fetch });
 
     return {
         data: data,
