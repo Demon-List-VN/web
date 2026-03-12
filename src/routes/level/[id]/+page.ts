@@ -1,10 +1,12 @@
 import { error } from '@sveltejs/kit';
+import type { ApiObject, GdBrowserLevel, PointercrateLevel } from '$lib/client/apiTypes';
+import * as sdk from '$lib/client/sdk';
 
 export async function load({ params, url, fetch }) {
 	const { id } = params;
 
 	if (url.searchParams.get('list') == 'other') {
-		const gdbrowserLevel: any = await (await fetch(`${import.meta.env.VITE_API_URL}/levels/${id}?fromGD=1`)).json();
+		const gdbrowserLevel = await sdk.get<GdBrowserLevel>(`/levels/${id}?fromGD=1`, { fetch });
 
 		if (!('demonList' in gdbrowserLevel)) {
 			return {
@@ -16,9 +18,9 @@ export async function load({ params, url, fetch }) {
 			};
 		}
 
-		const pointercrateLevel: any = await (
+		const pointercrateLevel = (await (
 			await fetch(`https://pointercrate.com/api/v2/demons/listed?name=${gdbrowserLevel.name}`)
-		).json();
+		).json()) as PointercrateLevel[];
 
 		return {
 			gdbrowser: gdbrowserLevel,
@@ -28,7 +30,7 @@ export async function load({ params, url, fetch }) {
 
 	try {
 		return {
-			level: (await (await fetch(`${import.meta.env.VITE_API_URL}/levels/${id}`)).json()) as any
+			level: await sdk.get<ApiObject>(`/levels/${id}`, { fetch })
 		};
 	} catch {
 		throw error(404, 'Level does not exist');

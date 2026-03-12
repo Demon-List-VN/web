@@ -1,11 +1,14 @@
+import type { ApiListResponse, ApiObject } from '$lib/client/apiTypes';
+import * as sdk from '$lib/client/sdk';
 export async function load({ params, url, fetch }) {
     const uidA = url.searchParams.get("a");
     const uidB = url.searchParams.get("b");
     const levelIDs: number[] = JSON.parse(url.searchParams.get("levels")!);
-    const levels = [];
+    const levels: ApiObject[] = [];
 
-    const players: any[] =
-        await (await fetch(`${import.meta.env.VITE_API_URL}/players/batch`, {
+    const players: ApiListResponse =
+        await (await sdk.fetch(`/players/batch`, {
+            fetch,
             method: "POST",
             body: JSON.stringify({
                 batch: [uidA, uidB],
@@ -18,7 +21,7 @@ export async function load({ params, url, fetch }) {
 
     for (const i of levelIDs) {
         levels.push(
-            await (await fetch(`${import.meta.env.VITE_API_URL}/levels/${i}?fromGD=1`)).json() as any,
+            await sdk.get<ApiObject>(`/levels/${i}?fromGD=1`, { fetch }),
         );
     }
 

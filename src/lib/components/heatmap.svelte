@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Switch } from '$lib/components/ui/switch/index.js';
 	import * as Tooltip from '$lib/components/ui/tooltip';
@@ -40,7 +41,7 @@
 	}
 
 	function fetchData() {
-		fetch(`${import.meta.env.VITE_API_URL}/players/${uid}/heatmap/${year}`)
+		sdk.fetch(`/players/${uid}/heatmap/${year}`)
 			.then((res) => res.json())
 			.then((res: any) => {
 				data = res.days;

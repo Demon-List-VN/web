@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import Title from '$lib/components/Title.svelte';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
@@ -61,7 +62,7 @@
 	// Tag CRUD
 	async function fetchAllTags() {
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/levels/tags`);
+			const res = await sdk.fetch(`/levels/tags`);
 			if (res.ok) allTags = await res.json();
 		} catch {}
 	}
@@ -70,7 +71,7 @@
 		if (!newTagName.trim()) return;
 		creatingTag = true;
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/levels/tags`, {
+			const res = await sdk.fetch(`/levels/tags`, {
 				method: 'POST',
 				headers: await getHeaders(),
 				body: JSON.stringify({ name: newTagName.trim(), color: newTagColor })
@@ -95,7 +96,7 @@
 	async function deleteTag(tagId: number) {
 		if (!confirm('Delete this tag? It will be removed from all levels.')) return;
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/levels/tags/${tagId}`, {
+			const res = await sdk.fetch(`/levels/tags/${tagId}`, {
 				method: 'DELETE',
 				headers: await getHeaders()
 			});
@@ -125,7 +126,7 @@
 		savingLevelTagEdit = true;
 		try {
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/levels/tags/${editingLevelTag.id}`,
+				sdk.url(`/levels/tags/${editingLevelTag.id}`),
 				{
 					method: 'PUT',
 					headers: await getHeaders(),
@@ -152,7 +153,7 @@
 	async function fetchLevelTags() {
 		if (isNaN(level.id)) return;
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/levels/${level.id}/tags`);
+			const res = await sdk.fetch(`/levels/${level.id}/tags`);
 			if (res.ok) {
 				const data = await res.json();
 				levelTags = data.map((t: any) => t.level_tags || t);
@@ -179,7 +180,7 @@
 		}
 		savingLevelTags = true;
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/levels/${level.id}/tags`, {
+			const res = await sdk.fetch(`/levels/${level.id}/tags`, {
 				method: 'PUT',
 				headers: await getHeaders(),
 				body: JSON.stringify({ tag_ids: levelTags.map((t) => t.id) })
@@ -200,7 +201,7 @@
 	async function fetchVariants() {
 		if (isNaN(level.id)) return;
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/levels/${level.id}/variants`);
+			const res = await sdk.fetch(`/levels/${level.id}/variants`);
 			if (res.ok) variants = await res.json();
 		} catch {}
 	}
@@ -209,7 +210,7 @@
 		if (isNaN(newVariantId)) return;
 		addingVariant = true;
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/levels/${level.id}/variants`, {
+			const res = await sdk.fetch(`/levels/${level.id}/variants`, {
 				method: 'POST',
 				headers: await getHeaders(),
 				body: JSON.stringify({ variantLevelId: newVariantId })
@@ -233,7 +234,7 @@
 		if (!confirm('Remove this variant?')) return;
 		try {
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/levels/${level.id}/variants/${variantId}`,
+				sdk.url(`/levels/${level.id}/variants/${variantId}`),
 				{
 					method: 'DELETE',
 					headers: await getHeaders()
@@ -255,7 +256,7 @@
 	});
 
 	async function fetchLevel() {
-		fetch(`${import.meta.env.VITE_API_URL}/levels/${level.id}`)
+		sdk.fetch(`/levels/${level.id}`)
 			.then((res) => res.json())
 			.then((res: any) => {
 				level = res;
@@ -265,7 +266,7 @@
 				if (allTags.length === 0) fetchAllTags();
 			})
 			.catch((err) => {
-				fetch(`${import.meta.env.VITE_API_URL}/levels/${level.id}?fromGD=1`)
+				sdk.fetch(`/levels/${level.id}?fromGD=1`)
 					.then((res) => res.json())
 					.then((res: any) => {
 						level.name = res.name;
@@ -287,7 +288,7 @@
 			}
 		}
 
-		fetch(`${import.meta.env.VITE_API_URL}/levels`, {
+		sdk.fetch(`/levels`, {
 			method: 'PUT',
 			body: JSON.stringify(level),
 			headers: {
@@ -310,7 +311,7 @@
 			return;
 		}
 
-		fetch(`${import.meta.env.VITE_API_URL}/levels/${level.id}`, {
+		sdk.fetch(`/levels/${level.id}`, {
 			method: 'DELETE',
 			headers: {
 				Authorization: `Bearer ${await $user.token()}`

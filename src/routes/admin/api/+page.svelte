@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import Title from '$lib/components/Title.svelte';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
@@ -94,7 +95,7 @@
 			// Convert array to pipe-separated string
 			const countString = deathCountArray.join('|');
 
-			const url = `${import.meta.env.VITE_API_URL}/deathCount/${deathCountData.levelID}/${countString}${deathCountData.completed ? '?completed=true' : ''}`;
+			const url = sdk.url(`/deathCount/${deathCountData.levelID}/${countString}${deathCountData.completed ? '?completed=true' : ''}`);
 
 			const response = await fetch(url, {
 				method: 'POST',
@@ -143,7 +144,7 @@
 			eventSubmitLoading = true;
 			eventSubmitResponse = '';
 
-			const url = `${import.meta.env.VITE_API_URL}/events/submitLevel/${eventSubmitData.levelID}?progress=${eventSubmitData.progress}&password=${encodeURIComponent(eventSubmitData.password)}`;
+			const url = sdk.url(`/events/submitLevel/${eventSubmitData.levelID}?progress=${eventSubmitData.progress}&password=${encodeURIComponent(eventSubmitData.password)}`);
 
 			const response = await fetch(url, {
 				method: 'PUT',
@@ -228,7 +229,7 @@ async function copyDeathCountAsCurl() {
 			return;
 		}
 		const countString = deathCountArray.join('|');
-		const url = `${import.meta.env.VITE_API_URL}/deathCount/${deathCountData.levelID}/${countString}${deathCountData.completed ? '?completed=true' : ''}`;
+		const url = sdk.url(`/deathCount/${deathCountData.levelID}/${countString}${deathCountData.completed ? '?completed=true' : ''}`);
 		const token = await $user.token();
 		const cmd = await buildCurlCommand('POST', url, { Authorization: 'Bearer ' + token });
 		await copyToClipboard(cmd);
@@ -245,7 +246,7 @@ async function copyEventSubmitAsCurl() {
 			toast.error('Level ID, Progress, and Password are required');
 			return;
 		}
-		const url = `${import.meta.env.VITE_API_URL}/events/submitLevel/${eventSubmitData.levelID}?progress=${eventSubmitData.progress}&password=${encodeURIComponent(eventSubmitData.password)}`;
+		const url = sdk.url(`/events/submitLevel/${eventSubmitData.levelID}?progress=${eventSubmitData.progress}&password=${encodeURIComponent(eventSubmitData.password)}`);
 		const token = await $user.token();
 		const cmd = await buildCurlCommand('PUT', url, { Authorization: 'Bearer ' + token });
 		await copyToClipboard(cmd);

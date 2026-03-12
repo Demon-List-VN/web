@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { createEventDispatcher, onMount } from 'svelte';
 	import { user } from '$lib/client';
 	import Loading from '$lib/components/animation/loading.svelte';
@@ -79,7 +80,7 @@
 
 		try {
 			res = await (
-				await fetch(`${import.meta.env.VITE_API_URL}/inventory/${inventoryItemId}/consume`, {
+				await sdk.fetch(`/inventory/${inventoryItemId}/consume`, {
 					method: 'DELETE',
 					headers: {
 						Authorization: 'Bearer ' + (await $user.token())

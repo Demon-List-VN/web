@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { cart } from '$lib/client/cart';
 	import { user } from '$lib/client/user';
 	import { onMount } from 'svelte';
@@ -20,7 +21,7 @@
 
 		data = await (
 			await fetch(
-				`${import.meta.env.VITE_API_URL}/store/products?ids=${JSON.stringify($cart.queryArray())}`
+				sdk.url(`/store/products?ids=${JSON.stringify($cart.queryArray())}`)
 			)
 		).json();
 	}

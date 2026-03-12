@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import * as Command from '$lib/components/ui/command';
 	import * as Avatar from '$lib/components/ui/avatar';
 	import { onMount } from 'svelte';
@@ -56,7 +57,7 @@
 		}
 
 		const promises = [
-			fetch(`${import.meta.env.VITE_API_URL}/search/${value}`, {
+			sdk.fetch(`/search/${value}`, {
 				headers: await getSearchAuthHeaders()
 			}).then((res) => res.json()),
 			fetch(`https://gdbrowser.com/api/search/${value}?page=0&count=5&diff=-2`) // TODO: Migrate to own GD API

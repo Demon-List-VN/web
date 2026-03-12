@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { onMount } from 'svelte';
 	import LevelCard from './levelCard.svelte';
 	import type { Level } from './type';
@@ -24,7 +25,7 @@
 		}
 
 		records = await (
-			await fetch(`${import.meta.env.VITE_API_URL}/events/${event.id}/submissions`, {
+			await sdk.fetch(`/events/${event.id}/submissions`, {
 				method: 'GET',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())

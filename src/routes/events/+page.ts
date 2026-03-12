@@ -1,5 +1,7 @@
+import type { ApiListResponse } from '$lib/client/apiTypes';
+import * as sdk from '$lib/client/sdk';
 export async function load({ params, url, fetch }) {
-	const events: any = await (await fetch(`${import.meta.env.VITE_API_URL}/events`)).json();
+	const events = await sdk.get<ApiListResponse>(`/events`, { fetch });
 
 	return { events };
 }

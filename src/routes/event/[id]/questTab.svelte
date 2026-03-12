@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { onMount } from 'svelte';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -12,7 +13,7 @@
 
 	async function fetchData() {
 		const res = await (
-			await fetch(`${import.meta.env.VITE_API_URL}/events/${event.id}/quest`)
+			await sdk.fetch(`/events/${event.id}/quest`)
 		).json();
 
 		return res;

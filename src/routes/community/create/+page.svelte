@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { Button } from '$lib/components/ui/button';
 	import * as Select from '$lib/components/ui/select';
 	import { Input } from '$lib/components/ui/input';
@@ -73,7 +74,7 @@
 	async function fetchTags() {
 		loadingTags = true;
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/tags`);
+			const res = await sdk.fetch(`/community/tags`);
 			const allTags = await res.json();
 			// Filter out admin-only tags for non-admins
 			availableTags = $user.data?.isAdmin ? allTags : allTags.filter((t: any) => !t.adminOnly);
@@ -134,7 +135,7 @@
 		loadingRecords = true;
 		try {
 			const token = await $user.token();
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/my/records`, {
+			const res = await sdk.fetch(`/community/my/records`, {
 				headers: { Authorization: `Bearer ${token}` }
 			});
 			myRecords = await res.json();
@@ -207,7 +208,7 @@
 		loadingReviewLevels = true;
 		try {
 			const token = await $user.token();
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/my/records`, {
+			const res = await sdk.fetch(`/community/my/records`, {
 				headers: { Authorization: `Bearer ${token}` }
 			});
 			const records = await res.json();
@@ -345,8 +346,8 @@
 			}
 
 			const apiUrl = clanId
-				? `${import.meta.env.VITE_API_URL}/clans/${clanId}/community/posts`
-				: `${import.meta.env.VITE_API_URL}/community/posts`;
+				? sdk.url(`/clans/${clanId}/community/posts`)
+				: sdk.url(`/community/posts`);
 
 			const res = await fetch(apiUrl, {
 				method: 'POST',

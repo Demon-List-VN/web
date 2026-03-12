@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { onMount } from 'svelte';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import * as Select from '$lib/components/ui/select';
@@ -38,7 +39,7 @@
 	async function fetchLevels() {
 		fetch(
 			// @ts-expect-error
-			`${import.meta.env.VITE_API_URL}/clans/${clan.id}/list/${list}?${new URLSearchParams(filter[list]).toString()}`
+			sdk.url(`/clans/${clan.id}/list/${list}?${new URLSearchParams(filter[list]).toString()}`)
 		)
 			.then((res) => res.json())
 			.then((res: any) => {

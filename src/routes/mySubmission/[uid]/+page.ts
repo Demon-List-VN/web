@@ -1,11 +1,10 @@
+import type { ApiListResponse } from '$lib/client/apiTypes';
+import * as sdk from '$lib/client/sdk';
 export async function load({ params, fetch }) {
-    const [recordsRes, levelSubmissionsRes] = await Promise.all([
-        fetch(`${import.meta.env.VITE_API_URL}/players/${params.uid}/submissions?end=500`),
-        fetch(`${import.meta.env.VITE_API_URL}/level-submissions/user/${params.uid}`)
+    const [records, levelSubmissions] = await Promise.all([
+        sdk.get<ApiListResponse>(`/players/${params.uid}/submissions?end=500`, { fetch }),
+        sdk.get<ApiListResponse>(`/level-submissions/user/${params.uid}`, { fetch })
     ])
-
-    const records: any[] = await recordsRes.json()
-    const levelSubmissions: any[] = await levelSubmissionsRes.json()
 
     return {
         records,

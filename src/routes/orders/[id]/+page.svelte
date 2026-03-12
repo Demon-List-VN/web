@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import Title from '$lib/components/Title.svelte';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Table from '$lib/components/ui/table/index.js';
@@ -33,12 +34,12 @@
 		}
 
 		toast.loading($_('orders.cancel.loading'));
-		window.location.href = `${import.meta.env.VITE_API_URL}/payment/cancelled?orderCode=${data.id}`;
+		window.location.href = sdk.url(`/payment/cancelled?orderCode=${data.id}`);
 	}
 
 	async function fetchData() {
 		data = await (
-			await fetch(`${import.meta.env.VITE_API_URL}/orders/${page.params.id}`, {
+			await sdk.fetch(`/orders/${page.params.id}`, {
 				method: 'GET',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())

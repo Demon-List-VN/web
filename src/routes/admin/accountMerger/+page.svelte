@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import Title from '$lib/components/Title.svelte';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
@@ -13,7 +14,7 @@
 			return;
 		}
 
-		fetch(`${import.meta.env.VITE_API_URL}/mergeAccount/${uidA}/${uidB}`, {
+		sdk.fetch(`/mergeAccount/${uidA}/${uidB}`, {
 			method: 'PATCH',
 			headers: {
 				Authorization: 'Bearer ' + (await $user.token())!

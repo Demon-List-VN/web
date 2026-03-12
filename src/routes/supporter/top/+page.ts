@@ -1,3 +1,5 @@
+import type { ApiListResponse } from '$lib/client/apiTypes';
+import * as sdk from '$lib/client/sdk';
 export async function load({ fetch, url }) {
 	const interval = url.searchParams.get('interval') || '30';
 	
@@ -6,7 +8,7 @@ export async function load({ fetch, url }) {
 	else if (interval === '14') intervalMs = 14 * 24 * 60 * 60 * 1000;
 	else intervalMs = 30 * 24 * 60 * 60 * 1000; // default to 30 days
 	
-	const buyers: any = await (await fetch(`${import.meta.env.VITE_API_URL}/buyers/top?interval=${intervalMs}`)).json();
+	const buyers = await sdk.get<ApiListResponse>(`/buyers/top?interval=${intervalMs}`, { fetch });
 
 	return { buyers, interval };
 }

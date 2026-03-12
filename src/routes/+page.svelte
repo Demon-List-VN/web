@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import * as Carousel from '$lib/components/ui/carousel/index.js';
 	import LevelCard from '$lib/components/levelCard.svelte';
 	import Ads from '$lib/components/ads.svelte';
@@ -38,7 +39,7 @@
 				headers['Authorization'] = `Bearer ${await $user.token()}`;
 			} catch {}
 		}
-		fetch(`${import.meta.env.VITE_API_URL}/homepage`, { headers })
+		sdk.fetch(`/homepage`, { headers })
 			.then((res) => res.json())
 			.then((data) => {
 				homeData = data;

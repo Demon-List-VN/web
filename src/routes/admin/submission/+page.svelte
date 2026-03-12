@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import RecordDetail from '$lib/components/recordDetail.svelte';
 	import Title from '$lib/components/Title.svelte';
 	import { Label } from '$lib/components/ui/label';
@@ -35,7 +36,7 @@
 
 		toast.loading('Submitting verdict... This page will be refreshed.');
 
-		await fetch(`${import.meta.env.VITE_API_URL}/records`, {
+		await sdk.fetch(`/records`, {
 			method: 'PUT',
 			body: JSON.stringify({
 				userid: userID,
@@ -48,7 +49,7 @@
 			}
 		});
 
-		await fetch(`${import.meta.env.VITE_API_URL}/notifications`, {
+		await sdk.fetch(`/notifications`, {
 			method: 'POST',
 			body: JSON.stringify({
 				to: userID,
@@ -73,14 +74,14 @@
 
 		toast.loading('Submitting verdict... This page will be refreshed.');
 
-		await fetch(`${import.meta.env.VITE_API_URL}/records/${userID}/${level.id}`, {
+		await sdk.fetch(`/records/${userID}/${level.id}`, {
 			method: 'DELETE',
 			headers: {
 				Authorization: `Bearer ${await $user.token()}`
 			}
 		});
 
-		await fetch(`${import.meta.env.VITE_API_URL}/notifications`, {
+		await sdk.fetch(`/notifications`, {
 			method: 'POST',
 			body: JSON.stringify({
 				to: userID,

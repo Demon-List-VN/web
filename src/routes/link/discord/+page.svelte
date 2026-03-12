@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { toast } from 'svelte-sonner';
 	import { user } from '$lib/client';
 	import { page } from '$app/stores';
@@ -8,7 +9,7 @@
 
 	async function link() {
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/auth/link/discord`, {
+			sdk.fetch(`/auth/link/discord`, {
 				method: 'PATCH',
 				body: JSON.stringify({
 					token: token

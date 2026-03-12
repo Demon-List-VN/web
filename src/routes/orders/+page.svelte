@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import Title from '$lib/components/Title.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as Table from '$lib/components/ui/table';
@@ -12,7 +13,7 @@
 
 	async function getOrders() {
 		orders = await (
-			await fetch(`${import.meta.env.VITE_API_URL}/orders`, {
+			await sdk.fetch(`/orders`, {
 				method: 'GET',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token()),
@@ -24,7 +25,7 @@
 
 	async function restore(order: any) {
 		toast.loading($_('toast.order_restore'));
-		window.location.href = `${import.meta.env.VITE_API_URL}/payment/success?orderCode=${order.id}`;
+		window.location.href = sdk.url(`/payment/success?orderCode=${order.id}`);
 	}
 
 	function restorable(order: any) {

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { Button, buttonVariants } from '$lib/components/ui/button/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
@@ -127,7 +128,7 @@
 
 		submitId = new Date().getTime();
 
-		fetch(`${import.meta.env.VITE_API_URL}/submission?id=${submitId}`, {
+		sdk.fetch(`/submission?id=${submitId}`, {
 			method: 'POST',
 			body: JSON.stringify(submitData),
 			headers: {
@@ -165,7 +166,7 @@
 
 		const videoID = levelSubmission.videoLink ? extractYouTubeVideoId(levelSubmission.videoLink) : null;
 
-		fetch(`${import.meta.env.VITE_API_URL}/level-submissions`, {
+		sdk.fetch(`/level-submissions`, {
 			method: 'POST',
 			body: JSON.stringify({
 				levelId: levelSubmission.levelId,
@@ -205,12 +206,12 @@
 		
 		try {
 			level = await (
-				await fetch(`${import.meta.env.VITE_API_URL}/levels/${levelId}`)
+				await sdk.fetch(`/levels/${levelId}`)
 			).json();
 		} catch {}
 
 		apiLevel = await (
-			await fetch(`${import.meta.env.VITE_API_URL}/levels/${levelId}?fromGD=1`)
+			await sdk.fetch(`/levels/${levelId}?fromGD=1`)
 		).json();
 
 		// Fetch variants for the level
@@ -218,7 +219,7 @@
 		selectedVariantId = null;
 		if (submissionType === 'record') {
 			try {
-				const varRes = await fetch(`${import.meta.env.VITE_API_URL}/levels/${levelId}/variants`);
+				const varRes = await sdk.fetch(`/levels/${levelId}/variants`);
 				if (varRes.ok) {
 					levelVariants = await varRes.json();
 				}

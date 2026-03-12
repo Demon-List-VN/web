@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import Title from '$lib/components/Title.svelte';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
@@ -68,7 +69,7 @@
 		}
 
 		try {
-			event = await (await fetch(`${import.meta.env.VITE_API_URL}/events/${event.id}`)).json();
+			event = await (await sdk.fetch(`/events/${event.id}`)).json();
 			state = State.EDIT_EVENT;
 
 			event.start = convertTime(event.start);
@@ -180,7 +181,7 @@
 		}
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/events`, {
+			sdk.fetch(`/events`, {
 				method: 'POST',
 				body: JSON.stringify(event),
 				headers: {
@@ -213,7 +214,7 @@
 		}
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/events/${event.id}`, {
+			sdk.fetch(`/events/${event.id}`, {
 				method: 'PATCH',
 				body: JSON.stringify(event),
 				headers: {
@@ -272,7 +273,7 @@
 
 	async function fetchLevels() {
 		levels = await (
-			await fetch(`${import.meta.env.VITE_API_URL}/events/${event.id}/levels`, {
+			await sdk.fetch(`/events/${event.id}/levels`, {
 				method: 'GET',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())
@@ -283,7 +284,7 @@
 
 	async function fetchProofs() {
 		proofs = await (
-			await fetch(`${import.meta.env.VITE_API_URL}/events/${event.id}/proofs?accepted=all`, {
+			await sdk.fetch(`/events/${event.id}/proofs?accepted=all`, {
 				method: 'GET',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())
@@ -298,7 +299,7 @@
 		}
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/events/${event.id}/proofs/${userid}`, {
+			sdk.fetch(`/events/${event.id}/proofs/${userid}`, {
 				method: 'PATCH',
 				body: JSON.stringify({ accepted: true }),
 				headers: {
@@ -323,7 +324,7 @@
 		}
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/events/${event.id}/proofs/${userid}`, {
+			sdk.fetch(`/events/${event.id}/proofs/${userid}`, {
 				method: 'PATCH',
 				body: JSON.stringify({ accepted: false }),
 				headers: {

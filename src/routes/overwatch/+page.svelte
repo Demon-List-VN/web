@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import Title from '$lib/components/Title.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import RecordDetail from '$lib/components/recordDetail.svelte';
@@ -18,7 +19,7 @@
 		}
 
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/records/retrieve-limit`, {
+			const res = await sdk.fetch(`/records/retrieve-limit`, {
 				headers: {
 					Authorization: `Bearer ${await $user.token()}`,
 					'Content-Type': 'application/json'
@@ -39,7 +40,7 @@
 
 	async function retrieve() {
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/records/retrieve`, {
+			sdk.fetch(`/records/retrieve`, {
 				headers: {
 					Authorization: `Bearer ${await $user.token()}`,
 					'Content-Type': 'application/json'

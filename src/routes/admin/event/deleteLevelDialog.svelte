@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { user } from '$lib/client';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { toast } from 'svelte-sonner';
@@ -12,7 +13,7 @@
 		}
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/events/${eventID}/level/${levelID}`, {
+			sdk.fetch(`/events/${eventID}/level/${levelID}`, {
 				method: 'DELETE',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())

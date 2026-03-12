@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { _ } from 'svelte-i18n';
 	import { user } from '$lib/client';
 	import { onMount } from 'svelte';
@@ -16,7 +17,7 @@
 
 	async function fetchRewards() {
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/rewards`);
+			const res = await sdk.fetch(`/battlepass/rewards`);
 			if (res.ok) {
 				rewards = await res.json();
 			}
@@ -29,7 +30,7 @@
 		if (!userInfo.loggedIn) return;
 
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/progress`, {
+			const res = await sdk.fetch(`/battlepass/progress`, {
 				headers: {
 					Authorization: `Bearer ${await userInfo.token()}`
 				}
@@ -49,7 +50,7 @@
 		if (!userInfo.loggedIn) return;
 
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/rewards/claimable`, {
+			const res = await sdk.fetch(`/battlepass/rewards/claimable`, {
 				headers: {
 					Authorization: `Bearer ${await userInfo.token()}`
 				}
@@ -70,7 +71,7 @@
 		try {
 			const claimPromise = (async () => {
 				const res = await fetch(
-					`${import.meta.env.VITE_API_URL}/battlepass/reward/${rewardId}/claim`,
+					sdk.url(`/battlepass/reward/${rewardId}/claim`),
 					{
 						method: 'POST',
 						headers: {

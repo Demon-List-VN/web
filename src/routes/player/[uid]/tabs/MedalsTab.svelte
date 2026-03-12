@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { onMount } from 'svelte';
 	import Medal from '../medal.svelte';
 
@@ -7,7 +8,7 @@
 	let medals: any[] = [];
 
 	onMount(async () => {
-		medals = await (await fetch(`${import.meta.env.VITE_API_URL}/players/${userID}/medals`)).json();
+		medals = await (await sdk.fetch(`/players/${userID}/medals`)).json();
 	});
 </script>
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import Title from '$lib/components/Title.svelte';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
@@ -17,7 +18,7 @@
 	};
 
 	async function add() {
-		fetch(`${import.meta.env.VITE_API_URL}/records`, {
+		sdk.fetch(`/records`, {
 			method: 'PUT',
 			body: JSON.stringify(data),
 			headers: {

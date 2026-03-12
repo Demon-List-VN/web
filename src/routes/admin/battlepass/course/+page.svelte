@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import Title from '$lib/components/Title.svelte';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
@@ -41,7 +42,7 @@
 
 	async function fetchCourses() {
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/courses`, {
+			const res = await sdk.fetch(`/battlepass/courses`, {
 				headers: { Authorization: `Bearer ${await $user.token()}` }
 			});
 
@@ -66,7 +67,7 @@
 
 	async function fetchCourseEntries(courseId: number) {
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/course/${courseId}/entries`, {
+			const res = await sdk.fetch(`/battlepass/course/${courseId}/entries`, {
 				headers: { Authorization: `Bearer ${await $user.token()}` }
 			});
 
@@ -85,8 +86,8 @@
 	async function saveCourse() {
 		const isNew = !courseForm.id;
 		const url = isNew
-			? `${import.meta.env.VITE_API_URL}/battlepass/courses`
-			: `${import.meta.env.VITE_API_URL}/battlepass/course/${courseForm.id}`;
+			? sdk.url(`/battlepass/courses`)
+			: sdk.url(`/battlepass/course/${courseForm.id}`);
 
 		toast.promise(
 			(async () => {
@@ -126,7 +127,7 @@
 
 		toast.promise(
 			(async () => {
-				const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/course/${id}`, {
+				const res = await sdk.fetch(`/battlepass/course/${id}`, {
 					method: 'DELETE',
 					headers: { Authorization: `Bearer ${await $user.token()}` }
 				});
@@ -159,8 +160,8 @@
 
 		const isNew = !courseEntryForm.id;
 		const url = isNew
-			? `${import.meta.env.VITE_API_URL}/battlepass/course/${selectedCourseId}/entries`
-			: `${import.meta.env.VITE_API_URL}/battlepass/course/entry/${courseEntryForm.id}`;
+			? sdk.url(`/battlepass/course/${selectedCourseId}/entries`)
+			: sdk.url(`/battlepass/course/entry/${courseEntryForm.id}`);
 
 		toast.promise(
 			(async () => {
@@ -203,7 +204,7 @@
 
 		toast.promise(
 			(async () => {
-				const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/course/entry/${id}`, {
+				const res = await sdk.fetch(`/battlepass/course/entry/${id}`, {
 					method: 'DELETE',
 					headers: { Authorization: `Bearer ${await $user.token()}` }
 				});

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import Chart from 'chart.js/auto';
@@ -105,12 +106,12 @@
 		};
 
 		tmp.data = await (
-			await fetch(`${import.meta.env.VITE_API_URL}/records/${uid}/${levelID}`)
+			await sdk.fetch(`/records/${uid}/${levelID}`)
 		).json();
 
 		try {
 			tmp.deathCount = await (
-				await fetch(`${import.meta.env.VITE_API_URL}/deathCount/${uid}/${levelID}`)
+				await sdk.fetch(`/deathCount/${uid}/${levelID}`)
 			).json();
 		} catch {
 			tmp.deathCount = Array(100).fill(0);
@@ -125,7 +126,7 @@
 	): Promise<number> {
 		const res = await (
 			await fetch(
-				`${import.meta.env.VITE_API_URL}/records/${userID}/${levelID}/getEstimatedQueue/${prioritizedBy}`,
+				sdk.url(`/records/${userID}/${levelID}/getEstimatedQueue/${prioritizedBy}`),
 				{
 					method: 'GET',
 					headers: {
@@ -142,7 +143,7 @@
 		loadingInventory = true;
 		try {
 			const res = await (
-				await fetch(`${import.meta.env.VITE_API_URL}/inventory?itemId=15`, {
+				await sdk.fetch(`/inventory?itemId=15`, {
 					method: 'GET',
 					headers: {
 						Authorization: 'Bearer ' + (await $user.token())
@@ -163,7 +164,7 @@
 		disableBtn = true;
 		toast.promise(
 			fetch(
-				`${import.meta.env.VITE_API_URL}/records/${uid}/${levelID}/changeSuggestedRating/${record.data.suggestedRating}`,
+				sdk.url(`/records/${uid}/${levelID}/changeSuggestedRating/${record.data.suggestedRating}`),
 				{
 					method: 'PUT',
 					headers: {
@@ -198,7 +199,7 @@
 		};
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/submitVerdict`, {
+			sdk.fetch(`/submitVerdict`, {
 				method: 'PUT',
 				body: JSON.stringify(data),
 				headers: {
@@ -223,7 +224,7 @@
 		delete data.players;
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/records`, {
+			sdk.fetch(`/records`, {
 				method: 'PUT',
 				headers: {
 					'Content-Type': 'application/json',
@@ -250,7 +251,7 @@
 
 		toast.promise(
 			fetch(
-				`${import.meta.env.VITE_API_URL}/records/${record.data.userid}/${record.data.levelid}`,
+				sdk.url(`/records/${record.data.userid}/${record.data.levelid}`),
 				{
 					method: 'DELETE',
 					headers: {
@@ -306,7 +307,7 @@
 	async function consumeQueueBoost() {
 		toast.promise(
 			(async () => {
-				const res = await fetch(`${import.meta.env.VITE_API_URL}/inventory/item/15/consume`, {
+				const res = await sdk.fetch(`/inventory/item/15/consume`, {
 					method: 'DELETE',
 					headers: {
 						Authorization: 'Bearer ' + (await $user.token()),
@@ -340,7 +341,7 @@
 		toast.loading(get(_)('toast.payment.redirect'));
 
 		const res: any = await (
-			await fetch(`${import.meta.env.VITE_API_URL}/payment/getPaymentLink/5/${daysToSkip[0]}`, {
+			await sdk.fetch(`/payment/getPaymentLink/5/${daysToSkip[0]}`, {
 				method: 'POST',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token()),

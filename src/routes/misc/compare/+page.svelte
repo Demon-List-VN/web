@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { user } from '$lib/client/user';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import * as Card from '$lib/components/ui/card';
@@ -27,8 +28,8 @@
 	async function loadPlayer(uid: string, playerSlot: 1 | 2) {
 		try {
 			const [playerRes, recordsRes] = await Promise.all([
-				fetch(`${import.meta.env.VITE_API_URL}/players/${uid}`),
-				fetch(`${import.meta.env.VITE_API_URL}/players/${uid}/records`)
+				sdk.fetch(`/players/${uid}`),
+				sdk.fetch(`/players/${uid}/records`)
 			]);
 
 			const data = await playerRes.json();

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import Title from '$lib/components/Title.svelte';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
@@ -184,7 +185,7 @@
 	// Fetch functions
 	async function fetchSeasons() {
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass`);
+			const res = await sdk.fetch(`/battlepass`);
 			if (res.ok) {
 				const season = await res.json();
 				seasons = [season];
@@ -209,7 +210,7 @@
 
 	async function fetchCourses() {
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/courses`, {
+			const res = await sdk.fetch(`/battlepass/courses`, {
 				headers: { Authorization: `Bearer ${await $user.token()}` }
 			});
 			if (res.ok) {
@@ -222,7 +223,7 @@
 
 	async function fetchCourseEntries(courseId: number) {
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/course/${courseId}/entries`, {
+			const res = await sdk.fetch(`/battlepass/course/${courseId}/entries`, {
 				headers: { Authorization: `Bearer ${await $user.token()}` }
 			});
 			if (res.ok) {
@@ -237,7 +238,7 @@
 		if (!selectedSeason) return;
 		try {
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/battlepass/season/${selectedSeason.id}/levels`
+				sdk.url(`/battlepass/season/${selectedSeason.id}/levels`)
 			);
 			if (res.ok) levels = await res.json();
 		} catch (e) {
@@ -249,7 +250,7 @@
 		if (!selectedSeason) return;
 		try {
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/battlepass/season/${selectedSeason.id}/mappacks`,
+				sdk.url(`/battlepass/season/${selectedSeason.id}/mappacks`),
 				{
 					headers: { Authorization: `Bearer ${await $user.token()}` }
 				}
@@ -264,7 +265,7 @@
 		if (!selectedSeason) return;
 		try {
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/battlepass/season/${selectedSeason.id}/rewards`
+				sdk.url(`/battlepass/season/${selectedSeason.id}/rewards`)
 			);
 			if (res.ok) rewards = await res.json();
 		} catch (e) {
@@ -291,7 +292,7 @@
 		if (!selectedSeason) return;
 		try {
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/battlepass/season/${selectedSeason.id}/missions`
+				sdk.url(`/battlepass/season/${selectedSeason.id}/missions`)
 			);
 			if (res.ok) missions = await res.json();
 		} catch (e) {
@@ -303,8 +304,8 @@
 	async function saveSeason() {
 		const isNew = !seasonForm.id;
 		const url = isNew
-			? `${import.meta.env.VITE_API_URL}/battlepass/season`
-			: `${import.meta.env.VITE_API_URL}/battlepass/season/${seasonForm.id}`;
+			? sdk.url(`/battlepass/season`)
+			: sdk.url(`/battlepass/season/${seasonForm.id}`);
 
 		const body: any = {
 			title: seasonForm.title,
@@ -341,7 +342,7 @@
 		if (!confirm('Archive this season?')) return;
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/battlepass/season/${id}/archive`, {
+			sdk.fetch(`/battlepass/season/${id}/archive`, {
 				method: 'POST',
 				headers: { Authorization: `Bearer ${await $user.token()}` }
 			}),
@@ -362,8 +363,8 @@
 
 		const isNew = !levelForm.id;
 		const url = isNew
-			? `${import.meta.env.VITE_API_URL}/battlepass/season/${selectedSeason.id}/levels`
-			: `${import.meta.env.VITE_API_URL}/battlepass/level/${levelForm.id}`;
+			? sdk.url(`/battlepass/season/${selectedSeason.id}/levels`)
+			: sdk.url(`/battlepass/level/${levelForm.id}`);
 
 		toast.promise(
 			fetch(url, {
@@ -395,7 +396,7 @@
 		if (!confirm('Delete this level?')) return;
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/battlepass/level/${id}`, {
+			sdk.fetch(`/battlepass/level/${id}`, {
 				method: 'DELETE',
 				headers: { Authorization: `Bearer ${await $user.token()}` }
 			}),
@@ -415,7 +416,7 @@
 		if (!selectedSeason) return;
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/battlepass/season/${selectedSeason.id}/mappacks`, {
+			sdk.fetch(`/battlepass/season/${selectedSeason.id}/mappacks`, {
 				method: 'POST',
 				body: JSON.stringify({
 					mapPackId: Number(mapPackLinkForm.mapPackId),
@@ -443,7 +444,7 @@
 		if (!confirm('Unlink this map pack?')) return;
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/battlepass/mappack/${id}`, {
+			sdk.fetch(`/battlepass/mappack/${id}`, {
 				method: 'DELETE',
 				headers: { Authorization: `Bearer ${await $user.token()}` }
 			}),
@@ -462,7 +463,7 @@
 		if (!mapPackEditForm.id) return;
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/battlepass/mappack/${mapPackEditForm.id}`, {
+			sdk.fetch(`/battlepass/mappack/${mapPackEditForm.id}`, {
 				method: 'PATCH',
 				body: JSON.stringify({
 					unlockWeek: mapPackEditForm.unlockWeek,
@@ -490,7 +491,7 @@
 		if (!selectedSeason) return;
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/battlepass/season/${selectedSeason.id}/rewards`, {
+			sdk.fetch(`/battlepass/season/${selectedSeason.id}/rewards`, {
 				method: 'POST',
 				body: JSON.stringify({
 					tier: rewardForm.tier,
@@ -526,7 +527,7 @@
 		}
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/battlepass/reward/${id}`, {
+			sdk.fetch(`/battlepass/reward/${id}`, {
 				method: 'DELETE',
 				headers: { Authorization: `Bearer ${await $user.token()}` }
 			}),
@@ -547,8 +548,8 @@
 
 		const isNew = !missionForm.id;
 		const url = isNew
-			? `${import.meta.env.VITE_API_URL}/battlepass/season/${selectedSeason.id}/missions`
-			: `${import.meta.env.VITE_API_URL}/battlepass/mission/${missionForm.id}`;
+			? sdk.url(`/battlepass/season/${selectedSeason.id}/missions`)
+			: sdk.url(`/battlepass/mission/${missionForm.id}`);
 
 		let condition: any[];
 		if (conditionBuilderMode) {
@@ -602,7 +603,7 @@
 		if (!confirm('Delete this mission?')) return;
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/battlepass/mission/${id}`, {
+			sdk.fetch(`/battlepass/mission/${id}`, {
 				method: 'DELETE',
 				headers: { Authorization: `Bearer ${await $user.token()}` }
 			}),
@@ -623,7 +624,7 @@
 
 		toast.promise(
 			fetch(
-				`${import.meta.env.VITE_API_URL}/battlepass/mission/${missionRewardForm.missionId}/reward`,
+				sdk.url(`/battlepass/mission/${missionRewardForm.missionId}/reward`),
 				{
 					method: 'POST',
 					body: JSON.stringify({
@@ -653,7 +654,7 @@
 		if (!confirm('Delete this reward?')) return;
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/battlepass/mission/${missionId}/reward/${rewardId}`, {
+			sdk.fetch(`/battlepass/mission/${missionId}/reward/${rewardId}`, {
 				method: 'DELETE',
 				headers: { Authorization: `Bearer ${await $user.token()}` }
 			}),
@@ -671,8 +672,8 @@
 	async function saveCourse() {
 		const isNew = !courseForm.id;
 		const url = isNew
-			? `${import.meta.env.VITE_API_URL}/battlepass/courses`
-			: `${import.meta.env.VITE_API_URL}/battlepass/course/${courseForm.id}`;
+			? sdk.url(`/battlepass/courses`)
+			: sdk.url(`/battlepass/course/${courseForm.id}`);
 
 		toast.promise(
 			fetch(url, {
@@ -702,7 +703,7 @@
 		if (!confirm('Delete this course?')) return;
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/battlepass/course/${id}`, {
+			sdk.fetch(`/battlepass/course/${id}`, {
 				method: 'DELETE',
 				headers: { Authorization: `Bearer ${await $user.token()}` }
 			}),
@@ -730,8 +731,8 @@
 
 		const isNew = !courseEntryForm.id;
 		const url = isNew
-			? `${import.meta.env.VITE_API_URL}/battlepass/course/${selectedSeason.courseId}/entries`
-			: `${import.meta.env.VITE_API_URL}/battlepass/course/entry/${courseEntryForm.id}`;
+			? sdk.url(`/battlepass/course/${selectedSeason.courseId}/entries`)
+			: sdk.url(`/battlepass/course/entry/${courseEntryForm.id}`);
 
 		toast.promise(
 			fetch(url, {
@@ -766,7 +767,7 @@
 		if (!confirm('Delete this course entry?')) return;
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/battlepass/course/entry/${id}`, {
+			sdk.fetch(`/battlepass/course/entry/${id}`, {
 				method: 'DELETE',
 				headers: { Authorization: `Bearer ${await $user.token()}` }
 			}),
@@ -889,7 +890,7 @@
 		itemSearchLoading = true;
 		try {
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/item/search?q=${encodeURIComponent(itemSearchQuery)}`,
+				sdk.url(`/item/search?q=${encodeURIComponent(itemSearchQuery)}`),
 				{
 					method: 'GET',
 					headers: {

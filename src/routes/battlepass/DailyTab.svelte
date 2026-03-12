@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { _ } from 'svelte-i18n';
 	import { user } from '$lib/client';
 	import { createEventDispatcher } from 'svelte';
@@ -75,7 +76,7 @@
 				headers['Authorization'] = `Bearer ${await $user.token()}`;
 			}
 
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/daily-weekly`, {
+			const res = await sdk.fetch(`/battlepass/daily-weekly`, {
 				headers
 			});
 
@@ -92,7 +93,7 @@
 
 		try {
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/battlepass/level/${levelId}/claim/completion`,
+				sdk.url(`/battlepass/level/${levelId}/claim/completion`),
 				{
 					method: 'POST',
 					headers: {

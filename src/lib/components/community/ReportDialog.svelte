@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { Button } from '$lib/components/ui/button';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import * as Dialog from '$lib/components/ui/dialog';
@@ -9,7 +10,7 @@
 
 	export let open = false;
 	export let target: { type: 'post' | 'comment'; id: number } | null = null;
-	export let apiPrefix: string = `${import.meta.env.VITE_API_URL}/community`;
+	export let apiPrefix: string = sdk.url(`/community`);
 
 	let reportReason = 'inappropriate';
 	let reportDescription = '';

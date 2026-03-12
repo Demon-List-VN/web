@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import * as Card from '$lib/components/ui/card';
 	import * as Table from '$lib/components/ui/table';
 	import * as Select from '$lib/components/ui/select';
@@ -51,7 +52,7 @@
 
 			const query = new URLSearchParams(x);
 			const res = await (
-				await fetch(`${import.meta.env.VITE_API_URL}/players?${query.toString()}`)
+				await sdk.fetch(`/players?${query.toString()}`)
 			).json();
 
 			players = res;

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { onMount } from 'svelte';
 	import { locale, _ } from 'svelte-i18n';
 	import BigTitle from '$lib/components/bigTitle.svelte';
@@ -41,7 +42,7 @@
 				query.set('locale', $locale);
 			}
 
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/wiki/latest?${query.toString()}`);
+			const res = await sdk.fetch(`/wiki/latest?${query.toString()}`);
 
 			if (!res.ok) {
 				throw new Error(`HTTP ${res.status}`);

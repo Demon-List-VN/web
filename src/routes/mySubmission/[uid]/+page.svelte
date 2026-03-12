@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import * as Table from '$lib/components/ui/table';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 	import { toast } from 'svelte-sonner';
@@ -42,7 +43,7 @@
 		const token = await $user.token();
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/records/${uid}/${lvID}`, {
+			sdk.fetch(`/records/${uid}/${lvID}`, {
 				method: 'DELETE',
 				headers: {
 					Authorization: 'Bearer ' + token
@@ -78,7 +79,7 @@
 
 		try {
 			await toast.promise(
-				fetch(`${import.meta.env.VITE_API_URL}/records/${uid}/${levelid}/boost`, {
+				sdk.fetch(`/records/${uid}/${levelid}/boost`, {
 					method: 'POST',
 					headers: {
 						Authorization: 'Bearer ' + token

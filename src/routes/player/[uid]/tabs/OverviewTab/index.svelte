@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import type { PageData } from '../../$types';
 	import * as Select from '$lib/components/ui/select';
 	import { Button } from '$lib/components/ui/button';
@@ -128,7 +129,7 @@
 		positions: Record<string, { order: number; visible: boolean; size: CardSize }>
 	) {
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/players`, {
+			sdk.fetch(`/players`, {
 				method: 'PUT',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token()),

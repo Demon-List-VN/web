@@ -1,9 +1,11 @@
+import type { ApiListResponse, SupporterProgress } from '$lib/client/apiTypes';
+import * as sdk from '$lib/client/sdk';
 export async function load({ fetch }) {
 	try {
 		const intervalMs = 30 * 24 * 60 * 60 * 1000; // 30 days
 		const [topBuyers, progress] = await Promise.all([
-			(await fetch(`${import.meta.env.VITE_API_URL}/buyers/top?interval=${intervalMs}`)).json(),
-			(await fetch(`${import.meta.env.VITE_API_URL}/buyers/progress?interval=${intervalMs}`)).json()
+			sdk.get<ApiListResponse>(`/buyers/top?interval=${intervalMs}`, { fetch }),
+			sdk.get<SupporterProgress>(`/buyers/progress?interval=${intervalMs}`, { fetch })
 		]);
 		
 		return { topBuyers, progress };

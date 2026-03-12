@@ -1,6 +1,8 @@
+import type { ApiObject } from '$lib/client/apiTypes';
+import * as sdk from '$lib/client/sdk';
 export async function load({ params, url, fetch }) {
     const { id } = params
-    const clan: any = await (await fetch(`${import.meta.env.VITE_API_URL}/clans/${id}`)).json()
+    const clan = await sdk.get<ApiObject>(`/clans/${id}`, { fetch })
 
     return clan
 };

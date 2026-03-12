@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { user } from '$lib/client';
 	import { Button, buttonVariants } from '$lib/components/ui/button/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
@@ -31,7 +32,7 @@
 		];
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/events/${event.id}/quest`, {
+			sdk.fetch(`/events/${event.id}/quest`, {
 				method: 'POST',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token()),

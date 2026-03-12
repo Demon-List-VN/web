@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { toast } from 'svelte-sonner';
 	import { user } from '$lib/client';
 	import { page } from '$app/stores';
@@ -23,7 +24,7 @@
 
 		try {
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/auth/otp/${$page.params.code}`,
+				sdk.url(`/auth/otp/${$page.params.code}`),
 				{
 					method: 'PATCH',
 					headers: {

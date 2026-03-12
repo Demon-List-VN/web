@@ -1,6 +1,8 @@
+import type { ApiObject } from '$lib/client/apiTypes';
+import * as sdk from '$lib/client/sdk';
 export async function load({ params, url, fetch }) {
     const { id } = params
-    const data: any = await (await fetch(`${import.meta.env.VITE_API_URL}/item/${id}`)).json()
+    const data = await sdk.get<ApiObject>(`/item/${id}`, { fetch })
 
     return data
 };

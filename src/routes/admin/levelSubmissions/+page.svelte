@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import Title from '$lib/components/Title.svelte';
 	import { Label } from '$lib/components/ui/label';
 	import { Button } from '$lib/components/ui/button';
@@ -27,7 +28,7 @@
 		loading = true;
 		try {
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/level-submissions?start=0&end=100`,
+				sdk.url(`/level-submissions?start=0&end=100`),
 				{
 					headers: {
 						Authorization: `Bearer ${await $user.token()}`
@@ -61,7 +62,7 @@
 
 		try {
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/level-submissions/${selectedSubmission.userId}/${selectedSubmission.levelId}/verdict`,
+				sdk.url(`/level-submissions/${selectedSubmission.userId}/${selectedSubmission.levelId}/verdict`),
 				{
 					method: 'POST',
 					body: JSON.stringify({
@@ -99,7 +100,7 @@
 
 		try {
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/level-submissions/${selectedSubmission.userId}/${selectedSubmission.levelId}/verdict`,
+				sdk.url(`/level-submissions/${selectedSubmission.userId}/${selectedSubmission.levelId}/verdict`),
 				{
 					method: 'POST',
 					body: JSON.stringify({

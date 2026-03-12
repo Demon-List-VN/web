@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import LevelCard from '$lib/components/levelCard.svelte';
 	import ListFilter from '$lib/components/listFilter.svelte';
 	import { page } from '$app/stores';
@@ -81,7 +82,7 @@
 		if (filters.tagIds) query.set('tagIds', filters.tagIds);
 
 		const res = await (
-			await fetch(`${import.meta.env.VITE_API_URL}/list/${$page.params.list}?${query.toString()}`)
+			await sdk.fetch(`/list/${$page.params.list}?${query.toString()}`)
 		).json();
 
 		if (resetList) {

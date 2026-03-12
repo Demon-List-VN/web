@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { user } from '$lib/client';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import * as Table from '$lib/components/ui/table/index.js';
@@ -34,7 +35,7 @@
 
 		loading = true;
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/events/${event.id}/quest`, {
+			const res = await sdk.fetch(`/events/${event.id}/quest`, {
 				method: 'GET',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())
@@ -53,7 +54,7 @@
 		if (!confirm('Are you sure you want to delete this quest?')) return;
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/events/${event.id}/quest/${questId}`, {
+			sdk.fetch(`/events/${event.id}/quest/${questId}`, {
 				method: 'DELETE',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())
@@ -74,7 +75,7 @@
 		if (!confirm('Remove this reward from the quest?')) return;
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/events/${event.id}/quest/${questId}/reward/${rewardId}`, {
+			sdk.fetch(`/events/${event.id}/quest/${questId}/reward/${rewardId}`, {
 				method: 'DELETE',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { ThumbsUp, MessageSquare, Pin, Image, BookOpen, Megaphone, MessageCircle, Play, Trophy, Gamepad2, Star, ThumbsDown, Flag, Users } from 'lucide-svelte';
 	import { _, locale } from 'svelte-i18n';
 	import { isActive } from '$lib/client/isSupporterActive';
@@ -10,7 +11,7 @@
 
 	export let post: any;
 	export let compact: boolean = false;
-	export let apiPrefix: string = `${import.meta.env.VITE_API_URL}/community`;
+	export let apiPrefix: string = sdk.url(`/community`);
 
 	const dispatch = createEventDispatcher();
 

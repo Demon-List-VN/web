@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import BaseCard from './BaseCard.svelte';
 	import type { CardConfig } from './types';
 	import { Button } from '$lib/components/ui/button';
@@ -55,7 +56,7 @@
 				}
 			};
 
-			const response = await fetch(`${import.meta.env.VITE_API_URL}/players`, {
+			const response = await sdk.fetch(`/players`, {
 				method: 'PUT',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token()),
@@ -105,7 +106,7 @@
 				}
 			};
 
-			const response = await fetch(`${import.meta.env.VITE_API_URL}/players`, {
+			const response = await sdk.fetch(`/players`, {
 				method: 'PUT',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token()),

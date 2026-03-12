@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { user } from '$lib/client';
 	import { Button, buttonVariants } from '$lib/components/ui/button/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
@@ -58,7 +59,7 @@
 
 		loading = true;
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/item/search?q=${encodeURIComponent(searchQuery)}`, {
+			const res = await sdk.fetch(`/item/search?q=${encodeURIComponent(searchQuery)}`, {
 				method: 'GET',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())
@@ -102,7 +103,7 @@
 		}
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/events/${event.id}/quest/${quest.id}/reward`, {
+			sdk.fetch(`/events/${event.id}/quest/${quest.id}/reward`, {
 				method: 'POST',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token()),

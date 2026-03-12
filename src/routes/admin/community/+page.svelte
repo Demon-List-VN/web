@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import Title from '$lib/components/Title.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
@@ -129,7 +130,7 @@
 
 		try {
 			const headers = await getAuthHeaders();
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/admin/posts?${params}`, {
+			const res = await sdk.fetch(`/community/admin/posts?${params}`, {
 				headers
 			});
 			const json = await res.json();
@@ -146,7 +147,7 @@
 
 		try {
 			const headers = await getAuthHeaders();
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/admin/posts/${id}`, {
+			const res = await sdk.fetch(`/community/admin/posts/${id}`, {
 				method: 'DELETE',
 				headers
 			});
@@ -161,7 +162,7 @@
 	async function togglePin(post: any) {
 		try {
 			const headers = await getAuthHeaders();
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/admin/posts/${post.id}`, {
+			const res = await sdk.fetch(`/community/admin/posts/${post.id}`, {
 				method: 'PUT',
 				headers,
 				body: JSON.stringify({ pinned: !post.pinned })
@@ -203,7 +204,7 @@
 			if (editPost.videoUrl) body.videoUrl = editPost.videoUrl;
 
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/community/admin/posts/${editPost.id}`,
+				sdk.url(`/community/admin/posts/${editPost.id}`),
 				{
 					method: 'PUT',
 					headers,
@@ -253,7 +254,7 @@
 		try {
 			const headers = await getAuthHeaders();
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/community/admin/moderation/pending?limit=1&offset=0`,
+				sdk.url(`/community/admin/moderation/pending?limit=1&offset=0`),
 				{ headers }
 			);
 			const json = await res.json();
@@ -267,7 +268,7 @@
 		try {
 			const headers = await getAuthHeaders();
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/community/admin/moderation/comments/pending?limit=1&offset=0`,
+				sdk.url(`/community/admin/moderation/comments/pending?limit=1&offset=0`),
 				{ headers }
 			);
 			const json = await res.json();
@@ -287,7 +288,7 @@
 
 		try {
 			const headers = await getAuthHeaders();
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/admin/reports?${params}`, {
+			const res = await sdk.fetch(`/community/admin/reports?${params}`, {
 				headers
 			});
 			const json = await res.json();
@@ -303,7 +304,7 @@
 		try {
 			const headers = await getAuthHeaders();
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/community/admin/reports/${id}/resolve`,
+				sdk.url(`/community/admin/reports/${id}/resolve`),
 				{
 					method: 'PUT',
 					headers
@@ -343,7 +344,7 @@
 	async function fetchTags() {
 		tags = null;
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/tags`);
+			const res = await sdk.fetch(`/community/tags`);
 			tags = await res.json();
 		} catch {
 			tags = [];
@@ -358,7 +359,7 @@
 		creatingTag = true;
 		try {
 			const headers = await getAuthHeaders();
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/tags`, {
+			const res = await sdk.fetch(`/community/tags`, {
 				method: 'POST',
 				headers,
 				body: JSON.stringify({
@@ -387,7 +388,7 @@
 		if (!confirm('Delete this tag? It will be removed from all posts.')) return;
 		try {
 			const headers = await getAuthHeaders();
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/tags/${id}`, {
+			const res = await sdk.fetch(`/community/tags/${id}`, {
 				method: 'DELETE',
 				headers
 			});
@@ -418,7 +419,7 @@
 		savingTagEdit = true;
 		try {
 			const headers = await getAuthHeaders();
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/tags/${editingTag.id}`, {
+			const res = await sdk.fetch(`/community/tags/${editingTag.id}`, {
 				method: 'PUT',
 				headers,
 				body: JSON.stringify({
@@ -456,7 +457,7 @@
 		try {
 			const headers = await getAuthHeaders();
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/community/admin/posts/${post.id}/hidden`,
+				sdk.url(`/community/admin/posts/${post.id}/hidden`),
 				{
 					method: 'PUT',
 					headers,
@@ -484,7 +485,7 @@
 		try {
 			const headers = await getAuthHeaders();
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/community/admin/moderation/pending?${params}`,
+				sdk.url(`/community/admin/moderation/pending?${params}`),
 				{ headers }
 			);
 			const json = await res.json();
@@ -500,7 +501,7 @@
 		try {
 			const headers = await getAuthHeaders();
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/community/admin/moderation/${id}/approve`,
+				sdk.url(`/community/admin/moderation/${id}/approve`),
 				{
 					method: 'PUT',
 					headers
@@ -521,7 +522,7 @@
 		try {
 			const headers = await getAuthHeaders();
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/community/admin/moderation/${id}/reject`,
+				sdk.url(`/community/admin/moderation/${id}/reject`),
 				{
 					method: 'PUT',
 					headers
@@ -554,7 +555,7 @@
 		try {
 			const headers = await getAuthHeaders();
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/community/admin/moderation/comments/pending?${params}`,
+				sdk.url(`/community/admin/moderation/comments/pending?${params}`),
 				{ headers }
 			);
 			const json = await res.json();
@@ -570,7 +571,7 @@
 		try {
 			const headers = await getAuthHeaders();
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/community/admin/moderation/comments/${id}/approve`,
+				sdk.url(`/community/admin/moderation/comments/${id}/approve`),
 				{
 					method: 'PUT',
 					headers
@@ -591,7 +592,7 @@
 		try {
 			const headers = await getAuthHeaders();
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/community/admin/moderation/comments/${id}/reject`,
+				sdk.url(`/community/admin/moderation/comments/${id}/reject`),
 				{
 					method: 'PUT',
 					headers
@@ -646,7 +647,7 @@
 		try {
 			const headers = await getAuthHeaders();
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/community/admin/comments?${params}`,
+				sdk.url(`/community/admin/comments?${params}`),
 				{ headers }
 			);
 			const json = await res.json();
@@ -662,7 +663,7 @@
 		if (!confirm('Are you sure you want to delete this comment?')) return;
 		try {
 			const headers = await getAuthHeaders();
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/admin/comments/${id}`, {
+			const res = await sdk.fetch(`/community/admin/comments/${id}`, {
 				method: 'DELETE',
 				headers
 			});
@@ -678,7 +679,7 @@
 		try {
 			const headers = await getAuthHeaders();
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/community/admin/comments/${comment.id}/hidden`,
+				sdk.url(`/community/admin/comments/${comment.id}/hidden`),
 				{
 					method: 'PUT',
 					headers,

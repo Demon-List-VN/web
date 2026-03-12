@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import type { PageData } from './$types';
 	import { toast } from 'svelte-sonner';
 	import { Label } from '$lib/components/ui/label';
@@ -47,7 +48,7 @@
 	async function applyFilter() {
 		const records: any[] = await (
 			await fetch(
-				`${import.meta.env.VITE_API_URL}/players/${$page.params.uid}/records?sortBy=${filter.sortBy}&ascending=${filter.ascending}&end=500`
+				sdk.url(`/players/${$page.params.uid}/records?sortBy=${filter.sortBy}&ascending=${filter.ascending}&end=500`)
 			)
 		).json();
 

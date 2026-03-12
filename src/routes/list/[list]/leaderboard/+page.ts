@@ -1,4 +1,6 @@
-async function getTotalPage(fetch: any, list: string) {
+import type { ApiFetch, LeaderboardEntry } from '$lib/client/apiTypes';
+import * as sdk from '$lib/client/sdk';
+async function getTotalPage(fetch: ApiFetch, list: string) {
     const prop = (list == 'dl' ? 'overallRank' : `${list}rank`);
     
     const query = new URLSearchParams({
@@ -8,14 +10,12 @@ async function getTotalPage(fetch: any, list: string) {
         ascending: 'false'
     });
 
-    const res = await (
-        await fetch(`${import.meta.env.VITE_API_URL}/leaderboard/${list}?${query.toString()}`)
-    ).json();
+    const res = await sdk.get<LeaderboardEntry[]>(`/leaderboard/${list}?${query.toString()}`, { fetch });
 
     return res[0][prop];
 }
 
-async function getLeaderboard(fetch: any, list: string, page: number) {
+async function getLeaderboard(fetch: ApiFetch, list: string, page: number) {
     const query = new URLSearchParams({
         start: String((page - 1) * 50),
         end: String(page * 50 - 1),
@@ -23,9 +23,7 @@ async function getLeaderboard(fetch: any, list: string, page: number) {
         ascending: 'true'
     });
 
-    const res = await (
-        await fetch(`${import.meta.env.VITE_API_URL}/leaderboard/${list}?${query.toString()}`)
-    ).json();
+    const res = await sdk.get<LeaderboardEntry[]>(`/leaderboard/${list}?${query.toString()}`, { fetch });
 
     return res
 }

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import type { PageData } from './$types';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { Skeleton } from '$lib/components/ui/skeleton';
@@ -29,7 +30,7 @@
 
 	async function saveContent() {
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/card/${data.id}/content`, {
+			sdk.fetch(`/card/${data.id}/content`, {
 				method: 'PATCH',
 				headers: {
 					Authorization: `Bearer ${await $user.token()}`,
@@ -51,7 +52,7 @@
 
 	async function link() {
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/card/${data.id}/link`, {
+			sdk.fetch(`/card/${data.id}/link`, {
 				method: 'PATCH',
 				headers: {
 					Authorization: `Bearer ${await $user.token()}`

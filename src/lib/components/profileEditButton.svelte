@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import supabase from '$lib/client/supabase';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Select from '$lib/components/ui/select';
@@ -54,7 +55,7 @@
 				player.isAvatarGif = true;
 				player.avatarVersion++;
 
-				await fetch(`${import.meta.env.VITE_API_URL}/players`, {
+				await sdk.fetch(`/players`, {
 					method: 'PUT',
 					headers: {
 						Authorization: 'Bearer ' + (await $user.token()),
@@ -81,7 +82,7 @@
 				player.isAvatarGif = false;
 				player.avatarVersion++;
 
-				await fetch(`${import.meta.env.VITE_API_URL}/players`, {
+				await sdk.fetch(`/players`, {
 					method: 'PUT',
 					headers: {
 						Authorization: 'Bearer ' + (await $user.token()),
@@ -113,7 +114,7 @@
 				player.isBannerGif = true;
 				player.bannerVersion++;
 
-				await fetch(`${import.meta.env.VITE_API_URL}/players`, {
+				await sdk.fetch(`/players`, {
 					method: 'PUT',
 					headers: {
 						Authorization: 'Bearer ' + (await $user.token()),
@@ -142,7 +143,7 @@
 				player.isBannerGif = false;
 				player.bannerVersion++;
 
-				await fetch(`${import.meta.env.VITE_API_URL}/players`, {
+				await sdk.fetch(`/players`, {
 					method: 'PUT',
 					headers: {
 						Authorization: 'Bearer ' + (await $user.token()),
@@ -170,7 +171,7 @@
 		}
 
 		const token = await $user.token();
-		const promise = fetch(`${import.meta.env.VITE_API_URL}/players`, {
+		const promise = sdk.fetch(`/players`, {
 			method: 'PUT',
 			headers: {
 				Authorization: 'Bearer ' + token,
@@ -189,7 +190,7 @@
 	}
 
 	onMount(() => {
-		fetch(`${import.meta.env.VITE_API_URL}/provinces`)
+		sdk.fetch(`/provinces`)
 			.then((res) => res.json())
 			.then((res) => {
 				provinces = res;

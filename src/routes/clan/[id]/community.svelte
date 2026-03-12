@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import CommunityPostCard from '$lib/components/communityPostCard.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as Select from '$lib/components/ui/select';
@@ -23,7 +24,7 @@
 
 	export let clan: any;
 
-	const API_PREFIX = `${import.meta.env.VITE_API_URL}/clans/${clan.id}/community`;
+	const API_PREFIX = sdk.url(`/clans/${clan.id}/community`);
 
 	let posts: any[] = [];
 	let total = 0;
@@ -170,7 +171,7 @@
 		try {
 			const token = await $user.token();
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/community/posts/${reportPostId}/report`,
+				sdk.url(`/community/posts/${reportPostId}/report`),
 				{
 					method: 'POST',
 					headers: {

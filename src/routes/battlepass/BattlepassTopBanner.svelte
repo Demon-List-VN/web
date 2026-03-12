@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
@@ -65,7 +66,7 @@
 		if (!$user.loggedIn || !season) return;
 
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/progress`, {
+			const res = await sdk.fetch(`/battlepass/progress`, {
 				headers: {
 					Authorization: `Bearer ${await $user.token()}`
 				}

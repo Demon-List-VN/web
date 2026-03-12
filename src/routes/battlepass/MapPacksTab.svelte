@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { _ } from 'svelte-i18n';
 	import { user } from '$lib/client';
 	import { onMount } from 'svelte';
@@ -75,7 +76,7 @@
             const token = $user.loggedIn ? await $user.token() : null;
             const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
 
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/mappacks`, { headers });
+			const res = await sdk.fetch(`/battlepass/mappacks`, { headers });
 			if (res.ok) {
 				mapPacks = await res.json();
 			}
@@ -86,7 +87,7 @@
 
 	async function fetchNextLockedMapPack() {
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/mappacks/next-locked`);
+			const res = await sdk.fetch(`/battlepass/mappacks/next-locked`);
 			if (res.ok) {
 				const payload = await res.json();
 				nextLockedMapPack = payload?.nextLockedMapPack ?? null;
@@ -102,7 +103,7 @@
 	async function claimMapPack(mapPackId: number) {
 		try {
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/battlepass/mappack/${mapPackId}/claim`,
+				sdk.url(`/battlepass/mappack/${mapPackId}/claim`),
 				{
 					method: 'POST',
 					headers: {

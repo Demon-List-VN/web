@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { page } from '$app/state';
 	import { user } from '$lib/client';
 	import { onMount } from 'svelte';
@@ -16,7 +17,7 @@
 
 	onMount(async () => {
 		try {
-			const response = await fetch(`${import.meta.env.VITE_API_URL}/coupon/${page.params.code}`, {
+			const response = await sdk.fetch(`/coupon/${page.params.code}`, {
 				method: 'GET',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())
@@ -35,7 +36,7 @@
 	async function claimGift() {
 		claiming = true;
 		try {
-			const response = await fetch(`${import.meta.env.VITE_API_URL}/coupon/${page.params.code}`, {
+			const response = await sdk.fetch(`/coupon/${page.params.code}`, {
 				method: 'DELETE',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())

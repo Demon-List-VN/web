@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { buttonVariants } from '$lib/components/ui/button';
 	import { user } from '$lib/client';
 	import * as Dialog from '$lib/components/ui/dialog';
@@ -31,7 +32,7 @@
 		fetchState = 1;
 
 		try {
-			giftTo = await (await fetch(`${import.meta.env.VITE_API_URL}/players/${giftToUID}`)).json();
+			giftTo = await (await sdk.fetch(`/players/${giftToUID}`)).json();
 			fetchState = 2;
 		} catch {
 			toast.error(get(_)("toast.payment.no_player"));
@@ -44,7 +45,7 @@
 
 		const res: any = await (
 			await fetch(
-				`${import.meta.env.VITE_API_URL}/payment/getPaymentLink/1/${quantity[0]}${giftTo ? `?giftTo=${giftTo.uid}` : ''}`,
+				sdk.url(`/payment/getPaymentLink/1/${quantity[0]}${giftTo ? `)?giftTo=${giftTo.uid}` : ''}`,
 				{
 					method: 'POST',
 					headers: {

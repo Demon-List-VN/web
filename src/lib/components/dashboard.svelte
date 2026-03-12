@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { onMount } from 'svelte';
 	import { user } from '$lib/client';
 	import { browser } from '$app/environment';
@@ -173,7 +174,7 @@
 
 		try {
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/players/${$user.data.uid}/submissions?end=10`
+				sdk.url(`/players/${$user.data.uid}/submissions?end=10`)
 			);
 			if (res.ok) {
 				submissions = await res.json();

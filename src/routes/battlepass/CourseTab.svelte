@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { _ } from 'svelte-i18n';
 	import { onMount } from 'svelte';
 	import { user } from '$lib/client';
@@ -108,7 +109,7 @@
 		try {
 			const claimPromise = (async () => {
 				const res = await fetch(
-					`${import.meta.env.VITE_API_URL}/battlepass/course/entry/${entryId}/claim`,
+					sdk.url(`/battlepass/course/entry/${entryId}/claim`),
 					{
 						method: 'POST',
 						headers: {
@@ -178,14 +179,14 @@
 
 		const [levelsRes, mapPacksRes] = await Promise.all([
 			levelIds.length > 0
-				? fetch(`${import.meta.env.VITE_API_URL}/levels/batch`, {
+				? sdk.fetch(`/levels/batch`, {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json' },
 						body: JSON.stringify({ batch: levelIds })
 					})
 				: Promise.resolve(null),
 			mapPackIds.length > 0
-				? fetch(`${import.meta.env.VITE_API_URL}/mappacks/batch`, {
+				? sdk.fetch(`/mappacks/batch`, {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json' },
 						body: JSON.stringify({ batch: mapPackIds })
@@ -228,7 +229,7 @@
 			}
 
 			courseInFlight = (async () => {
-				const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/course`, { headers });
+				const res = await sdk.fetch(`/battlepass/course`, { headers });
 				if (!res.ok) return null;
 				return await res.json();
 			})();

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import Title from '$lib/components/Title.svelte';
 	import { user } from '$lib/client';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -11,7 +12,7 @@
 
 	async function refresh() {
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/refresh`, {
+			sdk.fetch(`/refresh`, {
 				method: 'PATCH',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())

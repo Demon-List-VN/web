@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { _ } from 'svelte-i18n';
 	import { user } from '$lib/client';
 	import { onMount } from 'svelte';
@@ -16,7 +17,7 @@
 
 	async function fetchLevels() {
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/levels`);
+			const res = await sdk.fetch(`/battlepass/levels`);
 			if (res.ok) {
 				levels = await res.json();
 			}
@@ -31,7 +32,7 @@
 		try {
 			const levelIds = levels.map((l: any) => l.id);
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/battlepass/levels/progress?ids=${levelIds.join(',')}`,
+				sdk.url(`/battlepass/levels/progress?ids=${levelIds.join(',')}`),
 				{
 					headers: {
 						Authorization: `Bearer ${await $user.token()}`

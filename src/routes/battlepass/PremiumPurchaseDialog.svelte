@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { _ } from 'svelte-i18n';
 	import { user } from '$lib/client';
 	import { toast } from 'svelte-sonner';
@@ -26,7 +27,7 @@
 		if (!$user.loggedIn || !seasonId) return;
 
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/progress`, {
+			const res = await sdk.fetch(`/battlepass/progress`, {
 				headers: { Authorization: `Bearer ${await $user.token()}` }
 			});
 
@@ -52,7 +53,7 @@
 
 				try {
 					const res = await fetch(
-						`${import.meta.env.VITE_API_URL}/payment/getPaymentLink/6/1${giftTo ? `?giftTo=${giftTo.uid}` : ''}`,
+						sdk.url(`/payment/getPaymentLink/6/1${giftTo ? `)?giftTo=${giftTo.uid}` : ''}`,
 						{
 							method: 'POST',
 							headers: {

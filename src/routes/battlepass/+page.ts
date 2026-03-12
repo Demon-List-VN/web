@@ -1,8 +1,10 @@
 import type { PageLoad } from './$types';
+import type { ApiObject } from '$lib/client/apiTypes';
+import * as sdk from '$lib/client/sdk';
 
 export const load: PageLoad = async ({ fetch }) => {
 	try {
-		const seasonRes = await fetch(`${import.meta.env.VITE_API_URL}/battlepass`);
+		const seasonRes = await sdk.fetch(`/battlepass`, { fetch });
 
 		if (!seasonRes.ok) {
 			return {
@@ -10,7 +12,7 @@ export const load: PageLoad = async ({ fetch }) => {
 			};
 		}
 
-		const season = await seasonRes.json();
+		const season = (await seasonRes.json()) as ApiObject;
 
 		return {
 			season

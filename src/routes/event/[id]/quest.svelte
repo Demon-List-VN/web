@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { onMount } from 'svelte';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -32,7 +33,7 @@
 
 	async function checkQuest() {
 		const res = await (
-			await fetch(`${import.meta.env.VITE_API_URL}/events/quest/${quest.id}/check`, {
+			await sdk.fetch(`/events/quest/${quest.id}/check`, {
 				method: 'GET',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())
@@ -45,7 +46,7 @@
 
 	async function claim() {
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/events/quest/${quest.id}/claim`, {
+			sdk.fetch(`/events/quest/${quest.id}/claim`, {
 				method: 'POST',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { Bell } from 'svelte-radix';
 	import * as Popover from '$lib/components/ui/popover';
 	import * as Card from '$lib/components/ui/card';
@@ -33,7 +34,7 @@
 	async function fetchNotifications() {
 		try {
 			notifications = await (
-				await fetch(`${import.meta.env.VITE_API_URL}/notifications/${$user.data.uid}`, {
+				await sdk.fetch(`/notifications/${$user.data.uid}`, {
 					headers: {
 						Authorization: 'Bearer ' + (await $user.token())!
 					}
@@ -58,7 +59,7 @@
 			];
 		}
 
-		fetch(`${import.meta.env.VITE_API_URL}/notifications/${$user.data.uid}`, {
+		sdk.fetch(`/notifications/${$user.data.uid}`, {
 			method: 'DELETE',
 			headers: {
 				Authorization: 'Bearer ' + (await $user.token())!

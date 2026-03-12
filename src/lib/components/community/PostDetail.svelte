@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { Button } from '$lib/components/ui/button';
 	import * as Select from '$lib/components/ui/select';
 	import { _, locale } from 'svelte-i18n';
@@ -45,7 +46,7 @@
 		Clock
 	} from 'lucide-svelte';
 
-	export let apiPrefix: string = `${import.meta.env.VITE_API_URL}/community`;
+	export let apiPrefix: string = sdk.url(`/community`);
 	export let initialPost: any = null;
 	export let initialComments: any[] | null = null;
 	export let backLink: string = '/community';
@@ -476,7 +477,7 @@
 				body.type = editType;
 			}
 			const endpoint = isAdminNotOwner && !post.clanId
-				? `${import.meta.env.VITE_API_URL}/community/admin/posts/${post.id}`
+				? sdk.url(`/community/admin/posts/${post.id}`)
 				: `${apiPrefix}/posts/${post.id}`;
 			const res = await fetch(endpoint, {
 				method: 'PUT',

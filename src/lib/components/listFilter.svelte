@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import * as Card from '$lib/components/ui/card';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
@@ -38,7 +39,7 @@
 
 	onMount(async () => {
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/levels/tags`);
+			const res = await sdk.fetch(`/levels/tags`);
 			if (res.ok) {
 				availableTags = await res.json();
 			}

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { Button } from '$lib/components/ui/button';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import * as Dialog from '$lib/components/ui/dialog';
@@ -29,8 +30,8 @@
 		try {
 			const endpoint =
 				target.type === 'post'
-					? `${import.meta.env.VITE_API_URL}/community/posts/${target.id}/report`
-					: `${import.meta.env.VITE_API_URL}/community/comments/${target.id}/report`;
+					? sdk.url(`/community/posts/${target.id}/report`)
+					: sdk.url(`/community/comments/${target.id}/report`);
 
 			const res = await fetch(endpoint, {
 				method: 'POST',

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import Title from '$lib/components/Title.svelte';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
@@ -40,7 +41,7 @@
 	// Fetch functions
 	async function fetchGeneralMapPacks() {
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/mappacks`);
+			const res = await sdk.fetch(`/mappacks`);
 			if (res.ok) generalMapPacks = await res.json();
 		} catch (e) {
 			console.error('Failed to fetch general map packs:', e);
@@ -51,8 +52,8 @@
 	async function saveGeneralMapPack() {
 		const isNew = !generalMapPackForm.id;
 		const url = isNew
-			? `${import.meta.env.VITE_API_URL}/mappacks`
-			: `${import.meta.env.VITE_API_URL}/mappacks/${generalMapPackForm.id}`;
+			? sdk.url(`/mappacks`)
+			: sdk.url(`/mappacks/${generalMapPackForm.id}`);
 
 		toast.promise(
 			fetch(url, {
@@ -84,7 +85,7 @@
 		if (!confirm('Delete this map pack?')) return;
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/mappacks/${id}`, {
+			sdk.fetch(`/mappacks/${id}`, {
 				method: 'DELETE',
 				headers: { Authorization: `Bearer ${await $user.token()}` }
 			}),
@@ -105,7 +106,7 @@
 
 		toast.promise(
 			fetch(
-				`${import.meta.env.VITE_API_URL}/mappacks/${mapPackLevelForm.mapPackId}/level`,
+				sdk.url(`/mappacks/${mapPackLevelForm.mapPackId}/level`),
 				{
 					method: 'POST',
 					body: JSON.stringify({
@@ -135,7 +136,7 @@
 
 		toast.promise(
 			fetch(
-				`${import.meta.env.VITE_API_URL}/mappacks/${mapPackId}/level/${levelId}`,
+				sdk.url(`/mappacks/${mapPackId}/level/${levelId}`),
 				{
 					method: 'DELETE',
 					headers: { Authorization: `Bearer ${await $user.token()}` }

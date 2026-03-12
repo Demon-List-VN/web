@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import * as Carousel from '$lib/components/ui/carousel/index.js';
 	import LevelCard from '$lib/components/levelCard.svelte';
 	import Dashboard from '$lib/components/dashboard.svelte';
@@ -17,7 +18,7 @@
 	};
 
 	async function getEvents() {
-		return await (await fetch(`${import.meta.env.VITE_API_URL}/events/ongoing`)).json();
+		return await (await sdk.fetch(`/events/ongoing`)).json();
 	}
 
 	async function getRecentDemonListLevel() {
@@ -28,7 +29,7 @@
 		});
 
 		return await (
-			await fetch(`${import.meta.env.VITE_API_URL}/list/dl?${query.toString()}`)
+			await sdk.fetch(`/list/dl?${query.toString()}`)
 		).json();
 	}
 
@@ -40,7 +41,7 @@
 		});
 
 		return await (
-			await fetch(`${import.meta.env.VITE_API_URL}/list/fl?${query.toString()}`)
+			await sdk.fetch(`/list/fl?${query.toString()}`)
 		).json();
 	}
 
@@ -52,7 +53,7 @@
 		});
 
 		return await (
-			await fetch(`${import.meta.env.VITE_API_URL}/list/pl?${query.toString()}`)
+			await sdk.fetch(`/list/pl?${query.toString()}`)
 		).json();
 	}
 

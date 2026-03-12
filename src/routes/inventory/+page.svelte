@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { user } from '$lib/client';
 	import Loading from '$lib/components/animation/loading.svelte';
 	import { onMount } from 'svelte';
@@ -37,7 +38,7 @@
 
 		try {
 			const res = await (
-				await fetch(`${import.meta.env.VITE_API_URL}/inventory`, {
+				await sdk.fetch(`/inventory`, {
 					method: 'GET',
 					headers: {
 						Authorization: 'Bearer ' + (await $user.token())
@@ -56,7 +57,7 @@
 
 	async function fetchItem(itemId: number, inventoryId: number) {
 		const inventoryItem = await (
-			await fetch(`${import.meta.env.VITE_API_URL}/inventory/${inventoryId}`, {
+			await sdk.fetch(`/inventory/${inventoryId}`, {
 				method: 'GET',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())
@@ -66,7 +67,7 @@
 
 		if (inventoryItem.type == 'case') {
 			const item = await (
-				await fetch(`${import.meta.env.VITE_API_URL}/item/${itemId}`, {
+				await sdk.fetch(`/item/${itemId}`, {
 					method: 'GET',
 					headers: {
 						Authorization: 'Bearer ' + (await $user.token())
@@ -180,7 +181,7 @@
 
 	async function use(inventoryId: number, redirect: string) {
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/inventory/${inventoryId}/consume`, {
+			sdk.fetch(`/inventory/${inventoryId}/consume`, {
 				method: 'DELETE',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())

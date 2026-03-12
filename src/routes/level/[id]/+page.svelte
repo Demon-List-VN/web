@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import * as Card from '$lib/components/ui/card';
 	import * as Table from '$lib/components/ui/table';
 	import RecordDetail from '$lib/components/recordDetail.svelte';
@@ -97,33 +98,33 @@
 		levelTags = [];
 		levelVariants = [];
 
-		fetch(`${import.meta.env.VITE_API_URL}/levels/${$page.params.id}?fromGD=1`)
+		sdk.fetch(`/levels/${$page.params.id}?fromGD=1`)
 			.then((res) => res.json())
 			.then((res) => (levelAPI = res));
 
-		fetch(`${import.meta.env.VITE_API_URL}/levels/${$page.params.id}/records?end=500`)
+		sdk.fetch(`/levels/${$page.params.id}/records?end=500`)
 			.then((res) => res.json())
 			.then((res: any) => (records = res));
 
-		fetch(`${import.meta.env.VITE_API_URL}/levels/${$page.params.id}/deathCount`)
+		sdk.fetch(`/levels/${$page.params.id}/deathCount`)
 			.then((res) => res.json())
 			.then((res: any) => {
 				deathCount = res.count;
 			});
 
-		fetch(`${import.meta.env.VITE_API_URL}/community/levels/${$page.params.id}/posts?limit=5`)
+		sdk.fetch(`/community/levels/${$page.params.id}/posts?limit=5`)
 			.then((res) => res.json())
 			.then((res: any) => (relatedPosts = res))
 			.catch(() => (relatedPosts = []));
 
-		fetch(`${import.meta.env.VITE_API_URL}/levels/${$page.params.id}/tags`)
+		sdk.fetch(`/levels/${$page.params.id}/tags`)
 			.then((res) => res.json())
 			.then(
 				(res: any) => (levelTags = (res || []).map((t: any) => t.level_tags || t).filter(Boolean))
 			)
 			.catch(() => (levelTags = []));
 
-		fetch(`${import.meta.env.VITE_API_URL}/levels/${$page.params.id}/variants`)
+		sdk.fetch(`/levels/${$page.params.id}/variants`)
 			.then((res) => res.json())
 			.then((res: any) => (levelVariants = res || []))
 			.catch(() => (levelVariants = []));

@@ -1,12 +1,11 @@
-export async function getPlayerData(player: any, fetch: any) {
-	const records: any = await (
-		await fetch(
-			`${import.meta.env.VITE_API_URL}/players/${player.uid}/records?sortBy=pt&end=500&isChecked=true&ascending=false`
-		)
-	).json();
-	const events: any[] = await (
-		await fetch(`${import.meta.env.VITE_API_URL}/players/${player.uid}/events`)
-	).json();
+import type { ApiFetch, ApiListResponse, PlayerSummary } from '$lib/client/apiTypes';
+import * as sdk from '$lib/client/sdk';
+export async function getPlayerData(player: PlayerSummary, fetch: ApiFetch) {
+	const records = await sdk.get<ApiListResponse>(
+		`/players/${player.uid}/records?sortBy=pt&end=500&isChecked=true&ascending=false`,
+		{ fetch }
+	);
+	const events = await sdk.get<ApiListResponse>(`/players/${player.uid}/events`, { fetch });
 
 	return {
 		player: player,

@@ -1,4 +1,6 @@
-async function getTotalPage(fetch: any, list: string) {
+import type { ApiFetch, ApiListResponse, ListEntry } from '$lib/client/apiTypes';
+import * as sdk from '$lib/client/sdk';
+async function getTotalPage(fetch: ApiFetch, list: string) {
 	const query = new URLSearchParams({
 		start: '0',
 		end: '0',
@@ -6,14 +8,12 @@ async function getTotalPage(fetch: any, list: string) {
 		ascending: list == 'cl' ? 'false' : 'true'
 	});
 
-	const res = await (
-		await fetch(`${import.meta.env.VITE_API_URL}/list/${list}?${query.toString()}`)
-	).json();
+	const res = await sdk.get<ListEntry[]>(`/list/${list}?${query.toString()}`, { fetch });
 
 	return res[0][list == 'fl' ? 'flTop' : 'dlTop'];
 }
 
-async function getLevels(fetch: any, list: string, page: number, uid: string | null) {
+async function getLevels(fetch: ApiFetch, list: string, page: number, uid: string | null) {
 	let sortBy = list == 'fl' ? 'flTop' : 'dlTop';
 
 	if (list == 'cl') {
@@ -28,9 +28,7 @@ async function getLevels(fetch: any, list: string, page: number, uid: string | n
 		uid: !uid ? '' : uid
 	});
 
-	const res = await (
-		await fetch(`${import.meta.env.VITE_API_URL}/list/${list}?${query.toString()}`)
-	).json();
+	const res = await sdk.get<ApiListResponse>(`/list/${list}?${query.toString()}`, { fetch });
 
 	return res;
 }

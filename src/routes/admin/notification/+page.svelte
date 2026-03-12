@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import Title from '$lib/components/Title.svelte';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
@@ -53,7 +54,7 @@
 				payload.redirect = notification.redirect.trim();
 			}
 
-			const response = await fetch(`${import.meta.env.VITE_API_URL}/notifications`, {
+			const response = await sdk.fetch(`/notifications`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',

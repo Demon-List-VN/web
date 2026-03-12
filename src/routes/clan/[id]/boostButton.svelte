@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { buttonVariants } from '$lib/components/ui/button';
 	import { user } from '$lib/client';
 	import * as Dialog from '$lib/components/ui/dialog';
@@ -27,7 +28,7 @@
 
 		const res: any = await (
 			await fetch(
-				`${import.meta.env.VITE_API_URL}/payment/getPaymentLink/3/${quantity[0]}${data.id ? `?targetClanID=${data.id}` : ''}`,
+				sdk.url(`/payment/getPaymentLink/3/${quantity[0]}${data.id ? `)?targetClanID=${data.id}` : ''}`,
 				{
 					method: 'POST',
 					headers: {

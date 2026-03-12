@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { onMount } from 'svelte';
 	import { _ } from 'svelte-i18n';
 	import { user } from '$lib/client';
@@ -26,7 +27,7 @@
 
 		try {
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/players/${userID}/community-posts?${params}`,
+				sdk.url(`/players/${userID}/community-posts?${params}`),
 				{ headers }
 			);
 			const json = await res.json();

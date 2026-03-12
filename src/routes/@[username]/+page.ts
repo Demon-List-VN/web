@@ -2,12 +2,12 @@ import { isActive } from '$lib/client/isSupporterActive.js';
 import { redirect } from '@sveltejs/kit';
 import { getPlayerData } from '../player/[uid]/getPlayerData.js';
 import { error } from '@sveltejs/kit';
+import type { PlayerSummary } from '$lib/client/apiTypes';
+import * as sdk from '$lib/client/sdk';
 
 export async function load({ params, url, fetch }) {
 	const { username } = params;
-	const player: any = await (
-		await fetch(`${import.meta.env.VITE_API_URL}/players/@${username}`)
-	).json();
+	const player = await sdk.get<PlayerSummary>(`/players/@${username}`, { fetch });
 
 	if (!isActive(player.supporterUntil)) {
 		throw error(404, {

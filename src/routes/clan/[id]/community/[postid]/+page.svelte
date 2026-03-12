@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { page } from '$app/stores';
 	import PostDetail from '$lib/components/community/PostDetail.svelte';
 
@@ -8,6 +9,6 @@
 
 <PostDetail
 	postId={postId || ''}
-	apiPrefix={`${import.meta.env.VITE_API_URL}/clans/${clanId}/community`}
+	apiPrefix={sdk.url(`/clans/${clanId}/community`)}
 	backLink={`/clan/${clanId}`}
 />

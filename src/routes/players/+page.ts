@@ -1,12 +1,14 @@
+import type { Province, ProvinceMap } from '$lib/client/apiTypes';
+import * as sdk from '$lib/client/sdk';
 export async function load({ fetch }) {
-    const res: any = await (await fetch(`${import.meta.env.VITE_API_URL}/provinces`)).json()
+    const res = await sdk.get<ProvinceMap>(`/provinces`, { fetch })
 
     return {
         provinces: {
             list: Object
                 .keys(res)
                 .map(key => res[key])
-                .toSorted((a: any, b: any) => {
+                .toSorted((a: Province, b: Province) => {
                     return a.name > b.name ? 1 : -1
                 }),
             map: res

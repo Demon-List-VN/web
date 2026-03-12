@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { _ } from 'svelte-i18n';
 	import { user } from '$lib/client';
 	import { onMount } from 'svelte';
@@ -25,7 +26,7 @@
 		if (!seasonId) return;
 
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/season/${seasonId}/missions`);
+			const res = await sdk.fetch(`/battlepass/season/${seasonId}/missions`);
 			if (res.ok) {
 				missions = await res.json();
 			}
@@ -38,7 +39,7 @@
 		if (!$user.loggedIn) return;
 
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/missions`, {
+			const res = await sdk.fetch(`/battlepass/missions`, {
 				headers: {
 					Authorization: `Bearer ${await $user.token()}`
 				}
@@ -59,7 +60,7 @@
 	async function claimMission(missionId: number) {
 		try {
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/battlepass/mission/${missionId}/claim`,
+				sdk.url(`/battlepass/mission/${missionId}/claim`),
 				{
 					method: 'POST',
 					headers: {

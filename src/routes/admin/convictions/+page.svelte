@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import Title from '$lib/components/Title.svelte';
 	import PlayerSelector from '$lib/components/playerSelector.svelte';
 	import { Label } from '$lib/components/ui/label';
@@ -55,7 +56,7 @@
 	async function fetchConvictions(uid: string) {
 		loadingList = true;
 		try {
-			const response = await fetch(`${import.meta.env.VITE_API_URL}/players/${uid}/convictions`, {
+			const response = await sdk.fetch(`/players/${uid}/convictions`, {
 				headers: await getAuthHeaders()
 			});
 			if (!response.ok) {
@@ -84,7 +85,7 @@
 		conviction.saving = true;
 		try {
 			const response = await fetch(
-				`${import.meta.env.VITE_API_URL}/players/${selectedPlayer.uid}/convictions/${conviction.id}`,
+				sdk.url(`/players/${selectedPlayer.uid}/convictions/${conviction.id}`),
 				{
 					method: 'PATCH',
 					headers: await getAuthHeaders(true),
@@ -125,7 +126,7 @@
 		isLoading = true;
 		try {
 			const response = await fetch(
-				`${import.meta.env.VITE_API_URL}/players/${selectedPlayer.uid}/convictions`,
+				sdk.url(`/players/${selectedPlayer.uid}/convictions`),
 				{
 					method: 'POST',
 					headers: await getAuthHeaders(true),

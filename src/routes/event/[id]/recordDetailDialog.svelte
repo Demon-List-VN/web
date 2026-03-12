@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
@@ -53,7 +54,7 @@
 
 	async function getLevelDeathCount(levelID: number) {
 		const res = await (
-			await fetch(`${import.meta.env.VITE_API_URL}/levels/${levelID}/deathCount`)
+			await sdk.fetch(`/levels/${levelID}/deathCount`)
 		).json();
 
 		return res;
@@ -61,7 +62,7 @@
 
 	async function getPlayerDeathCount(levelID: number, userID: string) {
 		const res = await (
-			await fetch(`${import.meta.env.VITE_API_URL}/deathCount/${userID}/${levelID}`)
+			await sdk.fetch(`/deathCount/${userID}/${levelID}`)
 		).json();
 
 		return res;

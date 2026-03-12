@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { user } from '$lib/client';
 	import Title from '$lib/components/Title.svelte';
 	import * as Table from '$lib/components/ui/table/index.js';
@@ -8,7 +9,7 @@
 
 	onMount(async () => {
 		data = await (
-			await fetch(`${import.meta.env.VITE_API_URL}/merchant/orders`, {
+			await sdk.fetch(`/merchant/orders`, {
 				method: 'GET',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())

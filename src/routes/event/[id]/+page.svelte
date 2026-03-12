@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import type { PageData } from './$types';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import { user } from '$lib/client';
@@ -23,7 +24,7 @@
 		toast.promise(
 			async () => {
 				levels = await (
-					await fetch(`${import.meta.env.VITE_API_URL}/events/${data.id}/levels`)
+					await sdk.fetch(`/events/${data.id}/levels`)
 				).json();
 			},
 			{
@@ -35,7 +36,7 @@
 	}
 
 	onMount(async () => {
-		levels = await (await fetch(`${import.meta.env.VITE_API_URL}/events/${data.id}/levels`)).json();
+		levels = await (await sdk.fetch(`/events/${data.id}/levels`)).json();
 	});
 </script>
 

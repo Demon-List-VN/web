@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import * as Table from '$lib/components/ui/table/index.js';
 	import Download from 'svelte-radix/Download.svelte';
 	import { onMount } from 'svelte';
@@ -138,7 +139,7 @@
 			}
 			
 			leaderboard = await (
-				await fetch(`${import.meta.env.VITE_API_URL}/events/${event.id}/leaderboard`, {
+				await sdk.fetch(`/events/${event.id}/leaderboard`, {
 					method: 'GET',
 					headers: {
 						Authorization: $user.loggedIn ? 'Bearer ' + (await $user.token()) : ''
@@ -148,7 +149,7 @@
 
 			if ($user.loggedIn && $user.data.isAdmin) {
 				leaderboard1 = await (
-					await fetch(`${import.meta.env.VITE_API_URL}/events/${event.id}/leaderboard`)
+					await sdk.fetch(`/events/${event.id}/leaderboard`)
 				).json();
 			}
 
@@ -171,7 +172,7 @@
 		updateData.accepted = updateData.accepted.value;
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/events/submission`, {
+			sdk.fetch(`/events/submission`, {
 				method: 'PATCH',
 				body: JSON.stringify(updateData),
 				headers: {
@@ -278,7 +279,7 @@
 
 	async function calculate() {
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/events/${event.id}/calc`, {
+			sdk.fetch(`/events/${event.id}/calc`, {
 				method: 'PATCH',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())
@@ -298,7 +299,7 @@
 
 	async function getLevelDeathCount(levelID: number) {
 		const res = await (
-			await fetch(`${import.meta.env.VITE_API_URL}/levels/${levelID}/deathCount`)
+			await sdk.fetch(`/levels/${levelID}/deathCount`)
 		).json();
 
 		return res;
@@ -306,7 +307,7 @@
 
 	async function getPlayerDeathCount(levelID: number, userID: string) {
 		const res = await (
-			await fetch(`${import.meta.env.VITE_API_URL}/deathCount/${userID}/${levelID}`)
+			await sdk.fetch(`/deathCount/${userID}/${levelID}`)
 		).json();
 
 		return res;

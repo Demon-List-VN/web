@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
   import { onMount } from 'svelte';
   import { _ } from 'svelte-i18n';
   import { page } from '$app/stores';
@@ -80,7 +81,7 @@
     }
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/mappack/${mapPackWrapper.id}`, {
+      const res = await sdk.fetch(`/battlepass/mappack/${mapPackWrapper.id}`, {
           headers: {
               Authorization: `Bearer ${token}`
           }

@@ -1,21 +1,23 @@
 import type { PageLoad } from './$types';
+import type { MapPackWrapper } from '$lib/client/apiTypes';
+import * as sdk from '$lib/client/sdk';
 
 export const load: PageLoad = async ({ params, fetch }) => {
   const id = Number(params.id);
 
   try {
     // Try dedicated detail endpoint first
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/mappack/${id}`);
+    const res = await sdk.fetch(`/battlepass/mappack/${id}`, { fetch });
     if (res.ok) {
-      const mapPackWrapper = await res.json();
+      const mapPackWrapper = (await res.json()) as MapPackWrapper;
       return { mapPackWrapper };
     }
     
     // Fallback: fetch list and pick by id
-    const listRes = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/mappacks`);
+    const listRes = await sdk.fetch(`/battlepass/mappacks`, { fetch });
     if (listRes.ok) {
-      const packs = await listRes.json();
-      const mapPackWrapper = packs.find((p: any) => p?.id === id);
+      const packs = (await listRes.json()) as MapPackWrapper[];
+      const mapPackWrapper = packs.find((p) => p.id === id) ?? null;
       return { mapPackWrapper };
     }
   } catch (e) {

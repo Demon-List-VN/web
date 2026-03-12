@@ -1,5 +1,7 @@
 import supabase from '$lib/client/supabase';
+import type { PlayerSummary } from '$lib/client/apiTypes';
 import { writable } from 'svelte/store';
+import * as sdk from '$lib/client/sdk';
 
 interface Rating {
 	progress: number;
@@ -7,7 +9,7 @@ interface Rating {
 }
 
 interface userType {
-	data: any;
+	data: PlayerSummary | undefined;
 	ratings: Rating[];
 	token: () => Promise<string | undefined>;
 	loggedIn: boolean;
@@ -17,7 +19,7 @@ interface userType {
 }
 
 interface CachedUserData {
-	data: any;
+	data: PlayerSummary;
 	ratings: Rating[];
 	userId: string;
 	timestamp: number;
@@ -46,7 +48,7 @@ function loadCachedUserData(): CachedUserData | null {
 	}
 }
 
-function saveCachedUserData(userId: string, data: any, ratings: Rating[]) {
+function saveCachedUserData(userId: string, data: PlayerSummary, ratings: Rating[]) {
 	if (typeof window === 'undefined') return;
 
 	try {
@@ -79,7 +81,7 @@ async function addNewUser() {
 		throw new Error(error.message);
 	}
 
-	await fetch(`${import.meta.env.VITE_API_URL}/players`, {
+	await sdk.fetch(`/players`, {
 		method: 'POST',
 		headers: {
 			Authorization: `Bearer ${await userData.token()}`,
@@ -107,7 +109,7 @@ const userData: userType = {
 			return;
 		}
 
-		await fetch(`${import.meta.env.VITE_API_URL}/players/syncRole`, {
+		await sdk.fetch(`/players/syncRole`, {
 			method: 'PATCH',
 			headers: {
 				Authorization: 'Bearer ' + (await userData.token())
@@ -136,14 +138,12 @@ const userData: userType = {
 		}
 
 		const tmp = Promise.all([
-			fetch(`${import.meta.env.VITE_API_URL}/players/${userId}?cached=true`)
-				.then((res) => res.json())
+			sdk.get<PlayerSummary>(`/players/${userId}?cached=true`)
 				.then((res) => {
 					userData.data = res;
 				}),
-			fetch(`${import.meta.env.VITE_API_URL}/players/${userId}/records?ratingOnly=true`)
-				.then((res) => res.json())
-				.then((res: any) => {
+			sdk.get<Rating[]>(`/players/${userId}/records?ratingOnly=true`)
+				.then((res) => {
 					userData.ratings = res;
 				})
 		])
@@ -156,14 +156,12 @@ const userData: userType = {
 			.catch((err) => {
 				addNewUser().then(() => {
 					Promise.all([
-						fetch(`${import.meta.env.VITE_API_URL}/players/${userId}?cached=true`)
-							.then((res) => res.json())
+						sdk.get<PlayerSummary>(`/players/${userId}?cached=true`)
 							.then((res) => {
 								userData.data = res;
 							}),
-						fetch(`${import.meta.env.VITE_API_URL}/players/${userId}/records?ratingOnly=true`)
-							.then((res) => res.json())
-							.then((res: any) => {
+						sdk.get<Rating[]>(`/players/${userId}/records?ratingOnly=true`)
+							.then((res) => {
 								userData.ratings = res;
 							})
 					]).then(() => {

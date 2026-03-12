@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import * as Table from '$lib/components/ui/table';
 	import * as Select from '$lib/components/ui/select';
@@ -82,7 +83,7 @@
 		appliedMembersFilter = structuredClone(membersFilter);
 
 		fetch(
-			`${import.meta.env.VITE_API_URL}/clans/${$page.params.id}/members?${new URLSearchParams(membersFilter).toString()}`
+			sdk.url(`/clans/${$page.params.id}/members?${new URLSearchParams(membersFilter).toString()}`)
 		)
 			.then((res) => res.json())
 			.then((res: any) => {
@@ -118,7 +119,7 @@
 		appliedRecordsFilter = structuredClone(recordsFilter);
 
 		fetch(
-			`${import.meta.env.VITE_API_URL}/clans/${$page.params.id}/records?${new URLSearchParams(recordsFilter).toString()}`
+			sdk.url(`/clans/${$page.params.id}/records?${new URLSearchParams(recordsFilter).toString()}`)
 		)
 			.then((res) => res.json())
 			.then((res: any) => {
@@ -137,14 +138,14 @@
 	}
 
 	function fetchInvitations() {
-		fetch(`${import.meta.env.VITE_API_URL}/clans/${$page.params.id}/invitations`)
+		sdk.fetch(`/clans/${$page.params.id}/invitations`)
 			.then((res) => res.json())
 			.then((res: any) => (invitations = res));
 	}
 
 	async function joinClan() {
 		toast.loading('Joining clan...');
-		fetch(`${import.meta.env.VITE_API_URL}/clans/${$page.params.id}/join`, {
+		sdk.fetch(`/clans/${$page.params.id}/join`, {
 			method: 'PUT',
 			headers: {
 				Authorization: 'Bearer ' + (await $user.token())
@@ -159,7 +160,7 @@
 
 		toast.loading($_('toast.clan_leave.loading'));
 
-		fetch(`${import.meta.env.VITE_API_URL}/clans/leave`, {
+		sdk.fetch(`/clans/leave`, {
 			method: 'PUT',
 			headers: {
 				Authorization: 'Bearer ' + (await $user.token())
@@ -174,7 +175,7 @@
 		delete editedData.boostedUntil;
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/clans/${$page.params.id}`, {
+			sdk.fetch(`/clans/${$page.params.id}`, {
 				method: 'PATCH',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token()),
@@ -206,7 +207,7 @@
 		}
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/clans/${$page.params.id}`, {
+			sdk.fetch(`/clans/${$page.params.id}`, {
 				method: 'DELETE',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())
@@ -242,7 +243,7 @@
 			editedData.imageVersion++;
 
 			await upload(`clan-photos/${$page.params.id}.jpg`, cImg, (await $user.token())!);
-			await fetch(`${import.meta.env.VITE_API_URL}/clans/${$page.params.id}`, {
+			await sdk.fetch(`/clans/${$page.params.id}`, {
 				method: 'PATCH',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token()),
@@ -259,7 +260,7 @@
 	}
 
 	async function acceptInvitation(clanID: number) {
-		fetch(`${import.meta.env.VITE_API_URL}/clans/${clanID}/invite`, {
+		sdk.fetch(`/clans/${clanID}/invite`, {
 			method: 'PATCH',
 			headers: {
 				Authorization: 'Bearer ' + (await $user.token())
@@ -268,7 +269,7 @@
 	}
 
 	async function rejectInvitation(clanID: number) {
-		fetch(`${import.meta.env.VITE_API_URL}/clans/${clanID}/invite`, {
+		sdk.fetch(`/clans/${clanID}/invite`, {
 			method: 'DELETE',
 			headers: {
 				Authorization: 'Bearer ' + (await $user.token())
@@ -281,7 +282,7 @@
 			return;
 		}
 
-		fetch(`${import.meta.env.VITE_API_URL}/clans/${$page.params.id}/kick/${player.uid}`, {
+		sdk.fetch(`/clans/${$page.params.id}/kick/${player.uid}`, {
 			method: 'PATCH',
 			headers: {
 				Authorization: 'Bearer ' + (await $user.token())
@@ -302,7 +303,7 @@
 		}
 
 		fetch(
-			`${import.meta.env.VITE_API_URL}/clans/${$page.params.id}/ban/${player.uid}?reason=${reason}`,
+			sdk.url(`/clans/${$page.params.id}/ban/${player.uid}?reason=${reason}`),
 			{
 				method: 'POST',
 				headers: {
@@ -317,7 +318,7 @@
 			return;
 		}
 
-		fetch(`${import.meta.env.VITE_API_URL}/clans/${$page.params.id}/invitation/${uid}`, {
+		sdk.fetch(`/clans/${$page.params.id}/invitation/${uid}`, {
 			method: 'DELETE',
 			headers: {
 				Authorization: 'Bearer ' + (await $user.token())
@@ -329,7 +330,7 @@
 		(() => {
 			if ($user.loggedIn) {
 				fetch(
-					`${import.meta.env.VITE_API_URL}/clans/${$page.params.id}/invitation/${$user.data.uid}`
+					sdk.url(`/clans/${$page.params.id}/invitation/${$user.data.uid}`)
 				)
 					.then((res) => res.json())
 					.then((res) => (invitation = res));

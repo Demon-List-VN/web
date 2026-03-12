@@ -1,10 +1,11 @@
+import type { EventResponse, PlayerSummary } from '$lib/client/apiTypes';
+import * as sdk from '$lib/client/sdk';
 export async function load({ params, url, fetch }) {
     const { id } = params;
-    const event: any =
-        await (await fetch(`${import.meta.env.VITE_API_URL}/events/${id}`))
-            .json();
+    const event = await sdk.get<EventResponse>(`/events/${id}`, { fetch });
     event.data.players =
-        await (await fetch(`${import.meta.env.VITE_API_URL}/players/batch`, {
+        await (await sdk.fetch(`/players/batch`, {
+            fetch,
             method: "POST",
             body: JSON.stringify({
                 batch: event.data.players,
@@ -12,8 +13,7 @@ export async function load({ params, url, fetch }) {
             headers: {
                 "Content-Type": "application/json",
             },
-        }))
-            .json();
+        })).json() as PlayerSummary[];
 
     const mp = new Map();
 

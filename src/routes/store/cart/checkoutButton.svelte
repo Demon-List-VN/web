@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { Button } from '$lib/components/ui/button';
 	import { cart } from '$lib/client/cart';
 	import { user } from '$lib/client/user';
@@ -22,7 +23,7 @@
 		toast.loading('You will be redirected to our payment portal');
 
 		const res: any = await (
-			await fetch(`${import.meta.env.VITE_API_URL}/payment/getPaymentLink`, {
+			await sdk.fetch(`/payment/getPaymentLink`, {
 				method: 'POST',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token()),
@@ -45,7 +46,7 @@
 		let orderID = 0;
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/orders`, {
+			sdk.fetch(`/orders`, {
 				method: 'POST',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token()),

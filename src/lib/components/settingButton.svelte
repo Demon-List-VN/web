@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { onMount } from 'svelte';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
@@ -30,7 +31,7 @@
 		}
 
 		APIKeys = await (
-			await fetch(`${import.meta.env.VITE_API_URL}/APIKey`, {
+			await sdk.fetch(`/APIKey`, {
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())!
 				}
@@ -44,7 +45,7 @@
 	}
 
 	async function createNewKey() {
-		await fetch(`${import.meta.env.VITE_API_URL}/APIKey`, {
+		await sdk.fetch(`/APIKey`, {
 			method: 'POST',
 			headers: {
 				Authorization: 'Bearer ' + (await $user.token())!
@@ -56,7 +57,7 @@
 	}
 
 	async function deleteKey(key: string) {
-		await fetch(`${import.meta.env.VITE_API_URL}/APIKey/${key}`, {
+		await sdk.fetch(`/APIKey/${key}`, {
 			method: 'DELETE',
 			headers: {
 				Authorization: 'Bearer ' + (await $user.token())!
@@ -69,7 +70,7 @@
 
 	async function pointercrateLink() {
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/auth/link/pointercrate`, {
+			sdk.fetch(`/auth/link/pointercrate`, {
 				method: 'PATCH',
 				body: JSON.stringify({
 					token: token

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import Title from '$lib/components/Title.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as Table from '$lib/components/ui/table';
@@ -16,7 +17,7 @@
 
 		toast.loading('Submitting verdict... This page will be refreshed');
 
-		await fetch(`${import.meta.env.VITE_API_URL}/events/proofs`, {
+		await sdk.fetch(`/events/proofs`, {
 			method: 'PUT',
 			headers: {
 				Authorization: 'Bearer ' + (await $user.token())!,
@@ -25,7 +26,7 @@
 			body: JSON.stringify(data)
 		});
 
-		await fetch(`${import.meta.env.VITE_API_URL}/notifications`, {
+		await sdk.fetch(`/notifications`, {
 			method: 'POST',
 			body: JSON.stringify({
 				to: item.players.uid,
@@ -50,14 +51,14 @@
 
 		toast.loading('Submitting verdict... This page will be refreshed');
 
-		await fetch(`${import.meta.env.VITE_API_URL}/events/${item.eventID}/proofs/${item.players.uid}`, {
+		await sdk.fetch(`/events/${item.eventID}/proofs/${item.players.uid}`, {
 			method: 'DELETE',
 			headers: {
 				Authorization: 'Bearer ' + (await $user.token())!
 			}
 		});
 
-		await fetch(`${import.meta.env.VITE_API_URL}/notifications`, {
+		await sdk.fetch(`/notifications`, {
 			method: 'POST',
 			body: JSON.stringify({
 				to: item.players.uid,

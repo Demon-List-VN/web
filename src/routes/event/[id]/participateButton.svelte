@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Skeleton } from '$lib/components/ui/skeleton';
@@ -42,7 +43,7 @@
 			return;
 		}
 
-		fetch(`${import.meta.env.VITE_API_URL}/events/${data.id}/proofs/${$user.data.uid}`)
+		sdk.fetch(`/events/${data.id}/proofs/${$user.data.uid}`)
 			.then((res) => {
 				if (!res.ok) {
 					rewardState = 4;
@@ -63,7 +64,7 @@
 		claimOpened = false;
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/events/proofs`, {
+			sdk.fetch(`/events/proofs`, {
 				method: 'POST',
 				body: JSON.stringify({
 					eventID: data.id,
@@ -91,7 +92,7 @@
 		cancelOpened = false;
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/events/${data.id}/proofs/${$user.data.uid}`, {
+			sdk.fetch(`/events/${data.id}/proofs/${$user.data.uid}`, {
 				method: 'DELETE',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())!

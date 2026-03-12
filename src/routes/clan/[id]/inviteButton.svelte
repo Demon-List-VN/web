@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Button } from '$lib/components/ui/button';
 	import PlayerSelector from '$lib/components/playerSelector.svelte';
@@ -15,7 +16,7 @@
 		opened = false;
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/clans/invite/${selectedPlayer.uid}`, {
+			sdk.fetch(`/clans/invite/${selectedPlayer.uid}`, {
 				method: 'POST',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())

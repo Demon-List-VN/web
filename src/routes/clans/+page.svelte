@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Button } from '$lib/components/ui/button';
@@ -103,7 +104,7 @@
 		}
 
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/clans?${params}`);
+			const res = await sdk.fetch(`/clans?${params}`);
 			const newClans = await res.json();
 
 			if (append) {
@@ -151,7 +152,7 @@
 			return;
 		}
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/clans/${$user.data.clan}`);
+			const res = await sdk.fetch(`/clans/${$user.data.clan}`);
 			myClan = await res.json();
 		} catch {
 			// silently fail
@@ -175,7 +176,7 @@
 		}
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/clans`, {
+			sdk.fetch(`/clans`, {
 				method: 'POST',
 				body: JSON.stringify(newClanData),
 				headers: {
@@ -199,7 +200,7 @@
 	}
 
 	async function acceptInvitation(clanID: number) {
-		fetch(`${import.meta.env.VITE_API_URL}/clans/${clanID}/invite`, {
+		sdk.fetch(`/clans/${clanID}/invite`, {
 			method: 'PATCH',
 			headers: {
 				Authorization: 'Bearer ' + (await $user.token())
@@ -208,7 +209,7 @@
 	}
 
 	async function rejectInvitation(clanID: number) {
-		fetch(`${import.meta.env.VITE_API_URL}/clans/${clanID}/invite`, {
+		sdk.fetch(`/clans/${clanID}/invite`, {
 			method: 'DELETE',
 			headers: {
 				Authorization: 'Bearer ' + (await $user.token())
@@ -222,7 +223,7 @@
 
 		const res: any = await (
 			await fetch(
-				`${import.meta.env.VITE_API_URL}/payment/getPaymentLink/3/${boostQuantity[0]}?targetClanID=${$user.data.clan}`,
+				sdk.url(`/payment/getPaymentLink/3/${boostQuantity[0]}?targetClanID=${$user.data.clan}`),
 				{
 					method: 'POST',
 					headers: {
@@ -265,7 +266,7 @@
 		fetchMyClan();
 
 		if ($user.loggedIn) {
-			fetch(`${import.meta.env.VITE_API_URL}/clans/invitations`, {
+			sdk.fetch(`/clans/invitations`, {
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token()),
 					'Content-Type': 'application/json'

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { toast } from 'svelte-sonner';
 	import { _ } from 'svelte-i18n';
 	import EventCard from './eventCard.svelte';
@@ -51,7 +52,7 @@
 	async function fetchData() {
 		// @ts-expect-error
 		const query = new URLSearchParams({ ...filter, from: 0, to: 49 }).toString();
-		const res = await (await fetch(`${import.meta.env.VITE_API_URL}/events?${query}`)).json();
+		const res = await (await sdk.fetch(`/events?${query}`)).json();
 
 		data.events = res;
 		data = data;

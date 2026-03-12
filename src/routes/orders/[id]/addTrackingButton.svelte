@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { user } from '$lib/client';
 	import { Button, buttonVariants } from '$lib/components/ui/button/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
@@ -17,7 +18,7 @@
 
 	async function add() {
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/merchant/order/${order.id}/tracking`, {
+			sdk.fetch(`/merchant/order/${order.id}/tracking`, {
 				method: 'POST',
 				body: JSON.stringify({
 					content: content.label,

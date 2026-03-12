@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { onMount } from 'svelte';
 	import * as Table from '$lib/components/ui/table';
 	import { _ } from 'svelte-i18n';
@@ -17,7 +18,7 @@
 
 	onMount(async () => {
 		try {
-			const response = await fetch(`${import.meta.env.VITE_API_URL}/players/${userID}/convictions`);
+			const response = await sdk.fetch(`/players/${userID}/convictions`);
 			if (response.ok) {
 				convictions = await response.json();
 			}

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { Button } from '$lib/components/ui/button';
 	import * as Select from '$lib/components/ui/select';
 	import LevelCard from '$lib/components/levelCard.svelte';
@@ -72,7 +73,7 @@
 	}
 
 	async function getLevels() {
-		const url = new URL('/levels/random', import.meta.env.VITE_API_URL);
+		const url = new URL(sdk.url('/levels/random'));
 
 		if (list !== 'all') {
 			url.searchParams.set('list', list || '');

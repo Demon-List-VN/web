@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import CommunityPostCard from '$lib/components/communityPostCard.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
@@ -52,7 +53,7 @@
 
 	async function fetchAvailableTags() {
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/tags`);
+			const res = await sdk.fetch(`/community/tags`);
 			availableTags = await res.json();
 		} catch {
 			availableTags = [];
@@ -97,7 +98,7 @@
 				params.set('tagId', String(activeTagId));
 			}
 
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/posts?${params}`, {
+			const res = await sdk.fetch(`/community/posts?${params}`, {
 				headers
 			});
 
@@ -116,7 +117,7 @@
 			// Record views for logged-in users (fire-and-forget)
 			if (token && json.data.length > 0) {
 				const viewPostIds = json.data.map((p: any) => p.id);
-				fetch(`${import.meta.env.VITE_API_URL}/community/posts/views`, {
+				sdk.fetch(`/community/posts/views`, {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
@@ -171,7 +172,7 @@
 		try {
 			const token = await $user.token();
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/community/posts/${reportPostId}/report`,
+				sdk.url(`/community/posts/${reportPostId}/report`),
 				{
 					method: 'POST',
 					headers: {

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { createEventDispatcher, onMount, tick } from 'svelte';
 	import * as Avatar from '$lib/components/ui/avatar';
 	import { Input } from '$lib/components/ui/input';
@@ -41,7 +42,7 @@
 
 		isSearching = true;
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/search/${searchValue}`, {
+			const res = await sdk.fetch(`/search/${searchValue}`, {
 				headers: await getSearchAuthHeaders()
 			});
 			const data = await res.json();

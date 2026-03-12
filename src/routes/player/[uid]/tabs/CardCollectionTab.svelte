@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as sdk from '$lib/client/sdk';
 	import { onMount } from 'svelte';
 
 	export let userID: string;
@@ -18,7 +19,7 @@
 
 	onMount(async () => {
 		try {
-			const response = await fetch(`${import.meta.env.VITE_API_URL}/players/${userID}/cards`);
+			const response = await sdk.fetch(`/players/${userID}/cards`);
 			cards = await response.json();
 		} catch (error) {
 			console.error('Failed to fetch cards:', error);
