@@ -32,7 +32,7 @@
 		fetchState = 1;
 
 		try {
-			giftTo = await (await sdk.fetch(`/players/${giftToUID}`)).json();
+			giftTo = await (await sdk.players.byId(giftToUID).request()).json();
 			fetchState = 2;
 		} catch {
 			toast.error(get(_)('toast.payment.no_player'));

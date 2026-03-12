@@ -55,7 +55,7 @@
 				player.isAvatarGif = true;
 				player.avatarVersion++;
 
-				await sdk.fetch(`/players`, {
+				await sdk.players.root.request({
 					method: 'PUT',
 					headers: {
 						Authorization: 'Bearer ' + (await $user.token()),
@@ -82,7 +82,7 @@
 				player.isAvatarGif = false;
 				player.avatarVersion++;
 
-				await sdk.fetch(`/players`, {
+				await sdk.players.root.request({
 					method: 'PUT',
 					headers: {
 						Authorization: 'Bearer ' + (await $user.token()),
@@ -114,7 +114,7 @@
 				player.isBannerGif = true;
 				player.bannerVersion++;
 
-				await sdk.fetch(`/players`, {
+				await sdk.players.root.request({
 					method: 'PUT',
 					headers: {
 						Authorization: 'Bearer ' + (await $user.token()),
@@ -143,7 +143,7 @@
 				player.isBannerGif = false;
 				player.bannerVersion++;
 
-				await sdk.fetch(`/players`, {
+				await sdk.players.root.request({
 					method: 'PUT',
 					headers: {
 						Authorization: 'Bearer ' + (await $user.token()),
@@ -171,7 +171,7 @@
 		}
 
 		const token = await $user.token();
-		const promise = sdk.fetch(`/players`, {
+		const promise = sdk.players.root.request({
 			method: 'PUT',
 			headers: {
 				Authorization: 'Bearer ' + token,
@@ -190,7 +190,8 @@
 	}
 
 	onMount(() => {
-		sdk.fetch(`/provinces`)
+		sdk.provinceData
+			.request()
 			.then((res) => res.json())
 			.then((res) => {
 				provinces = res;

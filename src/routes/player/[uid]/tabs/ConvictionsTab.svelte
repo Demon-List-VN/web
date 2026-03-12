@@ -18,7 +18,7 @@
 
 	onMount(async () => {
 		try {
-			const response = await sdk.fetch(`/players/${userID}/convictions`);
+			const response = await sdk.players.byId(userID).convictions.request();
 			if (response.ok) {
 				convictions = await response.json();
 			}
@@ -44,7 +44,9 @@
 		<Table.Header>
 			<Table.Row>
 				<Table.Head>{$_('player.convictions.content')}</Table.Head>
-				<Table.Head class="w-[120px] text-center">{$_('player.convictions.credit_reduce')}</Table.Head>
+				<Table.Head class="w-[120px] text-center"
+					>{$_('player.convictions.credit_reduce')}</Table.Head
+				>
 				<Table.Head class="w-[220px] text-center">{$_('player.convictions.created_at')}</Table.Head>
 			</Table.Row>
 		</Table.Header>

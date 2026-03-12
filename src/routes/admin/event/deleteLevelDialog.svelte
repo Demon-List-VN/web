@@ -13,12 +13,15 @@
 		}
 
 		toast.promise(
-			sdk.fetch(`/events/${eventID}/level/${levelID}`, {
-				method: 'DELETE',
-				headers: {
-					Authorization: 'Bearer ' + (await $user.token())
-				}
-			}),
+			sdk.eventsApi
+				.byId(eventID)
+				.level(levelID)
+				.request({
+					method: 'DELETE',
+					headers: {
+						Authorization: 'Bearer ' + (await $user.token())
+					}
+				}),
 			{
 				success: 'Deleted!',
 				loading: 'Deleting...',

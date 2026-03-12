@@ -26,7 +26,7 @@
 		if (!seasonId) return;
 
 		try {
-			const res = await sdk.fetch(`/battlepass/season/${seasonId}/missions`);
+			const res = await sdk.battlepassApi.season(seasonId).missions.request();
 			if (res.ok) {
 				missions = await res.json();
 			}
@@ -39,7 +39,7 @@
 		if (!$user.loggedIn) return;
 
 		try {
-			const res = await sdk.fetch(`/battlepass/missions`, {
+			const res = await sdk.battlepassApi.missions.request({
 				headers: {
 					Authorization: `Bearer ${await $user.token()}`
 				}
@@ -59,15 +59,12 @@
 
 	async function claimMission(missionId: number) {
 		try {
-			const res = await fetch(
-				sdk.url(`/battlepass/mission/${missionId}/claim`),
-				{
-					method: 'POST',
-					headers: {
-						Authorization: `Bearer ${await $user.token()}`
-					}
+			const res = await fetch(sdk.url(`/battlepass/mission/${missionId}/claim`), {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`
 				}
-			);
+			});
 
 			if (res.ok) {
 				toast.success($_('battlepass.mission_claimed'));
@@ -161,9 +158,16 @@
 						<div class="flex items-center gap-2">
 							<h4 class="font-bold {isClaimed ? 'line-through' : ''}">{mission.title}</h4>
 							{#if mission.refreshType && mission.refreshType !== 'none'}
-								<span class="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium {mission.refreshType === 'daily' ? 'bg-blue-500/20 text-blue-400' : 'bg-purple-500/20 text-purple-400'}">
+								<span
+									class="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium {mission.refreshType ===
+									'daily'
+										? 'bg-blue-500/20 text-blue-400'
+										: 'bg-purple-500/20 text-purple-400'}"
+								>
 									<RefreshCw class="h-3 w-3" />
-									{mission.refreshType === 'daily' ? $_('battlepass.daily') : $_('battlepass.weekly')}
+									{mission.refreshType === 'daily'
+										? $_('battlepass.daily')
+										: $_('battlepass.weekly')}
 								</span>
 							{/if}
 						</div>

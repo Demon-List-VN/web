@@ -22,7 +22,7 @@
 
 	let state = 0;
 
-	$: $page.url, close();
+	$: ($page.url, close());
 	$: open && onChange();
 
 	function close() {
@@ -57,9 +57,12 @@
 		}
 
 		const promises = [
-			sdk.fetch(`/search/${value}`, {
-				headers: await getSearchAuthHeaders()
-			}).then((res) => res.json()),
+			sdk.search
+				.byValue(value)
+				.request({
+					headers: await getSearchAuthHeaders()
+				})
+				.then((res) => res.json()),
 			fetch(`https://gdbrowser.com/api/search/${value}?page=0&count=5&diff=-2`) // TODO: Migrate to own GD API
 				.then((res) => res.json())
 				.catch((err) => [])
@@ -130,18 +133,18 @@
 />
 
 <Command.Dialog bind:open>
-	<Command.Input bind:value placeholder={$_("search.placeholder")} disabled={state != 0} />
+	<Command.Input bind:value placeholder={$_('search.placeholder')} disabled={state != 0} />
 	<Command.List>
 		{#if state != 0}
 			{#if state != 1}
-				<Command.Empty>{$_("search.no_result")}</Command.Empty>
+				<Command.Empty>{$_('search.no_result')}</Command.Empty>
 			{:else}
 				<Command.Empty>
 					<Loading inverted={true} />
 				</Command.Empty>
 			{/if}
 			{#if result.levels.length}
-				<Command.Group heading={$_("search.dlvn")}>
+				<Command.Group heading={$_('search.dlvn')}>
 					{#each result.levels as item}
 						<ContextMenu.Root>
 							<ContextMenu.Trigger>
@@ -183,7 +186,7 @@
 				</Command.Group>
 			{/if}
 			{#if result.gdBrowserLevels.length}
-				<Command.Group heading={$_("search.gd")}>
+				<Command.Group heading={$_('search.gd')}>
 					{#each result.gdBrowserLevels as item}
 						<ContextMenu.Root>
 							<ContextMenu.Trigger>
@@ -202,7 +205,7 @@
 									on:click={async () => {
 										await navigator.clipboard.writeText(item.id);
 										toast.success('Copied to clipboard!');
-									}}>{$_("context.copy_level_id")}</ContextMenu.Item
+									}}>{$_('context.copy_level_id')}</ContextMenu.Item
 								>
 							</ContextMenu.Content>
 						</ContextMenu.Root>
@@ -210,7 +213,7 @@
 				</Command.Group>
 			{/if}
 			{#if result.players.length}
-				<Command.Group heading={$_("search.players")}>
+				<Command.Group heading={$_('search.players')}>
 					{#each result.players as item}
 						<a href={`/player/${item.uid}`} data-sveltekit-preload-data="tap">
 							<Command.Item>

@@ -19,7 +19,7 @@
 		}
 
 		try {
-			const res = await sdk.fetch(`/records/retrieve-limit`, {
+			const res = await sdk.recordsApi.retrieveLimit.request({
 				headers: {
 					Authorization: `Bearer ${await $user.token()}`,
 					'Content-Type': 'application/json'
@@ -40,12 +40,13 @@
 
 	async function retrieve() {
 		toast.promise(
-			sdk.fetch(`/records/retrieve`, {
-				headers: {
-					Authorization: `Bearer ${await $user.token()}`,
-					'Content-Type': 'application/json'
-				}
-			})
+			sdk.recordsApi.retrieve
+				.request({
+					headers: {
+						Authorization: `Bearer ${await $user.token()}`,
+						'Content-Type': 'application/json'
+					}
+				})
 				.then((res) => {
 					if (res.status == 429) {
 						return res.json().then((data) => {
@@ -105,9 +106,9 @@
 		<h2>Overview</h2>
 		<ul>
 			<li>
-				Overwatch allows the Geometry Dash Việt Nam and Geometry Dash Việt Nam community to regulate itself by
-				providing method for qualified and experienced members of community to review submitted
-				records.
+				Overwatch allows the Geometry Dash Việt Nam and Geometry Dash Việt Nam community to regulate
+				itself by providing method for qualified and experienced members of community to review
+				submitted records.
 			</li>
 		</ul>
 		<h2>Instruction</h2>
@@ -123,9 +124,7 @@
 		</ul>
 		<h2>Note</h2>
 		<ul>
-			<li>
-				You can review up to 3 records per day.
-			</li>
+			<li>You can review up to 3 records per day.</li>
 			<li>You can only review records which level's rating lower than your rating plus 500.</li>
 			<li>After retrieving a record, you must provide a verdict before reviewing other records.</li>
 			<li>You cannot review your own record.</li>
@@ -138,7 +137,9 @@
 			<p class="limitText">Daily limit left: {limitLeft}/{dailyLimit}</p>
 		{/if}
 		<br />
-		<Button on:click={retrieve} disabled={limitLeft !== null && limitLeft <= 0}>Retrieve record</Button>
+		<Button on:click={retrieve} disabled={limitLeft !== null && limitLeft <= 0}
+			>Retrieve record</Button
+		>
 	</div>
 {/if}
 

@@ -105,14 +105,10 @@
 			deathCount: null
 		};
 
-		tmp.data = await (
-			await sdk.fetch(`/records/${uid}/${levelID}`)
-		).json();
+		tmp.data = await (await sdk.recordsApi.byUserAndLevel(uid, levelID).request()).json();
 
 		try {
-			tmp.deathCount = await (
-				await sdk.fetch(`/deathCount/${uid}/${levelID}`)
-			).json();
+			tmp.deathCount = await (await sdk.deathCounts.byUserAndLevel(uid, levelID).request()).json();
 		} catch {
 			tmp.deathCount = Array(100).fill(0);
 		}
@@ -125,15 +121,12 @@
 		prioritizedBy: number
 	): Promise<number> {
 		const res = await (
-			await fetch(
-				sdk.url(`/records/${userID}/${levelID}/getEstimatedQueue/${prioritizedBy}`),
-				{
-					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json'
-					}
+			await fetch(sdk.url(`/records/${userID}/${levelID}/getEstimatedQueue/${prioritizedBy}`), {
+				method: 'GET',
+				headers: {
+					'Content-Type': 'application/json'
 				}
-			)
+			})
 		).json();
 
 		return res.no;
@@ -143,7 +136,7 @@
 		loadingInventory = true;
 		try {
 			const res = await (
-				await sdk.fetch(`/inventory?itemId=15`, {
+				await sdk.inventory.item15.request({
 					method: 'GET',
 					headers: {
 						Authorization: 'Bearer ' + (await $user.token())
@@ -199,7 +192,7 @@
 		};
 
 		toast.promise(
-			sdk.fetch(`/submitVerdict`, {
+			sdk.submissions.verdict.request({
 				method: 'PUT',
 				body: JSON.stringify(data),
 				headers: {
@@ -224,7 +217,7 @@
 		delete data.players;
 
 		toast.promise(
-			sdk.fetch(`/records`, {
+			sdk.recordsApi.root.request({
 				method: 'PUT',
 				headers: {
 					'Content-Type': 'application/json',
@@ -250,15 +243,12 @@
 		}
 
 		toast.promise(
-			fetch(
-				sdk.url(`/records/${record.data.userid}/${record.data.levelid}`),
-				{
-					method: 'DELETE',
-					headers: {
-						Authorization: 'Bearer ' + (await $user.token())!
-					}
+			fetch(sdk.url(`/records/${record.data.userid}/${record.data.levelid}`), {
+				method: 'DELETE',
+				headers: {
+					Authorization: 'Bearer ' + (await $user.token())!
 				}
-			),
+			}),
 			{
 				success: () => {
 					open = false;
@@ -307,7 +297,7 @@
 	async function consumeQueueBoost() {
 		toast.promise(
 			(async () => {
-				const res = await sdk.fetch(`/inventory/item/15/consume`, {
+				const res = await sdk.inventory.consumeItem15.request({
 					method: 'DELETE',
 					headers: {
 						Authorization: 'Bearer ' + (await $user.token()),
@@ -341,7 +331,7 @@
 		toast.loading(get(_)('toast.payment.redirect'));
 
 		const res: any = await (
-			await sdk.fetch(`/payment/getPaymentLink/5/${daysToSkip[0]}`, {
+			await sdk.payment.linkWithDuration(daysToSkip[0]).request({
 				method: 'POST',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token()),

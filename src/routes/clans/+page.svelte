@@ -21,8 +21,18 @@
 	import Ads from '$lib/components/ads.svelte';
 	import { _ } from 'svelte-i18n';
 	import {
-		Search, Globe, Lock, Users, Zap, Crown, ArrowRight,
-		MessageSquare, Layout, Palette, BarChart3, Star
+		Search,
+		Globe,
+		Lock,
+		Users,
+		Zap,
+		Crown,
+		ArrowRight,
+		MessageSquare,
+		Layout,
+		Palette,
+		BarChart3,
+		Star
 	} from 'lucide-svelte';
 
 	export let data: PageData;
@@ -77,11 +87,13 @@
 
 	function formatDate(dateStr: string) {
 		return new Date(dateStr).toLocaleDateString('vi-VN', {
-			year: 'numeric', month: 'short', day: 'numeric'
+			year: 'numeric',
+			month: 'short',
+			day: 'numeric'
 		});
 	}
 
-	$: featuredClans = clans.filter(c => isBoostActive(c));
+	$: featuredClans = clans.filter((c) => isBoostActive(c));
 
 	// --- API functions ---
 	async function fetchClans(append = false) {
@@ -104,7 +116,7 @@
 		}
 
 		try {
-			const res = await sdk.fetch(`/clans?${params}`);
+			const res = await sdk.clans.list(params).request();
 			const newClans = await res.json();
 
 			if (append) {
@@ -152,7 +164,7 @@
 			return;
 		}
 		try {
-			const res = await sdk.fetch(`/clans/${$user.data.clan}`);
+			const res = await sdk.clans.byId($user.data.clan).request();
 			myClan = await res.json();
 		} catch {
 			// silently fail
@@ -176,21 +188,23 @@
 		}
 
 		toast.promise(
-			sdk.fetch(`/clans`, {
-				method: 'POST',
-				body: JSON.stringify(newClanData),
-				headers: {
-					Authorization: 'Bearer ' + (await $user.token()),
-					'Content-Type': 'application/json'
-				}
-			}).then(async (res) => {
-				if (res.ok) {
-					await $user.refresh();
-					goto(`/clan/${$user.data.clan}`);
-				} else {
-					throw new Error();
-				}
-			}),
+			sdk.clans.root
+				.request({
+					method: 'POST',
+					body: JSON.stringify(newClanData),
+					headers: {
+						Authorization: 'Bearer ' + (await $user.token()),
+						'Content-Type': 'application/json'
+					}
+				})
+				.then(async (res) => {
+					if (res.ok) {
+						await $user.refresh();
+						goto(`/clan/${$user.data.clan}`);
+					} else {
+						throw new Error();
+					}
+				}),
 			{
 				success: 'Clan created!',
 				loading: 'Creating clan...',
@@ -200,21 +214,27 @@
 	}
 
 	async function acceptInvitation(clanID: number) {
-		sdk.fetch(`/clans/${clanID}/invite`, {
-			method: 'PATCH',
-			headers: {
-				Authorization: 'Bearer ' + (await $user.token())
-			}
-		}).then(() => window.location.reload());
+		sdk.clans
+			.byId(clanID)
+			.invite.request({
+				method: 'PATCH',
+				headers: {
+					Authorization: 'Bearer ' + (await $user.token())
+				}
+			})
+			.then(() => window.location.reload());
 	}
 
 	async function rejectInvitation(clanID: number) {
-		sdk.fetch(`/clans/${clanID}/invite`, {
-			method: 'DELETE',
-			headers: {
-				Authorization: 'Bearer ' + (await $user.token())
-			}
-		}).then(() => window.location.reload());
+		sdk.clans
+			.byId(clanID)
+			.invite.request({
+				method: 'DELETE',
+				headers: {
+					Authorization: 'Bearer ' + (await $user.token())
+				}
+			})
+			.then(() => window.location.reload());
 	}
 
 	async function boostPurchase() {
@@ -266,12 +286,13 @@
 		fetchMyClan();
 
 		if ($user.loggedIn) {
-			sdk.fetch(`/clans/invitations`, {
-				headers: {
-					Authorization: 'Bearer ' + (await $user.token()),
-					'Content-Type': 'application/json'
-				}
-			})
+			sdk.clans.invitations
+				.request({
+					headers: {
+						Authorization: 'Bearer ' + (await $user.token()),
+						'Content-Type': 'application/json'
+					}
+				})
 				.then((res) => res.json())
 				.then((res) => (invitations = res));
 		}
@@ -354,7 +375,7 @@
 				<Skeleton class="myClanBanner" />
 				<div class="myClanBody">
 					<Skeleton class="h-6 w-48" />
-					<Skeleton class="h-4 w-32 mt-2" />
+					<Skeleton class="mt-2 h-4 w-32" />
 				</div>
 			</div>
 		{:else if myClan}
@@ -394,12 +415,14 @@
 						<div class="myClanMeta">
 							<span class="metaItem">
 								<Users class="h-4 w-4" />
-								{myClan.memberCount} {$_('clans.members_count')}
+								{myClan.memberCount}
+								{$_('clans.members_count')}
 							</span>
 							{#if isBoostActive(myClan)}
 								<span class="metaItem boostMeta">
 									<Zap class="h-4 w-4" />
-									{$_('clans.my_clan.boost_active')} {formatDate(myClan.boostedUntil)}
+									{$_('clans.my_clan.boost_active')}
+									{formatDate(myClan.boostedUntil)}
 								</span>
 							{:else}
 								<span class="metaItem mutedMeta">
@@ -510,11 +533,16 @@
 				<p class="boostCtaSelectLabel">{$_('clans.boost_cta.select_duration')}</p>
 				<div class="boostSliderRow">
 					<Slider bind:value={boostQuantity} max={30} min={1} step={1} />
-					<span class="boostDays">{boostQuantity[0]} {$_(boostQuantity[0] > 1 ? 'clan.boost.days_plural' : 'clan.boost.days')}</span>
+					<span class="boostDays"
+						>{boostQuantity[0]}
+						{$_(boostQuantity[0] > 1 ? 'clan.boost.days_plural' : 'clan.boost.days')}</span
+					>
 				</div>
 				<div class="boostPriceRow">
 					<span class="boostPrice">{formatPrice(5000 * boostQuantity[0])}₫</span>
-					<span class="boostPriceUnit">({formatPrice(5000)}₫{$_('clans.boost_cta.price_per_day')})</span>
+					<span class="boostPriceUnit"
+						>({formatPrice(5000)}₫{$_('clans.boost_cta.price_per_day')})</span
+					>
 				</div>
 				<Button class="boostPurchaseBtn" on:click={boostPurchase}>
 					<Zap class="mr-1 h-4 w-4" />
@@ -597,7 +625,8 @@
 									<span class="featuredClanName">{clan.name}</span>
 									<span class="featuredClanMeta">
 										<Users class="h-3 w-3" />
-										{clan.memberCount} {$_('clans.members_count')}
+										{clan.memberCount}
+										{$_('clans.members_count')}
 									</span>
 								</div>
 							</a>
@@ -691,8 +720,8 @@
 							<Skeleton class="clanCardBannerSkeleton" />
 							<Card.Content class="clanCardContent">
 								<Skeleton class="h-5 w-3/4" />
-								<Skeleton class="h-4 w-1/2 mt-2" />
-								<Skeleton class="h-4 w-1/3 mt-2" />
+								<Skeleton class="mt-2 h-4 w-1/2" />
+								<Skeleton class="mt-2 h-4 w-1/3" />
 							</Card.Content>
 						</Card.Root>
 					{/each}
@@ -1196,7 +1225,8 @@
 	}
 
 	/* ═══════════ CLAN CARDS GRID ═══════════ */
-	.clansGrid, .invitationsGrid {
+	.clansGrid,
+	.invitationsGrid {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
 		gap: 16px;
@@ -1297,7 +1327,8 @@
 		}
 	}
 
-	.clanTagBadge, .clanTagSmall {
+	.clanTagBadge,
+	.clanTagSmall {
 		display: inline-flex;
 		align-items: center;
 		padding: 1px 7px;
@@ -1334,7 +1365,8 @@
 		padding-top: 4px;
 	}
 
-	.clanMemberCount, .clanRating {
+	.clanMemberCount,
+	.clanRating {
 		display: inline-flex;
 		align-items: center;
 		gap: 4px;
@@ -1432,7 +1464,8 @@
 			width: 100%;
 		}
 
-		.clansGrid, .invitationsGrid {
+		.clansGrid,
+		.invitationsGrid {
 			grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
 			gap: 12px;
 		}
@@ -1447,7 +1480,8 @@
 			padding: 0 12px 32px;
 		}
 
-		.clansGrid, .invitationsGrid {
+		.clansGrid,
+		.invitationsGrid {
 			grid-template-columns: 1fr;
 		}
 	}

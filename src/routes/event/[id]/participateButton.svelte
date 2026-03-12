@@ -43,7 +43,10 @@
 			return;
 		}
 
-		sdk.fetch(`/events/${data.id}/proofs/${$user.data.uid}`)
+		sdk.eventsApi
+			.byId(data.id)
+			.proofs.byUid($user.data.uid)
+			.request()
 			.then((res) => {
 				if (!res.ok) {
 					rewardState = 4;
@@ -64,7 +67,7 @@
 		claimOpened = false;
 
 		toast.promise(
-			sdk.fetch(`/events/proofs`, {
+			sdk.eventsApi.proofs.request({
 				method: 'POST',
 				body: JSON.stringify({
 					eventID: data.id,
@@ -92,12 +95,15 @@
 		cancelOpened = false;
 
 		toast.promise(
-			sdk.fetch(`/events/${data.id}/proofs/${$user.data.uid}`, {
-				method: 'DELETE',
-				headers: {
-					Authorization: 'Bearer ' + (await $user.token())!
-				}
-			}),
+			sdk.eventsApi
+				.byId(data.id)
+				.proofs.byUid($user.data.uid)
+				.request({
+					method: 'DELETE',
+					headers: {
+						Authorization: 'Bearer ' + (await $user.token())!
+					}
+				}),
 			{
 				success: () => {
 					rewardState = 4;
@@ -128,14 +134,20 @@
 				{#if canCancelParticipation()}
 					<Dialog.Root bind:open={cancelOpened}>
 						<Dialog.Trigger>
-							<Button class="w-[200px]" variant="destructive">{$_('contest.participate.cancel_participation')}</Button>
+							<Button class="w-[200px]" variant="destructive"
+								>{$_('contest.participate.cancel_participation')}</Button
+							>
 						</Dialog.Trigger>
 						<Dialog.Content>
 							<Dialog.Header>
 								<Dialog.Title>{$_('contest.participate.cancel_confirm.title')}</Dialog.Title>
-								<Dialog.Description>{$_('contest.participate.cancel_confirm.description')}</Dialog.Description>
+								<Dialog.Description
+									>{$_('contest.participate.cancel_confirm.description')}</Dialog.Description
+								>
 							</Dialog.Header>
-							<Button variant="destructive" on:click={cancelProof}>{$_('contest.participate.cancel_confirm.proceed')}</Button>
+							<Button variant="destructive" on:click={cancelProof}
+								>{$_('contest.participate.cancel_confirm.proceed')}</Button
+							>
 						</Dialog.Content>
 					</Dialog.Root>
 				{:else}
@@ -145,7 +157,9 @@
 				<Button class="w-[200px]" disabled>{$_('contest.participate.event_ended')}</Button>
 			{:else if rewardState == 4}
 				{#if $user.data.exp < data.minExp}
-					<Button class="w-[300px]" disabled>{$_('contest.participate.not_enough_exp', { values: { minExp: data.minExp } })}</Button>
+					<Button class="w-[300px]" disabled
+						>{$_('contest.participate.not_enough_exp', { values: { minExp: data.minExp } })}</Button
+					>
 				{:else if !$user.data.discord}
 					<Button class="w-[300px]" disabled>{$_('contest.participate.discord_required')}</Button>
 				{:else if isEventEnded()}
@@ -160,11 +174,21 @@
 								<Dialog.Title>{$_('contest.participate.participate_dialog.title')}</Dialog.Title>
 							</Dialog.Header>
 							{#if data.needProof}
-								<Textarea class="h-[125px]" placeholder={$_('contest.participate.participate_dialog.proof_placeholder')} bind:value={proof} />
+								<Textarea
+									class="h-[125px]"
+									placeholder={$_('contest.participate.participate_dialog.proof_placeholder')}
+									bind:value={proof}
+								/>
 							{:else}
-								<Textarea class="h-[125px]" placeholder={$_('contest.participate.participate_dialog.message_placeholder')} bind:value={proof} />
+								<Textarea
+									class="h-[125px]"
+									placeholder={$_('contest.participate.participate_dialog.message_placeholder')}
+									bind:value={proof}
+								/>
 							{/if}
-							<Button on:click={claimReward}>{$_('contest.participate.participate_dialog.continue')}</Button>
+							<Button on:click={claimReward}
+								>{$_('contest.participate.participate_dialog.continue')}</Button
+							>
 						</Dialog.Content>
 					</Dialog.Root>
 				{/if}

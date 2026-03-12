@@ -36,16 +36,19 @@
 		];
 
 		toast.promise(
-			sdk.fetch(`/events/${event.id}/quest/${quest.id}`, {
-				method: 'PATCH',
-				headers: {
-					Authorization: 'Bearer ' + (await $user.token()),
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({
-					condition: condition
-				})
-			}),
+			sdk.eventsApi
+				.byId(event.id)
+				.quest.byId(quest.id)
+				.request({
+					method: 'PATCH',
+					headers: {
+						Authorization: 'Bearer ' + (await $user.token()),
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({
+						condition: condition
+					})
+				}),
 			{
 				success: () => {
 					open = false;
@@ -86,7 +89,8 @@
 				/>
 			</div>
 			<p class="text-sm text-muted-foreground">
-				The quest will be completable when the user reaches at least {minPoints} total points in the event.
+				The quest will be completable when the user reaches at least {minPoints} total points in the
+				event.
 			</p>
 		</div>
 		<Dialog.Footer>

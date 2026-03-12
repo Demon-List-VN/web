@@ -12,11 +12,11 @@
 
 	async function invitePlayer() {
 		if (!selectedPlayer?.uid) return;
-		
+
 		opened = false;
 
 		toast.promise(
-			sdk.fetch(`/clans/invite/${selectedPlayer.uid}`, {
+			sdk.clans.invite(selectedPlayer.uid).request({
 				method: 'POST',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())
@@ -46,19 +46,15 @@
 		<Dialog.Header>
 			<Dialog.Title>{$_('clan.invite.title')}</Dialog.Title>
 		</Dialog.Header>
-			<div class="flex items-center gap-[10px]">
-				<PlayerSelector 
-					bind:value={selectedPlayer} 
-					on:select={handlePlayerSelect}
-					placeholder={$_('clan.invite.placeholder')}
-				/>
-				<Button 
-					on:click={invitePlayer} 
-					disabled={!selectedPlayer} 
-					class="w-[100px]"
-				>
-					{$_('clan.invite.button')}
-				</Button>
-			</div>
+		<div class="flex items-center gap-[10px]">
+			<PlayerSelector
+				bind:value={selectedPlayer}
+				on:select={handlePlayerSelect}
+				placeholder={$_('clan.invite.placeholder')}
+			/>
+			<Button on:click={invitePlayer} disabled={!selectedPlayer} class="w-[100px]">
+				{$_('clan.invite.button')}
+			</Button>
+		</div>
 	</Dialog.Content>
 </Dialog.Root>

@@ -34,7 +34,7 @@
 	async function fetchNotifications() {
 		try {
 			notifications = await (
-				await sdk.fetch(`/notifications/${$user.data.uid}`, {
+				await sdk.notifications.byUser($user.data.uid).request({
 					headers: {
 						Authorization: 'Bearer ' + (await $user.token())!
 					}
@@ -59,7 +59,7 @@
 			];
 		}
 
-		sdk.fetch(`/notifications/${$user.data.uid}`, {
+		sdk.notifications.byUser($user.data.uid).request({
 			method: 'DELETE',
 			headers: {
 				Authorization: 'Bearer ' + (await $user.token())!

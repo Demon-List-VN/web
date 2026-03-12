@@ -14,20 +14,23 @@
 			return;
 		}
 
-		sdk.fetch(`/mergeAccount/${uidA}/${uidB}`, {
-			method: 'PATCH',
-			headers: {
-				Authorization: 'Bearer ' + (await $user.token())!
-			}
-		}).then((res) => {
-			if (!res.ok) {
-				alert('An error occured');
-				return;
-			}
+		sdk
+			.mergeAccounts(uidA, uidB)
+			.request({
+				method: 'PATCH',
+				headers: {
+					Authorization: 'Bearer ' + (await $user.token())!
+				}
+			})
+			.then((res) => {
+				if (!res.ok) {
+					alert('An error occured');
+					return;
+				}
 
-			alert('Merged');
-			window.location.reload();
-		});
+				alert('Merged');
+				window.location.reload();
+			});
 	}
 </script>
 

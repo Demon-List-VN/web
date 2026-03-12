@@ -23,9 +23,7 @@
 	async function refresh() {
 		toast.promise(
 			async () => {
-				levels = await (
-					await sdk.fetch(`/events/${data.id}/levels`)
-				).json();
+				levels = await (await sdk.eventsApi.byId(data.id).levels.request()).json();
 			},
 			{
 				success: $_('contest.leaderboard.refresh.success'),
@@ -36,7 +34,7 @@
 	}
 
 	onMount(async () => {
-		levels = await (await sdk.fetch(`/events/${data.id}/levels`)).json();
+		levels = await (await sdk.eventsApi.byId(data.id).levels.request()).json();
 	});
 </script>
 
@@ -54,7 +52,7 @@
 <Ads dataAdFormat="auto" unit="leaderboard" />
 
 {#if !data.hidden || ($user.loggedIn && $user.data.isAdmin)}
-	<div class="flex items-center justify-center gap-[10px] mt-[10px]">
+	<div class="mt-[10px] flex items-center justify-center gap-[10px]">
 		<ParticipateButton {data} />
 		{#if $user.loggedIn && $user.data.isAdmin}
 			<Button href="/admin/event?id={data.id}" variant="outline">Manage Event</Button>

@@ -31,7 +31,7 @@
 		}
 
 		APIKeys = await (
-			await sdk.fetch(`/APIKey`, {
+			await sdk.apiKeys.root.request({
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())!
 				}
@@ -45,7 +45,7 @@
 	}
 
 	async function createNewKey() {
-		await sdk.fetch(`/APIKey`, {
+		await sdk.apiKeys.root.request({
 			method: 'POST',
 			headers: {
 				Authorization: 'Bearer ' + (await $user.token())!
@@ -57,7 +57,7 @@
 	}
 
 	async function deleteKey(key: string) {
-		await sdk.fetch(`/APIKey/${key}`, {
+		await sdk.apiKeys.byKey(key).request({
 			method: 'DELETE',
 			headers: {
 				Authorization: 'Bearer ' + (await $user.token())!
@@ -70,7 +70,7 @@
 
 	async function pointercrateLink() {
 		toast.promise(
-			sdk.fetch(`/auth/link/pointercrate`, {
+			sdk.authLinks.pointercrate.request({
 				method: 'PATCH',
 				body: JSON.stringify({
 					token: token

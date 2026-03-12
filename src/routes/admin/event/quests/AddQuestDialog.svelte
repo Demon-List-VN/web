@@ -32,7 +32,7 @@
 		];
 
 		toast.promise(
-			sdk.fetch(`/events/${event.id}/quest`, {
+			sdk.eventsApi.byId(event.id).quest.request({
 				method: 'POST',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token()),

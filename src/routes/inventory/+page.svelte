@@ -38,7 +38,7 @@
 
 		try {
 			const res = await (
-				await sdk.fetch(`/inventory`, {
+				await sdk.inventory.root.request({
 					method: 'GET',
 					headers: {
 						Authorization: 'Bearer ' + (await $user.token())
@@ -57,7 +57,7 @@
 
 	async function fetchItem(itemId: number, inventoryId: number) {
 		const inventoryItem = await (
-			await sdk.fetch(`/inventory/${inventoryId}`, {
+			await sdk.inventory.byId(inventoryId).request({
 				method: 'GET',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())
@@ -67,7 +67,7 @@
 
 		if (inventoryItem.type == 'case') {
 			const item = await (
-				await sdk.fetch(`/item/${itemId}`, {
+				await sdk.items.byId(itemId).request({
 					method: 'GET',
 					headers: {
 						Authorization: 'Bearer ' + (await $user.token())
@@ -181,7 +181,7 @@
 
 	async function use(inventoryId: number, redirect: string) {
 		toast.promise(
-			sdk.fetch(`/inventory/${inventoryId}/consume`, {
+			sdk.inventory.byId(inventoryId).consume.request({
 				method: 'DELETE',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())

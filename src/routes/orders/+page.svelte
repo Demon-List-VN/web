@@ -13,7 +13,7 @@
 
 	async function getOrders() {
 		orders = await (
-			await sdk.fetch(`/orders`, {
+			await sdk.orders.root.request({
 				method: 'GET',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token()),

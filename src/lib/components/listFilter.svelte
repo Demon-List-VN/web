@@ -39,7 +39,7 @@
 
 	onMount(async () => {
 		try {
-			const res = await sdk.fetch(`/levels/tags`);
+			const res = await sdk.levels.tags.request();
 			if (res.ok) {
 				availableTags = await res.json();
 			}
@@ -56,8 +56,7 @@
 		}
 	}
 
-	$: defaultTopColumn =
-		listType === 'fl' ? 'flTop' : 'dlTop';
+	$: defaultTopColumn = listType === 'fl' ? 'flTop' : 'dlTop';
 
 	const dispatch = createEventDispatcher();
 

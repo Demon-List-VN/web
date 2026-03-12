@@ -31,11 +31,7 @@
 		nameSearch: '',
 		creatorSearch: '',
 		sortBy:
-			$page.params.list === 'fl'
-				? 'flTop'
-				: $page.params.list === 'cl'
-					? 'created_at'
-					: 'dlTop',
+			$page.params.list === 'fl' ? 'flTop' : $page.params.list === 'cl' ? 'created_at' : 'dlTop',
 		ascending: $page.params.list !== 'cl',
 		tagIds: null as string | null
 	};
@@ -63,9 +59,7 @@
 			start: String((curPage - 1) * 50),
 			end: String(curPage * 50 - 1),
 			sortBy:
-				$page.params.list === 'cl'
-					? 'created_at'
-					: `${$page.params.list == 'fl' ? 'fl' : 'dl'}Top`,
+				$page.params.list === 'cl' ? 'created_at' : `${$page.params.list == 'fl' ? 'fl' : 'dl'}Top`,
 			ascending: $page.params.list == 'cl' ? 'false' : 'true',
 			uid: $user.loggedIn ? $user.data.uid : ''
 		});
@@ -82,7 +76,7 @@
 		if (filters.tagIds) query.set('tagIds', filters.tagIds);
 
 		const res = await (
-			await sdk.fetch(`/list/${$page.params.list}?${query.toString()}`)
+			await sdk.lists.byName($page.params.list, query.toString()).request()
 		).json();
 
 		if (resetList) {

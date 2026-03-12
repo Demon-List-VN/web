@@ -52,7 +52,7 @@
 	async function fetchData() {
 		// @ts-expect-error
 		const query = new URLSearchParams({ ...filter, from: 0, to: 49 }).toString();
-		const res = await (await sdk.fetch(`/events?${query}`)).json();
+		const res = await (await sdk.eventsApi.list(query).request()).json();
 
 		data.events = res;
 		data = data;

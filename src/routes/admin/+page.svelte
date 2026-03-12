@@ -12,7 +12,7 @@
 
 	async function refresh() {
 		toast.promise(
-			sdk.fetch(`/refresh`, {
+			sdk.refreshData.request({
 				method: 'PATCH',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())
@@ -142,7 +142,6 @@
 		border-radius: 12px;
 		padding: 1.5rem;
 		transition: all 0.3s ease;
-
 	}
 
 	.category-header {
@@ -177,8 +176,6 @@
 		height: auto;
 		font-size: 0.95rem;
 		transition: all 0.2s ease;
-
-
 	}
 
 	.admin-link {
@@ -198,7 +195,6 @@
 			transform: translateX(-4px);
 			transition: all 0.2s ease;
 		}
-
 	}
 
 	@media (max-width: 768px) {

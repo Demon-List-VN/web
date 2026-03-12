@@ -19,7 +19,7 @@
 
 	async function save() {
 		toast.promise(
-			sdk.fetch(`/events/${event.id}/levels`, {
+			sdk.eventsApi.byId(event.id).levels.request({
 				method: 'PUT',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token()),

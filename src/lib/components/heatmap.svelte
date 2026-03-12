@@ -41,7 +41,10 @@
 	}
 
 	function fetchData() {
-		sdk.fetch(`/players/${uid}/heatmap/${year}`)
+		sdk.players
+			.byId(uid)
+			.heatmap(year)
+			.request()
 			.then((res) => res.json())
 			.then((res: any) => {
 				data = res.days;
@@ -54,7 +57,7 @@
 <div class="wrapper">
 	<div class="flex">
 		<div class="flex items-center space-x-2">
-			<Label for="split">{$_("heatmap.split_by_month")}</Label>
+			<Label for="split">{$_('heatmap.split_by_month')}</Label>
 			<Switch bind:checked={splitByMonth} id="split" />
 		</div>
 		<div class="ml-auto">

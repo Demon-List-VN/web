@@ -50,7 +50,7 @@
 				}
 			};
 
-			const response = await sdk.fetch(`/players`, {
+			const response = await sdk.players.root.request({
 				method: 'PUT',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token()),
@@ -73,7 +73,7 @@
 				data.player.overviewData[config.id] = {};
 			}
 			data.player.overviewData[config.id].markdownContent = markdownInput.trim();
-			
+
 			toast.success($_('player.overview.markdown_saved') || 'Markdown saved successfully!');
 			isEditing = false;
 		} catch (error) {
@@ -89,7 +89,7 @@
 
 		try {
 			const currentOverviewData = data.player.overviewData || {};
-			
+
 			const updatedOverviewData = {
 				...currentOverviewData,
 				[config.id]: {
@@ -98,7 +98,7 @@
 				}
 			};
 
-			const response = await sdk.fetch(`/players`, {
+			const response = await sdk.players.root.request({
 				method: 'PUT',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token()),
@@ -117,7 +117,7 @@
 			if (data.player.overviewData?.[config.id]) {
 				data.player.overviewData[config.id].markdownContent = '';
 			}
-			
+
 			toast.success($_('player.overview.markdown_removed') || 'Markdown removed successfully!');
 		} catch (error) {
 			console.error('Delete error:', error);

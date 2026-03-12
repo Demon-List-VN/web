@@ -39,7 +39,7 @@
 
 	async function fetchData() {
 		data = await (
-			await sdk.fetch(`/orders/${page.params.id}`, {
+			await sdk.orders.byId(page.params.id).request({
 				method: 'GET',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())

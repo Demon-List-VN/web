@@ -30,7 +30,7 @@
 
 	async function saveContent() {
 		toast.promise(
-			sdk.fetch(`/card/${data.id}/content`, {
+			sdk.cards.byId(data.id).content.request({
 				method: 'PATCH',
 				headers: {
 					Authorization: `Bearer ${await $user.token()}`,
@@ -52,7 +52,7 @@
 
 	async function link() {
 		toast.promise(
-			sdk.fetch(`/card/${data.id}/link`, {
+			sdk.cards.byId(data.id).link.request({
 				method: 'PATCH',
 				headers: {
 					Authorization: `Bearer ${await $user.token()}`
@@ -96,12 +96,11 @@
 				{#if $user.loggedIn}
 					<AlertDialog.Root>
 						<AlertDialog.Trigger>
-							<Button class="w-full">{$_("card.link.button")} {$user.data.name}</Button>
+							<Button class="w-full">{$_('card.link.button')} {$user.data.name}</Button>
 						</AlertDialog.Trigger>
 						<AlertDialog.Content>
 							<AlertDialog.Header>
-								<AlertDialog.Title>{$_("card.link.title")} ({$user.data.name})?</AlertDialog.Title
-								>
+								<AlertDialog.Title>{$_('card.link.title')} ({$user.data.name})?</AlertDialog.Title>
 								<AlertDialog.Description>
 									{#if $locale == 'vi'}
 										Việc này sẽ liên kết vĩnh viễn và cấp <b
@@ -119,8 +118,8 @@
 								</AlertDialog.Description>
 							</AlertDialog.Header>
 							<AlertDialog.Footer>
-								<AlertDialog.Cancel>{$_("general.cancel")}</AlertDialog.Cancel>
-								<AlertDialog.Action on:click={link}>{$_("general.continue")}</AlertDialog.Action>
+								<AlertDialog.Cancel>{$_('general.cancel')}</AlertDialog.Cancel>
+								<AlertDialog.Action on:click={link}>{$_('general.continue')}</AlertDialog.Action>
 							</AlertDialog.Footer>
 						</AlertDialog.Content>
 					</AlertDialog.Root>
@@ -253,7 +252,7 @@
 	</div>
 	{#if data.owner && $user.data?.uid === data.owner}
 		<div class="mt-4 w-full">
-			<Button class="w-full" on:click={() => (editMode = true)}>{$_("card.edit")}</Button>
+			<Button class="w-full" on:click={() => (editMode = true)}>{$_('card.edit')}</Button>
 			<Dialog.Root bind:open={editMode}>
 				<Dialog.Content class="sm:max-w-[800px]">
 					<Dialog.Header>

@@ -8,7 +8,7 @@
 	let medals: any[] = [];
 
 	onMount(async () => {
-		medals = await (await sdk.fetch(`/players/${userID}/medals`)).json();
+		medals = await (await sdk.players.byId(userID).medals.request()).json();
 	});
 </script>
 

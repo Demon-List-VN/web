@@ -28,8 +28,8 @@
 	async function loadPlayer(uid: string, playerSlot: 1 | 2) {
 		try {
 			const [playerRes, recordsRes] = await Promise.all([
-				sdk.fetch(`/players/${uid}`),
-				sdk.fetch(`/players/${uid}/records`)
+				sdk.players.byId(uid).request(),
+				sdk.players.byId(uid).records.request()
 			]);
 
 			const data = await playerRes.json();

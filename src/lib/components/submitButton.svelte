@@ -128,98 +128,101 @@
 
 		submitId = new Date().getTime();
 
-		sdk.fetch(`/submission?id=${submitId}`, {
-			method: 'POST',
-			body: JSON.stringify(submitData),
-			headers: {
-				Authorization: `Bearer ${await $user.token()}`,
-				'Content-Type': 'application/json'
-			}
-		}).then(async (res) => {
-			if (res.ok) {
-				sendStatus = 1;
-			} else {
-				sendStatus = 2;
-			}
-
-			const responseText = await res.text();
-			errorResponse = responseText;
-			try {
-				const resJson = JSON.parse(responseText);
-				submitLog = resJson.logs;
-
-				if ($locale == 'vi') {
-					errorMessage = resJson.vi;
-				} else {
-					errorMessage = resJson.en;
+		sdk.submissions
+			.byId(submitId)
+			.request({
+				method: 'POST',
+				body: JSON.stringify(submitData),
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`,
+					'Content-Type': 'application/json'
 				}
-			} catch {
-				errorMessage = responseText;
-			}
+			})
+			.then(async (res) => {
+				if (res.ok) {
+					sendStatus = 1;
+				} else {
+					sendStatus = 2;
+				}
 
-			console.log(JSON.parse(responseText));
-		});
+				const responseText = await res.text();
+				errorResponse = responseText;
+				try {
+					const resJson = JSON.parse(responseText);
+					submitLog = resJson.logs;
+
+					if ($locale == 'vi') {
+						errorMessage = resJson.vi;
+					} else {
+						errorMessage = resJson.en;
+					}
+				} catch {
+					errorMessage = responseText;
+				}
+
+				console.log(JSON.parse(responseText));
+			});
 	}
 
 	async function submitLevel() {
 		submitId = new Date().getTime();
 
-		const videoID = levelSubmission.videoLink ? extractYouTubeVideoId(levelSubmission.videoLink) : null;
+		const videoID = levelSubmission.videoLink
+			? extractYouTubeVideoId(levelSubmission.videoLink)
+			: null;
 
-		sdk.fetch(`/level-submissions`, {
-			method: 'POST',
-			body: JSON.stringify({
-				levelId: levelSubmission.levelId,
-				comment: levelSubmission.comment,
-				videoID: videoID
-			}),
-			headers: {
-				Authorization: `Bearer ${await $user.token()}`,
-				'Content-Type': 'application/json'
-			}
-		}).then(async (res) => {
-			if (res.ok) {
-				sendStatus = 1;
-			} else {
-				sendStatus = 2;
-			}
-
-			const responseText = await res.text();
-			errorResponse = responseText;
-			try {
-				const resJson = JSON.parse(responseText);
-				submitLog = resJson.logs || [];
-
-				if ($locale == 'vi') {
-					errorMessage = resJson.vi;
-				} else {
-					errorMessage = resJson.en;
+		sdk.submissions.levelSubmissions
+			.request({
+				method: 'POST',
+				body: JSON.stringify({
+					levelId: levelSubmission.levelId,
+					comment: levelSubmission.comment,
+					videoID: videoID
+				}),
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`,
+					'Content-Type': 'application/json'
 				}
-			} catch {
-				errorMessage = responseText;
-			}
-		});
+			})
+			.then(async (res) => {
+				if (res.ok) {
+					sendStatus = 1;
+				} else {
+					sendStatus = 2;
+				}
+
+				const responseText = await res.text();
+				errorResponse = responseText;
+				try {
+					const resJson = JSON.parse(responseText);
+					submitLog = resJson.logs || [];
+
+					if ($locale == 'vi') {
+						errorMessage = resJson.vi;
+					} else {
+						errorMessage = resJson.en;
+					}
+				} catch {
+					errorMessage = responseText;
+				}
+			});
 	}
 
 	async function fetchLevel() {
 		const levelId = submissionType === 'level' ? levelSubmission.levelId : submission.levelid;
-		
+
 		try {
-			level = await (
-				await sdk.fetch(`/levels/${levelId}`)
-			).json();
+			level = await (await sdk.levels.byId(levelId).request()).json();
 		} catch {}
 
-		apiLevel = await (
-			await sdk.fetch(`/levels/${levelId}?fromGD=1`)
-		).json();
+		apiLevel = await (await sdk.levels.byId(levelId).fromGD.request()).json();
 
 		// Fetch variants for the level
 		levelVariants = [];
 		selectedVariantId = null;
 		if (submissionType === 'record') {
 			try {
-				const varRes = await sdk.fetch(`/levels/${levelId}/variants`);
+				const varRes = await sdk.levels.byId(levelId).variants.request();
 				if (varRes.ok) {
 					levelVariants = await varRes.json();
 				}
@@ -247,11 +250,17 @@
 		if (submissionType === 'level' && step == 2) {
 			// Validate YouTube video link is required and valid
 			if (!levelSubmission.videoLink) {
-				toast.error($locale == 'vi' ? 'Vui lòng nhập link video YouTube' : 'Please enter a YouTube video link');
+				toast.error(
+					$locale == 'vi' ? 'Vui lòng nhập link video YouTube' : 'Please enter a YouTube video link'
+				);
 				return;
 			}
 			if (!isValidYouTubeLink(levelSubmission.videoLink)) {
-				toast.error($locale == 'vi' ? 'Link video không hợp lệ. Vui lòng nhập link YouTube.' : 'Invalid video link. Please enter a valid YouTube link.');
+				toast.error(
+					$locale == 'vi'
+						? 'Link video không hợp lệ. Vui lòng nhập link YouTube.'
+						: 'Invalid video link. Please enter a valid YouTube link.'
+				);
 				return;
 			}
 			// Level submission is ready to submit after confirming level
@@ -287,7 +296,8 @@
 			}
 
 			if (level) {
-				const needsRaw = (!level.flTop || level.rating) && !(level.isChallenge && level.rating < 2600);
+				const needsRaw =
+					(!level.flTop || level.rating) && !(level.isChallenge && level.rating < 2600);
 				if (needsRaw && !submission.raw) {
 					toast.error('Please fill in all required fields');
 					return;
@@ -358,7 +368,11 @@
 				{#if step == 0}
 					{$_('submit.attention.title')}
 				{:else if step == 1 || step == 2}
-					{submissionType === 'level' ? ($locale == 'vi' ? 'Nộp Challenge Level' : 'Submit Challenge Level') : $_('submit.level.title')}
+					{submissionType === 'level'
+						? $locale == 'vi'
+							? 'Nộp Challenge Level'
+							: 'Submit Challenge Level'
+						: $_('submit.level.title')}
 				{:else if step == 3}
 					{$_('submit.required.title')}
 				{:else if step == 4}
@@ -369,16 +383,32 @@
 		{#if step == 0}
 			<div class="grid gap-4 py-4">
 				<Label>{$locale == 'vi' ? 'Loại nộp' : 'Submission Type'}</Label>
-				<Select.Root 
-					onSelectedChange={(e) => { if (e) submissionType = e.value; }}
-					selected={{ value: submissionType, label: submissionType === 'record' ? ($locale == 'vi' ? 'Nộp Record' : 'Submit Record') : ($locale == 'vi' ? 'Nộp Challenge Level' : 'Submit Challenge Level') }}
+				<Select.Root
+					onSelectedChange={(e) => {
+						if (e) submissionType = e.value;
+					}}
+					selected={{
+						value: submissionType,
+						label:
+							submissionType === 'record'
+								? $locale == 'vi'
+									? 'Nộp Record'
+									: 'Submit Record'
+								: $locale == 'vi'
+									? 'Nộp Challenge Level'
+									: 'Submit Challenge Level'
+					}}
 				>
 					<Select.Trigger>
 						<Select.Value />
 					</Select.Trigger>
 					<Select.Content>
-						<Select.Item value="record">{$locale == 'vi' ? 'Nộp Record' : 'Submit Record'}</Select.Item>
-						<Select.Item value="level">{$locale == 'vi' ? 'Nộp Challenge Level' : 'Submit Challenge Level'}</Select.Item>
+						<Select.Item value="record"
+							>{$locale == 'vi' ? 'Nộp Record' : 'Submit Record'}</Select.Item
+						>
+						<Select.Item value="level"
+							>{$locale == 'vi' ? 'Nộp Challenge Level' : 'Submit Challenge Level'}</Select.Item
+						>
 					</Select.Content>
 				</Select.Root>
 			</div>
@@ -386,7 +416,9 @@
 				<Alert.Description>
 					{#if submissionType === 'record'}
 						{#if $locale == 'vi'}
-							- Đọc <button on:click={() => (open = false)}><a href={`/wiki/${$locale}/rules`}><u>luật</u></a></button>
+							- Đọc <button on:click={() => (open = false)}
+								><a href={`/wiki/${$locale}/rules`}><u>luật</u></a></button
+							>
 							trước khi nộp.<br />
 							- Điểm đề xuất là điểm của DLVN, không phải sao hay thứ hạng của level.
 							<br />
@@ -410,16 +442,14 @@
 								<u>Geometry Dash Việt Nam's geode mod</u>
 							</a> while beating level to have higher chance of acceptance.
 						{/if}
+					{:else if $locale == 'vi'}
+						- Nộp challenge level mới để thêm vào Challenge List.<br />
+						- Level phải là Extreme hoặc Insane Demon challenge.<br />
+						- Level sẽ được kiểm duyệt trước khi thêm vào danh sách.
 					{:else}
-						{#if $locale == 'vi'}
-							- Nộp challenge level mới để thêm vào Challenge List.<br />
-							- Level phải là Extreme hoặc Insane Demon challenge.<br />
-							- Level sẽ được kiểm duyệt trước khi thêm vào danh sách.
-						{:else}
-							- Submit a new challenge level to be added to the Challenge List.<br />
-							- Level must be an Extreme or Insane Demon challenge.<br />
-							- Level will be reviewed before being added to the list.
-						{/if}
+						- Submit a new challenge level to be added to the Challenge List.<br />
+						- Level must be an Extreme or Insane Demon challenge.<br />
+						- Level will be reviewed before being added to the list.
 					{/if}
 				</Alert.Description>
 			</Alert.Root>
@@ -433,8 +463,8 @@
 								<Lightbulb size={24} />
 								<span>
 									{#if $locale == 'vi'}
-										Mẹo: Vào trang level và bấm Nộp để tự động điền ID. (Dành cho <a href="/supporter"
-											>Supporter</a
+										Mẹo: Vào trang level và bấm Nộp để tự động điền ID. (Dành cho <a
+											href="/supporter">Supporter</a
 										>)
 									{:else}
 										Tip: Go to the level page and click Submit to auto-fill the ID. (For <a
@@ -499,14 +529,14 @@
 							{#if levelVariants.length > 0}
 								<div class="variantPicker">
 									<Label class="text-sm font-medium">
-										<Link class="h-3.5 w-3.5 inline" />
+										<Link class="inline h-3.5 w-3.5" />
 										{$locale == 'vi' ? 'Bạn chơi bản nào?' : 'Which version did you play?'}
 									</Label>
 									<div class="variantOptions">
 										<button
 											class="variantOption"
 											class:selected={selectedVariantId === null}
-											on:click={() => selectedVariantId = null}
+											on:click={() => (selectedVariantId = null)}
 										>
 											{apiLevel.name} ({$locale == 'vi' ? 'Bản gốc' : 'Original'})
 										</button>
@@ -514,7 +544,7 @@
 											<button
 												class="variantOption"
 												class:selected={selectedVariantId === variant.id}
-												on:click={() => selectedVariantId = variant.id}
+												on:click={() => (selectedVariantId = variant.id)}
 											>
 												{variant.name}
 												<span class="variantOptionId">ID: {variant.id}</span>
@@ -554,21 +584,29 @@
 								{/if}
 							</div>
 							<div class="grid grid-cols-4 items-center gap-4">
-								<Label for="levelVideoLink" class="text-right">{$locale == 'vi' ? 'Video' : 'Video Link'}</Label>
+								<Label for="levelVideoLink" class="text-right"
+									>{$locale == 'vi' ? 'Video' : 'Video Link'}</Label
+								>
 								<Input
 									id="levelVideoLink"
 									bind:value={levelSubmission.videoLink}
-									placeholder={$locale == 'vi' ? 'Link YouTube (bắt buộc)' : 'YouTube link (required)'}
+									placeholder={$locale == 'vi'
+										? 'Link YouTube (bắt buộc)'
+										: 'YouTube link (required)'}
 									class="col-span-3"
 								/>
 							</div>
 							{#if levelSubmission.videoLink && !isValidYouTubeLink(levelSubmission.videoLink)}
-								<p class="text-sm text-red-500 text-center">
-									{$locale == 'vi' ? 'Link video không hợp lệ. Vui lòng nhập link YouTube.' : 'Invalid video link. Please enter a valid YouTube link.'}
+								<p class="text-center text-sm text-red-500">
+									{$locale == 'vi'
+										? 'Link video không hợp lệ. Vui lòng nhập link YouTube.'
+										: 'Invalid video link. Please enter a valid YouTube link.'}
 								</p>
 							{/if}
 							<div class="grid grid-cols-4 items-center gap-4">
-								<Label for="levelComment" class="text-right">{$locale == 'vi' ? 'Ghi chú' : 'Comment'}</Label>
+								<Label for="levelComment" class="text-right"
+									>{$locale == 'vi' ? 'Ghi chú' : 'Comment'}</Label
+								>
 								<Textarea
 									id="levelComment"
 									bind:value={levelSubmission.comment}

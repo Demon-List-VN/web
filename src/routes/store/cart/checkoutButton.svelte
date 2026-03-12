@@ -23,7 +23,7 @@
 		toast.loading('You will be redirected to our payment portal');
 
 		const res: any = await (
-			await sdk.fetch(`/payment/getPaymentLink`, {
+			await sdk.payment.link.request({
 				method: 'POST',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token()),
@@ -46,19 +46,20 @@
 		let orderID = 0;
 
 		toast.promise(
-			sdk.fetch(`/orders`, {
-				method: 'POST',
-				headers: {
-					Authorization: 'Bearer ' + (await $user.token()),
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({
-					items: $cart.items,
-					address: address,
-					phone: parseInt(phone),
-					recipientName: recipientName
+			sdk.orders.root
+				.request({
+					method: 'POST',
+					headers: {
+						Authorization: 'Bearer ' + (await $user.token()),
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({
+						items: $cart.items,
+						address: address,
+						phone: parseInt(phone),
+						recipientName: recipientName
+					})
 				})
-			})
 				.then((res) => res.json())
 				.then((res: any) => (orderID = res.orderID)),
 			{
@@ -82,7 +83,8 @@
 	>
 		<Button
 			class="w-[200px]"
-			disabled={$cart.items.length == 0 || !($user.loggedIn && $user.data.discord)}>{$_('store.checkout.button')}</Button
+			disabled={$cart.items.length == 0 || !($user.loggedIn && $user.data.discord)}
+			>{$_('store.checkout.button')}</Button
 		>
 	</Dialog.Trigger>
 	<Dialog.Content>
@@ -136,13 +138,21 @@
 			</div>
 			<div class="grid grid-cols-4 items-center gap-4">
 				<Label class="text-right">{$_('store.checkout.shipping.recipient_name')}</Label>
-				<Input class="col-span-3" placeholder={$_('store.checkout.shipping.recipient_required')} bind:value={recipientName} />
+				<Input
+					class="col-span-3"
+					placeholder={$_('store.checkout.shipping.recipient_required')}
+					bind:value={recipientName}
+				/>
 			</div>
 			<div class="grid grid-cols-4 items-center gap-4">
 				<Label class="text-right">{$_('store.checkout.shipping.phone_number')}</Label>
 				<div class="col-span-3 flex gap-[10px]">
 					<Input class="w-[50px] disabled:opacity-100" value="+84" disabled />
-					<Input bind:value={phone} type="tel" placeholder={$_('store.checkout.shipping.phone_placeholder')} />
+					<Input
+						bind:value={phone}
+						type="tel"
+						placeholder={$_('store.checkout.shipping.phone_placeholder')}
+					/>
 				</div>
 			</div>
 			<Dialog.Footer>

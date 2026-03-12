@@ -18,7 +18,7 @@
 	};
 
 	async function getEvents() {
-		return await (await sdk.fetch(`/events/ongoing`)).json();
+		return await (await sdk.eventsApi.ongoing.request()).json();
 	}
 
 	async function getRecentDemonListLevel() {
@@ -28,9 +28,7 @@
 			ascending: 'false'
 		});
 
-		return await (
-			await sdk.fetch(`/list/dl?${query.toString()}`)
-		).json();
+		return await (await sdk.lists.byName('dl', query.toString()).request()).json();
 	}
 
 	async function getRecentFeaturedListLevel() {
@@ -40,9 +38,7 @@
 			ascending: 'false'
 		});
 
-		return await (
-			await sdk.fetch(`/list/fl?${query.toString()}`)
-		).json();
+		return await (await sdk.lists.byName('fl', query.toString()).request()).json();
 	}
 
 	async function getRecentPlatformerListLevel() {
@@ -52,9 +48,7 @@
 			ascending: 'false'
 		});
 
-		return await (
-			await sdk.fetch(`/list/pl?${query.toString()}`)
-		).json();
+		return await (await sdk.lists.byName('pl', query.toString()).request()).json();
 	}
 
 	$: if (browser && $user.checked) {

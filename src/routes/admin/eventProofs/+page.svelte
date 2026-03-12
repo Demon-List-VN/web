@@ -17,7 +17,7 @@
 
 		toast.loading('Submitting verdict... This page will be refreshed');
 
-		await sdk.fetch(`/events/proofs`, {
+		await sdk.eventsApi.proofs.request({
 			method: 'PUT',
 			headers: {
 				Authorization: 'Bearer ' + (await $user.token())!,
@@ -26,7 +26,7 @@
 			body: JSON.stringify(data)
 		});
 
-		await sdk.fetch(`/notifications`, {
+		await sdk.notifications.root.request({
 			method: 'POST',
 			body: JSON.stringify({
 				to: item.players.uid,
@@ -51,14 +51,17 @@
 
 		toast.loading('Submitting verdict... This page will be refreshed');
 
-		await sdk.fetch(`/events/${item.eventID}/proofs/${item.players.uid}`, {
-			method: 'DELETE',
-			headers: {
-				Authorization: 'Bearer ' + (await $user.token())!
-			}
-		});
+		await sdk.eventsApi
+			.byId(item.eventID)
+			.proofs.byUid(item.players.uid)
+			.request({
+				method: 'DELETE',
+				headers: {
+					Authorization: 'Bearer ' + (await $user.token())!
+				}
+			});
 
-		await sdk.fetch(`/notifications`, {
+		await sdk.notifications.root.request({
 			method: 'POST',
 			body: JSON.stringify({
 				to: item.players.uid,

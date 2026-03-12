@@ -41,7 +41,7 @@
 	// Fetch functions
 	async function fetchGeneralMapPacks() {
 		try {
-			const res = await sdk.fetch(`/mappacks`);
+			const res = await sdk.mappacks.root.request();
 			if (res.ok) generalMapPacks = await res.json();
 		} catch (e) {
 			console.error('Failed to fetch general map packs:', e);
@@ -51,9 +51,7 @@
 	// General Map Pack CRUD
 	async function saveGeneralMapPack() {
 		const isNew = !generalMapPackForm.id;
-		const url = isNew
-			? sdk.url(`/mappacks`)
-			: sdk.url(`/mappacks/${generalMapPackForm.id}`);
+		const url = isNew ? sdk.url(`/mappacks`) : sdk.url(`/mappacks/${generalMapPackForm.id}`);
 
 		toast.promise(
 			fetch(url, {
@@ -85,7 +83,7 @@
 		if (!confirm('Delete this map pack?')) return;
 
 		toast.promise(
-			sdk.fetch(`/mappacks/${id}`, {
+			sdk.mappacks.byId(id).request({
 				method: 'DELETE',
 				headers: { Authorization: `Bearer ${await $user.token()}` }
 			}),
@@ -105,20 +103,17 @@
 		if (!mapPackLevelForm.mapPackId) return;
 
 		toast.promise(
-			fetch(
-				sdk.url(`/mappacks/${mapPackLevelForm.mapPackId}/level`),
-				{
-					method: 'POST',
-					body: JSON.stringify({
-						levelID: Number(mapPackLevelForm.levelID),
-						order: mapPackLevelForm.order
-					}),
-					headers: {
-						Authorization: `Bearer ${await $user.token()}`,
-						'Content-Type': 'application/json'
-					}
+			fetch(sdk.url(`/mappacks/${mapPackLevelForm.mapPackId}/level`), {
+				method: 'POST',
+				body: JSON.stringify({
+					levelID: Number(mapPackLevelForm.levelID),
+					order: mapPackLevelForm.order
+				}),
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`,
+					'Content-Type': 'application/json'
 				}
-			),
+			}),
 			{
 				success: () => {
 					showMapPackLevelDialog = false;
@@ -135,13 +130,10 @@
 		if (!confirm('Remove this level?')) return;
 
 		toast.promise(
-			fetch(
-				sdk.url(`/mappacks/${mapPackId}/level/${levelId}`),
-				{
-					method: 'DELETE',
-					headers: { Authorization: `Bearer ${await $user.token()}` }
-				}
-			),
+			fetch(sdk.url(`/mappacks/${mapPackId}/level/${levelId}`), {
+				method: 'DELETE',
+				headers: { Authorization: `Bearer ${await $user.token()}` }
+			}),
 			{
 				success: () => {
 					fetchGeneralMapPacks();
@@ -273,9 +265,7 @@
 			<div class="grid grid-cols-2 gap-4">
 				<div>
 					<Label for="packDifficulty">Difficulty</Label>
-					<Select.Root
-						onSelectedChange={(v) => (generalMapPackForm.difficulty = v?.value || '-')}
-					>
+					<Select.Root onSelectedChange={(v) => (generalMapPackForm.difficulty = v?.value || '-')}>
 						<Select.Trigger>
 							<Select.Value placeholder={generalMapPackForm.difficulty} />
 						</Select.Trigger>

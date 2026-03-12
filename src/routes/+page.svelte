@@ -39,7 +39,8 @@
 				headers['Authorization'] = `Bearer ${await $user.token()}`;
 			} catch {}
 		}
-		sdk.fetch(`/homepage`, { headers })
+		sdk.homepage
+			.request({ headers })
 			.then((res) => res.json())
 			.then((data) => {
 				homeData = data;
@@ -414,7 +415,6 @@
 				grid-template-columns: 1fr;
 				padding-inline: 16px;
 			}
-
 		}
 
 		.sideCol :global(.clanSpotlight) {

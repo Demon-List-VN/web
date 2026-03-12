@@ -24,6 +24,22 @@ interface ApiRequestInit extends RequestInit {
 
 type GetRequestInit = Omit<ApiRequestInit, 'method' | 'body'>;
 
+interface ApiEndpoint<T = unknown> {
+	request(init?: ApiRequestInit): Promise<Response>;
+	get(init?: GetRequestInit): Promise<T>;
+}
+
+type PathParam = unknown;
+type QueryParam = unknown;
+
+function pathValue(value: PathParam) {
+	return String(value);
+}
+
+function queryValue(value: QueryParam) {
+	return value instanceof URLSearchParams ? value.toString() : String(value);
+}
+
 export function url(path: string) {
 	if (/^https?:\/\//.test(path)) {
 		return path;
@@ -78,6 +94,277 @@ export async function fetch(path: string, init: ApiRequestInit = {}) {
 
 export async function get<T>(path: string, init: GetRequestInit = {}) {
 	return getJson<T>(path, init);
+}
+
+function endpoint<T = unknown>(path: string): ApiEndpoint<T> {
+	return {
+		request: (init: ApiRequestInit = {}) => request(path, init),
+		get: (init: GetRequestInit = {}) => getJson<T>(path, init)
+	};
+}
+
+export const homepage = endpoint('/homepage');
+
+export const refreshData = endpoint('/refresh');
+
+export const notifications = {
+	root: endpoint('/notifications'),
+	byUser: (uid: PathParam) => endpoint(`/notifications/${pathValue(uid)}`)
+};
+
+export const apiKeys = {
+	root: endpoint('/APIKey'),
+	byKey: (key: PathParam) => endpoint(`/APIKey/${pathValue(key)}`)
+};
+
+export const authLinks = {
+	discord: endpoint('/auth/link/discord'),
+	pointercrate: endpoint('/auth/link/pointercrate')
+};
+
+export const search = {
+	byValue: (value: PathParam) => endpoint(`/search/${pathValue(value)}`)
+};
+
+export const players = {
+	root: endpoint('/players'),
+	list: (query: QueryParam) => endpoint(`/players?${queryValue(query)}`),
+	byId: (uid: PathParam) =>
+		Object.assign(endpoint(`/players/${pathValue(uid)}`), {
+			records: endpoint(`/players/${pathValue(uid)}/records`),
+			convictions: endpoint(`/players/${pathValue(uid)}/convictions`),
+			medals: endpoint(`/players/${pathValue(uid)}/medals`),
+			cards: endpoint(`/players/${pathValue(uid)}/cards`),
+			heatmap: (year: PathParam) =>
+				endpoint(`/players/${pathValue(uid)}/heatmap/${pathValue(year)}`)
+		})
+};
+
+export const inventory = {
+	root: endpoint('/inventory'),
+	item15: endpoint('/inventory?itemId=15'),
+	consumeItem15: endpoint('/inventory/item/15/consume'),
+	byId: (inventoryId: PathParam) =>
+		Object.assign(endpoint(`/inventory/${pathValue(inventoryId)}`), {
+			consume: endpoint(`/inventory/${pathValue(inventoryId)}/consume`)
+		})
+};
+
+export const items = {
+	byId: (itemId: PathParam) => endpoint(`/item/${pathValue(itemId)}`),
+	search: (query: QueryParam) => endpoint(`/item/search?q=${queryValue(query)}`)
+};
+
+export const levels = {
+	root: endpoint('/levels'),
+	batch: endpoint('/levels/batch'),
+	tags: Object.assign(endpoint('/levels/tags'), {
+		byId: (tagId: PathParam) => endpoint(`/levels/tags/${pathValue(tagId)}`)
+	}),
+	byId: (levelId: PathParam) =>
+		Object.assign(endpoint(`/levels/${pathValue(levelId)}`), {
+			fromGD: endpoint(`/levels/${pathValue(levelId)}?fromGD=1`),
+			records: (end: PathParam = 500) =>
+				endpoint(`/levels/${pathValue(levelId)}/records?end=${pathValue(end)}`),
+			deathCount: endpoint(`/levels/${pathValue(levelId)}/deathCount`),
+			tags: endpoint(`/levels/${pathValue(levelId)}/tags`),
+			variants: endpoint(`/levels/${pathValue(levelId)}/variants`)
+		})
+};
+
+export const lists = {
+	byName: (list: PathParam, query: QueryParam) =>
+		endpoint(`/list/${pathValue(list)}?${queryValue(query)}`)
+};
+
+export const recordsApi = {
+	root: endpoint('/records'),
+	retrieveLimit: endpoint('/records/retrieve-limit'),
+	retrieve: endpoint('/records/retrieve'),
+	byUserAndLevel: (uid: PathParam, levelId: PathParam) =>
+		Object.assign(endpoint(`/records/${pathValue(uid)}/${pathValue(levelId)}`), {
+			boost: endpoint(`/records/${pathValue(uid)}/${pathValue(levelId)}/boost`)
+		})
+};
+
+export const deathCounts = {
+	byUserAndLevel: (uid: PathParam, levelId: PathParam) =>
+		endpoint(`/deathCount/${pathValue(uid)}/${pathValue(levelId)}`)
+};
+
+export const coupon = {
+	byCode: (code: PathParam) => endpoint(`/coupon/${pathValue(code)}`)
+};
+
+export const clans = {
+	root: endpoint('/clans'),
+	list: (query: QueryParam) => endpoint(`/clans?${queryValue(query)}`),
+	invitations: endpoint('/clans/invitations'),
+	leave: endpoint('/clans/leave'),
+	invite: (uid: PathParam) => endpoint(`/clans/invite/${pathValue(uid)}`),
+	byId: (clanId: PathParam) =>
+		Object.assign(endpoint(`/clans/${pathValue(clanId)}`), {
+			invitations: endpoint(`/clans/${pathValue(clanId)}/invitations`),
+			join: endpoint(`/clans/${pathValue(clanId)}/join`),
+			invite: endpoint(`/clans/${pathValue(clanId)}/invite`),
+			kick: (uid: PathParam) => endpoint(`/clans/${pathValue(clanId)}/kick/${pathValue(uid)}`),
+			invitation: (uid: PathParam) =>
+				endpoint(`/clans/${pathValue(clanId)}/invitation/${pathValue(uid)}`)
+		})
+};
+
+export const community = {
+	tags: Object.assign(endpoint('/community/tags'), {
+		byId: (tagId: PathParam) => endpoint(`/community/tags/${pathValue(tagId)}`)
+	}),
+	posts: {
+		list: (query: QueryParam) => endpoint(`/community/posts?${queryValue(query)}`),
+		views: endpoint('/community/posts/views')
+	},
+	levels: {
+		byId: (levelId: PathParam) => ({
+			posts: {
+				limit: (limit: PathParam) =>
+					endpoint(`/community/levels/${pathValue(levelId)}/posts?limit=${pathValue(limit)}`)
+			}
+		})
+	},
+	my: {
+		records: endpoint('/community/my/records')
+	},
+	admin: {
+		posts: {
+			list: (query: QueryParam) => endpoint(`/community/admin/posts?${queryValue(query)}`),
+			byId: (postId: PathParam) => endpoint(`/community/admin/posts/${pathValue(postId)}`)
+		},
+		reports: {
+			list: (query: QueryParam) => endpoint(`/community/admin/reports?${queryValue(query)}`)
+		},
+		comments: {
+			byId: (commentId: PathParam) => endpoint(`/community/admin/comments/${pathValue(commentId)}`)
+		}
+	}
+};
+
+export const eventsApi = {
+	root: endpoint('/events'),
+	list: (query: QueryParam) => endpoint(`/events?${queryValue(query)}`),
+	ongoing: endpoint('/events/ongoing'),
+	proofs: endpoint('/events/proofs'),
+	submission: endpoint('/events/submission'),
+	quest: {
+		byId: (questId: PathParam) => ({
+			check: endpoint(`/events/quest/${pathValue(questId)}/check`),
+			claim: endpoint(`/events/quest/${pathValue(questId)}/claim`)
+		})
+	},
+	byId: (eventId: PathParam) =>
+		Object.assign(endpoint(`/events/${pathValue(eventId)}`), {
+			levels: endpoint(`/events/${pathValue(eventId)}/levels`),
+			leaderboard: endpoint(`/events/${pathValue(eventId)}/leaderboard`),
+			calc: endpoint(`/events/${pathValue(eventId)}/calc`),
+			submissions: endpoint(`/events/${pathValue(eventId)}/submissions`),
+			submit: endpoint(`/events/${pathValue(eventId)}/submit`),
+			submission: (levelId: PathParam) =>
+				endpoint(`/events/${pathValue(eventId)}/submission/${pathValue(levelId)}`),
+			level: (levelId: PathParam) =>
+				endpoint(`/events/${pathValue(eventId)}/level/${pathValue(levelId)}`),
+			proofs: Object.assign(endpoint(`/events/${pathValue(eventId)}/proofs?accepted=all`), {
+				byUid: (uid: PathParam) =>
+					endpoint(`/events/${pathValue(eventId)}/proofs/${pathValue(uid)}`)
+			}),
+			quest: Object.assign(endpoint(`/events/${pathValue(eventId)}/quest`), {
+				byId: (questId: PathParam) =>
+					Object.assign(endpoint(`/events/${pathValue(eventId)}/quest/${pathValue(questId)}`), {
+						reward: (rewardId: PathParam) =>
+							endpoint(
+								`/events/${pathValue(eventId)}/quest/${pathValue(questId)}/reward/${pathValue(rewardId)}`
+							),
+						rewardRoot: endpoint(`/events/${pathValue(eventId)}/quest/${pathValue(questId)}/reward`)
+					})
+			})
+		})
+};
+
+export const wiki = {
+	latest: (query: QueryParam) => endpoint(`/wiki/latest?${queryValue(query)}`)
+};
+
+export const battlepassApi = {
+	root: endpoint('/battlepass'),
+	progress: endpoint('/battlepass/progress'),
+	courses: endpoint('/battlepass/courses'),
+	course: Object.assign(endpoint('/battlepass/course'), {
+		byId: (courseId: PathParam) =>
+			Object.assign(endpoint(`/battlepass/course/${pathValue(courseId)}`), {
+				entries: endpoint(`/battlepass/course/${pathValue(courseId)}/entries`)
+			}),
+		entry: (entryId: PathParam) => endpoint(`/battlepass/course/entry/${pathValue(entryId)}`)
+	}),
+	dailyWeekly: endpoint('/battlepass/daily-weekly'),
+	levels: endpoint('/battlepass/levels'),
+	missions: endpoint('/battlepass/missions'),
+	mission: (missionId: PathParam) =>
+		Object.assign(endpoint(`/battlepass/mission/${pathValue(missionId)}`), {
+			reward: (rewardId: PathParam) =>
+				endpoint(`/battlepass/mission/${pathValue(missionId)}/reward/${pathValue(rewardId)}`)
+		}),
+	rewards: Object.assign(endpoint('/battlepass/rewards'), {
+		claimable: endpoint('/battlepass/rewards/claimable'),
+		byId: (rewardId: PathParam) => endpoint(`/battlepass/reward/${pathValue(rewardId)}`)
+	}),
+	mappacks: Object.assign(endpoint('/battlepass/mappacks'), {
+		nextLocked: endpoint('/battlepass/mappacks/next-locked'),
+		byId: (mappackId: PathParam) => endpoint(`/battlepass/mappack/${pathValue(mappackId)}`)
+	}),
+	level: (levelId: PathParam) => endpoint(`/battlepass/level/${pathValue(levelId)}`),
+	season: (seasonId: PathParam) => ({
+		archive: endpoint(`/battlepass/season/${pathValue(seasonId)}/archive`),
+		missions: endpoint(`/battlepass/season/${pathValue(seasonId)}/missions`),
+		mappacks: endpoint(`/battlepass/season/${pathValue(seasonId)}/mappacks`),
+		rewards: endpoint(`/battlepass/season/${pathValue(seasonId)}/rewards`)
+	})
+};
+
+export const mappacks = {
+	root: endpoint('/mappacks'),
+	batch: endpoint('/mappacks/batch'),
+	byId: (mappackId: PathParam) => endpoint(`/mappacks/${pathValue(mappackId)}`)
+};
+
+export const orders = {
+	root: endpoint('/orders'),
+	byId: (orderId: PathParam) => endpoint(`/orders/${pathValue(orderId)}`),
+	merchant: {
+		root: endpoint('/merchant/orders'),
+		byId: (orderId: PathParam) => ({
+			tracking: endpoint(`/merchant/order/${pathValue(orderId)}/tracking`)
+		})
+	}
+};
+
+export const payment = {
+	link: endpoint('/payment/getPaymentLink'),
+	linkWithDuration: (days: PathParam) => endpoint(`/payment/getPaymentLink/5/${pathValue(days)}`)
+};
+
+export const cards = {
+	byId: (cardId: PathParam) => ({
+		content: endpoint(`/card/${pathValue(cardId)}/content`),
+		link: endpoint(`/card/${pathValue(cardId)}/link`)
+	})
+};
+
+export const submissions = {
+	verdict: endpoint('/submitVerdict'),
+	byId: (submissionId: PathParam) => endpoint(`/submission?id=${pathValue(submissionId)}`),
+	levelSubmissions: endpoint('/level-submissions')
+};
+
+export const provinceData = endpoint('/provinces');
+
+export function mergeAccounts(uidA: PathParam, uidB: PathParam) {
+	return endpoint(`/mergeAccount/${pathValue(uidA)}/${pathValue(uidB)}`);
 }
 
 export async function createPlayer(init: ApiRequestInit = {}) {
@@ -240,15 +527,17 @@ export async function getRecords(params: Record<string, string>, init: GetReques
 }
 
 export async function postPlayersBatch(batch: string[], init: ApiRequestInit = {}) {
-	return (await request('/players/batch', {
-		...init,
-		method: 'POST',
-		body: JSON.stringify({ batch }),
-		headers: {
-			'Content-Type': 'application/json',
-			...(init.headers ?? {})
-		}
-	})).json() as Promise<PlayerSummary[]>;
+	return (
+		await request('/players/batch', {
+			...init,
+			method: 'POST',
+			body: JSON.stringify({ batch }),
+			headers: {
+				'Content-Type': 'application/json',
+				...(init.headers ?? {})
+			}
+		})
+	).json() as Promise<PlayerSummary[]>;
 }
 
 export async function fetchCommunityPost(id: string, init: GetRequestInit = {}) {

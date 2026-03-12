@@ -185,7 +185,7 @@
 	// Fetch functions
 	async function fetchSeasons() {
 		try {
-			const res = await sdk.fetch(`/battlepass`);
+			const res = await sdk.battlepassApi.root.request();
 			if (res.ok) {
 				const season = await res.json();
 				seasons = [season];
@@ -204,13 +204,15 @@
 			fetchBattlePassMapPacks(),
 			fetchRewards(),
 			fetchMissions(),
-			selectedSeason.courseId ? fetchCourseEntries(selectedSeason.courseId) : Promise.resolve((courseEntries = []))
+			selectedSeason.courseId
+				? fetchCourseEntries(selectedSeason.courseId)
+				: Promise.resolve((courseEntries = []))
 		]);
 	}
 
 	async function fetchCourses() {
 		try {
-			const res = await sdk.fetch(`/battlepass/courses`, {
+			const res = await sdk.battlepassApi.courses.request({
 				headers: { Authorization: `Bearer ${await $user.token()}` }
 			});
 			if (res.ok) {
@@ -223,7 +225,7 @@
 
 	async function fetchCourseEntries(courseId: number) {
 		try {
-			const res = await sdk.fetch(`/battlepass/course/${courseId}/entries`, {
+			const res = await sdk.battlepassApi.course.byId(courseId).entries.request({
 				headers: { Authorization: `Bearer ${await $user.token()}` }
 			});
 			if (res.ok) {
@@ -237,9 +239,7 @@
 	async function fetchLevels() {
 		if (!selectedSeason) return;
 		try {
-			const res = await fetch(
-				sdk.url(`/battlepass/season/${selectedSeason.id}/levels`)
-			);
+			const res = await fetch(sdk.url(`/battlepass/season/${selectedSeason.id}/levels`));
 			if (res.ok) levels = await res.json();
 		} catch (e) {
 			console.error('Failed to fetch levels:', e);
@@ -249,12 +249,9 @@
 	async function fetchBattlePassMapPacks() {
 		if (!selectedSeason) return;
 		try {
-			const res = await fetch(
-				sdk.url(`/battlepass/season/${selectedSeason.id}/mappacks`),
-				{
-					headers: { Authorization: `Bearer ${await $user.token()}` }
-				}
-			);
+			const res = await fetch(sdk.url(`/battlepass/season/${selectedSeason.id}/mappacks`), {
+				headers: { Authorization: `Bearer ${await $user.token()}` }
+			});
 			if (res.ok) battlePassMapPacks = await res.json();
 		} catch (e) {
 			console.error('Failed to fetch Pass map packs:', e);
@@ -264,9 +261,7 @@
 	async function fetchRewards() {
 		if (!selectedSeason) return;
 		try {
-			const res = await fetch(
-				sdk.url(`/battlepass/season/${selectedSeason.id}/rewards`)
-			);
+			const res = await fetch(sdk.url(`/battlepass/season/${selectedSeason.id}/rewards`));
 			if (res.ok) rewards = await res.json();
 		} catch (e) {
 			console.error('Failed to fetch rewards:', e);
@@ -291,9 +286,7 @@
 	async function fetchMissions() {
 		if (!selectedSeason) return;
 		try {
-			const res = await fetch(
-				sdk.url(`/battlepass/season/${selectedSeason.id}/missions`)
-			);
+			const res = await fetch(sdk.url(`/battlepass/season/${selectedSeason.id}/missions`));
 			if (res.ok) missions = await res.json();
 		} catch (e) {
 			console.error('Failed to fetch missions:', e);
@@ -342,7 +335,7 @@
 		if (!confirm('Archive this season?')) return;
 
 		toast.promise(
-			sdk.fetch(`/battlepass/season/${id}/archive`, {
+			sdk.battlepassApi.season(id).archive.request({
 				method: 'POST',
 				headers: { Authorization: `Bearer ${await $user.token()}` }
 			}),
@@ -396,7 +389,7 @@
 		if (!confirm('Delete this level?')) return;
 
 		toast.promise(
-			sdk.fetch(`/battlepass/level/${id}`, {
+			sdk.battlepassApi.level(id).request({
 				method: 'DELETE',
 				headers: { Authorization: `Bearer ${await $user.token()}` }
 			}),
@@ -416,7 +409,7 @@
 		if (!selectedSeason) return;
 
 		toast.promise(
-			sdk.fetch(`/battlepass/season/${selectedSeason.id}/mappacks`, {
+			sdk.battlepassApi.season(selectedSeason.id).mappacks.request({
 				method: 'POST',
 				body: JSON.stringify({
 					mapPackId: Number(mapPackLinkForm.mapPackId),
@@ -444,7 +437,7 @@
 		if (!confirm('Unlink this map pack?')) return;
 
 		toast.promise(
-			sdk.fetch(`/battlepass/mappack/${id}`, {
+			sdk.battlepassApi.mappacks.byId(id).request({
 				method: 'DELETE',
 				headers: { Authorization: `Bearer ${await $user.token()}` }
 			}),
@@ -463,7 +456,7 @@
 		if (!mapPackEditForm.id) return;
 
 		toast.promise(
-			sdk.fetch(`/battlepass/mappack/${mapPackEditForm.id}`, {
+			sdk.battlepassApi.mappacks.byId(mapPackEditForm.id).request({
 				method: 'PATCH',
 				body: JSON.stringify({
 					unlockWeek: mapPackEditForm.unlockWeek,
@@ -491,7 +484,7 @@
 		if (!selectedSeason) return;
 
 		toast.promise(
-			sdk.fetch(`/battlepass/season/${selectedSeason.id}/rewards`, {
+			sdk.battlepassApi.season(selectedSeason.id).rewards.request({
 				method: 'POST',
 				body: JSON.stringify({
 					tier: rewardForm.tier,
@@ -527,7 +520,7 @@
 		}
 
 		toast.promise(
-			sdk.fetch(`/battlepass/reward/${id}`, {
+			sdk.battlepassApi.rewards.byId(id).request({
 				method: 'DELETE',
 				headers: { Authorization: `Bearer ${await $user.token()}` }
 			}),
@@ -603,7 +596,7 @@
 		if (!confirm('Delete this mission?')) return;
 
 		toast.promise(
-			sdk.fetch(`/battlepass/mission/${id}`, {
+			sdk.battlepassApi.mission(id).request({
 				method: 'DELETE',
 				headers: { Authorization: `Bearer ${await $user.token()}` }
 			}),
@@ -623,21 +616,18 @@
 		if (!missionRewardForm.missionId) return;
 
 		toast.promise(
-			fetch(
-				sdk.url(`/battlepass/mission/${missionRewardForm.missionId}/reward`),
-				{
-					method: 'POST',
-					body: JSON.stringify({
-						itemId: Number(missionRewardForm.itemId),
-						quantity: missionRewardForm.quantity,
-						expireAfter: missionRewardForm.expireAfter
-					}),
-					headers: {
-						Authorization: `Bearer ${await $user.token()}`,
-						'Content-Type': 'application/json'
-					}
+			fetch(sdk.url(`/battlepass/mission/${missionRewardForm.missionId}/reward`), {
+				method: 'POST',
+				body: JSON.stringify({
+					itemId: Number(missionRewardForm.itemId),
+					quantity: missionRewardForm.quantity,
+					expireAfter: missionRewardForm.expireAfter
+				}),
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`,
+					'Content-Type': 'application/json'
 				}
-			),
+			}),
 			{
 				success: () => {
 					showMissionRewardDialog = false;
@@ -654,10 +644,13 @@
 		if (!confirm('Delete this reward?')) return;
 
 		toast.promise(
-			sdk.fetch(`/battlepass/mission/${missionId}/reward/${rewardId}`, {
-				method: 'DELETE',
-				headers: { Authorization: `Bearer ${await $user.token()}` }
-			}),
+			sdk.battlepassApi
+				.mission(missionId)
+				.reward(rewardId)
+				.request({
+					method: 'DELETE',
+					headers: { Authorization: `Bearer ${await $user.token()}` }
+				}),
 			{
 				success: () => {
 					fetchMissions();
@@ -703,7 +696,7 @@
 		if (!confirm('Delete this course?')) return;
 
 		toast.promise(
-			sdk.fetch(`/battlepass/course/${id}`, {
+			sdk.battlepassApi.course.byId(id).request({
 				method: 'DELETE',
 				headers: { Authorization: `Bearer ${await $user.token()}` }
 			}),
@@ -767,7 +760,7 @@
 		if (!confirm('Delete this course entry?')) return;
 
 		toast.promise(
-			sdk.fetch(`/battlepass/course/entry/${id}`, {
+			sdk.battlepassApi.course.entry(id).request({
 				method: 'DELETE',
 				headers: { Authorization: `Bearer ${await $user.token()}` }
 			}),
@@ -784,7 +777,15 @@
 
 	// Reset form functions
 	function openNewSeason() {
-		seasonForm = { id: null, title: '', description: '', start: '', end: '', primaryColor: '#8b5cf6', courseId: '' };
+		seasonForm = {
+			id: null,
+			title: '',
+			description: '',
+			start: '',
+			end: '',
+			primaryColor: '#8b5cf6',
+			courseId: ''
+		};
 		showSeasonDialog = true;
 	}
 
@@ -889,15 +890,12 @@
 
 		itemSearchLoading = true;
 		try {
-			const res = await fetch(
-				sdk.url(`/item/search?q=${encodeURIComponent(itemSearchQuery)}`),
-				{
-					method: 'GET',
-					headers: {
-						Authorization: 'Bearer ' + (await $user.token())
-					}
+			const res = await fetch(sdk.url(`/item/search?q=${encodeURIComponent(itemSearchQuery)}`), {
+				method: 'GET',
+				headers: {
+					Authorization: 'Bearer ' + (await $user.token())
 				}
-			);
+			});
 			itemSearchResults = await res.json();
 		} catch (e) {
 			console.error(e);
@@ -932,7 +930,15 @@
 	}
 
 	function openNewMission() {
-		missionForm = { id: null, title: '', description: '', condition: '[]', xp: 100, order: 0, refreshType: 'none' };
+		missionForm = {
+			id: null,
+			title: '',
+			description: '',
+			condition: '[]',
+			xp: 100,
+			order: 0,
+			refreshType: 'none'
+		};
 		conditionBuilderMode = true;
 		conditionList = [];
 		newCondition = { type: 'clear_level', targetId: null, value: null };
@@ -942,7 +948,7 @@
 	function openEditMission(mission: any) {
 		// Ensure condition is always an array
 		const conditions = Array.isArray(mission.condition) ? mission.condition : [];
-		
+
 		missionForm = {
 			id: mission.id,
 			title: mission.title,
@@ -960,7 +966,7 @@
 
 	function addConditionToList() {
 		const cond: any = { type: newCondition.type };
-		
+
 		if (newCondition.type === 'clear_level' || newCondition.type === 'clear_mappack') {
 			if (!newCondition.targetId) {
 				toast.error('Please enter a target ID');
@@ -1264,7 +1270,12 @@
 													<span class="text-yellow-400">+{mission.xp} XP</span>
 													<span class="text-muted-foreground">Order: {mission.order}</span>
 													{#if mission.refreshType && mission.refreshType !== 'none'}
-														<span class="rounded px-2 py-0.5 text-xs font-medium {mission.refreshType === 'daily' ? 'bg-blue-500/20 text-blue-400' : 'bg-purple-500/20 text-purple-400'}">
+														<span
+															class="rounded px-2 py-0.5 text-xs font-medium {mission.refreshType ===
+															'daily'
+																? 'bg-blue-500/20 text-blue-400'
+																: 'bg-purple-500/20 text-purple-400'}"
+														>
 															{mission.refreshType === 'daily' ? '🔄 Daily' : '📅 Weekly'}
 														</span>
 													{/if}
@@ -1369,7 +1380,7 @@
 			</div>
 			<div>
 				<Label for="seasonColor">Primary Color</Label>
-				<div class="flex gap-2 items-center">
+				<div class="flex items-center gap-2">
 					<Input
 						id="seasonColor"
 						type="color"
@@ -1392,8 +1403,8 @@
 							selected={{
 								value: seasonForm.courseId ? String(seasonForm.courseId) : 'none',
 								label: seasonForm.courseId
-									? (courses.find((c) => String(c.id) === String(seasonForm.courseId))?.title ||
-										`Course #${seasonForm.courseId}`)
+									? courses.find((c) => String(c.id) === String(seasonForm.courseId))?.title ||
+										`Course #${seasonForm.courseId}`
 									: 'No linked course'
 							}}
 							onSelectedChange={(v) => {
@@ -1635,7 +1646,7 @@
 
 <!-- Mission Dialog -->
 <Dialog.Root bind:open={showMissionDialog}>
-	<Dialog.Content class="max-w-2xl max-h-[90vh]">
+	<Dialog.Content class="max-h-[90vh] max-w-2xl">
 		<Dialog.Header>
 			<Dialog.Title>{missionForm.id ? 'Edit Mission' : 'Add Mission'}</Dialog.Title>
 		</Dialog.Header>
@@ -1643,7 +1654,11 @@
 			<div class="flex flex-col gap-4">
 				<div>
 					<Label for="missionTitle">Title</Label>
-					<Input id="missionTitle" bind:value={missionForm.title} placeholder="Beat Extreme Level" />
+					<Input
+						id="missionTitle"
+						bind:value={missionForm.title}
+						placeholder="Beat Extreme Level"
+					/>
 				</div>
 				<div>
 					<Label for="missionDesc">Description</Label>
@@ -1658,8 +1673,8 @@
 				<div class="flex items-center justify-between rounded-lg border p-3">
 					<div class="flex items-center gap-2">
 						<Label>Condition Editor Mode</Label>
-						<Switch 
-							bind:checked={conditionBuilderMode} 
+						<Switch
+							bind:checked={conditionBuilderMode}
 							onCheckedChange={() => {
 								if (conditionBuilderMode) {
 									syncJSONToConditions();
@@ -1685,7 +1700,8 @@
 										<div class="flex items-center gap-2 rounded-lg border bg-muted/30 p-3">
 											<div class="flex-1">
 												<div class="text-sm font-medium">
-													{MISSION_CONDITION_TYPES.find((t) => t.type === cond.type)?.description || cond.type}
+													{MISSION_CONDITION_TYPES.find((t) => t.type === cond.type)?.description ||
+														cond.type}
 												</div>
 												<code class="text-xs text-muted-foreground">
 													{JSON.stringify(cond)}
@@ -1707,13 +1723,18 @@
 						</div>
 
 						<!-- Add New Condition -->
-						<div class="rounded-lg border p-4 space-y-3">
+						<div class="space-y-3 rounded-lg border p-4">
 							<Label class="text-base font-semibold">Add Condition</Label>
-							
+
 							<div>
 								<Label for="condType">Condition Type</Label>
 								<Select.Root
-									selected={{ value: newCondition.type, label: MISSION_CONDITION_TYPES.find(t => t.type === newCondition.type)?.description || newCondition.type }}
+									selected={{
+										value: newCondition.type,
+										label:
+											MISSION_CONDITION_TYPES.find((t) => t.type === newCondition.type)
+												?.description || newCondition.type
+									}}
 									onSelectedChange={(v) => {
 										if (v) {
 											newCondition.type = v.value;
@@ -1750,9 +1771,11 @@
 							{:else}
 								<div>
 									<Label for="condValue">
-										{newCondition.type === 'reach_tier' ? 'Tier Number' : 
-										 newCondition.type === 'earn_xp' ? 'XP Amount' : 
-										 'Count'}
+										{newCondition.type === 'reach_tier'
+											? 'Tier Number'
+											: newCondition.type === 'earn_xp'
+												? 'XP Amount'
+												: 'Count'}
 									</Label>
 									<Input
 										id="condValue"
@@ -1770,7 +1793,11 @@
 
 							<div class="rounded bg-muted/50 p-2 text-xs">
 								<span class="font-medium">Example: </span>
-								<code>{JSON.stringify(MISSION_CONDITION_TYPES.find((t) => t.type === newCondition.type)?.example)}</code>
+								<code
+									>{JSON.stringify(
+										MISSION_CONDITION_TYPES.find((t) => t.type === newCondition.type)?.example
+									)}</code
+								>
 							</div>
 						</div>
 					</div>
@@ -1814,9 +1841,11 @@
 				<div>
 					<Label for="missionRefreshType">Refresh Schedule</Label>
 					<Select.Root
-						selected={{ 
-							value: missionForm.refreshType, 
-							label: MISSION_REFRESH_TYPES.find(t => t.value === missionForm.refreshType)?.label || 'No Refresh' 
+						selected={{
+							value: missionForm.refreshType,
+							label:
+								MISSION_REFRESH_TYPES.find((t) => t.value === missionForm.refreshType)?.label ||
+								'No Refresh'
 						}}
 						onSelectedChange={(v) => {
 							if (v) missionForm.refreshType = v.value;
@@ -1919,7 +1948,11 @@
 			</div>
 			<div>
 				<Label for="courseDesc">Description</Label>
-				<Textarea id="courseDesc" bind:value={courseForm.description} placeholder="Course mode description" />
+				<Textarea
+					id="courseDesc"
+					bind:value={courseForm.description}
+					placeholder="Course mode description"
+				/>
 			</div>
 		</div>
 		<Dialog.Footer>
@@ -1979,10 +2012,17 @@
 				</div>
 				<div>
 					<Label for="entryRewardQty">Item Qty</Label>
-					<Input id="entryRewardQty" type="number" min="1" bind:value={courseEntryForm.rewardQuantity} />
+					<Input
+						id="entryRewardQty"
+						type="number"
+						min="1"
+						bind:value={courseEntryForm.rewardQuantity}
+					/>
 				</div>
 			</div>
-			<div class="text-xs text-muted-foreground">XP reward is fixed: +100 XP when this entry is cleared.</div>
+			<div class="text-xs text-muted-foreground">
+				XP reward is fixed: +100 XP when this entry is cleared.
+			</div>
 		</div>
 		<Dialog.Footer>
 			<Button variant="outline" on:click={() => (showCourseEntryDialog = false)}>Cancel</Button>

@@ -34,9 +34,7 @@
 
 	function toDateTimeLocal(isoDate: string) {
 		const date = new Date(isoDate);
-		return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
-			.toISOString()
-			.slice(0, 16);
+		return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 	}
 
 	async function getAuthHeaders(contentType = false) {
@@ -56,7 +54,7 @@
 	async function fetchConvictions(uid: string) {
 		loadingList = true;
 		try {
-			const response = await sdk.fetch(`/players/${uid}/convictions`, {
+			const response = await sdk.players.byId(uid).convictions.request({
 				headers: await getAuthHeaders()
 			});
 			if (!response.ok) {
@@ -125,18 +123,15 @@
 
 		isLoading = true;
 		try {
-			const response = await fetch(
-				sdk.url(`/players/${selectedPlayer.uid}/convictions`),
-				{
-					method: 'POST',
-					headers: await getAuthHeaders(true),
-					body: JSON.stringify({
-						content: form.content.trim(),
-						creditReduce: Number(form.creditReduce) || 0,
-						createdAt: form.createdAt
-					})
-				}
-			);
+			const response = await fetch(sdk.url(`/players/${selectedPlayer.uid}/convictions`), {
+				method: 'POST',
+				headers: await getAuthHeaders(true),
+				body: JSON.stringify({
+					content: form.content.trim(),
+					creditReduce: Number(form.creditReduce) || 0,
+					createdAt: form.createdAt
+				})
+			});
 
 			if (!response.ok) {
 				throw new Error($_('admin_convictions.toast.add_error'));

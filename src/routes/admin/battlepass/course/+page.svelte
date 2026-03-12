@@ -42,7 +42,7 @@
 
 	async function fetchCourses() {
 		try {
-			const res = await sdk.fetch(`/battlepass/courses`, {
+			const res = await sdk.battlepassApi.courses.request({
 				headers: { Authorization: `Bearer ${await $user.token()}` }
 			});
 
@@ -56,7 +56,10 @@
 				selectedCourseId = Number(courses[0].id);
 			}
 
-			if (selectedCourseId && !courses.find((course) => Number(course.id) === Number(selectedCourseId))) {
+			if (
+				selectedCourseId &&
+				!courses.find((course) => Number(course.id) === Number(selectedCourseId))
+			) {
 				selectedCourseId = courses.length > 0 ? Number(courses[0].id) : null;
 			}
 		} catch (error) {
@@ -67,7 +70,7 @@
 
 	async function fetchCourseEntries(courseId: number) {
 		try {
-			const res = await sdk.fetch(`/battlepass/course/${courseId}/entries`, {
+			const res = await sdk.battlepassApi.course.byId(courseId).entries.request({
 				headers: { Authorization: `Bearer ${await $user.token()}` }
 			});
 
@@ -127,7 +130,7 @@
 
 		toast.promise(
 			(async () => {
-				const res = await sdk.fetch(`/battlepass/course/${id}`, {
+				const res = await sdk.battlepassApi.course.byId(id).request({
 					method: 'DELETE',
 					headers: { Authorization: `Bearer ${await $user.token()}` }
 				});
@@ -172,7 +175,9 @@
 						refId: Number(courseEntryForm.refId),
 						sortOrder: Number(courseEntryForm.sortOrder),
 						rewardXp: 100,
-						rewardItemId: courseEntryForm.rewardItemId ? Number(courseEntryForm.rewardItemId) : null,
+						rewardItemId: courseEntryForm.rewardItemId
+							? Number(courseEntryForm.rewardItemId)
+							: null,
 						rewardQuantity: Number(courseEntryForm.rewardQuantity || 1)
 					}),
 					headers: {
@@ -204,7 +209,7 @@
 
 		toast.promise(
 			(async () => {
-				const res = await sdk.fetch(`/battlepass/course/entry/${id}`, {
+				const res = await sdk.battlepassApi.course.entry(id).request({
 					method: 'DELETE',
 					headers: { Authorization: `Bearer ${await $user.token()}` }
 				});
@@ -326,7 +331,9 @@
 						</div>
 					</div>
 				{:else}
-					<div class="rounded border border-dashed p-4 text-sm text-muted-foreground">No courses</div>
+					<div class="rounded border border-dashed p-4 text-sm text-muted-foreground">
+						No courses
+					</div>
 				{/each}
 			</Card.Content>
 		</Card.Root>
@@ -364,15 +371,23 @@
 								<Table.Cell>
 									+100 XP
 									{#if entry.rewardItemId}
-										 • Item #{entry.rewardItemId} x{entry.rewardQuantity}
+										• Item #{entry.rewardItemId} x{entry.rewardQuantity}
 									{/if}
 								</Table.Cell>
 								<Table.Cell>
 									<div class="flex gap-2">
-										<Button variant="outline" size="icon" on:click={() => openEditCourseEntry(entry)}>
+										<Button
+											variant="outline"
+											size="icon"
+											on:click={() => openEditCourseEntry(entry)}
+										>
 											<Edit class="h-4 w-4" />
 										</Button>
-										<Button variant="destructive" size="icon" on:click={() => removeCourseEntry(entry.id)}>
+										<Button
+											variant="destructive"
+											size="icon"
+											on:click={() => removeCourseEntry(entry.id)}
+										>
 											<Trash2 class="h-4 w-4" />
 										</Button>
 									</div>
@@ -404,7 +419,11 @@
 			</div>
 			<div>
 				<Label for="courseDesc">Description</Label>
-				<Textarea id="courseDesc" bind:value={courseForm.description} placeholder="Course mode description" />
+				<Textarea
+					id="courseDesc"
+					bind:value={courseForm.description}
+					placeholder="Course mode description"
+				/>
 			</div>
 		</div>
 		<Dialog.Footer>
@@ -464,10 +483,17 @@
 				</div>
 				<div>
 					<Label for="entryRewardQty">Item Qty</Label>
-					<Input id="entryRewardQty" type="number" min="1" bind:value={courseEntryForm.rewardQuantity} />
+					<Input
+						id="entryRewardQty"
+						type="number"
+						min="1"
+						bind:value={courseEntryForm.rewardQuantity}
+					/>
 				</div>
 			</div>
-			<div class="text-xs text-muted-foreground">XP reward is fixed: +100 XP when this entry is cleared.</div>
+			<div class="text-xs text-muted-foreground">
+				XP reward is fixed: +100 XP when this entry is cleared.
+			</div>
 		</div>
 		<Dialog.Footer>
 			<Button variant="outline" on:click={() => (showCourseEntryDialog = false)}>Cancel</Button>

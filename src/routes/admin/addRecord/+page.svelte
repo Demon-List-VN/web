@@ -18,22 +18,24 @@
 	};
 
 	async function add() {
-		sdk.fetch(`/records`, {
-			method: 'PUT',
-			body: JSON.stringify(data),
-			headers: {
-				Authorization: 'Bearer ' + (await $user.token()),
-				'Content-Type': 'application/json'
-			}
-		}).then((res) => {
-			if (!res.ok) {
-				alert('An error occured');
-				return;
-			}
+		sdk.recordsApi.root
+			.request({
+				method: 'PUT',
+				body: JSON.stringify(data),
+				headers: {
+					Authorization: 'Bearer ' + (await $user.token()),
+					'Content-Type': 'application/json'
+				}
+			})
+			.then((res) => {
+				if (!res.ok) {
+					alert('An error occured');
+					return;
+				}
 
-			alert('Added');
-			window.location.reload();
-		});
+				alert('Added');
+				window.location.reload();
+			});
 	}
 </script>
 

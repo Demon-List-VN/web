@@ -18,7 +18,7 @@
 
 	async function add() {
 		toast.promise(
-			sdk.fetch(`/merchant/order/${order.id}/tracking`, {
+			sdk.orders.merchant.byId(order.id).tracking.request({
 				method: 'POST',
 				body: JSON.stringify({
 					content: content.label,

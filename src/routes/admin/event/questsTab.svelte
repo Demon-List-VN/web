@@ -35,7 +35,7 @@
 
 		loading = true;
 		try {
-			const res = await sdk.fetch(`/events/${event.id}/quest`, {
+			const res = await sdk.eventsApi.byId(event.id).quest.request({
 				method: 'GET',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())
@@ -54,12 +54,15 @@
 		if (!confirm('Are you sure you want to delete this quest?')) return;
 
 		toast.promise(
-			sdk.fetch(`/events/${event.id}/quest/${questId}`, {
-				method: 'DELETE',
-				headers: {
-					Authorization: 'Bearer ' + (await $user.token())
-				}
-			}),
+			sdk.eventsApi
+				.byId(event.id)
+				.quest.byId(questId)
+				.request({
+					method: 'DELETE',
+					headers: {
+						Authorization: 'Bearer ' + (await $user.token())
+					}
+				}),
 			{
 				success: () => {
 					fetchQuests();
@@ -75,12 +78,16 @@
 		if (!confirm('Remove this reward from the quest?')) return;
 
 		toast.promise(
-			sdk.fetch(`/events/${event.id}/quest/${questId}/reward/${rewardId}`, {
-				method: 'DELETE',
-				headers: {
-					Authorization: 'Bearer ' + (await $user.token())
-				}
-			}),
+			sdk.eventsApi
+				.byId(event.id)
+				.quest.byId(questId)
+				.reward(rewardId)
+				.request({
+					method: 'DELETE',
+					headers: {
+						Authorization: 'Bearer ' + (await $user.token())
+					}
+				}),
 			{
 				success: () => {
 					fetchQuests();
@@ -94,13 +101,15 @@
 
 	function formatCondition(condition: any[]) {
 		if (!condition || !condition.length) return 'No condition';
-		
-		return condition.map(c => {
-			if (c.type === 'min' && c.attribute === 'total_point') {
-				return `Min ${c.value} points`;
-			}
-			return JSON.stringify(c);
-		}).join(', ');
+
+		return condition
+			.map((c) => {
+				if (c.type === 'min' && c.attribute === 'total_point') {
+					return `Min ${c.value} points`;
+				}
+				return JSON.stringify(c);
+			})
+			.join(', ');
 	}
 
 	onMount(() => {

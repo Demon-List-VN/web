@@ -42,7 +42,7 @@
 
 		isSearching = true;
 		try {
-			const res = await sdk.fetch(`/search/${searchValue}`, {
+			const res = await sdk.search.byValue(searchValue).request({
 				headers: await getSearchAuthHeaders()
 			});
 			const data = await res.json();
@@ -101,7 +101,7 @@
 
 <div class="player-selector" bind:this={containerElement}>
 	<div class="input-wrapper">
-		<Search class="absolute top-[7px] left-[10px]" size={18} />
+		<Search class="absolute left-[10px] top-[7px]" size={18} />
 		<Input
 			bind:value={searchValue}
 			{placeholder}

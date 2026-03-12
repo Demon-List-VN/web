@@ -17,7 +17,7 @@
 
 	async function fetchRewards() {
 		try {
-			const res = await sdk.fetch(`/battlepass/rewards`);
+			const res = await sdk.battlepassApi.rewards.request();
 			if (res.ok) {
 				rewards = await res.json();
 			}
@@ -30,7 +30,7 @@
 		if (!userInfo.loggedIn) return;
 
 		try {
-			const res = await sdk.fetch(`/battlepass/progress`, {
+			const res = await sdk.battlepassApi.progress.request({
 				headers: {
 					Authorization: `Bearer ${await userInfo.token()}`
 				}
@@ -50,7 +50,7 @@
 		if (!userInfo.loggedIn) return;
 
 		try {
-			const res = await sdk.fetch(`/battlepass/rewards/claimable`, {
+			const res = await sdk.battlepassApi.rewards.claimable.request({
 				headers: {
 					Authorization: `Bearer ${await userInfo.token()}`
 				}
@@ -70,15 +70,12 @@
 
 		try {
 			const claimPromise = (async () => {
-				const res = await fetch(
-					sdk.url(`/battlepass/reward/${rewardId}/claim`),
-					{
-						method: 'POST',
-						headers: {
-							Authorization: `Bearer ${await $user.token()}`
-						}
+				const res = await fetch(sdk.url(`/battlepass/reward/${rewardId}/claim`), {
+					method: 'POST',
+					headers: {
+						Authorization: `Bearer ${await $user.token()}`
 					}
-				);
+				});
 
 				if (!res.ok) {
 					const error = await res.text();

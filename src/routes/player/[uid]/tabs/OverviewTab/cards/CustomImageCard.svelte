@@ -56,7 +56,7 @@
 				}
 			};
 
-			const response = await sdk.fetch(`/players`, {
+			const response = await sdk.players.root.request({
 				method: 'PUT',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token()),
@@ -79,7 +79,7 @@
 				data.player.overviewData[config.id] = {};
 			}
 			data.player.overviewData[config.id].imageUrl = imageUrlInput.trim();
-			
+
 			toast.success($_('player.overview.image_saved') || 'Image URL saved successfully!');
 			isEditing = false;
 		} catch (error) {
@@ -96,7 +96,7 @@
 		try {
 			// Get current overviewData
 			const currentOverviewData = data.player.overviewData || {};
-			
+
 			// Update the custom image card data to remove the imageUrl
 			const updatedOverviewData = {
 				...currentOverviewData,
@@ -106,7 +106,7 @@
 				}
 			};
 
-			const response = await sdk.fetch(`/players`, {
+			const response = await sdk.players.root.request({
 				method: 'PUT',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token()),
@@ -126,7 +126,7 @@
 			if (data.player.overviewData?.[config.id]) {
 				data.player.overviewData[config.id].imageUrl = '';
 			}
-			
+
 			toast.success($_('player.overview.image_removed') || 'Image removed successfully!');
 		} catch (error) {
 			console.error('Delete error:', error);

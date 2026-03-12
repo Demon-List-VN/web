@@ -53,17 +53,13 @@
 	}
 
 	async function getLevelDeathCount(levelID: number) {
-		const res = await (
-			await sdk.fetch(`/levels/${levelID}/deathCount`)
-		).json();
+		const res = await (await sdk.levels.byId(levelID).deathCount.request()).json();
 
 		return res;
 	}
 
 	async function getPlayerDeathCount(levelID: number, userID: string) {
-		const res = await (
-			await sdk.fetch(`/deathCount/${userID}/${levelID}`)
-		).json();
+		const res = await (await sdk.deathCounts.byUserAndLevel(userID, levelID).request()).json();
 
 		return res;
 	}

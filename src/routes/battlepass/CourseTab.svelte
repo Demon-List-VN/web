@@ -108,15 +108,12 @@
 
 		try {
 			const claimPromise = (async () => {
-				const res = await fetch(
-					sdk.url(`/battlepass/course/entry/${entryId}/claim`),
-					{
-						method: 'POST',
-						headers: {
-							Authorization: `Bearer ${await $user.token()}`
-						}
+				const res = await fetch(sdk.url(`/battlepass/course/entry/${entryId}/claim`), {
+					method: 'POST',
+					headers: {
+						Authorization: `Bearer ${await $user.token()}`
 					}
-				);
+				});
 
 				if (!res.ok) {
 					let errorMessage = $_('battlepass.claim_failed');
@@ -179,14 +176,14 @@
 
 		const [levelsRes, mapPacksRes] = await Promise.all([
 			levelIds.length > 0
-				? sdk.fetch(`/levels/batch`, {
+				? sdk.levels.batch.request({
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json' },
 						body: JSON.stringify({ batch: levelIds })
 					})
 				: Promise.resolve(null),
 			mapPackIds.length > 0
-				? sdk.fetch(`/mappacks/batch`, {
+				? sdk.mappacks.batch.request({
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json' },
 						body: JSON.stringify({ batch: mapPackIds })
@@ -229,7 +226,7 @@
 			}
 
 			courseInFlight = (async () => {
-				const res = await sdk.fetch(`/battlepass/course`, { headers });
+				const res = await sdk.battlepassApi.course.request({ headers });
 				if (!res.ok) return null;
 				return await res.json();
 			})();

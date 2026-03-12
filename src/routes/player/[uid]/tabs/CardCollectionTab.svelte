@@ -19,7 +19,7 @@
 
 	onMount(async () => {
 		try {
-			const response = await sdk.fetch(`/players/${userID}/cards`);
+			const response = await sdk.players.byId(userID).cards.request();
 			cards = await response.json();
 		} catch (error) {
 			console.error('Failed to fetch cards:', error);

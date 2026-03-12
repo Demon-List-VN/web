@@ -42,7 +42,7 @@
 				query.set('locale', $locale);
 			}
 
-			const res = await sdk.fetch(`/wiki/latest?${query.toString()}`);
+			const res = await sdk.wiki.latest(query.toString()).request();
 
 			if (!res.ok) {
 				throw new Error(`HTTP ${res.status}`);

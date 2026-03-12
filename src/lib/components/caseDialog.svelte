@@ -65,7 +65,10 @@
 						rate: c.rate ?? 0
 					}))
 				: [];
-		const nothingEntry = { item: { id: 0, name: get(_ )('inventory.nothing'), type: 'none', rarity: 0 }, rate: 0 };
+		const nothingEntry = {
+			item: { id: 0, name: get(_)('inventory.nothing'), type: 'none', rarity: 0 },
+			rate: 0
+		};
 		const entries = [...pollEntries, nothingEntry];
 
 		const randomizedEntries = shuffleArray(entries);
@@ -80,7 +83,7 @@
 
 		try {
 			res = await (
-				await sdk.fetch(`/inventory/${inventoryItemId}/consume`, {
+				await sdk.inventory.byId(inventoryItemId).consume.request({
 					method: 'DELETE',
 					headers: {
 						Authorization: 'Bearer ' + (await $user.token())
@@ -190,7 +193,7 @@
 									class="case-img"
 								/>
 								<div class="case-name">{d.name}</div>
-								{:else}
+							{:else}
 								<div class="case-empty">{$_('inventory.nothing')}</div>
 							{/if}
 						</div>
@@ -199,14 +202,17 @@
 			</div>
 		</div>
 	{:else if !isRolling && !hasRolled}
-			<div class="p-4 text-center">
-				{$_('inventory.open_one_prefix')} <span class='font-bold' style="color: {rarityColor(item.rarity)}">{item.name}</span>{$_('inventory.open_one_suffix')}
+		<div class="p-4 text-center">
+			{$_('inventory.open_one_prefix')}
+			<span class="font-bold" style="color: {rarityColor(item.rarity)}">{item.name}</span>{$_(
+				'inventory.open_one_suffix'
+			)}
 
-				<div class='flex gap-[10px] w-full mt-[10px]'>
-					<AlertDialog.Cancel class='w-full'>{$_('general.cancel')}</AlertDialog.Cancel>
-					<Button class='w-full' on:click={openCase}>{$_('inventory.open_button')}</Button>
-				</div>
+			<div class="mt-[10px] flex w-full gap-[10px]">
+				<AlertDialog.Cancel class="w-full">{$_('general.cancel')}</AlertDialog.Cancel>
+				<Button class="w-full" on:click={openCase}>{$_('inventory.open_button')}</Button>
 			</div>
+		</div>
 	{:else}
 		<div class="p-4">
 			{#if rollResult && rollResult.items}
@@ -235,7 +241,9 @@
 				</div>
 			{/if}
 			<div class="h-[10px]"></div>
-			<AlertDialog.Cancel class="w-full" on:click={handleClose}>{$_('general.close')}</AlertDialog.Cancel>
+			<AlertDialog.Cancel class="w-full" on:click={handleClose}
+				>{$_('general.close')}</AlertDialog.Cancel
+			>
 		</div>
 	{/if}
 </div>

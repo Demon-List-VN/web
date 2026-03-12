@@ -62,7 +62,7 @@
 	// Tag CRUD
 	async function fetchAllTags() {
 		try {
-			const res = await sdk.fetch(`/levels/tags`);
+			const res = await sdk.levels.tags.request();
 			if (res.ok) allTags = await res.json();
 		} catch {}
 	}
@@ -71,7 +71,7 @@
 		if (!newTagName.trim()) return;
 		creatingTag = true;
 		try {
-			const res = await sdk.fetch(`/levels/tags`, {
+			const res = await sdk.levels.tags.request({
 				method: 'POST',
 				headers: await getHeaders(),
 				body: JSON.stringify({ name: newTagName.trim(), color: newTagColor })
@@ -96,7 +96,7 @@
 	async function deleteTag(tagId: number) {
 		if (!confirm('Delete this tag? It will be removed from all levels.')) return;
 		try {
-			const res = await sdk.fetch(`/levels/tags/${tagId}`, {
+			const res = await sdk.levels.tags.byId(tagId).request({
 				method: 'DELETE',
 				headers: await getHeaders()
 			});
@@ -125,14 +125,11 @@
 		if (!editLevelTagName.trim() || !editingLevelTag) return;
 		savingLevelTagEdit = true;
 		try {
-			const res = await fetch(
-				sdk.url(`/levels/tags/${editingLevelTag.id}`),
-				{
-					method: 'PUT',
-					headers: await getHeaders(),
-					body: JSON.stringify({ name: editLevelTagName.trim(), color: editLevelTagColor })
-				}
-			);
+			const res = await fetch(sdk.url(`/levels/tags/${editingLevelTag.id}`), {
+				method: 'PUT',
+				headers: await getHeaders(),
+				body: JSON.stringify({ name: editLevelTagName.trim(), color: editLevelTagColor })
+			});
 			if (res.ok) {
 				toast.success('Tag updated');
 				cancelEditTag();
@@ -153,7 +150,7 @@
 	async function fetchLevelTags() {
 		if (isNaN(level.id)) return;
 		try {
-			const res = await sdk.fetch(`/levels/${level.id}/tags`);
+			const res = await sdk.levels.byId(level.id).tags.request();
 			if (res.ok) {
 				const data = await res.json();
 				levelTags = data.map((t: any) => t.level_tags || t);
@@ -180,7 +177,7 @@
 		}
 		savingLevelTags = true;
 		try {
-			const res = await sdk.fetch(`/levels/${level.id}/tags`, {
+			const res = await sdk.levels.byId(level.id).tags.request({
 				method: 'PUT',
 				headers: await getHeaders(),
 				body: JSON.stringify({ tag_ids: levelTags.map((t) => t.id) })
@@ -201,7 +198,7 @@
 	async function fetchVariants() {
 		if (isNaN(level.id)) return;
 		try {
-			const res = await sdk.fetch(`/levels/${level.id}/variants`);
+			const res = await sdk.levels.byId(level.id).variants.request();
 			if (res.ok) variants = await res.json();
 		} catch {}
 	}
@@ -210,7 +207,7 @@
 		if (isNaN(newVariantId)) return;
 		addingVariant = true;
 		try {
-			const res = await sdk.fetch(`/levels/${level.id}/variants`, {
+			const res = await sdk.levels.byId(level.id).variants.request({
 				method: 'POST',
 				headers: await getHeaders(),
 				body: JSON.stringify({ variantLevelId: newVariantId })
@@ -233,13 +230,10 @@
 	async function removeVariant(variantId: number) {
 		if (!confirm('Remove this variant?')) return;
 		try {
-			const res = await fetch(
-				sdk.url(`/levels/${level.id}/variants/${variantId}`),
-				{
-					method: 'DELETE',
-					headers: await getHeaders()
-				}
-			);
+			const res = await fetch(sdk.url(`/levels/${level.id}/variants/${variantId}`), {
+				method: 'DELETE',
+				headers: await getHeaders()
+			});
 			if (res.ok) {
 				await fetchVariants();
 				toast.success('Variant removed');
@@ -256,7 +250,9 @@
 	});
 
 	async function fetchLevel() {
-		sdk.fetch(`/levels/${level.id}`)
+		sdk.levels
+			.byId(level.id)
+			.request()
 			.then((res) => res.json())
 			.then((res: any) => {
 				level = res;
@@ -266,7 +262,9 @@
 				if (allTags.length === 0) fetchAllTags();
 			})
 			.catch((err) => {
-				sdk.fetch(`/levels/${level.id}?fromGD=1`)
+				sdk.levels
+					.byId(level.id)
+					.fromGD.request()
 					.then((res) => res.json())
 					.then((res: any) => {
 						level.name = res.name;
@@ -288,22 +286,24 @@
 			}
 		}
 
-		sdk.fetch(`/levels`, {
-			method: 'PUT',
-			body: JSON.stringify(level),
-			headers: {
-				Authorization: `Bearer ${await $user.token()}`,
-				'Content-Type': 'application/json'
-			}
-		}).then((res) => {
-			if (!res.ok) {
-				alert('An error occured');
-				return;
-			}
+		sdk.levels.root
+			.request({
+				method: 'PUT',
+				body: JSON.stringify(level),
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`,
+					'Content-Type': 'application/json'
+				}
+			})
+			.then((res) => {
+				if (!res.ok) {
+					alert('An error occured');
+					return;
+				}
 
-			alert('Success!');
-			window.location.reload();
-		});
+				alert('Success!');
+				window.location.reload();
+			});
 	}
 
 	async function deleteLevel() {
@@ -311,20 +311,23 @@
 			return;
 		}
 
-		sdk.fetch(`/levels/${level.id}`, {
-			method: 'DELETE',
-			headers: {
-				Authorization: `Bearer ${await $user.token()}`
-			}
-		}).then((res) => {
-			if (!res.ok) {
-				alert('An error occured');
-				return;
-			}
+		sdk.levels
+			.byId(level.id)
+			.request({
+				method: 'DELETE',
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`
+				}
+			})
+			.then((res) => {
+				if (!res.ok) {
+					alert('An error occured');
+					return;
+				}
 
-			alert('Success!');
-			window.location.reload();
-		});
+				alert('Success!');
+				window.location.reload();
+			});
 	}
 </script>
 
@@ -386,7 +389,11 @@
 									>
 										{editLevelTagName || 'Preview'}
 									</span>
-									<Button on:click={saveEditTag} disabled={savingLevelTagEdit || !editLevelTagName.trim()} size="sm">
+									<Button
+										on:click={saveEditTag}
+										disabled={savingLevelTagEdit || !editLevelTagName.trim()}
+										size="sm"
+									>
 										{savingLevelTagEdit ? 'Saving...' : 'Save'}
 									</Button>
 									<button class="deleteTagBtn" on:click={cancelEditTag} title="Cancel">

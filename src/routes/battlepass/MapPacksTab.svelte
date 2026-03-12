@@ -15,7 +15,6 @@
 	import { DIFFICULTY_COLORS, DIFFICULTY_NAMES } from '$lib/battlepass/constants';
 	import UnlockTimer from './UnlockTimer.svelte';
 
-
 	export let primaryColor: string = '#8b5cf6';
 	export let seasonStart: string | null = null; // ISO string
 
@@ -36,12 +35,12 @@
 		return `--primary-color: ${rgb.r}, ${rgb.g}, ${rgb.b};`;
 	})();
 
-		// Navigate to dedicated map pack page
-		function openMapPackPage(pack: any) {
-			const id = pack?.id;
-			if (!id) return;
-			window.location.href = `/battlepass/mappacks/${id}`;
-		}
+	// Navigate to dedicated map pack page
+	function openMapPackPage(pack: any) {
+		const id = pack?.id;
+		if (!id) return;
+		window.location.href = `/battlepass/mappacks/${id}`;
+	}
 
 	function getDifficultyColor(difficulty: string): string {
 		return DIFFICULTY_COLORS[difficulty?.toLowerCase()] || '#6b7280';
@@ -68,15 +67,15 @@
 	}
 
 	function getMapPackCompletionPercent(pack: any): number {
-		return Math.round((pack.progress?.progress ?? 0));
+		return Math.round(pack.progress?.progress ?? 0);
 	}
 
 	async function fetchMapPacks() {
 		try {
-            const token = $user.loggedIn ? await $user.token() : null;
-            const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
+			const token = $user.loggedIn ? await $user.token() : null;
+			const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
 
-			const res = await sdk.fetch(`/battlepass/mappacks`, { headers });
+			const res = await sdk.battlepassApi.mappacks.request({ headers });
 			if (res.ok) {
 				mapPacks = await res.json();
 			}
@@ -87,7 +86,7 @@
 
 	async function fetchNextLockedMapPack() {
 		try {
-			const res = await sdk.fetch(`/battlepass/mappacks/next-locked`);
+			const res = await sdk.battlepassApi.mappacks.nextLocked.request();
 			if (res.ok) {
 				const payload = await res.json();
 				nextLockedMapPack = payload?.nextLockedMapPack ?? null;
@@ -102,15 +101,12 @@
 
 	async function claimMapPack(mapPackId: number) {
 		try {
-			const res = await fetch(
-				sdk.url(`/battlepass/mappack/${mapPackId}/claim`),
-				{
-					method: 'POST',
-					headers: {
-						Authorization: `Bearer ${await $user.token()}`
-					}
+			const res = await fetch(sdk.url(`/battlepass/mappack/${mapPackId}/claim`), {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`
 				}
-			);
+			});
 
 			if (res.ok) {
 				const result = await res.json();
@@ -139,7 +135,7 @@
 			if (!mounted) return;
 
 			// Reload when login state changes to get/clear progress
-            // Always fetch map packs to get updated progress data
+			// Always fetch map packs to get updated progress data
 			await Promise.all([fetchMapPacks(), fetchNextLockedMapPack()]);
 		});
 
@@ -165,12 +161,18 @@
 	<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
 		{#if nextLockedMapPack && seasonStart}
 			{@const startDate = new Date(seasonStart)}
-				<Card.Root class="h-full border-2 border-dashed border-primary/40 bg-muted/50 flex flex-col items-center justify-center p-6 col-span-1">
-					<Lock class="h-8 w-8 mb-2 text-muted-foreground" />
-					<div class="text-lg font-bold mb-1">{nextLockedMapPack.mapPacks?.name || 'Map Pack Locked'}</div>
-					<div class="mb-2 text-sm text-muted-foreground">{nextLockedMapPack.mapPacks?.description}</div>
-					<UnlockTimer {startDate} unlockWeek={nextLockedMapPack.unlockWeek} />
-				</Card.Root>
+			<Card.Root
+				class="col-span-1 flex h-full flex-col items-center justify-center border-2 border-dashed border-primary/40 bg-muted/50 p-6"
+			>
+				<Lock class="mb-2 h-8 w-8 text-muted-foreground" />
+				<div class="mb-1 text-lg font-bold">
+					{nextLockedMapPack.mapPacks?.name || 'Map Pack Locked'}
+				</div>
+				<div class="mb-2 text-sm text-muted-foreground">
+					{nextLockedMapPack.mapPacks?.description}
+				</div>
+				<UnlockTimer {startDate} unlockWeek={nextLockedMapPack.unlockWeek} />
+			</Card.Root>
 		{/if}
 		{#each mapPacks as pack}
 			{@const mapPack = pack.mapPacks}
@@ -187,30 +189,24 @@
 									class="flex h-12 w-12 items-center justify-center rounded-lg"
 									style="background-color: {getDifficultyColor(mapPack?.difficulty)}20;"
 								>
-									<Map
-										class="h-6 w-6"
-										style="color: {getDifficultyColor(mapPack?.difficulty)};"
-									/>
+									<Map class="h-6 w-6" style="color: {getDifficultyColor(mapPack?.difficulty)};" />
 								</div>
 								<div>
 									<Card.Title class="text-lg">{mapPack?.name || 'Map Pack'}</Card.Title>
-									<p
-										class="text-sm"
-										style="color: {getDifficultyColor(mapPack?.difficulty)};"
-									>
+									<p class="text-sm" style="color: {getDifficultyColor(mapPack?.difficulty)};">
 										{getDifficultyName(mapPack?.difficulty)}
 									</p>
 								</div>
 							</div>
 							<div class="text-right">
-							<div
-								class="rounded-full px-3 py-1 text-sm font-bold"
-								style="background-color: rgba(var(--primary-color), 0.2); color: {primaryColor}"
-							>
-								+{mapPack?.xp || 0} XP
+								<div
+									class="rounded-full px-3 py-1 text-sm font-bold"
+									style="background-color: rgba(var(--primary-color), 0.2); color: {primaryColor}"
+								>
+									+{mapPack?.xp || 0} XP
+								</div>
+								<div class="mt-1 text-xs text-muted-foreground">+25 XP / level</div>
 							</div>
-							<div class="mt-1 text-xs text-muted-foreground">+25 XP / level</div>
-						</div>
 						</div>
 					</Card.Header>
 					<Card.Content>
@@ -226,7 +222,9 @@
 								<div class="h-2 overflow-hidden rounded-full bg-muted">
 									<div
 										class="h-full rounded-full transition-all"
-										style="width: {completionPercent}%; background-color: {getDifficultyColor(mapPack?.difficulty)};"
+										style="width: {completionPercent}%; background-color: {getDifficultyColor(
+											mapPack?.difficulty
+										)};"
 									/>
 								</div>
 							</div>

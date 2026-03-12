@@ -53,7 +53,7 @@
 
 	async function fetchAvailableTags() {
 		try {
-			const res = await sdk.fetch(`/community/tags`);
+			const res = await sdk.community.tags.request();
 			availableTags = await res.json();
 		} catch {
 			availableTags = [];
@@ -98,18 +98,18 @@
 				params.set('tagId', String(activeTagId));
 			}
 
-			const res = await sdk.fetch(`/community/posts?${params}`, {
+			const res = await sdk.community.posts.list(params).request({
 				headers
 			});
 
 			const json = await res.json();
-			
+
 			if (append) {
 				posts = [...posts, ...json.data];
 			} else {
 				posts = json.data;
 			}
-			
+
 			total = json.total;
 			hasMore = posts.length < total;
 			offset += json.data.length;
@@ -117,14 +117,16 @@
 			// Record views for logged-in users (fire-and-forget)
 			if (token && json.data.length > 0) {
 				const viewPostIds = json.data.map((p: any) => p.id);
-				sdk.fetch(`/community/posts/views`, {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						'Authorization': `Bearer ${token}`
-					},
-					body: JSON.stringify({ postIds: viewPostIds })
-				}).catch(() => {});
+				sdk.community.posts.views
+					.request({
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							Authorization: `Bearer ${token}`
+						},
+						body: JSON.stringify({ postIds: viewPostIds })
+					})
+					.catch(() => {});
 			}
 		} catch {
 			if (!append) {
@@ -171,20 +173,17 @@
 
 		try {
 			const token = await $user.token();
-			const res = await fetch(
-				sdk.url(`/community/posts/${reportPostId}/report`),
-				{
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						Authorization: `Bearer ${token}`
-					},
-					body: JSON.stringify({
-						reason: reportReason,
-						description: reportDescription || undefined
-					})
-				}
-			);
+			const res = await fetch(sdk.url(`/community/posts/${reportPostId}/report`), {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${token}`
+				},
+				body: JSON.stringify({
+					reason: reportReason,
+					description: reportDescription || undefined
+				})
+			});
 
 			if (!res.ok) {
 				const err = await res.json();
@@ -290,12 +289,21 @@
 	<title>Cộng đồng - Geometry Dash Việt Nam</title>
 	<meta property="og:title" content="Cộng đồng - Geometry Dash Việt Nam" />
 	<meta property="og:type" content="website" />
-	<meta property="og:url" content="{import.meta.env.VITE_SITE_URL || 'https://demonlist.vn'}/community" />
-	<meta property="og:description" content="Chia sẻ, thảo luận và kết nối với cộng đồng Geometry Dash Việt Nam" />
+	<meta
+		property="og:url"
+		content="{import.meta.env.VITE_SITE_URL || 'https://demonlist.vn'}/community"
+	/>
+	<meta
+		property="og:description"
+		content="Chia sẻ, thảo luận và kết nối với cộng đồng Geometry Dash Việt Nam"
+	/>
 	<meta property="og:site_name" content="Geometry Dash Việt Nam" />
 	<meta name="twitter:card" content="summary" />
 	<meta name="twitter:title" content="Cộng đồng - Geometry Dash Việt Nam" />
-	<meta name="twitter:description" content="Chia sẻ, thảo luận và kết nối với cộng đồng Geometry Dash Việt Nam" />
+	<meta
+		name="twitter:description"
+		content="Chia sẻ, thảo luận và kết nối với cộng đồng Geometry Dash Việt Nam"
+	/>
 </svelte:head>
 
 <div class="communityPage">
@@ -321,7 +329,7 @@
 				{/if}
 				<div class="searchWrapper">
 					<div class="searchBox">
-						<Search class="h-4 w-4 searchIcon" />
+						<Search class="searchIcon h-4 w-4" />
 						<input
 							type="text"
 							bind:value={searchQuery}
@@ -353,14 +361,26 @@
 				</div>
 
 				<div class="sortFilters">
-				<button class="sortBtn" class:active={sortMode === 'recent'} on:click={() => switchSort('recent')}>
-					<Activity class="h-3.5 w-3.5" />
-					{$_('community.sort.recent')}
+					<button
+						class="sortBtn"
+						class:active={sortMode === 'recent'}
+						on:click={() => switchSort('recent')}
+					>
+						<Activity class="h-3.5 w-3.5" />
+						{$_('community.sort.recent')}
 					</button>
-					<button class="sortBtn" class:active={sortMode === 'newest'} on:click={() => switchSort('newest')}>
+					<button
+						class="sortBtn"
+						class:active={sortMode === 'newest'}
+						on:click={() => switchSort('newest')}
+					>
 						{$_('community.sort.newest')}
 					</button>
-					<button class="sortBtn" class:active={sortMode === 'best'} on:click={() => switchSort('best')}>
+					<button
+						class="sortBtn"
+						class:active={sortMode === 'best'}
+						on:click={() => switchSort('best')}
+					>
 						{$_('community.sort.best')}
 					</button>
 				</div>
@@ -370,7 +390,7 @@
 		<!-- Tag Filters -->
 		{#if availableTags.length > 0}
 			<div class="tagFilters">
-				<Tag class="h-3.5 w-3.5 tagIcon" />
+				<Tag class="tagIcon h-3.5 w-3.5" />
 				<button
 					class="tagFilterBtn"
 					class:active={activeTagId === null}
@@ -378,7 +398,7 @@
 				>
 					{$_('community.type.all')}
 				</button>
-				{#each availableTags.filter(t => !t.adminOnly) as tag}
+				{#each availableTags.filter((t) => !t.adminOnly) as tag}
 					<button
 						class="tagFilterBtn"
 						class:active={activeTagId === tag.id}
@@ -451,17 +471,29 @@
 						<Select.Value placeholder={$_('community.report.reasons.inappropriate')} />
 					</Select.Trigger>
 					<Select.Content>
-						<Select.Item value="inappropriate">{$_('community.report.reasons.inappropriate')}</Select.Item>
+						<Select.Item value="inappropriate"
+							>{$_('community.report.reasons.inappropriate')}</Select.Item
+						>
 						<Select.Item value="spam">{$_('community.report.reasons.spam')}</Select.Item>
-						<Select.Item value="harassment">{$_('community.report.reasons.harassment')}</Select.Item>
-						<Select.Item value="misinformation">{$_('community.report.reasons.misinformation')}</Select.Item>
+						<Select.Item value="harassment">{$_('community.report.reasons.harassment')}</Select.Item
+						>
+						<Select.Item value="misinformation"
+							>{$_('community.report.reasons.misinformation')}</Select.Item
+						>
 						<Select.Item value="other">{$_('community.report.reasons.other')}</Select.Item>
 					</Select.Content>
 				</Select.Root>
 			</div>
 			<div class="reportField">
-				<label for="report-desc">{$_('community.report.details')} ({$_('community.create.optional')})</label>
-				<Textarea id="report-desc" bind:value={reportDescription} placeholder={$_('community.report.details_placeholder')} rows={3} />
+				<label for="report-desc"
+					>{$_('community.report.details')} ({$_('community.create.optional')})</label
+				>
+				<Textarea
+					id="report-desc"
+					bind:value={reportDescription}
+					placeholder={$_('community.report.details_placeholder')}
+					rows={3}
+				/>
 			</div>
 		</div>
 
@@ -490,8 +522,16 @@
 	.heroContent {
 		max-width: 800px;
 
-		h1 { font-size: 28px; font-weight: 700; margin: 0 0 8px; }
-		p { font-size: 15px; color: hsl(var(--muted-foreground)); margin: 0; }
+		h1 {
+			font-size: 28px;
+			font-weight: 700;
+			margin: 0 0 8px;
+		}
+		p {
+			font-size: 15px;
+			color: hsl(var(--muted-foreground));
+			margin: 0;
+		}
 	}
 
 	.communityBody {
@@ -562,7 +602,9 @@
 		transition: all 0.2s ease;
 		white-space: nowrap;
 
-		&:hover { color: hsl(var(--foreground)); }
+		&:hover {
+			color: hsl(var(--foreground));
+		}
 
 		&.active {
 			background: hsl(var(--background));
@@ -593,15 +635,15 @@
 		align-items: center;
 		gap: 5px;
 
-		&:hover { color: hsl(var(--foreground)); }
+		&:hover {
+			color: hsl(var(--foreground));
+		}
 
 		&.active {
 			background: hsl(var(--background));
 			color: hsl(var(--foreground));
 			box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 		}
-
-
 	}
 
 	.tagFilters {
@@ -657,7 +699,10 @@
 		align-items: center;
 		gap: 12px;
 		padding: 60px 0;
-		p { color: hsl(var(--muted-foreground)); font-size: 14px; }
+		p {
+			color: hsl(var(--muted-foreground));
+			font-size: 14px;
+		}
 	}
 
 	.loadMoreSentinel {
@@ -685,7 +730,9 @@
 	}
 
 	@keyframes spin {
-		to { transform: rotate(360deg); }
+		to {
+			transform: rotate(360deg);
+		}
 	}
 
 	.endMessage {
@@ -733,19 +780,25 @@
 	}
 
 	@media screen and (max-width: 900px) {
-		.heroBanner { padding: 28px 16px; }
-		.communityBody { padding: 16px 16px 40px; }
-		.postsGrid { grid-template-columns: 1fr; }
-		
+		.heroBanner {
+			padding: 28px 16px;
+		}
+		.communityBody {
+			padding: 16px 16px 40px;
+		}
+		.postsGrid {
+			grid-template-columns: 1fr;
+		}
+
 		.toolbarTop {
 			flex-direction: column;
 			align-items: stretch;
 		}
-		
+
 		.searchWrapper {
 			width: 100%;
 		}
-		
+
 		:global(.createBtn) {
 			width: 100%;
 		}
@@ -753,12 +806,12 @@
 		.createBtnLink {
 			width: 100%;
 		}
-		
+
 		.toolbarBottom {
 			flex-direction: column;
 			align-items: stretch;
 		}
-		
+
 		.typeFilters,
 		.sortFilters {
 			width: 100%;
@@ -779,7 +832,8 @@
 		flex-direction: column;
 		gap: 6px;
 
-		label, .reportLabel {
+		label,
+		.reportLabel {
 			font-size: 13px;
 			font-weight: 500;
 		}

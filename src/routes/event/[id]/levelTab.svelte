@@ -25,7 +25,7 @@
 		}
 
 		records = await (
-			await sdk.fetch(`/events/${event.id}/submissions`, {
+			await sdk.eventsApi.byId(event.id).submissions.request({
 				method: 'GET',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())

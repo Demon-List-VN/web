@@ -43,7 +43,7 @@
 		const token = await $user.token();
 
 		toast.promise(
-			sdk.fetch(`/records/${uid}/${lvID}`, {
+			sdk.recordsApi.byUserAndLevel(uid, lvID).request({
 				method: 'DELETE',
 				headers: {
 					Authorization: 'Bearer ' + token
@@ -79,7 +79,7 @@
 
 		try {
 			await toast.promise(
-				sdk.fetch(`/records/${uid}/${levelid}/boost`, {
+				sdk.recordsApi.byUserAndLevel(uid, levelid).boost.request({
 					method: 'POST',
 					headers: {
 						Authorization: 'Bearer ' + token

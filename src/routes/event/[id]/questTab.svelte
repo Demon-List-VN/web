@@ -12,9 +12,7 @@
 	let data: any[] = [];
 
 	async function fetchData() {
-		const res = await (
-			await sdk.fetch(`/events/${event.id}/quest`)
-		).json();
+		const res = await (await sdk.eventsApi.byId(event.id).quest.request()).json();
 
 		return res;
 	}

@@ -59,7 +59,7 @@
 
 		loading = true;
 		try {
-			const res = await sdk.fetch(`/item/search?q=${encodeURIComponent(searchQuery)}`, {
+			const res = await sdk.items.search(encodeURIComponent(searchQuery)).request({
 				method: 'GET',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())
@@ -103,17 +103,20 @@
 		}
 
 		toast.promise(
-			sdk.fetch(`/events/${event.id}/quest/${quest.id}/reward`, {
-				method: 'POST',
-				headers: {
-					Authorization: 'Bearer ' + (await $user.token()),
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({
-					rewardId: selectedItem.id,
-					expireAfter: expireAfter || null
-				})
-			}),
+			sdk.eventsApi
+				.byId(event.id)
+				.quest.byId(quest.id)
+				.rewardRoot.request({
+					method: 'POST',
+					headers: {
+						Authorization: 'Bearer ' + (await $user.token()),
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({
+						rewardId: selectedItem.id,
+						expireAfter: expireAfter || null
+					})
+				}),
 			{
 				success: () => {
 					open = false;
@@ -222,7 +225,10 @@
 									<div>
 										<div class="font-medium">{item.name}</div>
 										<div class="text-xs text-muted-foreground">
-											ID: {item.id} • <span style="color: {rarityColor(item.rarity)}">{rarityName(item.rarity)}</span>
+											ID: {item.id} •
+											<span style="color: {rarityColor(item.rarity)}"
+												>{rarityName(item.rarity)}</span
+											>
 										</div>
 									</div>
 								</button>

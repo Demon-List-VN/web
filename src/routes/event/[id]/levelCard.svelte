@@ -83,7 +83,7 @@
 		}
 
 		toast.promise(
-			sdk.fetch(`/events/${event.id}/submit`, {
+			sdk.eventsApi.byId(event.id).submit.request({
 				method: 'POST',
 				body: JSON.stringify(submitData),
 				headers: {
@@ -112,12 +112,15 @@
 		}
 
 		toast.promise(
-			sdk.fetch(`/events/${event.id}/submission/${level.id}`, {
-				method: 'DELETE',
-				headers: {
-					Authorization: `Bearer ${await $user.token()}`
-				}
-			}),
+			sdk.eventsApi
+				.byId(event.id)
+				.submission(level.id)
+				.request({
+					method: 'DELETE',
+					headers: {
+						Authorization: `Bearer ${await $user.token()}`
+					}
+				}),
 			{
 				success: () => {
 					window.location.reload();
@@ -144,9 +147,7 @@
 		if (!level) return;
 
 		try {
-			const res = await (
-				await sdk.fetch(`/levels/${level.levelID}/deathCount`)
-			).json();
+			const res = await (await sdk.levels.byId(level.levelID).deathCount.request()).json();
 
 			if (res && res.count) {
 				deathCount = res.count;

@@ -17,7 +17,7 @@
 
 	onMount(async () => {
 		try {
-			const response = await sdk.fetch(`/coupon/${page.params.code}`, {
+			const response = await sdk.coupon.byCode(page.params.code).request({
 				method: 'GET',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())
@@ -36,7 +36,7 @@
 	async function claimGift() {
 		claiming = true;
 		try {
-			const response = await sdk.fetch(`/coupon/${page.params.code}`, {
+			const response = await sdk.coupon.byCode(page.params.code).request({
 				method: 'DELETE',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())
@@ -82,10 +82,7 @@
 
 <svelte:head>
 	<title>Nhận quà - Geometry Dash Việt Nam</title>
-	<meta
-		property="og:title"
-		content={`Nhận quà - Geometry Dash Việt Nam`}
-	/>
+	<meta property="og:title" content={`Nhận quà - Geometry Dash Việt Nam`} />
 </svelte:head>
 
 {#if loading}

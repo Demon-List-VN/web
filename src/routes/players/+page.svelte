@@ -51,9 +51,7 @@
 			pointProp = x.sortBy;
 
 			const query = new URLSearchParams(x);
-			const res = await (
-				await sdk.fetch(`/players?${query.toString()}`)
-			).json();
+			const res = await (await sdk.players.list(query.toString()).request()).json();
 
 			players = res;
 			state = 2;

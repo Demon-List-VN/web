@@ -107,7 +107,7 @@
 
 		const currentOverviewData = data.player.overviewData || {};
 		const positions: Record<string, any> = {};
-		
+
 		cardConfigs.forEach((card) => {
 			positions[card.id] = {
 				...(currentOverviewData[card.id] || {}), // Preserve existing properties like imageUrl
@@ -129,7 +129,7 @@
 		positions: Record<string, { order: number; visible: boolean; size: CardSize }>
 	) {
 		toast.promise(
-			sdk.fetch(`/players`, {
+			sdk.players.root.request({
 				method: 'PUT',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token()),
@@ -151,7 +151,7 @@
 	function handleSavePositions() {
 		const currentOverviewData = data.player.overviewData || {};
 		const positions: Record<string, any> = {};
-		
+
 		cardConfigs.forEach((card) => {
 			positions[card.id] = {
 				...(currentOverviewData[card.id] || {}),
@@ -160,7 +160,7 @@
 				size: card.size
 			};
 		});
-		
+
 		saveCardPositions(positions);
 		isCustomizing = false;
 	}
@@ -232,9 +232,11 @@
 						/>
 						<span>
 							{#if config.id.startsWith('customImage')}
-								{$_('player.overview.card_customImage') || 'Custom Image'} {config.id === 'customImage' ? '' : config.id.replace('customImage', '#')}
+								{$_('player.overview.card_customImage') || 'Custom Image'}
+								{config.id === 'customImage' ? '' : config.id.replace('customImage', '#')}
 							{:else if config.id.startsWith('customMarkdown')}
-								{$_('player.overview.card_customMarkdown') || 'Custom Markdown'} {config.id === 'customMarkdown' ? '' : config.id.replace('customMarkdown', '#')}
+								{$_('player.overview.card_customMarkdown') || 'Custom Markdown'}
+								{config.id === 'customMarkdown' ? '' : config.id.replace('customMarkdown', '#')}
 							{:else}
 								{$_(`player.overview.card_${config.id}`)}
 							{/if}

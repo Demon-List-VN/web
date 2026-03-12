@@ -76,7 +76,7 @@
 				headers['Authorization'] = `Bearer ${await $user.token()}`;
 			}
 
-			const res = await sdk.fetch(`/battlepass/daily-weekly`, {
+			const res = await sdk.battlepassApi.dailyWeekly.request({
 				headers
 			});
 
@@ -92,15 +92,12 @@
 		if (!$user.loggedIn) return;
 
 		try {
-			const res = await fetch(
-				sdk.url(`/battlepass/level/${levelId}/claim/completion`),
-				{
-					method: 'POST',
-					headers: {
-						Authorization: `Bearer ${await $user.token()}`
-					}
+			const res = await fetch(sdk.url(`/battlepass/level/${levelId}/claim/completion`), {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`
 				}
-			);
+			});
 
 			if (res.ok) {
 				const result = await res.json();

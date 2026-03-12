@@ -9,20 +9,22 @@
 
 	async function link() {
 		toast.promise(
-			sdk.fetch(`/auth/link/discord`, {
-				method: 'PATCH',
-				body: JSON.stringify({
-					token: token
+			sdk.authLinks.discord
+				.request({
+					method: 'PATCH',
+					body: JSON.stringify({
+						token: token
+					}),
+					headers: {
+						Authorization: 'Bearer ' + (await $user.token())!,
+						'Content-Type': 'application/json'
+					}
+				})
+				.then((res) => {
+					if (res.ok) {
+						$user.syncRole();
+					}
 				}),
-				headers: {
-					Authorization: 'Bearer ' + (await $user.token())!,
-					'Content-Type': 'application/json'
-				}
-			}).then((res) => {
-				if (res.ok) {
-					$user.syncRole();
-				}
-			}),
 			{
 				loading: $_('discord_link.loading'),
 				success: () => {

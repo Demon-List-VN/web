@@ -54,7 +54,7 @@
 				payload.redirect = notification.redirect.trim();
 			}
 
-			const response = await sdk.fetch(`/notifications`, {
+			const response = await sdk.notifications.root.request({
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',

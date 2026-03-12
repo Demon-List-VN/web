@@ -75,7 +75,7 @@
 			return 0;
 		}
 
-		if(event.type == 'raid') {
+		if (event.type == 'raid') {
 			return record.progress;
 		}
 
@@ -96,24 +96,24 @@
 
 	function getTotalLevelPoints() {
 		let res = 0;
-		
+
 		for (let i = 0; i < levels.length; i++) {
 			if (levels[i]) {
 				res += levels[i]!.point;
 			}
 		}
-		
+
 		return res;
 	}
 
 	function getContributionPercentage(records: any[]) {
 		const totalPoint = getTotalPoint(records);
 		const totalLevelPoints = getTotalLevelPoints();
-		
+
 		if (totalLevelPoints === 0) {
 			return 0;
 		}
-		
+
 		const percentage = (totalPoint / totalLevelPoints) * 100;
 		return Math.round(percentage * 100) / 100;
 	}
@@ -129,7 +129,7 @@
 	async function refresh(noti = false) {
 		const upd = async () => {
 			refreshing = true;
-			
+
 			// Store previous scores before refresh for raid events
 			if (event.type == 'raid' && leaderboard.length > 0) {
 				previousScores = new Map();
@@ -137,9 +137,9 @@
 					previousScores.set(player.uid, getTotalPoint(player.eventRecords));
 				}
 			}
-			
+
 			leaderboard = await (
-				await sdk.fetch(`/events/${event.id}/leaderboard`, {
+				await sdk.eventsApi.byId(event.id).leaderboard.request({
 					method: 'GET',
 					headers: {
 						Authorization: $user.loggedIn ? 'Bearer ' + (await $user.token()) : ''
@@ -148,9 +148,7 @@
 			).json();
 
 			if ($user.loggedIn && $user.data.isAdmin) {
-				leaderboard1 = await (
-					await sdk.fetch(`/events/${event.id}/leaderboard`)
-				).json();
+				leaderboard1 = await (await sdk.eventsApi.byId(event.id).leaderboard.request()).json();
 			}
 
 			refreshing = false;
@@ -172,7 +170,7 @@
 		updateData.accepted = updateData.accepted.value;
 
 		toast.promise(
-			sdk.fetch(`/events/submission`, {
+			sdk.eventsApi.submission.request({
 				method: 'PATCH',
 				body: JSON.stringify(updateData),
 				headers: {
@@ -279,7 +277,7 @@
 
 	async function calculate() {
 		toast.promise(
-			sdk.fetch(`/events/${event.id}/calc`, {
+			sdk.eventsApi.byId(event.id).calc.request({
 				method: 'PATCH',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())
@@ -298,17 +296,13 @@
 	}
 
 	async function getLevelDeathCount(levelID: number) {
-		const res = await (
-			await sdk.fetch(`/levels/${levelID}/deathCount`)
-		).json();
+		const res = await (await sdk.levels.byId(levelID).deathCount.request()).json();
 
 		return res;
 	}
 
 	async function getPlayerDeathCount(levelID: number, userID: string) {
-		const res = await (
-			await sdk.fetch(`/deathCount/${userID}/${levelID}`)
-		).json();
+		const res = await (await sdk.deathCounts.byUserAndLevel(userID, levelID).request()).json();
 
 		return res;
 	}
@@ -335,7 +329,9 @@
 <div class="mb-[10px] flex justify-center gap-[10px]">
 	<div class="flex items-center gap-[10px] rounded-md border border-input bg-background px-3">
 		<Label for="percentage-switch" class="cursor-pointer text-sm">
-			{showPercentage ? $_('contest.leaderboard.display_mode.contribution_percentage') : $_('contest.leaderboard.display_mode.total_points')}
+			{showPercentage
+				? $_('contest.leaderboard.display_mode.contribution_percentage')
+				: $_('contest.leaderboard.display_mode.total_points')}
 		</Label>
 		<Switch.Root id="percentage-switch" bind:checked={showPercentage} />
 	</div>

@@ -66,7 +66,7 @@
 		if (!$user.loggedIn || !season) return;
 
 		try {
-			const res = await sdk.fetch(`/battlepass/progress`, {
+			const res = await sdk.battlepassApi.progress.request({
 				headers: {
 					Authorization: `Bearer ${await $user.token()}`
 				}

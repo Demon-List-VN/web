@@ -69,7 +69,7 @@
 		}
 
 		try {
-			event = await (await sdk.fetch(`/events/${event.id}`)).json();
+			event = await (await sdk.eventsApi.byId(event.id).request()).json();
 			state = State.EDIT_EVENT;
 
 			event.start = convertTime(event.start);
@@ -162,9 +162,9 @@
 			delete event.freeze;
 		}
 
-		if(!event.id) {
+		if (!event.id) {
 			// @ts-expect-error
-			delete event.id
+			delete event.id;
 		}
 	}
 
@@ -181,7 +181,7 @@
 		}
 
 		toast.promise(
-			sdk.fetch(`/events`, {
+			sdk.eventsApi.root.request({
 				method: 'POST',
 				body: JSON.stringify(event),
 				headers: {
@@ -214,7 +214,7 @@
 		}
 
 		toast.promise(
-			sdk.fetch(`/events/${event.id}`, {
+			sdk.eventsApi.byId(event.id).request({
 				method: 'PATCH',
 				body: JSON.stringify(event),
 				headers: {
@@ -273,7 +273,7 @@
 
 	async function fetchLevels() {
 		levels = await (
-			await sdk.fetch(`/events/${event.id}/levels`, {
+			await sdk.eventsApi.byId(event.id).levels.request({
 				method: 'GET',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())
@@ -284,7 +284,7 @@
 
 	async function fetchProofs() {
 		proofs = await (
-			await sdk.fetch(`/events/${event.id}/proofs?accepted=all`, {
+			await sdk.eventsApi.byId(event.id).proofs.request({
 				method: 'GET',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())
@@ -299,14 +299,17 @@
 		}
 
 		toast.promise(
-			sdk.fetch(`/events/${event.id}/proofs/${userid}`, {
-				method: 'PATCH',
-				body: JSON.stringify({ accepted: true }),
-				headers: {
-					Authorization: 'Bearer ' + (await $user.token()),
-					'Content-Type': 'application/json'
-				}
-			}),
+			sdk.eventsApi
+				.byId(event.id)
+				.proofs.byUid(userid)
+				.request({
+					method: 'PATCH',
+					body: JSON.stringify({ accepted: true }),
+					headers: {
+						Authorization: 'Bearer ' + (await $user.token()),
+						'Content-Type': 'application/json'
+					}
+				}),
 			{
 				success: () => {
 					fetchProofs();
@@ -324,14 +327,17 @@
 		}
 
 		toast.promise(
-			sdk.fetch(`/events/${event.id}/proofs/${userid}`, {
-				method: 'PATCH',
-				body: JSON.stringify({ accepted: false }),
-				headers: {
-					Authorization: 'Bearer ' + (await $user.token()),
-					'Content-Type': 'application/json'
-				}
-			}),
+			sdk.eventsApi
+				.byId(event.id)
+				.proofs.byUid(userid)
+				.request({
+					method: 'PATCH',
+					body: JSON.stringify({ accepted: false }),
+					headers: {
+						Authorization: 'Bearer ' + (await $user.token()),
+						'Content-Type': 'application/json'
+					}
+				}),
 			{
 				success: () => {
 					fetchProofs();
@@ -344,7 +350,15 @@
 	}
 
 	function exportToCSV() {
-		const headers = ['Created At', 'Player Name', 'Player ID', 'Content', 'Accepted', 'Data', 'Diff'];
+		const headers = [
+			'Created At',
+			'Player Name',
+			'Player ID',
+			'Content',
+			'Accepted',
+			'Data',
+			'Diff'
+		];
 		const rows = proofs.map((proof) => [
 			new Date(proof.created_at).toLocaleString(),
 			proof.players?.name || 'Unknown',

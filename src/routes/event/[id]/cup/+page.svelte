@@ -17,7 +17,7 @@
 	let tab = 'detail';
 
 	onMount(async () => {
-		levels = await (await sdk.fetch(`/events/${data.id}/levels`)).json();
+		levels = await (await sdk.eventsApi.byId(data.id).levels.request()).json();
 	});
 </script>
 

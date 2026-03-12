@@ -9,7 +9,7 @@
 
 	onMount(async () => {
 		data = await (
-			await sdk.fetch(`/merchant/orders`, {
+			await sdk.orders.merchant.root.request({
 				method: 'GET',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())

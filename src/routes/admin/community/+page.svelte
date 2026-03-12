@@ -130,7 +130,7 @@
 
 		try {
 			const headers = await getAuthHeaders();
-			const res = await sdk.fetch(`/community/admin/posts?${params}`, {
+			const res = await sdk.community.admin.posts.list(params).request({
 				headers
 			});
 			const json = await res.json();
@@ -147,7 +147,7 @@
 
 		try {
 			const headers = await getAuthHeaders();
-			const res = await sdk.fetch(`/community/admin/posts/${id}`, {
+			const res = await sdk.community.admin.posts.byId(id).request({
 				method: 'DELETE',
 				headers
 			});
@@ -162,7 +162,7 @@
 	async function togglePin(post: any) {
 		try {
 			const headers = await getAuthHeaders();
-			const res = await sdk.fetch(`/community/admin/posts/${post.id}`, {
+			const res = await sdk.community.admin.posts.byId(post.id).request({
 				method: 'PUT',
 				headers,
 				body: JSON.stringify({ pinned: !post.pinned })
@@ -203,14 +203,11 @@
 			if (editPost.imageUrl) body.imageUrl = editPost.imageUrl;
 			if (editPost.videoUrl) body.videoUrl = editPost.videoUrl;
 
-			const res = await fetch(
-				sdk.url(`/community/admin/posts/${editPost.id}`),
-				{
-					method: 'PUT',
-					headers,
-					body: JSON.stringify(body)
-				}
-			);
+			const res = await fetch(sdk.url(`/community/admin/posts/${editPost.id}`), {
+				method: 'PUT',
+				headers,
+				body: JSON.stringify(body)
+			});
 
 			if (!res.ok) throw new Error();
 			toast.success('Post updated');
@@ -253,10 +250,9 @@
 	async function fetchPendingCount() {
 		try {
 			const headers = await getAuthHeaders();
-			const res = await fetch(
-				sdk.url(`/community/admin/moderation/pending?limit=1&offset=0`),
-				{ headers }
-			);
+			const res = await fetch(sdk.url(`/community/admin/moderation/pending?limit=1&offset=0`), {
+				headers
+			});
 			const json = await res.json();
 			pendingTotal = json.total;
 		} catch {
@@ -288,7 +284,7 @@
 
 		try {
 			const headers = await getAuthHeaders();
-			const res = await sdk.fetch(`/community/admin/reports?${params}`, {
+			const res = await sdk.community.admin.reports.list(params).request({
 				headers
 			});
 			const json = await res.json();
@@ -303,13 +299,10 @@
 	async function resolveReport(id: number) {
 		try {
 			const headers = await getAuthHeaders();
-			const res = await fetch(
-				sdk.url(`/community/admin/reports/${id}/resolve`),
-				{
-					method: 'PUT',
-					headers
-				}
-			);
+			const res = await fetch(sdk.url(`/community/admin/reports/${id}/resolve`), {
+				method: 'PUT',
+				headers
+			});
 			if (!res.ok) throw new Error();
 			toast.success('Report resolved');
 			await fetchReports();
@@ -344,7 +337,7 @@
 	async function fetchTags() {
 		tags = null;
 		try {
-			const res = await sdk.fetch(`/community/tags`);
+			const res = await sdk.community.tags.request();
 			tags = await res.json();
 		} catch {
 			tags = [];
@@ -359,7 +352,7 @@
 		creatingTag = true;
 		try {
 			const headers = await getAuthHeaders();
-			const res = await sdk.fetch(`/community/tags`, {
+			const res = await sdk.community.tags.request({
 				method: 'POST',
 				headers,
 				body: JSON.stringify({
@@ -388,7 +381,7 @@
 		if (!confirm('Delete this tag? It will be removed from all posts.')) return;
 		try {
 			const headers = await getAuthHeaders();
-			const res = await sdk.fetch(`/community/tags/${id}`, {
+			const res = await sdk.community.tags.byId(id).request({
 				method: 'DELETE',
 				headers
 			});
@@ -419,7 +412,7 @@
 		savingTagEdit = true;
 		try {
 			const headers = await getAuthHeaders();
-			const res = await sdk.fetch(`/community/tags/${editingTag.id}`, {
+			const res = await sdk.community.tags.byId(editingTag.id).request({
 				method: 'PUT',
 				headers,
 				body: JSON.stringify({
@@ -456,14 +449,11 @@
 	async function togglePostHidden(post: any) {
 		try {
 			const headers = await getAuthHeaders();
-			const res = await fetch(
-				sdk.url(`/community/admin/posts/${post.id}/hidden`),
-				{
-					method: 'PUT',
-					headers,
-					body: JSON.stringify({ hidden: !post.hidden })
-				}
-			);
+			const res = await fetch(sdk.url(`/community/admin/posts/${post.id}/hidden`), {
+				method: 'PUT',
+				headers,
+				body: JSON.stringify({ hidden: !post.hidden })
+			});
 			if (!res.ok) throw new Error();
 			post.hidden = !post.hidden;
 			posts = posts;
@@ -484,10 +474,9 @@
 
 		try {
 			const headers = await getAuthHeaders();
-			const res = await fetch(
-				sdk.url(`/community/admin/moderation/pending?${params}`),
-				{ headers }
-			);
+			const res = await fetch(sdk.url(`/community/admin/moderation/pending?${params}`), {
+				headers
+			});
 			const json = await res.json();
 			pendingPosts = json.data;
 			pendingTotal = json.total;
@@ -500,13 +489,10 @@
 	async function approvePendingPost(id: number) {
 		try {
 			const headers = await getAuthHeaders();
-			const res = await fetch(
-				sdk.url(`/community/admin/moderation/${id}/approve`),
-				{
-					method: 'PUT',
-					headers
-				}
-			);
+			const res = await fetch(sdk.url(`/community/admin/moderation/${id}/approve`), {
+				method: 'PUT',
+				headers
+			});
 			if (!res.ok) throw new Error();
 			toast.success('Post approved');
 			moderationDetailOpen = false;
@@ -521,13 +507,10 @@
 		if (!confirm('Are you sure you want to reject this post?')) return;
 		try {
 			const headers = await getAuthHeaders();
-			const res = await fetch(
-				sdk.url(`/community/admin/moderation/${id}/reject`),
-				{
-					method: 'PUT',
-					headers
-				}
-			);
+			const res = await fetch(sdk.url(`/community/admin/moderation/${id}/reject`), {
+				method: 'PUT',
+				headers
+			});
 			if (!res.ok) throw new Error();
 			toast.success('Post rejected');
 			moderationDetailOpen = false;
@@ -554,10 +537,9 @@
 
 		try {
 			const headers = await getAuthHeaders();
-			const res = await fetch(
-				sdk.url(`/community/admin/moderation/comments/pending?${params}`),
-				{ headers }
-			);
+			const res = await fetch(sdk.url(`/community/admin/moderation/comments/pending?${params}`), {
+				headers
+			});
 			const json = await res.json();
 			pendingComments = json.data;
 			pendingCommentsTotal = json.total;
@@ -570,13 +552,10 @@
 	async function approvePendingComment(id: number) {
 		try {
 			const headers = await getAuthHeaders();
-			const res = await fetch(
-				sdk.url(`/community/admin/moderation/comments/${id}/approve`),
-				{
-					method: 'PUT',
-					headers
-				}
-			);
+			const res = await fetch(sdk.url(`/community/admin/moderation/comments/${id}/approve`), {
+				method: 'PUT',
+				headers
+			});
 			if (!res.ok) throw new Error();
 			toast.success('Comment approved');
 			commentModerationDetailOpen = false;
@@ -591,13 +570,10 @@
 		if (!confirm('Are you sure you want to reject this comment? It will be deleted.')) return;
 		try {
 			const headers = await getAuthHeaders();
-			const res = await fetch(
-				sdk.url(`/community/admin/moderation/comments/${id}/reject`),
-				{
-					method: 'PUT',
-					headers
-				}
-			);
+			const res = await fetch(sdk.url(`/community/admin/moderation/comments/${id}/reject`), {
+				method: 'PUT',
+				headers
+			});
 			if (!res.ok) throw new Error();
 			toast.success('Comment rejected');
 			commentModerationDetailOpen = false;
@@ -646,10 +622,7 @@
 
 		try {
 			const headers = await getAuthHeaders();
-			const res = await fetch(
-				sdk.url(`/community/admin/comments?${params}`),
-				{ headers }
-			);
+			const res = await fetch(sdk.url(`/community/admin/comments?${params}`), { headers });
 			const json = await res.json();
 			allComments = json.data;
 			allCommentsTotal = json.total;
@@ -663,7 +636,7 @@
 		if (!confirm('Are you sure you want to delete this comment?')) return;
 		try {
 			const headers = await getAuthHeaders();
-			const res = await sdk.fetch(`/community/admin/comments/${id}`, {
+			const res = await sdk.community.admin.comments.byId(id).request({
 				method: 'DELETE',
 				headers
 			});
@@ -678,14 +651,11 @@
 	async function toggleAdminCommentHidden(comment: any) {
 		try {
 			const headers = await getAuthHeaders();
-			const res = await fetch(
-				sdk.url(`/community/admin/comments/${comment.id}/hidden`),
-				{
-					method: 'PUT',
-					headers,
-					body: JSON.stringify({ hidden: !comment.communityCommentsAdmin?.hidden })
-				}
-			);
+			const res = await fetch(sdk.url(`/community/admin/comments/${comment.id}/hidden`), {
+				method: 'PUT',
+				headers,
+				body: JSON.stringify({ hidden: !comment.communityCommentsAdmin?.hidden })
+			});
 			if (!res.ok) throw new Error();
 			const isHidden = !comment.communityCommentsAdmin?.hidden;
 			comment.communityCommentsAdmin = { ...comment.communityCommentsAdmin, hidden: isHidden };
@@ -1929,9 +1899,7 @@
 				</div>
 				<div class="field">
 					<span class="fieldLabel">Status</span>
-					<span
-						>{commentDetailComment.communityCommentsAdmin?.moderationStatus || 'approved'}</span
-					>
+					<span>{commentDetailComment.communityCommentsAdmin?.moderationStatus || 'approved'}</span>
 				</div>
 				<div class="field">
 					<span class="fieldLabel">Hidden</span>

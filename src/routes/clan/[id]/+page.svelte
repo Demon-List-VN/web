@@ -138,19 +138,24 @@
 	}
 
 	function fetchInvitations() {
-		sdk.fetch(`/clans/${$page.params.id}/invitations`)
+		sdk.clans
+			.byId($page.params.id)
+			.invitations.request()
 			.then((res) => res.json())
 			.then((res: any) => (invitations = res));
 	}
 
 	async function joinClan() {
 		toast.loading('Joining clan...');
-		sdk.fetch(`/clans/${$page.params.id}/join`, {
-			method: 'PUT',
-			headers: {
-				Authorization: 'Bearer ' + (await $user.token())
-			}
-		}).then((res) => window.location.reload());
+		sdk.clans
+			.byId($page.params.id)
+			.join.request({
+				method: 'PUT',
+				headers: {
+					Authorization: 'Bearer ' + (await $user.token())
+				}
+			})
+			.then((res) => window.location.reload());
 	}
 
 	async function leaveClan() {
@@ -160,12 +165,14 @@
 
 		toast.loading($_('toast.clan_leave.loading'));
 
-		sdk.fetch(`/clans/leave`, {
-			method: 'PUT',
-			headers: {
-				Authorization: 'Bearer ' + (await $user.token())
-			}
-		}).then((res) => window.location.reload());
+		sdk.clans.leave
+			.request({
+				method: 'PUT',
+				headers: {
+					Authorization: 'Bearer ' + (await $user.token())
+				}
+			})
+			.then((res) => window.location.reload());
 	}
 
 	async function updateClan() {
@@ -175,7 +182,7 @@
 		delete editedData.boostedUntil;
 
 		toast.promise(
-			sdk.fetch(`/clans/${$page.params.id}`, {
+			sdk.clans.byId($page.params.id).request({
 				method: 'PATCH',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token()),
@@ -207,7 +214,7 @@
 		}
 
 		toast.promise(
-			sdk.fetch(`/clans/${$page.params.id}`, {
+			sdk.clans.byId($page.params.id).request({
 				method: 'DELETE',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())
@@ -243,7 +250,7 @@
 			editedData.imageVersion++;
 
 			await upload(`clan-photos/${$page.params.id}.jpg`, cImg, (await $user.token())!);
-			await sdk.fetch(`/clans/${$page.params.id}`, {
+			await sdk.clans.byId($page.params.id).request({
 				method: 'PATCH',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token()),
@@ -260,21 +267,27 @@
 	}
 
 	async function acceptInvitation(clanID: number) {
-		sdk.fetch(`/clans/${clanID}/invite`, {
-			method: 'PATCH',
-			headers: {
-				Authorization: 'Bearer ' + (await $user.token())
-			}
-		}).then((res) => window.location.reload());
+		sdk.clans
+			.byId(clanID)
+			.invite.request({
+				method: 'PATCH',
+				headers: {
+					Authorization: 'Bearer ' + (await $user.token())
+				}
+			})
+			.then((res) => window.location.reload());
 	}
 
 	async function rejectInvitation(clanID: number) {
-		sdk.fetch(`/clans/${clanID}/invite`, {
-			method: 'DELETE',
-			headers: {
-				Authorization: 'Bearer ' + (await $user.token())
-			}
-		}).then((res) => window.location.reload());
+		sdk.clans
+			.byId(clanID)
+			.invite.request({
+				method: 'DELETE',
+				headers: {
+					Authorization: 'Bearer ' + (await $user.token())
+				}
+			})
+			.then((res) => window.location.reload());
 	}
 
 	async function kickPlayer(player: any) {
@@ -282,12 +295,16 @@
 			return;
 		}
 
-		sdk.fetch(`/clans/${$page.params.id}/kick/${player.uid}`, {
-			method: 'PATCH',
-			headers: {
-				Authorization: 'Bearer ' + (await $user.token())
-			}
-		}).then((res) => window.location.reload());
+		sdk.clans
+			.byId($page.params.id)
+			.kick(player.uid)
+			.request({
+				method: 'PATCH',
+				headers: {
+					Authorization: 'Bearer ' + (await $user.token())
+				}
+			})
+			.then((res) => window.location.reload());
 	}
 
 	async function banPlayer(player: any) {
@@ -302,15 +319,12 @@
 			return;
 		}
 
-		fetch(
-			sdk.url(`/clans/${$page.params.id}/ban/${player.uid}?reason=${reason}`),
-			{
-				method: 'POST',
-				headers: {
-					Authorization: 'Bearer ' + (await $user.token())
-				}
+		fetch(sdk.url(`/clans/${$page.params.id}/ban/${player.uid}?reason=${reason}`), {
+			method: 'POST',
+			headers: {
+				Authorization: 'Bearer ' + (await $user.token())
 			}
-		).then((res) => window.location.reload());
+		}).then((res) => window.location.reload());
 	}
 
 	async function revokeInvitation(uid: string) {
@@ -318,20 +332,22 @@
 			return;
 		}
 
-		sdk.fetch(`/clans/${$page.params.id}/invitation/${uid}`, {
-			method: 'DELETE',
-			headers: {
-				Authorization: 'Bearer ' + (await $user.token())
-			}
-		}).then((res) => window.location.reload());
+		sdk.clans
+			.byId($page.params.id)
+			.invitation(uid)
+			.request({
+				method: 'DELETE',
+				headers: {
+					Authorization: 'Bearer ' + (await $user.token())
+				}
+			})
+			.then((res) => window.location.reload());
 	}
 
 	$: ($user,
 		(() => {
 			if ($user.loggedIn) {
-				fetch(
-					sdk.url(`/clans/${$page.params.id}/invitation/${$user.data.uid}`)
-				)
+				fetch(sdk.url(`/clans/${$page.params.id}/invitation/${$user.data.uid}`))
 					.then((res) => res.json())
 					.then((res) => (invitation = res));
 			}

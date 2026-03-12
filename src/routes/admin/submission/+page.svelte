@@ -36,7 +36,7 @@
 
 		toast.loading('Submitting verdict... This page will be refreshed.');
 
-		await sdk.fetch(`/records`, {
+		await sdk.recordsApi.root.request({
 			method: 'PUT',
 			body: JSON.stringify({
 				userid: userID,
@@ -49,7 +49,7 @@
 			}
 		});
 
-		await sdk.fetch(`/notifications`, {
+		await sdk.notifications.root.request({
 			method: 'POST',
 			body: JSON.stringify({
 				to: userID,
@@ -74,14 +74,14 @@
 
 		toast.loading('Submitting verdict... This page will be refreshed.');
 
-		await sdk.fetch(`/records/${userID}/${level.id}`, {
+		await sdk.recordsApi.byUserAndLevel(userID, level.id).request({
 			method: 'DELETE',
 			headers: {
 				Authorization: `Bearer ${await $user.token()}`
 			}
 		});
 
-		await sdk.fetch(`/notifications`, {
+		await sdk.notifications.root.request({
 			method: 'POST',
 			body: JSON.stringify({
 				to: userID,

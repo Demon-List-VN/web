@@ -17,7 +17,7 @@
 
 	async function fetchLevels() {
 		try {
-			const res = await sdk.fetch(`/battlepass/levels`);
+			const res = await sdk.battlepassApi.levels.request();
 			if (res.ok) {
 				levels = await res.json();
 			}
@@ -31,14 +31,11 @@
 
 		try {
 			const levelIds = levels.map((l: any) => l.id);
-			const res = await fetch(
-				sdk.url(`/battlepass/levels/progress?ids=${levelIds.join(',')}`),
-				{
-					headers: {
-						Authorization: `Bearer ${await $user.token()}`
-					}
+			const res = await fetch(sdk.url(`/battlepass/levels/progress?ids=${levelIds.join(',')}`), {
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`
 				}
-			);
+			});
 
 			if (res.ok) {
 				const progressData = await res.json();
@@ -110,7 +107,9 @@
 							<Star class="h-6 w-6 text-red-400" />
 						</div>
 						<div>
-							<Card.Title class="text-lg">{level.levels?.name || `Level ${level.levelID}`}</Card.Title>
+							<Card.Title class="text-lg"
+								>{level.levels?.name || `Level ${level.levelID}`}</Card.Title
+							>
 							<p class="text-sm text-muted-foreground">ID: {level.levelID}</p>
 						</div>
 					</div>

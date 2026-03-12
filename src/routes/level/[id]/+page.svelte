@@ -98,33 +98,47 @@
 		levelTags = [];
 		levelVariants = [];
 
-		sdk.fetch(`/levels/${$page.params.id}?fromGD=1`)
+		sdk.levels
+			.byId($page.params.id)
+			.fromGD.request()
 			.then((res) => res.json())
 			.then((res) => (levelAPI = res));
 
-		sdk.fetch(`/levels/${$page.params.id}/records?end=500`)
+		sdk.levels
+			.byId($page.params.id)
+			.records()
+			.request()
 			.then((res) => res.json())
 			.then((res: any) => (records = res));
 
-		sdk.fetch(`/levels/${$page.params.id}/deathCount`)
+		sdk.levels
+			.byId($page.params.id)
+			.deathCount.request()
 			.then((res) => res.json())
 			.then((res: any) => {
 				deathCount = res.count;
 			});
 
-		sdk.fetch(`/community/levels/${$page.params.id}/posts?limit=5`)
+		sdk.community.levels
+			.byId($page.params.id)
+			.posts.limit(5)
+			.request()
 			.then((res) => res.json())
 			.then((res: any) => (relatedPosts = res))
 			.catch(() => (relatedPosts = []));
 
-		sdk.fetch(`/levels/${$page.params.id}/tags`)
+		sdk.levels
+			.byId($page.params.id)
+			.tags.request()
 			.then((res) => res.json())
 			.then(
 				(res: any) => (levelTags = (res || []).map((t: any) => t.level_tags || t).filter(Boolean))
 			)
 			.catch(() => (levelTags = []));
 
-		sdk.fetch(`/levels/${$page.params.id}/variants`)
+		sdk.levels
+			.byId($page.params.id)
+			.variants.request()
 			.then((res) => res.json())
 			.then((res: any) => (levelVariants = res || []))
 			.catch(() => (levelVariants = []));
@@ -177,9 +191,7 @@
 	<meta
 		property="og:image"
 		content={'pointercrate' in data
-			? `https://img.youtube.com/vi/${new URL(
-					data.pointercrate.video
-				).searchParams.get('v')}/0.jpg`
+			? `https://img.youtube.com/vi/${new URL(data.pointercrate.video).searchParams.get('v')}/0.jpg`
 			: `https://img.youtube.com/vi/${data.level.videoID}/mqdefault.jpg`}
 	/>
 </svelte:head>

@@ -74,7 +74,7 @@
 	async function fetchTags() {
 		loadingTags = true;
 		try {
-			const res = await sdk.fetch(`/community/tags`);
+			const res = await sdk.community.tags.request();
 			const allTags = await res.json();
 			// Filter out admin-only tags for non-admins
 			availableTags = $user.data?.isAdmin ? allTags : allTags.filter((t: any) => !t.adminOnly);
@@ -87,7 +87,7 @@
 
 	function toggleTag(tagId: number) {
 		if (selectedTagIds.includes(tagId)) {
-			selectedTagIds = selectedTagIds.filter(id => id !== tagId);
+			selectedTagIds = selectedTagIds.filter((id) => id !== tagId);
 		} else {
 			if (selectedTagIds.length >= 5) {
 				toast.error($_('community.create.max_tags') || 'Maximum 5 tags allowed');
@@ -104,7 +104,9 @@
 
 	function getYouTubeId(url: string): string | null {
 		if (!url) return null;
-		const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+		const match = url.match(
+			/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/
+		);
 		return match ? match[1] : null;
 	}
 
@@ -135,7 +137,7 @@
 		loadingRecords = true;
 		try {
 			const token = await $user.token();
-			const res = await sdk.fetch(`/community/my/records`, {
+			const res = await sdk.community.my.records.request({
 				headers: { Authorization: `Bearer ${token}` }
 			});
 			myRecords = await res.json();
@@ -165,7 +167,9 @@
 		}
 		loadingLevels = true;
 		try {
-			const res = await fetch(`https://gdbrowser.com/api/search/${encodeURIComponent(query)}?page=0&count=5&diff=-2`);
+			const res = await fetch(
+				`https://gdbrowser.com/api/search/${encodeURIComponent(query)}?page=0&count=5&diff=-2`
+			);
 			if (!res.ok) {
 				searchLevels = [];
 				return;
@@ -208,7 +212,7 @@
 		loadingReviewLevels = true;
 		try {
 			const token = await $user.token();
-			const res = await sdk.fetch(`/community/my/records`, {
+			const res = await sdk.community.my.records.request({
 				headers: { Authorization: `Bearer ${token}` }
 			});
 			const records = await res.json();
@@ -400,7 +404,11 @@
 		<div class="createForm">
 			<div class="formField">
 				<label for="post-title">{$_('community.create.post_title')}</label>
-				<Input id="post-title" bind:value={newPost.title} placeholder={$_('community.create.title_placeholder')} />
+				<Input
+					id="post-title"
+					bind:value={newPost.title}
+					placeholder={$_('community.create.title_placeholder')}
+				/>
 			</div>
 
 			<div class="formField">
@@ -491,7 +499,12 @@
 									<strong>{selectedLevel.name}</strong>
 									<span class="text-xs text-muted-foreground">{selectedLevel.creator}</span>
 								</div>
-								<button class="removeBtn" on:click={() => { selectedLevel = null; }}>
+								<button
+									class="removeBtn"
+									on:click={() => {
+										selectedLevel = null;
+									}}
+								>
 									<X class="h-3.5 w-3.5" />
 								</button>
 							</div>
@@ -553,10 +566,18 @@
 			<div class="formField">
 				<label for="post-content">{$_('community.create.post_content')}</label>
 				<div class="contentTabBar">
-					<button class="contentTab" class:active={!contentPreviewMode} on:click={() => contentPreviewMode = false}>
+					<button
+						class="contentTab"
+						class:active={!contentPreviewMode}
+						on:click={() => (contentPreviewMode = false)}
+					>
 						{$_('community.write') || 'Write'}
 					</button>
-					<button class="contentTab" class:active={contentPreviewMode} on:click={() => contentPreviewMode = true}>
+					<button
+						class="contentTab"
+						class:active={contentPreviewMode}
+						on:click={() => (contentPreviewMode = true)}
+					>
 						<Eye class="h-3.5 w-3.5" />
 						{$_('community.preview') || 'Preview'}
 					</button>
@@ -581,7 +602,9 @@
 
 			<!-- Image Upload -->
 			<div class="formField">
-				<span class="fieldLabel">{$_('community.create.image')} ({$_('community.create.optional')})</span>
+				<span class="fieldLabel"
+					>{$_('community.create.image')} ({$_('community.create.optional')})</span
+				>
 				<div class="uploadArea">
 					{#if imagePreview}
 						<div class="imagePreview">
@@ -614,16 +637,28 @@
 					<Link class="inline h-3.5 w-3.5" />
 					{$_('community.create.video_url')} ({$_('community.create.optional')})
 				</label>
-				<Input id="post-video" bind:value={newPost.videoUrl} placeholder="https://youtube.com/watch?v=..." />
+				<Input
+					id="post-video"
+					bind:value={newPost.videoUrl}
+					placeholder="https://youtube.com/watch?v=..."
+				/>
 				{#if videoPreviewId}
 					<div class="videoPreview">
 						<div class="videoPreviewThumb">
-							<img src="https://img.youtube.com/vi/{videoPreviewId}/mqdefault.jpg" alt="Video preview" />
+							<img
+								src="https://img.youtube.com/vi/{videoPreviewId}/mqdefault.jpg"
+								alt="Video preview"
+							/>
 							<div class="videoPreviewPlay">
 								<Play class="h-6 w-6" />
 							</div>
 						</div>
-						<a href="https://youtube.com/watch?v={videoPreviewId}" target="_blank" rel="noopener" class="videoPreviewLink">
+						<a
+							href="https://youtube.com/watch?v={videoPreviewId}"
+							target="_blank"
+							rel="noopener"
+							class="videoPreviewLink"
+						>
 							youtube.com/watch?v={videoPreviewId}
 						</a>
 					</div>
@@ -671,7 +706,10 @@
 								<button
 									class="attachmentTab"
 									class:active={attachmentType === 'record'}
-									on:click={() => { attachmentType = 'record'; fetchMyRecords(); }}
+									on:click={() => {
+										attachmentType = 'record';
+										fetchMyRecords();
+									}}
 								>
 									<Trophy class="h-3.5 w-3.5" />
 									{$_('community.create.my_records')}
@@ -679,7 +717,10 @@
 								<button
 									class="attachmentTab"
 									class:active={attachmentType === 'level'}
-									on:click={() => { attachmentType = 'level'; searchForLevels(); }}
+									on:click={() => {
+										attachmentType = 'level';
+										searchForLevels();
+									}}
 								>
 									<Gamepad2 class="h-3.5 w-3.5" />
 									{$_('community.create.attach_level')}
@@ -825,7 +866,8 @@
 		flex-direction: column;
 		gap: 6px;
 
-		label, .fieldLabel {
+		label,
+		.fieldLabel {
 			font-size: 13px;
 			font-weight: 500;
 			display: flex;
@@ -888,11 +930,15 @@
 			cursor: pointer;
 			transition: background 0.15s;
 
-			&:hover { background: rgba(0, 0, 0, 0.8); }
+			&:hover {
+				background: rgba(0, 0, 0, 0.8);
+			}
 		}
 	}
 
-	.hidden { display: none; }
+	.hidden {
+		display: none;
+	}
 
 	.videoPreview {
 		display: flex;
@@ -935,7 +981,9 @@
 		word-break: break-all;
 		text-decoration: none;
 
-		&:hover { text-decoration: underline; }
+		&:hover {
+			text-decoration: underline;
+		}
 	}
 
 	.attachmentPreview {
@@ -1039,7 +1087,9 @@
 		cursor: pointer;
 		transition: all 0.15s;
 
-		&:hover { color: hsl(var(--foreground)); }
+		&:hover {
+			color: hsl(var(--foreground));
+		}
 		&.active {
 			background: hsl(var(--primary) / 0.1);
 			color: hsl(var(--primary));
@@ -1070,7 +1120,9 @@
 		text-align: left;
 		transition: background 0.15s;
 
-		&:hover { background: hsl(var(--muted)); }
+		&:hover {
+			background: hsl(var(--muted));
+		}
 
 		.attachmentName {
 			flex: 1;
@@ -1105,12 +1157,15 @@
 				font-size: 13px;
 				color: hsl(var(--foreground));
 
-				&::placeholder { color: hsl(var(--muted-foreground)); }
+				&::placeholder {
+					color: hsl(var(--muted-foreground));
+				}
 			}
 		}
 	}
 
-	.attachmentLoading, .attachmentEmpty {
+	.attachmentLoading,
+	.attachmentEmpty {
 		padding: 16px;
 		text-align: center;
 		font-size: 12px;

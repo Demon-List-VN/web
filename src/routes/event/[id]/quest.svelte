@@ -33,7 +33,7 @@
 
 	async function checkQuest() {
 		const res = await (
-			await sdk.fetch(`/events/quest/${quest.id}/check`, {
+			await sdk.eventsApi.quest.byId(quest.id).check.request({
 				method: 'GET',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())
@@ -46,7 +46,7 @@
 
 	async function claim() {
 		toast.promise(
-			sdk.fetch(`/events/quest/${quest.id}/claim`, {
+			sdk.eventsApi.quest.byId(quest.id).claim.request({
 				method: 'POST',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())
@@ -111,9 +111,9 @@
 			{:else}
 				<Button class="ml-auto" disabled={claimBtnDisabled} on:click={claim}>
 					{#if status == 'claimable' || status == 'unclaimable'}
-							{get(_)('events.quest.claim_button')}
-						{:else if status == 'claimed'}
-							{get(_)('events.quest.claimed')}
+						{get(_)('events.quest.claim_button')}
+					{:else if status == 'claimed'}
+						{get(_)('events.quest.claimed')}
 					{/if}
 				</Button>
 			{/if}
