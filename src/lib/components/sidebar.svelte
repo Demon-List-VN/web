@@ -1,10 +1,10 @@
 <script lang="ts">
+	import type { ComponentType } from 'svelte';
 	import { page } from '$app/stores';
 	import { sidebarOpen, closeSidebar } from '$lib/client/sidebar';
 	import { user } from '$lib/client';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import { _, locale } from 'svelte-i18n';
-	import { Button } from '$lib/components/ui/button/index.js';
 	import { slide } from 'svelte/transition';
 	import ChevronDown from 'svelte-radix/ChevronDown.svelte';
 
@@ -61,9 +61,9 @@
 
 	type NavGroup = {
 		name: string;
-		icon: any;
+		icon: ComponentType;
 		route?: string;
-		routes?: { route: string; name: string; icon?: any }[];
+		routes?: { route: string; name: string; icon?: ComponentType }[];
 	};
 
 	$: navGroups = [
