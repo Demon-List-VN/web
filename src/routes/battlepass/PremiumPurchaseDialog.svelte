@@ -49,30 +49,30 @@
 
 	async function purchasePremium() {
 		try {
-				toast.loading($_('toast.payment.redirect'));
+			toast.loading($_('toast.payment.redirect'));
 
-				try {
-					const res = await fetch(
-						sdk.url(`/payment/getPaymentLink/6/1${giftTo ? `)?giftTo=${giftTo.uid}` : ''}`,
-						{
-							method: 'POST',
-							headers: {
-								Authorization: `Bearer ${await $user.token()}`,
-								'Content-Type': 'application/json'
-							}
+			try {
+				const res = await fetch(
+					sdk.url(`/payment/getPaymentLink/6/1${giftTo ? `?giftTo=${giftTo.uid}` : ''}`),
+					{
+						method: 'POST',
+						headers: {
+							Authorization: `Bearer ${await $user.token()}`,
+							'Content-Type': 'application/json'
 						}
-					);
-
-					if (res.ok) {
-						const data = await res.json();
-						window.location.href = data.checkoutUrl;
-					} else {
-						const error = await res.text();
-						toast.error(error || 'Failed to create payment link');
 					}
-				} catch (e) {
-					toast.error('Failed to initiate purchase');
+				);
+
+				if (res.ok) {
+					const data = await res.json();
+					window.location.href = data.checkoutUrl;
+				} else {
+					const error = await res.text();
+					toast.error(error || 'Failed to create payment link');
 				}
+			} catch (e) {
+				toast.error('Failed to initiate purchase');
+			}
 		} catch (e) {
 			toast.error('Failed to initiate purchase');
 		}
@@ -86,7 +86,7 @@
 	}
 </script>
 
-<Dialog.Root bind:open={open}>
+<Dialog.Root bind:open>
 	<Dialog.Content class="max-w-md">
 		{#if state == 0}
 			<Dialog.Header>
@@ -96,14 +96,16 @@
 			<div class="flex flex-col gap-[5px]">
 				<Button
 					variant="outline"
-					class={`h-[70px] justify-start ${nextState == 2 ? 'border-white' : ''} ${alreadyPremium ? 'opacity-50 cursor-not-allowed' : ''}`}
+					class={`h-[70px] justify-start ${nextState == 2 ? 'border-white' : ''} ${alreadyPremium ? 'cursor-not-allowed opacity-50' : ''}`}
 					on:click={() => {
 						if (alreadyPremium) {
 							toast.error('You already own Premium for this season');
 							return;
 						}
 						nextState = 2;
-					}} disabled={alreadyPremium}>
+					}}
+					disabled={alreadyPremium}
+				>
 					{$_('payment.recipent.self')}
 				</Button>
 				<Button
@@ -111,16 +113,18 @@
 					class={`h-[70px] justify-start ${nextState == 1 ? 'border-white' : ''}`}
 					on:click={() => {
 						nextState = 1;
-					}}>
+					}}
+				>
 					{$_('payment.recipent.friend')}
 				</Button>
 			</div>
 
 			<Dialog.Footer>
 				<Button variant="outline" on:click={() => (open = false)}>{$_('general.cancel')}</Button>
-				<Button disabled={nextState == 0} on:click={() => (state = nextState)}>{$_('general.next')}</Button>
+				<Button disabled={nextState == 0} on:click={() => (state = nextState)}
+					>{$_('general.next')}</Button
+				>
 			</Dialog.Footer>
-
 		{:else if state == 1}
 			<Dialog.Header>
 				<Dialog.Title>{$_('payment.gift.title')}</Dialog.Title>
@@ -134,7 +138,6 @@
 				<Button variant="outline" on:click={() => (state = 0)}>{$_('general.back')}</Button>
 				<Button disabled={!giftTo} on:click={() => (state = 2)}>{$_('general.next')}</Button>
 			</Dialog.Footer>
-
 		{:else}
 			<Dialog.Header>
 				<Dialog.Title class="flex items-center gap-3">
@@ -167,13 +170,19 @@
 
 				<div class="flex text-sm">
 					<p>{$_('payment.review.recipent')}</p>
-					<p class="ml-auto"><b>
-						{#if giftTo}
-							<a href="/player/{giftTo.uid}" class="text-blue-500 hover:underline">{giftTo.name}</a>
-						{:else}
-							<a href="/player/{$user.data.uid}" class="text-blue-500 hover:underline">{$user.data.name}</a>
-						{/if}
-					</b></p>
+					<p class="ml-auto">
+						<b>
+							{#if giftTo}
+								<a href="/player/{giftTo.uid}" class="text-blue-500 hover:underline"
+									>{giftTo.name}</a
+								>
+							{:else}
+								<a href="/player/{$user.data.uid}" class="text-blue-500 hover:underline"
+									>{$user.data.name}</a
+								>
+							{/if}
+						</b>
+					</p>
 				</div>
 
 				<p class="text-xs italic text-muted-foreground">{$_('payment.review.caution')}</p>

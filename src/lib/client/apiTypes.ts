@@ -7,7 +7,7 @@ export type ApiFetch = typeof globalThis.fetch;
 export interface PlayerSummary extends ApiObject {
 	uid: string;
 	name: string;
-	supporterUntil?: string | number | null;
+	supporterUntil?: string | null;
 }
 
 export interface EventData extends ApiObject {
@@ -22,6 +22,7 @@ export interface EventResponse extends ApiObject {
 
 export interface Province extends ApiObject {
 	name: string;
+	wards: string[];
 }
 
 export type ProvinceMap = Record<string, Province>;
@@ -58,7 +59,16 @@ export interface MapPackWrapper extends ApiObject {
 }
 
 export interface StoreProduct extends ApiObject {
+	id: number;
+	name: string;
+	description: string;
+	price: number;
+	imgCount: number;
+	maxQuantity: number;
+	stock: number | null;
 	featured?: boolean;
+	redirect?: string;
+	bannerTextColor?: string;
 }
 
 export interface ListEntry extends ApiObject {

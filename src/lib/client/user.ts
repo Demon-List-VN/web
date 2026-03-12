@@ -9,7 +9,7 @@ interface Rating {
 }
 
 interface userType {
-	data: PlayerSummary | undefined;
+	data: any;
 	ratings: Rating[];
 	token: () => Promise<string | undefined>;
 	loggedIn: boolean;
@@ -19,7 +19,7 @@ interface userType {
 }
 
 interface CachedUserData {
-	data: PlayerSummary;
+	data: any;
 	ratings: Rating[];
 	userId: string;
 	timestamp: number;
@@ -48,7 +48,7 @@ function loadCachedUserData(): CachedUserData | null {
 	}
 }
 
-function saveCachedUserData(userId: string, data: PlayerSummary, ratings: Rating[]) {
+function saveCachedUserData(userId: string, data: any, ratings: Rating[]) {
 	if (typeof window === 'undefined') return;
 
 	try {
@@ -138,14 +138,12 @@ const userData: userType = {
 		}
 
 		const tmp = Promise.all([
-			sdk.get<PlayerSummary>(`/players/${userId}?cached=true`)
-				.then((res) => {
-					userData.data = res;
-				}),
-			sdk.get<Rating[]>(`/players/${userId}/records?ratingOnly=true`)
-				.then((res) => {
-					userData.ratings = res;
-				})
+			sdk.get<PlayerSummary>(`/players/${userId}?cached=true`).then((res) => {
+				userData.data = res;
+			}),
+			sdk.get<Rating[]>(`/players/${userId}/records?ratingOnly=true`).then((res) => {
+				userData.ratings = res;
+			})
 		])
 			.then(() => {
 				userData.loggedIn = true;
@@ -156,14 +154,12 @@ const userData: userType = {
 			.catch((err) => {
 				addNewUser().then(() => {
 					Promise.all([
-						sdk.get<PlayerSummary>(`/players/${userId}?cached=true`)
-							.then((res) => {
-								userData.data = res;
-							}),
-						sdk.get<Rating[]>(`/players/${userId}/records?ratingOnly=true`)
-							.then((res) => {
-								userData.ratings = res;
-							})
+						sdk.get<PlayerSummary>(`/players/${userId}?cached=true`).then((res) => {
+							userData.data = res;
+						}),
+						sdk.get<Rating[]>(`/players/${userId}/records?ratingOnly=true`).then((res) => {
+							userData.ratings = res;
+						})
 					]).then(() => {
 						userData.loggedIn = true;
 						userData.checked = true;

@@ -9,7 +9,7 @@ export async function load({ params, url, fetch }) {
 	const { username } = params;
 	const player = await sdk.get<PlayerSummary>(`/players/@${username}`, { fetch });
 
-	if (!isActive(player.supporterUntil)) {
+	if (!isActive(player.supporterUntil ?? null)) {
 		throw error(404, {
 			message: 'Not found'
 		});

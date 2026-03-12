@@ -9,9 +9,9 @@ export async function load({ params, url, fetch }) {
 	const { uid } = params;
 	const player = await sdk.get<PlayerSummary>(`/players/${uid}`, { fetch });
 
-	if (isActive(player.supporterUntil)) {
+	if (isActive(player.supporterUntil ?? null)) {
 		throw redirect(307, `/@${player.name}`);
 	}
-	
+
 	return await getPlayerData(player, fetch);
 }

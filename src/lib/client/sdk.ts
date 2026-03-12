@@ -1,5 +1,4 @@
 import { browser } from '$app/environment';
-import supabase from '$lib/client/supabase';
 
 type FetchLike = typeof globalThis.fetch;
 
@@ -23,6 +22,7 @@ async function withAuthorization(headers?: HeadersInit) {
 	}
 
 	try {
+		const { default: supabase } = await import('$lib/client/supabase');
 		const { data, error } = await supabase.auth.getSession();
 
 		if (error) {

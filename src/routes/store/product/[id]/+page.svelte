@@ -18,7 +18,7 @@
 	export let data: PageData;
 
 	let selectedImageIndex = 0;
-	let quantity = data.stock > 0 ? 1 : 0;
+	let quantity = (data.stock ?? 0) > 0 ? 1 : 0;
 	let isImageEnlarged = false;
 
 	function selectImage(index: number) {
@@ -47,10 +47,7 @@
 	<title>{data.name} - Geometry Dash Việt Nam</title>
 	<meta property="og:title" content={`${data.name} - Geometry Dash Việt Nam`} />
 	<meta property="og:description" content={getFirstLine(data.description)} />
-	<meta
-		property="og:image"
-		content={`https://cdn.gdvn.net/products/${data.id}/0.webp`}
-	/>
+	<meta property="og:image" content={`https://cdn.gdvn.net/products/${data.id}/0.webp`} />
 </svelte:head>
 
 <div
@@ -83,7 +80,7 @@
 			/>
 		</button>
 		<div class="flex justify-center gap-[10px]">
-				{#each { length: data.imgCount } as _, index}
+			{#each { length: data.imgCount } as _, index}
 				<button
 					class="h-[75px] w-[75px] overflow-hidden rounded-lg border-2 transition-all duration-200
                     {selectedImageIndex === index
@@ -94,7 +91,9 @@
 					<img
 						class="h-full w-full object-cover"
 						src={`https://cdn.gdvn.net/products/${data.id}/${index}.webp`}
-						alt={t('store.product.thumbnail_alt', { values: { index: index + 1, product: data.name } })}
+						alt={t('store.product.thumbnail_alt', {
+							values: { index: index + 1, product: data.name }
+						})}
 					/>
 				</button>
 			{/each}
@@ -108,7 +107,7 @@
 			</h3>
 			{#if data.stock !== null}
 				<p class="text-center lg:text-left">
-						{#if data.stock === 0}
+					{#if data.stock === 0}
 						{t('store.product.out_of_stock')}
 					{:else}
 						{t('store.product.in_stock', { values: { stock: data.stock } })}
@@ -126,7 +125,8 @@
 		{:else}
 			<div class="mt-auto flex flex-col gap-[15px]">
 				<div class="flex items-center gap-[8px]">
-					<Label for="quantity" class="text-[16px] font-medium">{t('store.product.quantity')}</Label>
+					<Label for="quantity" class="text-[16px] font-medium">{t('store.product.quantity')}</Label
+					>
 					<div class="flex items-center gap-[10px]">
 						<Button
 							variant="outline"
@@ -148,7 +148,7 @@
 						<Button
 							variant="outline"
 							size="sm"
-							disabled={quantity == Math.min(data.stock, data.maxQuantity)}
+							disabled={quantity == Math.min(data.stock ?? 0, data.maxQuantity)}
 							on:click={() => quantity++}
 							class="h-[40px] w-[40px] p-0"
 						>
@@ -163,7 +163,7 @@
 					class="h-[50px] w-[260px] text-[16px] font-semibold"
 					size="lg"
 				>
-						{#if $cart.getItem(data.id).productID != -1}
+					{#if $cart.getItem(data.id).productID != -1}
 						{t('store.product.added', { values: { quantity: $cart.getItem(data.id).quantity } })}
 					{:else if data.stock == 0}
 						{t('store.product.out_of_stock')}
@@ -192,12 +192,12 @@
 				✕
 			</button>
 			<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-				<img
-					class="max-h-[700px] max-w-full rounded-lg object-contain"
-					src={`https://cdn.gdvn.net/products/${data.id}/${selectedImageIndex}.webp`}
-					alt={t('store.product.image_alt', { values: { product: data.name } })}
-					on:click|stopPropagation
-				/>
+			<img
+				class="max-h-[700px] max-w-full rounded-lg object-contain"
+				src={`https://cdn.gdvn.net/products/${data.id}/${selectedImageIndex}.webp`}
+				alt={t('store.product.image_alt', { values: { product: data.name } })}
+				on:click|stopPropagation
+			/>
 		</div>
 	</div>
 {/if}

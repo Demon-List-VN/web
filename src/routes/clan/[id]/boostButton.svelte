@@ -24,11 +24,13 @@
 	}
 
 	async function purchase() {
-		toast.loading($_("toast.payment.redirect"));
+		toast.loading($_('toast.payment.redirect'));
 
 		const res: any = await (
 			await fetch(
-				sdk.url(`/payment/getPaymentLink/3/${quantity[0]}${data.id ? `)?targetClanID=${data.id}` : ''}`,
+				sdk.url(
+					`/payment/getPaymentLink/3/${quantity[0]}${data.id ? `?targetClanID=${data.id}` : ''}`
+				),
 				{
 					method: 'POST',
 					headers: {
@@ -63,7 +65,10 @@
 				<Dialog.Title>{$_('clan.boost.quantity')}</Dialog.Title>
 			</Dialog.Header>
 			<div>
-				<p>{formatPrice(5000 * quantity[0])}₫/{quantity[0]} {$_(quantity[0] <= 1 ? 'clan.boost.days' : 'clan.boost.days_plural')}</p>
+				<p>
+					{formatPrice(5000 * quantity[0])}₫/{quantity[0]}
+					{$_(quantity[0] <= 1 ? 'clan.boost.days' : 'clan.boost.days_plural')}
+				</p>
 				<Slider bind:value={quantity} max={30} step={1} />
 			</div>
 			<Dialog.Footer>
@@ -79,7 +84,10 @@
 				<Dialog.Title>{$_('clan.boost.review')}</Dialog.Title>
 			</Dialog.Header>
 			<div class="flex text-sm">
-				<p>Clan Boost ({quantity[0]} {$_(quantity[0] > 1 ? 'clan.boost.days_plural' : 'clan.boost.days')})</p>
+				<p>
+					Clan Boost ({quantity[0]}
+					{$_(quantity[0] > 1 ? 'clan.boost.days_plural' : 'clan.boost.days')})
+				</p>
 				<p class="ml-auto"><b>{formatPrice(5000 * quantity[0])}₫</b></p>
 			</div>
 			<hr />
