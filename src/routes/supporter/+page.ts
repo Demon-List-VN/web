@@ -6,7 +6,7 @@ export async function load({ fetch }) {
 			sdk.getTopBuyers(intervalMs, { fetch }),
 			sdk.getBuyerProgress(intervalMs, { fetch })
 		]);
-		
+
 		return { topBuyers, progress };
 	} catch (error) {
 		console.error('Failed to fetch top buyers:', error);

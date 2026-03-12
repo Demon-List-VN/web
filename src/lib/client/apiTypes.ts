@@ -10,6 +10,11 @@ export interface PlayerSummary extends ApiObject {
 	supporterUntil?: string | null;
 }
 
+export interface Rating extends ApiObject {
+	progress: number;
+	rating: number;
+}
+
 export interface EventData extends ApiObject {
 	players: PlayerSummary[];
 	bracket: Array<string | PlayerSummary>;

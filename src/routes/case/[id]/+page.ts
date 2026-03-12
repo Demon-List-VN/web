@@ -1,8 +1,8 @@
 import type { ApiObject } from '$lib/client/apiTypes';
 import * as sdk from '$lib/client/sdk';
 export async function load({ params, url, fetch }) {
-    const { id } = params
-    const data = await sdk.getItem(id, { fetch })
+	const { id } = params;
+	const data = await sdk.getItem(id, { fetch });
 
-    return data
-};
+	return data;
+}

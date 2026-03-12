@@ -9,6 +9,7 @@ import type {
 	MapPackWrapper,
 	PlayerSummary,
 	ProvinceMap,
+	Rating,
 	Rule,
 	StoreProduct,
 	SupporterProgress,
@@ -100,10 +101,7 @@ export async function getCachedPlayer(uid: string, init: GetRequestInit = {}) {
 }
 
 export async function getPlayerRatings(uid: string, init: GetRequestInit = {}) {
-	return getJson<{ progress: number; rating: number }[]>(
-		`/players/${uid}/records?ratingOnly=true`,
-		init
-	);
+	return getJson<Rating[]>(`/players/${uid}/records?ratingOnly=true`, init);
 }
 
 export async function getPlayerProfileRecords(uid: string, init: GetRequestInit = {}) {
@@ -241,8 +239,8 @@ export async function getRecords(params: Record<string, string>, init: GetReques
 	return getJson<ApiListResponse>(`/records?${new URLSearchParams(params).toString()}`, init);
 }
 
-export async function postPlayersBatch(batch: Array<string | null>, init: ApiRequestInit = {}) {
-	return request('/players/batch', {
+export async function postPlayersBatch(batch: string[], init: ApiRequestInit = {}) {
+	return (await request('/players/batch', {
 		...init,
 		method: 'POST',
 		body: JSON.stringify({ batch }),
@@ -250,7 +248,7 @@ export async function postPlayersBatch(batch: Array<string | null>, init: ApiReq
 			'Content-Type': 'application/json',
 			...(init.headers ?? {})
 		}
-	});
+	})).json() as Promise<PlayerSummary[]>;
 }
 
 export async function fetchCommunityPost(id: string, init: GetRequestInit = {}) {

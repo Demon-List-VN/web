@@ -1,12 +1,7 @@
 import supabase from '$lib/client/supabase';
-import type { PlayerSummary } from '$lib/client/apiTypes';
+import type { PlayerSummary, Rating } from '$lib/client/apiTypes';
 import { writable } from 'svelte/store';
 import * as sdk from '$lib/client/sdk';
-
-interface Rating {
-	progress: number;
-	rating: number;
-}
 
 interface userType {
 	data: any;
