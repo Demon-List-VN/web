@@ -250,6 +250,8 @@
     "account": {
       "linked": "Linked",
       "link": "Link account",
+      "sync_role": "Sync Role",
+      "sync_role_synced": "Role synced!",
       "pointercrate": {
         "title": "Link Pointercrate account",
         "placeholder": "Enter Pointercrate access token"

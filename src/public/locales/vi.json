@@ -249,6 +249,8 @@
     "account": {
       "linked": "Đã liên kết",
       "link": "Liên kết tài khoản",
+      "sync_role": "Đồng bộ Role",
+      "sync_role_synced": "Đã đồng bộ Role!",
       "pointercrate": {
         "title": "Liên kết tài khoản Pointercrate",
         "placeholder": "Nhập access token Pointercrate"

@@ -99,6 +99,17 @@
 		}
 	});
 
+	async function syncDiscordRole() {
+		toast.promise(
+			$user.syncRole(),
+			{
+				loading: 'Syncing role...',
+				success: $_('settings.account.sync_role_synced'),
+				error: 'Failed to sync role'
+			}
+		);
+	}
+
 	function setTheme(theme: string) {
 		document.documentElement.setAttribute('data-theme', theme);
 		localStorage.setItem('theme', theme);
@@ -374,6 +385,9 @@
 					{#if $user.data.discord}
 						<Button class="w-full" variant="outline" disabled
 							>{$_('settings.account.linked')}</Button
+						>
+						<Button class="mt-2 w-full" variant="outline" on:click={syncDiscordRole}
+							>{$_('settings.account.sync_role')}</Button
 						>
 					{:else}
 						<a
