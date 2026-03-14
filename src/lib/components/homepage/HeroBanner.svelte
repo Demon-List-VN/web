@@ -10,11 +10,14 @@
 	$: profileBannerUrl = $user.loggedIn && $user.data?.uid
 		? `https://cdn.gdvn.net/banners/${$user.data.uid}${$user.data.isBannerGif ? '.gif' : '.jpg'}?version=${$user.data.bannerVersion || 0}`
 		: null;
+
+	let bannerError = false;
+	$: if (profileBannerUrl) bannerError = false;
 </script>
 
-<div class="heroBanner" class:hasBannerBg={!!profileBannerUrl}>
-	{#if profileBannerUrl}
-		<img class="heroBannerBg" src={profileBannerUrl} alt="" />
+<div class="heroBanner" class:hasBannerBg={!!profileBannerUrl && !bannerError}>
+	{#if profileBannerUrl && !bannerError}
+		<img class="heroBannerBg" src={profileBannerUrl} alt="" on:error={() => (bannerError = true)} />
 	{/if}
 	<div class="heroOverlay"></div>
 	<div class="heroContent">
