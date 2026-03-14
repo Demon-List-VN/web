@@ -31,6 +31,10 @@
 	import { page } from '$app/stores';
 	import { _, locale } from 'svelte-i18n';
 	import PlayerCard from '$lib/components/playerCard.svelte';
+	import OnboardingModal from '$lib/components/OnboardingModal.svelte';
+
+	$: showOnboarding =
+		$user.checked && $user.loggedIn && $user.data && $user.data.onboarding_done === false;
 
 	$: linkGroup = [
 		{
@@ -196,6 +200,7 @@
 
 <ModeWatcher defaultMode="system" />
 <Toaster position="top-center" />
+<OnboardingModal bind:open={showOnboarding} />
 <Search bind:open={searchToggled} bind:value={searchQuery} />
 <LoadingBar
 	--loading-bar-background-color="rgb(0 100 160 / 80%)"
