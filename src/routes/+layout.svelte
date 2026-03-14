@@ -34,7 +34,8 @@
 	import OnboardingModal from '$lib/components/OnboardingModal.svelte';
 
 	$: showOnboarding =
-		$user.checked && $user.loggedIn && $user.data && $user.data.onboarding_done === false;
+		$user.checked && $user.loggedIn && $user.data && $user.data.onboarding_done === false &&
+		($user.data.onboarding_step == null || $user.data.onboarding_step === 1);
 
 	$: linkGroup = [
 		{

@@ -5,7 +5,7 @@
 	export let step: number = 1;
 	export let onResume: () => void;
 
-	const TOTAL = 8;
+	const TOTAL = 9;
 	$: percent = Math.round((step / TOTAL) * 100);
 </script>
 

@@ -166,7 +166,7 @@
 			{#if step === 1}
 				<!-- Welcome -->
 				<div class="space-y-4 text-center">
-					<img src="/logo.png" alt="GDVN" class="mx-auto h-16 invert dark:invert-0" />
+					<img src="/logo.png" alt="GDVN" class="mx-auto h-16 invert-0 dark:invert" />
 					<h2 class="text-2xl font-bold">{$_('onboarding.welcome_title')}</h2>
 					<p class="text-muted-foreground">{$_('onboarding.welcome_desc')}</p>
 					<div class="rounded-lg border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm font-medium text-yellow-800 dark:border-yellow-700 dark:bg-yellow-950 dark:text-yellow-200">

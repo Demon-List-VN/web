@@ -69,10 +69,12 @@
 <div class="wrapper">
 	<!-- Onboarding progress banner (new users only) -->
 	{#if $user.loggedIn && $user.data && $user.data.onboarding_done === false}
-		<OnboardingProgress
-			step={$user.data.onboarding_step ?? 1}
-			onResume={() => (showOnboardingModal = true)}
-		/>
+		<div class="onboardingWrap">
+			<OnboardingProgress
+				step={$user.data.onboarding_step ?? 1}
+				onResume={() => (showOnboardingModal = true)}
+			/>
+		</div>
 		<OnboardingModal bind:open={showOnboardingModal} />
 	{/if}
 
@@ -198,6 +200,14 @@
 <style lang="scss">
 	.postHeroSpacing {
 		padding-top: 20px;
+	}
+
+	.onboardingWrap {
+		padding: 20px 50px 0;
+
+		@media screen and (max-width: 900px) {
+			padding: 20px 16px 0;
+		}
 	}
 
 	.wrapper {
