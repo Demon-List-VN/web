@@ -40,6 +40,16 @@
 		player = structuredClone(data);
 	}
 
+	$: renameCooldownActive =
+		!player.isAdmin &&
+		(player.nameLocked || (player.renameCooldown && new Date(player.renameCooldown) > new Date()));
+
+	$: renameCooldownMessage = player.nameLocked
+		? $_('profile_edit.rename_locked')
+		: $_('profile_edit.rename_cooldown', {
+				values: { date: new Date(player.renameCooldown).toLocaleDateString() }
+		  });
+
 	async function getAvatar(e: any) {
 		if (player.isBanned) {
 			return;
@@ -224,12 +234,16 @@
 			<div class="grid gap-4 py-4">
 				<div class="grid grid-cols-4 items-center gap-4">
 					<Label for="name" class="text-right">{$_('profile_edit.name')}</Label>
-					<Input
-						id="name"
-						bind:value={player.name}
-						class="col-span-3"
-						disabled={player.isTrusted && !player.isAdmin}
-					/>
+					<div class="col-span-3 flex flex-col gap-1">
+						<Input
+							id="name"
+							bind:value={player.name}
+							disabled={renameCooldownActive}
+						/>
+						{#if renameCooldownActive}
+							<p class="text-muted-foreground text-xs">{renameCooldownMessage}</p>
+						{/if}
+					</div>
 				</div>
 				<div class="flex gap-[10px]">
 					<Button

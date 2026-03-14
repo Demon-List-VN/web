@@ -297,6 +297,8 @@
     "title": "Chỉnh sửa hồ sơ",
     "description": "Thay đổi hồ sơ của bạn tại đây",
     "name": "Tên",
+    "rename_cooldown": "Bạn chỉ có thể đổi tên mỗi 30 ngày. Lần đổi tên tiếp theo: {date}",
+    "rename_locked": "Tên của bạn đã bị khóa và không thể thay đổi.",
     "upload_avatar": "Đổi ảnh đại diện",
     "upload_banner": "Đổi ảnh bìa",
     "border": "Viền",

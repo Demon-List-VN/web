@@ -203,7 +203,7 @@
 								<Select.Trigger class="w-full">
 									<Select.Value placeholder={$_('onboarding.location_province')} />
 								</Select.Trigger>
-								<Select.Content>
+								<Select.Content class="z-[10000]">
 									<ScrollArea class="h-60">
 										{#each Object.keys(provinces)
 											.map((k) => provinces[k])
@@ -224,7 +224,7 @@
 									<Select.Trigger class="w-full">
 										<Select.Value placeholder={$_('onboarding.location_city')} />
 									</Select.Trigger>
-									<Select.Content>
+									<Select.Content class="z-[10000]">
 										<ScrollArea class="h-60">
 											{#each provinces[provinceItem.value].wards as ward}
 												<Select.Item value={ward}>{ward}</Select.Item>

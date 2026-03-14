@@ -298,6 +298,8 @@
     "title": "Edit profile",
     "description": "Make changes to your profile here",
     "name": "Name",
+    "rename_cooldown": "You can rename once every 30 days. Next rename available: {date}",
+    "rename_locked": "Your name is locked and cannot be changed.",
     "upload_avatar": "Upload avatar",
     "upload_banner": "Upload banner",
     "border": "Border",
