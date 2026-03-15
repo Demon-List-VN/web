@@ -1,12 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { user } from '$lib/client';
-	import { isActive } from '$lib/client/isSupporterActive';
 
 	export let dataAdFormat = 'auto';
 	export let unit = 'auto';
 	let adPushed = false;
-	$: hidden = !$user.checked || ($user.loggedIn && isActive($user.data.supporterUntil));
+	$: hidden = false;
 
 	onMount(() => {
 		if (!hidden && !adPushed) {
