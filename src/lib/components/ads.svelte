@@ -1,21 +1,34 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { user } from '$lib/client/user';
+	import { isActive } from '$lib/client/isSupporterActive';
 
 	export let dataAdFormat = 'auto';
 	export let unit = 'auto';
 	let adPushed = false;
-	$: hidden = false;
+	$: hidden = $user.checked ? $user.loggedIn && isActive($user.data.supporterUntil) : true;
+
+	function pushAd() {
+		if (hidden && adPushed) {
+			return;
+		}
+
+		adPushed = true;
+
+		console.log('Ad pushed')
+
+		try {
+			// @ts-expect-error
+			(window.adsbygoogle = window.adsbygoogle || []).push({});
+		} catch (err) {
+			console.error('AdSense error:', err);
+		}
+	}
 
 	onMount(() => {
-		if (!hidden && !adPushed) {
-			adPushed = true;
-			try {
-				// @ts-expect-error
-				(window.adsbygoogle = window.adsbygoogle || []).push({});
-			} catch (err) {
-				console.error('AdSense error:', err);
-			}
-		}
+		user.subscribe(() => {
+			pushAd();
+		});
 	});
 </script>
 
