@@ -89,7 +89,7 @@
 	let hideNav = false;
 	let removePad = false;
 	let pathname = '';
-	let supporterAlertDismissed = false;
+	let supporterAlertDismissed = typeof localStorage !== 'undefined' && localStorage.getItem('supporterAlertDismissed') === 'true';
 	$: pathname = $page.url.pathname;
 
 	const isDesktop = mediaQuery('(min-width: 1350px)');
@@ -198,6 +198,7 @@
 
 	function dismissSupporterAlert() {
 		supporterAlertDismissed = true;
+		localStorage.setItem('supporterAlertDismissed', 'true');
 	}
 </script>
 

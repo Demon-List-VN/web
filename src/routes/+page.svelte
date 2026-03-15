@@ -56,9 +56,6 @@
 	<meta name="description" content="Website dành cho cộng đồng Geometry Dash Việt Nam" />
 </svelte:head>
 
-<!-- Hero Banner (personalized CTA) -->
-<HeroBanner />
-
 <!-- Active Events Strip -->
 <div class="postHeroSpacing">
 	<ActiveEventsStrip {events} />
