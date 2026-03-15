@@ -61,7 +61,7 @@
 	<ActiveEventsStrip {events} />
 </div>
 
-<Ads dataAdFormat="auto" unit="leaderboard" />
+<Ads dataAdFormat="auto"  />
 
 <div class="wrapper">
 	<!-- Onboarding progress banner (new users only) -->

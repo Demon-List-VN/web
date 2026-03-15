@@ -254,7 +254,7 @@
 		</Tabs.Root>
 	</div>
 </div>
-<Ads dataAdFormat="auto" unit="leaderboard" />
+<Ads dataAdFormat="auto"  />
 <div class="detailWrapper">
 	<div class="cardWrapper1 point">
 		<Card.Root>

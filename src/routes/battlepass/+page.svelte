@@ -89,7 +89,7 @@
 		</div>
 	{/if}
 
-	<Ads dataAdFormat="auto" unit="leaderboard" />
+	<Ads dataAdFormat="auto"  />
 
 	<!-- Main Content Tabs -->
 	<div class="mx-auto max-w-6xl px-4 py-8">

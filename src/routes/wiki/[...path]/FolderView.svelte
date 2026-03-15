@@ -39,7 +39,7 @@
 	<meta property="og:title" content={`${folderTitle} - Wiki - Geometry Dash Việt Nam`} />
 </svelte:head>
 
-<Ads unit="leaderboard" />
+<Ads  />
 
 <div class="folder-wrapper">
 	<!-- Breadcrumbs -->

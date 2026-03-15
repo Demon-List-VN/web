@@ -45,7 +45,7 @@
 	</div>
 </Tabs.Root>
 
-<Ads dataAdFormat="auto" unit="leaderboard" />
+<Ads dataAdFormat="auto"  />
 
 <slot />
 

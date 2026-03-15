@@ -193,7 +193,7 @@
 
 <div class="levelsWrapper">
 	<ListFilter listType={currentListType} on:filter={handleFilterChange} />
-	<Ads dataAdFormat="auto" unit="leaderboard" />
+	<Ads dataAdFormat="auto"  />
 	<div class="levels">
 		{#each data.levels as level, index}
 			<LevelCard {level} type={$page.params.list || 'dl'} hideTop={$page.params.list === 'cl'} />

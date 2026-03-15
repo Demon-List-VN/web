@@ -307,7 +307,7 @@
 		</div>
 	</div>
 
-	<Ads dataAdFormat="auto" unit="leaderboard" />
+	<Ads dataAdFormat="auto"  />
 
 	<div class="communityBody">
 		<!-- Toolbar -->

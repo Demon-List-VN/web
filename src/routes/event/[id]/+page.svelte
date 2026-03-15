@@ -50,7 +50,7 @@
 </svelte:head>
 
 <EventBanner {data} />
-<Ads dataAdFormat="auto" unit="leaderboard" />
+<Ads dataAdFormat="auto"  />
 
 {#if !data.hidden || ($user.loggedIn && $user.data.isAdmin)}
 	<div class="flex items-center justify-center gap-[10px] mt-[10px]">

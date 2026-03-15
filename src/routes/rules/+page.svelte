@@ -20,7 +20,7 @@
 {:else}
 	<BigTitle value="Rules" description="Read the rules" />
 {/if}
-<Ads unit="leaderboard" />
+<Ads  />
 <div class="wrapper">
 	{#each generalRules as rule}
 		<Markdown content={rule.content} />

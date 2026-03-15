@@ -79,7 +79,7 @@
 
 <BigTitle value="Wiki" description={$_('wiki.description')} />
 
-<Ads unit="leaderboard" />
+<Ads  />
 
 <div class="wrapper">
 	<!-- Quick Links Section -->

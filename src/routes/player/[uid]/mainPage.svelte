@@ -198,7 +198,7 @@
 		</div>
 
 		{#if !isActive(data.player.supporterUntil)}
-			<Ads dataAdFormat="auto" unit="leaderboard" />
+			<Ads dataAdFormat="auto"  />
 		{/if}
 		<Tabs.Root value="overview">
 			<div class="tabs">
