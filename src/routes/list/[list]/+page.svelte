@@ -197,6 +197,11 @@
 	<div class="levels">
 		{#each data.levels as level, index}
 			<LevelCard {level} type={$page.params.list || 'dl'} hideTop={$page.params.list === 'cl'} />
+			{#if index !== 0 && index % 25 === 0}
+				<div class="ad-row">
+					<Ads />
+				</div>
+			{/if}
 		{/each}
 	</div>
 </div>
@@ -227,6 +232,10 @@
 		margin-inline: auto;
 		margin-bottom: 20px;
 		padding-inline: 10px;
+	}
+
+	.ad-row {
+		grid-column: 1 / -1;
 	}
 
 	@media screen and (max-width: 1100px) {

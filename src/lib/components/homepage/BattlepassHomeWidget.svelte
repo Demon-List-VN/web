@@ -101,7 +101,7 @@
 						<ArrowRight class="h-4 w-4 ml-2" />
 					{:else}
 						<Zap class="h-4 w-4 mr-2" />
-						{$_('homepage.battlepass.get_premium')} — 149.000₫
+						{$_('homepage.battlepass.get_premium')} — 99.000₫
 					{/if}
 				</Button>
 			</div>

@@ -36,29 +36,6 @@
 				</Card.Content>
 			</Card.Root>
 
-			<!-- Pass -->
-			<Card.Root class="featureCard bpFeature">
-				<Card.Content class="p-5">
-					<div class="featureIcon bpIcon">
-						<Swords class="h-6 w-6" />
-					</div>
-					<h5>{$_('homepage.features.bp_title')}</h5>
-					<p class="featureDesc">{$_('homepage.features.bp_desc')}</p>
-					<ul class="featureBenefits">
-						<li>{$_('homepage.features.bp_b1')}</li>
-						<li>{$_('homepage.features.bp_b2')}</li>
-						<li>{$_('homepage.features.bp_b3')}</li>
-					</ul>
-					<div class="featureFooter">
-						<span class="featurePrice">149.000₫<small>/{$_('homepage.features.season')}</small></span>
-						<Button href="/battlepass" size="sm" variant="outline">
-							{$_('homepage.features.learn_more')}
-							<ArrowRight class="ml-1 h-3.5 w-3.5" />
-						</Button>
-					</div>
-				</Card.Content>
-			</Card.Root>
-
 			<!-- Queue Boost -->
 			<Card.Root class="featureCard boostFeature">
 				<Card.Content class="p-5">
