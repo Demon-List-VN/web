@@ -34,7 +34,10 @@
 	import OnboardingModal from '$lib/components/OnboardingModal.svelte';
 
 	$: showOnboarding =
-		$user.checked && $user.loggedIn && $user.data && $user.data.onboarding_done === false &&
+		$user.checked &&
+		$user.loggedIn &&
+		$user.data &&
+		$user.data.onboarding_done === false &&
 		($user.data.onboarding_step == null || $user.data.onboarding_step === 1);
 
 	$: linkGroup = [
@@ -89,7 +92,9 @@
 	let hideNav = false;
 	let removePad = false;
 	let pathname = '';
-	let supporterAlertDismissed = typeof localStorage !== 'undefined' && localStorage.getItem('supporterAlertDismissed') === 'true';
+	let supporterAlertDismissed =
+		typeof localStorage !== 'undefined' &&
+		localStorage.getItem('supporterAlertDismissed') === 'true';
 	$: pathname = $page.url.pathname;
 
 	const isDesktop = mediaQuery('(min-width: 1350px)');
@@ -129,6 +134,25 @@
 	function setTheme(theme: string) {
 		document.documentElement.setAttribute('data-theme', theme);
 		localStorage.setItem('theme', theme);
+	}
+
+	function enableAds() {
+		let adsScriptLoaded = false;
+
+		user.subscribe(() => {
+			// const enabled = u.checked && (!u.loggedIn || !isActive(u.data.supporterUntil));
+			const enabled = true;
+
+			if (!adsScriptLoaded && enabled) {
+				adsScriptLoaded = true;
+				const s = document.createElement('script');
+				s.async = true;
+				s.src =
+					'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4605218533506777';
+				s.crossOrigin = 'anonymous';
+				document.head.appendChild(s);
+			}
+		});
 	}
 
 	onMount(() => {
@@ -182,18 +206,7 @@
 		hideNav = urlParams.has('hideNav');
 		removePad = urlParams.has('removePad');
 
-		let adsScriptLoaded = false;
-		user.subscribe((u) => {
-			if (!adsScriptLoaded && u.checked && (!u.loggedIn || !isActive(u.data.supporterUntil))) {
-				adsScriptLoaded = true;
-				const s = document.createElement('script');
-				s.async = true;
-				s.src =
-					'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4605218533506777';
-				s.crossOrigin = 'anonymous';
-				document.head.appendChild(s);
-			}
-		});
+		enableAds();
 	});
 
 	function dismissSupporterAlert() {
@@ -215,7 +228,7 @@
 	<div class="navbarWrapper navbarWrapperOnTop">
 		<div class="right">
 			<a href="/" data-sveltekit-preload-data="tap">
-				<img src="/logo.png" alt="logo"/>
+				<img src="/logo.png" alt="logo" />
 			</a>
 			<div class="links">
 				{#each linkGroup as group}
@@ -602,7 +615,6 @@
 			.link:hover {
 				color: var(--textColor1);
 			}
-
 		}
 
 		.left {

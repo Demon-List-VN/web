@@ -6,7 +6,9 @@
 	export let dataAdFormat = 'auto';
 	export let unit = 'auto';
 	let adPushed = false;
-	$: hidden = $user.checked ? $user.loggedIn && isActive($user.data.supporterUntil) : true;
+
+	// $: hidden = $user.checked ? $user.loggedIn && isActive($user.data.supporterUntil) : true;
+	const hidden = false;
 
 	function pushAd() {
 		if (hidden && adPushed) {
@@ -14,8 +16,6 @@
 		}
 
 		adPushed = true;
-
-		console.log('Ad pushed')
 
 		try {
 			// @ts-expect-error
