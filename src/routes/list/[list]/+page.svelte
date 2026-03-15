@@ -197,11 +197,6 @@
 	<div class="levels">
 		{#each data.levels as level, index}
 			<LevelCard {level} type={$page.params.list || 'dl'} hideTop={$page.params.list === 'cl'} />
-			{#if index !== 0 && index % 25 === 0}
-				<div class="ad-row">
-					<Ads />
-				</div>
-			{/if}
 		{/each}
 	</div>
 </div>
