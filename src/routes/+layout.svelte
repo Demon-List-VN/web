@@ -182,8 +182,10 @@
 		hideNav = urlParams.has('hideNav');
 		removePad = urlParams.has('removePad');
 
+		let adsScriptLoaded = false;
 		user.subscribe((u) => {
-			if (u.checked && (!u.loggedIn || !isActive(u.data.supporterUntil))) {
+			if (!adsScriptLoaded && u.checked && (!u.loggedIn || !isActive(u.data.supporterUntil))) {
+				adsScriptLoaded = true;
 				const s = document.createElement('script');
 				s.async = true;
 				s.src =

@@ -1,25 +1,22 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { afterUpdate } from 'svelte';
 	import { user } from '$lib/client';
 	import { isActive } from '$lib/client/isSupporterActive';
 
 	export let dataAdFormat = 'auto';
 	export let unit = 'auto';
-	let mounted = false;
-	$: hidden = $user.checked && $user.loggedIn && isActive($user.data.supporterUntil);
+	let adPushed = false;
+	$: hidden = !$user.checked || ($user.loggedIn && isActive($user.data.supporterUntil));
 
-	onMount(() => {
-		if (mounted) {
-			return;
-		}
-
-		mounted = true;
-
-		try {
-			// @ts-expect-error
-			(window.adsbygoogle = window.adsbygoogle || []).push({});
-		} catch (err) {
-			console.error('AdSense error:', err);
+	afterUpdate(() => {
+		if (!hidden && !adPushed) {
+			adPushed = true;
+			try {
+				// @ts-expect-error
+				(window.adsbygoogle = window.adsbygoogle || []).push({});
+			} catch (err) {
+				console.error('AdSense error:', err);
+			}
 		}
 	});
 </script>
