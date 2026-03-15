@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { afterUpdate } from 'svelte';
+	import { onMount } from 'svelte';
 	import { user } from '$lib/client';
 	import { isActive } from '$lib/client/isSupporterActive';
 
@@ -8,7 +8,7 @@
 	let adPushed = false;
 	$: hidden = !$user.checked || ($user.loggedIn && isActive($user.data.supporterUntil));
 
-	afterUpdate(() => {
+	onMount(() => {
 		if (!hidden && !adPushed) {
 			adPushed = true;
 			try {
