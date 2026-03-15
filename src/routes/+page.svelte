@@ -195,8 +195,6 @@
 	</section>
 </div>
 
-<Ads dataAdFormat="auto" unit="leaderboard" />
-
 <style lang="scss">
 	.postHeroSpacing {
 		padding-top: 20px;

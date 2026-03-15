@@ -254,6 +254,7 @@
 		</Tabs.Root>
 	</div>
 </div>
+<Ads dataAdFormat="auto" unit="leaderboard" />
 <div class="detailWrapper">
 	<div class="cardWrapper1 point">
 		<Card.Root>
@@ -368,7 +369,6 @@
 			</Card.Root>
 		</div>
 	{/if}
-	<Ads />
 	{#if 'level' in data && !data.level.isPlatformer}
 		<div class="chartWrapper cardWrapper1">
 			{#if !deathCount.length}
