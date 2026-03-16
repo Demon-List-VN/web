@@ -13,14 +13,6 @@
 		<script>
 			window.googletag = window.googletag || { cmd: [] };
 			googletag.cmd.push(function () {
-				var rewardedSlot = googletag.defineOutOfPageSlot(
-					'/23344439882/pass-daily-checkin',
-					googletag.enums.OutOfPageFormat.REWARDED
-				);
-				if (rewardedSlot) {
-					rewardedSlot.addService(googletag.pubads());
-				}
-				googletag.pubads().enableSingleRequest();
 				googletag.enableServices();
 			});
 		</script>
