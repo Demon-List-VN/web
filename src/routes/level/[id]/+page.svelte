@@ -176,9 +176,7 @@
 	<meta
 		property="og:image"
 		content={'pointercrate' in data
-			? `https://img.youtube.com/vi/${new URL(
-					data.pointercrate.video
-				).searchParams.get('v')}/0.jpg`
+			? `https://img.youtube.com/vi/${new URL(data.pointercrate.video).searchParams.get('v')}/0.jpg`
 			: `https://img.youtube.com/vi/${data.level.videoID}/mqdefault.jpg`}
 	/>
 </svelte:head>
@@ -254,7 +252,6 @@
 		</Tabs.Root>
 	</div>
 </div>
-<Ads dataAdFormat="auto"  />
 <div class="detailWrapper">
 	<div class="cardWrapper1 point">
 		<Card.Root>
@@ -286,6 +283,7 @@
 			</Card.Content>
 		</Card.Root>
 	</div>
+	<Ads dataAdFormat="auto" />
 	<div class="cardWrapper1 detail">
 		<Card.Root>
 			<Card.Content>
