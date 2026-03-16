@@ -11,7 +11,7 @@
 	const hidden = false;
 
 	function pushAd() {
-		if (hidden && adPushed) {
+		if (hidden || adPushed) {
 			return;
 		}
 
