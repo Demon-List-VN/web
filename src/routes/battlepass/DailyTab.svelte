@@ -143,20 +143,35 @@
 		}
 
 		googletag.cmd.push(() => {
-			// ✅ Destroy the static slot first to avoid duplicate unit conflict with SRA
+			console.log('[RewardedAd] cmd started');
+
+			// Restores the original static 1x1 slot from <head> after rewarded ad is done.
+			// Declared first (function hoisting) so it's safe to call anywhere below.
+			function restoreStaticSlot() {
+				console.log('[RewardedAd] restoring static slot');
+				googletag
+					.defineSlot('/23344439882/pass-daily-checkin', [1, 1], 'div-gpt-ad-1773647417565-0')
+					?.addService(googletag.pubads());
+			}
+
+			// Destroy the static slot first to avoid duplicate unit conflict
 			const existingSlots = googletag.pubads().getSlots();
+			console.log('[RewardedAd] existing slots:', existingSlots.map((s: any) => s.getAdUnitPath()));
 			const staticSlot = existingSlots.find(
 				(s: any) => s.getAdUnitPath() === '/23344439882/pass-daily-checkin'
 			);
-			if (staticSlot) googletag.destroySlots([staticSlot]);
+			if (staticSlot) {
+				console.log('[RewardedAd] destroying static slot');
+				googletag.destroySlots([staticSlot]);
+			}
 
 			const slot = googletag.defineOutOfPageSlot(
 				'/23344439882/pass-daily-checkin',
 				googletag.enums.OutOfPageFormat.REWARDED
 			);
+			console.log('[RewardedAd] defineOutOfPageSlot result:', slot);
 
 			if (!slot) {
-				// @ts-ignore
 				restoreStaticSlot();
 				adLoading = false;
 				toast.error('Rewarded ad not supported or blocked');
@@ -165,13 +180,7 @@
 
 			slot.addService(googletag.pubads());
 			slot.setTargeting('user_id', $user.data?.uid);
-
-			// ✅ Restores the original static 1x1 slot from <head> after rewarded ad is done
-			const restoreStaticSlot = () => {
-				googletag
-					.defineSlot('/23344439882/pass-daily-checkin', [1, 1], 'div-gpt-ad-1773647417565-0')
-					?.addService(googletag.pubads());
-			};
+			console.log('[RewardedAd] slot configured, user_id:', $user.data?.uid);
 
 			const cleanup = () => {
 				googletag.pubads().removeEventListener('rewardedSlotReady', onReady);
@@ -180,10 +189,12 @@
 			};
 
 			const onReady = (e: any) => {
+				console.log('[RewardedAd] rewardedSlotReady — calling makeRewardedVisible');
 				e.makeRewardedVisible();
 			};
 
-			const onGranted = async () => {
+			const onGranted = async (e: any) => {
+				console.log('[RewardedAd] rewardedSlotGranted', e);
 				cleanup();
 				googletag.destroySlots([slot]);
 				restoreStaticSlot();
@@ -194,7 +205,8 @@
 				adLoading = false;
 			};
 
-			const onClosed = () => {
+			const onClosed = (e: any) => {
+				console.log('[RewardedAd] rewardedSlotClosed', e);
 				cleanup();
 				googletag.destroySlots([slot]);
 				restoreStaticSlot();
@@ -205,7 +217,9 @@
 			googletag.pubads().addEventListener('rewardedSlotGranted', onGranted);
 			googletag.pubads().addEventListener('rewardedSlotClosed', onClosed);
 
+			console.log('[RewardedAd] calling googletag.display');
 			googletag.display(slot);
+			console.log('[RewardedAd] display called');
 		});
 	}
 

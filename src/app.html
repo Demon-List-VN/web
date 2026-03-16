@@ -20,7 +20,8 @@
 						'div-gpt-ad-1773647417565-0'
 					)
 					.addService(googletag.pubads());
-				googletag.pubads().enableSingleRequest();
+				// NOTE: enableSingleRequest() is intentionally omitted — it is
+				// incompatible with out-of-page rewarded ad slots (GPT limitation).
 				googletag.enableServices();
 			});
 		</script>
