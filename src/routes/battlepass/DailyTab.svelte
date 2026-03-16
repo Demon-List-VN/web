@@ -143,39 +143,67 @@
 		}
 
 		googletag.cmd.push(() => {
+			// ✅ Destroy the static slot first to avoid duplicate unit conflict with SRA
+			const existingSlots = googletag.pubads().getSlots();
+			const staticSlot = existingSlots.find(
+				(s: any) => s.getAdUnitPath() === '/23344439882/pass-daily-checkin'
+			);
+			if (staticSlot) googletag.destroySlots([staticSlot]);
+
 			const slot = googletag.defineOutOfPageSlot(
 				'/23344439882/pass-daily-checkin',
 				googletag.enums.OutOfPageFormat.REWARDED
 			);
 
 			if (!slot) {
+				// @ts-ignore
+				restoreStaticSlot();
 				adLoading = false;
 				toast.error('Rewarded ad not supported or blocked');
 				return;
 			}
 
 			slot.addService(googletag.pubads());
-			// Pass user ID so Google includes it in the server-side callback
 			slot.setTargeting('user_id', $user.data?.uid);
 
-			googletag.pubads().addEventListener('rewardedSlotReady', (e: any) => {
-				e.makeRewardedVisible();
-			});
+			// ✅ Restores the original static 1x1 slot from <head> after rewarded ad is done
+			const restoreStaticSlot = () => {
+				googletag
+					.defineSlot('/23344439882/pass-daily-checkin', [1, 1], 'div-gpt-ad-1773647417565-0')
+					?.addService(googletag.pubads());
+			};
 
-			googletag.pubads().addEventListener('rewardedSlotGranted', async () => {
-				// Google calls /ads/rewards/confirm server-side; poll for updated status
+			const cleanup = () => {
+				googletag.pubads().removeEventListener('rewardedSlotReady', onReady);
+				googletag.pubads().removeEventListener('rewardedSlotGranted', onGranted);
+				googletag.pubads().removeEventListener('rewardedSlotClosed', onClosed);
+			};
+
+			const onReady = (e: any) => {
+				e.makeRewardedVisible();
+			};
+
+			const onGranted = async () => {
+				cleanup();
+				googletag.destroySlots([slot]);
+				restoreStaticSlot();
 				const xp = checkinStatus?.xp ?? 25;
 				checkinStatus = { claimed: true, xp };
 				toast.success($_('battlepass.xp_claimed', { values: { xp } }));
 				dispatch('xpClaimed', { xp, levelId: 0 });
-				googletag.destroySlots([slot]);
 				adLoading = false;
-			});
+			};
 
-			googletag.pubads().addEventListener('rewardedSlotClosed', () => {
+			const onClosed = () => {
+				cleanup();
 				googletag.destroySlots([slot]);
+				restoreStaticSlot();
 				adLoading = false;
-			});
+			};
+
+			googletag.pubads().addEventListener('rewardedSlotReady', onReady);
+			googletag.pubads().addEventListener('rewardedSlotGranted', onGranted);
+			googletag.pubads().addEventListener('rewardedSlotClosed', onClosed);
 
 			googletag.display(slot);
 		});
@@ -415,10 +443,14 @@
 
 	<!-- Daily Check-in via Ad -->
 	{#if $user.loggedIn}
-		<Card.Root class="mt-6 overflow-hidden border-2 border-yellow-500/30 bg-gradient-to-br from-yellow-500/5 to-orange-500/5">
+		<Card.Root
+			class="mt-6 overflow-hidden border-2 border-yellow-500/30 bg-gradient-to-br from-yellow-500/5 to-orange-500/5"
+		>
 			<Card.Header>
 				<div class="flex items-center gap-3">
-					<div class="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500">
+					<div
+						class="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500"
+					>
 						<Gift class="h-7 w-7 text-white" />
 					</div>
 					<div>
@@ -446,7 +478,7 @@
 					{:else}
 						<Button
 							size="sm"
-							class="bg-yellow-500 hover:bg-yellow-600 text-white"
+							class="bg-yellow-500 text-white hover:bg-yellow-600"
 							disabled={adLoading}
 							on:click={watchRewardedAd}
 						>
