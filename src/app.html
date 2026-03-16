@@ -3,17 +3,41 @@
 	<head>
 		<meta charset="utf-8" />
 		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
-		<meta name="viewport" content="width=device-width, initial-scale=1">
-		<meta name="google-adsense-account" content="ca-pub-4605218533506777">
-		<link rel="preconnect" href="https://fonts.googleapis.com">
-		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-		<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="google-adsense-account" content="ca-pub-4605218533506777" />
+		<script
+			async
+			src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"
+			crossorigin="anonymous"
+		></script>
+		<script>
+			window.googletag = window.googletag || { cmd: [] };
+			googletag.cmd.push(function () {
+				var rewardedSlot = googletag.defineOutOfPageSlot(
+					'/23344439882/pass-daily-checkin',
+					googletag.enums.OutOfPageFormat.REWARDED
+				);
+				if (rewardedSlot) {
+					rewardedSlot.addService(googletag.pubads());
+				}
+				googletag.pubads().enableSingleRequest();
+				googletag.enableServices();
+			});
+		</script>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap"
+			rel="stylesheet"
+		/>
 		%sveltekit.head%
 		<!-- Google tag (gtag.js) -->
 		<script async src="https://www.googletagmanager.com/gtag/js?id=G-8T6SG5ZBDC"></script>
 		<script>
 			window.dataLayer = window.dataLayer || [];
-			function gtag() { dataLayer.push(arguments); }
+			function gtag() {
+				dataLayer.push(arguments);
+			}
 			gtag('js', new Date());
 
 			gtag('config', 'G-8T6SG5ZBDC');

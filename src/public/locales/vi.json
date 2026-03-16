@@ -1560,6 +1560,10 @@
     "completion_reward": "Hoàn thành 100%",
     "xp_claimed": "Đã nhận {xp} XP!",
     "claim_failed": "Không thể nhận phần thưởng",
+    "daily_checkin": "Điểm danh hàng ngày",
+    "daily_checkin_desc": "Xem quảng cáo để nhận XP thưởng mỗi ngày",
+    "watch_ad": "Xem quảng cáo",
+    "loading": "Đang tải...",
     "course": {
       "title": "Chế độ Course",
       "description": "Hoàn thành từng level hoặc gói map đã mở khóa để mở khóa mục tiếp theo.",

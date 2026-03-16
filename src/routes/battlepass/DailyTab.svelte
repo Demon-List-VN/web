@@ -13,12 +13,16 @@
 	import Check from 'lucide-svelte/icons/check';
 	import Lock from 'lucide-svelte/icons/lock';
 	import { DIFFICULTY_COLORS, DIFFICULTY_NAMES } from '$lib/battlepass/constants';
+	import Gift from 'lucide-svelte/icons/gift';
+	import Tv from 'lucide-svelte/icons/tv-2';
 
 	export let primaryColor: string = '#8b5cf6';
 
 	let loading = true;
 	let dailyWeeklyData: { daily: any; weekly: any } = { daily: null, weekly: null };
 	let mounted = false;
+	let checkinStatus: { claimed: boolean; xp: number } | null = null;
+	let adLoading = false;
 	const defaultLevel = {
 		id: 0,
 		levelId: 0,
@@ -115,9 +119,71 @@
 		}
 	}
 
+	async function fetchCheckinStatus() {
+		if (!$user.loggedIn) return;
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/ads/rewards/daily-checkin`, {
+				headers: { Authorization: `Bearer ${await $user.token()}` }
+			});
+			if (res.ok) checkinStatus = await res.json();
+		} catch (e) {
+			console.error('Failed to fetch checkin status:', e);
+		}
+	}
+
+	function watchRewardedAd() {
+		if (adLoading || checkinStatus?.claimed) return;
+		adLoading = true;
+
+		const googletag = (window as any).googletag;
+		if (!googletag) {
+			adLoading = false;
+			toast.error('Ads not available');
+			return;
+		}
+
+		googletag.cmd.push(() => {
+			const slot = googletag.defineOutOfPageSlot(
+				'/23344439882/pass-daily-checkin',
+				googletag.enums.OutOfPageFormat.REWARDED
+			);
+
+			if (!slot) {
+				adLoading = false;
+				toast.error('Rewarded ad not supported or blocked');
+				return;
+			}
+
+			slot.addService(googletag.pubads());
+			// Pass user ID so Google includes it in the server-side callback
+			slot.setTargeting('user_id', $user.data?.uid);
+
+			googletag.pubads().addEventListener('rewardedSlotReady', (e: any) => {
+				e.makeRewardedVisible();
+			});
+
+			googletag.pubads().addEventListener('rewardedSlotGranted', async () => {
+				// Google calls /ads/rewards/confirm server-side; poll for updated status
+				const xp = checkinStatus?.xp ?? 25;
+				checkinStatus = { claimed: true, xp };
+				toast.success($_('battlepass.xp_claimed', { values: { xp } }));
+				dispatch('xpClaimed', { xp, levelId: 0 });
+				googletag.destroySlots([slot]);
+				adLoading = false;
+			});
+
+			googletag.pubads().addEventListener('rewardedSlotClosed', () => {
+				googletag.destroySlots([slot]);
+				adLoading = false;
+			});
+
+			googletag.display(slot);
+		});
+	}
+
 	async function loadData() {
 		loading = true;
-		await fetchDailyWeeklyProgress();
+		await Promise.all([fetchDailyWeeklyProgress(), fetchCheckinStatus()]);
 		loading = false;
 	}
 
@@ -129,9 +195,10 @@
 			if (!mounted) return;
 
 			if (value.loggedIn) {
-				await fetchDailyWeeklyProgress();
+				await Promise.all([fetchDailyWeeklyProgress(), fetchCheckinStatus()]);
 			} else {
 				dailyWeeklyData = { daily: null, weekly: null };
+				checkinStatus = null;
 			}
 		});
 
@@ -152,6 +219,7 @@
 		<Skeleton class="h-64 w-full" />
 		<Skeleton class="h-64 w-full" />
 	</div>
+	<Skeleton class="mt-6 h-32 w-full" />
 {:else}
 	<div class="grid gap-6 md:grid-cols-2">
 		<!-- Daily Level Card -->
@@ -344,4 +412,50 @@
 			</Card.Content>
 		</Card.Root>
 	</div>
+
+	<!-- Daily Check-in via Ad -->
+	{#if $user.loggedIn}
+		<Card.Root class="mt-6 overflow-hidden border-2 border-yellow-500/30 bg-gradient-to-br from-yellow-500/5 to-orange-500/5">
+			<Card.Header>
+				<div class="flex items-center gap-3">
+					<div class="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500">
+						<Gift class="h-7 w-7 text-white" />
+					</div>
+					<div>
+						<Card.Title class="text-xl">{$_('battlepass.daily_checkin')}</Card.Title>
+						<p class="text-sm text-muted-foreground">{$_('battlepass.daily_checkin_desc')}</p>
+					</div>
+				</div>
+			</Card.Header>
+			<Card.Content>
+				<div class="flex items-center justify-between rounded-lg bg-muted/20 p-3">
+					<div class="flex flex-col">
+						<span class="text-sm text-muted-foreground">{$_('battlepass.completion_reward')}</span>
+						<div class="flex items-center gap-1">
+							<Zap class="h-4 w-4" style="color: {primaryColor}" />
+							<span class="font-bold" style="color: {primaryColor}">
+								+{checkinStatus?.xp ?? 20} XP
+							</span>
+						</div>
+					</div>
+					{#if checkinStatus?.claimed}
+						<Button variant="outline" disabled size="sm">
+							<Check class="mr-1 h-4 w-4" />
+							{$_('battlepass.claimed')}
+						</Button>
+					{:else}
+						<Button
+							size="sm"
+							class="bg-yellow-500 hover:bg-yellow-600 text-white"
+							disabled={adLoading}
+							on:click={watchRewardedAd}
+						>
+							<Tv class="mr-1 h-4 w-4" />
+							{adLoading ? $_('battlepass.loading') : $_('battlepass.watch_ad')}
+						</Button>
+					{/if}
+				</div>
+			</Card.Content>
+		</Card.Root>
+	{/if}
 {/if}

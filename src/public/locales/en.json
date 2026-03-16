@@ -1561,6 +1561,10 @@
     "completion_reward": "Complete 100%",
     "xp_claimed": "Claimed {xp} XP!",
     "claim_failed": "Failed to claim reward",
+    "daily_checkin": "Daily Check-in",
+    "daily_checkin_desc": "Watch an ad to earn bonus XP once per day",
+    "watch_ad": "Watch Ad",
+    "loading": "Loading...",
     "course": {
       "title": "Course Mode",
       "description": "Clear each unlocked level or map pack to unlock the next one.",
