@@ -217,6 +217,18 @@
 			googletag.pubads().addEventListener('rewardedSlotGranted', onGranted);
 			googletag.pubads().addEventListener('rewardedSlotClosed', onClosed);
 
+			// Diagnostic listeners — tell us if the request went out and what came back
+			googletag.pubads().addEventListener('slotRequested', (e: any) => {
+				if (e.slot === slot) console.log('[RewardedAd] slotRequested');
+			});
+			googletag.pubads().addEventListener('slotResponseReceived', (e: any) => {
+				if (e.slot === slot) console.log('[RewardedAd] slotResponseReceived');
+			});
+			googletag.pubads().addEventListener('slotRenderEnded', (e: any) => {
+				if (e.slot === slot)
+					console.log('[RewardedAd] slotRenderEnded — isEmpty:', e.isEmpty, ' creativeId:', e.creativeId, ' lineItemId:', e.lineItemId);
+			});
+
 			console.log('[RewardedAd] calling googletag.display');
 			googletag.display(slot);
 			console.log('[RewardedAd] display called');
