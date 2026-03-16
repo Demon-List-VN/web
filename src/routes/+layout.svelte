@@ -32,6 +32,9 @@
 	import { _, locale } from 'svelte-i18n';
 	import PlayerCard from '$lib/components/playerCard.svelte';
 	import OnboardingModal from '$lib/components/OnboardingModal.svelte';
+	import AdblockModal from '$lib/components/AdblockModal.svelte';
+
+	let showAdblockModal = false;
 
 	$: showOnboarding =
 		$user.checked &&
@@ -136,6 +139,23 @@
 		localStorage.setItem('theme', theme);
 	}
 
+	function detectAdblock() {
+		if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') return;
+
+		setTimeout(() => {
+			const bait = document.createElement('div');
+			bait.className = 'ads adsbygoogle';
+			bait.style.cssText = 'position:absolute;top:-999px;left:-999px;width:1px;height:1px;';
+			document.body.appendChild(bait);
+			setTimeout(() => {
+				if (bait.offsetHeight === 0 || getComputedStyle(bait).display === 'none') {
+					showAdblockModal = true;
+				}
+				document.body.removeChild(bait);
+			}, 200);
+		}, 500);
+	}
+
 	function enableAds() {
 		let adsScriptLoaded = false;
 
@@ -233,6 +253,7 @@
 		removePad = urlParams.has('removePad');
 
 		enableAds();
+		detectAdblock();
 	});
 
 	function dismissSupporterAlert() {
@@ -244,6 +265,7 @@
 <ModeWatcher defaultMode="system" />
 <Toaster position="top-center" />
 <OnboardingModal bind:open={showOnboarding} />
+<AdblockModal bind:open={showAdblockModal} />
 <Search bind:open={searchToggled} bind:value={searchQuery} />
 <LoadingBar
 	--loading-bar-background-color="rgb(0 100 160 / 80%)"

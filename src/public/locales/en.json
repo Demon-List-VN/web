@@ -1687,5 +1687,10 @@
     "progress_title": "Complete profile setup",
     "progress_desc": "Receive 7 days of free Supporter when you finish",
     "progress_continue": "Continue setup"
+  },
+  "adblock": {
+    "title": "Please disable your ad blocker",
+    "desc": "Ads help keep GDVN free for everyone. Please disable your ad blocker to continue.",
+    "button": "I disabled AdBlock"
   }
 }

@@ -1686,5 +1686,10 @@
     "progress_title": "Hoàn thành thiết lập hồ sơ",
     "progress_desc": "Nhận 7 ngày Supporter miễn phí khi hoàn thành",
     "progress_continue": "Tiếp tục thiết lập"
+  },
+  "adblock": {
+    "title": "Vui lòng tắt trình chặn quảng cáo",
+    "desc": "Quảng cáo giúp GDVN hoạt động miễn phí cho mọi người. Vui lòng tắt trình chặn quảng cáo để tiếp tục.",
+    "button": "Tôi đã tắt AdBlock"
   }
 }
