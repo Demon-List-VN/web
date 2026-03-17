@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ComponentType } from 'svelte';
+	import { fade } from 'svelte/transition';
 	import { page } from '$app/stores';
 	import { mediaQuery } from 'svelte-legos';
 	import {
@@ -90,11 +91,11 @@
 	}
 </script>
 
-<!-- Mobile backdrop -->
+<!-- Backdrop -->
 {#if $sidebarOpen || ($isDesktop && !$sidebarCollapsed)}
 	<!-- svelte-ignore a11y-click-events-have-key-events -->
 	<!-- svelte-ignore a11y-no-static-element-interactions -->
-	<div class="sidebar-backdrop" on:click={handleBackdropClick} />
+	<div class="sidebar-backdrop" on:click={handleBackdropClick} transition:fade={{ duration: 200 }} />
 {/if}
 
 <aside class="sidebar" class:open={$sidebarOpen} class:collapsed={$sidebarCollapsed}>
@@ -294,6 +295,7 @@
 		overflow-x: hidden;
 		padding: 8px;
 		box-sizing: border-box;
+		transition: width 0.2s ease;
 
 		&.collapsed {
 			width: 72px;
@@ -310,6 +312,7 @@
 
 		@media screen and (max-width: 1024px) {
 			transform: translateX(-100%);
+			transition: transform 0.2s ease;
 			z-index: 50;
 			top: 0;
 			padding-top: 56px;
@@ -348,8 +351,9 @@
 		background: none;
 		width: 100%;
 		text-align: left;
-		transition: background-color 0.1s, color 0.1s;
+		transition: background-color 0.1s, color 0.1s, padding 0.2s ease;
 		white-space: nowrap;
+		overflow: hidden;
 
 		&:hover {
 			background-color: hsl(var(--accent));
@@ -365,9 +369,10 @@
 
 	@media screen and (min-width: 1025px) {
 		.sidebar.collapsed {
+			// 72px sidebar - 8px*2 padding = 56px inner
+			// center 18px icon: (56 - 18) / 2 = 19px
 			.nav-item {
-				justify-content: center;
-				padding: 8px 6px;
+				padding: 8px 19px;
 
 				span {
 					display: none;
