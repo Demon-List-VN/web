@@ -193,6 +193,7 @@
 
 <div class="levelsWrapper">
 	<ListFilter listType={currentListType} on:filter={handleFilterChange} />
+	<Ads dataAdFormat="auto"  />
 	<div class="levels">
 		{#each data.levels as level, index}
 			<LevelCard {level} type={$page.params.list || 'dl'} hideTop={$page.params.list === 'cl'} />
@@ -226,6 +227,10 @@
 		margin-inline: auto;
 		margin-bottom: 20px;
 		padding-inline: 10px;
+	}
+
+	.ad-row {
+		grid-column: 1 / -1;
 	}
 
 	@media screen and (max-width: 1100px) {

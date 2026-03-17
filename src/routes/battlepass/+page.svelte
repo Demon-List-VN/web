@@ -19,6 +19,7 @@
 	import CourseTab from './CourseTab.svelte';
 	import MissionsTab from './MissionsTab.svelte';
 	import BattlepassTopBanner from './BattlepassTopBanner.svelte';
+	import Ads from '$lib/components/ads.svelte';
 
 	export let data: PageData;
 
@@ -87,6 +88,8 @@
 			</Alert.Root>
 		</div>
 	{/if}
+
+	<Ads dataAdFormat="auto"  />
 
 	<!-- Main Content Tabs -->
 	<div class="mx-auto max-w-6xl px-4 py-8">

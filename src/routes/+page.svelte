@@ -12,6 +12,10 @@
 	import ClanSpotlight from '$lib/components/homepage/ClanSpotlight.svelte';
 	import SupporterSocialProof from '$lib/components/homepage/SupporterSocialProof.svelte';
 	import FeatureDiscovery from '$lib/components/homepage/FeatureDiscovery.svelte';
+	import OnboardingProgress from '$lib/components/homepage/OnboardingProgress.svelte';
+	import OnboardingModal from '$lib/components/OnboardingModal.svelte';
+
+	let showOnboardingModal = false;
 
 	let activeTab: 'dl' | 'fl' | 'pl' | 'cl' = 'dl';
 
@@ -52,17 +56,23 @@
 	<meta name="description" content="Website dành cho cộng đồng Geometry Dash Việt Nam" />
 </svelte:head>
 
-<!-- Hero Banner (personalized CTA) -->
-<HeroBanner />
-
 <!-- Active Events Strip -->
 <div class="postHeroSpacing">
 	<ActiveEventsStrip {events} />
 </div>
 
-<Ads dataAdFormat="auto" unit="leaderboard" />
-
 <div class="wrapper">
+	<!-- Onboarding progress banner (new users only) -->
+	{#if $user.loggedIn && $user.data && $user.data.onboarding_done === false}
+		<div class="onboardingWrap">
+			<OnboardingProgress
+				step={$user.data.onboarding_step ?? 1}
+				onResume={() => (showOnboardingModal = true)}
+			/>
+		</div>
+		<OnboardingModal bind:open={showOnboardingModal} />
+	{/if}
+
 	<!-- Full-width top: Battlepass + Supporter -->
 	<div class="topRow">
 		<BattlepassHomeWidget {activeSeason} {battlepassProgress} />
@@ -180,11 +190,17 @@
 	</section>
 </div>
 
-<Ads dataAdFormat="auto" unit="leaderboard" />
-
 <style lang="scss">
 	.postHeroSpacing {
 		padding-top: 20px;
+	}
+
+	.onboardingWrap {
+		padding: 20px 50px 0;
+
+		@media screen and (max-width: 900px) {
+			padding: 20px 16px 0;
+		}
 	}
 
 	.wrapper {

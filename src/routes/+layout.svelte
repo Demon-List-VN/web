@@ -33,6 +33,60 @@
 	import { _, locale } from 'svelte-i18n';
 	import PlayerCard from '$lib/components/playerCard.svelte';
 	import { sidebarOpen, toggleSidebar, closeSidebar } from '$lib/client/sidebar';
+	import OnboardingModal from '$lib/components/OnboardingModal.svelte';
+
+	$: showOnboarding =
+		$user.checked &&
+		$user.loggedIn &&
+		$user.data &&
+		$user.data.onboarding_done === false &&
+		($user.data.onboarding_step == null || $user.data.onboarding_step === 1);
+
+	$: linkGroup = [
+		{
+			name: 'List',
+			routes: [
+				{ route: '/list/dl', name: 'Classic' },
+				{ route: '/list/pl', name: 'Platformer' },
+				{ route: '/list/fl', name: 'Featured' },
+				{ route: '/list/cl', name: 'Challenge' }
+			]
+		},
+		{ route: '/battlepass', name: 'Pass' },
+		{ route: '/events', name: $locale === 'en' ? 'Event' : 'Sự kiện' },
+		{
+			name: $locale === 'en' ? 'Community' : 'Cộng đồng',
+			routes: [
+				{ route: '/community', name: $locale === 'en' ? 'Community Hub' : 'Cộng đồng' },
+				{ route: '/players', name: $locale === 'en' ? 'Players' : 'Người chơi' },
+				{ route: '/clans', name: $locale === 'en' ? 'Clans' : 'Hội' }
+			]
+		},
+		{
+			route: 'https://github.com/NamPE286/DemonListVN-geode-mod/releases',
+			name: $locale === 'en' ? 'Mod' : 'Mod'
+		},
+		{ route: '/discord', name: 'Discord' },
+		{ route: '/wiki', name: 'Wiki' },
+		{ route: '/store', name: $locale === 'en' ? 'Store' : 'Cửa hàng' },
+		{
+			name: $locale === 'en' ? 'Misc' : 'Khác',
+			routes: [
+				{
+					route: '/misc/compare',
+					name: $locale === 'en' ? 'Player comparison' : 'So sánh người chơi'
+				},
+				{
+					route: '/misc/roulette',
+					name: 'Roulette'
+				},
+				{
+					route: '/misc/roulette-v2',
+					name: 'Roulette v2'
+				}
+			]
+		}
+	];
 
 	let searchQuery = '';
 	let searchToggled = false;
@@ -40,7 +94,9 @@
 	let hideNav = false;
 	let removePad = false;
 	let pathname = '';
-	let supporterAlertDismissed = false;
+	let supporterAlertDismissed =
+		typeof localStorage !== 'undefined' &&
+		localStorage.getItem('supporterAlertDismissed') === 'true';
 	$: pathname = $page.url.pathname;
 
 	const isDesktop = mediaQuery('(min-width: 1025px)');
@@ -72,6 +128,25 @@
 	$: if (pathname) {
 		closeSidebar();
 	}
+  
+	function enableAds() {
+		let adsScriptLoaded = false;
+
+		user.subscribe(() => {
+			// const enabled = u.checked && (!u.loggedIn || !isActive(u.data.supporterUntil));
+			const enabled = true;
+
+			if (!adsScriptLoaded && enabled) {
+				adsScriptLoaded = true;
+				const s = document.createElement('script');
+				s.async = true;
+				s.src =
+					'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4605218533506777';
+				s.crossOrigin = 'anonymous';
+				document.head.appendChild(s);
+			}
+		});
+  }
 
 	onMount(() => {
 		const savedLocale = localStorage.getItem('locale');
@@ -108,25 +183,18 @@
 		hideNav = urlParams.has('hideNav');
 		removePad = urlParams.has('removePad');
 
-		user.subscribe((u) => {
-			if (u.checked && (!u.loggedIn || !isActive(u.data.supporterUntil))) {
-				const s = document.createElement('script');
-				s.async = true;
-				s.src =
-					'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4605218533506777';
-				s.crossOrigin = 'anonymous';
-				document.head.appendChild(s);
-			}
-		});
+		enableAds();
 	});
 
 	function dismissSupporterAlert() {
 		supporterAlertDismissed = true;
+		localStorage.setItem('supporterAlertDismissed', 'true');
 	}
 </script>
 
 <ModeWatcher defaultMode="system" />
 <Toaster position="top-center" />
+<OnboardingModal bind:open={showOnboarding} />
 <Search bind:open={searchToggled} bind:value={searchQuery} />
 <LoadingBar
 	--loading-bar-background-color="rgb(0 100 160 / 80%)"
@@ -494,6 +562,10 @@
 			border-bottom: 1px solid var(--border1);
 			margin-bottom: 20px;
 		}
+  
+    .link:hover {
+      color: var(--textColor1);
+    }
 
 		.links {
 			display: flex;

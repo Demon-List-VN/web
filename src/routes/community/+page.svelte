@@ -11,6 +11,7 @@
 	import { browser } from '$app/environment';
 	import { getCommunityCache, setCommunityCache } from '$lib/client/communityCache';
 	import { toast } from 'svelte-sonner';
+	import Ads from '$lib/components/ads.svelte';
 	import {
 		Plus,
 		MessageCircle,
@@ -305,6 +306,8 @@
 			<p>{$_('community.subtitle')}</p>
 		</div>
 	</div>
+
+	<Ads dataAdFormat="auto"  />
 
 	<div class="communityBody">
 		<!-- Toolbar -->

@@ -17,9 +17,9 @@
 					Authorization: 'Bearer ' + (await $user.token())!,
 					'Content-Type': 'application/json'
 				}
-			}).then((res) => {
+			}).then(async (res) => {
 				if (res.ok) {
-					$user.syncRole();
+					await $user.syncRole();
 				}
 			}),
 			{

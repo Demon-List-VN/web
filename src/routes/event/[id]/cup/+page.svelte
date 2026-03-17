@@ -28,7 +28,7 @@
 	<EventBanner {data} />
 {/if}
 
-<Ads dataAdFormat="auto" unit="leaderboard" />
+<Ads dataAdFormat="auto"  />
 
 {#if !data.hidden || ($user.loggedIn && $user.data.isAdmin)}
 	<Tabs.Root bind:value={tab} class="mt-[20px] flex flex-col items-center">
