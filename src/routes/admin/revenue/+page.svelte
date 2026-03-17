@@ -423,6 +423,7 @@
 									<Table.Head class="w-[50px]">#</Table.Head>
 									<Table.Head>User</Table.Head>
 									<Table.Head class="text-right">Total Spent</Table.Head>
+									<Table.Head class="text-right">% of Total</Table.Head>
 									<Table.Head class="text-right">Orders</Table.Head>
 									<Table.Head class="text-right">Avg Order</Table.Head>
 								</Table.Row>
@@ -437,6 +438,11 @@
 											</a>
 										</Table.Cell>
 										<Table.Cell class="text-right">{formatVND(u.revenue)}</Table.Cell>
+										<Table.Cell class="text-right">
+												{analyticsData.summary.totalRevenue > 0
+													? ((u.revenue / analyticsData.summary.totalRevenue) * 100).toFixed(1)
+													: '0.0'}%
+											</Table.Cell>
 										<Table.Cell class="text-right">{u.orderCount}</Table.Cell>
 										<Table.Cell class="text-right">
 											{formatVND(Math.round(u.revenue / u.orderCount))}
