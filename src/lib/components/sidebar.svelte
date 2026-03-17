@@ -1,30 +1,18 @@
 <script lang="ts">
 	import type { ComponentType } from 'svelte';
 	import { page } from '$app/stores';
-	import { sidebarOpen, closeSidebar } from '$lib/client/sidebar';
+	import {
+		sidebarOpen,
+		closeSidebar,
+		sidebarCollapsed,
+		setSidebarCollapsed
+	} from '$lib/client/sidebar';
 	import { user } from '$lib/client';
 	import { isActive } from '$lib/client/isSupporterActive';
-	import { _, locale } from 'svelte-i18n';
+	import { _ } from 'svelte-i18n';
 	import { slide } from 'svelte/transition';
 	import ChevronDown from 'svelte-radix/ChevronDown.svelte';
-
-	import {
-		LayoutList,
-		Ticket,
-		Calendar,
-		Users,
-		Download,
-		MessageCircle,
-		BookOpen,
-		ShoppingBag,
-		MoreHorizontal,
-		Heart,
-		List,
-		Gamepad2,
-		Award,
-		Shuffle,
-		GitCompare
-	} from 'lucide-svelte';
+	import { Heart } from 'lucide-svelte';
 
 	$: pathname = $page.url.pathname;
 
@@ -65,71 +53,7 @@
 		route?: string;
 		routes?: { route: string; name: string; icon?: ComponentType }[];
 	};
-
-	$: navGroups = [
-		{
-			name: 'List',
-			icon: LayoutList,
-			routes: [
-				{ route: '/list/dl', name: 'Classic', icon: List },
-				{ route: '/list/pl', name: 'Platformer', icon: Gamepad2 },
-				{ route: '/list/fl', name: 'Featured', icon: Award },
-				{ route: '/list/cl', name: 'Challenge', icon: Shuffle }
-			]
-		},
-		{ route: '/battlepass', name: 'Pass', icon: Ticket },
-		{ route: '/events', name: $locale === 'en' ? 'Event' : 'Sự kiện', icon: Calendar },
-		{
-			name: $locale === 'en' ? 'Community' : 'Cộng đồng',
-			icon: Users,
-			routes: [
-				{
-					route: '/community',
-					name: $locale === 'en' ? 'Community Hub' : 'Cộng đồng',
-					icon: MessageCircle
-				},
-				{
-					route: '/players',
-					name: $locale === 'en' ? 'Players' : 'Người chơi',
-					icon: Users
-				},
-				{
-					route: '/clans',
-					name: $locale === 'en' ? 'Clans' : 'Hội',
-					icon: Users
-				}
-			]
-		},
-		{
-			route: 'https://github.com/NamPE286/DemonListVN-geode-mod/releases',
-			name: 'Mod',
-			icon: Download
-		},
-		{ route: '/discord', name: 'Discord', icon: MessageCircle },
-		{ route: '/wiki', name: 'Wiki', icon: BookOpen },
-		{ route: '/store', name: $locale === 'en' ? 'Store' : 'Cửa hàng', icon: ShoppingBag },
-		{
-			name: $locale === 'en' ? 'Misc' : 'Khác',
-			icon: MoreHorizontal,
-			routes: [
-				{
-					route: '/misc/compare',
-					name: $locale === 'en' ? 'Player comparison' : 'So sánh người chơi',
-					icon: GitCompare
-				},
-				{
-					route: '/misc/roulette',
-					name: 'Roulette',
-					icon: Shuffle
-				},
-				{
-					route: '/misc/roulette-v2',
-					name: 'Roulette v2',
-					icon: Shuffle
-				}
-			]
-		}
-	] as NavGroup[];
+	export let linkGroup: NavGroup[] = [];
 
 	function handleLinkClick() {
 		closeSidebar();
@@ -137,11 +61,20 @@
 
 	// Auto-expand active groups on mount
 	$: {
-		for (const group of navGroups) {
+		for (const group of linkGroup) {
 			if (group.routes && isGroupActive(group) && expandedGroups[group.name] === undefined) {
 				expandedGroups[group.name] = true;
 			}
 		}
+	}
+
+	function handleGroupToggle(name: string) {
+		if (window.matchMedia('(min-width: 1025px)').matches && $sidebarCollapsed) {
+			setSidebarCollapsed(false);
+			expandedGroups[name] = true;
+			return;
+		}
+		toggleGroup(name);
 	}
 </script>
 
@@ -152,16 +85,16 @@
 	<div class="sidebar-backdrop" on:click={closeSidebar} />
 {/if}
 
-<aside class="sidebar" class:open={$sidebarOpen}>
+<aside class="sidebar" class:open={$sidebarOpen} class:collapsed={$sidebarCollapsed}>
 	<nav class="sidebar-nav">
-		{#each navGroups as group}
+		{#each linkGroup as group}
 			{#if group.routes}
 				<!-- Expandable group -->
 				<div class="nav-group">
 					<button
 						class="nav-item nav-group-trigger"
 						class:active={isGroupActive(group)}
-						on:click={() => toggleGroup(group.name)}
+						on:click={() => handleGroupToggle(group.name)}
 					>
 						<svelte:component this={group.icon} size={18} />
 						<span>{group.name}</span>
@@ -169,7 +102,7 @@
 							<ChevronDown size={14} />
 						</span>
 					</button>
-					{#if expandedGroups[group.name]}
+					{#if expandedGroups[group.name] && !$sidebarCollapsed}
 						<div class="nav-subitems" transition:slide={{ duration: 150 }}>
 							{#each group.routes as link}
 								<a
@@ -257,7 +190,11 @@
 		overflow-x: hidden;
 		padding: 8px;
 		box-sizing: border-box;
-		transition: transform 0.2s ease;
+		transition: transform 0.2s ease, width 0.2s ease;
+
+		&.collapsed {
+			width: 72px;
+		}
 
 		/* Custom scrollbar */
 		&::-webkit-scrollbar {
@@ -273,6 +210,7 @@
 			z-index: 50;
 			top: 0;
 			padding-top: 56px;
+			width: 240px;
 
 			&.open {
 				transform: translateX(0);
@@ -319,6 +257,28 @@
 			background-color: hsl(var(--accent));
 			color: var(--textColor);
 			font-weight: 600;
+		}
+	}
+
+	@media screen and (min-width: 1025px) {
+		.sidebar.collapsed {
+			.nav-item {
+				justify-content: center;
+				padding: 8px 6px;
+
+				span {
+					display: none;
+				}
+			}
+
+			.nav-group-trigger .chevron {
+				display: none;
+			}
+
+			.nav-subitems,
+			.nav-separator {
+				display: none;
+			}
 		}
 	}
 

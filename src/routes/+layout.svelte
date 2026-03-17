@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { ComponentType } from 'svelte';
 	import '../app.pcss';
 	import '../app.scss';
 	import 'non.geist';
@@ -9,6 +10,7 @@
 	import HamburgerMenu from 'svelte-radix/HamburgerMenu.svelte';
 	import MagnifyingGlass from 'svelte-radix/MagnifyingGlass.svelte';
 	import X from 'svelte-radix/Cross2.svelte';
+	import { PanelLeftClose, PanelLeftOpen } from 'lucide-svelte';
 
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Toaster } from '$lib/components/ui/sonner';
@@ -32,7 +34,30 @@
 	import { page } from '$app/stores';
 	import { _, locale } from 'svelte-i18n';
 	import PlayerCard from '$lib/components/playerCard.svelte';
-	import { sidebarOpen, toggleSidebar, closeSidebar } from '$lib/client/sidebar';
+	import {
+		sidebarOpen,
+		sidebarCollapsed,
+		toggleSidebar,
+		closeSidebar,
+		toggleSidebarCollapsed,
+		hydrateSidebarCollapsed
+	} from '$lib/client/sidebar';
+	import {
+		LayoutList,
+		Ticket,
+		Calendar,
+		Users,
+		Download,
+		MessageCircle,
+		BookOpen,
+		ShoppingBag,
+		MoreHorizontal,
+		List,
+		Gamepad2,
+		Award,
+		Shuffle,
+		GitCompare
+	} from 'lucide-svelte';
 	import OnboardingModal from '$lib/components/OnboardingModal.svelte';
 
 	$: showOnboarding =
@@ -42,51 +67,69 @@
 		$user.data.onboarding_done === false &&
 		($user.data.onboarding_step == null || $user.data.onboarding_step === 1);
 
+	type NavGroup = {
+		name: string;
+		icon: ComponentType;
+		route?: string;
+		routes?: { route: string; name: string; icon?: ComponentType }[];
+	};
+
 	$: linkGroup = [
 		{
 			name: 'List',
+			icon: LayoutList,
 			routes: [
-				{ route: '/list/dl', name: 'Classic' },
-				{ route: '/list/pl', name: 'Platformer' },
-				{ route: '/list/fl', name: 'Featured' },
-				{ route: '/list/cl', name: 'Challenge' }
+				{ route: '/list/dl', name: 'Classic', icon: List },
+				{ route: '/list/pl', name: 'Platformer', icon: Gamepad2 },
+				{ route: '/list/fl', name: 'Featured', icon: Award },
+				{ route: '/list/cl', name: 'Challenge', icon: Shuffle }
 			]
 		},
-		{ route: '/battlepass', name: 'Pass' },
-		{ route: '/events', name: $locale === 'en' ? 'Event' : 'Sự kiện' },
+		{ route: '/battlepass', name: 'Pass', icon: Ticket },
+		{ route: '/events', name: $locale === 'en' ? 'Event' : 'Sự kiện', icon: Calendar },
 		{
 			name: $locale === 'en' ? 'Community' : 'Cộng đồng',
+			icon: Users,
 			routes: [
-				{ route: '/community', name: $locale === 'en' ? 'Community Hub' : 'Cộng đồng' },
-				{ route: '/players', name: $locale === 'en' ? 'Players' : 'Người chơi' },
-				{ route: '/clans', name: $locale === 'en' ? 'Clans' : 'Hội' }
+				{
+					route: '/community',
+					name: $locale === 'en' ? 'Community Hub' : 'Cộng đồng',
+					icon: MessageCircle
+				},
+				{ route: '/players', name: $locale === 'en' ? 'Players' : 'Người chơi', icon: Users },
+				{ route: '/clans', name: $locale === 'en' ? 'Clans' : 'Hội', icon: Users }
 			]
 		},
 		{
 			route: 'https://github.com/NamPE286/DemonListVN-geode-mod/releases',
-			name: $locale === 'en' ? 'Mod' : 'Mod'
+			name: $locale === 'en' ? 'Mod' : 'Mod',
+			icon: Download
 		},
-		{ route: '/discord', name: 'Discord' },
-		{ route: '/wiki', name: 'Wiki' },
-		{ route: '/store', name: $locale === 'en' ? 'Store' : 'Cửa hàng' },
+		{ route: '/discord', name: 'Discord', icon: MessageCircle },
+		{ route: '/wiki', name: 'Wiki', icon: BookOpen },
+		{ route: '/store', name: $locale === 'en' ? 'Store' : 'Cửa hàng', icon: ShoppingBag },
 		{
 			name: $locale === 'en' ? 'Misc' : 'Khác',
+			icon: MoreHorizontal,
 			routes: [
 				{
 					route: '/misc/compare',
-					name: $locale === 'en' ? 'Player comparison' : 'So sánh người chơi'
+					name: $locale === 'en' ? 'Player comparison' : 'So sánh người chơi',
+					icon: GitCompare
 				},
 				{
 					route: '/misc/roulette',
-					name: 'Roulette'
+					name: 'Roulette',
+					icon: Shuffle
 				},
 				{
 					route: '/misc/roulette-v2',
-					name: 'Roulette v2'
+					name: 'Roulette v2',
+					icon: Shuffle
 				}
 			]
 		}
-	];
+	] as NavGroup[];
 
 	let searchQuery = '';
 	let searchToggled = false;
@@ -149,6 +192,7 @@
   }
 
 	onMount(() => {
+		hydrateSidebarCollapsed();
 		const savedLocale = localStorage.getItem('locale');
 
 		locale.set(savedLocale || 'vi');
@@ -178,6 +222,15 @@
 		}
 
 		isVisible = true;
+		user.subscribe((data) => {
+			if (!data.loggedIn) {
+				return;
+			}
+
+			linkGroup[0].routes![0].route = `/list/dl?uid=${data.data.uid}`;
+			linkGroup[0].routes![1].route = `/list/pl?uid=${data.data.uid}`;
+			linkGroup[0].routes![2].route = `/list/fl?uid=${data.data.uid}`;
+		});
 
 		const urlParams = new URLSearchParams(window.location.search);
 		hideNav = urlParams.has('hideNav');
@@ -205,6 +258,17 @@
 	<!-- Top bar -->
 	<header class="topbar">
 		<div class="topbar-left">
+			<button
+				class="desktop-collapse-toggle"
+				on:click={toggleSidebarCollapsed}
+				aria-label={$sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+			>
+				{#if $sidebarCollapsed}
+					<PanelLeftOpen size={16} />
+				{:else}
+					<PanelLeftClose size={16} />
+				{/if}
+			</button>
 			<button class="sidebar-toggle" on:click={toggleSidebar} aria-label="Toggle sidebar">
 				{#if $sidebarOpen}
 					<X size={18} />
@@ -303,11 +367,16 @@
 	</header>
 
 	<!-- Sidebar -->
-	<Sidebar />
+	<Sidebar {linkGroup} />
 {/if}
 
 <!-- Main content wrapper -->
-<div class="layout-container" class:has-sidebar={!hideNav} class:no-pad={removePad}>
+<div
+	class="layout-container"
+	class:has-sidebar={!hideNav}
+	class:sidebar-collapsed={$sidebarCollapsed}
+	class:no-pad={removePad}
+>
 	{#if !supporterAlertDismissed && $user.checked && isVisible && (!$user.loggedIn || !isActive($user.data.supporterUntil)) && pathname !== '/supporter' && pathname !== '/' && !pathname.startsWith('/player/') && !pathname.startsWith('/@')}
 		<div class="px-[5px] pt-[20px] md:px-[30px]">
 			<Alert.Root
@@ -485,6 +554,29 @@
 		}
 	}
 
+	.desktop-collapse-toggle {
+		display: none;
+		align-items: center;
+		justify-content: center;
+		width: 32px;
+		height: 32px;
+		border: none;
+		background: none;
+		color: var(--textColor2);
+		cursor: pointer;
+		border-radius: 6px;
+		transition: background-color 0.1s, color 0.1s;
+
+		&:hover {
+			background-color: hsl(var(--accent));
+			color: var(--textColor1);
+		}
+
+		@media screen and (min-width: 1025px) {
+			display: flex;
+		}
+	}
+
 	.logo-link {
 		display: flex;
 		align-items: center;
@@ -544,6 +636,12 @@
 			}
 		}
 
+		&.has-sidebar.sidebar-collapsed {
+			@media screen and (min-width: 1025px) {
+				margin-left: 72px;
+			}
+		}
+
 		&.no-pad {
 			padding-top: 0;
 		}
@@ -562,11 +660,6 @@
 			border-bottom: 1px solid var(--border1);
 			margin-bottom: 20px;
 		}
-  
-    .link:hover {
-      color: var(--textColor1);
-    }
-
 		.links {
 			display: flex;
 			justify-content: center;
