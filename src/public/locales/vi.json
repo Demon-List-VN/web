@@ -1563,6 +1563,7 @@
     "daily_checkin": "Điểm danh hàng ngày",
     "daily_checkin_desc": "Xem quảng cáo để nhận XP thưởng mỗi ngày",
     "watch_ad": "Xem quảng cáo",
+    "ad_unavailable": "Quảng cáo không khả dụng, vui lòng thử lại sau",
     "loading": "Đang tải...",
     "course": {
       "title": "Chế độ Course",

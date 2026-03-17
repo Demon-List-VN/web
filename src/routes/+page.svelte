@@ -61,8 +61,6 @@
 	<ActiveEventsStrip {events} />
 </div>
 
-<Ads dataAdFormat="auto"  />
-
 <div class="wrapper">
 	<!-- Onboarding progress banner (new users only) -->
 	{#if $user.loggedIn && $user.data && $user.data.onboarding_done === false}

@@ -1564,6 +1564,7 @@
     "daily_checkin": "Daily Check-in",
     "daily_checkin_desc": "Watch an ad to earn bonus XP once per day",
     "watch_ad": "Watch Ad",
+    "ad_unavailable": "Ad not available, please check back later",
     "loading": "Loading...",
     "course": {
       "title": "Course Mode",

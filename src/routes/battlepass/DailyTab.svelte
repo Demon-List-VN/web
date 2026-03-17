@@ -23,6 +23,7 @@
 	let mounted = false;
 	let checkinStatus: { claimed: boolean; xp: number } | null = null;
 	let adLoading = false;
+	let adUnavailable = false; // true when Google returns no fill
 	const defaultLevel = {
 		id: 0,
 		levelId: 0,
@@ -143,12 +144,7 @@
 		}
 
 		googletag.cmd.push(() => {
-			console.log('[RewardedAd] cmd started');
-
-			// Restores the original static 1x1 slot from <head> after rewarded ad is done.
-			// Declared first (function hoisting) so it's safe to call anywhere below.
 			function restoreStaticSlot() {
-				console.log('[RewardedAd] restoring static slot');
 				googletag
 					.defineSlot('/23344439882/pass-daily-checkin', [1, 1], 'div-gpt-ad-1773647417565-0')
 					?.addService(googletag.pubads());
@@ -156,12 +152,10 @@
 
 			// Destroy the static slot first to avoid duplicate unit conflict
 			const existingSlots = googletag.pubads().getSlots();
-			console.log('[RewardedAd] existing slots:', existingSlots.map((s: any) => s.getAdUnitPath()));
 			const staticSlot = existingSlots.find(
 				(s: any) => s.getAdUnitPath() === '/23344439882/pass-daily-checkin'
 			);
 			if (staticSlot) {
-				console.log('[RewardedAd] destroying static slot');
 				googletag.destroySlots([staticSlot]);
 			}
 
@@ -169,7 +163,6 @@
 				'/23344439882/pass-daily-checkin',
 				googletag.enums.OutOfPageFormat.REWARDED
 			);
-			console.log('[RewardedAd] defineOutOfPageSlot result:', slot);
 
 			if (!slot) {
 				restoreStaticSlot();
@@ -180,7 +173,6 @@
 
 			slot.addService(googletag.pubads());
 			slot.setTargeting('user_id', $user.data?.uid);
-			console.log('[RewardedAd] slot configured, user_id:', $user.data?.uid);
 
 			const cleanup = () => {
 				googletag.pubads().removeEventListener('rewardedSlotReady', onReady);
@@ -189,12 +181,10 @@
 			};
 
 			const onReady = (e: any) => {
-				console.log('[RewardedAd] rewardedSlotReady — calling makeRewardedVisible');
 				e.makeRewardedVisible();
 			};
 
 			const onGranted = async (e: any) => {
-				console.log('[RewardedAd] rewardedSlotGranted', e);
 				cleanup();
 				googletag.destroySlots([slot]);
 				restoreStaticSlot();
@@ -206,7 +196,6 @@
 			};
 
 			const onClosed = (e: any) => {
-				console.log('[RewardedAd] rewardedSlotClosed', e);
 				cleanup();
 				googletag.destroySlots([slot]);
 				restoreStaticSlot();
@@ -216,22 +205,19 @@
 			googletag.pubads().addEventListener('rewardedSlotReady', onReady);
 			googletag.pubads().addEventListener('rewardedSlotGranted', onGranted);
 			googletag.pubads().addEventListener('rewardedSlotClosed', onClosed);
-
-			// Diagnostic listeners — tell us if the request went out and what came back
-			googletag.pubads().addEventListener('slotRequested', (e: any) => {
-				if (e.slot === slot) console.log('[RewardedAd] slotRequested');
-			});
-			googletag.pubads().addEventListener('slotResponseReceived', (e: any) => {
-				if (e.slot === slot) console.log('[RewardedAd] slotResponseReceived');
-			});
 			googletag.pubads().addEventListener('slotRenderEnded', (e: any) => {
-				if (e.slot === slot)
-					console.log('[RewardedAd] slotRenderEnded — isEmpty:', e.isEmpty, ' creativeId:', e.creativeId, ' lineItemId:', e.lineItemId);
+				if (e.slot !== slot) return;
+				if (e.isEmpty) {
+					cleanup();
+					googletag.destroySlots([slot]);
+					restoreStaticSlot();
+					adUnavailable = true;
+					adLoading = false;
+					toast.error($_('battlepass.ad_unavailable'));
+				}
 			});
 
-			console.log('[RewardedAd] calling googletag.display');
 			googletag.display(slot);
-			console.log('[RewardedAd] display called');
 		});
 	}
 
@@ -505,11 +491,11 @@
 						<Button
 							size="sm"
 							class="bg-yellow-500 text-white hover:bg-yellow-600"
-							disabled={adLoading}
+							disabled={adLoading || adUnavailable}
 							on:click={watchRewardedAd}
 						>
 							<Tv class="mr-1 h-4 w-4" />
-							{adLoading ? $_('battlepass.loading') : $_('battlepass.watch_ad')}
+							{adLoading ? $_('battlepass.loading') : adUnavailable ? $_('battlepass.ad_unavailable') : $_('battlepass.watch_ad')}
 						</Button>
 					{/if}
 				</div>
