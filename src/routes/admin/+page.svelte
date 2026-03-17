@@ -81,6 +81,11 @@
 			]
 		},
 		{
+			title: 'Store & Revenue',
+			icon: '💰',
+			items: [{ name: 'Revenue Analytics', href: '/admin/revenue' }]
+		},
+		{
 			title: 'Community',
 			icon: '💬',
 			items: [
