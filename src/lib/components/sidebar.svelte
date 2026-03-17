@@ -316,7 +316,13 @@
 			z-index: 50;
 			top: 0;
 			padding-top: 56px;
-			width: 240px;
+			width: 75vw;
+			max-width: 320px;
+
+			&.collapsed {
+				width: 75vw;
+				max-width: 320px;
+			}
 
 			&.open {
 				transform: translateX(0);
