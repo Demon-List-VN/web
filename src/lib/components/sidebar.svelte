@@ -96,7 +96,7 @@
 				<!-- Expandable group -->
 				<div class="nav-group">
 					{#if showTooltip}
-						<Tooltip.Root>
+						<Tooltip.Root openDelay={0} closeDelay={0}>
 							<Tooltip.Trigger asChild let:builder>
 								<button
 									{...builder}
@@ -112,7 +112,10 @@
 									</span>
 								</button>
 							</Tooltip.Trigger>
-							<Tooltip.Content>{group.name}</Tooltip.Content>
+							<Tooltip.Content side="right" align="center" sideOffset={10}>
+								{group.name}
+								<Tooltip.Arrow class="fill-primary" />
+							</Tooltip.Content>
 						</Tooltip.Root>
 					{:else}
 						<button
@@ -149,7 +152,7 @@
 			{:else if group.route}
 				<!-- Direct link -->
 				{#if showTooltip}
-					<Tooltip.Root>
+					<Tooltip.Root openDelay={0} closeDelay={0}>
 						<Tooltip.Trigger asChild let:builder>
 							<a
 								{...builder}
@@ -164,7 +167,10 @@
 								<span>{group.name}</span>
 							</a>
 						</Tooltip.Trigger>
-						<Tooltip.Content>{group.name}</Tooltip.Content>
+						<Tooltip.Content side="right" align="center" sideOffset={10}>
+							{group.name}
+							<Tooltip.Arrow class="fill-primary" />
+						</Tooltip.Content>
 					</Tooltip.Root>
 				{:else}
 					<a
@@ -186,7 +192,7 @@
 		<!-- Supporter link -->
 		{#if $user.loggedIn && isActive($user.data.supporterUntil)}
 			{#if showTooltip}
-				<Tooltip.Root>
+				<Tooltip.Root openDelay={0} closeDelay={0}>
 					<Tooltip.Trigger asChild let:builder>
 						<a
 							{...builder}
@@ -201,7 +207,10 @@
 							<span>{$_('nav.supporter')}</span>
 						</a>
 					</Tooltip.Trigger>
-					<Tooltip.Content>{$_('nav.supporter')}</Tooltip.Content>
+					<Tooltip.Content side="right" align="center" sideOffset={10}>
+						{$_('nav.supporter')}
+						<Tooltip.Arrow class="fill-primary" />
+					</Tooltip.Content>
 				</Tooltip.Root>
 			{:else}
 				<a
@@ -217,7 +226,7 @@
 			{/if}
 		{:else}
 			{#if showTooltip}
-				<Tooltip.Root>
+				<Tooltip.Root openDelay={0} closeDelay={0}>
 					<Tooltip.Trigger asChild let:builder>
 						<a
 							{...builder}
@@ -231,7 +240,10 @@
 							<span>{$_('nav.supporter')}</span>
 						</a>
 					</Tooltip.Trigger>
-					<Tooltip.Content>{$_('nav.supporter')}</Tooltip.Content>
+					<Tooltip.Content side="right" align="center" sideOffset={10}>
+						{$_('nav.supporter')}
+						<Tooltip.Arrow class="fill-primary" />
+					</Tooltip.Content>
 				</Tooltip.Root>
 			{:else}
 				<a
