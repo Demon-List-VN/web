@@ -54,6 +54,7 @@
 		routes?: { route: string; name: string; icon?: ComponentType }[];
 	};
 	export let linkGroup: NavGroup[] = [];
+	const DESKTOP_BREAKPOINT = 1025;
 
 	function handleLinkClick() {
 		closeSidebar();
@@ -69,7 +70,7 @@
 	}
 
 	function handleGroupToggle(name: string) {
-		if (window.matchMedia('(min-width: 1025px)').matches && $sidebarCollapsed) {
+		if (window.matchMedia(`(min-width: ${DESKTOP_BREAKPOINT}px)`).matches && $sidebarCollapsed) {
 			setSidebarCollapsed(false);
 			expandedGroups[name] = true;
 			return;

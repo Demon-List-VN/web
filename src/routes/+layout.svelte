@@ -73,15 +73,16 @@
 		route?: string;
 		routes?: { route: string; name: string; icon?: ComponentType }[];
 	};
+	$: listUidQuery = $user.loggedIn ? `?uid=${$user.data.uid}` : '';
 
 	$: linkGroup = [
 		{
 			name: 'List',
 			icon: LayoutList,
 			routes: [
-				{ route: '/list/dl', name: 'Classic', icon: List },
-				{ route: '/list/pl', name: 'Platformer', icon: Gamepad2 },
-				{ route: '/list/fl', name: 'Featured', icon: Award },
+				{ route: `/list/dl${listUidQuery}`, name: 'Classic', icon: List },
+				{ route: `/list/pl${listUidQuery}`, name: 'Platformer', icon: Gamepad2 },
+				{ route: `/list/fl${listUidQuery}`, name: 'Featured', icon: Award },
 				{ route: '/list/cl', name: 'Challenge', icon: Shuffle }
 			]
 		},
@@ -222,15 +223,6 @@
 		}
 
 		isVisible = true;
-		user.subscribe((data) => {
-			if (!data.loggedIn) {
-				return;
-			}
-
-			linkGroup[0].routes![0].route = `/list/dl?uid=${data.data.uid}`;
-			linkGroup[0].routes![1].route = `/list/pl?uid=${data.data.uid}`;
-			linkGroup[0].routes![2].route = `/list/fl?uid=${data.data.uid}`;
-		});
 
 		const urlParams = new URLSearchParams(window.location.search);
 		hideNav = urlParams.has('hideNav');
