@@ -63,6 +63,14 @@
 		closeSidebar();
 	}
 
+	function handleBackdropClick() {
+		if ($isDesktop) {
+			setSidebarCollapsed(true);
+		} else {
+			closeSidebar();
+		}
+	}
+
 	// Auto-expand active groups on mount
 	$: {
 		for (const group of linkGroup) {
@@ -83,10 +91,10 @@
 </script>
 
 <!-- Mobile backdrop -->
-{#if $sidebarOpen}
+{#if $sidebarOpen || ($isDesktop && !$sidebarCollapsed)}
 	<!-- svelte-ignore a11y-click-events-have-key-events -->
 	<!-- svelte-ignore a11y-no-static-element-interactions -->
-	<div class="sidebar-backdrop" on:click={closeSidebar} />
+	<div class="sidebar-backdrop" on:click={handleBackdropClick} />
 {/if}
 
 <aside class="sidebar" class:open={$sidebarOpen} class:collapsed={$sidebarCollapsed}>
@@ -266,10 +274,10 @@
 		inset: 0;
 		background: rgba(0, 0, 0, 0.5);
 		z-index: 40;
-		display: none;
+		display: block;
 
-		@media screen and (max-width: 1024px) {
-			display: block;
+		@media screen and (min-width: 1025px) {
+			top: 48px;
 		}
 	}
 
