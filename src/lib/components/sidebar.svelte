@@ -139,7 +139,7 @@
 							</span>
 						</button>
 					{/if}
-					{#if expandedGroups[group.name] && !$sidebarCollapsed}
+					{#if expandedGroups[group.name] && (!$sidebarCollapsed || !$isDesktop)}
 						<div class="nav-subitems">
 							{#each group.routes as link}
 								<a
