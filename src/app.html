@@ -10,14 +10,12 @@
 			src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"
 			crossorigin="anonymous"
 		></script>
+		<script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js" crossorigin="anonymous"></script>
 		<script>
-			window.googletag = window.googletag || { cmd: [] };
-			googletag.cmd.push(function () {
-				googletag
-					.defineSlot('/23344439882/pass-daily-checkin', [1, 1], 'div-gpt-ad-1773647417565-0')
-					.addService(googletag.pubads());
-				// NOTE: enableSingleRequest() is intentionally omitted — it is
-				// incompatible with out-of-page rewarded ad slots (GPT limitation).
+			window.googletag = window.googletag || {cmd: []};
+			googletag.cmd.push(function() {
+				googletag.defineSlot('/23344439882/pass-daily-checkin', [MISSING_WIDTH, MISSING_HEIGHT], 'div-gpt-ad-1773718776957-0').addService(googletag.pubads());
+				googletag.pubads().enableSingleRequest();
 				googletag.enableServices();
 			});
 		</script>

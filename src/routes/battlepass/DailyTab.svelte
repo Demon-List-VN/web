@@ -136,89 +136,14 @@
 		if (adLoading || checkinStatus?.claimed) return;
 		adLoading = true;
 
-		const googletag = (window as any).googletag;
-		if (!googletag) {
-			adLoading = false;
-			toast.error('Ads not available');
-			return;
-		}
+		const adContainer = document.createElement('div');
+		adContainer.id = 'div-gpt-ad-1773718776957-0';
 
-		googletag.cmd.push(() => {
-			function restoreStaticSlot() {
-				googletag
-					.defineSlot('/23344439882/pass-daily-checkin', [1, 1], 'div-gpt-ad-1773647417565-0')
-					?.addService(googletag.pubads());
-			}
+		const script = document.createElement('script');
+		script.text = "googletag.cmd.push(function() { googletag.display('div-gpt-ad-1773718776957-0'); });";
+		adContainer.appendChild(script);
 
-			// Destroy the static slot first to avoid duplicate unit conflict
-			const existingSlots = googletag.pubads().getSlots();
-			const staticSlot = existingSlots.find(
-				(s: any) => s.getAdUnitPath() === '/23344439882/pass-daily-checkin'
-			);
-			if (staticSlot) {
-				googletag.destroySlots([staticSlot]);
-			}
-
-			const slot = googletag.defineOutOfPageSlot(
-				'/23344439882/pass-daily-checkin',
-				googletag.enums.OutOfPageFormat.REWARDED
-			);
-
-			if (!slot) {
-				restoreStaticSlot();
-				adLoading = false;
-				toast.error('Rewarded ad not supported or blocked');
-				return;
-			}
-
-			slot.addService(googletag.pubads());
-			slot.setTargeting('user_id', $user.data?.uid);
-
-			const cleanup = () => {
-				googletag.pubads().removeEventListener('rewardedSlotReady', onReady);
-				googletag.pubads().removeEventListener('rewardedSlotGranted', onGranted);
-				googletag.pubads().removeEventListener('rewardedSlotClosed', onClosed);
-			};
-
-			const onReady = (e: any) => {
-				e.makeRewardedVisible();
-			};
-
-			const onGranted = async (e: any) => {
-				cleanup();
-				googletag.destroySlots([slot]);
-				restoreStaticSlot();
-				const xp = checkinStatus?.xp ?? 25;
-				checkinStatus = { claimed: true, xp };
-				toast.success($_('battlepass.xp_claimed', { values: { xp } }));
-				dispatch('xpClaimed', { xp, levelId: 0 });
-				adLoading = false;
-			};
-
-			const onClosed = (e: any) => {
-				cleanup();
-				googletag.destroySlots([slot]);
-				restoreStaticSlot();
-				adLoading = false;
-			};
-
-			googletag.pubads().addEventListener('rewardedSlotReady', onReady);
-			googletag.pubads().addEventListener('rewardedSlotGranted', onGranted);
-			googletag.pubads().addEventListener('rewardedSlotClosed', onClosed);
-			googletag.pubads().addEventListener('slotRenderEnded', (e: any) => {
-				if (e.slot !== slot) return;
-				if (e.isEmpty) {
-					cleanup();
-					googletag.destroySlots([slot]);
-					restoreStaticSlot();
-					adUnavailable = true;
-					adLoading = false;
-					toast.error($_('battlepass.ad_unavailable'));
-				}
-			});
-
-			googletag.display(slot);
-		});
+		document.body.appendChild(adContainer);
 	}
 
 	async function loadData() {
