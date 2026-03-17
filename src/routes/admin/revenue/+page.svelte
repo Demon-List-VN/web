@@ -12,13 +12,16 @@
 
 	let loading = true;
 	let period = '30d';
+	let dateFrom = '';
+	let dateTo = '';
 	let analyticsData: any = null;
 
 	const PERIOD_OPTIONS = [
 		{ value: '7d', label: 'Last 7 days' },
 		{ value: '30d', label: 'Last 30 days' },
 		{ value: '90d', label: 'Last 90 days' },
-		{ value: 'all', label: 'All time' }
+		{ value: 'all', label: 'All time' },
+		{ value: 'custom', label: 'Custom range' }
 	];
 
 	const PRODUCT_COLORS = [
@@ -52,14 +55,16 @@
 	async function fetchAnalytics() {
 		loading = true;
 		try {
-			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/analytics/revenue?period=${period}`,
-				{
-					headers: {
-						Authorization: `Bearer ${await $user.token()}`
-					}
+			const params =
+				period === 'custom' && dateFrom && dateTo
+					? `from=${dateFrom}&to=${dateTo}`
+					: `period=${period}`;
+
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/analytics/revenue?${params}`, {
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`
 				}
-			);
+			});
 
 			if (res.ok) {
 				analyticsData = await res.json();
@@ -79,8 +84,20 @@
 	function handlePeriodChange(v: any) {
 		if (v) {
 			period = v.value;
-			fetchAnalytics();
+			if (period !== 'custom') {
+				fetchAnalytics();
+			}
 		}
+	}
+
+	function getTimeUnit() {
+		if (period === 'custom' && dateFrom && dateTo) {
+			const days = (new Date(dateTo).getTime() - new Date(dateFrom).getTime()) / 86400000;
+			if (days <= 14) return 'day';
+			if (days <= 90) return 'week';
+			return 'month';
+		}
+		return period === '7d' ? 'day' : period === '90d' || period === 'all' ? 'month' : 'week';
 	}
 
 	function createRevenueChart(node: HTMLCanvasElement) {
@@ -109,13 +126,14 @@
 				scales: {
 					x: {
 						type: 'time',
-						time: { unit: period === '7d' ? 'day' : period === '90d' || period === 'all' ? 'month' : 'week', tooltipFormat: 'PP' },
+						time: { unit: getTimeUnit(), tooltipFormat: 'PP' },
 						grid: { display: false }
 					},
 					y: {
 						beginAtZero: true,
 						ticks: {
-							callback: (val: any) => new Intl.NumberFormat('vi-VN', { notation: 'compact' }).format(val)
+							callback: (val: any) =>
+								new Intl.NumberFormat('vi-VN', { notation: 'compact' }).format(val)
 						}
 					}
 				},
@@ -142,7 +160,9 @@
 				datasets: [
 					{
 						data: data.map((d: any) => d.revenue),
-						backgroundColor: data.map((_: any, i: number) => PRODUCT_COLORS[i % PRODUCT_COLORS.length]),
+						backgroundColor: data.map(
+							(_: any, i: number) => PRODUCT_COLORS[i % PRODUCT_COLORS.length]
+						),
 						borderWidth: 2,
 						borderColor: 'rgba(0, 0, 0, 0.1)'
 					}
@@ -174,7 +194,9 @@
 				datasets: [
 					{
 						data: data.map((d: any) => d.revenue),
-						backgroundColor: data.map((d: any) => METHOD_COLORS[d.method] || 'rgba(107, 114, 128, 0.8)'),
+						backgroundColor: data.map(
+							(d: any) => METHOD_COLORS[d.method] || 'rgba(107, 114, 128, 0.8)'
+						),
 						borderWidth: 2,
 						borderColor: 'rgba(0, 0, 0, 0.1)'
 					}
@@ -206,7 +228,9 @@
 				datasets: [
 					{
 						data: data.map((d: any) => d.count),
-						backgroundColor: data.map((d: any) => STATUS_COLORS[d.state] || 'rgba(107, 114, 128, 0.8)'),
+						backgroundColor: data.map(
+							(d: any) => STATUS_COLORS[d.state] || 'rgba(107, 114, 128, 0.8)'
+						),
 						borderWidth: 2,
 						borderColor: 'rgba(0, 0, 0, 0.1)'
 					}
@@ -229,159 +253,204 @@
 
 <svelte:head></svelte:head>
 
-<Title value="Revenue Analytics" />
+{#if $user.data.isManager}
+	<Title value="Revenue Analytics" />
 
-<div class="wrapper">
-	<div class="header">
-		<h1>Revenue Analytics</h1>
-		<Select.Root
-			selected={{
-				value: period,
-				label: PERIOD_OPTIONS.find((o) => o.value === period)?.label || 'Last 30 days'
-			}}
-			onSelectedChange={handlePeriodChange}
-		>
-			<Select.Trigger class="w-[180px]">
-				<Select.Value placeholder="Select period" />
-			</Select.Trigger>
-			<Select.Content>
-				{#each PERIOD_OPTIONS as opt}
-					<Select.Item value={opt.value} label={opt.label}>{opt.label}</Select.Item>
-				{/each}
-			</Select.Content>
-		</Select.Root>
-	</div>
-
-	{#if loading}
-		<div class="flex justify-center py-12">
-			<Loading inverted={true} />
-		</div>
-	{:else if analyticsData}
-		<!-- Summary Cards -->
-		<div class="summary-grid">
-			<Card.Root>
-				<Card.Header class="pb-2">
-					<Card.Title class="text-sm font-medium text-muted-foreground"
-						>Total Revenue</Card.Title
-					>
-				</Card.Header>
-				<Card.Content>
-					<p class="stat">{formatVND(analyticsData.summary.totalRevenue)}</p>
-				</Card.Content>
-			</Card.Root>
-			<Card.Root>
-				<Card.Header class="pb-2">
-					<Card.Title class="text-sm font-medium text-muted-foreground"
-						>Paid Orders</Card.Title
-					>
-				</Card.Header>
-				<Card.Content>
-					<p class="stat">{analyticsData.summary.orderCount}</p>
-				</Card.Content>
-			</Card.Root>
-			<Card.Root>
-				<Card.Header class="pb-2">
-					<Card.Title class="text-sm font-medium text-muted-foreground"
-						>Avg Order Value</Card.Title
-					>
-				</Card.Header>
-				<Card.Content>
-					<p class="stat">{formatVND(analyticsData.summary.averageOrderValue)}</p>
-				</Card.Content>
-			</Card.Root>
-			<Card.Root>
-				<Card.Header class="pb-2">
-					<Card.Title class="text-sm font-medium text-muted-foreground"
-						>Total Fees</Card.Title
-					>
-				</Card.Header>
-				<Card.Content>
-					<p class="stat">{formatVND(analyticsData.summary.totalFees)}</p>
-				</Card.Content>
-			</Card.Root>
+	<div class="wrapper">
+		<div class="header">
+			<h1>Revenue Analytics</h1>
+			<div class="header-controls">
+				<Select.Root
+					selected={{
+						value: period,
+						label: PERIOD_OPTIONS.find((o) => o.value === period)?.label || 'Last 30 days'
+					}}
+					onSelectedChange={handlePeriodChange}
+				>
+					<Select.Trigger class="w-[180px]">
+						<Select.Value placeholder="Select period" />
+					</Select.Trigger>
+					<Select.Content>
+						{#each PERIOD_OPTIONS as opt}
+							<Select.Item value={opt.value} label={opt.label}>{opt.label}</Select.Item>
+						{/each}
+					</Select.Content>
+				</Select.Root>
+				{#if period === 'custom'}
+					<div class="date-range">
+						<input type="date" bind:value={dateFrom} class="date-input" />
+						<span class="date-separator">to</span>
+						<input type="date" bind:value={dateTo} class="date-input" />
+						<button class="apply-btn" on:click={fetchAnalytics} disabled={!dateFrom || !dateTo}>
+							Apply
+						</button>
+					</div>
+				{/if}
+			</div>
 		</div>
 
-		<!-- Revenue Over Time -->
-		<Card.Root class="mt-6">
-			<Card.Header>
-				<Card.Title>Revenue Over Time</Card.Title>
-			</Card.Header>
-			<Card.Content>
-				<div class="chart-container">
-					{#key analyticsData}
-						<canvas use:createRevenueChart />
-					{/key}
-				</div>
-			</Card.Content>
-		</Card.Root>
+		{#if loading}
+			<div class="flex justify-center py-12">
+				<Loading inverted={true} />
+			</div>
+		{:else if analyticsData}
+			<!-- Summary Cards -->
+			<div class="summary-grid">
+				<Card.Root>
+					<Card.Header class="pb-2">
+						<Card.Title class="text-sm font-medium text-muted-foreground">Total Revenue</Card.Title>
+					</Card.Header>
+					<Card.Content>
+						<p class="stat">{formatVND(analyticsData.summary.totalRevenue)}</p>
+					</Card.Content>
+				</Card.Root>
+				<Card.Root>
+					<Card.Header class="pb-2">
+						<Card.Title class="text-sm font-medium text-muted-foreground">Paid Orders</Card.Title>
+					</Card.Header>
+					<Card.Content>
+						<p class="stat">{analyticsData.summary.orderCount}</p>
+					</Card.Content>
+				</Card.Root>
+				<Card.Root>
+					<Card.Header class="pb-2">
+						<Card.Title class="text-sm font-medium text-muted-foreground"
+							>Avg Order Value</Card.Title
+						>
+					</Card.Header>
+					<Card.Content>
+						<p class="stat">{formatVND(analyticsData.summary.averageOrderValue)}</p>
+					</Card.Content>
+				</Card.Root>
+				<Card.Root>
+					<Card.Header class="pb-2">
+						<Card.Title class="text-sm font-medium text-muted-foreground">Total Fees</Card.Title>
+					</Card.Header>
+					<Card.Content>
+						<p class="stat">{formatVND(analyticsData.summary.totalFees)}</p>
+					</Card.Content>
+				</Card.Root>
+			</div>
 
-		<!-- Product Breakdown + Payment Methods -->
-		<div class="charts-row">
-			<Card.Root>
+			<!-- Revenue Over Time -->
+			<Card.Root class="mt-6">
 				<Card.Header>
-					<Card.Title>Revenue by Product</Card.Title>
+					<Card.Title>Revenue Over Time</Card.Title>
 				</Card.Header>
 				<Card.Content>
-					<div class="chart-container-sm">
+					<div class="chart-container">
 						{#key analyticsData}
-							<canvas use:createProductChart />
+							<canvas use:createRevenueChart />
 						{/key}
 					</div>
-					{#if analyticsData.revenueByProduct?.length}
-						<Table.Root class="mt-4">
+				</Card.Content>
+			</Card.Root>
+
+			<!-- Product Breakdown + Payment Methods -->
+			<div class="charts-row">
+				<Card.Root>
+					<Card.Header>
+						<Card.Title>Revenue by Product</Card.Title>
+					</Card.Header>
+					<Card.Content>
+						<div class="chart-container-sm">
+							{#key analyticsData}
+								<canvas use:createProductChart />
+							{/key}
+						</div>
+						{#if analyticsData.revenueByProduct?.length}
+							<Table.Root class="mt-4">
+								<Table.Header>
+									<Table.Row>
+										<Table.Head>Product</Table.Head>
+										<Table.Head class="text-right">Revenue</Table.Head>
+										<Table.Head class="text-right">Orders</Table.Head>
+									</Table.Row>
+								</Table.Header>
+								<Table.Body>
+									{#each analyticsData.revenueByProduct as product}
+										<Table.Row>
+											<Table.Cell class="font-medium">{product.productName}</Table.Cell>
+											<Table.Cell class="text-right">{formatVND(product.revenue)}</Table.Cell>
+											<Table.Cell class="text-right">{product.orderCount}</Table.Cell>
+										</Table.Row>
+									{/each}
+								</Table.Body>
+							</Table.Root>
+						{/if}
+					</Card.Content>
+				</Card.Root>
+
+				<div class="charts-col">
+					<Card.Root>
+						<Card.Header>
+							<Card.Title>Payment Methods</Card.Title>
+						</Card.Header>
+						<Card.Content>
+							<div class="chart-container-sm">
+								{#key analyticsData}
+									<canvas use:createPaymentChart />
+								{/key}
+							</div>
+						</Card.Content>
+					</Card.Root>
+
+					<Card.Root>
+						<Card.Header>
+							<Card.Title>Order Status</Card.Title>
+						</Card.Header>
+						<Card.Content>
+							<div class="chart-container-sm">
+								{#key analyticsData}
+									<canvas use:createStatusChart />
+								{/key}
+							</div>
+						</Card.Content>
+					</Card.Root>
+				</div>
+			</div>
+
+			<!-- Revenue by User -->
+			{#if analyticsData.revenueByUser?.length}
+				<Card.Root class="mt-6">
+					<Card.Header>
+						<Card.Title>Revenue by User</Card.Title>
+					</Card.Header>
+					<Card.Content>
+						<Table.Root>
 							<Table.Header>
 								<Table.Row>
-									<Table.Head>Product</Table.Head>
-									<Table.Head class="text-right">Revenue</Table.Head>
+									<Table.Head class="w-[50px]">#</Table.Head>
+									<Table.Head>User</Table.Head>
+									<Table.Head class="text-right">Total Spent</Table.Head>
 									<Table.Head class="text-right">Orders</Table.Head>
+									<Table.Head class="text-right">Avg Order</Table.Head>
 								</Table.Row>
 							</Table.Header>
 							<Table.Body>
-								{#each analyticsData.revenueByProduct as product}
+								{#each analyticsData.revenueByUser as u, i}
 									<Table.Row>
-										<Table.Cell class="font-medium">{product.productName}</Table.Cell>
-										<Table.Cell class="text-right"
-											>{formatVND(product.revenue)}</Table.Cell
-										>
-										<Table.Cell class="text-right">{product.orderCount}</Table.Cell>
+										<Table.Cell>{i + 1}</Table.Cell>
+										<Table.Cell class="font-medium">
+											<a href="/player/{u.userID}" class="user-link">
+												{u.userName}
+											</a>
+										</Table.Cell>
+										<Table.Cell class="text-right">{formatVND(u.revenue)}</Table.Cell>
+										<Table.Cell class="text-right">{u.orderCount}</Table.Cell>
+										<Table.Cell class="text-right">
+											{formatVND(Math.round(u.revenue / u.orderCount))}
+										</Table.Cell>
 									</Table.Row>
 								{/each}
 							</Table.Body>
 						</Table.Root>
-					{/if}
-				</Card.Content>
-			</Card.Root>
-
-			<div class="charts-col">
-				<Card.Root>
-					<Card.Header>
-						<Card.Title>Payment Methods</Card.Title>
-					</Card.Header>
-					<Card.Content>
-						<div class="chart-container-sm">
-							{#key analyticsData}
-								<canvas use:createPaymentChart />
-							{/key}
-						</div>
 					</Card.Content>
 				</Card.Root>
-
-				<Card.Root>
-					<Card.Header>
-						<Card.Title>Order Status</Card.Title>
-					</Card.Header>
-					<Card.Content>
-						<div class="chart-container-sm">
-							{#key analyticsData}
-								<canvas use:createStatusChart />
-							{/key}
-						</div>
-					</Card.Content>
-				</Card.Root>
-			</div>
-		</div>
-	{/if}
-</div>
+			{/if}
+		{/if}
+	</div>
+{/if}
 
 <style lang="scss">
 	.wrapper {
@@ -395,10 +464,63 @@
 		justify-content: space-between;
 		align-items: center;
 		margin-bottom: 1.5rem;
+		flex-wrap: wrap;
+		gap: 1rem;
 
 		h1 {
 			font-size: 1.5rem;
 			font-weight: 700;
+		}
+	}
+
+	.header-controls {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		flex-wrap: wrap;
+	}
+
+	.date-range {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.date-input {
+		padding: 0.4rem 0.6rem;
+		border: 1px solid rgba(255, 255, 255, 0.2);
+		border-radius: 6px;
+		background: rgba(255, 255, 255, 0.05);
+		color: inherit;
+		font-size: 0.875rem;
+
+		&::-webkit-calendar-picker-indicator {
+			filter: invert(1);
+		}
+	}
+
+	.date-separator {
+		font-size: 0.875rem;
+		color: rgba(255, 255, 255, 0.6);
+	}
+
+	.apply-btn {
+		padding: 0.4rem 1rem;
+		border: 1px solid rgba(59, 130, 246, 0.5);
+		border-radius: 6px;
+		background: rgba(59, 130, 246, 0.15);
+		color: rgb(147, 197, 253);
+		font-size: 0.875rem;
+		cursor: pointer;
+		transition: all 0.2s ease;
+
+		&:hover:not(:disabled) {
+			background: rgba(59, 130, 246, 0.3);
+		}
+
+		&:disabled {
+			opacity: 0.4;
+			cursor: not-allowed;
 		}
 	}
 
@@ -436,6 +558,15 @@
 		display: flex;
 		flex-direction: column;
 		gap: 1.5rem;
+	}
+
+	.user-link {
+		color: #7cb4f8;
+		text-decoration: none;
+
+		&:hover {
+			text-decoration: underline;
+		}
 	}
 
 	@media (max-width: 900px) {

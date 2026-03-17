@@ -25,6 +25,10 @@
 		);
 	}
 
+	$: visibleCategories = $user.data?.isAdmin
+		? categories
+		: categories.filter((c) => c.title === 'Store & Revenue');
+
 	const categories = [
 		{
 			title: 'System',
@@ -102,7 +106,7 @@
 
 <div class="wrapper">
 	<div class="categories-grid">
-		{#each categories as category}
+		{#each visibleCategories as category}
 			<div class="category-card">
 				<div class="category-header">
 					<span class="category-icon">{category.icon}</span>
