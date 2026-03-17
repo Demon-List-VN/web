@@ -379,7 +379,7 @@
 	</div>
 
 	<!-- Daily Check-in via Ad -->
-	{#if $user.loggedIn}
+	{#if $user.loggedIn && false}
 		<Card.Root
 			class="mt-6 overflow-hidden border-2 border-yellow-500/30 bg-gradient-to-br from-yellow-500/5 to-orange-500/5"
 		>
