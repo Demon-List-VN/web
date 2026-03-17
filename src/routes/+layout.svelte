@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { ComponentType } from 'svelte';
 	import '../app.pcss';
 	import '../app.scss';
 	import 'non.geist';
@@ -9,6 +10,7 @@
 	import HamburgerMenu from 'svelte-radix/HamburgerMenu.svelte';
 	import MagnifyingGlass from 'svelte-radix/MagnifyingGlass.svelte';
 	import X from 'svelte-radix/Cross2.svelte';
+	import { PanelLeftClose, PanelLeftOpen } from 'lucide-svelte';
 
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Toaster } from '$lib/components/ui/sonner';
@@ -19,6 +21,7 @@
 	import Search from '$lib/components/search.svelte';
 	import SubmitButton from '$lib/components/submitButton.svelte';
 	import SettingButton from '$lib/components/settingButton.svelte';
+	import Sidebar from '$lib/components/sidebar.svelte';
 
 	import supabase from '$lib/client/supabase';
 	import { user } from '$lib/client';
@@ -31,6 +34,30 @@
 	import { page } from '$app/stores';
 	import { _, locale } from 'svelte-i18n';
 	import PlayerCard from '$lib/components/playerCard.svelte';
+	import {
+		sidebarOpen,
+		sidebarCollapsed,
+		toggleSidebar,
+		closeSidebar,
+		toggleSidebarCollapsed,
+		hydrateSidebarCollapsed
+	} from '$lib/client/sidebar';
+	import {
+		LayoutList,
+		Ticket,
+		Calendar,
+		Users,
+		Download,
+		MessageCircle,
+		BookOpen,
+		ShoppingBag,
+		MoreHorizontal,
+		List,
+		Gamepad2,
+		Award,
+		Shuffle,
+		GitCompare
+	} from 'lucide-svelte';
 	import OnboardingModal from '$lib/components/OnboardingModal.svelte';
 
 	$: showOnboarding =
@@ -40,51 +67,70 @@
 		$user.data.onboarding_done === false &&
 		($user.data.onboarding_step == null || $user.data.onboarding_step === 1);
 
+	type NavGroup = {
+		name: string;
+		icon: ComponentType;
+		route?: string;
+		routes?: { route: string; name: string; icon?: ComponentType }[];
+	};
+	$: listUidQuery = $user.loggedIn ? `?uid=${$user.data.uid}` : '';
+
 	$: linkGroup = [
 		{
 			name: 'List',
+			icon: LayoutList,
 			routes: [
-				{ route: '/list/dl', name: 'Classic' },
-				{ route: '/list/pl', name: 'Platformer' },
-				{ route: '/list/fl', name: 'Featured' },
-				{ route: '/list/cl', name: 'Challenge' }
+				{ route: `/list/dl${listUidQuery}`, name: 'Classic', icon: List },
+				{ route: `/list/pl${listUidQuery}`, name: 'Platformer', icon: Gamepad2 },
+				{ route: `/list/fl${listUidQuery}`, name: 'Featured', icon: Award },
+				{ route: '/list/cl', name: 'Challenge', icon: Shuffle }
 			]
 		},
-		{ route: '/battlepass', name: 'Pass' },
-		{ route: '/events', name: $locale === 'en' ? 'Event' : 'Sự kiện' },
+		{ route: '/battlepass', name: 'Pass', icon: Ticket },
+		{ route: '/events', name: $locale === 'en' ? 'Event' : 'Sự kiện', icon: Calendar },
 		{
 			name: $locale === 'en' ? 'Community' : 'Cộng đồng',
+			icon: Users,
 			routes: [
-				{ route: '/community', name: $locale === 'en' ? 'Community Hub' : 'Cộng đồng' },
-				{ route: '/players', name: $locale === 'en' ? 'Players' : 'Người chơi' },
-				{ route: '/clans', name: $locale === 'en' ? 'Clans' : 'Hội' }
+				{
+					route: '/community',
+					name: $locale === 'en' ? 'Community Hub' : 'Cộng đồng',
+					icon: MessageCircle
+				},
+				{ route: '/players', name: $locale === 'en' ? 'Players' : 'Người chơi', icon: Users },
+				{ route: '/clans', name: $locale === 'en' ? 'Clans' : 'Hội', icon: Users }
 			]
 		},
 		{
 			route: 'https://github.com/NamPE286/DemonListVN-geode-mod/releases',
-			name: $locale === 'en' ? 'Mod' : 'Mod'
+			name: $locale === 'en' ? 'Mod' : 'Mod',
+			icon: Download
 		},
-		{ route: '/discord', name: 'Discord' },
-		{ route: '/wiki', name: 'Wiki' },
-		{ route: '/store', name: $locale === 'en' ? 'Store' : 'Cửa hàng' },
+		{ route: '/discord', name: 'Discord', icon: MessageCircle },
+		{ route: '/wiki', name: 'Wiki', icon: BookOpen },
+		{ route: '/store', name: $locale === 'en' ? 'Store' : 'Cửa hàng', icon: ShoppingBag },
 		{
 			name: $locale === 'en' ? 'Misc' : 'Khác',
+			icon: MoreHorizontal,
 			routes: [
 				{
 					route: '/misc/compare',
-					name: $locale === 'en' ? 'Player comparison' : 'So sánh người chơi'
+					name: $locale === 'en' ? 'Player comparison' : 'So sánh người chơi',
+					icon: GitCompare
 				},
 				{
 					route: '/misc/roulette',
-					name: 'Roulette'
+					name: 'Roulette',
+					icon: Shuffle
 				},
 				{
 					route: '/misc/roulette-v2',
-					name: 'Roulette v2'
+					name: 'Roulette v2',
+					icon: Shuffle
 				}
 			]
 		}
-	];
+	] as NavGroup[];
 
 	let searchQuery = '';
 	let searchToggled = false;
@@ -97,7 +143,7 @@
 		localStorage.getItem('supporterAlertDismissed') === 'true';
 	$: pathname = $page.url.pathname;
 
-	const isDesktop = mediaQuery('(min-width: 1350px)');
+	const isDesktop = mediaQuery('(min-width: 1025px)');
 
 	function signIn() {
 		supabase.auth.signInWithOAuth({
@@ -117,25 +163,16 @@
 		window.location.reload();
 	}
 
-	function updateNavbarOnTop() {
-		if (!document.getElementsByClassName('navbarWrapper')) {
-			return;
-		}
-
-		const navbar = document.getElementsByClassName('navbarWrapper')[0];
-
-		if (window.scrollY === 0) {
-			navbar.classList.add('navbarWrapperOnTop');
-		} else {
-			navbar.classList.remove('navbarWrapperOnTop');
-		}
-	}
-
 	function setTheme(theme: string) {
 		document.documentElement.setAttribute('data-theme', theme);
 		localStorage.setItem('theme', theme);
 	}
 
+	// Close sidebar on route change (mobile)
+	$: if (pathname) {
+		closeSidebar();
+	}
+  
 	function enableAds() {
 		let adsScriptLoaded = false;
 
@@ -153,9 +190,10 @@
 				document.head.appendChild(s);
 			}
 		});
-	}
+  }
 
 	onMount(() => {
+		hydrateSidebarCollapsed();
 		const savedLocale = localStorage.getItem('locale');
 
 		locale.set(savedLocale || 'vi');
@@ -186,22 +224,6 @@
 
 		isVisible = true;
 
-		user.subscribe((data) => {
-			if (!data.loggedIn) {
-				return;
-			}
-
-			linkGroup[0].routes![0].route = `/list/dl?uid=${data.data.uid}`;
-			linkGroup[0].routes![1].route = `/list/pl?uid=${data.data.uid}`;
-			linkGroup[0].routes![2].route = `/list/fl?uid=${data.data.uid}`;
-		});
-
-		updateNavbarOnTop();
-
-		if ('addEventListener' in window) {
-			window.addEventListener('scroll', updateNavbarOnTop);
-		}
-
 		const urlParams = new URLSearchParams(window.location.search);
 		hideNav = urlParams.has('hideNav');
 		removePad = urlParams.has('removePad');
@@ -225,87 +247,36 @@
 />
 
 {#if !hideNav}
-	<div class="navbarWrapper navbarWrapperOnTop">
-		<div class="right">
-			<a href="/" data-sveltekit-preload-data="tap">
+	<!-- Top bar -->
+	<header class="topbar">
+		<div class="topbar-left">
+			<button
+				class="desktop-collapse-toggle"
+				on:click={toggleSidebarCollapsed}
+				aria-label={$sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+			>
+				{#if $sidebarCollapsed}
+					<PanelLeftOpen size={16} />
+				{:else}
+					<PanelLeftClose size={16} />
+				{/if}
+			</button>
+			<button class="sidebar-toggle" on:click={toggleSidebar} aria-label="Toggle sidebar">
+				{#if $sidebarOpen}
+					<X size={18} />
+				{:else}
+					<HamburgerMenu size={18} />
+				{/if}
+			</button>
+			<a href="/" class="logo-link" data-sveltekit-preload-data="tap">
 				<img src="/logo.png" alt="logo" />
 			</a>
-			<div class="links">
-				{#each linkGroup as group}
-					{#if group.routes}
-						<DropdownMenu.Root>
-							<DropdownMenu.Trigger>
-								<span class="link">{group.name}</span>
-							</DropdownMenu.Trigger>
-							<DropdownMenu.Content>
-								<DropdownMenu.Group>
-									{#each group.routes as link}
-										<a href={link.route}>
-											<DropdownMenu.Item>{link.name}</DropdownMenu.Item>
-										</a>
-									{/each}
-								</DropdownMenu.Group>
-							</DropdownMenu.Content>
-						</DropdownMenu.Root>
-					{:else if group.route}
-						<a href={group.route} class="link">{group.name}</a>
-					{/if}
-				{/each}
-				{#if $user.loggedIn && isActive($user.data.supporterUntil)}
-					<a href="/supporter" class="link" data-sveltekit-preload-data="tap"
-						>{$_('nav.supporter')}</a
-					>
-				{:else}
-					<Button class=" bg-yellow-400 hover:bg-yellow-500" href="/supporter"
-						>{$_('nav.supporter')}</Button
-					>
-				{/if}
-			</div>
-			<div class="menu">
-				<DropdownMenu.Root>
-					<DropdownMenu.Trigger asChild let:builder>
-						<Button builders={[builder]} variant="outline" size="icon">
-							<HamburgerMenu size={18} />
-						</Button>
-					</DropdownMenu.Trigger>
-					<DropdownMenu.Content align="end" class="w-64">
-						{#each linkGroup as group}
-							{#if group.routes}
-								<DropdownMenu.Group>
-									<DropdownMenu.Label>{group.name}</DropdownMenu.Label>
-									{#each group.routes as link}
-										<a href={link.route} data-sveltekit-preload-data="tap">
-											<DropdownMenu.Item>{link.name}</DropdownMenu.Item>
-										</a>
-									{/each}
-								</DropdownMenu.Group>
-								<DropdownMenu.Separator />
-							{:else if group.route}
-								<a href={group.route} data-sveltekit-preload-data="tap">
-									<DropdownMenu.Item>{group.name}</DropdownMenu.Item>
-								</a>
-							{/if}
-						{/each}
-						<DropdownMenu.Item>
-							{#if $user.loggedIn && isActive($user.data.supporterUntil)}
-								<a href="/supporter" class="link" data-sveltekit-preload-data="tap"
-									>{$_('nav.supporter')}</a
-								>
-							{:else}
-								<Button class="w-full bg-yellow-400 hover:bg-yellow-500" href="/supporter">
-									{$_('nav.supporter')}
-								</Button>
-							{/if}
-						</DropdownMenu.Item>
-					</DropdownMenu.Content>
-				</DropdownMenu.Root>
-			</div>
 		</div>
-		<div class="left">
+		<div class="topbar-right">
 			{#if $isDesktop}
 				<Button variant="outline" on:click={() => (searchToggled = true)}>
 					<div class="searchBtn">
-						<MagnifyingGlass size={20} />
+						<MagnifyingGlass size={18} />
 						<p>{$_('search.button')}</p>
 						<kbd
 							class="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100"
@@ -315,8 +286,8 @@
 					</div>
 				</Button>
 			{:else}
-				<button class="clickable" on:click={() => (searchToggled = true)}>
-					<MagnifyingGlass size={20} />
+				<button class="clickable topbar-icon-btn" on:click={() => (searchToggled = true)}>
+					<MagnifyingGlass size={18} />
 				</button>
 			{/if}
 
@@ -385,53 +356,60 @@
 			{/if}
 			<SettingButton />
 		</div>
-	</div>
-{/if}
-{#if !removePad}
-	<div class="filler"></div>
+	</header>
+
+	<!-- Sidebar -->
+	<Sidebar {linkGroup} />
 {/if}
 
-{#if !supporterAlertDismissed && $user.checked && isVisible && (!$user.loggedIn || !isActive($user.data.supporterUntil)) && pathname !== '/supporter' && pathname !== '/' && !pathname.startsWith('/player/') && !pathname.startsWith('/@')}
-	<div class="px-[5px] pt-[20px] md:px-[55px]">
-		<Alert.Root
-			class="relative mb-[10px] flex items-center gap-[10px] border-pink-200 bg-pink-50 pb-[7px] dark:border-pink-800 dark:bg-pink-950"
-		>
-			<div class="mt-[-8px] text-3xl">💖</div>
-			<div>
-				<Alert.Title class="pr-8">{$_('supporter.alert.title')}</Alert.Title>
-				<Alert.Description>
-					{$_('supporter.alert.description')}
-					<a href="/supporter" class="font-semibold underline hover:text-pink-600"
-						>{$_('supporter.alert.learn_more')}</a
+<!-- Main content wrapper -->
+<div
+	class="layout-container"
+	class:has-sidebar={!hideNav}
+	class:no-pad={removePad}
+>
+	{#if !supporterAlertDismissed && $user.checked && isVisible && (!$user.loggedIn || !isActive($user.data.supporterUntil)) && pathname !== '/supporter' && pathname !== '/' && !pathname.startsWith('/player/') && !pathname.startsWith('/@')}
+		<div class="px-[5px] pt-[20px] md:px-[30px]">
+			<Alert.Root
+				class="relative mb-[10px] flex items-center gap-[10px] border-pink-200 bg-pink-50 pb-[7px] dark:border-pink-800 dark:bg-pink-950"
+			>
+				<div class="mt-[-8px] text-3xl">💖</div>
+				<div>
+					<Alert.Title class="pr-8">{$_('supporter.alert.title')}</Alert.Title>
+					<Alert.Description>
+						{$_('supporter.alert.description')}
+						<a href="/supporter" class="font-semibold underline hover:text-pink-600"
+							>{$_('supporter.alert.learn_more')}</a
+						>
+					</Alert.Description>
+					<button
+						on:click={dismissSupporterAlert}
+						class="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100"
+						aria-label="Dismiss"
 					>
-				</Alert.Description>
-				<button
-					on:click={dismissSupporterAlert}
-					class="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100"
-					aria-label="Dismiss"
-				>
-					<X class="h-4 w-4" />
-				</button>
-			</div>
-		</Alert.Root>
-	</div>
-{/if}
+						<X class="h-4 w-4" />
+					</button>
+				</div>
+			</Alert.Root>
+		</div>
+	{/if}
 
-<slot />
+	<slot />
 
-<footer>
-	<div class="footerFiller"></div>
-	<p>
-		© Copyright 2020-2025 gdvn.net.<br />
-		All rights reserved gdvn.net and Geometry Dash Việt Nam are in no way affiliated with RobTopGamesAB
-		®
-	</p>
-	<div class="links">
-		<a href="/about">About</a>
-		<a href="/privacyPolicy">Privacy Policy</a>
-		<a href="/tos">Terms of service</a>
-	</div>
-</footer>
+	<footer>
+		<div class="footerFiller"></div>
+		<p>
+			© Copyright 2020-2025 gdvn.net.<br />
+			All rights reserved gdvn.net and Geometry Dash Việt Nam are in no way affiliated with RobTopGamesAB
+			®
+		</p>
+		<div class="links">
+			<a href="/about">About</a>
+			<a href="/privacyPolicy">Privacy Policy</a>
+			<a href="/tos">Terms of service</a>
+		</div>
+	</footer>
+</div>
 
 <style lang="scss">
 	:global(.markdown) {
@@ -518,6 +496,143 @@
 			padding-inline: 10px;
 		}
 	}
+
+	/* Top bar */
+	.topbar {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 48px;
+		background-color: var(--navbar-bg);
+		backdrop-filter: blur(20px);
+		border-bottom: 1px solid var(--border1);
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0 16px;
+		z-index: 50;
+		box-sizing: border-box;
+	}
+
+	.topbar-left {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.sidebar-toggle {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 32px;
+		height: 32px;
+		border: none;
+		background: none;
+		color: var(--textColor2);
+		cursor: pointer;
+		border-radius: 6px;
+		transition: background-color 0.1s, color 0.1s;
+
+		&:hover {
+			background-color: hsl(var(--accent));
+			color: var(--textColor1);
+		}
+
+		/* Show only on mobile */
+		@media screen and (min-width: 1025px) {
+			display: none;
+		}
+	}
+
+	.desktop-collapse-toggle {
+		display: none;
+		align-items: center;
+		justify-content: center;
+		width: 32px;
+		height: 32px;
+		border: none;
+		background: none;
+		color: var(--textColor2);
+		cursor: pointer;
+		border-radius: 6px;
+		transition: background-color 0.1s, color 0.1s;
+
+		&:hover {
+			background-color: hsl(var(--accent));
+			color: var(--textColor1);
+		}
+
+		@media screen and (min-width: 1025px) {
+			display: flex;
+		}
+	}
+
+	.logo-link {
+		display: flex;
+		align-items: center;
+		text-decoration: none;
+
+		img {
+			filter: invert(var(--inverted));
+			max-width: 65px;
+			margin-bottom: 12px;
+		}
+	}
+
+	.topbar-right {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.topbar-icon-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 32px;
+		height: 32px;
+		border: none;
+		background: none;
+		color: var(--textColor2);
+		border-radius: 6px;
+		transition: background-color 0.1s, color 0.1s;
+
+		&:hover {
+			background-color: hsl(var(--accent));
+			color: var(--textColor1);
+		}
+	}
+
+	.searchBtn {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		color: var(--textColor2);
+
+		kbd {
+			margin-left: 50px;
+		}
+	}
+
+	/* Layout container */
+	.layout-container {
+		padding-top: 48px;
+		min-height: 100vh;
+		box-sizing: border-box;
+
+		&.has-sidebar {
+			@media screen and (min-width: 1025px) {
+				margin-left: 72px;
+			}
+		}
+
+		&.no-pad {
+			padding-top: 0;
+		}
+	}
+
+	/* Footer */
 	footer {
 		height: fit-content;
 		padding-top: 20px;
@@ -530,7 +645,6 @@
 			border-bottom: 1px solid var(--border1);
 			margin-bottom: 20px;
 		}
-
 		.links {
 			display: flex;
 			justify-content: center;
@@ -543,105 +657,6 @@
 
 		p {
 			text-align: center;
-		}
-	}
-
-	.searchBtn {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-		color: var(--textColor2);
-
-		kbd {
-			margin-left: 100px;
-		}
-	}
-
-	.filler {
-		width: 100%;
-		height: 55px;
-	}
-
-	.menu {
-		display: none;
-		margin-top: 6px;
-	}
-
-	.navbarWrapper {
-		transition: all 0.3s;
-		position: fixed;
-		width: 100%;
-		height: 55px;
-		background-color: var(--navbar-bg);
-		overflow: hidden;
-		display: flex;
-		align-items: center;
-		box-sizing: border-box;
-		padding-inline: 30px;
-		border-bottom: 1px solid;
-		border-color: var(--border1);
-		backdrop-filter: blur(20px);
-		z-index: 50;
-		.right {
-			display: flex;
-
-			img {
-				filter: invert(var(--inverted));
-				max-width: 75px;
-				margin-bottom: 14px;
-				margin-right: 10px;
-			}
-
-			a {
-				color: var(--textColor);
-				text-decoration: none;
-				display: flex;
-				align-items: center;
-				gap: 10px;
-			}
-
-			.links {
-				display: flex;
-			}
-
-			.link {
-				margin-inline: 10px;
-				color: var(--textColor2);
-				transition: color 0.1s;
-				font-weight: 500;
-				font-size: 14px;
-			}
-
-			.link:hover {
-				color: var(--textColor1);
-			}
-		}
-
-		.left {
-			display: flex;
-			gap: 10px;
-			align-items: center;
-			margin-left: auto;
-		}
-	}
-
-	.navbarWrapperOnTop {
-		background-color: transparent;
-		border-color: transparent;
-	}
-
-	@media screen and (max-width: 1100px) {
-		.navbarWrapper {
-			padding-inline: 15px;
-			.right {
-				.links {
-					display: none;
-				}
-			}
-
-			.menu {
-				display: block;
-			}
 		}
 	}
 </style>
