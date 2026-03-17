@@ -366,7 +366,6 @@
 <div
 	class="layout-container"
 	class:has-sidebar={!hideNav}
-	class:sidebar-collapsed={$sidebarCollapsed}
 	class:no-pad={removePad}
 >
 	{#if !supporterAlertDismissed && $user.checked && isVisible && (!$user.loggedIn || !isActive($user.data.supporterUntil)) && pathname !== '/supporter' && pathname !== '/' && !pathname.startsWith('/player/') && !pathname.startsWith('/@')}
@@ -623,12 +622,6 @@
 		box-sizing: border-box;
 
 		&.has-sidebar {
-			@media screen and (min-width: 1025px) {
-				margin-left: 240px;
-			}
-		}
-
-		&.has-sidebar.sidebar-collapsed {
 			@media screen and (min-width: 1025px) {
 				margin-left: 72px;
 			}

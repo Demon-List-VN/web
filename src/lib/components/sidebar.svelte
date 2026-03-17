@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { ComponentType } from 'svelte';
 	import { page } from '$app/stores';
+	import { mediaQuery } from 'svelte-legos';
 	import {
 		sidebarOpen,
 		closeSidebar,
@@ -10,9 +11,9 @@
 	import { user } from '$lib/client';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import { _ } from 'svelte-i18n';
-	import { slide } from 'svelte/transition';
 	import ChevronDown from 'svelte-radix/ChevronDown.svelte';
 	import { Heart } from 'lucide-svelte';
+	import * as Tooltip from '$lib/components/ui/tooltip';
 
 	$: pathname = $page.url.pathname;
 
@@ -55,6 +56,8 @@
 	};
 	export let linkGroup: NavGroup[] = [];
 	const DESKTOP_BREAKPOINT = 1025;
+	const isDesktop = mediaQuery(`(min-width: ${DESKTOP_BREAKPOINT}px)`);
+	$: showTooltip = $sidebarCollapsed && $isDesktop;
 
 	function handleLinkClick() {
 		closeSidebar();
@@ -70,7 +73,7 @@
 	}
 
 	function handleGroupToggle(name: string) {
-		if (window.matchMedia(`(min-width: ${DESKTOP_BREAKPOINT}px)`).matches && $sidebarCollapsed) {
+		if ($isDesktop && $sidebarCollapsed) {
 			setSidebarCollapsed(false);
 			expandedGroups[name] = true;
 			return;
@@ -92,19 +95,40 @@
 			{#if group.routes}
 				<!-- Expandable group -->
 				<div class="nav-group">
-					<button
-						class="nav-item nav-group-trigger"
-						class:active={isGroupActive(group)}
-						on:click={() => handleGroupToggle(group.name)}
-					>
-						<svelte:component this={group.icon} size={18} />
-						<span>{group.name}</span>
-						<span class="chevron" class:expanded={expandedGroups[group.name]}>
-							<ChevronDown size={14} />
-						</span>
-					</button>
+					{#if showTooltip}
+						<Tooltip.Root>
+							<Tooltip.Trigger asChild let:builder>
+								<button
+									{...builder}
+									use:builder.action
+									class="nav-item nav-group-trigger"
+									class:active={isGroupActive(group)}
+									on:click={() => handleGroupToggle(group.name)}
+								>
+									<svelte:component this={group.icon} size={18} />
+									<span>{group.name}</span>
+									<span class="chevron" class:expanded={expandedGroups[group.name]}>
+										<ChevronDown size={14} />
+									</span>
+								</button>
+							</Tooltip.Trigger>
+							<Tooltip.Content>{group.name}</Tooltip.Content>
+						</Tooltip.Root>
+					{:else}
+						<button
+							class="nav-item nav-group-trigger"
+							class:active={isGroupActive(group)}
+							on:click={() => handleGroupToggle(group.name)}
+						>
+							<svelte:component this={group.icon} size={18} />
+							<span>{group.name}</span>
+							<span class="chevron" class:expanded={expandedGroups[group.name]}>
+								<ChevronDown size={14} />
+							</span>
+						</button>
+					{/if}
 					{#if expandedGroups[group.name] && !$sidebarCollapsed}
-						<div class="nav-subitems" transition:slide={{ duration: 150 }}>
+						<div class="nav-subitems">
 							{#each group.routes as link}
 								<a
 									href={link.route}
@@ -124,16 +148,36 @@
 				</div>
 			{:else if group.route}
 				<!-- Direct link -->
-				<a
-					href={group.route}
-					class="nav-item"
-					class:active={isLinkActive(group.route)}
-					data-sveltekit-preload-data="tap"
-					on:click={handleLinkClick}
-				>
-					<svelte:component this={group.icon} size={18} />
-					<span>{group.name}</span>
-				</a>
+				{#if showTooltip}
+					<Tooltip.Root>
+						<Tooltip.Trigger asChild let:builder>
+							<a
+								{...builder}
+								use:builder.action
+								href={group.route}
+								class="nav-item"
+								class:active={isLinkActive(group.route)}
+								data-sveltekit-preload-data="tap"
+								on:click={handleLinkClick}
+							>
+								<svelte:component this={group.icon} size={18} />
+								<span>{group.name}</span>
+							</a>
+						</Tooltip.Trigger>
+						<Tooltip.Content>{group.name}</Tooltip.Content>
+					</Tooltip.Root>
+				{:else}
+					<a
+						href={group.route}
+						class="nav-item"
+						class:active={isLinkActive(group.route)}
+						data-sveltekit-preload-data="tap"
+						on:click={handleLinkClick}
+					>
+						<svelte:component this={group.icon} size={18} />
+						<span>{group.name}</span>
+					</a>
+				{/if}
 			{/if}
 		{/each}
 
@@ -141,26 +185,65 @@
 
 		<!-- Supporter link -->
 		{#if $user.loggedIn && isActive($user.data.supporterUntil)}
-			<a
-				href="/supporter"
-				class="nav-item supporter-link"
-				class:active={isLinkActive('/supporter')}
-				data-sveltekit-preload-data="tap"
-				on:click={handleLinkClick}
-			>
-				<Heart size={18} />
-				<span>{$_('nav.supporter')}</span>
-			</a>
+			{#if showTooltip}
+				<Tooltip.Root>
+					<Tooltip.Trigger asChild let:builder>
+						<a
+							{...builder}
+							use:builder.action
+							href="/supporter"
+							class="nav-item supporter-link"
+							class:active={isLinkActive('/supporter')}
+							data-sveltekit-preload-data="tap"
+							on:click={handleLinkClick}
+						>
+							<Heart size={18} />
+							<span>{$_('nav.supporter')}</span>
+						</a>
+					</Tooltip.Trigger>
+					<Tooltip.Content>{$_('nav.supporter')}</Tooltip.Content>
+				</Tooltip.Root>
+			{:else}
+				<a
+					href="/supporter"
+					class="nav-item supporter-link"
+					class:active={isLinkActive('/supporter')}
+					data-sveltekit-preload-data="tap"
+					on:click={handleLinkClick}
+				>
+					<Heart size={18} />
+					<span>{$_('nav.supporter')}</span>
+				</a>
+			{/if}
 		{:else}
-			<a
-				href="/supporter"
-				class="nav-item supporter-cta"
-				data-sveltekit-preload-data="tap"
-				on:click={handleLinkClick}
-			>
-				<Heart size={18} />
-				<span>{$_('nav.supporter')}</span>
-			</a>
+			{#if showTooltip}
+				<Tooltip.Root>
+					<Tooltip.Trigger asChild let:builder>
+						<a
+							{...builder}
+							use:builder.action
+							href="/supporter"
+							class="nav-item supporter-cta"
+							data-sveltekit-preload-data="tap"
+							on:click={handleLinkClick}
+						>
+							<Heart size={18} />
+							<span>{$_('nav.supporter')}</span>
+						</a>
+					</Tooltip.Trigger>
+					<Tooltip.Content>{$_('nav.supporter')}</Tooltip.Content>
+				</Tooltip.Root>
+			{:else}
+				<a
+					href="/supporter"
+					class="nav-item supporter-cta"
+					data-sveltekit-preload-data="tap"
+					on:click={handleLinkClick}
+				>
+					<Heart size={18} />
+					<span>{$_('nav.supporter')}</span>
+				</a>
+			{/if}
 		{/if}
 	</nav>
 </aside>
@@ -191,7 +274,6 @@
 		overflow-x: hidden;
 		padding: 8px;
 		box-sizing: border-box;
-		transition: transform 0.2s ease, width 0.2s ease;
 
 		&.collapsed {
 			width: 72px;
@@ -288,7 +370,6 @@
 			margin-left: auto;
 			display: flex;
 			align-items: center;
-			transition: transform 0.2s;
 
 			&.expanded {
 				transform: rotate(180deg);

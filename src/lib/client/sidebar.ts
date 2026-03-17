@@ -1,7 +1,7 @@
 import { writable } from 'svelte/store';
 
 export const sidebarOpen = writable(false);
-export const sidebarCollapsed = writable(false);
+export const sidebarCollapsed = writable(true);
 
 export function toggleSidebar() {
 	sidebarOpen.update((v) => !v);
@@ -37,5 +37,5 @@ export function hydrateSidebarCollapsed() {
 		return;
 	}
 
-	sidebarCollapsed.set(localStorage.getItem('sidebarCollapsed') === 'true');
+	sidebarCollapsed.set(localStorage.getItem('sidebarCollapsed') !== 'false');
 }
