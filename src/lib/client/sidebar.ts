@@ -17,25 +17,8 @@ export function openSidebar() {
 
 export function setSidebarCollapsed(value: boolean) {
 	sidebarCollapsed.set(value);
-	if (typeof window !== 'undefined') {
-		localStorage.setItem('sidebarCollapsed', value ? 'true' : 'false');
-	}
 }
 
 export function toggleSidebarCollapsed() {
-	sidebarCollapsed.update((value) => {
-		const nextValue = !value;
-		if (typeof window !== 'undefined') {
-			localStorage.setItem('sidebarCollapsed', nextValue ? 'true' : 'false');
-		}
-		return nextValue;
-	});
-}
-
-export function hydrateSidebarCollapsed() {
-	if (typeof window === 'undefined') {
-		return;
-	}
-
-	sidebarCollapsed.set(localStorage.getItem('sidebarCollapsed') !== 'false');
+	sidebarCollapsed.update((value) => !value);
 }

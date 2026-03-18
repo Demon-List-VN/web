@@ -36,8 +36,7 @@
 		sidebarCollapsed,
 		toggleSidebar,
 		closeSidebar,
-		toggleSidebarCollapsed,
-		hydrateSidebarCollapsed
+		toggleSidebarCollapsed
 	} from '$lib/client/sidebar';
 	import {
 		LayoutList,
@@ -190,7 +189,6 @@
   }
 
 	onMount(() => {
-		hydrateSidebarCollapsed();
 		const savedLocale = localStorage.getItem('locale');
 
 		locale.set(savedLocale || 'vi');
