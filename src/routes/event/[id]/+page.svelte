@@ -52,10 +52,10 @@
 <EventBanner {data} />
 <Ads dataAdFormat="auto"  />
 
-{#if !data.hidden || ($user.loggedIn && $user.data.isAdmin)}
+{#if !data.hidden || ($user?.loggedIn && $user?.data?.isAdmin)}
 	<div class="flex items-center justify-center gap-[10px] mt-[10px]">
 		<ParticipateButton {data} />
-		{#if $user.loggedIn && $user.data.isAdmin}
+		{#if $user?.loggedIn && $user?.data?.isAdmin}
 			<Button href="/admin/event?id={data.id}" variant="outline">Manage Event</Button>
 		{/if}
 	</div>
