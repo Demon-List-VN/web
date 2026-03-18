@@ -18,8 +18,8 @@
 </script>
 
 <svelte:head>
-	<title>Nhận Supporter - Geometry Dash Việt Nam</title>
-	<meta property="og:title" content="Nhận Supporter - Geometry Dash Việt Nam" />
+	<title>Ủng hộ - Geometry Dash Việt Nam</title>
+	<meta property="og:title" content="Ủng hộ - Geometry Dash Việt Nam" />
 	<meta property="og:type" content="website" />
 </svelte:head>
 
