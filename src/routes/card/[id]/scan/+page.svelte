@@ -49,6 +49,25 @@
 		);
 	}
 
+	async function activate() {
+		toast.promise(
+			fetch(`${import.meta.env.VITE_API_URL}/card/${data.id}/activate`, {
+				method: 'PATCH',
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`
+				}
+			}),
+			{
+				success: () => {
+					window.location.reload();
+					return 'Card activated!';
+				},
+				error: 'Failed to activate card',
+				loading: 'Activating...'
+			}
+		);
+	}
+
 	async function link() {
 		toast.promise(
 			fetch(`${import.meta.env.VITE_API_URL}/card/${data.id}/link`, {
@@ -87,8 +106,13 @@
 	{/if}
 	<div class="relative z-0 w-full">
 		{#if data.activationDate == null}
-			<div class="whitespace-pre-wrap text-center">
-				{$_('card.inactive')}
+			<div class="flex flex-col items-center gap-2">
+				<div class="whitespace-pre-wrap text-center">
+					{$_('card.inactive')}
+				</div>
+				{#if $user.data?.isManager || $user.data?.isAdmin}
+					<Button on:click={activate}>Activate Card</Button>
+				{/if}
 			</div>
 		{:else if data.owner == null}
 			<div class="flex justify-center">

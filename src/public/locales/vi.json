@@ -368,7 +368,7 @@
     "players": "Người chơi"
   },
   "card": {
-    "inactive": "Thẻ này chưa được kích hoạt.\nVui lòng liên hệ với quản trị viên để kích hoath thẻ này.",
+    "inactive": "Thẻ này chưa được kích hoạt.\nVui lòng liên hệ với quản trị viên để kích hoạt thẻ này.",
     "link": {
       "button": "Liên kết thẻ tới",
       "title": "Liên kết thẻ tới tài khoản này"
