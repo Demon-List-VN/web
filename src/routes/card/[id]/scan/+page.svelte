@@ -70,10 +70,10 @@
 				success: () => {
 					editMode = false;
 					window.location.reload();
-					return 'Content updated!';
+					return 'Nội dung đã được cập nhật!';
 				},
-				error: 'Failed to update content',
-				loading: 'Saving...'
+				error: 'Không thể cập nhật nội dung',
+				loading: 'Đang lưu...'
 			}
 		);
 	}
@@ -89,10 +89,10 @@
 			{
 				success: () => {
 					window.location.reload();
-					return 'Card activated!';
+					return 'Thẻ đã được kích hoạt!';
 				},
-				error: 'Failed to activate card',
-				loading: 'Activating...'
+				error: 'Không thể kích hoạt thẻ',
+				loading: 'Đang kích hoạt...'
 			}
 		);
 	}
@@ -108,10 +108,10 @@
 			{
 				success: () => {
 					window.location.reload();
-					return 'Linked!';
+					return 'Đã liên kết!';
 				},
-				error: 'Failed to link',
-				loading: 'Linking...'
+				error: 'Không thể liên kết',
+				loading: 'Đang liên kết...'
 			}
 		);
 	}
@@ -167,7 +167,7 @@
 						{$_('card.inactive')}
 					</div>
 					{#if $user.data?.isManager || $user.data?.isAdmin}
-						<Button on:click={activate}>Activate Card</Button>
+						<Button on:click={activate}>Kích Hoạt Thẻ</Button>
 					{/if}
 				</div>
 			{:else if data.owner == null}
@@ -340,9 +340,9 @@
 					<Dialog.Root bind:open={editMode}>
 						<Dialog.Content class="sm:max-w-[800px]">
 							<Dialog.Header>
-								<Dialog.Title>Edit Card's Content</Dialog.Title>
+								<Dialog.Title>Chỉnh sửa nội dung thẻ</Dialog.Title>
 								<Dialog.Description>
-									Write card's content using markdown. Click save when you're done.
+									Viết nội dung thẻ bằng markdown. Nhấn lưu khi hoàn tất.
 								</Dialog.Description>
 							</Dialog.Header>
 
@@ -354,17 +354,17 @@
 								<textarea
 									bind:value={editedContent}
 									class="h-[500px] w-full rounded-md border p-2 font-mono"
-									placeholder="Write the card content in markdown..."
+									placeholder="Viết nội dung thẻ bằng markdown..."
 								></textarea>
 							{/if}
 
 							<Dialog.Footer>
 								<div class="flex justify-end gap-2">
-									<Button variant="outline" on:click={() => (editMode = false)}>Cancel</Button>
+									<Button variant="outline" on:click={() => (editMode = false)}>Hủy</Button>
 									<Button variant="secondary" on:click={togglePreview}
-										>{previewMode ? 'Edit' : 'Preview'}</Button
+										>{previewMode ? 'Chỉnh sửa' : 'Xem trước'}</Button
 									>
-									<Button on:click={saveContent}>Save</Button>
+									<Button on:click={saveContent}>Lưu</Button>
 								</div>
 							</Dialog.Footer>
 						</Dialog.Content>

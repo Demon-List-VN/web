@@ -4,6 +4,9 @@
       "Bash(find c:UsersnambuDesktopDLVNcodeDemonListVN-v3/src -name *.css -o -name *.scss)",
       "Bash(grep -r \"transition\\\\|animation\\\\|spring\\\\|tween\" c:UsersnambuDesktopDLVNcodeDemonListVN-v3/src --include=*.svelte --include=*.ts --include=*.js)",
       "Bash(npx svelte-check:*)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\nambu\\Desktop\\DLVN\\code\\DemonListVN-v3\\src\\routes\\card\\[id]\\scan"
     ]
   }
 }
