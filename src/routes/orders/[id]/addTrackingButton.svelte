@@ -62,15 +62,15 @@
 						<Select.Value placeholder="Select content" />
 					</Select.Trigger>
 					<Select.Content>
-						<Select.Item value={0}>Your order is being prepared</Select.Item>
-						<Select.Item value={1}>Failed to pick up the package</Select.Item>
+						<Select.Item value={0}>Đơn hàng của bạn đang được chuẩn bị</Select.Item>
+						<Select.Item value={1}>Không thể lấy gói hàng</Select.Item>
 						<Select.Item value={2} disabled={!shippingUnit}>
-							Your order is packed and will be handed over to {shippingUnit} soon
+							Đơn hàng của bạn đã đóng gói và sẽ được bàn giao cho {shippingUnit} trong thời gian sớm nhất
 						</Select.Item>
 						<Select.Item value={3} disabled={!shippingUnit || !trackingID}>
-							Your package is picked up by {shippingUnit} (Tracking ID: {trackingID})
+							Đơn hàng đã được lấy bởi {shippingUnit} và đang trên đường tới bạn (Mã vận đơn: {trackingID})
 						</Select.Item>
-						<Select.Item value={4}>Your package has been delivered!</Select.Item>
+						<Select.Item value={4}>Đơn hàng của bạn đã được giao thành công!</Select.Item>
 					</Select.Content>
 				</Select.Root>
 			</div>
