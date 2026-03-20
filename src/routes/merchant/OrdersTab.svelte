@@ -9,6 +9,8 @@
 	import { Label } from '$lib/components/ui/label';
 	import { toast } from 'svelte-sonner';
 	import { onMount } from 'svelte';
+	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
 	import Download from 'lucide-svelte/icons/download';
 	import ChevronDown from 'lucide-svelte/icons/chevron-down';
 	import Check from 'lucide-svelte/icons/check';
@@ -17,14 +19,43 @@
 	let products: any[] = [];
 	let loading = false;
 
-	// Filters
+	// Filters — initialized from URL in onMount
 	let selectedStates: Set<string> = new Set();
 	let selectedMethods: Set<string> = new Set();
 	let selectedProducts: Set<number> = new Set();
-	let deliveredFilter = ''; // '' = all, 'yes', 'no'
+	let deliveredFilter = '';
 	let searchQuery = '';
 	let amountMin: number | null = null;
 	let amountMax: number | null = null;
+
+	function readFiltersFromURL() {
+		const params = $page.url.searchParams;
+		const s = params.get('states');
+		selectedStates = s ? new Set(s.split(',')) : new Set();
+		const m = params.get('methods');
+		selectedMethods = m ? new Set(m.split(',')) : new Set();
+		const p = params.get('products');
+		selectedProducts = p ? new Set(p.split(',').map(Number)) : new Set();
+		deliveredFilter = params.get('delivered') || '';
+		searchQuery = params.get('search') || '';
+		const min = params.get('amountMin');
+		amountMin = min ? Number(min) : null;
+		const max = params.get('amountMax');
+		amountMax = max ? Number(max) : null;
+	}
+
+	function syncFiltersToURL() {
+		const params = new URLSearchParams();
+		if (selectedStates.size > 0) params.set('states', [...selectedStates].join(','));
+		if (selectedMethods.size > 0) params.set('methods', [...selectedMethods].join(','));
+		if (selectedProducts.size > 0) params.set('products', [...selectedProducts].join(','));
+		if (deliveredFilter) params.set('delivered', deliveredFilter);
+		if (searchQuery) params.set('search', searchQuery);
+		if (amountMin !== null && amountMin > 0) params.set('amountMin', String(amountMin));
+		if (amountMax !== null && amountMax > 0) params.set('amountMax', String(amountMax));
+		const qs = params.toString();
+		goto(`?${qs}`, { replaceState: true, keepFocus: true, noScroll: true });
+	}
 
 	// Dialogs
 	let showStateDialog = false;
@@ -83,6 +114,12 @@
 		return true;
 	});
 
+	$: if (initialized) {
+		// Touch all filter vars to track them as dependencies
+		selectedStates, selectedMethods, selectedProducts, deliveredFilter, searchQuery, amountMin, amountMax;
+		syncFiltersToURL();
+	}
+
 	async function fetchOrders() {
 		loading = true;
 		try {
@@ -109,9 +146,13 @@
 		} catch {}
 	}
 
+	let initialized = false;
+
 	onMount(() => {
+		readFiltersFromURL();
 		fetchOrders();
 		fetchProducts();
+		initialized = true;
 	});
 
 	function toggleProduct(id: number) {
@@ -318,6 +359,7 @@
 			onSelectedChange={(e) => {
 				deliveredFilter = e?.value === 'all' ? '' : (String(e?.value) || '');
 			}}
+			selected={deliveredFilter ? { value: deliveredFilter, label: deliveredFilter === 'yes' ? 'Yes' : 'No' } : { value: 'all', label: 'All' }}
 		>
 			<Select.Trigger class="w-[120px]">
 				<Select.Value placeholder="All" />
