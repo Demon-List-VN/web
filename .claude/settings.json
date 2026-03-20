@@ -3,7 +3,13 @@
     "allow": [
       "Bash(find c:UsersnambuDesktopDLVNcodeDemonListVN-v3/src -name *.css -o -name *.scss)",
       "Bash(grep -r \"transition\\\\|animation\\\\|spring\\\\|tween\" c:UsersnambuDesktopDLVNcodeDemonListVN-v3/src --include=*.svelte --include=*.ts --include=*.js)",
-      "Bash(npx svelte-check:*)"
+      "Bash(npx svelte-check:*)",
+      "Read(//c/Users/nambu/Desktop/DLVN/code/**)",
+      "Bash(grep -r merchant /c/Users/nambu/Desktop/DLVN/code/DemonListVN-v3/src --include=*.ts --include=*.js --include=*.svelte)",
+      "Bash(grep -E \"\\\\.\\(js|ts|json\\)$|svelte\")",
+      "Bash(find /c/Users/nambu/Desktop/DLVN/code/DemonListVN-v3/src -type f \\\\\\(-name *.ts -o -name *.tsx \\\\\\))",
+      "Bash(find /c/Users/nambu/Desktop/DLVN/code/DemonListVN-v3-api -type f \\\\\\(-name *.ts -o -name *.tsx -o -name *.js \\\\\\))",
+      "Bash(grep -E \"\\\\.\\(ts|js\\)$\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\nambu\\Desktop\\DLVN\\code\\DemonListVN-v3\\src\\routes\\card\\[id]\\scan"
