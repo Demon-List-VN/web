@@ -14,6 +14,7 @@
 	import FeatureDiscovery from '$lib/components/homepage/FeatureDiscovery.svelte';
 	import OnboardingProgress from '$lib/components/homepage/OnboardingProgress.svelte';
 	import OnboardingModal from '$lib/components/OnboardingModal.svelte';
+	import RecordCardPromo from '$lib/components/homepage/RecordCardPromo.svelte';
 
 	let showOnboardingModal = false;
 
@@ -62,6 +63,11 @@
 </div>
 
 <div class="wrapper">
+	<!-- Record Card Promo — full-width top -->
+	<div class="promoRow">
+		<RecordCardPromo />
+	</div>
+
 	<!-- Onboarding progress banner (new users only) -->
 	{#if $user.loggedIn && $user.data && $user.data.onboarding_done === false}
 		<div class="onboardingWrap">
@@ -193,6 +199,14 @@
 <style lang="scss">
 	.postHeroSpacing {
 		padding-top: 20px;
+	}
+
+	.promoRow {
+		padding: 20px 50px 0;
+
+		@media screen and (max-width: 900px) {
+			padding: 20px 16px 0;
+		}
 	}
 
 	.onboardingWrap {

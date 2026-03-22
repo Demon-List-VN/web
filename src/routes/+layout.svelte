@@ -51,7 +51,8 @@
 		Gamepad2,
 		Award,
 		Shuffle,
-		GitCompare
+		GitCompare,
+		CreditCard
 	} from 'lucide-svelte';
 	import OnboardingModal from '$lib/components/OnboardingModal.svelte';
 
@@ -104,6 +105,7 @@
 		{ route: '/discord', name: 'Discord', icon: MessageCircle },
 		{ route: '/wiki', name: 'Wiki', icon: BookOpen },
 		{ route: '/store', name: $locale === 'en' ? 'Store' : 'Cửa hàng', icon: ShoppingBag },
+	{ route: '/vending', name: $locale === 'en' ? 'Card Maker' : 'Máy Tạo Thẻ', icon: CreditCard },
 		{
 			name: $locale === 'en' ? 'Misc' : 'Khác',
 			icon: MoreHorizontal,

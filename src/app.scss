@@ -234,3 +234,19 @@ ins.adsbygoogle[data-ad-status='unfilled'] {
     @apply bg-background text-foreground;
   }
 }
+
+/* ===== Record Card Print Styles ===== */
+@media print {
+  body.printing-record-card > *:not(#record-card-print-area) {
+    display: none !important;
+  }
+
+  body.printing-record-card #record-card-print-area {
+    display: block !important;
+  }
+
+  @page {
+    size: 85.6mm 53.98mm;
+    margin: 0;
+  }
+}

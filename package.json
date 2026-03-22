@@ -40,6 +40,7 @@
 	"dependencies": {
 		"@supabase/supabase-js": "^2.41.1",
 		"@sveltejs/adapter-cloudflare": "^7.1.2",
+		"@types/qrcode": "^1.5.6",
 		"browser-image-compression": "^2.0.2",
 		"chart.js": "^4.4.2",
 		"chartjs-adapter-date-fns": "^3.0.0",
@@ -52,6 +53,7 @@
 		"lucide-svelte": "^0.546.0",
 		"mode-watcher": "^0.3.1",
 		"non.geist": "^1.0.2",
+		"qrcode": "^1.5.4",
 		"svelte-i18n": "^4.0.1",
 		"svelte-legos": "^0.2.2",
 		"svelte-loading-bar": "^1.2.0",

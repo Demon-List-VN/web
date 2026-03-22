@@ -3,6 +3,7 @@
 	import * as Tabs from '$lib/components/ui/tabs/index.js';
 	import OrdersTab from './OrdersTab.svelte';
 	import ProductsTab from './ProductsTab.svelte';
+	import RecordCardsTab from './RecordCardsTab.svelte';
 </script>
 
 <Title value="Merchant" />
@@ -12,6 +13,7 @@
 		<Tabs.List class="mb-4">
 			<Tabs.Trigger value="orders">Orders</Tabs.Trigger>
 			<Tabs.Trigger value="products">Products</Tabs.Trigger>
+			<Tabs.Trigger value="record-cards">Thẻ Bản Ghi</Tabs.Trigger>
 		</Tabs.List>
 
 		<Tabs.Content value="orders">
@@ -20,6 +22,10 @@
 
 		<Tabs.Content value="products">
 			<ProductsTab />
+		</Tabs.Content>
+
+		<Tabs.Content value="record-cards">
+			<RecordCardsTab />
 		</Tabs.Content>
 	</Tabs.Root>
 </div>
