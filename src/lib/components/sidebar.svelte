@@ -61,7 +61,11 @@
 	$: showTooltip = $sidebarCollapsed && $isDesktop;
 
 	function handleLinkClick() {
-		closeSidebar();
+		if ($isDesktop) {
+			setSidebarCollapsed(true);
+		} else {
+			closeSidebar();
+		}
 	}
 
 	function handleBackdropClick() {
