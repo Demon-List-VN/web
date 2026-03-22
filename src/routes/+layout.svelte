@@ -307,32 +307,6 @@
 	class:has-sidebar={!hideNav}
 	class:no-pad={removePad}
 >
-	{#if !supporterAlertDismissed && $user.checked && isVisible && (!$user.loggedIn || !isActive($user.data.supporterUntil)) && pathname !== '/supporter' && pathname !== '/' && !pathname.startsWith('/player/') && !pathname.startsWith('/@')}
-		<div class="px-[5px] pt-[20px] md:px-[30px]">
-			<Alert.Root
-				class="relative mb-[10px] flex items-center gap-[10px] border-pink-200 bg-pink-50 pb-[7px] dark:border-pink-800 dark:bg-pink-950"
-			>
-				<div class="mt-[-8px] text-3xl">💖</div>
-				<div>
-					<Alert.Title class="pr-8">{$_('supporter.alert.title')}</Alert.Title>
-					<Alert.Description>
-						{$_('supporter.alert.description')}
-						<a href="/supporter" class="font-semibold underline hover:text-pink-600"
-							>{$_('supporter.alert.learn_more')}</a
-						>
-					</Alert.Description>
-					<button
-						on:click={dismissSupporterAlert}
-						class="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100"
-						aria-label="Dismiss"
-					>
-						<X class="h-4 w-4" />
-					</button>
-				</div>
-			</Alert.Root>
-		</div>
-	{/if}
-
 	<slot />
 
 	<footer>
