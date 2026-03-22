@@ -1,9 +1,22 @@
 <script lang="ts">
-	import * as Alert from '$lib/components/ui/alert/index.js';
 	import { locale } from 'svelte-i18n';
-	import { BookOpen } from 'lucide-svelte';
+	import {
+		BookOpen,
+		ScrollText,
+		Gauge,
+		Star,
+		Film,
+		Gamepad2,
+		Trophy,
+		Shield,
+		Search
+	} from 'lucide-svelte';
 
 	export let submissionType: 'record' | 'level';
+
+	function t(vi: string, en: string) {
+		return $locale == 'vi' ? vi : en;
+	}
 </script>
 
 <div class="step-content">
@@ -12,50 +25,105 @@
 			<BookOpen size={32} />
 		</div>
 		<h2>
-			{$locale == 'vi' ? 'Lưu ý trước khi nộp' : 'Before you submit'}
+			{t('Lưu ý trước khi nộp', 'Before you submit')}
 		</h2>
 		<p class="subtitle">
-			{$locale == 'vi'
-				? 'Vui lòng đọc kỹ các quy định dưới đây'
-				: 'Please read the following guidelines carefully'}
+			{t('Vui lòng đọc kỹ các quy định dưới đây', 'Please read the following guidelines carefully')}
 		</p>
 	</div>
 
-	<Alert.Root class="rules-alert">
-		<Alert.Description>
-			{#if submissionType === 'record'}
-				{#if $locale == 'vi'}
-					- Đọc <a href={`/wiki/${$locale}/rules`}><u>luật</u></a> trước khi nộp.<br />
-					- Level phải là Insane Demon trở lên. Level chưa có trong danh sách cũng có thể nộp.<br />
-					- Điểm đề xuất là điểm của DLVN, không phải sao hay thứ hạng của level.<br />
-					- Video thô là video quay từ lúc bắt đầu đến kết thúc quá trình quay chưa bị chỉnh sửa.<br />
-					- Sử dụng
-					<a href="https://github.com/NamPE286/DemonListVN-geode-mod/releases">
-						<u>Geometry Dash Việt Nam's geode mod</u>
-					</a> trong khi chơi level để có cơ hội chấp nhận cao hơn.
-				{:else}
-					- Read the <a href={`/wiki/${$locale}/rules`}><u>rules</u></a> before submitting.<br />
-					- Level must be Insane Demon or above. Levels not yet on the list can also be submitted.<br />
-					- Suggested rating is Geometry Dash Viet Nam level's rating, not level's stars or placement.<br />
-					- Raw is recording from the beginning to the end of the recording session without editing.<br />
-					- Use
-					<a href="https://github.com/NamPE286/DemonListVN-geode-mod/releases">
-						<u>Geometry Dash Viet Nam's geode mod</u>
-					</a> while beating level to have higher chance of acceptance.
-				{/if}
-			{:else}
-				{#if $locale == 'vi'}
-					- Nộp challenge level mới để thêm vào Challenge List.<br />
-					- Level phải là Extreme hoặc Insane Demon challenge.<br />
-					- Level sẽ được kiểm duyệt trước khi thêm vào danh sách.
-				{:else}
-					- Submit a new challenge level to be added to the Challenge List.<br />
-					- Level must be an Extreme or Insane Demon challenge.<br />
-					- Level will be reviewed before being added to the list.
-				{/if}
-			{/if}
-		</Alert.Description>
-	</Alert.Root>
+	{#if submissionType === 'record'}
+		<div class="rules-grid">
+			<a href={`/wiki/${$locale}/rules`} class="rule-card accent">
+				<div class="rule-icon">
+					<ScrollText size={20} />
+				</div>
+				<div class="rule-text">
+					<h3>{t('Đọc luật', 'Read the rules')}</h3>
+					<p>{t('Đọc kỹ luật trước khi nộp record', 'Read the rules carefully before submitting a record')}</p>
+				</div>
+				<span class="rule-link">{t('Xem luật →', 'View rules →')}</span>
+			</a>
+
+			<div class="rule-card">
+				<div class="rule-icon">
+					<Gauge size={20} />
+				</div>
+				<div class="rule-text">
+					<h3>{t('Insane Demon trở lên', 'Insane Demon or above')}</h3>
+					<p>{t('Level phải là Insane Demon trở lên. Level chưa có trong danh sách cũng có thể nộp.', 'Level must be Insane Demon or above. Levels not yet on the list can also be submitted.')}</p>
+				</div>
+			</div>
+
+			<div class="rule-card">
+				<div class="rule-icon">
+					<Star size={20} />
+				</div>
+				<div class="rule-text">
+					<h3>{t('Điểm đề xuất', 'Suggested rating')}</h3>
+					<p>{t('Điểm đề xuất là điểm của DLVN, không phải sao hay thứ hạng của level.', 'Suggested rating is DLVN\'s rating, not level\'s stars or placement.')}</p>
+				</div>
+			</div>
+
+			<div class="rule-card">
+				<div class="rule-icon">
+					<Film size={20} />
+				</div>
+				<div class="rule-text">
+					<h3>{t('Video thô (Raw)', 'Raw footage')}</h3>
+					<p>{t('Video quay từ lúc bắt đầu đến kết thúc quá trình quay chưa bị chỉnh sửa.', 'Recording from the beginning to the end of the session without editing.')}</p>
+				</div>
+			</div>
+
+			<a
+				href="https://github.com/NamPE286/DemonListVN-geode-mod/releases"
+				target="_blank"
+				rel="noopener"
+				class="rule-card highlight"
+			>
+				<div class="rule-icon">
+					<Gamepad2 size={20} />
+				</div>
+				<div class="rule-text">
+					<h3>{t('Geode Mod', 'Geode Mod')}</h3>
+					<p>{t('Sử dụng Geometry Dash Việt Nam\'s geode mod trong khi chơi level để có cơ hội chấp nhận cao hơn.', 'Use Geometry Dash Viet Nam\'s geode mod while playing to have higher chance of acceptance.')}</p>
+				</div>
+				<span class="rule-link">{t('Tải mod →', 'Download →')}</span>
+			</a>
+		</div>
+	{:else}
+		<div class="rules-grid">
+			<div class="rule-card">
+				<div class="rule-icon">
+					<Trophy size={20} />
+				</div>
+				<div class="rule-text">
+					<h3>{t('Challenge List', 'Challenge List')}</h3>
+					<p>{t('Nộp challenge level mới để thêm vào Challenge List.', 'Submit a new challenge level to be added to the Challenge List.')}</p>
+				</div>
+			</div>
+
+			<div class="rule-card">
+				<div class="rule-icon">
+					<Gauge size={20} />
+				</div>
+				<div class="rule-text">
+					<h3>{t('Extreme / Insane Demon', 'Extreme / Insane Demon')}</h3>
+					<p>{t('Level phải là Extreme hoặc Insane Demon challenge.', 'Level must be an Extreme or Insane Demon challenge.')}</p>
+				</div>
+			</div>
+
+			<div class="rule-card">
+				<div class="rule-icon">
+					<Search size={20} />
+				</div>
+				<div class="rule-text">
+					<h3>{t('Kiểm duyệt', 'Review process')}</h3>
+					<p>{t('Level sẽ được kiểm duyệt trước khi thêm vào danh sách.', 'Level will be reviewed before being added to the list.')}</p>
+				</div>
+			</div>
+		</div>
+	{/if}
 </div>
 
 <style lang="scss">
@@ -98,7 +166,96 @@
 		line-height: 1.5;
 	}
 
-	.rules-alert :global(a) {
-		text-decoration: underline;
+	.rules-grid {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+
+	.rule-card {
+		display: flex;
+		align-items: flex-start;
+		gap: 14px;
+		padding: 14px 16px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 12px;
+		background: hsl(var(--card, var(--background)));
+		transition: all 0.15s ease;
+		text-decoration: none;
+		color: inherit;
+
+		&:hover {
+			background: hsl(var(--muted) / 0.3);
+		}
+
+		&.accent {
+			border-color: hsl(var(--primary) / 0.3);
+			background: hsl(var(--primary) / 0.04);
+
+			.rule-icon {
+				background: hsl(var(--primary) / 0.12);
+				color: hsl(var(--primary));
+			}
+
+			&:hover {
+				background: hsl(var(--primary) / 0.08);
+			}
+		}
+
+		&.highlight {
+			border-color: hsl(142 71% 45% / 0.3);
+			background: hsl(142 71% 45% / 0.04);
+
+			.rule-icon {
+				background: hsl(142 71% 45% / 0.12);
+				color: hsl(142 71% 45%);
+			}
+
+			&:hover {
+				background: hsl(142 71% 45% / 0.08);
+			}
+		}
+	}
+
+	.rule-icon {
+		width: 40px;
+		height: 40px;
+		border-radius: 10px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: hsl(var(--muted) / 0.5);
+		color: hsl(var(--muted-foreground));
+		flex-shrink: 0;
+	}
+
+	.rule-text {
+		flex: 1;
+		min-width: 0;
+
+		h3 {
+			font-size: 13px;
+			font-weight: 600;
+			color: hsl(var(--foreground));
+			margin-bottom: 2px;
+		}
+
+		p {
+			font-size: 12px;
+			color: hsl(var(--muted-foreground));
+			line-height: 1.5;
+		}
+	}
+
+	.rule-link {
+		font-size: 12px;
+		font-weight: 500;
+		color: hsl(var(--primary));
+		white-space: nowrap;
+		align-self: center;
+	}
+
+	.highlight .rule-link {
+		color: hsl(142 71% 45%);
 	}
 </style>
