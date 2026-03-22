@@ -2,11 +2,15 @@
 	import { Label } from '$lib/components/ui/label/index.js';
 	import Loading from '$lib/components/animation/loading.svelte';
 	import { locale } from 'svelte-i18n';
-	import { Link } from 'lucide-svelte';
+	import { Link, ExternalLink } from 'lucide-svelte';
+	import { fade } from 'svelte/transition';
 
 	export let apiLevel: any;
+	export let level: any;
 	export let levelVariants: any[];
 	export let selectedVariantId: number | null;
+
+	let thumbFailed = false;
 </script>
 
 <div class="step-content">
@@ -15,14 +19,37 @@
 			<Loading inverted={true} />
 		</div>
 	{:else}
-		<div class="level-preview">
-			<div class="level-name">
-				<a href={`/level/${apiLevel.id}`}>
-					<b>{apiLevel.name}</b>
-				</a>
+		<div class="level-card" in:fade={{ duration: 200 }}>
+			<div class="thumbnail-wrapper">
+				{#if level?.videoID}
+					<img
+						src={`https://img.youtube.com/vi/${level.videoID}/0.jpg`}
+						alt=""
+						class="thumbnail bg-thumb"
+					/>
+				{/if}
+				{#if !thumbFailed}
+					<img
+						src={`https://levelthumbs.prevter.me/thumbnail/${apiLevel.id}/small`}
+						alt=""
+						class="thumbnail fg-thumb"
+						on:error={() => { thumbFailed = true; }}
+					/>
+				{/if}
 			</div>
-			<div class="level-author">{$locale == 'vi' ? 'bởi' : 'by'} {apiLevel.author}</div>
-			<div class="level-id">ID: {apiLevel.id}</div>
+
+			<div class="level-info">
+				<a href={`/level/${apiLevel.id}`} class="level-name" target="_blank">
+					{apiLevel.name}
+					<ExternalLink size={13} class="inline ml-1 opacity-50" />
+				</a>
+				<div class="level-meta">
+					{$locale == 'vi' ? 'bởi' : 'by'} <span class="author">{apiLevel.author}</span>
+				</div>
+				<div class="level-id-badge">
+					ID: {apiLevel.id}
+				</div>
+			</div>
 		</div>
 
 		{#if levelVariants.length > 0}
@@ -68,30 +95,84 @@
 		padding: 32px 0;
 	}
 
-	.level-preview {
-		text-align: center;
-		padding: 20px;
+	.level-card {
 		border: 1px solid hsl(var(--border));
-		border-radius: 12px;
-		background: hsl(var(--muted) / 0.15);
+		border-radius: 14px;
+		overflow: hidden;
+		background: hsl(var(--muted) / 0.08);
+	}
 
-		a {
-			text-decoration: underline;
-			font-size: 18px;
+	.thumbnail-wrapper {
+		position: relative;
+		width: 100%;
+		height: 180px;
+		overflow: hidden;
+		background: hsl(var(--muted) / 0.2);
+	}
+
+	.thumbnail {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.fg-thumb {
+		z-index: 1;
+		opacity: 0;
+		transition: opacity 0.4s ease;
+
+		&:not([src=""]) {
+			opacity: 1;
 		}
 	}
 
-	.level-author {
-		font-size: 13px;
-		color: hsl(var(--muted-foreground));
-		margin-top: 4px;
+	.bg-thumb {
+		z-index: 0;
 	}
 
-	.level-id {
-		font-size: 12px;
-		color: hsl(var(--muted-foreground) / 0.7);
-		margin-top: 2px;
+	.level-info {
+		padding: 16px 20px;
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.level-name {
+		font-size: 17px;
+		font-weight: 600;
+		color: hsl(var(--foreground));
+		text-decoration: none;
+		display: inline-flex;
+		align-items: center;
+		transition: color 0.15s ease;
+
+		&:hover {
+			color: hsl(var(--primary));
+		}
+	}
+
+	.level-meta {
+		font-size: 13px;
+		color: hsl(var(--muted-foreground));
+	}
+
+	.author {
+		font-weight: 500;
+		color: hsl(var(--foreground));
+	}
+
+	.level-id-badge {
+		display: inline-flex;
+		width: fit-content;
+		font-size: 11px;
 		font-family: monospace;
+		color: hsl(var(--muted-foreground));
+		background: hsl(var(--muted) / 0.4);
+		padding: 2px 8px;
+		border-radius: 6px;
+		margin-top: 4px;
 	}
 
 	.variant-picker {

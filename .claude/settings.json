@@ -9,7 +9,8 @@
       "Bash(grep -E \"\\\\.\\(js|ts|json\\)$|svelte\")",
       "Bash(find /c/Users/nambu/Desktop/DLVN/code/DemonListVN-v3/src -type f \\\\\\(-name *.ts -o -name *.tsx \\\\\\))",
       "Bash(find /c/Users/nambu/Desktop/DLVN/code/DemonListVN-v3-api -type f \\\\\\(-name *.ts -o -name *.tsx -o -name *.js \\\\\\))",
-      "Bash(grep -E \"\\\\.\\(ts|js\\)$\")"
+      "Bash(grep -E \"\\\\.\\(ts|js\\)$\")",
+      "Bash(npx vite:*)"
     ],
     "additionalDirectories": [
       "c:\\Users\\nambu\\Desktop\\DLVN\\code\\DemonListVN-v3\\src\\routes\\card\\[id]\\scan"

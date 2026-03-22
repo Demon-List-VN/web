@@ -64,8 +64,8 @@ export function createDefaultState(uid: string): SubmitState {
 	};
 }
 
-export const RECORD_STEPS = ['Type', 'Level', 'Confirm', 'Details', 'Optional'];
-export const LEVEL_STEPS = ['Type', 'Level', 'Details'];
+export const RECORD_STEPS = ['Type', 'Rules', 'Level', 'Confirm', 'Details', 'Optional'];
+export const LEVEL_STEPS = ['Type', 'Rules', 'Level', 'Details'];
 
 export function getSteps(type: 'record' | 'level') {
 	return type === 'level' ? LEVEL_STEPS : RECORD_STEPS;

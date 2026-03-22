@@ -8,6 +8,7 @@
 	import { toast } from 'svelte-sonner';
 	import { CheckCircle2, XCircle, ChevronDown, ChevronUp, Copy } from 'lucide-svelte';
 	import { fly } from 'svelte/transition';
+	import { Confetti } from 'svelte-confetti';
 
 	export let sendStatus: 0 | 1 | 2;
 	export let errorMessage: string;
@@ -30,6 +31,16 @@
 			<p class="text-muted">{$_('submit.send.loading.description')}</p>
 		</div>
 	{:else if sendStatus === 1}
+		<div class="confetti-wrapper">
+			<Confetti
+				x={[-5, 5]}
+				y={[0, 0.1]}
+				delay={[0, 250]}
+				duration={3000}
+				amount={200}
+				fallDistance="100vh"
+			/>
+		</div>
 		<div class="result-success">
 			<div class="result-icon success">
 				<CheckCircle2 size={48} />
@@ -192,6 +203,14 @@
 		display: flex;
 		flex-direction: column;
 		gap: 20px;
+	}
+
+	.confetti-wrapper {
+		position: fixed;
+		top: -10px;
+		left: 50%;
+		z-index: 100;
+		pointer-events: none;
 	}
 
 	.result-loading {
