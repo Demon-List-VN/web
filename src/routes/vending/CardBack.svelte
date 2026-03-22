@@ -20,6 +20,7 @@
 	});
 </script>
 
+<div class="card-back-container" style={scale !== 1 ? `aspect-ratio: 245 / 155.48;` : ''}>
 <div
 	class="card-back-scaler"
 	style={scale !== 1 ? `width: ${100 / scale}%; transform: scale(${scale}); transform-origin: top left;` : ''}
@@ -46,6 +47,7 @@
 			</div>
 		{/if}
 	</div>
+</div>
 </div>
 </div>
 
