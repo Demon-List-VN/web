@@ -12,12 +12,11 @@
 	import X from 'svelte-radix/Cross2.svelte';
 	import { PanelLeftClose, PanelLeftOpen } from 'lucide-svelte';
 
-	import { Button } from '$lib/components/ui/button/index.js';
+	import { Button, buttonVariants } from '$lib/components/ui/button/index.js';
 	import { Toaster } from '$lib/components/ui/sonner';
 	import { LoadingBar } from 'svelte-loading-bar';
 
 	import Search from '$lib/components/search.svelte';
-	import SubmitButton from '$lib/components/submitButton.svelte';
 	import SettingButton from '$lib/components/settingButton.svelte';
 	import Sidebar from '$lib/components/sidebar.svelte';
 
@@ -289,7 +288,7 @@
 			{#if !$user.loggedIn}
 				<Button variant="outline" on:click={signIn}>{$_('nav.sign_in')}</Button>
 			{:else}
-				<SubmitButton />
+				<a href="/submit" class={buttonVariants({ variant: 'outline' })}>{$_('submit.button')}</a>
 				<NotificationButton />
 				<UserPopover {signOut} />
 			{/if}

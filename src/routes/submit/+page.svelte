@@ -1,0 +1,514 @@
+<script lang="ts">
+	import { Button } from '$lib/components/ui/button/index.js';
+	import { user } from '$lib/client';
+	import { page } from '$app/stores';
+	import { onMount } from 'svelte';
+	import { locale, _ } from 'svelte-i18n';
+	import { toast } from 'svelte-sonner';
+	import { fly } from 'svelte/transition';
+	import { ArrowLeft } from 'lucide-svelte';
+	import { isActive } from '$lib/client/isSupporterActive';
+
+	import SubmitStepper from '$lib/components/submit/SubmitStepper.svelte';
+	import StepTypeSelect from '$lib/components/submit/StepTypeSelect.svelte';
+	import StepLevelId from '$lib/components/submit/StepLevelId.svelte';
+	import StepConfirmLevel from '$lib/components/submit/StepConfirmLevel.svelte';
+	import StepRequiredFields from '$lib/components/submit/StepRequiredFields.svelte';
+	import StepOptionalFields from '$lib/components/submit/StepOptionalFields.svelte';
+	import StepLevelDetails from '$lib/components/submit/StepLevelDetails.svelte';
+	import SubmitResult from '$lib/components/submit/SubmitResult.svelte';
+	import {
+		createDefaultState,
+		getSteps,
+		extractYouTubeVideoId,
+		isValidYouTubeLink,
+		getMs,
+		validTime,
+		type SubmitState
+	} from '$lib/components/submit/submitState';
+
+	let state: SubmitState = createDefaultState($user.data?.uid || '');
+	let submitted = false;
+	let direction = 1;
+
+	$: steps = getSteps(state.type).map((s) => {
+		const labels: Record<string, { vi: string; en: string }> = {
+			Type: { vi: 'Loại', en: 'Type' },
+			Level: { vi: 'Level', en: 'Level' },
+			Confirm: { vi: 'Xác nhận', en: 'Confirm' },
+			Details: { vi: 'Chi tiết', en: 'Details' },
+			Optional: { vi: 'Tùy chọn', en: 'Optional' }
+		};
+		return labels[s] ? ($locale == 'vi' ? labels[s].vi : labels[s].en) : s;
+	});
+	$: isLastStep =
+		state.type === 'level' ? state.step === 2 && state.apiLevel : state.step === 4;
+
+	function t(vi: string, en: string) {
+		return $locale == 'vi' ? vi : en;
+	}
+
+	onMount(() => {
+		const params = $page.url.searchParams;
+		const type = params.get('type');
+		const levelId = params.get('levelId');
+
+		if (type === 'level') state.type = 'level';
+		if (levelId) {
+			const id = parseInt(levelId);
+			if (!isNaN(id)) {
+				state.levelid = id;
+				state.levelSubmission.levelId = id;
+				state.step = 1;
+			}
+		}
+	});
+
+	async function fetchLevel() {
+		const levelId = state.type === 'level' ? state.levelSubmission.levelId : state.levelid;
+
+		try {
+			state.level = await (
+				await fetch(`${import.meta.env.VITE_API_URL}/levels/${levelId}`)
+			).json();
+		} catch {
+			state.level = null;
+		}
+
+		state.apiLevel = await (
+			await fetch(`${import.meta.env.VITE_API_URL}/levels/${levelId}?fromGD=1`)
+		).json();
+
+		state.levelVariants = [];
+		state.selectedVariantId = null;
+		if (state.type === 'record') {
+			try {
+				const varRes = await fetch(
+					`${import.meta.env.VITE_API_URL}/levels/${levelId}/variants`
+				);
+				if (varRes.ok) {
+					state.levelVariants = await varRes.json();
+				}
+			} catch {}
+		}
+	}
+
+	function next() {
+		if (state.step === 1) {
+			const levelId = state.type === 'level' ? state.levelSubmission.levelId : state.levelid;
+			if (!levelId || isNaN(levelId)) {
+				toast.error(t('Vui lòng nhập Level ID hợp lệ', 'Please enter a valid Level ID'));
+				return;
+			}
+			state.apiLevel = null;
+			fetchLevel().catch(() => {
+				toast.error(t('Level ID không hợp lệ', 'Invalid level ID'));
+				state.step--;
+				state = state;
+			});
+		}
+
+		if (state.type === 'level' && state.step === 2) {
+			if (!state.levelSubmission.videoLink) {
+				toast.error(t('Vui lòng nhập link video YouTube', 'Please enter a YouTube video link'));
+				return;
+			}
+			if (!isValidYouTubeLink(state.levelSubmission.videoLink)) {
+				toast.error(t('Link video không hợp lệ', 'Invalid video link. Please enter a valid YouTube link.'));
+				return;
+			}
+			submitLevel();
+			return;
+		}
+
+		if (state.type === 'record' && state.step === 3) {
+			const isPlatformer = state.apiLevel?.length == 5;
+
+			if (isPlatformer) {
+				if (!validTime(state.time)) {
+					toast.error(t('Thời gian không hợp lệ', 'Invalid time'));
+					return;
+				}
+			} else {
+				if (!state.progress) {
+					toast.error(t('Vui lòng điền đầy đủ các trường bắt buộc', 'Please fill in all required fields'));
+					return;
+				}
+			}
+
+			if (!state.refreshRate || !state.videoLink || !state.mobile) {
+				toast.error(t('Vui lòng điền đầy đủ các trường bắt buộc', 'Please fill in all required fields'));
+				return;
+			}
+
+			if (state.level) {
+				const needsRaw =
+					(!state.level.flTop || state.level.rating) &&
+					!(state.level.isChallenge && state.level.rating < 2600);
+				if (needsRaw && !state.raw) {
+					toast.error(t('Vui lòng điền đầy đủ các trường bắt buộc', 'Please fill in all required fields'));
+					return;
+				}
+			} else if (!state.raw) {
+				toast.error(t('Vui lòng điền đầy đủ các trường bắt buộc', 'Please fill in all required fields'));
+				return;
+			}
+
+			if (state.raw && state.raw === state.videoLink) {
+				toast.error(t('Video thô không được trùng với video hoàn thành', 'Raw is not completion video.'));
+				return;
+			}
+
+			if (state.level && state.progress < state.level.minProgress) {
+				toast.error(t('Progress chưa đủ', 'Not enough progress'));
+				return;
+			}
+		}
+
+		if (state.type === 'record' && state.step === 4) {
+			submitRecord();
+			return;
+		}
+
+		direction = 1;
+		state.step++;
+		state = state;
+	}
+
+	function back() {
+		if (state.step > 0) {
+			direction = -1;
+			state.step--;
+			state = state;
+		}
+	}
+
+	async function submitRecord() {
+		submitted = true;
+		state.sendStatus = 0;
+		state = state;
+
+		const submitData: any = {
+			levelid: state.levelid,
+			userid: $user.data.uid,
+			progress: state.apiLevel?.length == 5 ? getMs(state.time) : state.progress,
+			refreshRate: state.refreshRate,
+			videoLink: state.videoLink,
+			raw: state.raw,
+			mobile: state.mobile?.value ?? null,
+			suggestedRating: state.suggestedRating,
+			comment: state.comment
+		};
+
+		if (state.selectedVariantId) {
+			submitData.levelid = state.selectedVariantId;
+		}
+
+		state.submitId = new Date().getTime();
+
+		try {
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/submission?id=${state.submitId}`,
+				{
+					method: 'POST',
+					body: JSON.stringify(submitData),
+					headers: {
+						Authorization: `Bearer ${await $user.token()}`,
+						'Content-Type': 'application/json'
+					}
+				}
+			);
+
+			state.sendStatus = res.ok ? 1 : 2;
+
+			const responseText = await res.text();
+			state.errorResponse = responseText;
+			try {
+				const resJson = JSON.parse(responseText);
+				state.submitLog = resJson.logs || [];
+				state.errorMessage = $locale == 'vi' ? resJson.vi : resJson.en;
+			} catch {
+				state.errorMessage = responseText;
+			}
+		} catch (err) {
+			state.sendStatus = 2;
+			state.errorMessage = String(err);
+		}
+
+		state = state;
+	}
+
+	async function submitLevel() {
+		submitted = true;
+		state.sendStatus = 0;
+		state = state;
+
+		state.submitId = new Date().getTime();
+		const videoID = state.levelSubmission.videoLink
+			? extractYouTubeVideoId(state.levelSubmission.videoLink)
+			: null;
+
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/level-submissions`, {
+				method: 'POST',
+				body: JSON.stringify({
+					levelId: state.levelSubmission.levelId,
+					comment: state.levelSubmission.comment,
+					videoID
+				}),
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`,
+					'Content-Type': 'application/json'
+				}
+			});
+
+			state.sendStatus = res.ok ? 1 : 2;
+
+			const responseText = await res.text();
+			state.errorResponse = responseText;
+			try {
+				const resJson = JSON.parse(responseText);
+				state.submitLog = resJson.logs || [];
+				state.errorMessage = $locale == 'vi' ? resJson.vi : resJson.en;
+			} catch {
+				state.errorMessage = responseText;
+			}
+		} catch (err) {
+			state.sendStatus = 2;
+			state.errorMessage = String(err);
+		}
+
+		state = state;
+	}
+
+	function resetForm() {
+		state = createDefaultState($user.data?.uid || '');
+		submitted = false;
+		direction = 1;
+	}
+</script>
+
+<svelte:head>
+	<title>{$_('submit.button')} | DLVN</title>
+</svelte:head>
+
+<div class="submit-page">
+	{#if !$user.loggedIn}
+		<div class="auth-prompt">
+			<h2>{$locale == 'vi' ? 'Đăng nhập để nộp' : 'Sign in to submit'}</h2>
+			<p class="text-muted">
+				{$locale == 'vi'
+					? 'Bạn cần đăng nhập để nộp record hoặc challenge level.'
+					: 'You need to sign in to submit a record or challenge level.'}
+			</p>
+		</div>
+	{:else}
+		<div class="submit-container">
+			<a href="/" class="back-link">
+				<ArrowLeft size={16} />
+				<span>{$locale == 'vi' ? 'Trang chủ' : 'Home'}</span>
+			</a>
+
+			<div class="submit-card">
+				{#if !submitted}
+					<SubmitStepper {steps} currentStep={state.step} />
+
+					<div class="step-wrapper">
+						{#key state.step}
+							<div
+								class="step-animate"
+								in:fly={{ x: direction * 40, duration: 250, delay: 100 }}
+								out:fly={{ x: direction * -40, duration: 150 }}
+							>
+								{#if state.step === 0}
+									<StepTypeSelect
+										submissionType={state.type}
+										onSelect={(t) => {
+											state.type = t;
+											state = state;
+										}}
+									/>
+								{:else if state.step === 1}
+									{#if state.type === 'level'}
+										<StepLevelId
+											bind:levelId={state.levelSubmission.levelId}
+											submissionType="level"
+										/>
+									{:else}
+										<StepLevelId
+											bind:levelId={state.levelid}
+											submissionType="record"
+										/>
+									{/if}
+								{:else if state.step === 2}
+									{#if state.type === 'level'}
+										<StepLevelDetails
+											apiLevel={state.apiLevel}
+											bind:videoLink={state.levelSubmission.videoLink}
+											bind:comment={state.levelSubmission.comment}
+										/>
+									{:else}
+										<StepConfirmLevel
+											apiLevel={state.apiLevel}
+											levelVariants={state.levelVariants}
+											bind:selectedVariantId={state.selectedVariantId}
+										/>
+									{/if}
+								{:else if state.step === 3}
+									<StepRequiredFields
+										apiLevel={state.apiLevel}
+										level={state.level}
+										bind:progress={state.progress}
+										bind:refreshRate={state.refreshRate}
+										bind:videoLink={state.videoLink}
+										bind:raw={state.raw}
+										bind:mobile={state.mobile}
+										bind:time={state.time}
+									/>
+								{:else if state.step === 4}
+									<StepOptionalFields
+										apiLevel={state.apiLevel}
+										progress={state.progress}
+										bind:suggestedRating={state.suggestedRating}
+										bind:comment={state.comment}
+									/>
+								{/if}
+							</div>
+						{/key}
+					</div>
+
+					<div class="step-footer">
+						{#if state.step > 0}
+							<Button variant="outline" class="footer-btn" on:click={back}>
+								{$_('submit.back')}
+							</Button>
+						{:else}
+							<div />
+						{/if}
+						<Button class="footer-btn" on:click={next}>
+							{#if isLastStep}
+								{$_('submit.button')}
+							{:else}
+								{$_('submit.next')}
+							{/if}
+						</Button>
+					</div>
+				{:else}
+					<SubmitResult
+						sendStatus={state.sendStatus}
+						errorMessage={state.errorMessage}
+						errorResponse={state.errorResponse}
+						submitLog={state.submitLog}
+						submitId={state.submitId}
+						submission={{
+							levelid: state.levelid,
+							progress: state.progress,
+							refreshRate: state.refreshRate,
+							videoLink: state.videoLink,
+							raw: state.raw,
+							mobile: state.mobile,
+							suggestedRating: state.suggestedRating,
+							comment: state.comment
+						}}
+						apiLevel={state.apiLevel}
+						time={state.time}
+						onReset={resetForm}
+					/>
+				{/if}
+			</div>
+		</div>
+	{/if}
+</div>
+
+<style lang="scss">
+	.submit-page {
+		min-height: 60vh;
+		padding: 24px 16px;
+		display: flex;
+		justify-content: center;
+	}
+
+	.auth-prompt {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		text-align: center;
+		padding: 60px 20px;
+
+		h2 {
+			font-size: 20px;
+			font-weight: 600;
+		}
+
+		.text-muted {
+			font-size: 14px;
+			color: hsl(var(--muted-foreground));
+		}
+	}
+
+	.submit-container {
+		width: 100%;
+		max-width: 672px;
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+	}
+
+	.back-link {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 13px;
+		color: hsl(var(--muted-foreground));
+		text-decoration: none;
+		transition: color 0.15s ease;
+		width: fit-content;
+
+		&:hover {
+			color: hsl(var(--foreground));
+		}
+	}
+
+	.submit-card {
+		border: 1px solid hsl(var(--border));
+		border-radius: 16px;
+		padding: 24px;
+		background: hsl(var(--card, var(--background)));
+
+		@media (max-width: 480px) {
+			padding: 16px;
+			border-radius: 12px;
+		}
+	}
+
+	.step-wrapper {
+		position: relative;
+		min-height: 200px;
+		overflow: hidden;
+	}
+
+	.step-animate {
+		width: 100%;
+	}
+
+	.step-footer {
+		display: flex;
+		justify-content: space-between;
+		gap: 12px;
+		margin-top: 24px;
+		padding-top: 16px;
+		border-top: 1px solid hsl(var(--border));
+	}
+
+	.step-footer :global(.footer-btn) {
+		min-width: 100px;
+	}
+
+	@media (max-width: 480px) {
+		.step-footer :global(.footer-btn) {
+			flex: 1;
+		}
+	}
+</style>
