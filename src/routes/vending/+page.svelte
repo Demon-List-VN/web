@@ -8,6 +8,7 @@
 	import CardBack from './CardBack.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { CreditCard, ChevronRight, ChevronLeft, Upload, X } from 'lucide-svelte';
+	import { upload } from '$lib/client/storage';
 
 	// --- State ---
 	let step = 1;
@@ -26,6 +27,7 @@
 
 	// Step 3
 	let selectedMaterial: 'paper' | 'plastic' | null = null;
+	let addingToCart = false;
 
 	let hasFetchedRecords = false;
 
@@ -33,8 +35,8 @@
 		{
 			id: 'paper' as const,
 			label: 'Giấy',
-			price: '12,000đ',
-			priceNum: 12000,
+			price: '29,000đ',
+			priceNum: 29000,
 			features: ['In mã QR', 'Giấy mờ chất lượng cao', 'Kích thước chuẩn CR80']
 		},
 		{
@@ -150,18 +152,45 @@
 		if (file) handleAvatarUpload(file);
 	}
 
-	function addToCart() {
+	async function addToCart() {
 		if (!selectedRecord || !selectedMaterial) {
 			toast.error('Vui lòng chọn chất liệu');
 			return;
 		}
+
+		addingToCart = true;
+		const token = await $user.token();
+		const uid = $user.data?.uid;
+		const levelId = selectedRecord.levelid;
+		let imgUrl: string | undefined;
+		let avatarUrl: string | undefined;
+
+		try {
+			if (customImageDataUrl) {
+				const path = `record-cards/${uid}-${levelId}`;
+				const blob = await fetch(customImageDataUrl).then((r) => r.blob());
+				await upload(path, blob, token!);
+				imgUrl = `https://cdn.gdvn.net/${path}`;
+			}
+			if (customAvatarDataUrl) {
+				const path = `record-cards/${uid}-${levelId}-avatar`;
+				const blob = await fetch(customAvatarDataUrl).then((r) => r.blob());
+				await upload(path, blob, token!);
+				avatarUrl = `https://cdn.gdvn.net/${path}`;
+			}
+		} catch {
+			toast.error('Không thể tải ảnh lên, vui lòng thử lại');
+			addingToCart = false;
+			return;
+		}
+
 		$cart.addRecordCard({
 			type: 'record-card',
-			levelID: selectedRecord.levelid,
+			levelID: levelId,
 			template: 1,
 			material: selectedMaterial,
-			customImageDataUrl: customImageDataUrl ?? undefined,
-			customAvatarDataUrl: customAvatarDataUrl ?? undefined,
+			imgUrl,
+			avatarUrl,
 			levelName: selectedRecord.levels?.name ?? ''
 		});
 		toast.success('Đã thêm vào giỏ hàng!');
@@ -235,7 +264,7 @@
 					{#each records as record}
 						<button
 							class="record-card"
-							class:selected={selectedRecord?.no === record.no}
+							class:selected={selectedRecord?.levelid === record.levelid}
 							on:click={() => (selectedRecord = record)}
 							type="button"
 						>
@@ -267,17 +296,19 @@
 			<div class="preview-wrap">
 				{#if !showBack}
 					<CardPreview
-						{playerUID}
-						{playerName}
-						{clanTag}
-						{clanTagBg}
-						{clanTagText}
-						{levelName}
-						{creator}
-						{progress}
-						{bgImage}
-						avatarImage={customAvatarDataUrl}
-						template={1}
+						data={{
+							playerUID,
+							playerName,
+							clanTag,
+							clanTagBg,
+							clanTagText,
+							levelName,
+							creator,
+							progress,
+							bgImage,
+							avatarImage: customAvatarDataUrl,
+							template: 1
+						}}
 						size="full"
 					/>
 				{:else}
@@ -416,8 +447,8 @@
 				<ChevronRight size={16} />
 			</Button>
 		{:else}
-			<Button on:click={addToCart} disabled={!selectedMaterial}>
-				Thêm vào giỏ hàng
+			<Button on:click={addToCart} disabled={!selectedMaterial || addingToCart}>
+				{addingToCart ? 'Đang tải ảnh...' : 'Thêm vào giỏ hàng'}
 				<CreditCard size={16} />
 			</Button>
 		{/if}

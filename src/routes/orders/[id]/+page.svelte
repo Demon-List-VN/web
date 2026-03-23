@@ -156,8 +156,8 @@
 													levelName: rc.levels?.name || `Level #${rc.levelID}`,
 													creator: rc.levels?.creator || '',
 													progress: rc.records?.progress ?? null,
-													bgImage: `https://levelthumbs.prevter.me/thumbnail/${rc.levelID}/high`, // default thumbnail
-													avatarImage: `https://cdn.gdvn.net/avatars/${data.userID}.jpg`,
+													bgImage: rc.img || `https://levelthumbs.prevter.me/thumbnail/${rc.levelID}/high`,
+													avatarImage: rc.avatar || `https://cdn.gdvn.net/avatars/${data.userID}.jpg`,
 													template: rc.template
 												}}
 												size="mini"

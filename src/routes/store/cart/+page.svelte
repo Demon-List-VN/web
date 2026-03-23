@@ -111,7 +111,7 @@
 							<Button
 								variant="destructive"
 								size="icon"
-								on:click={() => {
+								on:click={async () => {
 									$cart.removeItem(product.id);
 									data = data.filter((item) => item.id !== product.id);
 									toast.success($_('store.cart.remove_success', { values: { product: product.name } }));
@@ -135,8 +135,8 @@
 									levelName: rc.levelName || `Level #${rc.levelID}`,
 									creator: rc.creator || '',
 									progress: rc.progress ?? null,
-									bgImage: rc.customImageDataUrl || `https://levelthumbs.prevter.me/thumbnail/${rc.levelID}/high`,
-									avatarImage: rc.customAvatarDataUrl || `https://cdn.gdvn.net/avatars/${$user.data?.uid}.jpg`,
+									bgImage: rc.imgUrl || `https://levelthumbs.prevter.me/thumbnail/${rc.levelID}/high`,
+									avatarImage: rc.avatarUrl || `https://cdn.gdvn.net/avatars/${$user.data?.uid}.jpg`,
 									template: rc.template
 								}}
 								size="mini"
@@ -156,8 +156,14 @@
 							<Button
 								variant="destructive"
 								size="icon"
-								on:click={() => {
-									$cart.removeRecordCard(i);
+								on:click={async () => {
+									const removed = $cart.removeRecordCard(i);
+									if (removed && $user.loggedIn) {
+										const token = await $user.token();
+										const uid = $user.data?.uid;
+										if (removed.imgUrl) fetch(`${import.meta.env.VITE_API_URL}/storage/object?path=${encodeURIComponent(`record-cards/${uid}-${removed.levelID}`)}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }).catch(() => {});
+										if (removed.avatarUrl) fetch(`${import.meta.env.VITE_API_URL}/storage/object?path=${encodeURIComponent(`record-cards/${uid}-${removed.levelID}-avatar`)}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }).catch(() => {});
+									}
 									toast.success('Đã xoá thẻ bản ghi khỏi giỏ hàng');
 								}}
 							>

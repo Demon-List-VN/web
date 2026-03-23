@@ -11,8 +11,8 @@ export interface RecordCardItem {
     levelID: number;
     template: 1 | 2 | 3;
     material: 'paper' | 'plastic';
-    customImageDataUrl?: string;
-    customAvatarDataUrl?: string;
+    imgUrl?: string;
+    avatarUrl?: string;
     levelName?: string;
     creator?: string;
     progress?: number | null;
@@ -27,7 +27,7 @@ interface Data {
     addItem: (id: number, quantity: number) => void;
     removeItem: (id: number) => void;
     addRecordCard: (item: RecordCardItem) => void;
-    removeRecordCard: (index: number) => void;
+    removeRecordCard: (index: number) => RecordCardItem | undefined;
     getRecordCards: () => RecordCardItem[];
     refresh: () => void;
     clear: () => void;
@@ -121,9 +121,10 @@ const data: Data = {
             .filter(({ item }) => item.type === 'record-card');
 
         if (index >= 0 && index < recordCards.length) {
-            data.items.splice(recordCards[index].i, 1);
+            const removed = data.items.splice(recordCards[index].i, 1)[0] as RecordCardItem;
             saveItems(data.items);
             cart.set(data);
+            return removed;
         }
     },
     getRecordCards: () => {

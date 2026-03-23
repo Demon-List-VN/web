@@ -46,44 +46,20 @@
 
 			const { cardID } = await res.json();
 
-			if (rc.customImageDataUrl && cardID) {
-				try {
-					const presignRes = await fetch(
-						`${import.meta.env.VITE_API_URL}/storage/presign?path=record-cards/${cardID}&bucket=cdn`,
-						{ headers: { Authorization: `Bearer ${token}` } }
-					);
-					if (presignRes.ok) {
-						const { url } = await presignRes.json();
-						const blob = await fetch(rc.customImageDataUrl).then((r) => r.blob());
-						await fetch(url, { method: 'PUT', body: blob });
-						const cdnUrl = `https://cdn.gdvn.net/record-cards/${cardID}`;
-						await fetch(`${import.meta.env.VITE_API_URL}/card/record/${cardID}/img`, {
-							method: 'PATCH',
-							headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-							body: JSON.stringify({ imgURL: cdnUrl })
-						});
-					}
-				} catch { /* non-fatal */ }
+			if (rc.imgUrl && cardID) {
+				fetch(`${import.meta.env.VITE_API_URL}/card/record/${cardID}/img`, {
+					method: 'PATCH',
+					headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+					body: JSON.stringify({ imgURL: rc.imgUrl })
+				}).catch(() => {});
 			}
 
-			if (rc.customAvatarDataUrl && cardID) {
-				try {
-					const presignRes = await fetch(
-						`${import.meta.env.VITE_API_URL}/storage/presign?path=record-cards/${cardID}-avatar&bucket=cdn`,
-						{ headers: { Authorization: `Bearer ${token}` } }
-					);
-					if (presignRes.ok) {
-						const { url } = await presignRes.json();
-						const blob = await fetch(rc.customAvatarDataUrl).then((r) => r.blob());
-						await fetch(url, { method: 'PUT', body: blob });
-						const cdnUrl = `https://cdn.gdvn.net/record-cards/${cardID}-avatar`;
-						await fetch(`${import.meta.env.VITE_API_URL}/card/record/${cardID}/avatar`, {
-							method: 'PATCH',
-							headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-							body: JSON.stringify({ avatarURL: cdnUrl })
-						});
-					}
-				} catch { /* non-fatal */ }
+			if (rc.avatarUrl && cardID) {
+				fetch(`${import.meta.env.VITE_API_URL}/card/record/${cardID}/avatar`, {
+					method: 'PATCH',
+					headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+					body: JSON.stringify({ avatarURL: rc.avatarUrl })
+				}).catch(() => {});
 			}
 		}
 		return allSucceeded;
