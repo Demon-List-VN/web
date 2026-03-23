@@ -87,12 +87,12 @@
 				...(data.fl ?? []),
 				...(data.pl ?? []),
 				...(data.cl ?? [])
-			].filter((r: any) => r.levelid && r.no != null);
-			// Deduplicate by `no`
+			].filter((r: any) => r.levelid);
+			// Deduplicate by `levelid`
 			const seen = new Set();
 			records = records.filter((r: any) => {
-				if (seen.has(r.no)) return false;
-				seen.add(r.no);
+				if (seen.has(r.levelid)) return false;
+				seen.add(r.levelid);
 				return true;
 			});
 		} catch {
