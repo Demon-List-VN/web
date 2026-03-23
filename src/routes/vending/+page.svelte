@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { user } from '$lib/client';
+	import { cart } from '$lib/client/cart';
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
@@ -25,10 +26,6 @@
 
 	// Step 3
 	let selectedMaterial: 'paper' | 'plastic' | null = null;
-	let address = '';
-	let phone = '';
-	let recipientName = '';
-	let placing = false;
 
 	let hasFetchedRecords = false;
 
@@ -153,98 +150,23 @@
 		if (file) handleAvatarUpload(file);
 	}
 
-	async function placeOrder() {
-		if (!selectedRecord || !selectedMaterial || !address || !phone || !recipientName) {
-			toast.error('Vui lòng điền đầy đủ thông tin');
+	function addToCart() {
+		if (!selectedRecord || !selectedMaterial) {
+			toast.error('Vui lòng chọn chất liệu');
 			return;
 		}
-
-		placing = true;
-		try {
-			const token = await $user.token();
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/orders/record-card`, {
-				method: 'POST',
-				headers: {
-					Authorization: `Bearer ${token}`,
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({
-					recordNo: selectedRecord.no,
-					levelID: selectedRecord.levelid,
-					template: 1,
-					material: selectedMaterial,
-					address,
-					phone: Number(phone),
-					recipientName
-				})
-			});
-
-			if (!res.ok) {
-				const err = await res.json().catch(() => ({}));
-				throw new Error(err.message || 'Đặt hàng thất bại');
-			}
-
-			const { orderID, cardID } = await res.json();
-
-			// Upload custom image if provided
-			if (customImageDataUrl && cardID) {
-				try {
-					const presignRes = await fetch(
-						`${import.meta.env.VITE_API_URL}/storage/presign?path=record-cards/${cardID}&bucket=cdn`,
-						{ headers: { Authorization: `Bearer ${token}` } }
-					);
-					if (presignRes.ok) {
-						const { url } = await presignRes.json();
-						const blob = await fetch(customImageDataUrl).then((r) => r.blob());
-						await fetch(url, { method: 'PUT', body: blob });
-						const cdnUrl = `https://cdn.gdvn.net/record-cards/${cardID}`;
-						await fetch(`${import.meta.env.VITE_API_URL}/card/record/${cardID}/img`, {
-							method: 'PATCH',
-							headers: {
-								Authorization: `Bearer ${token}`,
-								'Content-Type': 'application/json'
-							},
-							body: JSON.stringify({ imgURL: cdnUrl })
-						});
-					}
-				} catch {
-					// Non-fatal — order still placed
-				}
-			}
-
-			// Upload custom avatar if provided
-			if (customAvatarDataUrl && cardID) {
-				try {
-					const presignRes = await fetch(
-						`${import.meta.env.VITE_API_URL}/storage/presign?path=record-cards/${cardID}-avatar&bucket=cdn`,
-						{ headers: { Authorization: `Bearer ${token}` } }
-					);
-					if (presignRes.ok) {
-						const { url } = await presignRes.json();
-						const blob = await fetch(customAvatarDataUrl).then((r) => r.blob());
-						await fetch(url, { method: 'PUT', body: blob });
-						const cdnUrl = `https://cdn.gdvn.net/record-cards/${cardID}-avatar`;
-						await fetch(`${import.meta.env.VITE_API_URL}/card/record/${cardID}/avatar`, {
-							method: 'PATCH',
-							headers: {
-								Authorization: `Bearer ${token}`,
-								'Content-Type': 'application/json'
-							},
-							body: JSON.stringify({ avatarURL: cdnUrl })
-						});
-					}
-				} catch {
-					// Non-fatal — order still placed
-				}
-			}
-
-			toast.success('Đặt hàng thành công!');
-			goto(`/orders/${orderID}`);
-		} catch (err: any) {
-			toast.error(err.message || 'Đặt hàng thất bại');
-		} finally {
-			placing = false;
-		}
+		$cart.addRecordCard({
+			type: 'record-card',
+			recordNo: selectedRecord.no,
+			levelID: selectedRecord.levelid,
+			template: 1,
+			material: selectedMaterial,
+			customImageDataUrl: customImageDataUrl ?? undefined,
+			customAvatarDataUrl: customAvatarDataUrl ?? undefined,
+			levelName: selectedRecord.levels?.name ?? ''
+		});
+		toast.success('Đã thêm vào giỏ hàng!');
+		goto('/store/cart');
 	}
 
 	function nextStep() {
@@ -449,23 +371,6 @@
 				{/each}
 			</div>
 
-			<!-- Delivery form -->
-			<div class="delivery-form">
-				<h3>Thông tin giao hàng</h3>
-				<div class="form-group">
-					<label for="recipient">Người nhận</label>
-					<input id="recipient" bind:value={recipientName} placeholder="Tên người nhận" type="text" />
-				</div>
-				<div class="form-group">
-					<label for="phone">Số điện thoại</label>
-					<input id="phone" bind:value={phone} placeholder="0xxxxxxxxx" type="tel" />
-				</div>
-				<div class="form-group">
-					<label for="address">Địa chỉ</label>
-					<input id="address" bind:value={address} placeholder="Địa chỉ giao hàng" type="text" />
-				</div>
-			</div>
-
 			<!-- Order summary -->
 			{#if selectedMaterial}
 				<div class="order-summary">
@@ -507,11 +412,8 @@
 				<ChevronRight size={16} />
 			</Button>
 		{:else}
-			<Button
-				on:click={placeOrder}
-				disabled={placing || !selectedMaterial || !address || !phone || !recipientName}
-			>
-				{placing ? 'Đang đặt hàng...' : 'Đặt hàng'}
+			<Button on:click={addToCart} disabled={!selectedMaterial}>
+				Thêm vào giỏ hàng
 				<CreditCard size={16} />
 			</Button>
 		{/if}

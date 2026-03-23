@@ -18,58 +18,140 @@
 	let state = 0;
 	let shippingFee = 0;
 
+	async function placeRecordCardOrders(token: string): Promise<void> {
+		const recordCards = $cart.getRecordCards();
+		for (const rc of recordCards) {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/orders/record-card`, {
+				method: 'POST',
+				headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					recordNo: rc.recordNo,
+					levelID: rc.levelID,
+					template: rc.template,
+					material: rc.material,
+					address,
+					phone: parseInt(phone),
+					recipientName
+				})
+			});
+
+			if (!res.ok) continue;
+
+			const { cardID } = await res.json();
+
+			if (rc.customImageDataUrl && cardID) {
+				try {
+					const presignRes = await fetch(
+						`${import.meta.env.VITE_API_URL}/storage/presign?path=record-cards/${cardID}&bucket=cdn`,
+						{ headers: { Authorization: `Bearer ${token}` } }
+					);
+					if (presignRes.ok) {
+						const { url } = await presignRes.json();
+						const blob = await fetch(rc.customImageDataUrl).then((r) => r.blob());
+						await fetch(url, { method: 'PUT', body: blob });
+						const cdnUrl = `https://cdn.gdvn.net/record-cards/${cardID}`;
+						await fetch(`${import.meta.env.VITE_API_URL}/card/record/${cardID}/img`, {
+							method: 'PATCH',
+							headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+							body: JSON.stringify({ imgURL: cdnUrl })
+						});
+					}
+				} catch { /* non-fatal */ }
+			}
+
+			if (rc.customAvatarDataUrl && cardID) {
+				try {
+					const presignRes = await fetch(
+						`${import.meta.env.VITE_API_URL}/storage/presign?path=record-cards/${cardID}-avatar&bucket=cdn`,
+						{ headers: { Authorization: `Bearer ${token}` } }
+					);
+					if (presignRes.ok) {
+						const { url } = await presignRes.json();
+						const blob = await fetch(rc.customAvatarDataUrl).then((r) => r.blob());
+						await fetch(url, { method: 'PUT', body: blob });
+						const cdnUrl = `https://cdn.gdvn.net/record-cards/${cardID}-avatar`;
+						await fetch(`${import.meta.env.VITE_API_URL}/card/record/${cardID}/avatar`, {
+							method: 'PATCH',
+							headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+							body: JSON.stringify({ avatarURL: cdnUrl })
+						});
+					}
+				} catch { /* non-fatal */ }
+			}
+		}
+	}
+
 	async function bankTransfer() {
 		toast.loading('You will be redirected to our payment portal');
 
-		const res: any = await (
-			await fetch(`${import.meta.env.VITE_API_URL}/payment/getPaymentLink`, {
-				method: 'POST',
-				headers: {
-					Authorization: 'Bearer ' + (await $user.token()),
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({
-					items: $cart.items,
-					address: address,
-					phone: parseInt(phone),
-					recipientName: recipientName
-				})
-			})
-		).json();
+		const token = await $user.token();
+		await placeRecordCardOrders(token);
 
-		$cart.clear();
-		window.location.href = res.checkoutUrl;
+		const productItems = $cart.items.filter((i) => i.type !== 'record-card');
+		if (productItems.length > 0) {
+			const res: any = await (
+				await fetch(`${import.meta.env.VITE_API_URL}/payment/getPaymentLink`, {
+					method: 'POST',
+					headers: {
+						Authorization: 'Bearer ' + token,
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({
+						items: productItems,
+						address: address,
+						phone: parseInt(phone),
+						recipientName: recipientName
+					})
+				})
+			).json();
+
+			$cart.clear();
+			window.location.href = res.checkoutUrl;
+		} else {
+			$cart.clear();
+			window.location.href = '/orders';
+		}
 	}
 
 	async function COD() {
 		let orderID = 0;
 
-		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/orders`, {
-				method: 'POST',
-				headers: {
-					Authorization: 'Bearer ' + (await $user.token()),
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({
-					items: $cart.items,
-					address: address,
-					phone: parseInt(phone),
-					recipientName: recipientName
+		const token = await $user.token();
+		await placeRecordCardOrders(token);
+
+		const productItems = $cart.items.filter((i) => i.type !== 'record-card');
+		if (productItems.length > 0) {
+			toast.promise(
+				fetch(`${import.meta.env.VITE_API_URL}/orders`, {
+					method: 'POST',
+					headers: {
+						Authorization: 'Bearer ' + token,
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({
+						items: productItems,
+						address: address,
+						phone: parseInt(phone),
+						recipientName: recipientName
+					})
 				})
-			})
-				.then((res) => res.json())
-				.then((res: any) => (orderID = res.orderID)),
-			{
-				success: () => {
-					$cart.clear();
-					window.location.href = `/orders/${orderID}`;
-					return $_('toast.order_place.success');
-				},
-				loading: $_('toast.order_place.loading'),
-				error: $_('toast.order_place.error')
-			}
-		);
+					.then((res) => res.json())
+					.then((res: any) => (orderID = res.orderID)),
+				{
+					success: () => {
+						$cart.clear();
+						window.location.href = `/orders/${orderID}`;
+						return $_('toast.order_place.success');
+					},
+					loading: $_('toast.order_place.loading'),
+					error: $_('toast.order_place.error')
+				}
+			);
+		} else {
+			$cart.clear();
+			toast.success($_('toast.order_place.success'));
+			window.location.href = '/orders';
+		}
 	}
 </script>
 
@@ -196,6 +278,18 @@
 						</p>
 					</div>
 				{/each}
+				{#each $cart.getRecordCards() as rc}
+					<div class="flex text-sm">
+						<p>Thẻ Bản Ghi — {rc.levelName || `Level #${rc.levelID}`} ({rc.material === 'paper' ? 'Giấy' : 'Nhựa'})</p>
+						<p class="ml-auto">
+							<b>
+								{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(
+									rc.material === 'paper' ? 12000 : 149000
+								)}
+							</b>
+						</p>
+					</div>
+				{/each}
 			</div>
 			<hr />
 			<div class="flex flex-col gap-[10px]">
@@ -207,7 +301,8 @@
 								items.reduce(
 									(total, item) => total + $cart.getItem(item.id).quantity * item.price,
 									0
-								)
+								) +
+								$cart.getRecordCards().reduce((total, rc) => total + (rc.material === 'paper' ? 12000 : 149000), 0)
 							)}
 						</b>
 					</p>
@@ -235,7 +330,9 @@
 							items.reduce(
 								(total, item) => total + $cart.getItem(item.id).quantity * item.price,
 								0
-							) + shippingFee
+							) +
+							$cart.getRecordCards().reduce((total, rc) => total + (rc.material === 'paper' ? 12000 : 149000), 0) +
+							shippingFee
 						)}
 					</b>
 				</p>

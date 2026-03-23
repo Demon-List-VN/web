@@ -11,16 +11,20 @@
 	import { ExclamationTriangle } from 'svelte-radix';
 	import { _ } from 'svelte-i18n';
 
+	const MATERIAL_PRICES: Record<string, number> = { paper: 12000, plastic: 149000 };
+	const MATERIAL_LABELS: Record<string, string> = { paper: 'Giấy', plastic: 'Nhựa' };
+
 	let data: any[] = [];
 
 	async function fetchData() {
-		if (!$cart.items.length) {
+		const productIDs = $cart.queryArray();
+		if (!productIDs.length) {
 			return;
 		}
 
 		data = await (
 			await fetch(
-				`${import.meta.env.VITE_API_URL}/store/products?ids=${JSON.stringify($cart.queryArray())}`
+				`${import.meta.env.VITE_API_URL}/store/products?ids=${JSON.stringify(productIDs)}`
 			)
 		).json();
 	}
@@ -28,6 +32,19 @@
 	onMount(async () => {
 		await fetchData();
 	});
+
+	$: recordCards = $cart.getRecordCards();
+	$: hasItems = $cart.items.length > 0;
+
+	$: productTotal = data.reduce((total, product) => {
+		return total + product.price * $cart.getItem(product.id).quantity;
+	}, 0);
+
+	$: recordCardTotal = recordCards.reduce((total, rc) => {
+		return total + (MATERIAL_PRICES[rc.material] ?? 0);
+	}, 0);
+
+	$: grandTotal = productTotal + recordCardTotal;
 </script>
 
 <svelte:head>
@@ -39,7 +56,7 @@
 >
 	<h2>{$_('store.cart.title')}</h2>
 </div>
-{#if $cart.items.length}
+{#if hasItems}
 	<div
 		class="mb-[50px] ml-auto mr-auto mt-[30px] flex w-[1200px] max-w-full flex-col justify-center gap-[15px] pl-[15px] pr-[15px]"
 	>
@@ -96,17 +113,39 @@
 						</Table.Cell>
 					</Table.Row>
 				{/each}
+				{#each recordCards as rc, i}
+					<Table.Row>
+						<Table.Cell class="w-[300px]">
+							Thẻ Bản Ghi — {rc.levelName || `Level #${rc.levelID}`}
+							<span class="ml-2 text-xs opacity-60">({MATERIAL_LABELS[rc.material]})</span>
+						</Table.Cell>
+						<Table.Cell class="w-[50px] text-center">1</Table.Cell>
+						<Table.Cell class="w-[200px]">
+							{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(
+								MATERIAL_PRICES[rc.material] ?? 0
+							)}
+						</Table.Cell>
+						<Table.Cell class="text-right">
+							<Button
+								variant="destructive"
+								size="icon"
+								on:click={() => {
+									$cart.removeRecordCard(i);
+									toast.success('Đã xoá thẻ bản ghi khỏi giỏ hàng');
+								}}
+							>
+								<Cross2 size={16} />
+							</Button>
+						</Table.Cell>
+					</Table.Row>
+				{/each}
 			</Table.Body>
 		</Table.Root>
 		<div class="flex justify-end">
 			<p class="text-right text-lg">
 				{$_('store.cart.total')}<br />
 				<span class="text-2xl font-semibold">
-					{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(
-						data.reduce((total, product) => {
-							return total + product.price * $cart.getItem(product.id).quantity;
-						}, 0)
-					)}
+					{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(grandTotal)}
 				</span>
 			</p>
 		</div>

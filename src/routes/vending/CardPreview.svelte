@@ -71,7 +71,7 @@
 		display: flex;
 		flex-direction: column;
 		justify-content: space-between;
-		padding: 2cqw 2.4cqw;
+		padding: 2% 2.4%;
 		box-sizing: border-box;
 		width: 100%;
 	}

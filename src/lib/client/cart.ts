@@ -1,16 +1,33 @@
 import { writable } from "svelte/store";
 
-interface Item {
+interface ProductItem {
+    type?: 'product';
     productID: number;
     quantity: number;
 }
 
+interface RecordCardItem {
+    type: 'record-card';
+    recordNo: number;
+    levelID: number;
+    template: number;
+    material: 'paper' | 'plastic';
+    customImageDataUrl?: string;
+    customAvatarDataUrl?: string;
+    levelName?: string;
+}
+
+type Item = ProductItem | RecordCardItem;
+
 interface Data {
     items: Item[];
     queryArray: () => number[];
-    getItem: (id: number) => Item;
+    getItem: (id: number) => ProductItem;
     addItem: (id: number, quantity: number) => void;
     removeItem: (id: number) => void;
+    addRecordCard: (item: RecordCardItem) => void;
+    removeRecordCard: (index: number) => void;
+    getRecordCards: () => RecordCardItem[];
     refresh: () => void;
     clear: () => void;
 }
@@ -48,13 +65,15 @@ const data: Data = {
         const res = [];
 
         for (const i of data.items) {
-            res.push(i.productID);
+            if (i.type !== 'record-card') {
+                res.push((i as ProductItem).productID);
+            }
         }
 
         return res;
     },
     getItem: (id: number) => {
-        const res = data.items.find((item) => item.productID === id);
+        const res = data.items.find((item) => item.type !== 'record-card' && (item as ProductItem).productID === id) as ProductItem | undefined;
 
         if (!res) {
             return {
@@ -67,11 +86,11 @@ const data: Data = {
     },
     addItem: (id: number, quantity: number = 1) => {
         const existingItemIndex = data.items.findIndex((item) =>
-            item.productID === id
+            item.type !== 'record-card' && (item as ProductItem).productID === id
         );
 
         if (existingItemIndex >= 0) {
-            data.items[existingItemIndex].quantity += quantity;
+            (data.items[existingItemIndex] as ProductItem).quantity += quantity;
         } else {
             data.items.push({ productID: id, quantity });
         }
@@ -81,7 +100,7 @@ const data: Data = {
     },
     removeItem: (id: number) => {
         const existingItemIndex = data.items.findIndex((item) =>
-            item.productID === id
+            item.type !== 'record-card' && (item as ProductItem).productID === id
         );
 
         if (existingItemIndex >= 0) {
@@ -89,6 +108,25 @@ const data: Data = {
             saveItems(data.items);
             cart.set(data);
         }
+    },
+    addRecordCard: (item: RecordCardItem) => {
+        data.items.push(item);
+        saveItems(data.items);
+        cart.set(data);
+    },
+    removeRecordCard: (index: number) => {
+        const recordCards = data.items
+            .map((item, i) => ({ item, i }))
+            .filter(({ item }) => item.type === 'record-card');
+
+        if (index >= 0 && index < recordCards.length) {
+            data.items.splice(recordCards[index].i, 1);
+            saveItems(data.items);
+            cart.set(data);
+        }
+    },
+    getRecordCards: () => {
+        return data.items.filter((item): item is RecordCardItem => item.type === 'record-card');
     },
     refresh: () => {
         data.items = getStoredItems();

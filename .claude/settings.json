@@ -21,7 +21,8 @@
       "Bash(grep -A 20 'CREATE TABLE IF NOT EXISTS \"\"public\"\".\"\"orderTracking\"\"' supabase/migrations/20260308055058_remote_schema.sql)",
       "Bash(npm install:*)",
       "Bash(python3 -c \":*)",
-      "Bash(node -e \":*)"
+      "Bash(node -e \":*)",
+      "Bash(find c:UsersnambuDesktopDLVNcodeDemonListVN-v3srclib -type f -name *store* -o -name *cart*)"
     ],
     "additionalDirectories": [
       "c:\\Users\\nambu\\Desktop\\DLVN\\code\\DemonListVN-v3\\src\\routes\\card\\[id]\\scan",

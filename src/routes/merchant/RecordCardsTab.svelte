@@ -40,10 +40,14 @@
 		}
 	}
 
+	type TemplateId = 1 | 2 | 3;
+
 	function openView(card: any) {
 		selectedCard = card;
 		viewDialogOpen = true;
 	}
+
+	$: selectedTemplate = (selectedCard?.template ?? 1) as TemplateId;
 
 	async function markPrinted(card: any) {
 		try {
@@ -95,7 +99,7 @@
 				playerName={selectedCard.players?.name ?? ''}
 				levelName={selectedCard.level?.name ?? ''}
 				bgImage={bgImage(selectedCard)}
-				template={(selectedCard.template ?? 1) as 1 | 2 | 3}
+				template={selectedTemplate}
 				size="full"
 			/>
 		</div>
@@ -195,7 +199,7 @@
 						playerName={selectedCard.players?.name ?? ''}
 						levelName={selectedCard.level?.name ?? ''}
 						bgImage={bgImage(selectedCard)}
-						template={(selectedCard.template ?? 1) as 1 | 2 | 3}
+						template={selectedTemplate}
 						size="full"
 					/>
 				</div>
