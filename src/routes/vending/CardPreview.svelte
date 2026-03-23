@@ -3,9 +3,57 @@
 
 	export let data: CardPreviewData;
 	export let size: 'mini' | 'full' = 'full';
+
+	let showModal = false;
 </script>
 
-<div class="card-container {size}">
+{#if showModal}
+	<!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+	<div class="modal-backdrop" on:click={() => (showModal = false)}>
+		<!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+		<div class="modal-card" on:click|stopPropagation>
+			<div class="card-wrap" class:dark={data.template === 1} class:light={data.template === 2} class:gold={data.template === 3}>
+				<img class="card-bg" src={data.bgImage} alt="" />
+				{#if data.template === 3}
+					<div class="gold-frame"></div>
+				{/if}
+				<div class="card-top">
+					<img class="gdvn-logo" src="/logo.png" alt="GDVN" />
+					{#if data.progress !== null && data.progress !== undefined}
+						<span class="progress-badge">{data.progress}%</span>
+					{/if}
+				</div>
+				<div class="card-bottom">
+					<div class="player-info">
+						<img
+							class="avatar"
+							src={data.avatarImage || `https://cdn.gdvn.net/avatars/${data.playerUID}.jpg`}
+							alt={data.playerName}
+							on:error={(e) => {
+								if (e.target instanceof HTMLImageElement) e.target.style.visibility = 'hidden';
+							}}
+						/>
+						{#if data.clanTag}
+							<span class="clan-tag" style={`background-color: ${data.clanTagBg || '#555'}; color: ${data.clanTagText || '#fff'};`}>
+								{data.clanTag}
+							</span>
+						{/if}
+						<span class="player-name">{data.playerName}</span>
+					</div>
+					<div class="level-info">
+						<span class="level-name">{data.levelName}</span>
+						{#if data.creator}
+							<span class="creator-name">by {data.creator}</span>
+						{/if}
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+<div class="card-container {size}" on:click={() => (showModal = true)} style="cursor: pointer;">
 	<div class="card-wrap" class:dark={data.template === 1} class:light={data.template === 2} class:gold={data.template === 3}>
 		<!-- Background image — no overlay, image shows as-is -->
 		<img class="card-bg" src={data.bgImage} alt="" />
@@ -56,6 +104,36 @@
 </div>
 
 <style lang="scss">
+	.modal-backdrop {
+		position: fixed;
+		inset: 0;
+		z-index: 1000;
+		background: rgba(0, 0, 0, 0.75);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		backdrop-filter: blur(4px);
+	}
+
+	.modal-card {
+		width: min(90vw, 600px);
+		container-type: inline-size;
+
+		.card-wrap {
+			position: relative;
+			aspect-ratio: 245 / 155.48;
+			border-radius: 3.7cqw;
+			overflow: hidden;
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
+			padding: 2% 2.4%;
+			box-sizing: border-box;
+			width: 100%;
+			box-shadow: 0 8px 48px rgba(0, 0, 0, 0.6);
+		}
+	}
+
 	.card-container {
 		container-type: inline-size;
 		width: 100%;
