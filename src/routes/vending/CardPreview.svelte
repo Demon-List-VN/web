@@ -1,72 +1,70 @@
 <script lang="ts">
-	export let playerUID: string;
-	export let playerName: string;
-	export let clanTag: string | null = null;
-	export let clanTagBg: string | null = null;
-	export let clanTagText: string | null = null;
-	export let levelName: string;
-	export let creator: string | null = null;
-	export let progress: number | null = null;
-	export let bgImage: string;
-	export let avatarImage: string | null = null;
-	export let template: 1 | 2 | 3 = 1; // 1=Tối, 2=Sáng, 3=Vàng
+	import type { CardPreviewData } from '$lib/types/card';
+
+	export let data: CardPreviewData;
 	export let size: 'mini' | 'full' = 'full';
 </script>
 
-<div class="card-wrap {size}" class:dark={template === 1} class:light={template === 2} class:gold={template === 3}>
-	<!-- Background image — no overlay, image shows as-is -->
-	<img class="card-bg" src={bgImage} alt="" />
+<div class="card-container {size}">
+	<div class="card-wrap" class:dark={data.template === 1} class:light={data.template === 2} class:gold={data.template === 3}>
+		<!-- Background image — no overlay, image shows as-is -->
+		<img class="card-bg" src={data.bgImage} alt="" />
 
-	<!-- Gold border frame (template 3 only) -->
-	{#if template === 3}
-		<div class="gold-frame"></div>
-	{/if}
-
-	<!-- Top row: GDVN logo (left) + progress (right) -->
-	<div class="card-top">
-		<img class="gdvn-logo" src="/logo.png" alt="GDVN" />
-		{#if progress !== null && progress !== undefined}
-			<span class="progress-badge">{progress}%</span>
+		<!-- Gold border frame (template 3 only) -->
+		{#if data.template === 3}
+			<div class="gold-frame"></div>
 		{/if}
-	</div>
 
-	<!-- Bottom row: player info (left) + level info (right) -->
-	<div class="card-bottom">
-		<div class="player-info">
-			<img
-				class="avatar"
-				src={avatarImage || `https://cdn.gdvn.net/avatars/${playerUID}.jpg`}
-				alt={playerName}
-				on:error={(e) => {
-					if (e.target instanceof HTMLImageElement) e.target.style.display = 'none';
-				}}
-			/>
-			{#if clanTag}
-				<span
-					class="clan-tag"
-					style={`background-color: ${clanTagBg || '#555'}; color: ${clanTagText || '#fff'};`}
-				>
-					{clanTag}
-				</span>
+		<!-- Top row: GDVN logo (left) + progress (right) -->
+		<div class="card-top">
+			<img class="gdvn-logo" src="/logo.png" alt="GDVN" />
+			{#if data.progress !== null && data.progress !== undefined}
+				<span class="progress-badge">{data.progress}%</span>
 			{/if}
-			<span class="player-name">{playerName}</span>
 		</div>
 
-		<div class="level-info">
-			<span class="level-name">{levelName}</span>
-			{#if creator}
-				<span class="creator-name">by {creator}</span>
-			{/if}
+		<!-- Bottom row: player info (left) + level info (right) -->
+		<div class="card-bottom">
+			<div class="player-info">
+				<img
+					class="avatar"
+					src={data.avatarImage || `https://cdn.gdvn.net/avatars/${data.playerUID}.jpg`}
+					alt={data.playerName}
+					on:error={(e) => {
+						if (e.target instanceof HTMLImageElement) e.target.style.visibility = 'hidden';
+					}}
+				/>
+				{#if data.clanTag}
+					<span
+						class="clan-tag"
+						style={`background-color: ${data.clanTagBg || '#555'}; color: ${data.clanTagText || '#fff'};`}
+					>
+						{data.clanTag}
+					</span>
+				{/if}
+				<span class="player-name">{data.playerName}</span>
+			</div>
+
+			<div class="level-info">
+				<span class="level-name">{data.levelName}</span>
+				{#if data.creator}
+					<span class="creator-name">by {data.creator}</span>
+				{/if}
+			</div>
 		</div>
 	</div>
 </div>
 
 <style lang="scss">
+	.card-container {
+		container-type: inline-size;
+		width: 100%;
+	}
+
 	.card-wrap {
 		position: relative;
 		aspect-ratio: 245 / 155.48;
-		container-type: inline-size;
-		border-radius: 1.6cqw;
+		border-radius: 3.7cqw;
 		overflow: hidden;
 		display: flex;
 		flex-direction: column;
@@ -209,7 +207,7 @@
 		display: flex;
 		flex-direction: column;
 		align-items: flex-end;
-		gap: 0.2cqw;
+		gap: 0;
 		min-width: 0;
 	}
 
@@ -220,7 +218,7 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		max-width: 65.3cqw;
-		line-height: 1.1;
+		line-height: 1;
 		text-align: right;
 	}
 
@@ -243,6 +241,8 @@
 		font-size: 2.25cqw;
 		font-weight: 500;
 		text-align: right;
+		line-height: 1.1;
+		margin-top: -0.2cqw;
 	}
 
 	.dark .creator-name,

@@ -6,15 +6,16 @@ interface ProductItem {
     quantity: number;
 }
 
-interface RecordCardItem {
+export interface RecordCardItem {
     type: 'record-card';
-    recordNo: number;
     levelID: number;
-    template: number;
+    template: 1 | 2 | 3;
     material: 'paper' | 'plastic';
     customImageDataUrl?: string;
     customAvatarDataUrl?: string;
     levelName?: string;
+    creator?: string;
+    progress?: number | null;
 }
 
 type Item = ProductItem | RecordCardItem;

@@ -64,8 +64,11 @@
 					<Table.Row>
 						<Table.Cell class="font-medium">{order.id}</Table.Cell>
 						<Table.Cell
-							>{order.productID ? order.products.name : $_('orders.store_items')}</Table.Cell
-						>
+							>
+							{order.productID ? order.products.name : 
+								(order.record_cards && order.record_cards.length > 0) ? `Store Items (${order.record_cards.length} Thẻ Bản Ghi)` : $_('orders.store_items')
+							}
+						</Table.Cell>
 						<Table.Cell>{order.quantity ? order.quantity : '?'}</Table.Cell>
 						<Table.Cell>
 							{new Intl.NumberFormat('vi-VN', {

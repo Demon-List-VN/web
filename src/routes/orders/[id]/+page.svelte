@@ -4,6 +4,7 @@
 	import * as Table from '$lib/components/ui/table/index.js';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import PlayerHoverCard from '$lib/components/playerLink.svelte';
+	import CardPreview from '../../vending/CardPreview.svelte';
 	import { user } from '$lib/client';
 	import { toast } from 'svelte-sonner';
 	import { page } from '$app/state';
@@ -140,6 +141,48 @@
 								</div>
 							</Table.Row>
 						{/each}
+						{#if data.record_cards}
+							{#each data.record_cards as rc}
+								<Table.Row>
+									<div class="border-box flex gap-[10px] p-[10px]">
+										<div class="w-[200px]">
+											<CardPreview
+												data={{
+													playerUID: data.userID,
+													playerName: data.players?.name ?? 'Player',
+													clanTag: data.players?.clans?.tag ?? null,
+													clanTagBg: data.players?.clans?.tagBgColor ?? null,
+													clanTagText: data.players?.clans?.tagTextColor ?? null,
+													levelName: rc.levels?.name || `Level #${rc.levelID}`,
+													creator: rc.levels?.creator || '',
+													progress: rc.records?.progress ?? null,
+													bgImage: `https://levelthumbs.prevter.me/thumbnail/${rc.levelID}/high`, // default thumbnail
+													avatarImage: `https://cdn.gdvn.net/avatars/${data.userID}.jpg`,
+													template: rc.template
+												}}
+												size="mini"
+											/>
+										</div>
+										<div>
+											<h3 class="text-lg font-semibold">
+												Thẻ Bản Ghi
+											</h3>
+											<p>
+												Chất liệu: {rc.material === 'paper' ? 'Giấy' : 'Nhựa'}
+											</p>
+											<p>
+												{$_('order_detail.qty')}: 1
+											</p>
+										</div>
+										<div class="ml-auto flex items-center">
+											{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(
+												rc.material === 'paper' ? 29000 : 149000
+											)}
+										</div>
+									</div>
+								</Table.Row>
+							{/each}
+						{/if}
 					</Table.Body>
 				</Table.Root>
 				<div class="mt-[15px]">

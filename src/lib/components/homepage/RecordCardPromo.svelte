@@ -25,10 +25,10 @@
 		<div class="promo-header">
 			<CreditCard size={20} class="promo-icon" />
 			<h3>Thẻ Bản Ghi</h3>
-			<span class="price-badge">Từ 12,000đ</span>
+			<span class="price-badge">Từ 29,000đ</span>
 		</div>
 
-		<p class="promo-desc">Lưu giữ kỷ lục của bạn dưới dạng thẻ nhựa vật lý CR80 — tặng bạn bè hoặc trưng bày!</p>
+		<p class="promo-desc">Lưu giữ bản ghi của bạn dưới dạng thẻ vật lí</p>
 
 		<ul class="feature-list">
 			<li>✓ Kích thước chuẩn thẻ tín dụng CR80</li>

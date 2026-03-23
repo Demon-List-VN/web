@@ -24,16 +24,10 @@
 
 		let allSucceeded = true;
 		for (const rc of recordCards) {
-			if (rc.recordNo == null) {
-				toast.error(`Thẻ bản ghi "${rc.levelName}" không hợp lệ (thiếu mã bản ghi). Vui lòng xoá và thêm lại.`);
-				allSucceeded = false;
-				continue;
-			}
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/orders/record-card`, {
 				method: 'POST',
 				headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
 				body: JSON.stringify({
-					recordNo: rc.recordNo,
 					levelID: rc.levelID,
 					template: rc.template,
 					material: rc.material,
@@ -298,7 +292,7 @@
 						<p class="ml-auto">
 							<b>
 								{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(
-									rc.material === 'paper' ? 12000 : 149000
+									rc.material === 'paper' ? 29000 : 149000
 								)}
 							</b>
 						</p>
@@ -316,7 +310,7 @@
 									(total, item) => total + $cart.getItem(item.id).quantity * item.price,
 									0
 								) +
-								$cart.getRecordCards().reduce((total, rc) => total + (rc.material === 'paper' ? 12000 : 149000), 0)
+								$cart.getRecordCards().reduce((total, rc) => total + (rc.material === 'paper' ? 29000 : 149000), 0)
 							)}
 						</b>
 					</p>
@@ -345,7 +339,7 @@
 								(total, item) => total + $cart.getItem(item.id).quantity * item.price,
 								0
 							) +
-							$cart.getRecordCards().reduce((total, rc) => total + (rc.material === 'paper' ? 12000 : 149000), 0) +
+							$cart.getRecordCards().reduce((total, rc) => total + (rc.material === 'paper' ? 29000 : 149000), 0) +
 							shippingFee
 						)}
 					</b>

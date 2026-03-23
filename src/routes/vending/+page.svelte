@@ -157,7 +157,6 @@
 		}
 		$cart.addRecordCard({
 			type: 'record-card',
-			recordNo: selectedRecord.no,
 			levelID: selectedRecord.levelid,
 			template: 1,
 			material: selectedMaterial,

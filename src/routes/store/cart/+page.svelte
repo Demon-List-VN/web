@@ -10,14 +10,23 @@
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import { ExclamationTriangle } from 'svelte-radix';
 	import { _ } from 'svelte-i18n';
+	import CardPreview from '../../vending/CardPreview.svelte';
 
-	const MATERIAL_PRICES: Record<string, number> = { paper: 12000, plastic: 149000 };
+	const MATERIAL_PRICES: Record<string, number> = { paper: 29000, plastic: 149000 };
 	const MATERIAL_LABELS: Record<string, string> = { paper: 'Giấy', plastic: 'Nhựa' };
 
 	let data: any[] = [];
 
 	async function fetchData() {
 		const productIDs = $cart.queryArray();
+
+		// Fetch levels for record cards that are missing levelName
+		const recordCardsToFetchLevels = $cart.getRecordCards().filter(rc => !rc.levelName);
+		if (recordCardsToFetchLevels.length > 0) {
+			const levelIDs = [...new Set(recordCardsToFetchLevels.map(rc => rc.levelID))];
+			// Do whatever logic we can later. Currently we might not need to fetch.
+		}
+
 		if (!productIDs.length) {
 			return;
 		}
@@ -116,8 +125,26 @@
 				{#each recordCards as rc, i}
 					<Table.Row>
 						<Table.Cell class="w-[300px]">
-							Thẻ Bản Ghi — {rc.levelName || `Level #${rc.levelID}`}
-							<span class="ml-2 text-xs opacity-60">({MATERIAL_LABELS[rc.material]})</span>
+							<CardPreview
+								data={{
+									playerUID: $user.data?.uid ?? '',
+									playerName: $user.data?.name ?? '',
+									clanTag: $user.data?.clans?.tag ?? null,
+									clanTagBg: $user.data?.clans?.tagBgColor ?? null,
+									clanTagText: $user.data?.clans?.tagTextColor ?? null,
+									levelName: rc.levelName || `Level #${rc.levelID}`,
+									creator: rc.creator || '',
+									progress: rc.progress ?? null,
+									bgImage: rc.customImageDataUrl || `https://levelthumbs.prevter.me/thumbnail/${rc.levelID}/high`,
+									avatarImage: rc.customAvatarDataUrl || `https://cdn.gdvn.net/avatars/${$user.data?.uid}.jpg`,
+									template: rc.template
+								}}
+								size="mini"
+							/>
+							<div class="mt-2">
+								Thẻ Bản Ghi — {rc.levelName || `Level #${rc.levelID}`}
+								<span class="ml-2 text-xs opacity-60">({MATERIAL_LABELS[rc.material]})</span>
+							</div>
 						</Table.Cell>
 						<Table.Cell class="w-[50px] text-center">1</Table.Cell>
 						<Table.Cell class="w-[200px]">
