@@ -18,9 +18,17 @@
 	let state = 0;
 	let shippingFee = 0;
 
-	async function placeRecordCardOrders(token: string): Promise<void> {
+	async function placeRecordCardOrders(token: string | undefined): Promise<boolean> {
 		const recordCards = $cart.getRecordCards();
+		if (recordCards.length === 0) return true;
+
+		let allSucceeded = true;
 		for (const rc of recordCards) {
+			if (rc.recordNo == null) {
+				toast.error(`Thẻ bản ghi "${rc.levelName}" không hợp lệ (thiếu mã bản ghi). Vui lòng xoá và thêm lại.`);
+				allSucceeded = false;
+				continue;
+			}
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/orders/record-card`, {
 				method: 'POST',
 				headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -35,7 +43,12 @@
 				})
 			});
 
-			if (!res.ok) continue;
+			if (!res.ok) {
+				const err = await res.json().catch(() => ({ message: 'Unknown error' }));
+				toast.error(`Lỗi tạo thẻ bản ghi "${rc.levelName}": ${err.message}`);
+				allSucceeded = false;
+				continue;
+			}
 
 			const { cardID } = await res.json();
 
@@ -79,13 +92,14 @@
 				} catch { /* non-fatal */ }
 			}
 		}
+		return allSucceeded;
 	}
 
 	async function bankTransfer() {
 		toast.loading('You will be redirected to our payment portal');
 
 		const token = await $user.token();
-		await placeRecordCardOrders(token);
+		const rcSuccess = await placeRecordCardOrders(token);
 
 		const productItems = $cart.items.filter((i) => i.type !== 'record-card');
 		if (productItems.length > 0) {
@@ -107,7 +121,7 @@
 
 			$cart.clear();
 			window.location.href = res.checkoutUrl;
-		} else {
+		} else if (rcSuccess) {
 			$cart.clear();
 			window.location.href = '/orders';
 		}
@@ -117,7 +131,7 @@
 		let orderID = 0;
 
 		const token = await $user.token();
-		await placeRecordCardOrders(token);
+		const rcSuccess = await placeRecordCardOrders(token);
 
 		const productItems = $cart.items.filter((i) => i.type !== 'record-card');
 		if (productItems.length > 0) {
@@ -147,7 +161,7 @@
 					error: $_('toast.order_place.error')
 				}
 			);
-		} else {
+		} else if (rcSuccess) {
 			$cart.clear();
 			toast.success($_('toast.order_place.success'));
 			window.location.href = '/orders';

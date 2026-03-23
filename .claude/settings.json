@@ -22,7 +22,8 @@
       "Bash(npm install:*)",
       "Bash(python3 -c \":*)",
       "Bash(node -e \":*)",
-      "Bash(find c:UsersnambuDesktopDLVNcodeDemonListVN-v3srclib -type f -name *store* -o -name *cart*)"
+      "Bash(find c:UsersnambuDesktopDLVNcodeDemonListVN-v3srclib -type f -name *store* -o -name *cart*)",
+      "Bash(find c:UsersnambuDesktopDLVNcodeDemonListVN-v3-api -type f -name *order* -o -type f -name *vend*)"
     ],
     "additionalDirectories": [
       "c:\\Users\\nambu\\Desktop\\DLVN\\code\\DemonListVN-v3\\src\\routes\\card\\[id]\\scan",

@@ -87,7 +87,7 @@
 				...(data.fl ?? []),
 				...(data.pl ?? []),
 				...(data.cl ?? [])
-			].filter((r: any) => r.levelid);
+			].filter((r: any) => r.levelid && r.no != null);
 			// Deduplicate by `no`
 			const seen = new Set();
 			records = records.filter((r: any) => {
