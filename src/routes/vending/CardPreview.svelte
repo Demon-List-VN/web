@@ -105,8 +105,8 @@
 	}
 
 	.gdvn-logo {
-		width: 12.25cqw;
-		height: 12.25cqw;
+		width: 14.7cqw;
+		height: 14.7cqw;
 		object-fit: contain;
 		flex-shrink: 0;
 		opacity: 0.9;
@@ -119,11 +119,12 @@
 	}
 
 	.progress-badge {
-		font-size: 2.85cqw;
+		font-size: 3.42cqw;
 		font-weight: 800;
-		padding: 0.4cqw 1.45cqw;
-		border-radius: 1cqw;
+		padding: 0.48cqw 1.74cqw;
+		border-radius: 1.2cqw;
 		line-height: 1.2;
+		margin-top: 1.5cqw;
 	}
 
 	.dark .progress-badge,

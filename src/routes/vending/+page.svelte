@@ -291,6 +291,11 @@
 				</Button>
 			</div>
 
+			<!-- Upload warning -->
+			<div class="upload-alert">
+				<strong>Lưu ý:</strong> Ảnh tải lên phải liên quan đến level. Ảnh đại diện và ảnh nền không được chứa nội dung NSFW. GDVN có quyền từ chối đơn hàng nếu ảnh không phù hợp.
+			</div>
+
 			<!-- Upload row -->
 			<div class="upload-row">
 				<div class="upload-col">
@@ -628,6 +633,22 @@
 		.hint {
 			font-size: 12px;
 			opacity: 0.7;
+		}
+	}
+
+	/* Upload alert */
+	.upload-alert {
+		background: hsl(var(--muted));
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		padding: 10px 14px;
+		font-size: 12px;
+		line-height: 1.5;
+		margin-top: 16px;
+		color: hsl(var(--muted-foreground));
+
+		strong {
+			color: hsl(var(--foreground));
 		}
 	}
 
