@@ -8,6 +8,7 @@
 	export let creator: string | null = null;
 	export let progress: number | null = null;
 	export let bgImage: string;
+	export let avatarImage: string | null = null;
 	export let template: 1 | 2 | 3 = 1; // 1=Tối, 2=Sáng, 3=Vàng
 	export let size: 'mini' | 'full' = 'full';
 </script>
@@ -34,7 +35,7 @@
 		<div class="player-info">
 			<img
 				class="avatar"
-				src={`https://cdn.gdvn.net/avatars/${playerUID}.jpg`}
+				src={avatarImage || `https://cdn.gdvn.net/avatars/${playerUID}.jpg`}
 				alt={playerName}
 				on:error={(e) => {
 					if (e.target instanceof HTMLImageElement) e.target.style.display = 'none';
@@ -64,19 +65,15 @@
 	.card-wrap {
 		position: relative;
 		aspect-ratio: 245 / 155.48;
-		border-radius: 8px;
+		container-type: inline-size;
+		border-radius: 1.6cqw;
 		overflow: hidden;
 		display: flex;
 		flex-direction: column;
 		justify-content: space-between;
-		padding: 10px 12px;
+		padding: 2cqw 2.4cqw;
 		box-sizing: border-box;
 		width: 100%;
-
-		&.mini {
-			border-radius: 5px;
-			padding: 5px 7px;
-		}
 	}
 
 	.card-bg {
@@ -90,10 +87,10 @@
 
 	.gold-frame {
 		position: absolute;
-		inset: 4px;
-		border-radius: 6px;
-		border: 2px solid #ffd700;
-		box-shadow: inset 0 0 10px rgba(255, 215, 0, 0.4);
+		inset: 0.8cqw;
+		border-radius: 1.2cqw;
+		border: 0.4cqw solid #ffd700;
+		box-shadow: inset 0 0 2cqw rgba(255, 215, 0, 0.4);
 		z-index: 2;
 		pointer-events: none;
 	}
@@ -108,18 +105,12 @@
 	}
 
 	.gdvn-logo {
-		width: 60px;
-		height: 60px;
+		width: 12.25cqw;
+		height: 12.25cqw;
 		object-fit: contain;
 		flex-shrink: 0;
 		opacity: 0.9;
-		margin-top: -23px;
-
-		.mini & {
-			width: 36px;
-			height: 36px;
-			margin-top: -14px;
-		}
+		margin-top: -4.7cqw;
 	}
 
 	.dark .gdvn-logo,
@@ -128,16 +119,11 @@
 	}
 
 	.progress-badge {
-		font-size: 14px;
+		font-size: 2.85cqw;
 		font-weight: 800;
-		padding: 2px 7px;
-		border-radius: 5px;
+		padding: 0.4cqw 1.45cqw;
+		border-radius: 1cqw;
 		line-height: 1.2;
-
-		.mini & {
-			font-size: 9px;
-			padding: 1px 4px;
-		}
 	}
 
 	.dark .progress-badge,
@@ -164,56 +150,41 @@
 		display: flex;
 		align-items: flex-end;
 		justify-content: space-between;
-		gap: 6px;
+		gap: 1.2cqw;
 	}
 
 	/* Player info (bottom-left) */
 	.player-info {
 		display: flex;
 		align-items: center;
-		gap: 5px;
+		gap: 1cqw;
 		min-width: 0;
 	}
 
 	.avatar {
-		width: 39px;
-		height: 39px;
+		width: 7.95cqw;
+		height: 7.95cqw;
 		border-radius: 50%;
 		object-fit: cover;
-		border: 1.5px solid rgba(255, 255, 255, 0.55);
+		border: 0.3cqw solid rgba(255, 255, 255, 0.55);
 		flex-shrink: 0;
-
-		.mini & {
-			width: 24px;
-			height: 24px;
-		}
 	}
 
 	.clan-tag {
-		font-size: 14px;
+		font-size: 2.85cqw;
 		font-weight: 700;
-		padding: 2px 6px;
-		border-radius: 3px;
+		padding: 0.4cqw 1.2cqw;
+		border-radius: 0.6cqw;
 		flex-shrink: 0;
-
-		.mini & {
-			font-size: 8px;
-			padding: 1px 3px;
-		}
 	}
 
 	.player-name {
-		font-size: 17px;
+		font-size: 3.45cqw;
 		font-weight: 700;
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
-		max-width: 130px;
-
-		.mini & {
-			font-size: 10px;
-			max-width: 75px;
-		}
+		max-width: 53cqw;
 	}
 
 	.dark .player-name,
@@ -237,24 +208,19 @@
 		display: flex;
 		flex-direction: column;
 		align-items: flex-end;
-		gap: 1px;
+		gap: 0.2cqw;
 		min-width: 0;
 	}
 
 	.level-name {
-		font-size: 20px;
+		font-size: 4.1cqw;
 		font-weight: 800;
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
-		max-width: 160px;
+		max-width: 65.3cqw;
 		line-height: 1.1;
 		text-align: right;
-
-		.mini & {
-			font-size: 12px;
-			max-width: 90px;
-		}
 	}
 
 	.dark .level-name,
@@ -273,13 +239,9 @@
 	}
 
 	.creator-name {
-		font-size: 11px;
+		font-size: 2.25cqw;
 		font-weight: 500;
 		text-align: right;
-
-		.mini & {
-			font-size: 7px;
-		}
 	}
 
 	.dark .creator-name,

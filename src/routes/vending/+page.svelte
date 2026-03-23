@@ -18,19 +18,19 @@
 
 	// Step 2
 	let customImageDataUrl: string | null = null;
+	let customAvatarDataUrl: string | null = null;
 	let isDragging = false;
-
-	// Step 3 (preview flip)
+	let isDraggingAvatar = false;
 	let showBack = false;
 
-	let hasFetchedRecords = false;
-
-	// Step 4
+	// Step 3
 	let selectedMaterial: 'paper' | 'plastic' | null = null;
 	let address = '';
 	let phone = '';
 	let recipientName = '';
 	let placing = false;
+
+	let hasFetchedRecords = false;
 
 	const MATERIALS = [
 		{
@@ -129,6 +129,30 @@
 		if (file) handleImageUpload(file);
 	}
 
+	function handleAvatarUpload(file: File) {
+		if (!file.type.startsWith('image/')) {
+			toast.error('Chỉ chấp nhận file ảnh');
+			return;
+		}
+		const reader = new FileReader();
+		reader.onload = (e) => {
+			customAvatarDataUrl = e.target?.result as string;
+		};
+		reader.readAsDataURL(file);
+	}
+
+	function onAvatarFileInput(e: Event) {
+		const file = (e.target as HTMLInputElement).files?.[0];
+		if (file) handleAvatarUpload(file);
+	}
+
+	function onAvatarDrop(e: DragEvent) {
+		e.preventDefault();
+		isDraggingAvatar = false;
+		const file = e.dataTransfer?.files?.[0];
+		if (file) handleAvatarUpload(file);
+	}
+
 	async function placeOrder() {
 		if (!selectedRecord || !selectedMaterial || !address || !phone || !recipientName) {
 			toast.error('Vui lòng điền đầy đủ thông tin');
@@ -188,6 +212,32 @@
 				}
 			}
 
+			// Upload custom avatar if provided
+			if (customAvatarDataUrl && cardID) {
+				try {
+					const presignRes = await fetch(
+						`${import.meta.env.VITE_API_URL}/storage/presign?path=record-cards/${cardID}-avatar&bucket=cdn`,
+						{ headers: { Authorization: `Bearer ${token}` } }
+					);
+					if (presignRes.ok) {
+						const { url } = await presignRes.json();
+						const blob = await fetch(customAvatarDataUrl).then((r) => r.blob());
+						await fetch(url, { method: 'PUT', body: blob });
+						const cdnUrl = `https://cdn.gdvn.net/record-cards/${cardID}-avatar`;
+						await fetch(`${import.meta.env.VITE_API_URL}/card/record/${cardID}/avatar`, {
+							method: 'PATCH',
+							headers: {
+								Authorization: `Bearer ${token}`,
+								'Content-Type': 'application/json'
+							},
+							body: JSON.stringify({ avatarURL: cdnUrl })
+						});
+					}
+				} catch {
+					// Non-fatal — order still placed
+				}
+			}
+
 			toast.success('Đặt hàng thành công!');
 			goto(`/orders/${orderID}`);
 		} catch (err: any) {
@@ -228,17 +278,16 @@
 
 	<!-- Step progress -->
 	<div class="step-bar">
-		{#each [1, 2, 3, 4] as s}
+		{#each [1, 2, 3] as s}
 			<div class="step-item" class:active={step === s} class:done={step > s}>
 				<span class="step-num">{step > s ? '✓' : s}</span>
 				<span class="step-label">
 					{#if s === 1}Chọn bản ghi
-					{:else if s === 2}Tùy chỉnh
-					{:else if s === 3}Xem trước
+					{:else if s === 2}Tùy chỉnh & Xem trước
 					{:else}Đặt hàng{/if}
 				</span>
 			</div>
-			{#if s < 4}
+			{#if s < 3}
 				<div class="step-line" class:done={step > s}></div>
 			{/if}
 		{/each}
@@ -289,39 +338,11 @@
 				</div>
 			{/if}
 
-		<!-- Step 2: Customize -->
+		<!-- Step 2: Customize & Preview -->
 		{:else if step === 2}
-			<h2 class="step-title">② Tùy chỉnh thẻ</h2>
+			<h2 class="step-title">② Tùy chỉnh & Xem trước</h2>
 
-			<!-- Image upload -->
-			<div class="section-label">Ảnh nền (tùy chọn)</div>
-			<div
-				class="upload-zone"
-				class:dragging={isDragging}
-				on:dragover|preventDefault={() => (isDragging = true)}
-				on:dragleave={() => (isDragging = false)}
-				on:drop={onDrop}
-				role="button"
-				tabindex="0"
-			>
-				{#if customImageDataUrl}
-					<div class="upload-preview">
-						<img src={customImageDataUrl} alt="preview" />
-						<button class="remove-img" on:click={() => (customImageDataUrl = null)} type="button">
-							<X size={14} />
-						</button>
-					</div>
-				{:else}
-					<Upload size={24} class="upload-icon" />
-					<p>Kéo thả hoặc <label class="upload-link">chọn ảnh<input type="file" accept="image/*" on:change={onFileInput} hidden /></label></p>
-					<p class="upload-hint">Mặc định: ảnh thumbnail YouTube của level</p>
-				{/if}
-			</div>
-
-
-		<!-- Step 3: Preview -->
-		{:else if step === 3}
-			<h2 class="step-title">③ Xem trước thẻ</h2>
+			<!-- Preview (full width) -->
 			<div class="preview-wrap">
 				{#if !showBack}
 					<CardPreview
@@ -334,6 +355,7 @@
 						{creator}
 						{progress}
 						{bgImage}
+						avatarImage={customAvatarDataUrl}
 						template={1}
 						size="full"
 					/>
@@ -347,9 +369,64 @@
 				</Button>
 			</div>
 
-		<!-- Step 4: Material & Order -->
-		{:else if step === 4}
-			<h2 class="step-title">④ Chọn chất liệu & Đặt hàng</h2>
+			<!-- Upload row -->
+			<div class="upload-row">
+				<div class="upload-col">
+					<div class="section-label">Ảnh nền (tùy chọn)</div>
+					<div
+						class="upload-zone"
+						class:dragging={isDragging}
+						on:dragover|preventDefault={() => (isDragging = true)}
+						on:dragleave={() => (isDragging = false)}
+						on:drop={onDrop}
+						role="button"
+						tabindex="0"
+					>
+						{#if customImageDataUrl}
+							<div class="upload-preview">
+								<img src={customImageDataUrl} alt="preview" />
+								<button class="remove-img" on:click={() => (customImageDataUrl = null)} type="button">
+									<X size={14} />
+								</button>
+							</div>
+						{:else}
+							<Upload size={24} class="upload-icon" />
+							<p>Kéo thả hoặc <label class="upload-link">chọn ảnh<input type="file" accept="image/*" on:change={onFileInput} hidden /></label></p>
+							<p class="upload-hint">Mặc định: ảnh thumbnail YouTube của level</p>
+						{/if}
+					</div>
+				</div>
+
+				<div class="upload-col">
+					<div class="section-label">Ảnh đại diện (tùy chọn)</div>
+					<div
+						class="upload-zone"
+						class:dragging={isDraggingAvatar}
+						on:dragover|preventDefault={() => (isDraggingAvatar = true)}
+						on:dragleave={() => (isDraggingAvatar = false)}
+						on:drop={onAvatarDrop}
+						role="button"
+						tabindex="0"
+					>
+						{#if customAvatarDataUrl}
+							<div class="upload-preview avatar-preview">
+								<img src={customAvatarDataUrl} alt="avatar preview" />
+								<button class="remove-img" on:click={() => (customAvatarDataUrl = null)} type="button">
+									<X size={14} />
+								</button>
+							</div>
+						{:else}
+							<Upload size={24} class="upload-icon" />
+							<p>Kéo thả hoặc <label class="upload-link">chọn ảnh<input type="file" accept="image/*" on:change={onAvatarFileInput} hidden /></label></p>
+							<p class="upload-hint">Mặc định: ảnh đại diện tài khoản của bạn</p>
+						{/if}
+					</div>
+				</div>
+			</div>
+
+		<!-- Step 3: Material & Order -->
+		{:else if step === 3}
+			<h2 class="step-title">③ Chọn chất liệu & Đặt hàng</h2>
 
 			<div class="material-grid">
 				{#each MATERIALS as mat}
@@ -424,7 +501,7 @@
 			<div></div>
 		{/if}
 
-		{#if step < 4}
+		{#if step < 3}
 			<Button on:click={nextStep} disabled={step === 1 && !selectedRecord}>
 				Tiếp theo
 				<ChevronRight size={16} />
@@ -698,6 +775,25 @@
 			max-height: 100px;
 			border-radius: 6px;
 		}
+
+		&.avatar-preview img {
+			width: 64px;
+			height: 64px;
+			border-radius: 50%;
+			object-fit: cover;
+		}
+	}
+
+	/* Upload row */
+	.upload-row {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 16px;
+		margin-top: 20px;
+	}
+
+	.upload-col {
+		min-width: 0;
 	}
 
 	.remove-img {
@@ -757,9 +853,7 @@
 		opacity: 0.55;
 	}
 
-	/* Step 3: Preview */
 	.preview-wrap {
-		max-width: 380px;
 		margin: 0 auto;
 	}
 
@@ -916,6 +1010,10 @@
 
 		.step-label {
 			display: none;
+		}
+
+		.upload-row {
+			grid-template-columns: 1fr;
 		}
 	}
 </style>
