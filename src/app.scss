@@ -241,8 +241,30 @@ ins.adsbygoogle[data-ad-status='unfilled'] {
     display: none !important;
   }
 
-  body.printing-record-card #record-card-print-area {
+  body.printing-record-card > #record-card-print-area {
     display: block !important;
+    position: static !important;
+    opacity: 1 !important;
+    left: auto !important;
+  }
+
+  body.printing-record-card .print-card-front,
+  body.printing-record-card .print-card-back {
+    width: 85.6mm;
+    height: 53.98mm;
+    overflow: hidden;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  body.printing-record-card .card-container,
+  body.printing-record-card .card-wrap,
+  body.printing-record-card .card-back-container,
+  body.printing-record-card .card-back-scaler,
+  body.printing-record-card .card-back {
+    width: 100% !important;
+    height: 100% !important;
+    aspect-ratio: auto !important;
   }
 
   @page {

@@ -13,11 +13,16 @@
 	import { goto } from '$app/navigation';
 	import Download from 'lucide-svelte/icons/download';
 	import ChevronDown from 'lucide-svelte/icons/chevron-down';
+	import ChevronLeft from 'lucide-svelte/icons/chevron-left';
+	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import Check from 'lucide-svelte/icons/check';
 
 	let allOrders: any[] = [];
 	let products: any[] = [];
 	let loading = false;
+
+	const PAGE_SIZE = 20;
+	let currentPage = 0;
 
 	// Filters — initialized from URL in onMount
 	let selectedStates: Set<string> = new Set();
@@ -42,6 +47,8 @@
 		amountMin = min ? Number(min) : null;
 		const max = params.get('amountMax');
 		amountMax = max ? Number(max) : null;
+		const pg = params.get('page');
+		currentPage = pg ? Math.max(0, Number(pg) - 1) : 0;
 	}
 
 	function syncFiltersToURL() {
@@ -53,6 +60,7 @@
 		if (searchQuery) params.set('search', searchQuery);
 		if (amountMin !== null && amountMin > 0) params.set('amountMin', String(amountMin));
 		if (amountMax !== null && amountMax > 0) params.set('amountMax', String(amountMax));
+		if (currentPage > 0) params.set('page', String(currentPage + 1));
 		const qs = params.toString();
 		goto(`?${qs}`, { replaceState: true, keepFocus: true, noScroll: true });
 	}
@@ -99,6 +107,9 @@
 		return '-';
 	}
 
+	$: pagedOrders = filteredOrders.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE);
+	$: maxPage = Math.ceil(filteredOrders.length / PAGE_SIZE);
+
 	$: filteredOrders = allOrders.filter((o) => {
 		if (selectedStates.size > 0 && !selectedStates.has(o.state)) return false;
 		if (selectedMethods.size > 0 && !selectedMethods.has(o.paymentMethod)) return false;
@@ -117,6 +128,7 @@
 	$: if (initialized) {
 		// Touch all filter vars to track them as dependencies
 		selectedStates, selectedMethods, selectedProducts, deliveredFilter, searchQuery, amountMin, amountMax;
+		currentPage = 0;
 		syncFiltersToURL();
 	}
 
@@ -398,7 +410,13 @@
 </div>
 
 <Table.Root>
-	<Table.Caption>Showing {filteredOrders.length} of {allOrders.length} orders</Table.Caption>
+	<Table.Caption>
+		{#if filteredOrders.length === 0}
+			No orders
+		{:else}
+			Showing {currentPage * PAGE_SIZE + 1}–{Math.min((currentPage + 1) * PAGE_SIZE, filteredOrders.length)} of {filteredOrders.length} orders
+		{/if}
+	</Table.Caption>
 	<Table.Header>
 		<Table.Row>
 			<Table.Head class="w-[100px]">ID</Table.Head>
@@ -415,7 +433,7 @@
 		</Table.Row>
 	</Table.Header>
 	<Table.Body>
-		{#each filteredOrders as order}
+		{#each pagedOrders as order}
 			<Table.Row>
 				<Table.Cell class="font-medium">
 					<a href={`/orders/${order.id}`} class="link">{order.id}</a>
@@ -457,6 +475,36 @@
 		{/each}
 	</Table.Body>
 </Table.Root>
+
+{#if maxPage > 1}
+	<div class="pagination">
+		<Button
+			variant="outline"
+			size="sm"
+			disabled={currentPage === 0}
+			on:click={() => { currentPage -= 1; syncFiltersToURL(); }}
+		>
+			<ChevronLeft class="h-4 w-4" />
+		</Button>
+		{#each Array.from({ length: maxPage }, (_, i) => i) as p}
+			<Button
+				variant={p === currentPage ? 'default' : 'outline'}
+				size="sm"
+				on:click={() => { currentPage = p; syncFiltersToURL(); }}
+			>
+				{p + 1}
+			</Button>
+		{/each}
+		<Button
+			variant="outline"
+			size="sm"
+			disabled={currentPage >= maxPage - 1}
+			on:click={() => { currentPage += 1; syncFiltersToURL(); }}
+		>
+			<ChevronRight class="h-4 w-4" />
+		</Button>
+	</div>
+{/if}
 
 {#if loading}
 	<p class="text-center text-muted-foreground mt-4">Loading...</p>
@@ -649,5 +697,14 @@
 		&.visible {
 			opacity: 1;
 		}
+	}
+
+	.pagination {
+		display: flex;
+		gap: 0.25rem;
+		justify-content: center;
+		align-items: center;
+		margin-top: 1rem;
+		flex-wrap: wrap;
 	}
 </style>

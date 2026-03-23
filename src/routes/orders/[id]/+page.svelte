@@ -5,14 +5,72 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import PlayerHoverCard from '$lib/components/playerLink.svelte';
 	import CardPreview from '../../vending/CardPreview.svelte';
+	import CardBack from '../../vending/CardBack.svelte';
+	import * as Dialog from '$lib/components/ui/dialog';
 	import { user } from '$lib/client';
 	import { toast } from 'svelte-sonner';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import AddTrackingButton from './addTrackingButton.svelte';
 	import { _ } from 'svelte-i18n';
+	import { Printer, Eye, Check } from 'lucide-svelte';
 
 	let data: any = null;
+	let selectedCard: any | null = null;
+	let viewDialogOpen = false;
+
+	$: selectedTemplate = (selectedCard?.template ?? 1) as 1 | 2 | 3;
+
+	function bgImage(rc: any) {
+		return rc?.img || `https://levelthumbs.prevter.me/thumbnail/${rc?.levelID}/high`;
+	}
+
+	function openView(rc: any) {
+		selectedCard = rc;
+		viewDialogOpen = true;
+	}
+
+	async function markPrinted(rc: any) {
+		try {
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/merchant/record-cards/${rc.id}/printed`,
+				{
+					method: 'PATCH',
+					headers: { Authorization: `Bearer ${await $user.token()}` }
+				}
+			);
+			if (!res.ok) throw new Error();
+			data.record_cards = data.record_cards.map((c: any) =>
+				c.id === rc.id ? { ...c, printed: true } : c
+			);
+			toast.success('Đã cập nhật trạng thái in');
+		} catch {
+			toast.error('Không thể cập nhật trạng thái');
+		}
+	}
+
+	function printCard(rc: any) {
+		selectedCard = rc;
+		setTimeout(() => {
+			const el = document.getElementById('record-card-print-area');
+			if (!el) return;
+			const parent = el.parentNode;
+			const next = el.nextSibling;
+
+			document.body.appendChild(el);
+			document.body.classList.add('printing-record-card');
+			window.print();
+
+			window.addEventListener(
+				'afterprint',
+				() => {
+					document.body.classList.remove('printing-record-card');
+					if (parent) parent.insertBefore(el, next);
+				},
+				{ once: true }
+			);
+		}, 100);
+	}
 
 	function cancellable() {
 		if (data.state == 'CANCELLED' || data.paymentMethod == 'Bank Transfer') {
@@ -63,6 +121,33 @@
 		await fetchData();
 	});
 </script>
+
+<!-- Print area (hidden except during print) -->
+<div id="record-card-print-area">
+	{#if selectedCard && data}
+		<div class="print-card-front">
+			<CardPreview
+				data={{
+					playerUID: data.userID,
+					playerName: data.players?.name ?? 'Player',
+					clanTag: data.players?.clans?.tag ?? null,
+					clanTagBg: data.players?.clans?.tagBgColor ?? null,
+					clanTagText: data.players?.clans?.tagTextColor ?? null,
+					levelName: selectedCard.levels?.name || `Level #${selectedCard.levelID}`,
+					creator: selectedCard.levels?.creator || '',
+					progress: selectedCard.records?.progress ?? null,
+					bgImage: bgImage(selectedCard),
+					avatarImage: selectedCard.avatar || `https://cdn.gdvn.net/avatars/${data.userID}.jpg`,
+					template: selectedCard.template
+				}}
+				size="full"
+			/>
+		</div>
+		<div class="print-card-back" style="page-break-before: always;">
+			<CardBack cardID={selectedCard.id} />
+		</div>
+	{/if}
+</div>
 
 <svelte:head>
 	<title>Chi tiết đơn hàng - Geometry Dash Việt Nam</title>
@@ -180,6 +265,25 @@
 											)}
 										</div>
 									</div>
+									{#if $user.loggedIn && $user.data.isManager}
+										<div class="flex flex-wrap items-center gap-2 px-[10px] pb-[10px]">
+											{#if rc.printed}
+												<span class="text-xs font-semibold text-green-500">✓ Đã in</span>
+											{:else}
+												<span class="text-xs opacity-55">Chưa in</span>
+											{/if}
+											<Button variant="outline" size="sm" on:click={() => openView(rc)}>
+												<Eye size={14} />
+												Xem
+											</Button>
+											{#if !rc.printed}
+												<Button variant="ghost" size="sm" on:click={() => markPrinted(rc)}>
+													<Check size={14} />
+													Đã in
+												</Button>
+											{/if}
+										</div>
+									{/if}
 								</Table.Row>
 							{/each}
 						{/if}
@@ -277,3 +381,67 @@
 		</div>
 	</div>
 {/if}
+
+<!-- Manager: View card dialog -->
+<Dialog.Root bind:open={viewDialogOpen}>
+	<Dialog.Content class="max-w-[700px]">
+		<Dialog.Header>
+			<Dialog.Title>Xem Thẻ Bản Ghi</Dialog.Title>
+			<Dialog.Description>
+				{data?.players?.name ?? ''} — {selectedCard?.levels?.name ?? ''}
+			</Dialog.Description>
+		</Dialog.Header>
+
+		{#if selectedCard && data}
+			<div class="mt-2 grid grid-cols-2 gap-5">
+				<div class="flex flex-col gap-1.5">
+					<p class="text-center text-xs font-semibold opacity-60">Mặt trước</p>
+					<CardPreview
+						data={{
+							playerUID: data.userID,
+							playerName: data.players?.name ?? 'Player',
+							clanTag: data.players?.clans?.tag ?? null,
+							clanTagBg: data.players?.clans?.tagBgColor ?? null,
+							clanTagText: data.players?.clans?.tagTextColor ?? null,
+							levelName: selectedCard.levels?.name || `Level #${selectedCard.levelID}`,
+							creator: selectedCard.levels?.creator || '',
+							progress: selectedCard.records?.progress ?? null,
+							bgImage: bgImage(selectedCard),
+							avatarImage:
+								selectedCard.avatar || `https://cdn.gdvn.net/avatars/${data.userID}.jpg`,
+							template: selectedCard.template
+						}}
+						size="full"
+					/>
+				</div>
+				<div class="flex flex-col gap-1.5">
+					<p class="text-center text-xs font-semibold opacity-60">Mặt sau</p>
+					<CardBack cardID={selectedCard.id} />
+				</div>
+			</div>
+		{/if}
+
+		<Dialog.Footer>
+			<Button variant="outline" on:click={() => printCard(selectedCard)}>
+				<Printer size={14} />
+				In PDF
+			</Button>
+			<Button on:click={() => (viewDialogOpen = false)}>Đóng</Button>
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>
+
+<style>
+	:global(#record-card-print-area) {
+		position: fixed;
+		left: -9999px;
+		opacity: 0;
+		pointer-events: none;
+	}
+
+	.print-card-front,
+	.print-card-back {
+		width: 85.6mm;
+		height: 53.98mm;
+	}
+</style>
