@@ -36,6 +36,27 @@
 	let showFooter = false;
 	let showConfetti = false;
 
+	// 3D tilt
+	let tiltX = 0;
+	let tiltY = 0;
+	let isHovering = false;
+
+	function handleTiltMove(e: MouseEvent) {
+		const el = e.currentTarget as HTMLElement;
+		const rect = el.getBoundingClientRect();
+		const x = (e.clientX - rect.left) / rect.width;
+		const y = (e.clientY - rect.top) / rect.height;
+		tiltX = (y - 0.5) * -12;
+		tiltY = (x - 0.5) * 12;
+		isHovering = true;
+	}
+
+	function handleTiltLeave() {
+		tiltX = 0;
+		tiltY = 0;
+		isHovering = false;
+	}
+
 	onMount(() => {
 		const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 		if (prefersReduced) {
@@ -139,12 +160,20 @@
 >
 	{#if showCard}
 		<div class="card-image-wrapper" in:fly={{ y: 60, duration: 500, easing: quintOut }}>
-			<img
-				class="card-image relative z-10 rounded-xl border border-opacity-50 shadow-md"
-				src={data.img}
-				alt="card"
-			/>
-			<div class="holographic-overlay"></div>
+			<!-- svelte-ignore a11y-no-static-element-interactions -->
+			<div
+				class="card-tilt"
+				on:mousemove={handleTiltMove}
+				on:mouseleave={handleTiltLeave}
+				style="transform: perspective(800px) rotateX({tiltX}deg) rotateY({tiltY}deg); {isHovering ? '' : 'transition: transform 0.4s ease;'}"
+			>
+				<img
+					class="card-image relative z-10 rounded-xl border border-opacity-50 shadow-md"
+					src={data.img}
+					alt="card"
+				/>
+				<div class="holographic-overlay"></div>
+			</div>
 			<div class="card-glow"></div>
 		</div>
 	{/if}
@@ -383,6 +412,12 @@
 		width: 100%;
 	}
 
+	.card-tilt {
+		position: relative;
+		transform-style: preserve-3d;
+		will-change: transform;
+	}
+
 	.card-image {
 		position: relative;
 		z-index: 10;
@@ -518,6 +553,10 @@
 			animation: none !important;
 			opacity: 1;
 			transform: none;
+		}
+
+		.card-tilt {
+			transition: none !important;
 		}
 	}
 
