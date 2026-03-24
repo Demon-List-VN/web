@@ -997,8 +997,14 @@
       "cards": "Card collection",
       "created_challenges": "Created Challenges",
       "community_posts": "Posts",
-      "convictions": "Convictions"
+      "convictions": "Convictions",
+      "records": "Records",
+      "activity": "Activity",
+      "collection": "Collection"
     },
+    "supporter_badge": "Supporter",
+    "supporter_expires": "Expires",
+    "copy_discord": "Copied Discord username to clipboard!",
     "filter": {
       "sort_by": "Sort by",
       "point": "Point",

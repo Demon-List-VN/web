@@ -50,7 +50,7 @@
 			>
 		{/if}
 		<h4 class="font-semibold">
-			<span class={isActive(player.supporterUntil) ? 'text-yellow-500' : ''}>
+			<span class={isActive(player.supporterUntil) ? 'supporter-name' : ''}>
 				{#if player.clan && !isActive(player.clans.boostedUntil)}
 					<a href={`/clan/${player.clan}`}>[{player.clans.tag}]</a>
 				{/if}
@@ -249,5 +249,25 @@
 		padding-inline: 5px;
 		border-radius: 5px;
 		font-weight: 600;
+	}
+
+	:global(.supporter-name) {
+		background: linear-gradient(90deg, #f6d365, #fda085, #f6d365);
+		background-size: 200%;
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		background-clip: text;
+		animation: shimmer 3s ease infinite;
+	}
+
+	@keyframes shimmer {
+		0% { background-position: 0% 50%; }
+		100% { background-position: 200% 50%; }
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		:global(.supporter-name) {
+			animation: none;
+		}
 	}
 </style>

@@ -222,7 +222,7 @@
 		<CreditCard class="header-icon" size={28} />
 		<div>
 			<h1>Máy Tạo Thẻ Bản Ghi</h1>
-			<p>Lưu giữ kỷ lục của bạn dưới dạng thẻ vật lý CR80</p>
+			<p>Lưu giữ bản ghi của bạn dưới dạng thẻ vật lý</p>
 		</div>
 	</div>
 

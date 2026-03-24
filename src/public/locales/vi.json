@@ -996,8 +996,14 @@
       "cards": "Bộ sưu tập thẻ",
       "created_challenges": "Challenge đã tạo",
       "community_posts": "Bài viết",
-      "convictions": "Án tích"
+      "convictions": "Án tích",
+      "records": "Bản ghi",
+      "activity": "Hoạt động",
+      "collection": "Bộ sưu tập"
     },
+    "supporter_badge": "Supporter",
+    "supporter_expires": "Hết hạn",
+    "copy_discord": "Đã sao chép tên Discord vào bảng nhớ tạm!",
     "filter": {
       "sort_by": "Sắp xếp theo",
       "point": "Điểm",
