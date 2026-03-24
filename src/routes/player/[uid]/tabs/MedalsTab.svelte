@@ -7,7 +7,8 @@
 	let medals: any[] = [];
 
 	onMount(async () => {
-		medals = await (await fetch(`${import.meta.env.VITE_API_URL}/players/${userID}/medals`)).json();
+		const items = await (await fetch(`${import.meta.env.VITE_API_URL}/players/${userID}/medals`)).json();
+		medals = items.filter((item: any) => item.type === 'medal');
 	});
 </script>
 
