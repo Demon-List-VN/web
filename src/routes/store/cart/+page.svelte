@@ -43,6 +43,11 @@
 	});
 
 	$: recordCards = $cart.getRecordCards();
+	$: cartPlayerUID = $user.data?.uid ?? '';
+	$: cartPlayerName = $user.data?.name ?? '';
+	$: cartClanTag = $user.data?.clans?.tag ?? null;
+	$: cartClanTagBg = $user.data?.clans?.tagBgColor ?? null;
+	$: cartClanTagText = $user.data?.clans?.tagTextColor ?? null;
 	$: hasItems = $cart.items.length > 0;
 
 	$: productTotal = data.reduce((total, product) => {
@@ -127,11 +132,11 @@
 						<Table.Cell class="w-[300px]">
 							<CardPreview
 								data={{
-									playerUID: $user.data?.uid ?? '',
-									playerName: $user.data?.name ?? '',
-									clanTag: $user.data?.clans?.tag ?? null,
-									clanTagBg: $user.data?.clans?.tagBgColor ?? null,
-									clanTagText: $user.data?.clans?.tagTextColor ?? null,
+									playerUID: cartPlayerUID,
+									playerName: cartPlayerName,
+									clanTag: cartClanTag,
+									clanTagBg: cartClanTagBg,
+									clanTagText: cartClanTagText,
 									levelName: rc.levelName || `Level #${rc.levelID}`,
 									creator: rc.creator || '',
 									progress: rc.progress ?? null,

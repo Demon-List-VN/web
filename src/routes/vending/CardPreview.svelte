@@ -177,8 +177,8 @@
 	}
 	.card-container.fill .clan-tag {
 		font-size: 4.5cqmin;
-		padding: 0.63cqmin 1.89cqmin;
-		border-radius: 0.95cqmin;
+		padding: 0.95cqmin 2.52cqmin;
+		border-radius: 1.2cqw;
 	}
 	.card-container.fill .player-name {
 		font-size: 5.44cqmin;
@@ -302,9 +302,12 @@
 	.clan-tag {
 		font-size: 2.85cqw;
 		font-weight: 700;
-		padding: 0.4cqw 1.2cqw;
-		border-radius: 0.6cqw;
+		padding: 0.6cqw 1.6cqw;
+		border-radius: 1.2cqw;
 		flex-shrink: 0;
+		width: fit-content;
+		height: fit-content;
+		line-height: 1;
 	}
 
 	.player-name {

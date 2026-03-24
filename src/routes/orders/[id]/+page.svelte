@@ -34,6 +34,9 @@
 	let printLandscape = true;
 
 	$: selectedTemplate = (selectedCard?.template ?? 1) as 1 | 2 | 3;
+	// For gift orders use the gift recipient's player data; for own orders use the order owner's data
+	$: cardPlayer = data ? (data.giftTo ? data.players : data.ownerPlayer) : null;
+	$: cardPlayerUID = data ? (data.giftTo ?? data.userID) : '';
 	$: baseSize = CARD_SIZES.find((s) => s.id === selectedPrintSize) ?? CARD_SIZES[0];
 	$: printWidth = printLandscape ? baseSize.w : baseSize.h;
 	$: printHeight = printLandscape ? baseSize.h : baseSize.w;
@@ -147,16 +150,16 @@
 		<div class="print-card-front" style="width:{printWidth}; height:{printHeight};">
 			<CardPreview
 				data={{
-					playerUID: data.userID,
-					playerName: data.players?.name ?? 'Player',
-					clanTag: data.players?.clans?.tag ?? null,
-					clanTagBg: data.players?.clans?.tagBgColor ?? null,
-					clanTagText: data.players?.clans?.tagTextColor ?? null,
+					playerUID: cardPlayerUID,
+					playerName: cardPlayer?.name ?? 'Player',
+					clanTag: cardPlayer?.clans?.tag ?? null,
+					clanTagBg: cardPlayer?.clans?.tagBgColor ?? null,
+					clanTagText: cardPlayer?.clans?.tagTextColor ?? null,
 					levelName: selectedCard.levels?.name || `Level #${selectedCard.levelID}`,
 					creator: selectedCard.levels?.creator || '',
 					progress: selectedCard.records?.progress ?? null,
 					bgImage: bgImage(selectedCard),
-					avatarImage: selectedCard.avatar || `https://cdn.gdvn.net/avatars/${data.userID}.jpg`,
+					avatarImage: selectedCard.avatar || `https://cdn.gdvn.net/avatars/${cardPlayerUID}.jpg`,
 					template: selectedCard.template
 				}}
 				size="full"
@@ -253,16 +256,16 @@
 										<div class="w-[200px]">
 											<CardPreview
 												data={{
-													playerUID: data.userID,
-													playerName: data.players?.name ?? 'Player',
-													clanTag: data.players?.clans?.tag ?? null,
-													clanTagBg: data.players?.clans?.tagBgColor ?? null,
-													clanTagText: data.players?.clans?.tagTextColor ?? null,
+													playerUID: cardPlayerUID,
+													playerName: cardPlayer?.name ?? 'Player',
+													clanTag: cardPlayer?.clans?.tag ?? null,
+													clanTagBg: cardPlayer?.clans?.tagBgColor ?? null,
+													clanTagText: cardPlayer?.clans?.tagTextColor ?? null,
 													levelName: rc.levels?.name || `Level #${rc.levelID}`,
 													creator: rc.levels?.creator || '',
 													progress: rc.records?.progress ?? null,
 													bgImage: rc.img || `https://levelthumbs.prevter.me/thumbnail/${rc.levelID}/high`,
-													avatarImage: rc.avatar || `https://cdn.gdvn.net/avatars/${data.userID}.jpg`,
+													avatarImage: rc.avatar || `https://cdn.gdvn.net/avatars/${cardPlayerUID}.jpg`,
 													template: rc.template
 												}}
 												size="mini"
@@ -408,7 +411,7 @@
 		<Dialog.Header>
 			<Dialog.Title>Xem Thẻ Bản Ghi</Dialog.Title>
 			<Dialog.Description>
-				{data?.players?.name ?? ''} — {selectedCard?.levels?.name ?? ''}
+				{cardPlayer?.name ?? ''} — {selectedCard?.levels?.name ?? ''}
 			</Dialog.Description>
 		</Dialog.Header>
 
@@ -422,17 +425,17 @@
 						>
 							<CardPreview
 								data={{
-									playerUID: data.userID,
-									playerName: data.players?.name ?? 'Player',
-									clanTag: data.players?.clans?.tag ?? null,
-									clanTagBg: data.players?.clans?.tagBgColor ?? null,
-									clanTagText: data.players?.clans?.tagTextColor ?? null,
+									playerUID: cardPlayerUID,
+									playerName: cardPlayer?.name ?? 'Player',
+									clanTag: cardPlayer?.clans?.tag ?? null,
+									clanTagBg: cardPlayer?.clans?.tagBgColor ?? null,
+									clanTagText: cardPlayer?.clans?.tagTextColor ?? null,
 									levelName: selectedCard.levels?.name || `Level #${selectedCard.levelID}`,
 									creator: selectedCard.levels?.creator || '',
 									progress: selectedCard.records?.progress ?? null,
 									bgImage: bgImage(selectedCard),
 									avatarImage:
-										selectedCard.avatar || `https://cdn.gdvn.net/avatars/${data.userID}.jpg`,
+										selectedCard.avatar || `https://cdn.gdvn.net/avatars/${cardPlayerUID}.jpg`,
 									template: selectedCard.template
 								}}
 								size="full"
