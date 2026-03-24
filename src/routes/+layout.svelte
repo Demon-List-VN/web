@@ -173,9 +173,8 @@
 	function enableAds() {
 		let adsScriptLoaded = false;
 
-		user.subscribe(() => {
-			// const enabled = u.checked && (!u.loggedIn || !isActive(u.data.supporterUntil));
-			const enabled = true;
+		user.subscribe((u) => {
+			const enabled = u.checked && (!u.loggedIn || !isActive(u.data.supporterUntil));
 
 			if (!adsScriptLoaded && enabled) {
 				adsScriptLoaded = true;
