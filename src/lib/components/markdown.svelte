@@ -4,6 +4,9 @@
 
 	export let content: string;
 
+	// Convert legacy mentions: @[Name](123) → @[Name](/player/123)
+	$: processedContent = content?.replace(/@\[([^\]]+)\]\((\d+)\)/g, '@[$1](/player/$2)');
+
 	function updateMarkdownStyle() {
 		const elem = document.getElementsByClassName('markdown')[0];
 
@@ -20,9 +23,9 @@
 	});
 </script>
 
-{#if content}
+{#if processedContent}
 	<div class="markdown">
-		<SvelteMarkdown source={content} />
+		<SvelteMarkdown source={processedContent} />
 	</div>
 {/if}
 

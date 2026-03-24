@@ -1,19 +1,31 @@
 <script lang="ts">
 	import type { PageData } from './$types';
+	import type { CardPreviewData } from '$lib/types/card';
 	import { onMount } from 'svelte';
 	import { fly, fade } from 'svelte/transition';
 	import { quintOut } from 'svelte/easing';
 	import CardPreview from '../../vending/CardPreview.svelte';
 	import CardBack from '../../vending/CardBack.svelte';
-	import { ExternalLink, Calendar, Trophy, Video } from 'lucide-svelte';
+	import { ExternalLink, Calendar, Trophy, Video, Copy, Check, RotateCw } from 'lucide-svelte';
 
 	export let data: PageData;
 
+	// Animation state
 	let showCard = false;
 	let showId = false;
 	let showInfo = false;
 	let showRecord = false;
-	let showBack = false;
+
+	// Card flip
+	let isFlipped = false;
+
+	// Share
+	let copied = false;
+
+	// 3D tilt
+	let tiltX = 0;
+	let tiltY = 0;
+	let isHovering = false;
 
 	$: card = data as any;
 	$: record = card?.record;
@@ -27,6 +39,28 @@
 			: '';
 
 	$: template = (card?.template ?? 1) as 1 | 2 | 3;
+
+	$: cardPreviewData = {
+		playerUID: player?.uid ?? '',
+		playerName: player?.name ?? '',
+		clanTag: player?.clans?.tag ?? null,
+		clanTagBg: player?.clans?.tagBgColor ?? null,
+		clanTagText: player?.clans?.tagTextColor ?? null,
+		levelName: level?.name ?? '',
+		creator: level?.creator ?? null,
+		progress: record?.progress ?? null,
+		bgImage,
+		avatarImage: card?.avatar ?? null,
+		template
+	} satisfies CardPreviewData;
+
+	// Points array for badge rendering
+	$: points = [
+		record?.dlPt ? { label: 'DL', value: record.dlPt } : null,
+		record?.flPt ? { label: 'FL', value: record.flPt } : null,
+		record?.plPt ? { label: 'PL', value: record.plPt } : null,
+		record?.clPt ? { label: 'CL', value: record.clPt } : null
+	].filter(Boolean) as { label: string; value: number }[];
 
 	onMount(() => {
 		if (data.notFound) return;
@@ -42,6 +76,28 @@
 		setTimeout(() => (showInfo = true), 1000);
 		setTimeout(() => (showRecord = true), 1300);
 	});
+
+	function handleTiltMove(e: MouseEvent) {
+		const el = e.currentTarget as HTMLElement;
+		const rect = el.getBoundingClientRect();
+		const x = (e.clientX - rect.left) / rect.width;
+		const y = (e.clientY - rect.top) / rect.height;
+		tiltX = (y - 0.5) * -12;
+		tiltY = (x - 0.5) * 12;
+		isHovering = true;
+	}
+
+	function handleTiltLeave() {
+		tiltX = 0;
+		tiltY = 0;
+		isHovering = false;
+	}
+
+	async function copyLink() {
+		await navigator.clipboard.writeText(window.location.href);
+		copied = true;
+		setTimeout(() => (copied = false), 2000);
+	}
 </script>
 
 <svelte:head>
@@ -58,35 +114,46 @@
 	</div>
 {:else}
 	<div class="wrapper">
-		<!-- Card visual -->
+		<!-- Card with 3D tilt + flip -->
 		{#if showCard}
 			<div class="card-display" in:fly={{ y: 60, duration: 500, easing: quintOut }}>
-				<div class="card-flip-wrap">
-					{#if !showBack}
-						<div class="card-image-wrapper">
-							<CardPreview
-								playerUID={player?.uid ?? ''}
-								playerName={player?.name ?? ''}
-								clanTag={player?.clans?.tag ?? null}
-								clanTagBg={player?.clans?.tagBgColor ?? null}
-								clanTagText={player?.clans?.tagTextColor ?? null}
-								levelName={level?.name ?? ''}
-								creator={level?.creator ?? null}
-								progress={record?.progress ?? null}
-								{bgImage}
-								{template}
-								size="full"
-							/>
+				<!-- svelte-ignore a11y-no-static-element-interactions -->
+				<div
+					class="card-perspective"
+					on:mousemove={handleTiltMove}
+					on:mouseleave={handleTiltLeave}
+				>
+					<div
+						class="card-flip-container"
+						class:flipped={isFlipped}
+						style="transform: perspective(800px) rotateX({tiltX}deg) rotateY({isFlipped ? 180 + tiltY : tiltY}deg); {isHovering ? '' : 'transition: transform 0.4s ease;'}"
+					>
+						<div class="card-face card-front">
+							<CardPreview data={cardPreviewData} size="full" />
 							<div class="holographic-overlay"></div>
 							<div class="card-glow"></div>
 						</div>
-					{:else}
-						<CardBack cardID={card?.id} scale={2} />
-					{/if}
+						<div class="card-face card-back-face">
+							<CardBack cardID={card?.id} scale={2} />
+						</div>
+					</div>
 				</div>
-				<button class="flip-btn" on:click={() => (showBack = !showBack)} type="button">
-					{showBack ? 'Xem mặt trước' : 'Xem mặt sau'}
-				</button>
+
+				<div class="card-actions">
+					<button class="action-btn" on:click={() => (isFlipped = !isFlipped)} type="button">
+						<RotateCw size={14} />
+						{isFlipped ? 'Mặt trước' : 'Mặt sau'}
+					</button>
+					<button class="action-btn" on:click={copyLink} type="button">
+						{#if copied}
+							<Check size={14} />
+							Đã sao chép
+						{:else}
+							<Copy size={14} />
+							Chia sẻ
+						{/if}
+					</button>
+				</div>
 			</div>
 		{/if}
 
@@ -103,7 +170,7 @@
 					src={`https://cdn.gdvn.net/avatars/${player.uid}.jpg`}
 					alt={player.name}
 				/>
-				<div>
+				<div class="player-details">
 					{#if player.clans?.tag}
 						<span
 							class="clan-badge"
@@ -122,8 +189,8 @@
 			<div class="record-detail" in:fly={{ y: 20, duration: 500, easing: quintOut }}>
 				<h2 class="section-title">Thông tin bản ghi</h2>
 
-				<div class="record-card-detail">
-					<!-- Level name -->
+				<div class="detail-rows">
+					<!-- Level -->
 					<div class="detail-row">
 						<Trophy size={15} class="detail-icon" />
 						<span class="detail-label">Level:</span>
@@ -133,21 +200,21 @@
 					<!-- Progress -->
 					<div class="detail-row">
 						<span class="detail-label">Tiến độ:</span>
-						<span class="detail-value">
-							{record.progress}%
-						</span>
+						<span class="detail-value">{record.progress}%</span>
 					</div>
 
-					<!-- Points -->
-					{#if record.dlPt || record.flPt || record.plPt || record.clPt}
+					<!-- Points as badges -->
+					{#if points.length > 0}
 						<div class="detail-row">
 							<span class="detail-label">Điểm:</span>
-							<span class="detail-value">
-								{#if record.dlPt}DL: {record.dlPt?.toFixed(2)}pt{/if}
-								{#if record.flPt}{record.dlPt ? ' · ' : ''}FL: {record.flPt?.toFixed(2)}pt{/if}
-								{#if record.plPt}{(record.dlPt || record.flPt) ? ' · ' : ''}PL: {record.plPt?.toFixed(2)}pt{/if}
-								{#if record.clPt}{(record.dlPt || record.flPt || record.plPt) ? ' · ' : ''}CL: {record.clPt?.toFixed(2)}pt{/if}
-							</span>
+							<div class="point-badges">
+								{#each points as pt}
+									<span class="point-badge">
+										<span class="point-label">{pt.label}</span>
+										{pt.value.toFixed(2)}
+									</span>
+								{/each}
+							</div>
 						</div>
 					{/if}
 
@@ -155,7 +222,7 @@
 					{#if record.timestamp}
 						<div class="detail-row">
 							<Calendar size={15} class="detail-icon" />
-							<span class="detail-label">Ngày hoàn thành:</span>
+							<span class="detail-label">Ngày:</span>
 							<span class="detail-value">
 								{new Date(record.timestamp).toLocaleDateString('vi-VN')}
 							</span>
@@ -167,7 +234,12 @@
 						<div class="detail-row">
 							<Video size={15} class="detail-icon" />
 							<span class="detail-label">Video:</span>
-							<a href={record.videoLink} target="_blank" rel="noopener noreferrer" class="detail-value link">
+							<a
+								href={record.videoLink}
+								target="_blank"
+								rel="noopener noreferrer"
+								class="detail-value link"
+							>
 								Xem video
 								<ExternalLink size={11} class="inline-icon" />
 							</a>
@@ -200,6 +272,7 @@
 		font-size: 15px;
 	}
 
+	/* ===== Card Display ===== */
 	.card-display {
 		width: 100%;
 		display: flex;
@@ -208,17 +281,34 @@
 		gap: 10px;
 	}
 
-	.card-flip-wrap {
-		position: relative;
+	.card-perspective {
 		width: 100%;
 	}
 
-	.card-image-wrapper {
+	.card-flip-container {
 		position: relative;
 		width: 100%;
+		transform-style: preserve-3d;
+		will-change: transform;
 	}
 
-	/* Holographic shimmer — same as /card/[id]/scan */
+	.card-face {
+		width: 100%;
+		backface-visibility: hidden;
+		-webkit-backface-visibility: hidden;
+	}
+
+	.card-front {
+		position: relative;
+	}
+
+	.card-back-face {
+		position: absolute;
+		inset: 0;
+		transform: rotateY(180deg);
+	}
+
+	/* ===== Holographic Shimmer ===== */
 	.holographic-overlay {
 		position: absolute;
 		inset: 0;
@@ -249,6 +339,7 @@
 		100% { transform: translateX(100%) rotate(15deg); }
 	}
 
+	/* ===== Glow Pulse ===== */
 	.card-glow {
 		position: absolute;
 		top: 50%;
@@ -268,7 +359,16 @@
 		100% { opacity: 0; transform: translate(-50%, -50%) scale(1.1); }
 	}
 
-	.flip-btn {
+	/* ===== Card Actions ===== */
+	.card-actions {
+		display: flex;
+		gap: 8px;
+	}
+
+	.action-btn {
+		display: flex;
+		align-items: center;
+		gap: 5px;
 		background: hsl(var(--muted));
 		border: 1px solid hsl(var(--border));
 		border-radius: 6px;
@@ -277,19 +377,20 @@
 		cursor: pointer;
 		color: hsl(var(--foreground));
 		transition: background 0.15s ease;
-		align-self: center;
 
 		&:hover {
 			background: hsl(var(--accent));
 		}
 	}
 
+	/* ===== Card ID ===== */
 	.card-id {
 		font-size: 11px;
 		opacity: 0.4;
 		margin: 0;
 	}
 
+	/* ===== Player Section ===== */
 	.player-section {
 		display: flex;
 		align-items: center;
@@ -311,12 +412,19 @@
 		flex-shrink: 0;
 	}
 
+	.player-details {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		min-width: 0;
+	}
+
 	.clan-badge {
 		font-size: 10px;
 		font-weight: 700;
 		padding: 1px 6px;
 		border-radius: 4px;
-		margin-right: 6px;
+		flex-shrink: 0;
 	}
 
 	.player-name {
@@ -324,13 +432,16 @@
 		font-weight: 700;
 		color: hsl(var(--foreground));
 		text-decoration: none;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 
 		&:hover {
 			text-decoration: underline;
 		}
 	}
 
-	/* Record detail */
+	/* ===== Record Detail ===== */
 	.record-detail {
 		width: 100%;
 		background: hsl(var(--card));
@@ -346,10 +457,10 @@
 		margin: 0 0 14px;
 	}
 
-	.record-card-detail {
+	.detail-rows {
 		display: flex;
 		flex-direction: column;
-		gap: 8px;
+		gap: 10px;
 	}
 
 	.detail-row {
@@ -375,6 +486,32 @@
 		}
 	}
 
+	/* ===== Point Badges ===== */
+	.point-badges {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px;
+	}
+
+	.point-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 3px;
+		font-size: 12px;
+		font-weight: 600;
+		padding: 2px 8px;
+		border-radius: 6px;
+		background: hsl(var(--muted));
+		border: 1px solid hsl(var(--border));
+	}
+
+	.point-label {
+		font-size: 10px;
+		font-weight: 700;
+		opacity: 0.6;
+	}
+
+	/* ===== Global Icon Styles ===== */
 	:global(.detail-icon) {
 		opacity: 0.5;
 		flex-shrink: 0;
@@ -385,8 +522,10 @@
 		margin-left: 2px;
 	}
 
+	/* ===== Reduced Motion ===== */
 	@media (prefers-reduced-motion: reduce) {
 		.card-glow { animation: none !important; display: none; }
 		.holographic-overlay::after { animation: none !important; }
+		.card-flip-container { transition: none !important; }
 	}
 </style>

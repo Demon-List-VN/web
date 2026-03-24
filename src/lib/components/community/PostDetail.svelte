@@ -558,14 +558,14 @@
 		const afterCursor = newComment.slice(cursorPos);
 		const atIndex = beforeCursor.lastIndexOf('@');
 
-		newComment = beforeCursor.slice(0, atIndex) + `@[${player.name}](${player.uid}) ` + afterCursor;
+		newComment = beforeCursor.slice(0, atIndex) + `@[${player.name}](/player/${player.uid}) ` + afterCursor;
 		showMentionDropdown = false;
 		mentionSuggestions = [];
 
 		// Refocus textarea
 		setTimeout(() => {
 			commentTextarea.focus();
-			const newPos = atIndex + `@[${player.name}](${player.uid}) `.length;
+			const newPos = atIndex + `@[${player.name}](/player/${player.uid}) `.length;
 			commentTextarea.setSelectionRange(newPos, newPos);
 		}, 0);
 	}
