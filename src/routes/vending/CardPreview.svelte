@@ -3,6 +3,7 @@
 
 	export let data: CardPreviewData;
 	export let size: 'mini' | 'full' = 'full';
+	export let fillContainer: boolean = false;
 
 	let showModal = false;
 </script>
@@ -53,7 +54,7 @@
 {/if}
 
 <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
-<div class="card-container {size}" on:click={() => (showModal = true)} style="cursor: pointer;">
+<div class="card-container {size}" class:fill={fillContainer} on:click={() => (showModal = true)} style="cursor: pointer;">
 	<div class="card-wrap" class:dark={data.template === 1} class:light={data.template === 2} class:gold={data.template === 3}>
 		<!-- Background image — no overlay, image shows as-is -->
 		<img class="card-bg" src={data.bgImage} alt="" />
@@ -137,6 +138,57 @@
 	.card-container {
 		container-type: inline-size;
 		width: 100%;
+	}
+
+	.card-container.fill {
+		height: 100%;
+		container-type: size;
+	}
+
+	.card-container.fill .card-wrap {
+		aspect-ratio: unset;
+		height: 100%;
+	}
+
+	/* Scale elements by cqmin (min of width/height) so they stay proportional
+	   regardless of card shape. Values = original cqw × 1.576 (CR80 ratio),
+	   so CR80 looks identical to non-fill mode. */
+	.card-container.fill .gdvn-logo {
+		width: 23.2cqmin;
+		height: 23.2cqmin;
+		margin-top: -7.4cqmin;
+	}
+	.card-container.fill .progress-badge {
+		font-size: 5.4cqmin;
+		padding: 0.76cqmin 2.74cqmin;
+		border-radius: 1.9cqmin;
+		margin-top: 2.4cqmin;
+	}
+	.card-container.fill .card-bottom {
+		gap: 1.9cqmin;
+	}
+	.card-container.fill .player-info {
+		gap: 1.6cqmin;
+	}
+	.card-container.fill .avatar {
+		width: 12.5cqmin;
+		height: 12.5cqmin;
+		border-width: 0.47cqmin;
+	}
+	.card-container.fill .clan-tag {
+		font-size: 4.5cqmin;
+		padding: 0.63cqmin 1.89cqmin;
+		border-radius: 0.95cqmin;
+	}
+	.card-container.fill .player-name {
+		font-size: 5.44cqmin;
+	}
+	.card-container.fill .level-name {
+		font-size: 6.46cqmin;
+	}
+	.card-container.fill .creator-name {
+		font-size: 3.55cqmin;
+		margin-top: -0.32cqmin;
 	}
 
 	.card-wrap {

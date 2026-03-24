@@ -13,13 +13,32 @@
 	import { onMount } from 'svelte';
 	import AddTrackingButton from './addTrackingButton.svelte';
 	import { _ } from 'svelte-i18n';
-	import { Printer, Eye, Check } from 'lucide-svelte';
+	import { Printer, Eye, Check, RotateCw } from 'lucide-svelte';
+	import * as Select from '$lib/components/ui/select';
+
+	const CARD_SIZES = [
+		{ id: 'CR80',  label: 'CR80 (85.6 × 54mm)', w: '85.6mm', h: '53.98mm' },
+		{ id: '5x5',   label: '5 × 5cm',             w: '50mm',   h: '50mm'    },
+		{ id: '3x8',   label: '3 × 8cm',             w: '80mm',   h: '30mm'    },
+		{ id: '4x7',   label: '4 × 7cm',             w: '70mm',   h: '40mm'    },
+		{ id: '5x8',   label: '5 × 8cm',             w: '80mm',   h: '50mm'    },
+		{ id: '5.5x7', label: '5.5 × 7cm',           w: '70mm',   h: '55mm'    },
+		{ id: '5.5x9', label: '5.5 × 9cm',           w: '90mm',   h: '55mm'    },
+	] as const;
+	type PrintSizeId = (typeof CARD_SIZES)[number]['id'];
 
 	let data: any = null;
 	let selectedCard: any | null = null;
 	let viewDialogOpen = false;
+	let selectedPrintSize: PrintSizeId = 'CR80';
+	let printLandscape = true;
 
 	$: selectedTemplate = (selectedCard?.template ?? 1) as 1 | 2 | 3;
+	$: baseSize = CARD_SIZES.find((s) => s.id === selectedPrintSize) ?? CARD_SIZES[0];
+	$: printWidth = printLandscape ? baseSize.w : baseSize.h;
+	$: printHeight = printLandscape ? baseSize.h : baseSize.w;
+	$: previewW = parseFloat(printWidth);
+	$: previewH = parseFloat(printHeight);
 
 	function bgImage(rc: any) {
 		return rc?.img || `https://levelthumbs.prevter.me/thumbnail/${rc?.levelID}/high`;
@@ -125,7 +144,7 @@
 <!-- Print area (hidden except during print) -->
 <div id="record-card-print-area">
 	{#if selectedCard && data}
-		<div class="print-card-front">
+		<div class="print-card-front" style="width:{printWidth}; height:{printHeight};">
 			<CardPreview
 				data={{
 					playerUID: data.userID,
@@ -141,10 +160,11 @@
 					template: selectedCard.template
 				}}
 				size="full"
+				fillContainer={true}
 			/>
 		</div>
-		<div class="print-card-back" style="page-break-before: always;">
-			<CardBack cardID={selectedCard.id} />
+		<div class="print-card-back" style="width:{printWidth}; height:{printHeight}; page-break-before: always;">
+			<CardBack cardID={selectedCard.id} fillContainer={true} />
 		</div>
 	{/if}
 </div>
@@ -393,35 +413,70 @@
 		</Dialog.Header>
 
 		{#if selectedCard && data}
-			<div class="mt-2 grid grid-cols-2 gap-5">
-				<div class="flex flex-col gap-1.5">
-					<p class="text-center text-xs font-semibold opacity-60">Mặt trước</p>
-					<CardPreview
-						data={{
-							playerUID: data.userID,
-							playerName: data.players?.name ?? 'Player',
-							clanTag: data.players?.clans?.tag ?? null,
-							clanTagBg: data.players?.clans?.tagBgColor ?? null,
-							clanTagText: data.players?.clans?.tagTextColor ?? null,
-							levelName: selectedCard.levels?.name || `Level #${selectedCard.levelID}`,
-							creator: selectedCard.levels?.creator || '',
-							progress: selectedCard.records?.progress ?? null,
-							bgImage: bgImage(selectedCard),
-							avatarImage:
-								selectedCard.avatar || `https://cdn.gdvn.net/avatars/${data.userID}.jpg`,
-							template: selectedCard.template
-						}}
-						size="full"
-					/>
-				</div>
-				<div class="flex flex-col gap-1.5">
-					<p class="text-center text-xs font-semibold opacity-60">Mặt sau</p>
-					<CardBack cardID={selectedCard.id} />
+			<div class="mt-2 overflow-x-auto">
+				<div style="display:flex; gap:24px; width:max-content; min-width:100%; justify-content:center; margin:auto;">
+					<div class="flex flex-col items-center gap-1.5">
+						<p class="text-center text-xs font-semibold opacity-60">Mặt trước</p>
+						<div
+							style="height:180px; aspect-ratio:{previewW}/{previewH}; overflow:hidden; border:1px solid hsl(var(--border)); border-radius:6px;"
+						>
+							<CardPreview
+								data={{
+									playerUID: data.userID,
+									playerName: data.players?.name ?? 'Player',
+									clanTag: data.players?.clans?.tag ?? null,
+									clanTagBg: data.players?.clans?.tagBgColor ?? null,
+									clanTagText: data.players?.clans?.tagTextColor ?? null,
+									levelName: selectedCard.levels?.name || `Level #${selectedCard.levelID}`,
+									creator: selectedCard.levels?.creator || '',
+									progress: selectedCard.records?.progress ?? null,
+									bgImage: bgImage(selectedCard),
+									avatarImage:
+										selectedCard.avatar || `https://cdn.gdvn.net/avatars/${data.userID}.jpg`,
+									template: selectedCard.template
+								}}
+								size="full"
+								fillContainer={true}
+							/>
+						</div>
+					</div>
+					<div class="flex flex-col items-center gap-1.5">
+						<p class="text-center text-xs font-semibold opacity-60">Mặt sau</p>
+						<div
+							style="height:180px; aspect-ratio:{previewW}/{previewH}; overflow:hidden; border:1px solid hsl(var(--border)); border-radius:6px;"
+						>
+							<CardBack cardID={selectedCard.id} fillContainer={true} />
+						</div>
+					</div>
 				</div>
 			</div>
 		{/if}
 
 		<Dialog.Footer>
+			<div class="mr-auto flex items-center gap-2">
+				<span class="text-sm text-muted-foreground">Kích thước:</span>
+				<Select.Root
+					selected={{ value: selectedPrintSize, label: CARD_SIZES.find((s) => s.id === selectedPrintSize)?.label }}
+					onSelectedChange={(v) => { if (v) selectedPrintSize = v.value; }}
+				>
+					<Select.Trigger class="w-[160px]">
+						<Select.Value />
+					</Select.Trigger>
+					<Select.Content>
+						{#each CARD_SIZES as size}
+							<Select.Item value={size.id}>{size.label}</Select.Item>
+						{/each}
+					</Select.Content>
+				</Select.Root>
+				<Button
+					variant="outline"
+					size="icon"
+					title={printLandscape ? 'Landscape' : 'Portrait'}
+					on:click={() => (printLandscape = !printLandscape)}
+				>
+					<RotateCw size={14} class={printLandscape ? '' : 'rotate-90'} />
+				</Button>
+			</div>
 			<Button variant="outline" on:click={() => printCard(selectedCard)}>
 				<Printer size={14} />
 				In PDF
@@ -439,9 +494,12 @@
 		pointer-events: none;
 	}
 
-	.print-card-front,
-	.print-card-back {
-		width: 85.6mm;
-		height: 53.98mm;
+	@media print {
+		:global(#record-card-print-area .card-wrap),
+		:global(#record-card-print-area .card-back) {
+			border-radius: 0 !important;
+		}
 	}
+
+
 </style>

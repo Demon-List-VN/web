@@ -4,6 +4,7 @@
 
 	export let cardID: string | undefined = undefined;
 	export let scale: number = 1;
+	export let fillContainer: boolean = false;
 
 	let qrDataUrl = '';
 
@@ -20,7 +21,7 @@
 	});
 </script>
 
-<div class="card-back-container" style={scale !== 1 ? `aspect-ratio: 245 / 155.48;` : ''}>
+<div class="card-back-container" class:fill={fillContainer} style={scale !== 1 ? `aspect-ratio: 245 / 155.48;` : ''}>
 <div
 	class="card-back-scaler"
 	style={scale !== 1 ? `width: ${100 / scale}%; transform: scale(${scale}); transform-origin: top left;` : ''}
@@ -52,6 +53,18 @@
 </div>
 
 <style lang="scss">
+	.card-back-container.fill {
+		height: 100%;
+		width: 100%;
+	}
+
+	.card-back-container.fill .card-back-scaler,
+	.card-back-container.fill .card-back {
+		aspect-ratio: unset;
+		height: 100%;
+		width: 100%;
+	}
+
 	.card-back {
 		aspect-ratio: 245 / 155.48;
 		border-radius: 8px;
