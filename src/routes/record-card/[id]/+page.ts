@@ -1,5 +1,5 @@
 export async function load({ params, fetch }) {
-	const res = await fetch(`${import.meta.env.VITE_API_URL}/card/record/${params.id}`);
+	const res = await fetch(`${import.meta.env.VITE_API_URL}/record-card/${params.id}`);
 	if (!res.ok) {
 		return { notFound: true };
 	}
