@@ -11,29 +11,39 @@
 
 	export let items: any[];
 
+	const PAPER_CARD_PRODUCT_ID = 8;
+	const PLASTIC_CARD_PRODUCT_ID = 9;
+
 	let paymentMethod = '';
 	let recipientName = '';
 	let address = '';
 	let phone = '';
 	let state = 0;
 	let shippingFee = 0;
+	let loading = false;
 
-	async function placeRecordCardOrders(token: string | undefined): Promise<boolean> {
+	function buildAllItems() {
+		const productItems = $cart.items.filter((i) => i.type !== 'record-card');
+		const cardItems = $cart.getRecordCards().map((rc) => ({
+			productID: rc.material === 'paper' ? PAPER_CARD_PRODUCT_ID : PLASTIC_CARD_PRODUCT_ID,
+			quantity: 1
+		}));
+		return [...productItems, ...cardItems];
+	}
+
+	async function attachRecordCards(token: string | undefined, orderID: number): Promise<boolean> {
 		const recordCards = $cart.getRecordCards();
 		if (recordCards.length === 0) return true;
 
 		let allSucceeded = true;
 		for (const rc of recordCards) {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/orders/record-card`, {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/orders/${orderID}/record-card`, {
 				method: 'POST',
 				headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					levelID: rc.levelID,
 					template: rc.template,
-					material: rc.material,
-					address,
-					phone: parseInt(phone),
-					recipientName
+					material: rc.material
 				})
 			});
 
@@ -66,75 +76,89 @@
 	}
 
 	async function bankTransfer() {
-		toast.loading('You will be redirected to our payment portal');
+		if (loading) return;
+		loading = true;
+		try {
+			toast.loading('You will be redirected to our payment portal');
 
-		const token = await $user.token();
-		const rcSuccess = await placeRecordCardOrders(token);
+			const token = await $user.token();
+			const allItems = buildAllItems();
 
-		const productItems = $cart.items.filter((i) => i.type !== 'record-card');
-		if (productItems.length > 0) {
-			const res: any = await (
-				await fetch(`${import.meta.env.VITE_API_URL}/payment/getPaymentLink`, {
-					method: 'POST',
-					headers: {
-						Authorization: 'Bearer ' + token,
-						'Content-Type': 'application/json'
-					},
-					body: JSON.stringify({
-						items: productItems,
-						address: address,
-						phone: parseInt(phone),
-						recipientName: recipientName
-					})
+			if (allItems.length === 0) return;
+
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/payment/getPaymentLink`, {
+				method: 'POST',
+				headers: {
+					Authorization: 'Bearer ' + token,
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					items: allItems,
+					address: address,
+					phone: parseInt(phone),
+					recipientName: recipientName
 				})
-			).json();
+			});
+
+			if (!res.ok) {
+				const err = await res.json().catch(() => ({ message: 'Unknown error' }));
+				toast.error(err.message || $_('toast.order_place.error'));
+				return;
+			}
+
+			const { checkoutUrl, orderID } = await res.json();
+
+			await attachRecordCards(token, orderID);
 
 			$cart.clear();
-			window.location.href = res.checkoutUrl;
-		} else if (rcSuccess) {
-			$cart.clear();
-			window.location.href = '/orders';
+			window.location.href = checkoutUrl;
+		} catch {
+			toast.error($_('toast.order_place.error'));
+		} finally {
+			loading = false;
 		}
 	}
 
 	async function COD() {
-		let orderID = 0;
+		if (loading) return;
+		loading = true;
+		try {
+			const token = await $user.token();
+			const allItems = buildAllItems();
 
-		const token = await $user.token();
-		const rcSuccess = await placeRecordCardOrders(token);
+			if (allItems.length === 0) return;
 
-		const productItems = $cart.items.filter((i) => i.type !== 'record-card');
-		if (productItems.length > 0) {
-			toast.promise(
-				fetch(`${import.meta.env.VITE_API_URL}/orders`, {
-					method: 'POST',
-					headers: {
-						Authorization: 'Bearer ' + token,
-						'Content-Type': 'application/json'
-					},
-					body: JSON.stringify({
-						items: productItems,
-						address: address,
-						phone: parseInt(phone),
-						recipientName: recipientName
-					})
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/orders`, {
+				method: 'POST',
+				headers: {
+					Authorization: 'Bearer ' + token,
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					items: allItems,
+					address: address,
+					phone: parseInt(phone),
+					recipientName: recipientName
 				})
-					.then((res) => res.json())
-					.then((res: any) => (orderID = res.orderID)),
-				{
-					success: () => {
-						$cart.clear();
-						window.location.href = `/orders/${orderID}`;
-						return $_('toast.order_place.success');
-					},
-					loading: $_('toast.order_place.loading'),
-					error: $_('toast.order_place.error')
-				}
-			);
-		} else if (rcSuccess) {
+			});
+
+			if (!res.ok) {
+				const err = await res.json().catch(() => ({ message: 'Unknown error' }));
+				toast.error(err.message || $_('toast.order_place.error'));
+				return;
+			}
+
+			const { orderID } = await res.json();
+
+			await attachRecordCards(token, orderID);
+
 			$cart.clear();
 			toast.success($_('toast.order_place.success'));
-			window.location.href = '/orders';
+			window.location.href = `/orders/${orderID}`;
+		} catch {
+			toast.error($_('toast.order_place.error'));
+		} finally {
+			loading = false;
 		}
 	}
 </script>
@@ -330,9 +354,13 @@
 			</p>
 			<Dialog.Footer>
 				{#if paymentMethod == 'Bank Transfer'}
-					<Button on:click={bankTransfer}>{$_('store.checkout.review.proceed_payment')}</Button>
+					<Button disabled={loading} on:click={bankTransfer}>
+						{loading ? 'Đang xử lý...' : $_('store.checkout.review.proceed_payment')}
+					</Button>
 				{:else if paymentMethod == 'COD'}
-					<Button on:click={COD}>{$_('store.checkout.review.place_order')}</Button>
+					<Button disabled={loading} on:click={COD}>
+						{loading ? 'Đang xử lý...' : $_('store.checkout.review.place_order')}
+					</Button>
 				{/if}
 			</Dialog.Footer>
 		{/if}
