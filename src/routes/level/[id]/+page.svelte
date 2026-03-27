@@ -1,7 +1,6 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card';
 	import * as Table from '$lib/components/ui/table';
-	import RecordDetail from '$lib/components/recordDetail.svelte';
 	import CommunityPostCard from '$lib/components/communityPostCard.svelte';
 	import type { PageData } from './$types';
 	import PlayerLink from '$lib/components/playerLink.svelte';
@@ -14,7 +13,7 @@
 	import * as Tabs from '$lib/components/ui/tabs';
 	import { goto } from '$app/navigation';
 	import { _ } from 'svelte-i18n';
-	import { MessageSquare, Tag, Link } from 'lucide-svelte';
+	import { MessageSquare, Tag, Link, Crown, Monitor, Smartphone, ExternalLink } from 'lucide-svelte';
 
 	export let data: PageData;
 	let levelAPI: any = null;
@@ -22,8 +21,6 @@
 	let deathCount: any[] = [];
 	let chart: any = null;
 	let loaded = false;
-	let recordDetailOpened = false;
-	let selectedRecord: any = null;
 	let relatedPosts: any[] = [];
 	let activeTab = 'records';
 	let levelTags: any[] = [];
@@ -144,12 +141,9 @@
 		loaded = true;
 		fetchData();
 
-		if ($page.url.searchParams.get('record')) {
-			recordDetailOpened = true;
-			selectedRecord = {
-				userid: $page.url.searchParams.get('record'),
-				levelid: $page.params.id
-			};
+		const recordParam = $page.url.searchParams.get('record');
+		if (recordParam) {
+			goto(`/record/${recordParam}/${$page.params.id}`);
 		}
 	});
 </script>
@@ -181,13 +175,7 @@
 	/>
 </svelte:head>
 
-{#if selectedRecord}
-	<RecordDetail
-		bind:open={recordDetailOpened}
-		bind:uid={selectedRecord.userid}
-		bind:levelID={selectedRecord.levelid}
-	/>
-{/if}
+
 
 <img
 	in:fade={{ delay: 500, duration: 300 }}
@@ -386,65 +374,69 @@
 				</Tabs.Trigger>
 			</Tabs.List>
 			<Tabs.Content value="records" class="mt-4">
-				<Table.Root>
-					{#if records}
-						<Table.Caption>{$_('level.total_records')}: {records.length}</Table.Caption>
-					{/if}
-					<Table.Header>
-						<Table.Row>
-							<Table.Head class="w-[35px]">{$_('level.no')}</Table.Head>
-							<Table.Head>Player</Table.Head>
-							<Table.Head class="w-[100px] text-center">{$_('level.submitted_on')}</Table.Head>
-							<Table.Head class="w-[100px] text-center">{$_('level.device')}</Table.Head>
-							<Table.Head class="w-[80px] text-center"
-								>{data.level && data.level.isPlatformer
-									? $_('level.time')
-									: $_('level.progress')}</Table.Head
+				{#if records && records.length > 0}
+					<div class="records-list">
+						{#each records as record, index}
+							<!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+							<div
+								class="record-row"
+								class:top1={index === 0}
+								on:click={() => goto(`/record/${record.userid}/${record.levelid}`)}
 							>
-						</Table.Row>
-					</Table.Header>
-					<Table.Body>
-						{#if records}
-							{#each records as record, index}
-								<Table.Row
-									on:click={(e) => {
-										// @ts-expect-error
-										if (e.target.nodeName == 'A') {
-											return;
-										}
-
-										selectedRecord = record;
-										recordDetailOpened = true;
-									}}
-								>
-									<Table.Cell class="font-medium">
+								<span class="record-rank" class:rank-top1={index === 0}>
+									{#if index === 0}
+										<Crown size={14} />
+									{:else}
 										#{index + 1}
-									</Table.Cell>
-									<Table.Cell>
-										<!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
-										<div on:click={(e) => e.stopPropagation()}>
-											<PlayerLink player={record.players} />
-										</div>
-									</Table.Cell>
-									<Table.Cell class="text-center">
-										{new Date(record.timestamp).toLocaleString('vi-VN')}
-									</Table.Cell>
-									<Table.Cell class="text-center">
-										{record.mobile ? $_('level.mobile') : $_('level.pc')}
-										{#if record.refreshRate}
-											<br />({record.refreshRate}{$_('level.fps')})
+									{/if}
+								</span>
+
+								<div class="record-player">
+									<!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+									<div on:click={(e) => e.stopPropagation()}>
+										<PlayerLink player={record.players} />
+									</div>
+								</div>
+
+								<div class="record-meta">
+									<span class="record-device">
+										{#if record.mobile}
+											<Smartphone size={12} />
+										{:else}
+											<Monitor size={12} />
 										{/if}
-									</Table.Cell>
-									<Table.Cell class="text-center">
-										{data.level && data.level.isPlatformer
-											? getTimeString(record.progress)
-											: `${record.progress}%`}
-									</Table.Cell>
-								</Table.Row>
-							{/each}
-						{/if}
-					</Table.Body>
-				</Table.Root>
+										{#if record.refreshRate}
+											<span class="record-fps">{record.refreshRate}fps</span>
+										{/if}
+									</span>
+									<span class="record-date">
+										{new Date(record.timestamp).toLocaleDateString('vi-VN')}
+									</span>
+								</div>
+
+								<span class="record-progress" class:progress-top1={index === 0}>
+									{data.level && data.level.isPlatformer
+										? getTimeString(record.progress)
+										: `${record.progress}%`}
+								</span>
+
+								<button
+									class="record-detail-btn"
+									on:click|stopPropagation={() => goto(`/record/${record.userid}/${record.levelid}`)}
+									title="View detail"
+								>
+									<ExternalLink size={13} />
+									Detail
+								</button>
+							</div>
+						{/each}
+					</div>
+					<p class="records-count">{$_('level.total_records')}: {records.length}</p>
+				{:else if records}
+					<p class="records-empty">No records yet.</p>
+				{:else}
+					<Loading inverted />
+				{/if}
 			</Tabs.Content>
 			<Tabs.Content value="community" class="mt-4">
 				{#if relatedPosts.length > 0}
@@ -468,6 +460,148 @@
 <style lang="scss">
 	.tabs-section {
 		padding-bottom: 20px;
+	}
+
+	/* ── Record list ── */
+	.records-list {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.record-row {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 10px 14px;
+		border-radius: 10px;
+		border: 1px solid transparent;
+		cursor: pointer;
+		transition: background 0.15s, border-color 0.15s;
+
+		&:hover {
+			background: hsl(var(--muted) / 0.5);
+			border-color: hsl(var(--border));
+
+			.record-detail-btn {
+				opacity: 1;
+			}
+		}
+
+		&.top1 {
+			background: linear-gradient(90deg, rgba(234, 179, 8, 0.08) 0%, transparent 100%);
+			border-color: rgba(234, 179, 8, 0.25);
+
+			&:hover {
+				background: linear-gradient(90deg, rgba(234, 179, 8, 0.14) 0%, rgba(234, 179, 8, 0.04) 100%);
+				border-color: rgba(234, 179, 8, 0.4);
+			}
+		}
+	}
+
+	.record-rank {
+		width: 32px;
+		flex-shrink: 0;
+		font-size: 0.75rem;
+		font-weight: 700;
+		color: hsl(var(--muted-foreground));
+		display: flex;
+		align-items: center;
+		justify-content: center;
+
+		&.rank-top1 {
+			color: #f59e0b;
+			filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.6));
+		}
+	}
+
+	.record-player {
+		flex: 1;
+		min-width: 0;
+		font-weight: 500;
+	}
+
+	.record-meta {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		color: hsl(var(--muted-foreground));
+		font-size: 0.75rem;
+	}
+
+	.record-device {
+		display: flex;
+		align-items: center;
+		gap: 3px;
+	}
+
+	.record-fps {
+		font-size: 0.7rem;
+	}
+
+	.record-date {
+		font-size: 0.75rem;
+	}
+
+	.record-progress {
+		font-size: 0.875rem;
+		font-weight: 600;
+		min-width: 56px;
+		text-align: right;
+		flex-shrink: 0;
+
+		&.progress-top1 {
+			color: #f59e0b;
+		}
+	}
+
+	.record-detail-btn {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		padding: 4px 10px;
+		border-radius: 6px;
+		font-size: 0.75rem;
+		font-weight: 600;
+		border: 1px solid hsl(var(--border));
+		background: hsl(var(--background));
+		color: hsl(var(--foreground));
+		cursor: pointer;
+		opacity: 0;
+		transition: opacity 0.15s, background 0.15s;
+		flex-shrink: 0;
+		white-space: nowrap;
+
+		&:hover {
+			background: hsl(var(--muted));
+		}
+	}
+
+	.record-row:hover .record-detail-btn {
+		opacity: 1;
+	}
+
+	.records-count {
+		font-size: 0.75rem;
+		color: hsl(var(--muted-foreground));
+		text-align: center;
+		margin-top: 12px;
+	}
+
+	.records-empty {
+		text-align: center;
+		padding: 32px 0;
+		color: hsl(var(--muted-foreground));
+		font-size: 0.875rem;
+	}
+
+	@media (max-width: 600px) {
+		.record-meta { display: none; }
+		.record-detail-btn { opacity: 1; }
+	}
+
+	@media (hover: none) {
+		.record-detail-btn { opacity: 1; }
 	}
 
 	.chartWrapper {

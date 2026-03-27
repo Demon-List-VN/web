@@ -11,8 +11,8 @@
 	import ExternalLink from 'svelte-radix/ExternalLink.svelte';
 	import CrossCircled from 'svelte-radix/CrossCircled.svelte';
 	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
 	import type { PageData } from './$types';
-	import RecordDetail from '$lib/components/recordDetail.svelte';
 	import Ads from '$lib/components/ads.svelte';
 	import { _ } from 'svelte-i18n';
 	import { EllipsisIcon, SkipForward } from 'lucide-svelte';
@@ -20,9 +20,6 @@
 	export let data: PageData;
 	let alertOpened = false;
 	let lvID: number;
-	let userID: string, levelID: number;
-	let recordDetailOpened = false;
-	let recordDetailTab: string = 'detail';
 
 	function getTimeString(ms: number) {
 		const minutes = Math.floor(ms / 60000);
@@ -98,7 +95,6 @@
 </svelte:head>
 
 <Ads />
-<RecordDetail bind:open={recordDetailOpened} uid={userID} {levelID} selectedTab={recordDetailTab} />
 
 <AlertDialog.Root bind:open={alertOpened}>
 	<AlertDialog.Content>
@@ -158,9 +154,7 @@
 									if (e.target.nodeName != 'TD') {
 										return;
 									}
-									userID = record.userid;
-									levelID = record.levels.id;
-									recordDetailOpened = true;
+									goto(`/record/${record.userid}/${record.levels.id}`);
 								}}
 							>
 								<Table.Cell class="font-medium">
@@ -199,10 +193,7 @@
 										disabled={isBoosting(record.levelid)}
 										on:click={(e) => {
 											e.stopPropagation();
-											userID = record.userid;
-											levelID = record.levels.id;
-											recordDetailTab = 'skipAhead';
-											recordDetailOpened = true;
+											goto(`/record/${record.userid}/${record.levels.id}?tab=skipAhead`);
 										}}
 									>
 										<SkipForward size={14} />
@@ -216,9 +207,7 @@
 											title="Chi tiết"
 											on:click={(e) => {
 												e.stopPropagation();
-												userID = record.userid;
-												levelID = record.levels.id;
-												recordDetailOpened = true;
+												goto(`/record/${record.userid}/${record.levels.id}`);
 											}}
 										>
 											<EllipsisIcon size={16} />

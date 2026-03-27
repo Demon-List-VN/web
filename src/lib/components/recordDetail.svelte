@@ -271,7 +271,7 @@
 	}
 
 	function getShareLink() {
-		return `${$page.url.origin}/level/${record.data.levelid}?record=${record.data.userid}`;
+		return `${$page.url.origin}/record/${record.data.userid}/${record.data.levelid}`;
 	}
 
 	function formatPrice(x: number) {
