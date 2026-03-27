@@ -11,9 +11,6 @@
 
 	export let items: any[];
 
-	const PAPER_CARD_PRODUCT_ID = 8;
-	const PLASTIC_CARD_PRODUCT_ID = 9;
-
 	let paymentMethod = '';
 	let recipientName = '';
 	let address = '';
@@ -22,139 +19,44 @@
 	let shippingFee = 0;
 	let loading = false;
 
-	function buildAllItems() {
-		const productItems = $cart.items.filter((i) => i.type !== 'record-card');
-		const cardItems = $cart.getRecordCards().map((rc) => ({
-			productID: rc.material === 'paper' ? PAPER_CARD_PRODUCT_ID : PLASTIC_CARD_PRODUCT_ID,
-			quantity: 1
-		}));
-		return [...productItems, ...cardItems];
-	}
-
-	async function attachRecordCards(token: string | undefined, orderID: number): Promise<boolean> {
-		const recordCards = $cart.getRecordCards();
-		if (recordCards.length === 0) return true;
-
-		let allSucceeded = true;
-		for (const rc of recordCards) {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/orders/${orderID}/record-card`, {
-				method: 'POST',
-				headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					levelID: rc.levelID,
-					template: rc.template,
-					material: rc.material
-				})
-			});
-
-			if (!res.ok) {
-				const err = await res.json().catch(() => ({ message: 'Unknown error' }));
-				toast.error(`Lỗi tạo thẻ bản ghi "${rc.levelName}": ${err.message}`);
-				allSucceeded = false;
-				continue;
-			}
-
-			const { cardID } = await res.json();
-
-			if (rc.imgUrl && cardID) {
-				fetch(`${import.meta.env.VITE_API_URL}/card/record/${cardID}/img`, {
-					method: 'PATCH',
-					headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-					body: JSON.stringify({ imgURL: rc.imgUrl })
-				}).catch(() => {});
-			}
-
-			if (rc.avatarUrl && cardID) {
-				fetch(`${import.meta.env.VITE_API_URL}/card/record/${cardID}/avatar`, {
-					method: 'PATCH',
-					headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-					body: JSON.stringify({ avatarURL: rc.avatarUrl })
-				}).catch(() => {});
-			}
-		}
-		return allSucceeded;
-	}
-
-	async function bankTransfer() {
+	async function checkout() {
 		if (loading) return;
 		loading = true;
 		try {
-			toast.loading('You will be redirected to our payment portal');
+			if (paymentMethod === 'Bank Transfer') {
+				toast.loading('You will be redirected to our payment portal');
+			}
 
 			const token = await $user.token();
-			const allItems = buildAllItems();
+			const cartItems = JSON.parse(localStorage.getItem('cartItems') ?? '[]');
 
-			if (allItems.length === 0) return;
+			if (cartItems.length === 0) return;
 
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/payment/getPaymentLink`, {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/checkout`, {
 				method: 'POST',
 				headers: {
-					Authorization: 'Bearer ' + token,
+					Authorization: `Bearer ${token}`,
 					'Content-Type': 'application/json'
 				},
-				body: JSON.stringify({
-					items: allItems,
-					address: address,
-					phone: parseInt(phone),
-					recipientName: recipientName
-				})
+				body: JSON.stringify({ cartItems, address, phone: parseInt(phone), recipientName, paymentMethod })
 			});
 
 			if (!res.ok) {
-				const err = await res.json().catch(() => ({ message: 'Unknown error' }));
-				toast.error(err.message || $_('toast.order_place.error'));
+				const err = await res.json().catch(() => ({ error: 'Unknown error' }));
+				toast.error(err.error || $_('toast.order_place.error'));
 				return;
 			}
 
-			const { checkoutUrl, orderID } = await res.json();
-
-			await attachRecordCards(token, orderID);
+			const { orderID, checkoutUrl } = await res.json();
 
 			$cart.clear();
-			window.location.href = checkoutUrl;
-		} catch {
-			toast.error($_('toast.order_place.error'));
-		} finally {
-			loading = false;
-		}
-	}
 
-	async function COD() {
-		if (loading) return;
-		loading = true;
-		try {
-			const token = await $user.token();
-			const allItems = buildAllItems();
-
-			if (allItems.length === 0) return;
-
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/orders`, {
-				method: 'POST',
-				headers: {
-					Authorization: 'Bearer ' + token,
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({
-					items: allItems,
-					address: address,
-					phone: parseInt(phone),
-					recipientName: recipientName
-				})
-			});
-
-			if (!res.ok) {
-				const err = await res.json().catch(() => ({ message: 'Unknown error' }));
-				toast.error(err.message || $_('toast.order_place.error'));
-				return;
+			if (paymentMethod === 'Bank Transfer' && checkoutUrl) {
+				window.location.href = checkoutUrl;
+			} else {
+				toast.success($_('toast.order_place.success'));
+				window.location.href = `/orders/${orderID}`;
 			}
-
-			const { orderID } = await res.json();
-
-			await attachRecordCards(token, orderID);
-
-			$cart.clear();
-			toast.success($_('toast.order_place.success'));
-			window.location.href = `/orders/${orderID}`;
 		} catch {
 			toast.error($_('toast.order_place.error'));
 		} finally {
@@ -353,15 +255,15 @@
 				{/if}
 			</p>
 			<Dialog.Footer>
-				{#if paymentMethod == 'Bank Transfer'}
-					<Button disabled={loading} on:click={bankTransfer}>
-						{loading ? 'Đang xử lý...' : $_('store.checkout.review.proceed_payment')}
-					</Button>
-				{:else if paymentMethod == 'COD'}
-					<Button disabled={loading} on:click={COD}>
-						{loading ? 'Đang xử lý...' : $_('store.checkout.review.place_order')}
-					</Button>
-				{/if}
+				<Button disabled={loading} on:click={checkout}>
+					{#if loading}
+						Đang xử lý...
+					{:else if paymentMethod == 'Bank Transfer'}
+						{$_('store.checkout.review.proceed_payment')}
+					{:else}
+						{$_('store.checkout.review.place_order')}
+					{/if}
+				</Button>
 			</Dialog.Footer>
 		{/if}
 	</Dialog.Content>
