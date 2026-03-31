@@ -312,7 +312,7 @@
 						size="full"
 					/>
 				{:else}
-					<CardBack scale={2} />
+					<CardBack scale={2} hasNFC={selectedMaterial === 'plastic'} />
 				{/if}
 			</div>
 			<div class="flip-btn-wrap">

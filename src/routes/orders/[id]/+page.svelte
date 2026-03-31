@@ -13,7 +13,7 @@
 	import { onMount } from 'svelte';
 	import AddTrackingButton from './addTrackingButton.svelte';
 	import { _ } from 'svelte-i18n';
-	import { Printer, Eye, Check, RotateCw } from 'lucide-svelte';
+	import { Printer, Eye, Check, RotateCw, Wifi } from 'lucide-svelte';
 	import * as Select from '$lib/components/ui/select';
 
 	const CARD_SIZES = [
@@ -32,6 +32,7 @@
 	let viewDialogOpen = false;
 	let selectedPrintSize: PrintSizeId = 'CR80';
 	let printLandscape = true;
+	let previewNFC = false;
 
 	$: selectedTemplate = (selectedCard?.template ?? 1) as 1 | 2 | 3;
 	// For gift orders use the gift recipient's player data; for own orders use the order owner's data
@@ -167,7 +168,7 @@
 			/>
 		</div>
 		<div class="print-card-back" style="width:{printWidth}; height:{printHeight}; page-break-before: always;">
-			<CardBack cardID={selectedCard.id} fillContainer={true} />
+			<CardBack cardID={selectedCard.id} fillContainer={true} hasNFC={previewNFC} />
 		</div>
 	{/if}
 </div>
@@ -448,7 +449,7 @@
 						<div
 							style="height:180px; aspect-ratio:{previewW}/{previewH}; overflow:hidden; border:1px solid hsl(var(--border)); border-radius:6px;"
 						>
-							<CardBack cardID={selectedCard.id} fillContainer={true} />
+							<CardBack cardID={selectedCard.id} fillContainer={true} hasNFC={previewNFC} />
 						</div>
 					</div>
 				</div>
@@ -478,6 +479,14 @@
 					on:click={() => (printLandscape = !printLandscape)}
 				>
 					<RotateCw size={14} class={printLandscape ? '' : 'rotate-90'} />
+				</Button>
+				<Button
+					variant={previewNFC ? 'default' : 'outline'}
+					size="icon"
+					title="Toggle NFC Symbol"
+					on:click={() => (previewNFC = !previewNFC)}
+				>
+					<Wifi size={14} class="rotate-90" />
 				</Button>
 			</div>
 			<Button variant="outline" on:click={() => printCard(selectedCard)}>
