@@ -45,7 +45,6 @@
 									loading="lazy"
 									decoding="async"
 									class="thumbnail absolute"
-									style="width: 100%; height: 100%; object-fit: cover;"
 								/>
 								{#if !failedToLoad}
 									<img
@@ -54,7 +53,6 @@
 										loading="lazy"
 										decoding="async"
 										class="thumbnail z-1 absolute translate-x-4 opacity-0 transition-all duration-300 ease-in-out hover:translate-x-0 hover:opacity-100"
-										style="width: 100%; height: 100%; object-fit: cover;"
 										on:error={() => {
 											failedToLoad = true;
 										}}
@@ -66,7 +64,9 @@
 							<a
 								href={`/level/${level.id}`}
 								class="absolute inset-0 z-10"
-								data-sveltekit-preload-data="tap"							aria-label={level.name || 'Level details'}							></a>
+								data-sveltekit-preload-data="tap"							
+								aria-label={level.name || 'Level details'}							
+							></a>
 							{#if !hideTop}
 								{#if top}
 									<div class="top">#{top}</div>
