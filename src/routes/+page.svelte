@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import * as Carousel from '$lib/components/ui/carousel/index.js';
 	import LevelCard from '$lib/components/levelCard.svelte';
 	import Ads from '$lib/components/ads.svelte';
@@ -16,12 +17,15 @@
 	import OnboardingModal from '$lib/components/OnboardingModal.svelte';
 	import RecordCardPromo from '$lib/components/homepage/RecordCardPromo.svelte';
 
+	export let data: any;
+
 	let showOnboardingModal = false;
 
 	let activeTab: 'dl' | 'fl' | 'pl' | 'cl' = 'dl';
 
-	let homeData: any = null;
-	let loaded = false;
+	let homeData: any = data?.homeData || null;
+	let loadedPublic = false;
+	let loadedAuth = false;
 	$: events = homeData?.events ?? null;
 	$: levels = homeData?.levels ?? { dl: null, fl: null, pl: null, cl: null };
 	$: communityPosts = homeData?.communityPosts ?? null;
@@ -31,18 +35,22 @@
 	$: activeSeason = homeData?.activeSeason ?? null;
 	$: battlepassProgress = homeData?.battlepassProgress ?? null;
 
-	$: if ($user.checked && !loaded) {
-		loaded = true;
-		loadHomepage();
+	// Auto-update if navigation provides new data
+	$: if (data?.homeData) {
+		homeData = data.homeData;
 	}
 
-	async function loadHomepage() {
+	$: if ($user.checked && $user.loggedIn && !loadedAuth) {
+		loadedAuth = true;
+		loadHomepageAuth();
+	}
+
+	async function loadHomepageAuth() {
 		const headers: Record<string, string> = {};
-		if ($user.loggedIn) {
-			try {
-				headers['Authorization'] = `Bearer ${await $user.token()}`;
-			} catch {}
-		}
+		try {
+			headers['Authorization'] = `Bearer ${await $user.token()}`;
+		} catch {}
+
 		fetch(`${import.meta.env.VITE_API_URL}/homepage`, { headers })
 			.then((res) => res.json())
 			.then((data) => {
@@ -443,7 +451,6 @@
 				grid-template-columns: 1fr;
 				padding-inline: 16px;
 			}
-
 		}
 
 		.sideCol :global(.clanSpotlight) {

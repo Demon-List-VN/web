@@ -68,6 +68,8 @@
 								<Avatar.Root class="h-8 w-8 ml-auto">
 									<Avatar.Image
 										class="object-cover"
+										loading="lazy"
+										decoding="async"
 										src={`https://cdn.gdvn.net/avatars/${clan.players.uid}${isActive(clan.players.supporterUntil) && clan.players.isAvatarGif ? '.gif' : '.jpg'}?version=${clan.players.avatarVersion}`}
 										alt={clan.players.name}
 									/>

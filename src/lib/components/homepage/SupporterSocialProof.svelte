@@ -49,6 +49,8 @@
 							<img
 								on:error={() => { isBannerFailedToLoad[index] = true; }}
 								class="absolute left-0 top-0 z-0 h-full w-full rounded-xl object-cover opacity-20"
+								loading="lazy"
+								decoding="async"
 								src={`https://cdn.gdvn.net/banners/${buyer.player.uid}${buyer.player.isBannerGif ? '.gif' : '.jpg'}?version=${buyer.player.bannerVersion}`}
 								alt=""
 							/>
@@ -57,8 +59,8 @@
 						<Card.Content class="relative z-10 flex items-center gap-3 p-3">
 							<Avatar.Root class="h-10 w-10">
 								<Avatar.Image
-									class="object-cover"
-									src={`https://cdn.gdvn.net/avatars/${buyer.player.uid}${isActive(buyer.player.supporterUntil) && buyer.player.isAvatarGif ? '.gif' : '.jpg'}?version=${buyer.player.avatarVersion}`}
+									class="object-cover"									loading="lazy"
+									decoding="async"									src={`https://cdn.gdvn.net/avatars/${buyer.player.uid}${isActive(buyer.player.supporterUntil) && buyer.player.isAvatarGif ? '.gif' : '.jpg'}?version=${buyer.player.avatarVersion}`}
 									alt={buyer.player.name}
 								/>
 								<Avatar.Fallback>{buyer.player.name[0]}</Avatar.Fallback>

@@ -17,7 +17,7 @@
 
 <div class="heroBanner" class:hasBannerBg={!!profileBannerUrl && !bannerError}>
 	{#if profileBannerUrl && !bannerError}
-		<img class="heroBannerBg" src={profileBannerUrl} alt="" on:error={() => (bannerError = true)} />
+		<img class="heroBannerBg" src={profileBannerUrl} alt="" fetchpriority="high" decoding="sync" on:error={() => (bannerError = true)} />
 	{/if}
 	<div class="heroOverlay"></div>
 	<div class="heroContent">

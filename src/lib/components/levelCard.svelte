@@ -43,14 +43,18 @@
 									src={`https://img.youtube.com/vi/${level.videoID}/0.jpg`}
 									alt=""
 									loading="lazy"
+									decoding="async"
 									class="thumbnail absolute"
+									style="width: 100%; height: 100%; object-fit: cover;"
 								/>
 								{#if !failedToLoad}
 									<img
 										src={`https://levelthumbs.prevter.me/thumbnail/${level.id}/small`}
 										alt=""
 										loading="lazy"
+										decoding="async"
 										class="thumbnail z-1 absolute translate-x-4 opacity-0 transition-all duration-300 ease-in-out hover:translate-x-0 hover:opacity-100"
+										style="width: 100%; height: 100%; object-fit: cover;"
 										on:error={() => {
 											failedToLoad = true;
 										}}
