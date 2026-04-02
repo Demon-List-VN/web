@@ -13,17 +13,17 @@
 	import { onMount } from 'svelte';
 	import AddTrackingButton from './addTrackingButton.svelte';
 	import { _ } from 'svelte-i18n';
-	import { Printer, Eye, Check, RotateCw, Wifi } from 'lucide-svelte';
+	import { Printer, Eye, Check, RotateCw, Nfc } from 'lucide-svelte';
 	import * as Select from '$lib/components/ui/select';
 
 	const CARD_SIZES = [
-		{ id: 'CR80',  label: 'CR80 (85.6 × 54mm)', w: '85.6mm', h: '53.98mm' },
-		{ id: '5x5',   label: '5 × 5cm',             w: '50mm',   h: '50mm'    },
-		{ id: '3x8',   label: '3 × 8cm',             w: '80mm',   h: '30mm'    },
-		{ id: '4x7',   label: '4 × 7cm',             w: '70mm',   h: '40mm'    },
-		{ id: '5x8',   label: '5 × 8cm',             w: '80mm',   h: '50mm'    },
-		{ id: '5.5x7', label: '5.5 × 7cm',           w: '70mm',   h: '55mm'    },
-		{ id: '5.5x9', label: '5.5 × 9cm',           w: '90mm',   h: '55mm'    },
+		{ id: 'CR80', label: 'CR80 (85.6 × 54mm)', w: '85.6mm', h: '53.98mm' },
+		{ id: '5x5', label: '5 × 5cm', w: '50mm', h: '50mm' },
+		{ id: '3x8', label: '3 × 8cm', w: '80mm', h: '30mm' },
+		{ id: '4x7', label: '4 × 7cm', w: '70mm', h: '40mm' },
+		{ id: '5x8', label: '5 × 8cm', w: '80mm', h: '50mm' },
+		{ id: '5.5x7', label: '5.5 × 7cm', w: '70mm', h: '55mm' },
+		{ id: '5.5x9', label: '5.5 × 9cm', w: '90mm', h: '55mm' }
 	] as const;
 	type PrintSizeId = (typeof CARD_SIZES)[number]['id'];
 
@@ -33,6 +33,19 @@
 	let selectedPrintSize: PrintSizeId = 'CR80';
 	let printLandscape = true;
 	let previewNFC = false;
+
+	let massExportDialogOpen = false;
+	let isMassExport = false;
+	let cardNFCMap: Record<string, boolean> = {};
+	let massExportPrintSize: PrintSizeId = 'CR80';
+	let massExportLandscape = true;
+
+	$: massExportBaseSize = CARD_SIZES.find((s) => s.id === massExportPrintSize) ?? CARD_SIZES[0];
+	$: massExportPrintWidth = massExportLandscape ? massExportBaseSize.w : massExportBaseSize.h;
+	$: massExportPrintHeight = massExportLandscape ? massExportBaseSize.h : massExportBaseSize.w;
+	$: massExportPreviewW = parseFloat(massExportPrintWidth);
+	$: massExportPreviewH = parseFloat(massExportPrintHeight);
+	$: allNFCOn = data?.record_cards?.every((rc: any) => cardNFCMap[rc.id]) ?? false;
 
 	$: selectedTemplate = (selectedCard?.template ?? 1) as 1 | 2 | 3;
 	// For gift orders use the gift recipient's player data; for own orders use the order owner's data
@@ -95,6 +108,58 @@
 		}, 100);
 	}
 
+	function openMassExport() {
+		if (data?.record_cards) {
+			const initial: Record<string, boolean> = {};
+			for (const rc of data.record_cards) {
+				initial[rc.id] = cardNFCMap[rc.id] ?? false;
+			}
+			cardNFCMap = initial;
+		}
+		// Render print area immediately so images load while user reviews cards
+		isMassExport = true;
+		massExportDialogOpen = true;
+	}
+
+	function closeMassExportDialog() {
+		massExportDialogOpen = false;
+		isMassExport = false;
+	}
+
+	function toggleAllNFC() {
+		if (!data?.record_cards) return;
+		const allOn = data.record_cards.every((rc: any) => cardNFCMap[rc.id]);
+		const nextMap: Record<string, boolean> = {};
+		for (const rc of data.record_cards) nextMap[rc.id] = !allOn;
+		cardNFCMap = nextMap;
+	}
+
+	function massExport() {
+		const el = document.getElementById('record-card-print-area');
+		if (!el) return;
+		const parent = el.parentNode;
+		const nextSibling = el.nextSibling;
+
+		document.body.appendChild(el);
+		document.body.classList.add('printing-record-card');
+		window.print();
+
+		window.addEventListener(
+			'afterprint',
+			() => {
+				document.body.classList.remove('printing-record-card');
+				if (parent) {
+					if (nextSibling && parent.contains(nextSibling)) {
+						parent.insertBefore(el, nextSibling);
+					} else {
+						parent.appendChild(el);
+					}
+				}
+			},
+			{ once: true }
+		);
+	}
+
 	function cancellable() {
 		if (data.state == 'CANCELLED' || data.paymentMethod == 'Bank Transfer') {
 			return false;
@@ -147,7 +212,40 @@
 
 <!-- Print area (hidden except during print) -->
 <div id="record-card-print-area">
-	{#if selectedCard && data}
+	{#if isMassExport && data?.record_cards}
+		{#each data.record_cards as rc, i}
+			<div
+				class="print-card-front"
+				style="width:{massExportPrintWidth}; height:{massExportPrintHeight};{i > 0
+					? ' page-break-before: always;'
+					: ''}"
+			>
+				<CardPreview
+					data={{
+						playerUID: cardPlayerUID,
+						playerName: cardPlayer?.name ?? 'Player',
+						clanTag: cardPlayer?.clans?.tag ?? null,
+						clanTagBg: cardPlayer?.clans?.tagBgColor ?? null,
+						clanTagText: cardPlayer?.clans?.tagTextColor ?? null,
+						levelName: rc.levels?.name || `Level #${rc.levelID}`,
+						creator: rc.levels?.creator || '',
+						progress: rc.records?.progress ?? null,
+						bgImage: bgImage(rc),
+						avatarImage: rc.avatar || `https://cdn.gdvn.net/avatars/${cardPlayerUID}.jpg`,
+						template: rc.template
+					}}
+					size="full"
+					fillContainer={true}
+				/>
+			</div>
+			<div
+				class="print-card-back"
+				style="width:{massExportPrintWidth}; height:{massExportPrintHeight}; page-break-before: always;"
+			>
+				<CardBack cardID={rc.id} fillContainer={true} hasNFC={cardNFCMap[rc.id] ?? false} />
+			</div>
+		{/each}
+	{:else if selectedCard && data}
 		<div class="print-card-front" style="width:{printWidth}; height:{printHeight};">
 			<CardPreview
 				data={{
@@ -167,7 +265,10 @@
 				fillContainer={true}
 			/>
 		</div>
-		<div class="print-card-back" style="width:{printWidth}; height:{printHeight}; page-break-before: always;">
+		<div
+			class="print-card-back"
+			style="width:{printWidth}; height:{printHeight}; page-break-before: always;"
+		>
 			<CardBack cardID={selectedCard.id} fillContainer={true} hasNFC={previewNFC} />
 		</div>
 	{/if}
@@ -265,17 +366,17 @@
 													levelName: rc.levels?.name || `Level #${rc.levelID}`,
 													creator: rc.levels?.creator || '',
 													progress: rc.records?.progress ?? null,
-													bgImage: rc.img || `https://levelthumbs.prevter.me/thumbnail/${rc.levelID}/high`,
-													avatarImage: rc.avatar || `https://cdn.gdvn.net/avatars/${cardPlayerUID}.jpg`,
+													bgImage:
+														rc.img || `https://levelthumbs.prevter.me/thumbnail/${rc.levelID}/high`,
+													avatarImage:
+														rc.avatar || `https://cdn.gdvn.net/avatars/${cardPlayerUID}.jpg`,
 													template: rc.template
 												}}
 												size="mini"
 											/>
 										</div>
 										<div>
-											<h3 class="text-lg font-semibold">
-												Thẻ Bản Ghi
-											</h3>
+											<h3 class="text-lg font-semibold">Thẻ Bản Ghi</h3>
 											<p>
 												Chất liệu: {rc.material === 'paper' ? 'Giấy' : 'Nhựa'}
 											</p>
@@ -284,9 +385,10 @@
 											</p>
 										</div>
 										<div class="ml-auto flex items-center">
-											{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(
-												rc.material === 'paper' ? 29000 : 149000
-											)}
+											{new Intl.NumberFormat('vi-VN', {
+												style: 'currency',
+												currency: 'VND'
+											}).format(rc.material === 'paper' ? 29000 : 149000)}
 										</div>
 									</div>
 									{#if $user.loggedIn && $user.data.isManager}
@@ -310,6 +412,14 @@
 									{/if}
 								</Table.Row>
 							{/each}
+							{#if $user.loggedIn && $user.data.isManager && data.record_cards?.length}
+								<div class="flex justify-end px-[10px] py-[8px]">
+									<Button variant="outline" size="sm" on:click={openMassExport}>
+										<Printer size={14} />
+										Mass Export PDF
+									</Button>
+								</div>
+							{/if}
 						{/if}
 					</Table.Body>
 				</Table.Root>
@@ -418,7 +528,9 @@
 
 		{#if selectedCard && data}
 			<div class="mt-2 overflow-x-auto">
-				<div style="display:flex; gap:24px; width:max-content; min-width:100%; justify-content:center; margin:auto;">
+				<div
+					style="display:flex; gap:24px; width:max-content; min-width:100%; justify-content:center; margin:auto;"
+				>
 					<div class="flex flex-col items-center gap-1.5">
 						<p class="text-center text-xs font-semibold opacity-60">Mặt trước</p>
 						<div
@@ -460,8 +572,13 @@
 			<div class="mr-auto flex items-center gap-2">
 				<span class="text-sm text-muted-foreground">Kích thước:</span>
 				<Select.Root
-					selected={{ value: selectedPrintSize, label: CARD_SIZES.find((s) => s.id === selectedPrintSize)?.label }}
-					onSelectedChange={(v) => { if (v) selectedPrintSize = v.value; }}
+					selected={{
+						value: selectedPrintSize,
+						label: CARD_SIZES.find((s) => s.id === selectedPrintSize)?.label
+					}}
+					onSelectedChange={(v) => {
+						if (v) selectedPrintSize = v.value;
+					}}
 				>
 					<Select.Trigger class="w-[160px]">
 						<Select.Value />
@@ -486,7 +603,7 @@
 					title="Toggle NFC Symbol"
 					on:click={() => (previewNFC = !previewNFC)}
 				>
-					<Wifi size={14} class="rotate-90" />
+					<Nfc size={14} />
 				</Button>
 			</div>
 			<Button variant="outline" on:click={() => printCard(selectedCard)}>
@@ -494,6 +611,113 @@
 				In PDF
 			</Button>
 			<Button on:click={() => (viewDialogOpen = false)}>Đóng</Button>
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>
+
+<!-- Manager: Mass Export dialog -->
+<Dialog.Root bind:open={massExportDialogOpen} onOpenChange={(open) => { if (!open) isMassExport = false; }}>
+	<Dialog.Content class="max-w-[900px]">
+		<Dialog.Header>
+			<Dialog.Title>Mass Export PDF</Dialog.Title>
+			<Dialog.Description>
+				Review all cards before exporting. Toggle NFC per card as needed.
+			</Dialog.Description>
+		</Dialog.Header>
+
+		{#if data?.record_cards}
+			<div class="mt-2 max-h-[60vh] overflow-y-auto">
+				<div class="grid grid-cols-2 gap-4 sm:grid-cols-3">
+					{#each data.record_cards as rc}
+						<div class="flex flex-col items-center gap-2 rounded-lg border p-3">
+							<p class="text-xs font-semibold opacity-60">Mặt trước</p>
+							<div
+								style="height:100px; aspect-ratio:{massExportPreviewW}/{massExportPreviewH}; overflow:hidden; border:1px solid hsl(var(--border)); border-radius:6px;"
+							>
+								<CardPreview
+									data={{
+										playerUID: cardPlayerUID,
+										playerName: cardPlayer?.name ?? 'Player',
+										clanTag: cardPlayer?.clans?.tag ?? null,
+										clanTagBg: cardPlayer?.clans?.tagBgColor ?? null,
+										clanTagText: cardPlayer?.clans?.tagTextColor ?? null,
+										levelName: rc.levels?.name || `Level #${rc.levelID}`,
+										creator: rc.levels?.creator || '',
+										progress: rc.records?.progress ?? null,
+										bgImage: bgImage(rc),
+										avatarImage: rc.avatar || `https://cdn.gdvn.net/avatars/${cardPlayerUID}.jpg`,
+										template: rc.template
+									}}
+									size="full"
+									fillContainer={true}
+								/>
+							</div>
+							<p class="text-xs font-semibold opacity-60">Mặt sau</p>
+							<div
+								style="height:100px; aspect-ratio:{massExportPreviewW}/{massExportPreviewH}; overflow:hidden; border:1px solid hsl(var(--border)); border-radius:6px;"
+							>
+								<CardBack cardID={rc.id} fillContainer={true} hasNFC={cardNFCMap[rc.id] ?? false} />
+							</div>
+							<Button
+								variant={cardNFCMap[rc.id] ? 'default' : 'outline'}
+								size="sm"
+								class="w-full"
+								on:click={() => {
+									cardNFCMap = { ...cardNFCMap, [rc.id]: !cardNFCMap[rc.id] };
+								}}
+							>
+								<Nfc size={13} class="mr-1" />
+								{cardNFCMap[rc.id] ? 'NFC: Bật' : 'NFC: Tắt'}
+							</Button>
+							<p class="text-center text-xs opacity-50">
+								{rc.levels?.name || `Level #${rc.levelID}`}
+							</p>
+						</div>
+					{/each}
+				</div>
+			</div>
+		{/if}
+
+		<Dialog.Footer>
+			<div class="mr-auto flex flex-wrap items-center gap-2">
+				<Button variant="outline" size="sm" on:click={toggleAllNFC}>
+					<Nfc size={13} class="mr-1" />
+					{allNFCOn ? 'Tắt tất cả NFC' : 'Bật tất cả NFC'}
+				</Button>
+				<span class="text-muted-foreground">|</span>
+				<span class="text-sm text-muted-foreground">Kích thước:</span>
+				<Select.Root
+					selected={{
+						value: massExportPrintSize,
+						label: CARD_SIZES.find((s) => s.id === massExportPrintSize)?.label
+					}}
+					onSelectedChange={(v) => {
+						if (v) massExportPrintSize = v.value;
+					}}
+				>
+					<Select.Trigger class="w-[160px]">
+						<Select.Value />
+					</Select.Trigger>
+					<Select.Content>
+						{#each CARD_SIZES as size}
+							<Select.Item value={size.id}>{size.label}</Select.Item>
+						{/each}
+					</Select.Content>
+				</Select.Root>
+				<Button
+					variant="outline"
+					size="icon"
+					title={massExportLandscape ? 'Landscape' : 'Portrait'}
+					on:click={() => (massExportLandscape = !massExportLandscape)}
+				>
+					<RotateCw size={14} class={massExportLandscape ? '' : 'rotate-90'} />
+				</Button>
+			</div>
+			<Button variant="outline" on:click={massExport}>
+				<Printer size={14} />
+				Export PDF
+			</Button>
+			<Button on:click={closeMassExportDialog}>Đóng</Button>
 		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Root>
@@ -512,6 +736,4 @@
 			border-radius: 0 !important;
 		}
 	}
-
-
 </style>
