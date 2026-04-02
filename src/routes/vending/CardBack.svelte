@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import QRCode from 'qrcode';
 	import { Nfc } from 'lucide-svelte';
 
@@ -12,15 +11,15 @@
 
 	const FRONTEND_URL = import.meta.env.VITE_FRONTEND_URL || 'https://gdvn.net';
 
-	onMount(async () => {
-		if (cardID) {
-			qrDataUrl = await QRCode.toDataURL(`${FRONTEND_URL}/record-card/${cardID}`, {
-				width: 200,
-				margin: 1,
-				color: { dark: '#1a1a1a', light: '#ffffff' }
-			});
-		}
-	});
+	$: if (cardID) {
+		QRCode.toDataURL(`${FRONTEND_URL}/record-card/${cardID}`, {
+			width: 200,
+			margin: 1,
+			color: { dark: '#1a1a1a', light: '#ffffff' }
+		}).then((url) => (qrDataUrl = url));
+	} else {
+		qrDataUrl = '';
+	}
 </script>
 
 <div class="card-back-container" class:fill={fillContainer} style={scale !== 1 ? `aspect-ratio: 245 / 155.48;` : ''}>
