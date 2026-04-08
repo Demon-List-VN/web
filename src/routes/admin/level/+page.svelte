@@ -155,7 +155,7 @@
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/levels/${level.id}/tags`);
 			if (res.ok) {
 				const data = await res.json();
-				levelTags = data.map((t: any) => t.level_tags || t);
+				levelTags = data.map((t: any) => t.levelTags || t);
 			}
 		} catch {}
 	}

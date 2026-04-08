@@ -116,7 +116,7 @@
 		fetch(`${import.meta.env.VITE_API_URL}/levels/${$page.params.id}/tags`)
 			.then((res) => res.json())
 			.then(
-				(res: any) => (levelTags = (res || []).map((t: any) => t.level_tags || t).filter(Boolean))
+				(res: any) => (levelTags = (res || []).map((t: any) => t.levelTags || t).filter(Boolean))
 			)
 			.catch(() => (levelTags = []));
 
