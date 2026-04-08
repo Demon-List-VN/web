@@ -135,9 +135,11 @@
 	let hideNav = false;
 	let removePad = false;
 	let pathname = '';
-	let supporterAlertDismissed =
-		typeof localStorage !== 'undefined' &&
-		localStorage.getItem('supporterAlertDismissed') === 'true';
+	let supporterAlertDismissed = false;
+	
+	onMount(() => {
+		supporterAlertDismissed = localStorage.getItem('supporterAlertDismissed') === 'true';
+	});
 	$: pathname = $page.url.pathname;
 
 	const isDesktop = mediaQuery('(min-width: 1025px)');

@@ -12,3 +12,7 @@ package-lock.json
 # Sentry Config File
 .env.sentry-build-plugin
 
+.wrangler
+.claude
+.svelte-kit
+.idea
