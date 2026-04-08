@@ -730,10 +730,19 @@
 		pointer-events: none;
 	}
 
+	@page {
+		margin: 0;
+	}
+
 	@media print {
 		:global(#record-card-print-area .card-wrap),
 		:global(#record-card-print-area .card-back) {
 			border-radius: 0 !important;
+		}
+
+		:global(#record-card-print-area > div:last-child) {
+			page-break-after: avoid;
+			break-after: avoid;
 		}
 	}
 </style>

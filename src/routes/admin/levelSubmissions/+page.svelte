@@ -26,17 +26,16 @@
 	async function fetchSubmissions() {
 		loading = true;
 		try {
-			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/level-submissions?start=0&end=100`,
-				{
-					headers: {
-						Authorization: `Bearer ${await $user.token()}`
-					}
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/level-submissions`, {
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`
 				}
-			);
+			});
 
 			if (res.ok) {
-				submissions = await res.json();
+				const allSubmissions: any[] = await res.json();
+				// Filter out accepted levels
+				submissions = allSubmissions.filter((sub) => !sub.accepted);
 			} else {
 				toast.error('Failed to fetch level submissions');
 			}
