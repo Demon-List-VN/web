@@ -5,6 +5,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import * as Table from '$lib/components/ui/table';
 	import * as Dialog from '$lib/components/ui/dialog';
+	import * as Select from '$lib/components/ui/select';
 	import CrossCircled from 'svelte-radix/CrossCircled.svelte';
 	import CheckCircled from 'svelte-radix/CheckCircled.svelte';
 	import { user } from '$lib/client';
@@ -18,6 +19,7 @@
 	let dialogOpen = false;
 	let rating: number | null = null;
 	let rejectReason = '';
+	let acceptedFilter: { label: string; value: 'pending' | 'accepted' } = { label: 'Pending Only', value: 'pending' };
 
 	onMount(async () => {
 		await fetchSubmissions();
@@ -26,16 +28,24 @@
 	async function fetchSubmissions() {
 		loading = true;
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/level-submissions`, {
+			const params = new URLSearchParams();
+			if (acceptedFilter.value === 'pending') {
+				params.set('accepted', 'false');
+			} else if (acceptedFilter.value === 'accepted') {
+				params.set('accepted', 'true');
+			}
+
+			params.set('end', '10000')
+
+			const url = `${import.meta.env.VITE_API_URL}/level-submissions${params.toString() ? '?' + params.toString() : ''}`;
+			const res = await fetch(url, {
 				headers: {
 					Authorization: `Bearer ${await $user.token()}`
 				}
 			});
 
 			if (res.ok) {
-				const allSubmissions: any[] = await res.json();
-				// Filter out accepted levels
-				submissions = allSubmissions.filter((sub) => !sub.accepted);
+				submissions = await res.json();
 			} else {
 				toast.error('Failed to fetch level submissions');
 			}
@@ -131,6 +141,12 @@
 		rejectReason = '';
 		dialogOpen = true;
 	}
+
+	function handleFilterChange(selected: any) {
+		if (!selected) return;
+		acceptedFilter = { label: selected.label, value: selected.value as 'pending' | 'accepted' };
+		fetchSubmissions();
+	}
 </script>
 
 <Title value="Level Submissions" />
@@ -212,6 +228,22 @@
 	<p class="mb-4 text-muted-foreground">
 		Review and approve challenge level submissions from users.
 	</p>
+
+	<div class="mb-4 flex items-center gap-4">
+		<Label class="font-medium">Filter by status:</Label>
+		<Select.Root
+			onSelectedChange={handleFilterChange}
+			selected={acceptedFilter}
+		>
+			<Select.Trigger class="w-[180px]">
+				<Select.Value />
+			</Select.Trigger>
+			<Select.Content>
+				<Select.Item value="pending">Pending Only</Select.Item>
+				<Select.Item value="accepted">Accepted Only</Select.Item>
+			</Select.Content>
+		</Select.Root>
+	</div>
 
 	{#if loading}
 		<div class="flex justify-center py-8">
