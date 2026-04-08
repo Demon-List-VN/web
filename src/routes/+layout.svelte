@@ -52,7 +52,8 @@
 		Award,
 		Shuffle,
 		GitCompare,
-		CreditCard
+		CreditCard,
+		Bug
 	} from 'lucide-svelte';
 	import OnboardingModal from '$lib/components/OnboardingModal.svelte';
 
@@ -105,7 +106,8 @@
 		{ route: '/discord', name: 'Discord', icon: MessageCircle },
 		{ route: '/wiki', name: 'Wiki', icon: BookOpen },
 		{ route: '/store', name: $locale === 'en' ? 'Store' : 'Cửa hàng', icon: ShoppingBag },
-	{ route: '/vending', name: $locale === 'en' ? 'Card Maker' : 'Máy Tạo Thẻ', icon: CreditCard },
+		{ route: '/vending', name: $locale === 'en' ? 'Card Maker' : 'Máy Tạo Thẻ', icon: CreditCard },
+		{ route: 'https://docs.google.com/forms/d/e/1FAIpQLSdF4pJFdwbrFKQPLU0PPPX-bkrPJpMTSnlJ6XWNbSCpSOUqpQ/viewform?usp=dialog', name: $locale === 'en' ? 'Bug Report' : 'Báo lỗi', icon: Bug },
 		{
 			name: $locale === 'en' ? 'Misc' : 'Khác',
 			icon: MoreHorizontal,
