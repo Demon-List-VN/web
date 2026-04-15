@@ -45,7 +45,7 @@
 	$: massExportPrintHeight = massExportLandscape ? massExportBaseSize.h : massExportBaseSize.w;
 	$: massExportPreviewW = parseFloat(massExportPrintWidth);
 	$: massExportPreviewH = parseFloat(massExportPrintHeight);
-	$: allNFCOn = data?.record_cards?.every((rc: any) => cardNFCMap[rc.id]) ?? false;
+	$: allNFCOn = data?.recordCards?.every((rc: any) => cardNFCMap[rc.id]) ?? false;
 
 	$: selectedTemplate = (selectedCard?.template ?? 1) as 1 | 2 | 3;
 	// For gift orders use the gift recipient's player data; for own orders use the order owner's data
@@ -76,7 +76,7 @@
 				}
 			);
 			if (!res.ok) throw new Error();
-			data.record_cards = data.record_cards.map((c: any) =>
+			data.recordCards = data.recordCards.map((c: any) =>
 				c.id === rc.id ? { ...c, printed: true } : c
 			);
 			toast.success('Đã cập nhật trạng thái in');
@@ -109,9 +109,9 @@
 	}
 
 	function openMassExport() {
-		if (data?.record_cards) {
+		if (data?.recordCards) {
 			const initial: Record<string, boolean> = {};
-			for (const rc of data.record_cards) {
+			for (const rc of data.recordCards) {
 				initial[rc.id] = cardNFCMap[rc.id] ?? false;
 			}
 			cardNFCMap = initial;
@@ -127,10 +127,10 @@
 	}
 
 	function toggleAllNFC() {
-		if (!data?.record_cards) return;
-		const allOn = data.record_cards.every((rc: any) => cardNFCMap[rc.id]);
+		if (!data?.recordCards) return;
+		const allOn = data.recordCards.every((rc: any) => cardNFCMap[rc.id]);
 		const nextMap: Record<string, boolean> = {};
-		for (const rc of data.record_cards) nextMap[rc.id] = !allOn;
+		for (const rc of data.recordCards) nextMap[rc.id] = !allOn;
 		cardNFCMap = nextMap;
 	}
 
@@ -212,8 +212,8 @@
 
 <!-- Print area (hidden except during print) -->
 <div id="record-card-print-area">
-	{#if isMassExport && data?.record_cards}
-		{#each data.record_cards as rc, i}
+	{#if isMassExport && data?.recordCards}
+		{#each data.recordCards as rc, i}
 			<div
 				class="print-card-front"
 				style="width:{massExportPrintWidth}; height:{massExportPrintHeight};{i > 0
@@ -351,8 +351,8 @@
 								</div>
 							</Table.Row>
 						{/each}
-						{#if data.record_cards}
-							{#each data.record_cards as rc}
+						{#if data.recordCards}
+							{#each data.recordCards as rc}
 								<Table.Row>
 									<div class="border-box flex gap-[10px] p-[10px]">
 										<div class="w-[200px]">
@@ -412,7 +412,7 @@
 									{/if}
 								</Table.Row>
 							{/each}
-							{#if $user.loggedIn && $user.data.isManager && data.record_cards?.length}
+							{#if $user.loggedIn && $user.data.isManager && data.recordCards?.length}
 								<div class="flex justify-end px-[10px] py-[8px]">
 									<Button variant="outline" size="sm" on:click={openMassExport}>
 										<Printer size={14} />
@@ -625,10 +625,10 @@
 			</Dialog.Description>
 		</Dialog.Header>
 
-		{#if data?.record_cards}
+		{#if data?.recordCards}
 			<div class="mt-2 max-h-[60vh] overflow-y-auto">
 				<div class="grid grid-cols-2 gap-4 sm:grid-cols-3">
-					{#each data.record_cards as rc}
+					{#each data.recordCards as rc}
 						<div class="flex flex-col items-center gap-2 rounded-lg border p-3">
 							<p class="text-xs font-semibold opacity-60">Mặt trước</p>
 							<div

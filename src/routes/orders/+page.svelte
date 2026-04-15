@@ -71,7 +71,7 @@
 
 	function getProductName(order: any): string {
 		if (order.productID) return order.products?.name ?? '';
-		if (order.record_cards?.length > 0) return `Store Items (${order.record_cards.length} Thẻ Bản Ghi)`;
+		if (order.recordCards?.length > 0) return `Store Items (${order.recordCards.length} Thẻ Bản Ghi)`;
 		return $_('orders.store_items');
 	}
 

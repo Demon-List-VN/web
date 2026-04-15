@@ -28,7 +28,7 @@
 	export let top: number | null = null;
 	export let hideTop: boolean = false;
 
-	$: levelTags = (level?.levels_tags || []).map((lt: any) => lt.levelTags).filter(Boolean);
+	$: levelTags = (level?.levelsTags || []).map((lt: any) => lt.levelTags).filter(Boolean);
 </script>
 
 {#if level}
