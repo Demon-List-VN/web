@@ -222,7 +222,7 @@
 							</div>
 						{/if}
 							<div class="levelActionRow">
-								<Button variant="outline" size="sm" on:click={() => goto(`/custom-lists?levelId=${$page.params.id}`)}>
+							<Button variant="outline" size="sm" on:click={() => goto(`/lists?levelId=${$page.params.id}`)}>
 									<ListPlus class="mr-2 h-4 w-4" />
 									Add to List
 								</Button>

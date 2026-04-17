@@ -8,9 +8,10 @@
 	import { goto } from '$app/navigation';
 	import { user } from '$lib/client';
 	import { toast } from 'svelte-sonner';
-	import { Plus, Link as LinkIcon, ListPlus } from 'lucide-svelte';
+	import PlayerLink from '$lib/components/playerLink.svelte';
+	import { Globe2, Link as LinkIcon, ListPlus, Plus, Search } from 'lucide-svelte';
 
-	type CustomList = {
+	type ListSummary = {
 		id: number;
 		title: string;
 		description: string;
@@ -18,6 +19,8 @@
 		tags: string[];
 		levelCount: number;
 		updated_at: string;
+		owner: string;
+		ownerData?: any;
 	};
 
 	const createForm = {
@@ -32,11 +35,20 @@
 		'public'
 	];
 
-	let lists: CustomList[] = [];
-	let loading = true;
+	let ownLists: ListSummary[] = [];
+	let publicLists: ListSummary[] = [];
+	let ownLoading = true;
+	let browseLoading = true;
+	let browseLoadingMore = false;
+	let browseHasMore = true;
+	let browseOffset = 0;
+	let browseTotal = 0;
+	let browseSearch = '';
+	let appliedBrowseSearch = '';
 	let creating = false;
 	let actionListId: number | null = null;
-	let loadKey = '';
+	let ownLoadKey = '';
+	let browseLoadKey = '';
 
 	function getQuickLevelId() {
 		const raw = $page.url.searchParams.get('levelId');
@@ -65,29 +77,97 @@
 
 	async function fetchOwnLists() {
 		if (!$user.loggedIn) {
-			lists = [];
-			loading = false;
+			ownLists = [];
+			ownLoading = false;
 			return;
 		}
 
-		loading = true;
+		ownLoading = true;
 
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/custom-lists/me`, {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/me`, {
 				headers: {
 					Authorization: `Bearer ${await $user.token()}`
 				}
 			});
 
 			if (!res.ok) {
-				throw new Error('Failed to load your custom lists');
+				throw new Error('Failed to load your lists');
 			}
 
-			lists = await res.json();
+			ownLists = await res.json();
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Failed to load your custom lists');
+			toast.error(error instanceof Error ? error.message : 'Failed to load your lists');
 		} finally {
-			loading = false;
+			ownLoading = false;
+		}
+	}
+
+	async function fetchBrowseLists(reset = false) {
+		if (reset) {
+			browseLoading = true;
+		} else if (browseLoadingMore || !browseHasMore) {
+			return;
+		} else {
+			browseLoadingMore = true;
+		}
+
+		const nextOffset = reset ? 0 : browseOffset;
+
+		try {
+			const params = new URLSearchParams({
+				limit: '12',
+				offset: String(nextOffset)
+			});
+
+			if (appliedBrowseSearch) {
+				params.set('search', appliedBrowseSearch);
+			}
+
+			const headers: Record<string, string> = {};
+			if ($user.loggedIn) {
+				headers.Authorization = `Bearer ${await $user.token()}`;
+			}
+
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists?${params.toString()}`, {
+				headers
+			});
+
+			const payload = await res.json();
+
+			if (!res.ok) {
+				throw new Error(payload.error || 'Failed to browse lists');
+			}
+
+			const nextLists = payload.data as ListSummary[];
+			publicLists = reset ? nextLists : publicLists.concat(nextLists);
+			browseTotal = payload.total || 0;
+			browseOffset = nextOffset + nextLists.length;
+			browseHasMore = browseOffset < browseTotal;
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : 'Failed to browse lists');
+			if (reset) {
+				publicLists = [];
+				browseTotal = 0;
+				browseOffset = 0;
+				browseHasMore = false;
+			}
+		} finally {
+			browseLoading = false;
+			browseLoadingMore = false;
+		}
+	}
+
+	function handleBrowseSearch() {
+		appliedBrowseSearch = browseSearch.trim();
+		browseOffset = 0;
+		browseHasMore = true;
+		fetchBrowseLists(true);
+	}
+
+	function handleBrowseSearchKeydown(event: KeyboardEvent) {
+		if (event.key === 'Enter') {
+			handleBrowseSearch();
 		}
 	}
 
@@ -95,7 +175,7 @@
 		actionListId = listId;
 
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/custom-lists/${listId}/levels`, {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${listId}/levels`, {
 				method: 'POST',
 				headers: {
 					Authorization: `Bearer ${await $user.token()}`,
@@ -111,7 +191,7 @@
 			}
 
 			toast.success('Level added to list');
-			goto(`/custom-lists/${listId}`);
+			goto(`/lists/${listId}`);
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : 'Failed to add level to list');
 		} finally {
@@ -128,7 +208,7 @@
 		creating = true;
 
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/custom-lists`, {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists`, {
 				method: 'POST',
 				headers: {
 					Authorization: `Bearer ${await $user.token()}`,
@@ -145,10 +225,10 @@
 			const payload = await res.json();
 
 			if (!res.ok) {
-				throw new Error(payload.error || 'Failed to create custom list');
+				throw new Error(payload.error || 'Failed to create list');
 			}
 
-			const createdList = payload as CustomList;
+			const createdList = payload as ListSummary;
 
 			createForm.title = '';
 			createForm.description = '';
@@ -160,10 +240,13 @@
 				return;
 			}
 
-			lists = [createdList, ...lists];
-			toast.success('Custom list created');
+			ownLists = [createdList, ...ownLists];
+			if (createdList.visibility === 'public') {
+				fetchBrowseLists(true);
+			}
+			toast.success('List created');
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Failed to create custom list');
+			toast.error(error instanceof Error ? error.message : 'Failed to create list');
 		} finally {
 			creating = false;
 		}
@@ -171,31 +254,120 @@
 
 	$: if ($user.checked) {
 		const nextKey = $user.loggedIn ? $user.data?.uid || 'authed' : 'guest';
-		if (nextKey !== loadKey) {
-			loadKey = nextKey;
+		if (nextKey !== ownLoadKey) {
+			ownLoadKey = nextKey;
 			fetchOwnLists();
+		}
+		if (nextKey !== browseLoadKey) {
+			browseLoadKey = nextKey;
+			browseOffset = 0;
+			browseHasMore = true;
+			fetchBrowseLists(true);
 		}
 	}
 </script>
 
 <svelte:head>
-	<title>Custom Lists - Geometry Dash Việt Nam</title>
+	<title>Lists - Geometry Dash Việt Nam</title>
 </svelte:head>
 
 <div class="page">
 	<div class="header">
 		<div>
-			<h1>Custom Lists</h1>
-			<p>Create personal level collections and manage them without touching record flow yet.</p>
+			<h1>Lists</h1>
+			<p>Browse public lists and manage your own level collections.</p>
 		</div>
 	</div>
 
-	{#if !$user.checked || loading}
-		<div class="emptyState">Loading your custom lists...</div>
+	<div class="sectionHeader browseHeader">
+		<div>
+			<h2>Browse lists</h2>
+			<p class="sectionHint">Public lists are discoverable by everyone.</p>
+		</div>
+		<Badge variant="outline">{browseTotal}</Badge>
+	</div>
+
+	<div class="searchRow">
+		<div class="searchInputWrap">
+			<span class="searchIcon">
+				<Search class="h-4 w-4" />
+			</span>
+			<Input
+				bind:value={browseSearch}
+				placeholder="Search public lists by title or description"
+				on:keydown={handleBrowseSearchKeydown}
+			/>
+		</div>
+		<Button variant="outline" on:click={handleBrowseSearch}>Search</Button>
+	</div>
+
+	{#if browseLoading}
+		<div class="emptyState">Loading lists...</div>
+	{:else if publicLists.length === 0}
+		<div class="emptyState slim">
+			<h2>No public lists found</h2>
+			<p>{appliedBrowseSearch ? 'Try a different search term.' : 'Public lists will appear here once creators publish them.'}</p>
+		</div>
+	{:else}
+		<div class="listGrid browseGrid">
+			{#each publicLists as list}
+				<Card.Root class="listCard">
+					<Card.Content>
+						<div class="listCardHead">
+							<div>
+								<h3>{list.title}</h3>
+								<p>{list.description || 'No description yet.'}</p>
+							</div>
+							<Badge variant="outline">
+								<Globe2 class="mr-1 h-3.5 w-3.5" />
+								Public
+							</Badge>
+						</div>
+
+						<div class="metaRow">
+							<span>{list.levelCount} levels</span>
+							<span>Updated {formatDate(list.updated_at)}</span>
+						</div>
+
+						{#if list.ownerData}
+							<div class="ownerRow">
+								<span>by</span>
+								<PlayerLink player={list.ownerData} />
+							</div>
+						{/if}
+
+						{#if list.tags?.length}
+							<div class="tagRow">
+								{#each list.tags as tag}
+									<Badge variant="outline">{tag}</Badge>
+								{/each}
+							</div>
+						{/if}
+
+						<div class="actionRow compact">
+							<Button variant="outline" on:click={() => goto(`/lists/${list.id}`)}>
+								Open list
+							</Button>
+						</div>
+					</Card.Content>
+				</Card.Root>
+			{/each}
+		</div>
+		{#if browseHasMore}
+			<div class="browseFooter">
+				<Button variant="outline" on:click={() => fetchBrowseLists(false)} disabled={browseLoadingMore}>
+					{browseLoadingMore ? 'Loading...' : 'Load more'}
+				</Button>
+			</div>
+		{/if}
+	{/if}
+
+	{#if !$user.checked || ownLoading}
+		<div class="emptyState slim">Loading your lists...</div>
 	{:else if !$user.loggedIn}
 		<div class="emptyState">
-			<h2>Sign in to manage custom lists</h2>
-			<p>You need an account to create and edit your own lists.</p>
+			<h2>Sign in to create and manage lists</h2>
+			<p>{quickLevelId ? `Sign in to save level #${quickLevelId} to one of your own lists.` : 'You need an account to create, edit, and populate your own lists.'}</p>
 		</div>
 	{:else}
 		{#if quickLevelId}
@@ -216,16 +388,16 @@
 			<Card.Content>
 				<div class="sectionHeader">
 					<h2>Create a new list</h2>
-					<Plus class="icon" />
+					<Plus class="icon h-4 w-4" />
 				</div>
 				<div class="formGrid">
 					<div class="field full">
-						<label for="custom-list-title">Title</label>
-						<Input id="custom-list-title" bind:value={createForm.title} maxlength={100} />
+						<label for="list-title">Title</label>
+						<Input id="list-title" bind:value={createForm.title} maxlength={100} />
 					</div>
 					<div class="field full">
-						<label for="custom-list-description">Description</label>
-						<Textarea id="custom-list-description" bind:value={createForm.description} rows={4} />
+						<label for="list-description">Description</label>
+						<Textarea id="list-description" bind:value={createForm.description} rows={4} />
 					</div>
 					<div class="field full">
 						<span class="fieldLabel">Visibility</span>
@@ -242,12 +414,8 @@
 						</div>
 					</div>
 					<div class="field full">
-						<label for="custom-list-tags">Tags</label>
-						<Input
-							id="custom-list-tags"
-							bind:value={createForm.tags}
-							placeholder="challenge, favorite, platformer"
-						/>
+						<label for="list-tags">Tags</label>
+						<Input id="list-tags" bind:value={createForm.tags} placeholder="challenge, favorite, platformer" />
 						<p class="hint">Separate tags with commas.</p>
 					</div>
 				</div>
@@ -266,17 +434,17 @@
 
 		<div class="sectionHeader listSectionHeader">
 			<h2>Your lists</h2>
-			<Badge variant="outline">{lists.length}</Badge>
+			<Badge variant="outline">{ownLists.length}</Badge>
 		</div>
 
-		{#if lists.length === 0}
+		{#if ownLists.length === 0}
 			<div class="emptyState slim">
-				<h2>No custom lists yet</h2>
+				<h2>No lists yet</h2>
 				<p>Create your first list above to start organizing levels.</p>
 			</div>
 		{:else}
 			<div class="listGrid">
-				{#each lists as list}
+				{#each ownLists as list}
 					<Card.Root class="listCard">
 						<Card.Content>
 							<div class="listCardHead">
@@ -301,7 +469,7 @@
 							{/if}
 
 							<div class="actionRow compact">
-								<Button variant="outline" on:click={() => goto(`/custom-lists/${list.id}`)}>
+								<Button variant="outline" on:click={() => goto(`/lists/${list.id}`)}>
 									Open list
 								</Button>
 								{#if quickLevelId}
@@ -341,7 +509,9 @@
 	.quickHeader p,
 	.listCardHead p,
 	.emptyState p,
-	.hint {
+	.hint,
+	.sectionHint,
+	.ownerRow {
 		color: hsl(var(--muted-foreground));
 	}
 
@@ -358,15 +528,50 @@
 		gap: 12px;
 	}
 
+	.browseHeader {
+		margin-top: 4px;
+	}
+
 	.listSectionHeader {
 		margin-top: 8px;
 	}
 
 	.quickHeader,
-	.listCardHead {
+	.listCardHead,
+	.searchRow,
+	.ownerRow,
+	.browseFooter {
 		display: flex;
+		gap: 12px;
+	}
+
+	.quickHeader,
+	.listCardHead,
+	.searchRow {
 		justify-content: space-between;
-		gap: 16px;
+	}
+
+	.searchRow,
+	.ownerRow,
+	.browseFooter {
+		align-items: center;
+	}
+
+	.searchInputWrap {
+		position: relative;
+		flex: 1;
+	}
+
+	.searchInputWrap :global(input) {
+		padding-left: 36px;
+	}
+
+	.searchIcon {
+		position: absolute;
+		left: 12px;
+		top: 50%;
+		transform: translateY(-50%);
+		color: hsl(var(--muted-foreground));
 	}
 
 	.formGrid {
@@ -437,6 +642,10 @@
 		gap: 16px;
 	}
 
+	.browseGrid {
+		margin-top: -4px;
+	}
+
 	.emptyState {
 		border: 1px dashed hsl(var(--border));
 		border-radius: 16px;
@@ -451,8 +660,18 @@
 
 	@media screen and (max-width: 700px) {
 		.quickHeader,
-		.listCardHead {
+		.listCardHead,
+		.searchRow,
+		.sectionHeader {
 			flex-direction: column;
+		}
+
+		.browseFooter {
+			justify-content: stretch;
+		}
+
+		.browseFooter :global(button) {
+			width: 100%;
 		}
 	}
 </style>

@@ -106,20 +106,20 @@
 				headers.Authorization = `Bearer ${await $user.token()}`;
 			}
 
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/custom-lists/${$page.params.id}`, {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${$page.params.id}`, {
 				headers
 			});
 
 			const payload = await res.json().catch(() => null);
 
 			if (!res.ok) {
-				throw new Error(payload?.error || 'Failed to load custom list');
+				throw new Error(payload?.error || 'Failed to load list');
 			}
 
 			list = payload as CustomList;
 			syncForm();
 		} catch (error) {
-			loadingError = error instanceof Error ? error.message : 'Failed to load custom list';
+			loadingError = error instanceof Error ? error.message : 'Failed to load list';
 			list = null;
 		} finally {
 			loading = false;
@@ -136,7 +136,7 @@
 		savingMetadata = true;
 
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/custom-lists/${list.id}`, {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}`, {
 				method: 'PATCH',
 				headers: {
 					Authorization: `Bearer ${await $user.token()}`,
@@ -153,14 +153,14 @@
 			const payload = await res.json();
 
 			if (!res.ok) {
-				throw new Error(payload.error || 'Failed to update custom list');
+				throw new Error(payload.error || 'Failed to update list');
 			}
 
 			list = payload;
 			syncForm();
-			toast.success('Custom list updated');
+			toast.success('List updated');
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Failed to update custom list');
+			toast.error(error instanceof Error ? error.message : 'Failed to update list');
 		} finally {
 			savingMetadata = false;
 		}
@@ -168,12 +168,12 @@
 
 	async function deleteList() {
 		if (!list) return;
-		if (!confirm('Delete this custom list? This cannot be undone.')) {
+		if (!confirm('Delete this list? This cannot be undone.')) {
 			return;
 		}
 
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/custom-lists/${list.id}`, {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}`, {
 				method: 'DELETE',
 				headers: {
 					Authorization: `Bearer ${await $user.token()}`
@@ -182,13 +182,13 @@
 
 			if (!res.ok) {
 				const payload = await res.json().catch(() => null);
-				throw new Error(payload?.error || 'Failed to delete custom list');
+				throw new Error(payload?.error || 'Failed to delete list');
 			}
 
-			toast.success('Custom list deleted');
-			goto('/custom-lists');
+			toast.success('List deleted');
+			goto('/lists');
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Failed to delete custom list');
+			toast.error(error instanceof Error ? error.message : 'Failed to delete list');
 		}
 	}
 
@@ -204,7 +204,7 @@
 		addingLevel = true;
 
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/custom-lists/${list.id}/levels`, {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/levels`, {
 				method: 'POST',
 				headers: {
 					Authorization: `Bearer ${await $user.token()}`,
@@ -221,7 +221,7 @@
 
 			list = payload;
 			levelIdInput = '';
-			toast.success('Level added to custom list');
+			toast.success('Level added to list');
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : 'Failed to add level');
 		} finally {
@@ -235,7 +235,7 @@
 
 		try {
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/custom-lists/${list.id}/levels/${levelId}`,
+				`${import.meta.env.VITE_API_URL}/lists/${list.id}/levels/${levelId}`,
 				{
 					method: 'DELETE',
 					headers: {
@@ -251,7 +251,7 @@
 			}
 
 			list = payload;
-			toast.success('Level removed from custom list');
+			toast.success('Level removed from list');
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : 'Failed to remove level');
 		} finally {
@@ -271,17 +271,17 @@
 </script>
 
 <svelte:head>
-	<title>{list ? `${list.title} - Custom Lists` : 'Custom List'} - Geometry Dash Việt Nam</title>
+	<title>{list ? `${list.title} - Lists` : 'List'} - Geometry Dash Việt Nam</title>
 </svelte:head>
 
 <div class="page">
-	<Button variant="outline" on:click={() => goto('/custom-lists')}>
+	<Button variant="outline" on:click={() => goto('/lists')}>
 		<ArrowLeft class="mr-2 h-4 w-4" />
 		Back to lists
 	</Button>
 
 	{#if loading}
-		<div class="emptyState">Loading custom list...</div>
+		<div class="emptyState">Loading list...</div>
 	{:else if loadingError}
 		<div class="emptyState">
 			<h2>Unable to open this list</h2>
