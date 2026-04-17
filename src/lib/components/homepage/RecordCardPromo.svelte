@@ -19,7 +19,7 @@
 	const demoBg = GRADIENTS[Math.floor(Math.random() * GRADIENTS.length)];
 </script>
 
-<div class="record-card-promo">
+<div class="record-card-promo" data-nosnippet>
 	<!-- Left: text content -->
 	<div class="promo-content">
 		<div class="promo-header">

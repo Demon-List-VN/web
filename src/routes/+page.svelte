@@ -1,13 +1,10 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import * as Carousel from '$lib/components/ui/carousel/index.js';
 	import LevelCard from '$lib/components/levelCard.svelte';
-	import Ads from '$lib/components/ads.svelte';
-	import { _, locale } from 'svelte-i18n';
+	import { _ } from 'svelte-i18n';
 	import { ArrowRight, Users } from 'lucide-svelte';
 	import { user } from '$lib/client';
 	import CommunityPostCard from '$lib/components/communityPostCard.svelte';
-	import HeroBanner from '$lib/components/homepage/HeroBanner.svelte';
 	import ActiveEventsStrip from '$lib/components/homepage/ActiveEventsStrip.svelte';
 	import BattlepassHomeWidget from '$lib/components/homepage/BattlepassHomeWidget.svelte';
 	import ClanSpotlight from '$lib/components/homepage/ClanSpotlight.svelte';
@@ -19,12 +16,17 @@
 
 	export let data: any;
 
+	const homepageTitle = 'Geometry Dash Việt Nam';
+	const homepageDescription =
+		'Bảng xếp hạng, hồ sơ người chơi, bản ghi, sự kiện và cộng đồng Geometry Dash Việt Nam.';
+	const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://demonlist.vn').replace(/\/$/, '');
+	const homepageUrl = siteUrl || 'https://demonlist.vn';
+
 	let showOnboardingModal = false;
 
 	let activeTab: 'dl' | 'fl' | 'pl' | 'cl' = 'dl';
 
 	let homeData: any = data?.homeData || null;
-	let loadedPublic = false;
 	let loadedAuth = false;
 	$: events = homeData?.events ?? null;
 	$: levels = homeData?.levels ?? { dl: null, fl: null, pl: null, cl: null };
@@ -61,8 +63,17 @@
 </script>
 
 <svelte:head>
-	<title>Geometry Dash Việt Nam</title>
-	<meta name="description" content="Website dành cho cộng đồng Geometry Dash Việt Nam" />
+	<title>{homepageTitle}</title>
+	<meta name="description" content={homepageDescription} />
+	<link rel="canonical" href={homepageUrl} />
+	<meta property="og:title" content={homepageTitle} />
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content={homepageUrl} />
+	<meta property="og:description" content={homepageDescription} />
+	<meta property="og:site_name" content="Geometry Dash Việt Nam" />
+	<meta name="twitter:card" content="summary" />
+	<meta name="twitter:title" content={homepageTitle} />
+	<meta name="twitter:description" content={homepageDescription} />
 </svelte:head>
 
 <!-- Active Events Strip -->
