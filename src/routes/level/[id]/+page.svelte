@@ -11,9 +11,10 @@
 	import Chart from 'chart.js/auto';
 	import Ads from '$lib/components/ads.svelte';
 	import * as Tabs from '$lib/components/ui/tabs';
+	import { Button } from '$lib/components/ui/button';
 	import { goto } from '$app/navigation';
 	import { _ } from 'svelte-i18n';
-	import { MessageSquare, Tag, Link, Crown, Monitor, Smartphone, ExternalLink } from 'lucide-svelte';
+	import { MessageSquare, Tag, Link, Crown, Monitor, Smartphone, ExternalLink, ListPlus } from 'lucide-svelte';
 
 	export let data: PageData;
 	let levelAPI: any = null;
@@ -220,6 +221,12 @@
 								{/each}
 							</div>
 						{/if}
+							<div class="levelActionRow">
+								<Button variant="outline" size="sm" on:click={() => goto(`/custom-lists?levelId=${$page.params.id}`)}>
+									<ListPlus class="mr-2 h-4 w-4" />
+									Add to List
+								</Button>
+							</div>
 					</div>
 				</div>
 			</Card.Content>
@@ -752,6 +759,11 @@
 		font-size: 12px;
 		font-weight: 600;
 		line-height: 1;
+	}
+
+	.levelActionRow {
+		display: flex;
+		margin-top: 10px;
 	}
 
 	.variantsSection {

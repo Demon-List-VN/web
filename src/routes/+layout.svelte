@@ -80,7 +80,8 @@
 				{ route: `/list/dl${listUidQuery}`, name: 'Classic', icon: List },
 				{ route: `/list/pl${listUidQuery}`, name: 'Platformer', icon: Gamepad2 },
 				{ route: `/list/fl${listUidQuery}`, name: 'Featured', icon: Award },
-				{ route: '/list/cl', name: 'Challenge', icon: Shuffle }
+				{ route: '/list/cl', name: 'Challenge', icon: Shuffle },
+				{ route: '/custom-lists', name: 'Custom', icon: LayoutList }
 			]
 		},
 		{ route: '/battlepass', name: 'Pass', icon: Ticket },
