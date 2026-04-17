@@ -18,9 +18,9 @@
 
 	const homepageTitle = 'Geometry Dash Việt Nam';
 	const homepageDescription =
-		'Bảng xếp hạng, hồ sơ người chơi, bản ghi, sự kiện và cộng đồng Geometry Dash Việt Nam.';
-	const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://demonlist.vn').replace(/\/$/, '');
-	const homepageUrl = siteUrl || 'https://demonlist.vn';
+		'Website dành cho cộng đồng Geometry Dash Việt Nam';
+	const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://gdvn.net').replace(/\/$/, '');
+	const homepageUrl = siteUrl || 'https://gdvn.net';
 
 	let showOnboardingModal = false;
 
