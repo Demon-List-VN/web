@@ -12,6 +12,7 @@ export type LevelCardProps = {
 	type: string;
 	top?: number | null;
 	hideTop?: boolean;
+	hideRating?: boolean;
 	loading?: boolean;
 	ratingPrediction?: boolean;
 	id?: number | string | null;
@@ -37,7 +38,7 @@ type LevelCardTagSource =
 
 export type LevelCardSource = Omit<
 	LevelCardProps,
-	'type' | 'top' | 'hideTop' | 'loading' | 'tags'
+	'type' | 'top' | 'hideTop' | 'hideRating' | 'loading' | 'tags'
 > & {
 	flPt?: number | null;
 	dlTop?: number | null;

@@ -37,6 +37,7 @@
 	export let isPlatformer: LevelCardProps['isPlatformer'] = false;
 	export let type: string;
 	export let hideTop: boolean = false;
+	export let hideRating: boolean = false;
 	export let loading: boolean = false;
 	export let ratingPrediction: boolean = true;
 </script>
@@ -89,11 +90,13 @@
 									<div class="name">
 										{name}
 									</div>
-									<div class="pt">
-										{rating}pt
-									</div>
+									{#if !hideRating}
+										<div class="pt">
+											{rating}pt
+										</div>
+									{/if}
 									{#key $user}
-										{#if ratingPrediction && $user.loggedIn && isActive($user.data.supporterUntil) && type == 'dl'}
+										{#if !hideRating && ratingPrediction && $user.loggedIn && isActive($user.data.supporterUntil) && type == 'dl'}
 											{#if !record}
 												<Tooltip.Root>
 													<div class="relative z-20">

@@ -183,6 +183,7 @@
 									minProgress: item.minProgress ?? item.level.minProgress ?? null
 								})}
 								type={listCardType}
+								hideRating={list.mode === 'top'}
 								ratingPrediction={false}
 							/>
 						{:else}
