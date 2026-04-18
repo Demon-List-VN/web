@@ -90,7 +90,7 @@
 </script>
 
 <svelte:head>
-	<title>{list ? `${list.title} - ${$_('custom_lists.page_title')}` : $_('custom_lists.index.title')} - Geometry Dash Việt Nam</title>
+	<title>{list ? `${list.title} - Danh sách - Geometry Dash Việt Nam` : 'Danh sách - Geometry Dash Việt Nam'}</title>
 	{#if list?.description}
 		<meta name="description" content={list.description} />
 	{/if}

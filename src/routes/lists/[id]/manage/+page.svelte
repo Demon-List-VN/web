@@ -430,7 +430,7 @@
 </script>
 
 <svelte:head>
-	<title>{list ? `${$_('custom_lists.actions.manage')} - ${list.title}` : $_('custom_lists.index.title')} - Geometry Dash Việt Nam</title>
+	<title>{list ? `Quản lý danh sách - ${list.title} - Geometry Dash Việt Nam` : 'Danh sách - Geometry Dash Việt Nam'}</title>
 </svelte:head>
 
 <div class="page">

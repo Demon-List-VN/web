@@ -97,7 +97,7 @@
 </script>
 
 <svelte:head>
-	<title>{$_('custom_lists.new.page_title')} - Geometry Dash Việt Nam</title>
+	<title>Danh sách mới - Geometry Dash Việt Nam</title>
 </svelte:head>
 
 <div class="page">

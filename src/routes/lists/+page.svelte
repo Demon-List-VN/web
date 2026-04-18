@@ -204,8 +204,8 @@
 </script>
 
 <svelte:head>
-	<title>{$_('custom_lists.page_title')}</title>
-	<meta name="description" content={$_('custom_lists.index.subtitle')} />
+	<title>Danh sách - Geometry Dash Việt Nam</title>
+	<meta name="description" content="Xem các danh sách công khai và quản lý bộ sưu tập level của bạn." />
 </svelte:head>
 
 <div class="page">
