@@ -46,9 +46,9 @@
 		items: CustomListItem[];
 	};
 
-	// SSR data
-	$: list = (data?.list ?? null) as CustomList | null;
-	$: loadingError = data?.error ?? '';
+	let list: CustomList | null = data?.list ?? null;
+	let loadingError = data?.error ?? '';
+	let authFetchKey = '';
 
 	function formatVisibility(visibility: string) {
 		if (visibility === 'public') return $_('custom_lists.visibility.public');
@@ -82,6 +82,38 @@
 
 	function getModeIcon(mode: string) {
 		return mode === 'top' ? ListOrdered : Star;
+	}
+
+	$: if ($user.checked && $user.loggedIn) {
+		refetchWithAuth();
+	}
+
+	async function refetchWithAuth() {
+		const key = `${$page.params.id}:${$user.data?.uid || 'authed'}`;
+		if (key === authFetchKey) return;
+		authFetchKey = key;
+
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${$page.params.id}`, {
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`
+				}
+			});
+
+			const payload = await res.json().catch(() => null);
+
+			if (res.ok && payload) {
+				list = payload as CustomList;
+				loadingError = '';
+				return;
+			}
+
+			if (!list) {
+				loadingError = payload?.error || loadingError || 'Failed to load list';
+			}
+		} catch {
+			// Keep the SSR state when auth recovery fails.
+		}
 	}
 
 	$: isOwner = Boolean(list && $user.loggedIn && list.owner === $user.data?.uid);

@@ -61,7 +61,7 @@
 
 	// SSR data - hydrate into reactive local state
 	let list: CustomList | null = data?.list ?? null;
-	const loadingError = data?.error ?? '';
+	let loadingError = data?.error ?? '';
 
 	let savingMetadata = false;
 	let addingLevel = false;
@@ -116,8 +116,8 @@
 		syncForm();
 	}
 
-	// Re-fetch with auth once user is available (to get private list data)
-	$: if ($user.checked && $user.loggedIn && data?.list) {
+	// Re-fetch with auth once user is available so owners can recover private lists.
+	$: if ($user.checked && $user.loggedIn) {
 		refetchWithAuth();
 	}
 
@@ -134,7 +134,13 @@
 			const payload = await res.json().catch(() => null);
 			if (res.ok && payload) {
 				list = payload as CustomList;
+				loadingError = '';
 				syncForm();
+				return;
+			}
+
+			if (!list) {
+				loadingError = payload?.error || loadingError || 'Failed to load list';
 			}
 		} catch {
 			// silently fail, we already have SSR data
