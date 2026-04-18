@@ -1,5 +1,6 @@
 <script lang="ts">
 	import LevelCard from '$lib/components/levelCard.svelte';
+	import { toLevelCardProps } from '$lib/components/levelCardProps';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
 	import { Badge } from '$lib/components/ui/badge';
@@ -161,12 +162,12 @@
 					{#each listItems as item, i}
 						{#if item.level}
 							<LevelCard
-								level={{
-									...item.level,
-									rating: list.mode === 'rating' ? (item.rating ?? item.level.rating) : item.level.rating
-								}}
+								{...toLevelCardProps(item.level, 'dl', {
+									rating: list.mode === 'rating' ? (item.rating ?? item.level.rating) : item.level.rating,
+									top: i + 1
+								})}
 								type="dl"
-								top={i + 1}
+								ratingPrediction={false}
 							/>
 						{:else}
 							<Card.Root class="missingLevelCard">

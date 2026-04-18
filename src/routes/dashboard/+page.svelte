@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as Carousel from '$lib/components/ui/carousel/index.js';
 	import LevelCard from '$lib/components/levelCard.svelte';
+	import { toLevelCardProps } from '$lib/components/levelCardProps';
 	import Dashboard from '$lib/components/dashboard.svelte';
 	import { user } from '$lib/client';
 	import { isActive } from '$lib/client/isSupporterActive';
@@ -84,7 +85,7 @@
 				<Carousel.Content>
 					{#each recent.dl as level}
 						<Carousel.Item class="sm:basis-1/1 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-							<LevelCard {level} type="dl" />
+							<LevelCard {...toLevelCardProps(level, 'dl')} type="dl" />
 						</Carousel.Item>
 					{/each}
 				</Carousel.Content>
@@ -96,7 +97,7 @@
 				<Carousel.Content>
 					{#each { length: 5 } as _}
 						<Carousel.Item class="sm:basis-1/1 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-							<LevelCard level={null} type="dl" />
+							<LevelCard loading type="dl" />
 						</Carousel.Item>
 					{/each}
 				</Carousel.Content>
@@ -112,7 +113,7 @@
 				<Carousel.Content>
 					{#each recent.fl as level}
 						<Carousel.Item class="sm:basis-1/1 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-							<LevelCard {level} type="fl" />
+							<LevelCard {...toLevelCardProps(level, 'fl')} type="fl" />
 						</Carousel.Item>
 					{/each}
 				</Carousel.Content>
@@ -124,7 +125,7 @@
 				<Carousel.Content>
 					{#each { length: 5 } as _}
 						<Carousel.Item class="sm:basis-1/1 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-							<LevelCard level={null} type="dl" />
+							<LevelCard loading type="dl" />
 						</Carousel.Item>
 					{/each}
 				</Carousel.Content>
@@ -140,7 +141,7 @@
 				<Carousel.Content>
 					{#each recent.pl as level}
 						<Carousel.Item class="sm:basis-1/1 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-							<LevelCard {level} type="pl" />
+							<LevelCard {...toLevelCardProps(level, 'pl')} type="pl" />
 						</Carousel.Item>
 					{/each}
 				</Carousel.Content>
@@ -152,7 +153,7 @@
 				<Carousel.Content>
 					{#each { length: 5 } as _}
 						<Carousel.Item class="sm:basis-1/1 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-							<LevelCard level={null} type="pl" />
+							<LevelCard loading type="pl" />
 						</Carousel.Item>
 					{/each}
 				</Carousel.Content>

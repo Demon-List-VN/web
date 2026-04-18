@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card';
 	import * as ContextMenu from '$lib/components/ui/context-menu';
+	import type { LevelCardProps, LevelCardTag } from '$lib/components/levelCardProps';
 	import { toast } from 'svelte-sonner';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import Check from 'svelte-radix/Check.svelte';
@@ -10,7 +11,6 @@
 	import { calcRating } from '$lib/client/rating';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import { _ } from 'svelte-i18n';
-	import { get } from 'svelte/store';
 	import PlayerLink from '$lib/components/playerLink.svelte';
 
 	let failedToLoad = false;
@@ -23,24 +23,34 @@
 		return `${minutes}:${seconds.toString().padStart(2, '0')}.${milliseconds}`;
 	}
 
-	export let level: any;
+	export let id: LevelCardProps['id'] = null;
+	export let videoID: LevelCardProps['videoID'] = null;
+	export let name: LevelCardProps['name'] = null;
+	export let rating: LevelCardProps['rating'] = null;
+		export let top: LevelCardProps['top'] = null;
+	export let minProgress: LevelCardProps['minProgress'] = null;
+	export let creator: LevelCardProps['creator'] = null;
+	export let creatorId: LevelCardProps['creatorId'] = null;
+	export let creatorData: LevelCardProps['creatorData'] = null;
+	export let tags: LevelCardTag[] = [];
+	export let record: LevelCardProps['record'] = null;
+	export let isPlatformer: LevelCardProps['isPlatformer'] = false;
 	export let type: string;
-	export let top: number | null = null;
 	export let hideTop: boolean = false;
-
-	$: levelTags = (level?.levelsTags || []).map((lt: any) => lt.levelTags).filter(Boolean);
+	export let loading: boolean = false;
+	export let ratingPrediction: boolean = true;
 </script>
 
-{#if level}
+{#if !loading}
 	<div class="level">
 		<Card.Root>
 			<Card.Content>
 				<ContextMenu.Root>
 					<ContextMenu.Trigger>
-						<a href={`/level/${level.id}`} data-sveltekit-preload-data="tap">
+						<a href={`/level/${id}`} data-sveltekit-preload-data="tap">
 							<div class="relative flex h-[235px] justify-center">
 								<img
-									src={`https://img.youtube.com/vi/${level.videoID}/0.jpg`}
+									src={`https://img.youtube.com/vi/${videoID}/0.jpg`}
 									alt=""
 									loading="lazy"
 									decoding="async"
@@ -48,7 +58,7 @@
 								/>
 								{#if !failedToLoad}
 									<img
-										src={`https://levelthumbs.prevter.me/thumbnail/${level.id}/small`}
+										src={`https://levelthumbs.prevter.me/thumbnail/${id}/small`}
 										alt=""
 										loading="lazy"
 										decoding="async"
@@ -62,77 +72,70 @@
 						</a>
 						<div class="levelInfo relative h-[60px]">
 							<a
-								href={`/level/${level.id}`}
+								href={`/level/${id}`}
 								class="absolute inset-0 z-10"
 								data-sveltekit-preload-data="tap"							
-								aria-label={level.name || 'Level details'}							
+								aria-label={name || 'Level details'}							
 							></a>
 							{#if !hideTop}
 								{#if top}
 									<div class="top">#{top}</div>
 								{:else}
-									<div class="top">#{level[`${type == 'fl' ? 'fl' : 'dl'}Top`]}</div>
+									<div class="top">#{top}</div>
 								{/if}
 							{/if}
 							<div class="info">
 								<div class="levelName">
 									<div class="name">
-										{#if top && !hideTop}
-											#{level[`${type == 'fl' ? 'fl' : 'dl'}Top`]}
-										{/if}
-										{level.name}
+										{name}
 									</div>
 									<div class="pt">
-										{#if type == 'fl'}
-											{level.flPt}pt
-										{:else}
-											{level.rating}pt
-										{/if}
+										{rating}pt
 									</div>
 									{#key $user}
-										{#if $user.loggedIn && isActive($user.data.supporterUntil) && type == 'dl'}
-											{#if !level.record}
+										{#if ratingPrediction && $user.loggedIn && isActive($user.data.supporterUntil) && type == 'dl'}
+											{#if !record}
 												<Tooltip.Root>
 													<div class="relative z-20">
 														<Tooltip.Trigger>
 															<div class="pt">
-																+{calcRating($user.ratings, level.rating) - $user.data.rating}
+																+{calcRating($user.ratings, rating) - $user.data.rating}
 															</div>
 														</Tooltip.Trigger>
 													</div>
 													<Tooltip.Content>
 														<p>
-															{$user.data.rating} -> {calcRating($user.ratings, level.rating)}
+															{$user.data.rating} -> {calcRating($user.ratings, rating)}
 														</p>
 													</Tooltip.Content>
 												</Tooltip.Root>
 											{/if}
 										{/if}
 									{/key}
-									{#if level.minProgress}
-										{#if type == 'dl' && level.minProgress != 100}
+									{#if minProgress}
+										{#if type == 'dl' && minProgress != 100}
 											<div class="pt">
-												{level.minProgress}% Min
+												{minProgress}% Min
 											</div>
 										{:else if type == 'pl'}
 											<div class="pt">
-												{getTimeString(level.minProgress)} Base
+												{getTimeString(minProgress)} Base
 											</div>
 										{/if}
 									{/if}
 								</div>
 								<div class="creator flex gap-[5px]">
 									by
-									{#if level.creatorId}
+									{#if creatorId}
 										<div class="relative z-20">
-											<PlayerLink player={level.creatorData} />
+											<PlayerLink player={creatorData} />
 										</div>
 									{:else}
-										{level.creator}
+										{creator}
 									{/if}
-									{#if levelTags.length > 0}
+									{#if tags.length > 0}
 										<div class="levelTags">
-											{#each levelTags as tag}
+											{#each tags as tag}
 												<span
 													class="levelTag"
 													style="background: {tag.color || '#666'}18; color: {tag.color ||
@@ -145,17 +148,17 @@
 									{/if}
 								</div>
 							</div>
-							{#if level.record}
+							{#if record}
 								<div class="progress">
-									{#if level.record.isChecked}
-										{#if !level.isPlatformer}
-											{#if level.record.progress == 100}
+									{#if record.isChecked}
+										{#if !isPlatformer}
+											{#if record.progress == 100}
 												<Check />
 											{:else}
-												{level.record.progress}%
+												{record.progress}%
 											{/if}
 										{:else}
-											{getTimeString(level.record.progress)}
+											{getTimeString(record.progress)}
 										{/if}
 									{:else}
 										<Clock />
@@ -168,7 +171,7 @@
 						<ContextMenu.Item
 							inset
 							on:click={async () => {
-								await navigator.clipboard.writeText(String(level.id));
+								await navigator.clipboard.writeText(String(id));
 								toast.success($_('toast.clipboard'));
 							}}>{$_('context.copy_level_id')}</ContextMenu.Item
 						>
@@ -176,7 +179,7 @@
 							inset
 							on:click={async () => {
 								await navigator.clipboard.writeText(
-									`https://img.youtube.com/vi/${level.videoID}/0.jpg`
+									`https://img.youtube.com/vi/${videoID}/0.jpg`
 								);
 								toast.success($_('toast.clipboard'));
 							}}>{$_('context.copy_thumbnail')}</ContextMenu.Item

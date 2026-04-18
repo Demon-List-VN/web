@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as Carousel from '$lib/components/ui/carousel/index.js';
 	import LevelCard from '$lib/components/levelCard.svelte';
+	import { toLevelCardProps } from '$lib/components/levelCardProps';
 	import { _ } from 'svelte-i18n';
 	import { ArrowRight, Users } from 'lucide-svelte';
 	import { user } from '$lib/client';
@@ -175,7 +176,7 @@
 								<Carousel.Content>
 									{#each levels[activeTab] as level}
 										<Carousel.Item class="sm:basis-1/1 md:basis-1/2 lg:basis-1/3">
-											<LevelCard {level} type={activeTab} />
+											<LevelCard {...toLevelCardProps(level, activeTab)} type={activeTab} />
 										</Carousel.Item>
 									{/each}
 								</Carousel.Content>
@@ -185,7 +186,7 @@
 								<Carousel.Content>
 									{#each { length: 4 } as _}
 										<Carousel.Item class="sm:basis-1/1 md:basis-1/2 lg:basis-1/3">
-											<LevelCard level={null} type={activeTab} />
+											<LevelCard loading type={activeTab} />
 										</Carousel.Item>
 									{/each}
 								</Carousel.Content>

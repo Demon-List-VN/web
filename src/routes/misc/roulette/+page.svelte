@@ -5,6 +5,7 @@ import {Button} from '$lib/components/ui/button';
 import {Card, CardContent} from '$lib/components/ui/card';
 import {Label} from '$lib/components/ui/label';
 import LevelCard from '$lib/components/levelCard.svelte';
+import { toLevelCardProps } from '$lib/components/levelCardProps';
 
 interface Level {
   readonly id?: number;
@@ -373,7 +374,7 @@ onMount(() => {
             Loading...
           </div>
         {:else if currentLevel}
-          <LevelCard level={currentLevel} type={currentType} />
+          <LevelCard {...toLevelCardProps(currentLevel, currentType)} type={currentType} />
         {:else if !finished}
           <div class="h-[120px] sm:h-[220px] flex items-center justify-center text-base sm:text-xl mb-4 text-zinc-500 dark:text-zinc-400">
             No level loaded

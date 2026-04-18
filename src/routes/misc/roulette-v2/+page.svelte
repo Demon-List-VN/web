@@ -2,6 +2,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Select from '$lib/components/ui/select';
 	import LevelCard from '$lib/components/levelCard.svelte';
+	import { toLevelCardProps } from '$lib/components/levelCardProps';
 
 	interface Level {
 		id: number;
@@ -181,7 +182,7 @@
 						{#if rarity !== 'gold'}
 							<div class="case-item" style="border-color: {getRarityColor(rarity)}">
 								<div class="item-glow" style="background: {getRarityColor(rarity)}"></div>
-								<LevelCard level={entry.level} type={list === 'fl' ? 'fl' : 'dl'} />
+									<LevelCard {...toLevelCardProps(entry.level, list === 'fl' ? 'fl' : 'dl')} type={list === 'fl' ? 'fl' : 'dl'} />
 								<div class="item-min-progress" style="color: {getRarityColor(rarity)}; border-color: {getRarityColor(rarity)}">
 									{entry.minProgress}%
 								</div>
@@ -204,7 +205,7 @@
 			<div class="result-content">
 				<div class="rarity-border" style="border-color: {getRarityColor(getRarity(wonLevel))}">
 					<div class="item-glow" style="background: {getRarityColor(getRarity(wonLevel))}"></div>
-					<LevelCard level={wonLevel} type={list === 'fl' ? 'fl' : 'dl'} />
+					<LevelCard {...toLevelCardProps(wonLevel, list === 'fl' ? 'fl' : 'dl')} type={list === 'fl' ? 'fl' : 'dl'} />
 				</div>
 				<div class="min-progress-display">
 					<p>Minimum Progress: <strong style="color: {getRarityColor(getRarity(wonLevel))}">{minProgress}%</strong></p>

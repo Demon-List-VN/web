@@ -1,5 +1,6 @@
 <script lang="ts">
 	import LevelCard from '$lib/components/levelCard.svelte';
+	import { toLevelCardProps } from '$lib/components/levelCardProps';
 	import ListFilter from '$lib/components/listFilter.svelte';
 	import { page } from '$app/stores';
 	import type { PageData } from './$types';
@@ -196,7 +197,11 @@
 	<Ads dataAdFormat="auto"  />
 	<div class="levels">
 		{#each data.levels as level, index}
-			<LevelCard {level} type={$page.params.list || 'dl'} hideTop={$page.params.list === 'cl'} />
+			<LevelCard
+				{...toLevelCardProps(level, $page.params.list || 'dl')}
+				type={$page.params.list || 'dl'}
+				hideTop={$page.params.list === 'cl'}
+			/>
 		{/each}
 	</div>
 </div>

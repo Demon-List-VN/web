@@ -2,6 +2,7 @@
 	import BaseCard from './BaseCard.svelte';
 	import * as Card from '$lib/components/ui/card';
 	import LevelCard from '$lib/components/levelCard.svelte';
+	import { toLevelCardProps } from '$lib/components/levelCardProps';
 	import { _ } from 'svelte-i18n';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import type { CardConfig } from './types';
@@ -24,7 +25,7 @@
 		</Card.Header>
 		<Card.Content>
 			{#if hardestLevel}
-				<LevelCard level={hardestLevel.levels} type="dl" />
+				<LevelCard {...toLevelCardProps(hardestLevel.levels, 'dl')} type="dl" />
 			{:else}
 				<div class="no-records">{$_('player.overview.no_data')}</div>
 			{/if}

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import LevelCard from '$lib/components/levelCard.svelte';
+	import { toLevelCardProps } from '$lib/components/levelCardProps';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import supabase from '$lib/client/supabase';
 	import { onMount } from 'svelte';
@@ -81,15 +82,15 @@
 		{#if lvStart && lvEnd}
 			<p>Estimated rating range: {lvEnd.rating} - {lvStart.rating}</p>
 			<div class="finWrapper">
-				<LevelCard level={lvStart} type="dl" />
-				<LevelCard level={lvEnd} type="dl" />
+				<LevelCard {...toLevelCardProps(lvStart, 'dl')} type="dl" />
+				<LevelCard {...toLevelCardProps(lvEnd, 'dl')} type="dl" />
 			</div>
 		{:else}
 			<Loading inverted />
 		{/if}
 	{:else if level}
 		<div class="lvWrapper">
-			<LevelCard {level} type="dl" />
+			<LevelCard {...toLevelCardProps(level, 'dl')} type="dl" />
 			<div class="btn">
 				<Button on:click={setEasier}>Easier</Button>
 				<span>or</span>

@@ -4,6 +4,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import { Button } from '$lib/components/ui/button';
 	import LevelCard from '$lib/components/levelCard.svelte';
+	import { toLevelCardProps } from '$lib/components/levelCardProps';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import { _ } from 'svelte-i18n';
 	
@@ -98,7 +99,7 @@
 
 <div class="mx-auto grid max-w-[1000px] grid-cols-1 gap-[10px] xl:grid-cols-2">
 	{#each levels[list] as level, index}
-		<LevelCard {level} type={list} top={index + 1} />
+		<LevelCard {...toLevelCardProps(level, list, { top: index + 1 })} type={list} />
 	{/each}
 </div>
 
