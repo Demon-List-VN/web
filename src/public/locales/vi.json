@@ -1706,6 +1706,10 @@
   "custom_lists": {
     "page_title": "Danh sách - Geometry Dash Việt Nam",
     "back": "Quay lại danh sách",
+    "type": {
+      "classic": "Classic",
+      "platformer": "Platformer"
+    },
     "actions": {
       "view": "Xem danh sách",
       "manage": "Quản lý danh sách"
@@ -1758,12 +1762,14 @@
         "heading": "Chỉnh sửa thông tin",
         "title_label": "Tên",
         "description_label": "Mô tả",
+        "type_label": "Loại danh sách",
+        "type_hint": "Danh sách platformer chỉ nhận level platformer và hiển thị base time thay vì phần trăm tối thiểu.",
         "visibility_label": "Chế độ hiển thị",
         "tags_label": "Thẻ",
         "mode_label": "Chế độ",
-        "mode_rating": "Đánh giá",
+        "mode_rating": "Điểm",
         "mode_top": "Top",
-        "mode_rating_hint": "Mỗi level được chấm điểm từ 1–10, hiển thị từ cao đến thấp.",
+        "mode_rating_hint": "Mỗi level được chấm điểm từ 1-10, hiển thị từ cao đến thấp.",
         "mode_top_hint": "Sắp xếp level theo thứ tự tuỳ chỉnh bằng cách kéo thả.",
         "save": "Lưu thay đổi",
         "delete": "Xoá danh sách"
@@ -1784,10 +1790,12 @@
         "platformer": "Platformer",
         "unavailable": "Level không khả dụng #{id}",
         "unavailable_desc": "Mục level vẫn còn trong danh sách này, nhưng siêu dữ liệu cục bộ không khả dụng.",
+        "min_progress_label": "Mốc tối thiểu",
         "id_badge": "ID {id}",
         "remove": "Xoá",
         "drag_hint": "Kéo để sắp xếp lại",
-        "rating_edit_hint": "Nhấn để chỉnh điểm"
+        "rating_edit_hint": "Nhấn để chỉnh điểm",
+        "min_progress_edit_hint": "Nhấn để đặt mốc tối thiểu tuỳ chỉnh. Để trống để dùng giá trị mặc định của level."
       }
     },
     "new": {
@@ -1812,6 +1820,8 @@
       "creating": "Đang tạo…",
       "cancel": "Huỷ",
       "mode_label": "Chế độ",
+      "type_label": "Loại danh sách",
+      "type_hint": "Chọn Platformer nếu danh sách này chỉ nên chứa level platformer.",
       "mode_rating_hint": "Mỗi level được chấm điểm từ 1–10, hiển thị từ cao đến thấp.",
       "mode_top_hint": "Sắp xếp level theo thứ tự tuỳ chỉnh bằng cách kéo thả."
     },
@@ -1836,7 +1846,8 @@
       "failed_update_level": "Không thể cập nhật level",
       "reordered": "Đã lưu thứ tự",
       "failed_reorder": "Không thể lưu thứ tự",
-      "rating_invalid": "Điểm đánh giá phải từ 1 đến 10"
+      "rating_invalid": "Điểm đánh giá phải từ 1 đến 10",
+      "min_progress_invalid": "Nhập mốc tối thiểu hợp lệ"
     }
   }
 }

@@ -14,6 +14,7 @@
 		id: number;
 		levelId: number;
 		created_at: string;
+		minProgress: number | null;
 		rating: number;
 		position: number | null;
 		level: any | null;
@@ -24,6 +25,7 @@
 		owner: string;
 		title: string;
 		description: string;
+		isPlatformer: boolean;
 		visibility: 'private' | 'unlisted' | 'public';
 		mode: 'rating' | 'top';
 		tags: string[];
@@ -51,6 +53,10 @@
 		return mode === 'rating'
 			? $_('custom_lists.detail.edit.mode_rating')
 			: $_('custom_lists.detail.edit.mode_top');
+	}
+
+	function getListTypeLabel(isPlatformer: boolean) {
+		return isPlatformer ? $_('custom_lists.type.platformer') : $_('custom_lists.type.classic');
 	}
 
 	async function fetchList() {
@@ -84,6 +90,7 @@
 
 	$: isOwner = Boolean(list && $user.loggedIn && list.owner === $user.data?.uid);
 	$: listItems = list?.items ?? [];
+	$: listCardType = list?.isPlatformer ? 'pl' : 'dl';
 	$: if ($user.checked) {
 		const viewerKey = $user.loggedIn ? $user.data?.uid || 'authed' : 'guest';
 		const nextKey = `${$page.params.id}:${viewerKey}`;
@@ -129,6 +136,7 @@
 					</div>
 					<div class="heroMeta">
 						<Badge variant="outline">{formatVisibility(list.visibility)}</Badge>
+						<Badge variant="secondary">{getListTypeLabel(list.isPlatformer)}</Badge>
 						<Badge variant="secondary">{getModeLabel(list.mode)}</Badge>
 						<Badge variant="outline">{$_('custom_lists.detail.levels_badge', { values: { count: list.levelCount } })}</Badge>
 					</div>
@@ -162,11 +170,12 @@
 					{#each listItems as item, i}
 						{#if item.level}
 							<LevelCard
-								{...toLevelCardProps(item.level, 'dl', {
+								{...toLevelCardProps(item.level, listCardType, {
 									rating: list.mode === 'rating' ? (item.rating ?? item.level.rating) : item.level.rating,
-									top: i + 1
+									top: i + 1,
+									minProgress: item.minProgress ?? item.level.minProgress ?? null
 								})}
-								type="dl"
+								type={listCardType}
 								ratingPrediction={false}
 							/>
 						{:else}

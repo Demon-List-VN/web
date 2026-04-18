@@ -1707,6 +1707,10 @@
   "custom_lists": {
     "page_title": "Lists - Geometry Dash Việt Nam",
     "back": "Back to lists",
+    "type": {
+      "classic": "Classic",
+      "platformer": "Platformer"
+    },
     "actions": {
       "view": "View list",
       "manage": "Manage list"
@@ -1759,6 +1763,8 @@
         "heading": "Edit metadata",
         "title_label": "Title",
         "description_label": "Description",
+        "type_label": "List type",
+        "type_hint": "Platformer lists only accept platformer levels and display base time instead of percentage minimums.",
         "visibility_label": "Visibility",
         "tags_label": "Tags",
         "mode_label": "Mode",
@@ -1785,10 +1791,12 @@
         "platformer": "Platformer",
         "unavailable": "Unavailable level #{id}",
         "unavailable_desc": "The level entry still exists in this list, but local metadata is unavailable.",
+        "min_progress_label": "Min progress",
         "id_badge": "ID {id}",
         "remove": "Remove",
         "drag_hint": "Drag to reorder",
-        "rating_edit_hint": "Click to set rating"
+        "rating_edit_hint": "Click to set rating",
+        "min_progress_edit_hint": "Click to set a custom minimum progress. Leave blank to use the level default."
       }
     },
     "new": {
@@ -1813,6 +1821,8 @@
       "creating": "Creating…",
       "cancel": "Cancel",
       "mode_label": "Mode",
+      "type_label": "List type",
+      "type_hint": "Choose Platformer if this list should only contain platformer levels.",
       "mode_rating_hint": "Levels are rated 1–10 and shown from highest to lowest rated.",
       "mode_top_hint": "Arrange levels in a custom order by dragging."
     },
@@ -1837,7 +1847,8 @@
       "failed_update_level": "Failed to update level",
       "reordered": "Order saved",
       "failed_reorder": "Failed to save order",
-      "rating_invalid": "Rating must be between 1 and 10"
+      "rating_invalid": "Rating must be between 1 and 10",
+      "min_progress_invalid": "Enter a valid min progress value"
     }
   }
 }

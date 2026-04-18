@@ -4,6 +4,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Badge } from '$lib/components/ui/badge';
+	import { Switch } from '$lib/components/ui/switch';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { user } from '$lib/client';
@@ -15,6 +16,7 @@
 		id: number;
 		levelId: number;
 		created_at: string;
+		minProgress: number | null;
 		rating: number;
 		position: number | null;
 		level: {
@@ -23,6 +25,7 @@
 			creator: string | null;
 			difficulty: string | null;
 			isPlatformer: boolean;
+			minProgress: number | null;
 		} | null;
 	};
 
@@ -31,6 +34,7 @@
 		owner: string;
 		title: string;
 		description: string;
+		isPlatformer: boolean;
 		visibility: 'private' | 'unlisted' | 'public';
 		mode: 'rating' | 'top';
 		tags: string[];
@@ -50,11 +54,14 @@
 	let dragOverIndex: number | null = null;
 	let editingRatingItemId: number | null = null;
 	let editingRatingValue = '';
+	let editingMinProgressItemId: number | null = null;
+	let editingMinProgressValue = '';
 	let savingReorder = false;
 
 	const editForm = {
 		title: '',
 		description: '',
+		isPlatformer: false,
 		visibility: 'private' as 'private' | 'unlisted' | 'public',
 		tags: '',
 		mode: 'rating' as 'rating' | 'top'
@@ -85,6 +92,7 @@
 
 		editForm.title = list.title;
 		editForm.description = list.description;
+		editForm.isPlatformer = list.isPlatformer;
 		editForm.visibility = list.visibility;
 		editForm.tags = list.tags.join(', ');
 		editForm.mode = list.mode;
@@ -103,8 +111,38 @@
 		return $_('custom_lists.visibility.private');
 	}
 
+	function formatListType(isPlatformer: boolean) {
+		return isPlatformer ? $_('custom_lists.type.platformer') : $_('custom_lists.type.classic');
+	}
+
 	function formatDate(value: string) {
 		return new Date(value).toLocaleString('vi-VN');
+	}
+
+	function getTimeString(ms: number) {
+		const minutes = Math.floor(ms / 60000);
+		const seconds = Math.floor((ms % 60000) / 1000);
+		const milliseconds = ms % 1000;
+
+		return `${minutes}:${seconds.toString().padStart(2, '0')}.${milliseconds}`;
+	}
+
+	function getEffectiveMinProgress(item: CustomListItem) {
+		return item.minProgress ?? item.level?.minProgress ?? null;
+	}
+
+	function getMinProgressLabel(item: CustomListItem) {
+		const minProgress = getEffectiveMinProgress(item);
+
+		if (minProgress == null) {
+			return $_('custom_lists.detail.levels.min_progress_label');
+		}
+
+		const value = list?.isPlatformer
+			? `${getTimeString(minProgress)} Base`
+			: `${minProgress}% Min`;
+
+		return item.minProgress == null ? value : `${value} *`;
 	}
 
 	async function fetchList() {
@@ -156,6 +194,7 @@
 				body: JSON.stringify({
 					title: editForm.title,
 					description: editForm.description,
+					isPlatformer: editForm.isPlatformer,
 					visibility: editForm.visibility,
 					tags: parseTags(editForm.tags),
 					mode: editForm.mode
@@ -276,6 +315,11 @@
 		editingRatingValue = String(item.rating ?? 5);
 	}
 
+	function startMinProgressEdit(item: CustomListItem) {
+		editingMinProgressItemId = item.id;
+		editingMinProgressValue = item.minProgress == null ? '' : String(item.minProgress);
+	}
+
 	async function saveRatingEdit(levelId: number) {
 		const rating = Number.parseInt(editingRatingValue, 10);
 		editingRatingItemId = null;
@@ -286,7 +330,28 @@
 		await updateLevelItem(levelId, { rating });
 	}
 
-	async function updateLevelItem(levelId: number, patch: { rating?: number }) {
+	async function saveMinProgressEdit(levelId: number) {
+		if (!list) return;
+
+		const rawValue = editingMinProgressValue.trim();
+		editingMinProgressItemId = null;
+
+		if (!rawValue.length) {
+			await updateLevelItem(levelId, { minProgress: null });
+			return;
+		}
+
+		const minProgress = Number.parseInt(rawValue, 10);
+
+		if (!Number.isInteger(minProgress) || minProgress <= 0 || (!list.isPlatformer && minProgress > 100)) {
+			toast.error($_('custom_lists.toast.min_progress_invalid'));
+			return;
+		}
+
+		await updateLevelItem(levelId, { minProgress });
+	}
+
+	async function updateLevelItem(levelId: number, patch: { rating?: number; minProgress?: number | null }) {
 		if (!list) return;
 		try {
 			const res = await fetch(
@@ -412,6 +477,7 @@
 						<p>{list.description || $_('custom_lists.detail.no_description')}</p>
 					</div>
 					<div class="heroMeta">
+						<Badge variant="secondary">{formatListType(list.isPlatformer)}</Badge>
 						<Badge variant="outline">{formatVisibility(list.visibility)}</Badge>
 						<Badge variant="outline">{$_('custom_lists.detail.levels_badge', { values: { count: list.levelCount } })}</Badge>
 					</div>
@@ -442,6 +508,18 @@
 							<div class="field">
 								<label for="list-description">{$_('custom_lists.detail.edit.description_label')}</label>
 								<Textarea id="list-description" bind:value={editForm.description} rows={4} />
+							</div>
+							<div class="field">
+								<div class="switchRow">
+									<div>
+										<label for="list-platformer">{$_('custom_lists.detail.edit.type_label')}</label>
+										<p class="hint">{$_('custom_lists.detail.edit.type_hint')}</p>
+									</div>
+									<div class="switchControl">
+										<span>{formatListType(editForm.isPlatformer)}</span>
+										<Switch id="list-platformer" bind:checked={editForm.isPlatformer} />
+									</div>
+								</div>
 							</div>
 							<div class="field">
 								<span class="fieldLabel">{$_('custom_lists.detail.edit.visibility_label')}</span>
@@ -582,6 +660,28 @@
 												</button>
 											{/if}
 										{/if}
+										{#if isOwner && editingMinProgressItemId === item.id}
+											<input
+												class="ratingInput minProgressInput"
+												type="number"
+												min="1"
+												max={list.isPlatformer ? undefined : '100'}
+												placeholder={item.level?.minProgress != null ? String(item.level.minProgress) : undefined}
+												bind:value={editingMinProgressValue}
+												on:blur={() => saveMinProgressEdit(item.levelId)}
+												on:keydown={(e) => e.key === 'Enter' && saveMinProgressEdit(item.levelId)}
+											/>
+										{:else}
+											<button
+												class="ratingBadge"
+												class:ownerEditable={isOwner}
+												type="button"
+												on:click={isOwner ? () => startMinProgressEdit(item) : undefined}
+												title={isOwner ? $_('custom_lists.detail.levels.min_progress_edit_hint') : undefined}
+											>
+												{getMinProgressLabel(item)}
+											</button>
+										{/if}
 										<Badge variant="outline">{$_('custom_lists.detail.levels.id_badge', { values: { id: item.levelId } })}</Badge>
 										{#if isOwner}
 											<Button
@@ -716,6 +816,23 @@
 		border-color: hsl(var(--primary));
 	}
 
+	.switchRow,
+	.switchControl {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+	}
+
+	.switchRow {
+		justify-content: space-between;
+		flex-wrap: wrap;
+	}
+
+	.switchControl {
+		font-size: 0.95rem;
+		font-weight: 500;
+	}
+
 	.levelList {
 		display: flex;
 		flex-direction: column;
@@ -790,6 +907,10 @@
 		color: hsl(var(--foreground));
 		font-size: 0.9rem;
 		text-align: center;
+	}
+
+	.minProgressInput {
+		width: 132px;
 	}
 
 	.levelBody {

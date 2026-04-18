@@ -2,6 +2,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
 	import { Input } from '$lib/components/ui/input';
+	import { Switch } from '$lib/components/ui/switch';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { goto } from '$app/navigation';
 	import { user } from '$lib/client';
@@ -22,7 +23,8 @@
 		description: '',
 		visibility: 'private' as 'private' | 'unlisted' | 'public',
 		tags: '',
-		mode: 'rating' as 'rating' | 'top'
+		mode: 'rating' as 'rating' | 'top',
+		isPlatformer: false
 	};
 
 	let creating = false;
@@ -54,7 +56,8 @@
 					description: form.description,
 					visibility: form.visibility,
 					tags: parseTags(form.tags),
-					mode: form.mode
+					mode: form.mode,
+					isPlatformer: form.isPlatformer
 				})
 			});
 
@@ -156,6 +159,19 @@
 					</div>
 
 					<div class="field">
+						<div class="switchRow">
+							<div>
+								<label for="list-platformer">{$_('custom_lists.new.type_label')}</label>
+								<p class="hint">{$_('custom_lists.new.type_hint')}</p>
+							</div>
+							<div class="switchControl">
+								<span>{form.isPlatformer ? $_('custom_lists.type.platformer') : $_('custom_lists.type.classic')}</span>
+								<Switch id="list-platformer" bind:checked={form.isPlatformer} />
+							</div>
+						</div>
+					</div>
+
+					<div class="field">
 						<label for="list-tags">{$_('custom_lists.new.tags_label')}</label>
 						<Input
 							id="list-tags"
@@ -244,6 +260,23 @@
 	.visibilityRow button.selected {
 		background: hsl(var(--primary) / 0.12);
 		border-color: hsl(var(--primary));
+	}
+
+	.switchRow,
+	.switchControl {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+	}
+
+	.switchRow {
+		justify-content: space-between;
+		flex-wrap: wrap;
+	}
+
+	.switchControl {
+		font-size: 0.95rem;
+		font-weight: 500;
 	}
 
 	.hint {

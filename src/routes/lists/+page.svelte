@@ -16,6 +16,7 @@
 		id: number;
 		title: string;
 		description: string;
+		isPlatformer: boolean;
 		visibility: 'private' | 'unlisted' | 'public';
 		tags: string[];
 		levelCount: number;
@@ -51,6 +52,10 @@
 		if (visibility === 'public') return $_('custom_lists.visibility.public');
 		if (visibility === 'unlisted') return $_('custom_lists.visibility.unlisted');
 		return $_('custom_lists.visibility.private');
+	}
+
+	function formatListType(isPlatformer: boolean) {
+		return isPlatformer ? $_('custom_lists.type.platformer') : $_('custom_lists.type.classic');
 	}
 
 	function formatDate(value: string) {
@@ -272,10 +277,13 @@
 								<h3>{list.title}</h3>
 								<p>{list.description || $_('custom_lists.detail.no_description')}</p>
 							</div>
-							<Badge variant="outline">
-								<Globe2 class="mr-1 h-3.5 w-3.5" />
-								{$_('custom_lists.visibility.public')}
-							</Badge>
+							<div class="badgeRow">
+								<Badge variant="outline">
+									<Globe2 class="mr-1 h-3.5 w-3.5" />
+									{$_('custom_lists.visibility.public')}
+								</Badge>
+								<Badge variant="secondary">{formatListType(list.isPlatformer)}</Badge>
+							</div>
 						</div>
 
 						<div class="metaRow">
@@ -352,7 +360,10 @@
 									<h3>{list.title}</h3>
 									<p>{list.description || $_('custom_lists.detail.no_description')}</p>
 								</div>
-								<Badge variant="outline">{formatVisibility(list.visibility)}</Badge>
+								<div class="badgeRow">
+									<Badge variant="outline">{formatVisibility(list.visibility)}</Badge>
+									<Badge variant="secondary">{formatListType(list.isPlatformer)}</Badge>
+								</div>
 							</div>
 
 							<div class="metaRow">
@@ -420,6 +431,13 @@
 	.sectionHint,
 	.ownerRow {
 		color: hsl(var(--muted-foreground));
+	}
+
+	.badgeRow {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		align-items: center;
 	}
 
 	:global(.quickCard),
