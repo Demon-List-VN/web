@@ -1,11 +1,38 @@
-import { register, init, locale } from 'svelte-i18n';
+import { addMessages, init, locale } from 'svelte-i18n';
 
-register('en', () => import('./public/locales/en.json'));
-register('vi', () => import('./public/locales/vi.json'));
+import en from './public/locales/en.json';
+import vi from './public/locales/vi.json';
+
+export const DEFAULT_LOCALE = 'vi';
+
+addMessages('en', en);
+addMessages('vi', vi);
 
 init({
-	fallbackLocale: 'vi',
-	initialLocale: 'vi'
+	fallbackLocale: DEFAULT_LOCALE,
+	initialLocale: DEFAULT_LOCALE
 });
 
-locale.set('vi');
+export function resolveLocale(candidate?: string | null) {
+	if (!candidate) {
+		return DEFAULT_LOCALE;
+	}
+
+	const normalized = candidate.toLowerCase();
+
+	if (normalized.startsWith('en')) {
+		return 'en';
+	}
+
+	if (normalized.startsWith('vi')) {
+		return 'vi';
+	}
+
+	return DEFAULT_LOCALE;
+}
+
+export function setAppLocale(candidate?: string | null) {
+	const nextLocale = resolveLocale(candidate);
+	locale.set(nextLocale);
+	return nextLocale;
+}

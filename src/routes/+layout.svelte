@@ -1,9 +1,10 @@
 <script lang="ts">
 	import type { ComponentType } from 'svelte';
+	import type { LayoutData } from './$types';
 	import '../app.pcss';
 	import '../app.scss';
 	import 'non.geist';
-	import '../i18n';
+	import { resolveLocale, setAppLocale } from '../i18n';
 
 	import { ModeWatcher, setMode } from 'mode-watcher';
 
@@ -56,6 +57,10 @@
 		Bug
 	} from 'lucide-svelte';
 	import OnboardingModal from '$lib/components/OnboardingModal.svelte';
+
+	export let data: LayoutData;
+
+	$: setAppLocale(data.initialLocale);
 
 	$: showOnboarding =
 		$user.checked &&
@@ -170,6 +175,11 @@
 		localStorage.setItem('theme', theme);
 	}
 
+	function persistLocale(value: string) {
+		localStorage.setItem('locale', value);
+		document.cookie = `locale=${value}; Path=/; Max-Age=31536000; SameSite=Lax`;
+	}
+
 	// Close sidebar on route change (mobile)
 	$: if (pathname) {
 		closeSidebar();
@@ -195,13 +205,15 @@
 
 	onMount(() => {
 		const savedLocale = localStorage.getItem('locale');
-
-		locale.set(savedLocale || 'vi');
-		locale.subscribe((value) => {
+		const initialLocale = resolveLocale(savedLocale ?? data.initialLocale);
+		const unsubscribeLocale = locale.subscribe((value) => {
 			if (value) {
-				localStorage.setItem('locale', value);
+				persistLocale(resolveLocale(value));
 			}
 		});
+
+		setAppLocale(initialLocale);
+		persistLocale(initialLocale);
 
 		const currentTheme =
 			localStorage.getItem('theme') || document.documentElement.getAttribute('data-theme');
@@ -229,6 +241,10 @@
 		removePad = urlParams.has('removePad');
 
 		enableAds();
+
+		return () => {
+			unsubscribeLocale();
+		};
 	});
 
 	function dismissSupporterAlert() {
