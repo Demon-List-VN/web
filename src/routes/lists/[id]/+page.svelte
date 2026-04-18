@@ -7,8 +7,20 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { user } from '$lib/client';
-	import { ArrowLeft, Settings } from 'lucide-svelte';
+	import {
+		ArrowLeft,
+		Settings,
+		Globe2,
+		EyeOff,
+		Lock,
+		Layers,
+		Clock,
+		ListOrdered,
+		Star
+	} from 'lucide-svelte';
 	import { _ } from 'svelte-i18n';
+
+	export let data: any;
 
 	type CustomListItem = {
 		id: number;
@@ -34,10 +46,9 @@
 		items: CustomListItem[];
 	};
 
-	let list: CustomList | null = null;
-	let loading = true;
-	let loadingError = '';
-	let loadKey = '';
+	// SSR data
+	$: list = (data?.list ?? null) as CustomList | null;
+	$: loadingError = data?.error ?? '';
 
 	function formatVisibility(visibility: string) {
 		if (visibility === 'public') return $_('custom_lists.visibility.public');
@@ -46,7 +57,11 @@
 	}
 
 	function formatDate(value: string) {
-		return new Date(value).toLocaleString('vi-VN');
+		return new Date(value).toLocaleDateString('vi-VN', {
+			year: 'numeric',
+			month: 'short',
+			day: 'numeric'
+		});
 	}
 
 	function getModeLabel(mode: 'rating' | 'top') {
@@ -59,113 +74,105 @@
 		return isPlatformer ? $_('custom_lists.type.platformer') : $_('custom_lists.type.classic');
 	}
 
-	async function fetchList() {
-		loading = true;
-		loadingError = '';
+	function getVisibilityIcon(visibility: string) {
+		if (visibility === 'public') return Globe2;
+		if (visibility === 'unlisted') return EyeOff;
+		return Lock;
+	}
 
-		try {
-			const headers: Record<string, string> = {};
-			if ($user.loggedIn) {
-				headers.Authorization = `Bearer ${await $user.token()}`;
-			}
-
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${$page.params.id}`, {
-				headers
-			});
-
-			const payload = await res.json().catch(() => null);
-
-			if (!res.ok) {
-				throw new Error(payload?.error || $_('custom_lists.toast.failed_load'));
-			}
-
-			list = payload as CustomList;
-		} catch (error) {
-			loadingError = error instanceof Error ? error.message : $_('custom_lists.toast.failed_load');
-			list = null;
-		} finally {
-			loading = false;
-		}
+	function getModeIcon(mode: string) {
+		return mode === 'top' ? ListOrdered : Star;
 	}
 
 	$: isOwner = Boolean(list && $user.loggedIn && list.owner === $user.data?.uid);
 	$: listItems = list?.items ?? [];
 	$: listCardType = list?.isPlatformer ? 'pl' : 'dl';
-	$: if ($user.checked) {
-		const viewerKey = $user.loggedIn ? $user.data?.uid || 'authed' : 'guest';
-		const nextKey = `${$page.params.id}:${viewerKey}`;
-		if (nextKey !== loadKey) {
-			loadKey = nextKey;
-			fetchList();
-		}
-	}
 </script>
 
 <svelte:head>
 	<title>{list ? `${list.title} - ${$_('custom_lists.page_title')}` : $_('custom_lists.index.title')} - Geometry Dash Việt Nam</title>
+	{#if list?.description}
+		<meta name="description" content={list.description} />
+	{/if}
 </svelte:head>
 
 <div class="page">
+	<!-- Toolbar -->
 	<div class="toolbar">
-		<Button variant="outline" on:click={() => goto('/lists')}>
+		<Button variant="outline" size="sm" on:click={() => goto('/lists')}>
 			<ArrowLeft class="mr-2 h-4 w-4" />
 			{$_('custom_lists.back')}
 		</Button>
 		{#if list && isOwner}
-			<Button on:click={() => goto(`/lists/${$page.params.id}/manage`)}>
+			<Button size="sm" on:click={() => goto(`/lists/${$page.params.id}/manage`)}>
 				<Settings class="mr-2 h-4 w-4" />
 				{$_('custom_lists.actions.manage')}
 			</Button>
 		{/if}
 	</div>
 
-	{#if loading}
-		<div class="emptyState">{$_('custom_lists.detail.loading')}</div>
-	{:else if loadingError}
+	{#if loadingError}
 		<div class="emptyState">
-			<h2>{$_('custom_lists.detail.error_title')}</h2>
+			<h3>{$_('custom_lists.detail.error_title')}</h3>
 			<p>{loadingError}</p>
 		</div>
 	{:else if list}
-		<Card.Root class="heroCard">
-			<Card.Content class="pt-6">
-				<div class="heroHead">
-					<div>
-						<h1>{list.title}</h1>
-						<p>{list.description || $_('custom_lists.detail.no_description')}</p>
-					</div>
-					<div class="heroMeta">
-						<Badge variant="outline">{formatVisibility(list.visibility)}</Badge>
-						<Badge variant="secondary">{getListTypeLabel(list.isPlatformer)}</Badge>
-						<Badge variant="secondary">{getModeLabel(list.mode)}</Badge>
-						<Badge variant="outline">{$_('custom_lists.detail.levels_badge', { values: { count: list.levelCount } })}</Badge>
-					</div>
-				</div>
-
-				{#if list.tags?.length}
-					<div class="tagRow">
-						{#each list.tags as tag}
-							<Badge variant="outline">{tag}</Badge>
-						{/each}
-					</div>
+		<!-- Hero Card -->
+		<div class="hero">
+			<div class="heroTop">
+				<h1>{list.title}</h1>
+				{#if list.description}
+					<p class="heroDesc">{list.description}</p>
+				{:else}
+					<p class="heroDesc muted">{$_('custom_lists.detail.no_description')}</p>
 				{/if}
+			</div>
 
-				<p class="updatedAt">{$_('custom_lists.detail.updated', { values: { date: formatDate(list.updated_at) } })}</p>
-			</Card.Content>
-		</Card.Root>
+			<div class="heroMeta">
+				<span class="metaChip">
+					<svelte:component this={getVisibilityIcon(list.visibility)} class="h-3.5 w-3.5" />
+					{formatVisibility(list.visibility)}
+				</span>
+				<span class="metaChip">
+					<Layers class="h-3.5 w-3.5" />
+					{getListTypeLabel(list.isPlatformer)}
+				</span>
+				<span class="metaChip">
+					<svelte:component this={getModeIcon(list.mode)} class="h-3.5 w-3.5" />
+					{getModeLabel(list.mode)}
+				</span>
+				<span class="metaChip">
+					{$_('custom_lists.detail.levels_badge', { values: { count: list.levelCount } })}
+				</span>
+			</div>
 
-		<div class="sectionHeader">
-			<h2>{$_('custom_lists.detail.levels.heading')}</h2>
-			<Badge variant="outline">{list.items.length}</Badge>
+			{#if list.tags?.length}
+				<div class="tagRow">
+					{#each list.tags as tag}
+						<Badge variant="outline">{tag}</Badge>
+					{/each}
+				</div>
+			{/if}
+
+			<p class="updatedAt">
+				<Clock class="h-3.5 w-3.5" />
+				{$_('custom_lists.detail.updated', { values: { date: formatDate(list.updated_at) } })}
+			</p>
 		</div>
 
-		{#if listItems.length === 0}
-			<div class="emptyState slim">
-				<h2>{$_('custom_lists.detail.levels.empty_title')}</h2>
-				<p>{isOwner ? $_('custom_lists.detail.levels.empty_owner_manage') : $_('custom_lists.detail.levels.empty_visitor')}</p>
+		<!-- Levels Section -->
+		<div class="levelsSection">
+			<div class="sectionHeader">
+				<h2>{$_('custom_lists.detail.levels.heading')}</h2>
+				<Badge variant="outline">{list.items.length}</Badge>
 			</div>
-		{:else}
-			<div class="levelsWrapper">
+
+			{#if listItems.length === 0}
+				<div class="emptyState slim">
+					<h3>{$_('custom_lists.detail.levels.empty_title')}</h3>
+					<p>{isOwner ? $_('custom_lists.detail.levels.empty_owner_manage') : $_('custom_lists.detail.levels.empty_visitor')}</p>
+				</div>
+			{:else}
 				<div class="levels">
 					{#each listItems as item, i}
 						{#if item.level}
@@ -179,22 +186,18 @@
 								ratingPrediction={false}
 							/>
 						{:else}
-							<Card.Root class="missingLevelCard">
-								<Card.Content class="pt-6">
-									<div class="missingLevelHeader">
-										<div class="rankBadge">#{i + 1}</div>
-										<div>
-											<h3>{$_('custom_lists.detail.levels.unavailable', { values: { id: item.levelId } })}</h3>
-											<p>{$_('custom_lists.detail.levels.unavailable_desc')}</p>
-										</div>
-									</div>
-								</Card.Content>
-							</Card.Root>
+							<div class="missingLevel">
+								<div class="missingRank">#{i + 1}</div>
+								<div class="missingContent">
+									<h4>{$_('custom_lists.detail.levels.unavailable', { values: { id: item.levelId } })}</h4>
+									<p>{$_('custom_lists.detail.levels.unavailable_desc')}</p>
+								</div>
+							</div>
 						{/if}
 					{/each}
 				</div>
-			</div>
-		{/if}
+			{/if}
+		</div>
 	{/if}
 </div>
 
@@ -205,86 +208,120 @@
 		padding: 24px 16px 48px;
 		display: flex;
 		flex-direction: column;
-		gap: 18px;
+		gap: 20px;
 	}
 
-	h1,
-	h2,
-	.emptyState h2 {
-		margin: 0;
-	}
-
-	:global(.heroCard),
-	:global(.missingLevelCard) {
-		border: 1px solid hsl(var(--border));
-	}
-
-	.toolbar,
-	.heroHead,
-	.heroMeta,
-	.sectionHeader,
-	.tagRow,
-	.missingLevelHeader {
+	/* Toolbar */
+	.toolbar {
 		display: flex;
-		gap: 12px;
-	}
-
-	.toolbar,
-	.heroHead,
-	.sectionHeader {
-		justify-content: space-between;
-	}
-
-	.toolbar,
-	.heroHead,
-	.heroMeta,
-	.sectionHeader,
-	.missingLevelHeader {
 		align-items: center;
-	}
-
-	.heroMeta,
-	.tagRow {
+		justify-content: space-between;
+		gap: 10px;
 		flex-wrap: wrap;
 	}
 
-	.heroHead p,
-	.updatedAt,
-	:global(.missingLevelCard) p,
-	.emptyState p {
+	/* Hero */
+	.hero {
+		background: hsl(var(--card));
+		border: 1px solid hsl(var(--border));
+		border-radius: 12px;
+		padding: 24px;
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+	}
+
+	.heroTop h1 {
+		margin: 0;
+		font-size: 1.5rem;
+		font-weight: 700;
+		letter-spacing: -0.01em;
+	}
+
+	.heroDesc {
+		margin: 6px 0 0;
+		font-size: 0.95rem;
+		color: hsl(var(--foreground));
+		line-height: 1.5;
+	}
+
+	.heroDesc.muted {
+		color: hsl(var(--muted-foreground));
+		font-style: italic;
+	}
+
+	.heroMeta {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	.metaChip {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		font-size: 0.8rem;
+		color: hsl(var(--muted-foreground));
+		background: hsl(var(--muted) / 0.4);
+		padding: 4px 10px;
+		border-radius: 999px;
+		white-space: nowrap;
+	}
+
+	.tagRow {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+
+	.updatedAt {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		margin: 0;
+		font-size: 0.8rem;
 		color: hsl(var(--muted-foreground));
 	}
 
-	.tagRow,
-	.updatedAt {
-		margin-top: 12px;
+	/* Levels */
+	.levelsSection {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
 	}
 
-	.levelsWrapper {
+	.sectionHeader {
 		display: flex;
-		justify-content: center;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
+	}
+
+	.sectionHeader h2 {
+		margin: 0;
+		font-size: 1.2rem;
+		font-weight: 600;
 	}
 
 	.levels {
 		display: grid;
 		align-items: start;
 		gap: 10px;
-		grid-template-columns: 500px 500px;
-		margin-inline: auto;
-		margin-bottom: 20px;
-		padding-inline: 10px;
+		grid-template-columns: repeat(2, 1fr);
 	}
 
-	:global(.missingLevelCard) {
-		width: 500px;
+	/* Missing level card */
+	.missingLevel {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 16px 18px;
+		background: hsl(var(--card));
+		border: 1px solid hsl(var(--border));
+		border-radius: 10px;
 	}
 
-	:global(.missingLevelCard) h3 {
-		margin: 0;
-		font-size: 1rem;
-	}
-
-	.rankBadge {
+	.missingRank {
 		font-size: 0.85rem;
 		font-weight: 700;
 		color: hsl(var(--muted-foreground));
@@ -293,35 +330,67 @@
 		flex-shrink: 0;
 	}
 
-	@media screen and (max-width: 1100px) {
-		.levels {
-			grid-template-columns: 100%;
-		}
-
-		:global(.missingLevelCard) {
-			width: 100%;
-		}
+	.missingContent h4 {
+		margin: 0;
+		font-size: 0.95rem;
+		font-weight: 600;
 	}
 
+	.missingContent p {
+		margin: 2px 0 0;
+		font-size: 0.8rem;
+		color: hsl(var(--muted-foreground));
+	}
+
+	/* Empty State */
 	.emptyState {
 		border: 1px dashed hsl(var(--border));
-		border-radius: 16px;
-		padding: 32px 20px;
+		border-radius: 12px;
+		padding: 40px 24px;
 		text-align: center;
-		background: hsl(var(--muted) / 0.18);
+		background: hsl(var(--muted) / 0.12);
 	}
 
 	.emptyState.slim {
 		padding: 28px 20px;
 	}
 
-	@media screen and (max-width: 700px) {
-		.toolbar,
-		.heroHead,
-		.sectionHeader,
-		.missingLevelHeader {
+	.emptyState h3 {
+		margin: 0 0 6px;
+		font-size: 1.05rem;
+		font-weight: 600;
+	}
+
+	.emptyState p {
+		margin: 0;
+		color: hsl(var(--muted-foreground));
+		font-size: 0.9rem;
+	}
+
+	/* Responsive */
+	@media (max-width: 900px) {
+		.levels {
+			grid-template-columns: 1fr;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.hero {
+			padding: 18px 16px;
+		}
+
+		.heroTop h1 {
+			font-size: 1.25rem;
+		}
+
+		.toolbar {
 			flex-direction: column;
 			align-items: stretch;
+		}
+
+		.sectionHeader {
+			flex-direction: column;
+			align-items: flex-start;
 		}
 	}
 </style>
