@@ -1703,5 +1703,141 @@
     "title": "Please disable your ad blocker",
     "desc": "Ads help keep GDVN free for everyone. Please disable your ad blocker to continue.",
     "button": "I disabled AdBlock"
+  },
+  "custom_lists": {
+    "page_title": "Lists - Geometry Dash Việt Nam",
+    "back": "Back to lists",
+    "actions": {
+      "view": "View list",
+      "manage": "Manage list"
+    },
+    "visibility": {
+      "public": "Public",
+      "unlisted": "Unlisted",
+      "private": "Private"
+    },
+    "index": {
+      "title": "Lists",
+      "subtitle": "Browse public lists and manage your own level collections.",
+      "new_list": "New list",
+      "browse": {
+        "heading": "Browse lists",
+        "hint": "Public lists are discoverable by everyone.",
+        "search_placeholder": "Search public lists by title or description",
+        "search_button": "Search",
+        "loading": "Loading lists...",
+        "empty_title": "No public lists found",
+        "empty_search_hint": "Try a different search term.",
+        "empty_browse_hint": "Public lists will appear here once creators publish them.",
+        "load_more": "Load more",
+        "loading_more": "Loading...",
+        "open": "Open list",
+        "add_level": "Add current level",
+        "by": "by"
+      },
+      "own": {
+        "loading": "Loading your lists...",
+        "sign_in_title": "Sign in to create and manage lists",
+        "sign_in_desc": "You need an account to create, edit, and populate your own lists.",
+        "sign_in_quickadd": "Sign in to save level #{id} to one of your own lists.",
+        "quick_title": "Save level #{id} to a list",
+        "quick_desc": "Pick one of your existing lists below, or create a new one.",
+        "heading": "Your lists",
+        "empty_title": "No lists yet",
+        "empty_desc": "Create your first list to start organising levels."
+      }
+    },
+    "detail": {
+      "loading": "Loading list...",
+      "error_title": "Unable to open this list",
+      "levels_badge": "{count} levels",
+      "level_badge": "Level {id}",
+      "updated": "Updated {date}",
+      "no_description": "No description yet.",
+      "delete_confirm": "Delete this list? This cannot be undone.",
+      "edit": {
+        "heading": "Edit metadata",
+        "title_label": "Title",
+        "description_label": "Description",
+        "visibility_label": "Visibility",
+        "tags_label": "Tags",
+        "mode_label": "Mode",
+        "mode_rating": "Rating",
+        "mode_top": "Top",
+        "mode_rating_hint": "Levels are rated 1–10 and shown from highest to lowest rated.",
+        "mode_top_hint": "Arrange levels in a custom order by dragging.",
+        "save": "Save changes",
+        "delete": "Delete list"
+      },
+      "add_level": {
+        "heading": "Add a level",
+        "id_label": "Geometry Dash Level ID",
+        "hint": "Only official Geometry Dash level IDs are accepted.",
+        "button": "Add level"
+      },
+      "levels": {
+        "heading": "Levels",
+        "empty_title": "No levels yet",
+        "empty_owner": "Add your first level using the form above.",
+        "empty_owner_manage": "This list has no levels yet. Open Manage to add your first one.",
+        "empty_visitor": "This list has no levels yet.",
+        "by": "by",
+        "platformer": "Platformer",
+        "unavailable": "Unavailable level #{id}",
+        "unavailable_desc": "The level entry still exists in this list, but local metadata is unavailable.",
+        "id_badge": "ID {id}",
+        "remove": "Remove",
+        "drag_hint": "Drag to reorder",
+        "rating_edit_hint": "Click to set rating"
+      }
+    },
+    "new": {
+      "page_title": "New list",
+      "heading": "Create a new list",
+      "subtitle": "Organise Geometry Dash levels into a shareable collection.",
+      "loading": "Loading...",
+      "sign_in_title": "Sign in to create lists",
+      "sign_in_desc": "You need an account to create, edit, and populate your own lists.",
+      "title_label": "Title",
+      "title_placeholder": "My awesome list",
+      "description_label": "Description",
+      "description_placeholder": "Describe what levels are in this list…",
+      "visibility_label": "Visibility",
+      "visibility_public_hint": "Anyone can discover and view this list.",
+      "visibility_unlisted_hint": "Only people with the link can view this list.",
+      "visibility_private_hint": "Only you can see this list.",
+      "tags_label": "Tags",
+      "tags_placeholder": "challenge, favorite, platformer",
+      "tags_hint": "Separate tags with commas. Up to 10 tags.",
+      "create_button": "Create list",
+      "creating": "Creating…",
+      "cancel": "Cancel",
+      "mode_label": "Mode",
+      "mode_rating_hint": "Levels are rated 1–10 and shown from highest to lowest rated.",
+      "mode_top_hint": "Arrange levels in a custom order by dragging."
+    },
+    "toast": {
+      "title_required": "Title is required",
+      "level_id_invalid": "Enter a valid level ID",
+      "list_updated": "List updated",
+      "list_deleted": "List deleted",
+      "list_created": "List created",
+      "level_added": "Level added to list",
+      "level_removed": "Level removed from list",
+      "failed_load": "Failed to load list",
+      "failed_update": "Failed to update list",
+      "failed_delete": "Failed to delete list",
+      "failed_create": "Failed to create list",
+      "failed_add_level": "Failed to add level",
+      "failed_remove_level": "Failed to remove level",
+      "failed_load_own": "Failed to load your lists",
+      "failed_browse": "Failed to browse lists",
+      "failed_add_to_list": "Failed to add level to list",
+      "level_updated": "Level updated",
+      "failed_update_level": "Failed to update level",
+      "reordered": "Order saved",
+      "failed_reorder": "Failed to save order",
+      "rating_invalid": "Rating must be between 1 and 10"
+    }
   }
 }

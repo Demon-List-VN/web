@@ -1702,5 +1702,141 @@
     "title": "Vui lòng tắt trình chặn quảng cáo",
     "desc": "Quảng cáo giúp GDVN hoạt động miễn phí cho mọi người. Vui lòng tắt trình chặn quảng cáo để tiếp tục.",
     "button": "Tôi đã tắt AdBlock"
+  },
+  "custom_lists": {
+    "page_title": "Danh sách - Geometry Dash Việt Nam",
+    "back": "Quay lại danh sách",
+    "actions": {
+      "view": "Xem danh sách",
+      "manage": "Quản lý danh sách"
+    },
+    "visibility": {
+      "public": "Công khai",
+      "unlisted": "Không liệt kê",
+      "private": "Riêng tư"
+    },
+    "index": {
+      "title": "Danh sách",
+      "subtitle": "Xem các danh sách công khai và quản lý bộ sưu tập level của bạn.",
+      "new_list": "Tạo danh sách",
+      "browse": {
+        "heading": "Khám phá danh sách",
+        "hint": "Danh sách công khai có thể được tìm thấy bởi tất cả mọi người.",
+        "search_placeholder": "Tìm kiếm danh sách công khai theo tên hoặc mô tả",
+        "search_button": "Tìm kiếm",
+        "loading": "Đang tải danh sách...",
+        "empty_title": "Không tìm thấy danh sách công khai",
+        "empty_search_hint": "Thử từ khoá tìm kiếm khác.",
+        "empty_browse_hint": "Các danh sách công khai sẽ xuất hiện ở đây khi người tạo công bố.",
+        "load_more": "Tải thêm",
+        "loading_more": "Đang tải...",
+        "open": "Xem danh sách",
+        "add_level": "Thêm level hiện tại",
+        "by": "bởi"
+      },
+      "own": {
+        "loading": "Đang tải danh sách của bạn...",
+        "sign_in_title": "Đăng nhập để tạo và quản lý danh sách",
+        "sign_in_desc": "Bạn cần một tài khoản để tạo, chỉnh sửa và thêm level vào danh sách của mình.",
+        "sign_in_quickadd": "Đăng nhập để lưu level #{id} vào một trong danh sách của bạn.",
+        "quick_title": "Lưu level #{id} vào danh sách",
+        "quick_desc": "Chọn một trong các danh sách hiện có bên dưới, hoặc tạo mới.",
+        "heading": "Danh sách của bạn",
+        "empty_title": "Chưa có danh sách",
+        "empty_desc": "Tạo danh sách đầu tiên để bắt đầu sắp xếp level."
+      }
+    },
+    "detail": {
+      "loading": "Đang tải danh sách...",
+      "error_title": "Không thể mở danh sách này",
+      "levels_badge": "{count} level",
+      "level_badge": "Level {id}",
+      "updated": "Cập nhật {date}",
+      "no_description": "Chưa có mô tả.",
+      "delete_confirm": "Xoá danh sách này? Hành động này không thể hoàn tác.",
+      "edit": {
+        "heading": "Chỉnh sửa thông tin",
+        "title_label": "Tên",
+        "description_label": "Mô tả",
+        "visibility_label": "Chế độ hiển thị",
+        "tags_label": "Thẻ",
+        "mode_label": "Chế độ",
+        "mode_rating": "Đánh giá",
+        "mode_top": "Top",
+        "mode_rating_hint": "Mỗi level được chấm điểm từ 1–10, hiển thị từ cao đến thấp.",
+        "mode_top_hint": "Sắp xếp level theo thứ tự tuỳ chỉnh bằng cách kéo thả.",
+        "save": "Lưu thay đổi",
+        "delete": "Xoá danh sách"
+      },
+      "add_level": {
+        "heading": "Thêm level",
+        "id_label": "ID Level Geometry Dash",
+        "hint": "Chỉ chấp nhận ID level Geometry Dash chính thức.",
+        "button": "Thêm level"
+      },
+      "levels": {
+        "heading": "Levels",
+        "empty_title": "Chưa có level",
+        "empty_owner": "Thêm level đầu tiên của bạn bằng biểu mẫu ở trên.",
+        "empty_owner_manage": "Danh sách này chưa có level nào. Mở phần quản lý để thêm level đầu tiên.",
+        "empty_visitor": "Danh sách này chưa có level nào.",
+        "by": "bởi",
+        "platformer": "Platformer",
+        "unavailable": "Level không khả dụng #{id}",
+        "unavailable_desc": "Mục level vẫn còn trong danh sách này, nhưng siêu dữ liệu cục bộ không khả dụng.",
+        "id_badge": "ID {id}",
+        "remove": "Xoá",
+        "drag_hint": "Kéo để sắp xếp lại",
+        "rating_edit_hint": "Nhấn để chỉnh điểm"
+      }
+    },
+    "new": {
+      "page_title": "Danh sách mới",
+      "heading": "Tạo danh sách mới",
+      "subtitle": "Sắp xếp các level Geometry Dash vào một bộ sưu tập có thể chia sẻ.",
+      "loading": "Đang tải...",
+      "sign_in_title": "Đăng nhập để tạo danh sách",
+      "sign_in_desc": "Bạn cần một tài khoản để tạo, chỉnh sửa và thêm level vào danh sách của mình.",
+      "title_label": "Tên",
+      "title_placeholder": "Danh sách của tôi",
+      "description_label": "Mô tả",
+      "description_placeholder": "Mô tả các level trong danh sách này…",
+      "visibility_label": "Chế độ hiển thị",
+      "visibility_public_hint": "Tất cả mọi người đều có thể tìm thấy và xem danh sách này.",
+      "visibility_unlisted_hint": "Chỉ người có đường dẫn mới có thể xem danh sách này.",
+      "visibility_private_hint": "Chỉ bạn mới có thể xem danh sách này.",
+      "tags_label": "Thẻ",
+      "tags_placeholder": "thử thách, yêu thích, platformer",
+      "tags_hint": "Cách các thẻ bằng dấu phẩy. Tối đa 10 thẻ.",
+      "create_button": "Tạo danh sách",
+      "creating": "Đang tạo…",
+      "cancel": "Huỷ",
+      "mode_label": "Chế độ",
+      "mode_rating_hint": "Mỗi level được chấm điểm từ 1–10, hiển thị từ cao đến thấp.",
+      "mode_top_hint": "Sắp xếp level theo thứ tự tuỳ chỉnh bằng cách kéo thả."
+    },
+    "toast": {
+      "title_required": "Tiêu đề là bắt buộc",
+      "level_id_invalid": "Nhập ID level hợp lệ",
+      "list_updated": "Đã cập nhật danh sách",
+      "list_deleted": "Đã xoá danh sách",
+      "list_created": "Đã tạo danh sách",
+      "level_added": "Đã thêm level vào danh sách",
+      "level_removed": "Đã xoá level khỏi danh sách",
+      "failed_load": "Không thể tải danh sách",
+      "failed_update": "Không thể cập nhật danh sách",
+      "failed_delete": "Không thể xoá danh sách",
+      "failed_create": "Không thể tạo danh sách",
+      "failed_add_level": "Không thể thêm level",
+      "failed_remove_level": "Không thể xoá level",
+      "failed_load_own": "Không thể tải danh sách của bạn",
+      "failed_browse": "Không thể tải danh sách",
+      "failed_add_to_list": "Không thể thêm level vào danh sách",
+      "level_updated": "Đã cập nhật level",
+      "failed_update_level": "Không thể cập nhật level",
+      "reordered": "Đã lưu thứ tự",
+      "failed_reorder": "Không thể lưu thứ tự",
+      "rating_invalid": "Điểm đánh giá phải từ 1 đến 10"
+    }
   }
 }
