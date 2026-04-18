@@ -1796,7 +1796,9 @@
         "remove": "Remove",
         "drag_hint": "Drag to reorder",
         "rating_edit_hint": "Click to set rating",
-        "min_progress_edit_hint": "Click to set a custom minimum progress. Leave blank to use the level default."
+        "min_progress_edit_hint": "Click to set a custom minimum progress. Leave blank to use the level default.",
+        "save_button": "Save",
+        "cancel_button": "Cancel"
       }
     },
     "new": {

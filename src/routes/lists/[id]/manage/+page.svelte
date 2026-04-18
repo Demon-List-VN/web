@@ -71,7 +71,8 @@
 	let editingRatingItemId: number | null = null;
 	let editingRatingValue = '';
 	let editingMinProgressItemId: number | null = null;
-	let editingMinProgressValue = '';
+	let editingMinProgressValue: string | number | undefined = '';
+	let savingLevelItemId: number | null = null;
 	let savingReorder = false;
 	let initialSyncDone = false;
 
@@ -304,6 +305,20 @@
 		editingMinProgressValue = item.minProgress == null ? '' : String(item.minProgress);
 	}
 
+	function cancelMinProgressEdit() {
+		editingMinProgressItemId = null;
+		editingMinProgressValue = '';
+	}
+
+	function handleMinProgressBlur(event: FocusEvent) {
+		const nextTarget = event.relatedTarget;
+		if (nextTarget instanceof HTMLElement && nextTarget.dataset.minProgressAction) {
+			return;
+		}
+
+		cancelMinProgressEdit();
+	}
+
 	async function saveRatingEdit(levelId: number) {
 		const rating = Number.parseInt(editingRatingValue, 10);
 		editingRatingItemId = null;
@@ -316,7 +331,7 @@
 
 	async function saveMinProgressEdit(levelId: number) {
 		if (!list) return;
-		const rawValue = editingMinProgressValue.trim();
+		const rawValue = editingMinProgressValue == null ? '' : String(editingMinProgressValue).trim();
 		editingMinProgressItemId = null;
 
 		if (!rawValue.length) {
@@ -325,7 +340,7 @@
 		}
 
 		const minProgress = Number.parseInt(rawValue, 10);
-		if (!Number.isInteger(minProgress) || minProgress <= 0 || (!list.isPlatformer && minProgress > 100)) {
+		if (!Number.isInteger(minProgress) || minProgress < 0 || (!list.isPlatformer && minProgress > 100)) {
 			toast.error($_('custom_lists.toast.min_progress_invalid'));
 			return;
 		}
@@ -334,6 +349,7 @@
 
 	async function updateLevelItem(levelId: number, patch: { rating?: number; minProgress?: number | null }) {
 		if (!list) return;
+		savingLevelItemId = levelId;
 		try {
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/levels/${levelId}`, {
 				method: 'PATCH',
@@ -349,6 +365,8 @@
 			toast.success($_('custom_lists.toast.level_updated'));
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_update_level'));
+		} finally {
+			savingLevelItemId = null;
 		}
 	}
 
@@ -662,13 +680,45 @@
 										<input
 											class="inlineInput minProgressInput"
 											type="number"
-											min="1"
+											min="0"
 											max={list.isPlatformer ? undefined : '100'}
 											placeholder={item.level?.minProgress != null ? String(item.level.minProgress) : undefined}
 											bind:value={editingMinProgressValue}
-											on:blur={() => saveMinProgressEdit(item.levelId)}
-											on:keydown={(e) => e.key === 'Enter' && saveMinProgressEdit(item.levelId)}
+											on:blur={handleMinProgressBlur}
+											on:keydown={(e) => {
+												if (e.key === 'Enter') {
+													e.preventDefault();
+													saveMinProgressEdit(item.levelId);
+												}
+												if (e.key === 'Escape') {
+													e.preventDefault();
+													cancelMinProgressEdit();
+												}
+											}}
 										/>
+										<div class="inlineEditActions">
+											<button
+												type="button"
+												class="inlineEditBtn inlineEditBtnPrimary"
+												data-min-progress-action="save"
+												on:mousedown|preventDefault
+												on:click={() => saveMinProgressEdit(item.levelId)}
+												disabled={savingLevelItemId === item.levelId}
+											>
+												<Save class="mr-1.5 h-3.5 w-3.5" />
+												{$_('custom_lists.detail.levels.save_button')}
+											</button>
+											<button
+												type="button"
+												class="inlineEditBtn inlineEditBtnSecondary"
+												data-min-progress-action="cancel"
+												on:mousedown|preventDefault
+												on:click={cancelMinProgressEdit}
+												disabled={savingLevelItemId === item.levelId}
+											>
+												{$_('custom_lists.detail.levels.cancel_button')}
+											</button>
+										</div>
 									{:else}
 										<button
 											class="chipBtn"
@@ -1039,6 +1089,51 @@
 
 	.minProgressInput {
 		width: 120px;
+	}
+
+	.inlineEditActions {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.inlineEditBtn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		min-height: 32px;
+		padding: 0 12px;
+		border-radius: 8px;
+		border: 1px solid hsl(var(--border));
+		font-size: 0.8rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+	}
+
+	.inlineEditBtn:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	.inlineEditBtnPrimary {
+		background: hsl(var(--primary));
+		border-color: hsl(var(--primary));
+		color: hsl(var(--primary-foreground));
+	}
+
+	.inlineEditBtnPrimary:hover:not(:disabled) {
+		background: hsl(var(--primary) / 0.9);
+	}
+
+	.inlineEditBtnSecondary {
+		background: hsl(var(--background));
+		color: hsl(var(--foreground));
+	}
+
+	.inlineEditBtnSecondary:hover:not(:disabled) {
+		background: hsl(var(--muted) / 0.5);
 	}
 
 	/* Empty State */

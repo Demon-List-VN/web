@@ -1795,7 +1795,9 @@
         "remove": "Xoá",
         "drag_hint": "Kéo để sắp xếp lại",
         "rating_edit_hint": "Nhấn để chỉnh điểm",
-        "min_progress_edit_hint": "Nhấn để đặt mốc tối thiểu tuỳ chỉnh. Để trống để dùng giá trị mặc định của level."
+        "min_progress_edit_hint": "Nhấn để đặt mốc tối thiểu tuỳ chỉnh. Để trống để dùng giá trị mặc định của level.",
+        "save_button": "Lưu",
+        "cancel_button": "Huỷ"
       }
     },
     "new": {

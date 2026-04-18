@@ -112,7 +112,7 @@
 											{/if}
 										{/if}
 									{/key}
-									{#if minProgress}
+									{#if minProgress != null}
 										{#if type == 'dl' && minProgress != 100}
 											<div class="pt">
 												{minProgress}% Min
