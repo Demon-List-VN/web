@@ -4,9 +4,8 @@
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { getTitle } from '$lib/client';
 	import { badgeVariants } from '$lib/components/ui/badge';
-	import { getExpLevel } from '$lib/client/getExpLevel';
 	import { isActive } from '$lib/client/isSupporterActive';
-	import { _ } from 'svelte-i18n';
+	import { BadgeCheck, CheckCheck, Crown } from 'lucide-svelte';
 	import PlayerCard from '$lib/components/playerCard.svelte';
 
 	export let player: any;
@@ -15,9 +14,16 @@
 	export let titleType: string = 'dl';
 	export let truncate: number | null = null;
 
-	const exp = player.exp + player.extraExp;
-	const isBannerFailedToLoad = false;
 	let isPopoverOpen = false;
+	let playerRoleBadge: 'manager' | 'admin' | 'trusted' | null = null;
+
+	$: playerRoleBadge = player?.isManager
+		? 'manager'
+		: player?.isAdmin
+			? 'admin'
+			: player?.isTrusted
+				? 'trusted'
+				: null;
 
 	function truncateText(str: string) {
 		if (!truncate) {
@@ -88,10 +94,12 @@
 									: player.name
 							)}
 						</span>
-						{#if player.isTrusted}
-							<div class="mb-[2.5px] h-[12px] w-[12px] rounded-full bg-black dark:invert">
-								<img class="invert" src="/tick-svgrepo-com.svg" alt="tick" />
-							</div>
+						{#if playerRoleBadge === 'manager'}
+							<Crown class="h-[14px] w-[14px] text-yellow-500" aria-label="manager" />
+						{:else if playerRoleBadge === 'admin'}
+							<CheckCheck class="h-[14px] w-[14px] text-sky-600" aria-label="admin" />
+						{:else if playerRoleBadge === 'trusted'}
+							<BadgeCheck class="h-[14px] w-[14px] text-blue-500" aria-label="trusted" />
 						{/if}
 					</div>
 				</a>
@@ -104,10 +112,12 @@
 								: player.name
 						)}
 					</span>
-					{#if player.isTrusted}
-						<div class="mb-[2.5px] h-[12px] w-[12px] rounded-full bg-black dark:invert">
-							<img class="invert" src="/tick-svgrepo-com.svg" alt="tick" />
-						</div>
+					{#if playerRoleBadge === 'manager'}
+						<Crown class="h-[14px] w-[14px] text-yellow-500" aria-label="manager" />
+					{:else if playerRoleBadge === 'admin'}
+						<CheckCheck class="h-[14px] w-[14px] text-sky-600" aria-label="admin" />
+					{:else if playerRoleBadge === 'trusted'}
+						<BadgeCheck class="h-[14px] w-[14px] text-blue-500" aria-label="trusted" />
 					{/if}
 				</div>
 			{/if}
