@@ -38,6 +38,7 @@
 		Eye,
 		Tag,
 		Users,
+		Layers,
 		UserPlus,
 		UserMinus,
 		UserCheck,
@@ -916,6 +917,24 @@
 							</span>
 						</div>
 						<a href="/level/{post.attachedLevel.id}" class="attachedLink">
+							<ExternalLink class="h-4 w-4" />
+						</a>
+					</div>
+				{/if}
+
+				{#if post.attachedList}
+					<div class="attachedCard">
+						<Layers class="h-5 w-5 text-sky-500" />
+						<div class="attachedInfo">
+							<strong>{post.attachedList.title}</strong>
+							{#if post.attachedList.ownerName}
+								<span class="attachedMeta">
+									{$_('community.attachment.by')}
+									{post.attachedList.ownerName}
+								</span>
+							{/if}
+						</div>
+						<a href="/lists/{post.attachedList.id}" class="attachedLink">
 							<ExternalLink class="h-4 w-4" />
 						</a>
 					</div>

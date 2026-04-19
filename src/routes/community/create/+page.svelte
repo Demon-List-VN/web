@@ -17,6 +17,7 @@
 		X,
 		Trophy,
 		Gamepad2,
+		Layers,
 		Search,
 		Play,
 		Star,
@@ -29,6 +30,7 @@
 	} from 'lucide-svelte';
 
 	$: clanId = $page.url.searchParams.get('clanId');
+	$: presetListId = $page.url.searchParams.get('listId');
 
 	const newPost = {
 		title: '',
@@ -55,6 +57,9 @@
 	let loadingLevels = false;
 	let selectedRecord: any = null;
 	let selectedLevel: any = null;
+	let selectedList: any = null;
+	let loadingListAttachment = false;
+	let selectedListKey = '';
 
 	// Review state
 	let isRecommended: boolean = true;
@@ -100,6 +105,35 @@
 	onMount(() => {
 		fetchTags();
 	});
+
+	async function prefillListAttachment(listId: string) {
+		if (!listId || listId === selectedListKey) return;
+
+		selectedListKey = listId;
+		loadingListAttachment = true;
+
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${listId}`);
+			if (!res.ok) {
+				selectedList = null;
+				return;
+			}
+
+			const list = await res.json();
+			selectedList = {
+				id: list.id,
+				title: list.title,
+				ownerName: list.ownerData?.name || null,
+				levelCount: list.levelCount,
+				isPlatformer: list.isPlatformer,
+				mode: list.mode
+			};
+		} catch {
+			selectedList = null;
+		} finally {
+			loadingListAttachment = false;
+		}
+	}
 
 	function getYouTubeId(url: string): string | null {
 		if (!url) return null;
@@ -201,6 +235,13 @@
 		selectedRecord = null;
 		selectedLevel = null;
 		attachmentType = 'none';
+	}
+
+	$: if (presetListId) {
+		prefillListAttachment(presetListId);
+	} else {
+		selectedList = null;
+		selectedListKey = '';
 	}
 
 	async function searchReviewLevels() {
@@ -307,7 +348,12 @@
 				body.videoUrl = newPost.videoUrl;
 			}
 
-			if (selectedRecord) {
+			if (newPost.type !== 'review' && selectedList?.id) {
+				body.attachedList = {
+					id: selectedList.id,
+					title: selectedList.title
+				};
+			} else if (selectedRecord) {
 				body.attachedRecord = {
 					levelid: selectedRecord.levelid,
 					levelName: selectedRecord.levels?.name,
@@ -636,7 +682,23 @@
 						{$_('community.create.attachment')} ({$_('community.create.optional')})
 					</span>
 
-					{#if selectedRecord}
+					{#if loadingListAttachment}
+						<div class="attachmentPreview">
+							<p class="attachmentLoading">{$_('general.loading')}...</p>
+						</div>
+					{:else if selectedList}
+						<div class="attachmentPreview">
+							<div class="attachmentCard">
+								<Layers class="h-4 w-4 text-sky-500" />
+								<div class="attachmentInfo">
+									<strong>{selectedList.title}</strong>
+									{#if selectedList.ownerName}
+										<span class="text-xs text-muted-foreground">{selectedList.ownerName}</span>
+									{/if}
+								</div>
+							</div>
+						</div>
+					{:else if selectedRecord}
 						<div class="attachmentPreview">
 							<div class="attachmentCard">
 								<Trophy class="h-4 w-4 text-amber-500" />

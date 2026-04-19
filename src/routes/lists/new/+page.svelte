@@ -28,7 +28,8 @@
 		visibility: 'private' as 'private' | 'unlisted' | 'public',
 		tags: '',
 		mode: 'rating' as 'rating' | 'top',
-		isPlatformer: false
+		isPlatformer: false,
+		communityEnabled: true
 	};
 
 	let creating = false;
@@ -72,7 +73,8 @@
 					visibility: form.visibility,
 					tags: parseTags(form.tags),
 					mode: form.mode,
-					isPlatformer: form.isPlatformer
+					isPlatformer: form.isPlatformer,
+					communityEnabled: form.communityEnabled
 				})
 			});
 
@@ -101,7 +103,7 @@
 </svelte:head>
 
 <div class="page">
-	<Button variant="outline" size="sm" on:click={() => goto('/lists')}>
+	<Button variant="ghost" size="sm" on:click={() => goto('/lists')}>
 		<ArrowLeft class="mr-2 h-4 w-4" />
 		{$_('custom_lists.back')}
 	</Button>
@@ -189,6 +191,19 @@
 						<div class="switchControl">
 							<span class="switchLabel">{form.isPlatformer ? $_('custom_lists.type.platformer') : $_('custom_lists.type.classic')}</span>
 							<Switch id="list-platformer" bind:checked={form.isPlatformer} />
+						</div>
+					</div>
+				</div>
+
+				<div class="field">
+					<div class="switchRow">
+						<div>
+							<label for="list-community-enabled">{$_('custom_lists.new.community_label')}</label>
+							<p class="hint">{$_('custom_lists.new.community_hint')}</p>
+						</div>
+						<div class="switchControl">
+							<span class="switchLabel">{form.communityEnabled ? $_('general.yes') : $_('general.no')}</span>
+							<Switch id="list-community-enabled" bind:checked={form.communityEnabled} />
 						</div>
 					</div>
 				</div>

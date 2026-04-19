@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ThumbsUp, MessageSquare, Pin, Image, BookOpen, Megaphone, MessageCircle, Play, Trophy, Gamepad2, Star, ThumbsDown, Flag, Users } from 'lucide-svelte';
+	import { ThumbsUp, MessageSquare, Pin, Image, BookOpen, Megaphone, MessageCircle, Play, Trophy, Gamepad2, Star, ThumbsDown, Flag, Users, Layers } from 'lucide-svelte';
 	import { _, locale } from 'svelte-i18n';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import { user } from '$lib/client';
@@ -201,7 +201,7 @@
 				{/if}
 			</div>
 		{/if}
-		{#if post.attachedRecord || post.attachedLevel}
+		{#if post.attachedRecord || post.attachedLevel || post.attachedList}
 			<div class="attachmentBar">
 				{#if post.attachedRecord}
 					<div class="attachmentChip">
@@ -214,6 +214,12 @@
 						<Gamepad2 class="h-3.5 w-3.5 text-emerald-500" />
 						<span class="attachmentName">{post.attachedLevel.name}</span>
 						<span class="attachmentMeta">{post.attachedLevel.creator}</span>
+					</div>
+				{:else if post.attachedList}
+					<div class="attachmentChip">
+						<Layers class="h-3.5 w-3.5 text-sky-500" />
+						<span class="attachmentName">{post.attachedList.title}</span>
+						<span class="attachmentMeta">{post.attachedList.ownerName}</span>
 					</div>
 				{/if}
 			</div>

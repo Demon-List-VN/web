@@ -3,7 +3,27 @@ import { error } from '@sveltejs/kit';
 export async function load({ params, url, fetch }) {
 	const { id } = params;
 
-	if (url.searchParams.get('list') == 'other') {
+	try {
+		const levelRes = await fetch(`${import.meta.env.VITE_API_URL}/levels/${id}`);
+
+		if (levelRes.ok) {
+			let starredLists: any[] = [];
+
+			try {
+				const starredRes = await fetch(`${import.meta.env.VITE_API_URL}/lists/levels/${id}/starred`);
+				if (starredRes.ok) {
+					starredLists = await starredRes.json();
+				}
+			} catch {
+				starredLists = [];
+			}
+
+			return {
+				level: (await levelRes.json()) as any,
+				starredLists
+			};
+		}
+
 		const gdbrowserLevel: any = await (await fetch(`${import.meta.env.VITE_API_URL}/levels/${id}?fromGD=1`)).json();
 
 		if (!('demonList' in gdbrowserLevel)) {
@@ -12,7 +32,8 @@ export async function load({ params, url, fetch }) {
 				pointercrate: {
 					video: 'https://www.youtube.com/watch?v=XIMLoLxmTDw',
 					requirement: -1
-				}
+				},
+				starredLists: []
 			};
 		}
 
@@ -22,13 +43,8 @@ export async function load({ params, url, fetch }) {
 
 		return {
 			gdbrowser: gdbrowserLevel,
-			pointercrate: pointercrateLevel[0]
-		};
-	}
-
-	try {
-		return {
-			level: (await (await fetch(`${import.meta.env.VITE_API_URL}/levels/${id}`)).json()) as any
+			pointercrate: pointercrateLevel[0],
+			starredLists: []
 		};
 	} catch {
 		throw error(404, 'Level does not exist');

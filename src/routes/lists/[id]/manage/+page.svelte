@@ -50,6 +50,7 @@
 		owner: string;
 		title: string;
 		description: string;
+		communityEnabled: boolean;
 		isPlatformer: boolean;
 		visibility: 'private' | 'unlisted' | 'public';
 		mode: 'rating' | 'top';
@@ -79,6 +80,7 @@
 	const editForm = {
 		title: '',
 		description: '',
+		communityEnabled: true,
 		isPlatformer: false,
 		visibility: 'private' as 'private' | 'unlisted' | 'public',
 		tags: '',
@@ -104,6 +106,7 @@
 		if (!list) return;
 		editForm.title = list.title;
 		editForm.description = list.description;
+		editForm.communityEnabled = list.communityEnabled;
 		editForm.isPlatformer = list.isPlatformer;
 		editForm.visibility = list.visibility;
 		editForm.tags = list.tags.join(', ');
@@ -214,6 +217,7 @@
 				body: JSON.stringify({
 					title: editForm.title,
 					description: editForm.description,
+					communityEnabled: editForm.communityEnabled,
 					isPlatformer: editForm.isPlatformer,
 					visibility: editForm.visibility,
 					tags: parseTags(editForm.tags),
@@ -442,7 +446,7 @@
 <div class="page">
 	<!-- Navigation -->
 	<div class="navRow">
-		<Button variant="outline" size="sm" on:click={() => goto('/lists')}>
+		<Button variant="ghost" size="sm" on:click={() => goto('/lists')}>
 			<ArrowLeft class="mr-2 h-4 w-4" />
 			{$_('custom_lists.back')}
 		</Button>
@@ -523,6 +527,18 @@
 								<div class="switchControl">
 									<span class="switchLabel">{formatListType(editForm.isPlatformer)}</span>
 									<Switch id="list-platformer" bind:checked={editForm.isPlatformer} />
+								</div>
+							</div>
+						</div>
+						<div class="field">
+							<div class="switchRow">
+								<div>
+									<label for="list-community-enabled">{$_('custom_lists.detail.edit.community_label')}</label>
+									<p class="hint">{$_('custom_lists.detail.edit.community_hint')}</p>
+								</div>
+								<div class="switchControl">
+									<span class="switchLabel">{editForm.communityEnabled ? $_('general.yes') : $_('general.no')}</span>
+									<Switch id="list-community-enabled" bind:checked={editForm.communityEnabled} />
 								</div>
 							</div>
 						</div>

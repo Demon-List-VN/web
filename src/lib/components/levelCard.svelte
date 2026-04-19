@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
 	import * as Card from '$lib/components/ui/card';
 	import * as ContextMenu from '$lib/components/ui/context-menu';
 	import type { LevelCardProps, LevelCardTag } from '$lib/components/levelCardProps';
@@ -14,6 +15,50 @@
 	import PlayerLink from '$lib/components/playerLink.svelte';
 
 	let failedToLoad = false;
+	let thumbnailStatusKey = '';
+
+	async function getThumbnailResponse(url: string) {
+		let response = await fetch(url, { method: 'HEAD' });
+
+		if (response.status === 405) {
+			response = await fetch(url);
+		}
+
+		return response;
+	}
+
+	async function verifyYoutubeThumbnail(statusKey: string, url: string) {
+		try {
+			const response = await getThumbnailResponse(url);
+
+			if (thumbnailStatusKey !== statusKey) {
+				return;
+			}
+
+			failedToLoad = !response.ok || response.status === 404;
+		} catch {
+			if (thumbnailStatusKey === statusKey) {
+				failedToLoad = true;
+			}
+		}
+	}
+
+	$: hasVideoThumbnail = Boolean(videoID?.trim());
+	$: youtubeThumbnailUrl = hasVideoThumbnail ? `https://img.youtube.com/vi/${videoID}/0.jpg` : '';
+	$: levelThumbUrl = `https://levelthumbs.prevter.me/thumbnail/${id}/small`;
+	$: thumbnailUrl = hasVideoThumbnail && !failedToLoad ? youtubeThumbnailUrl : levelThumbUrl;
+	$: if (!hasVideoThumbnail) {
+		failedToLoad = false;
+		thumbnailStatusKey = '';
+	} else if (browser) {
+		const nextThumbnailStatusKey = `${id ?? ''}:${videoID}`;
+
+		if (thumbnailStatusKey !== nextThumbnailStatusKey) {
+			thumbnailStatusKey = nextThumbnailStatusKey;
+			failedToLoad = false;
+			void verifyYoutubeThumbnail(nextThumbnailStatusKey, youtubeThumbnailUrl);
+		}
+	}
 
 	function getTimeString(ms: number) {
 		const minutes = Math.floor(ms / 60000);
@@ -27,7 +72,7 @@
 	export let videoID: LevelCardProps['videoID'] = null;
 	export let name: LevelCardProps['name'] = null;
 	export let rating: LevelCardProps['rating'] = null;
-		export let top: LevelCardProps['top'] = null;
+	export let top: LevelCardProps['top'] = null;
 	export let minProgress: LevelCardProps['minProgress'] = null;
 	export let creator: LevelCardProps['creator'] = null;
 	export let creatorId: LevelCardProps['creatorId'] = null;
@@ -51,22 +96,22 @@
 						<a href={`/level/${id}`} data-sveltekit-preload-data="tap">
 							<div class="relative flex h-[235px] justify-center">
 								<img
-									src={`https://img.youtube.com/vi/${videoID}/0.jpg`}
+									src={thumbnailUrl}
 									alt=""
 									loading="lazy"
 									decoding="async"
 									class="thumbnail absolute"
+									on:error={() => {
+										failedToLoad = true;
+									}}
 								/>
-								{#if !failedToLoad}
+								{#if hasVideoThumbnail && !failedToLoad}
 									<img
-										src={`https://levelthumbs.prevter.me/thumbnail/${id}/small`}
+										src={levelThumbUrl}
 										alt=""
 										loading="lazy"
 										decoding="async"
 										class="thumbnail z-1 absolute translate-x-4 opacity-0 transition-all duration-300 ease-in-out hover:translate-x-0 hover:opacity-100"
-										on:error={() => {
-											failedToLoad = true;
-										}}
 									/>
 								{/if}
 							</div>

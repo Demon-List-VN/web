@@ -146,7 +146,7 @@
 							<ContextMenu.Trigger>
 								<!--View levels rank-->
 								{#if 'other' in item}
-									<a href={`/level/${item.id}?list=other`} data-sveltekit-preload-data="tap">
+									<a href={`/level/${item.id}`} data-sveltekit-preload-data="tap">
 										<Command.Item>
 											{#if item.dlTop}
 												<span class="mr-1 font-bold text-white">#{item.dlTop} DL</span>
@@ -187,7 +187,7 @@
 						<ContextMenu.Root>
 							<ContextMenu.Trigger>
 								{#if 'other' in item}
-									<a href={`/level/${item.id}?list=other`} data-sveltekit-preload-data="tap">
+										<a href={`/level/${item.id}`} data-sveltekit-preload-data="tap">
 										<Command.Item>{item.name} by {item.creator} ({item.id})</Command.Item>
 									</a>
 								{:else}

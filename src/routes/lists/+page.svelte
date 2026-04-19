@@ -3,6 +3,7 @@
 	import * as Card from '$lib/components/ui/card';
 	import { Input } from '$lib/components/ui/input';
 	import { Badge } from '$lib/components/ui/badge';
+	import * as Tabs from '$lib/components/ui/tabs';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { user } from '$lib/client';
@@ -20,7 +21,8 @@
 		EyeOff,
 		Lock,
 		Layers,
-		Clock
+		Clock,
+		Star
 	} from 'lucide-svelte';
 	import { _ } from 'svelte-i18n';
 
@@ -36,6 +38,8 @@
 		levelCount: number;
 		updated_at: string;
 		owner: string;
+		starCount?: number;
+		starred?: boolean;
 		ownerData?: any;
 	};
 
@@ -46,10 +50,13 @@
 	$: pageSize = data?.pageSize ?? 12;
 	$: searchQuery = data?.search ?? '';
 	$: totalPages = Math.max(1, Math.ceil(total / pageSize));
+	let activeTab: 'browse' | 'mine' | 'starred' = 'browse';
 
 	// Own lists (client-only, requires auth)
 	let ownLists: ListSummary[] = [];
 	let ownLoading = true;
+	let starredLists: ListSummary[] = [];
+	let starredLoading = true;
 	let ownLoadKey = '';
 	let actionListId: number | null = null;
 
@@ -180,6 +187,32 @@
 		}
 	}
 
+	async function fetchStarredLists() {
+		if (!$user.loggedIn) {
+			starredLists = [];
+			starredLoading = false;
+			return;
+		}
+
+		starredLoading = true;
+
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/starred`, {
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`
+				}
+			});
+
+			if (!res.ok) throw new Error('Failed to load your starred lists');
+
+			starredLists = await res.json();
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_load_starred'));
+		} finally {
+			starredLoading = false;
+		}
+	}
+
 	function handleManageClick(event: MouseEvent, listId: number) {
 		event.stopPropagation();
 		goto(`/lists/${listId}/manage`);
@@ -195,7 +228,8 @@
 		const nextKey = $user.loggedIn ? $user.data?.uid || 'authed' : 'guest';
 		if (nextKey !== ownLoadKey) {
 			ownLoadKey = nextKey;
-			fetchOwnLists();
+			void fetchOwnLists();
+			void fetchStarredLists();
 		}
 	}
 
@@ -236,215 +270,325 @@
 		</div>
 	{/if}
 
-	<!-- Browse Section -->
-	<section class="section">
-		<div class="sectionHeader">
-			<div class="sectionTitleRow">
-				<h2>{$_('custom_lists.index.browse.heading')}</h2>
-				<Badge variant="outline">{total}</Badge>
-			</div>
-			<p class="sectionHint">{$_('custom_lists.index.browse.hint')}</p>
+	<Tabs.Root bind:value={activeTab}>
+		<div class="tabsList">
+			<Tabs.List>
+				<Tabs.Trigger value="browse">{$_('custom_lists.index.tabs.browse')}</Tabs.Trigger>
+				<Tabs.Trigger value="mine">{$_('custom_lists.index.tabs.mine')}</Tabs.Trigger>
+				<Tabs.Trigger value="starred">{$_('custom_lists.index.tabs.starred')}</Tabs.Trigger>
+			</Tabs.List>
 		</div>
 
-		<div class="searchRow">
-			<div class="searchInputWrap">
-				<span class="searchIcon"><Search class="h-4 w-4" /></span>
-				<Input
-					bind:value={searchInput}
-					placeholder={$_('custom_lists.index.browse.search_placeholder')}
-					on:keydown={handleSearchKeydown}
-				/>
-			</div>
-			<Button variant="outline" on:click={handleSearch}>{$_('custom_lists.index.browse.search_button')}</Button>
-		</div>
+		<Tabs.Content value="browse">
+			<section class="section">
+				<div class="sectionHeader">
+					<div class="sectionTitleRow">
+						<h2>{$_('custom_lists.index.browse.heading')}</h2>
+						<Badge variant="outline">{total}</Badge>
+					</div>
+					<p class="sectionHint">{$_('custom_lists.index.browse.hint')}</p>
+				</div>
 
-		{#if lists.length === 0}
-			<div class="emptyState">
-				<h3>{$_('custom_lists.index.browse.empty_title')}</h3>
-				<p>{searchQuery ? $_('custom_lists.index.browse.empty_search_hint') : $_('custom_lists.index.browse.empty_browse_hint')}</p>
-			</div>
-		{:else}
-			<div class="listGrid">
-				{#each lists as list}
-					<button class="listCard" on:click={() => goto(`/lists/${list.id}`)}>
-						<div class="cardTop">
-							<h3 class="cardTitle">{list.title}</h3>
-							<p class="cardDesc">{list.description || $_('custom_lists.detail.no_description')}</p>
-						</div>
+				<div class="searchRow">
+					<div class="searchInputWrap">
+						<span class="searchIcon"><Search class="h-4 w-4" /></span>
+						<Input
+							bind:value={searchInput}
+							placeholder={$_('custom_lists.index.browse.search_placeholder')}
+							on:keydown={handleSearchKeydown}
+						/>
+					</div>
+					<Button variant="outline" on:click={handleSearch}>{$_('custom_lists.index.browse.search_button')}</Button>
+				</div>
 
-						<div class="cardMeta">
-							<div class="metaBadges">
-								<span class="metaItem">
-									<svelte:component this={getVisibilityIcon(list.visibility)} class="h-3.5 w-3.5" />
-									{formatVisibility(list.visibility)}
-								</span>
-								<span class="metaItem">
-									<Layers class="h-3.5 w-3.5" />
-									{formatListType(list.isPlatformer)}
-								</span>
-								<span class="metaItem">
-									{$_('custom_lists.detail.levels_badge', { values: { count: list.levelCount } })}
-								</span>
-							</div>
-							<div class="cardFooter">
-								<span class="metaDate">
-									<Clock class="h-3.5 w-3.5" />
-									{formatDate(list.updated_at)}
-								</span>
-								{#if list.ownerData}
-									<span class="ownerInfo">
-										{$_('custom_lists.index.browse.by')}
-										<PlayerLink player={list.ownerData} />
-									</span>
+				{#if lists.length === 0}
+					<div class="emptyState">
+						<h3>{$_('custom_lists.index.browse.empty_title')}</h3>
+						<p>{searchQuery ? $_('custom_lists.index.browse.empty_search_hint') : $_('custom_lists.index.browse.empty_browse_hint')}</p>
+					</div>
+				{:else}
+					<div class="listGrid">
+						{#each lists as list}
+							<button class="listCard" on:click={() => goto(`/lists/${list.id}`)}>
+								<div class="cardTop">
+									<h3 class="cardTitle">{list.title}</h3>
+									<p class="cardDesc">{list.description || $_('custom_lists.detail.no_description')}</p>
+								</div>
+
+								<div class="cardMeta">
+									<div class="metaBadges">
+										<span class="metaItem">
+											<svelte:component this={getVisibilityIcon(list.visibility)} class="h-3.5 w-3.5" />
+											{formatVisibility(list.visibility)}
+										</span>
+										<span class="metaItem">
+											<Layers class="h-3.5 w-3.5" />
+											{formatListType(list.isPlatformer)}
+										</span>
+										<span class="metaItem">
+											{$_('custom_lists.detail.levels_badge', { values: { count: list.levelCount } })}
+										</span>
+									</div>
+									<div class="cardFooter">
+										<span class="metaDate">
+											<Clock class="h-3.5 w-3.5" />
+											{formatDate(list.updated_at)}
+										</span>
+										{#if list.ownerData}
+											<span class="ownerInfo">
+												{$_('custom_lists.index.browse.by')}
+												<PlayerLink player={list.ownerData} />
+											</span>
+										{/if}
+									</div>
+								</div>
+
+								{#if list.tags?.length}
+									<div class="cardTags">
+										{#each list.tags.slice(0, 4) as tag}
+											<Badge variant="outline">{tag}</Badge>
+										{/each}
+										{#if list.tags.length > 4}
+											<Badge variant="outline">+{list.tags.length - 4}</Badge>
+										{/if}
+									</div>
 								{/if}
-							</div>
-						</div>
-
-						{#if list.tags?.length}
-							<div class="cardTags">
-								{#each list.tags.slice(0, 4) as tag}
-									<Badge variant="outline">{tag}</Badge>
-								{/each}
-								{#if list.tags.length > 4}
-									<Badge variant="outline">+{list.tags.length - 4}</Badge>
-								{/if}
-							</div>
-						{/if}
-					</button>
-				{/each}
-			</div>
-
-			<!-- Pagination -->
-			{#if totalPages > 1}
-				<nav class="pagination" aria-label="Pagination">
-					<Button
-						variant="outline"
-						size="sm"
-						disabled={currentPage <= 1}
-						on:click={() => goToPage(currentPage - 1)}
-					>
-						<ChevronLeft class="h-4 w-4" />
-						<span class="paginationLabel">Prev</span>
-					</Button>
-
-					<div class="pageNumbers">
-						{#each paginationPages as p}
-							{#if p === '...'}
-								<span class="pageEllipsis">…</span>
-							{:else}
-								<button
-									class="pageBtn"
-									class:active={p === currentPage}
-									on:click={() => goToPage(p)}
-								>
-									{p}
-								</button>
-							{/if}
+							</button>
 						{/each}
 					</div>
 
-					<Button
-						variant="outline"
-						size="sm"
-						disabled={currentPage >= totalPages}
-						on:click={() => goToPage(currentPage + 1)}
-					>
-						<span class="paginationLabel">Next</span>
-						<ChevronRight class="h-4 w-4" />
-					</Button>
-				</nav>
-			{/if}
-		{/if}
-	</section>
+					<!-- Pagination -->
+					{#if totalPages > 1}
+						<nav class="pagination" aria-label="Pagination">
+							<Button
+								variant="outline"
+								size="sm"
+								disabled={currentPage <= 1}
+								on:click={() => goToPage(currentPage - 1)}
+							>
+								<ChevronLeft class="h-4 w-4" />
+								<span class="paginationLabel">Prev</span>
+							</Button>
 
-	<!-- Own Lists Section (client-side, auth required) -->
-	{#if !$user.checked || ownLoading}
-		<section class="section">
-			<div class="sectionHeader">
-				<h2>{$_('custom_lists.index.own.heading')}</h2>
-			</div>
-			<div class="emptyState slim">{$_('custom_lists.index.own.loading')}</div>
-		</section>
-	{:else if !$user.loggedIn}
-		<section class="section">
-			<div class="emptyState">
-				<h3>{$_('custom_lists.index.own.sign_in_title')}</h3>
-				<p>{quickLevelId ? $_('custom_lists.index.own.sign_in_quickadd', { values: { id: quickLevelId } }) : $_('custom_lists.index.own.sign_in_desc')}</p>
-			</div>
-		</section>
-	{:else}
-		<section class="section">
-			<div class="sectionHeader">
-				<div class="sectionTitleRow">
-					<h2>{$_('custom_lists.index.own.heading')}</h2>
-					<Badge variant="outline">{ownLists.length}</Badge>
-				</div>
-			</div>
+							<div class="pageNumbers">
+								{#each paginationPages as p}
+									{#if p === '...'}
+										<span class="pageEllipsis">…</span>
+									{:else}
+										<button
+											class="pageBtn"
+											class:active={p === currentPage}
+											on:click={() => goToPage(p)}
+										>
+											{p}
+										</button>
+									{/if}
+								{/each}
+							</div>
 
-			{#if ownLists.length === 0}
-				<div class="emptyState slim">
-					<h3>{$_('custom_lists.index.own.empty_title')}</h3>
-					<p>{$_('custom_lists.index.own.empty_desc')}</p>
-				</div>
+							<Button
+								variant="outline"
+								size="sm"
+								disabled={currentPage >= totalPages}
+								on:click={() => goToPage(currentPage + 1)}
+							>
+								<span class="paginationLabel">Next</span>
+								<ChevronRight class="h-4 w-4" />
+							</Button>
+						</nav>
+					{/if}
+				{/if}
+			</section>
+		</Tabs.Content>
+
+		<Tabs.Content value="mine">
+			{#if !$user.checked || ownLoading}
+				<section class="section">
+					<div class="sectionHeader">
+						<h2>{$_('custom_lists.index.own.heading')}</h2>
+					</div>
+					<div class="emptyState slim">{$_('custom_lists.index.own.loading')}</div>
+				</section>
+			{:else if !$user.loggedIn}
+				<section class="section">
+					<div class="emptyState">
+						<h3>{$_('custom_lists.index.own.sign_in_title')}</h3>
+						<p>{quickLevelId ? $_('custom_lists.index.own.sign_in_quickadd', { values: { id: quickLevelId } }) : $_('custom_lists.index.own.sign_in_desc')}</p>
+					</div>
+				</section>
 			{:else}
-				<div class="listGrid">
-					{#each ownLists as list}
-						<button class="listCard" on:click={() => goto(`/lists/${list.id}`)}>
-							<div class="cardTop">
-								<h3 class="cardTitle">{list.title}</h3>
-								<p class="cardDesc">{list.description || $_('custom_lists.detail.no_description')}</p>
-							</div>
+				<section class="section">
+					<div class="sectionHeader">
+						<div class="sectionTitleRow">
+							<h2>{$_('custom_lists.index.own.heading')}</h2>
+							<Badge variant="outline">{ownLists.length}</Badge>
+						</div>
+					</div>
 
-							<div class="cardMeta">
-								<div class="metaBadges">
-									<span class="metaItem">
-										<svelte:component this={getVisibilityIcon(list.visibility)} class="h-3.5 w-3.5" />
-										{formatVisibility(list.visibility)}
-									</span>
-									<span class="metaItem">
-										<Layers class="h-3.5 w-3.5" />
-										{formatListType(list.isPlatformer)}
-									</span>
-									<span class="metaItem">
-										{$_('custom_lists.detail.levels_badge', { values: { count: list.levelCount } })}
-									</span>
-								</div>
-								<span class="metaDate">
-									<Clock class="h-3.5 w-3.5" />
-									{formatDate(list.updated_at)}
-								</span>
-							</div>
+					{#if ownLists.length === 0}
+						<div class="emptyState slim">
+							<h3>{$_('custom_lists.index.own.empty_title')}</h3>
+							<p>{$_('custom_lists.index.own.empty_desc')}</p>
+						</div>
+					{:else}
+						<div class="listGrid">
+							{#each ownLists as list}
+								<button class="listCard" on:click={() => goto(`/lists/${list.id}`)}>
+									<div class="cardTop">
+										<h3 class="cardTitle">{list.title}</h3>
+										<p class="cardDesc">{list.description || $_('custom_lists.detail.no_description')}</p>
+									</div>
 
-							{#if list.tags?.length}
-								<div class="cardTags">
-									{#each list.tags.slice(0, 4) as tag}
-										<Badge variant="outline">{tag}</Badge>
-									{/each}
-								</div>
-							{/if}
+									<div class="cardMeta">
+										<div class="metaBadges">
+											<span class="metaItem">
+												<svelte:component this={getVisibilityIcon(list.visibility)} class="h-3.5 w-3.5" />
+												{formatVisibility(list.visibility)}
+											</span>
+											<span class="metaItem">
+												<Layers class="h-3.5 w-3.5" />
+												{formatListType(list.isPlatformer)}
+											</span>
+											<span class="metaItem">
+												{$_('custom_lists.detail.levels_badge', { values: { count: list.levelCount } })}
+											</span>
+										</div>
+										<span class="metaDate">
+											<Clock class="h-3.5 w-3.5" />
+											{formatDate(list.updated_at)}
+										</span>
+									</div>
 
-							<div class="cardActions" on:click|stopPropagation={() => {}}>
-								{#if quickLevelId}
-									<Button
-										size="sm"
-										on:click={(event) => handleQuickAddClick(event, list.id, quickLevelId)}
-										disabled={actionListId === list.id}
-									>
-										<LinkIcon class="mr-1.5 h-3.5 w-3.5" />
-										{$_('custom_lists.index.browse.add_level')}
-									</Button>
-								{/if}
-								<Button variant="outline" size="sm" on:click={(event) => handleManageClick(event, list.id)}>
-									<Settings class="mr-1.5 h-3.5 w-3.5" />
-									{$_('custom_lists.actions.manage')}
-								</Button>
-							</div>
-						</button>
-					{/each}
-				</div>
+									{#if list.tags?.length}
+										<div class="cardTags">
+											{#each list.tags.slice(0, 4) as tag}
+												<Badge variant="outline">{tag}</Badge>
+											{/each}
+										</div>
+									{/if}
+
+									<div class="cardActions">
+										{#if quickLevelId}
+											<Button
+												size="sm"
+												on:click={(event) => {
+													event.stopPropagation();
+													handleQuickAddClick(event, list.id, quickLevelId);
+												}}
+												disabled={actionListId === list.id}
+											>
+												<LinkIcon class="mr-1.5 h-3.5 w-3.5" />
+												{$_('custom_lists.index.browse.add_level')}
+											</Button>
+										{/if}
+										<Button
+											variant="outline"
+											size="sm"
+											on:click={(event) => {
+												event.stopPropagation();
+												handleManageClick(event, list.id);
+											}}
+										>
+											<Settings class="mr-1.5 h-3.5 w-3.5" />
+											{$_('custom_lists.actions.manage')}
+										</Button>
+									</div>
+								</button>
+							{/each}
+						</div>
+					{/if}
+				</section>
 			{/if}
-		</section>
-	{/if}
+		</Tabs.Content>
+
+		<Tabs.Content value="starred">
+			{#if !$user.checked || starredLoading}
+				<section class="section">
+					<div class="sectionHeader">
+						<h2>{$_('custom_lists.index.starred.heading')}</h2>
+					</div>
+					<div class="emptyState slim">{$_('custom_lists.index.starred.loading')}</div>
+				</section>
+			{:else if !$user.loggedIn}
+				<section class="section">
+					<div class="emptyState">
+						<h3>{$_('custom_lists.index.starred.sign_in_title')}</h3>
+						<p>{$_('custom_lists.index.starred.sign_in_desc')}</p>
+					</div>
+				</section>
+			{:else}
+				<section class="section">
+					<div class="sectionHeader">
+						<div class="sectionTitleRow">
+							<h2>{$_('custom_lists.index.starred.heading')}</h2>
+							<Badge variant="outline">{starredLists.length}</Badge>
+						</div>
+					</div>
+
+					{#if starredLists.length === 0}
+						<div class="emptyState slim">
+							<h3>{$_('custom_lists.index.starred.empty_title')}</h3>
+							<p>{$_('custom_lists.index.starred.empty_desc')}</p>
+						</div>
+					{:else}
+						<div class="listGrid">
+							{#each starredLists as list}
+								<button class="listCard" on:click={() => goto(`/lists/${list.id}`)}>
+									<div class="cardTop">
+										<h3 class="cardTitle">{list.title}</h3>
+										<p class="cardDesc">{list.description || $_('custom_lists.detail.no_description')}</p>
+									</div>
+
+									<div class="cardMeta">
+										<div class="metaBadges">
+											<span class="metaItem">
+												<svelte:component this={getVisibilityIcon(list.visibility)} class="h-3.5 w-3.5" />
+												{formatVisibility(list.visibility)}
+											</span>
+											<span class="metaItem">
+												<Layers class="h-3.5 w-3.5" />
+												{formatListType(list.isPlatformer)}
+											</span>
+											<span class="metaItem">
+												{$_('custom_lists.detail.levels_badge', { values: { count: list.levelCount } })}
+											</span>
+											<span class="metaItem">
+												<Star class="h-3.5 w-3.5" />
+												{$_('custom_lists.detail.star_count', { values: { count: list.starCount ?? 0 } })}
+											</span>
+										</div>
+										<div class="cardFooter">
+											<span class="metaDate">
+												<Clock class="h-3.5 w-3.5" />
+												{formatDate(list.updated_at)}
+											</span>
+											{#if list.ownerData}
+												<span class="ownerInfo">
+													{$_('custom_lists.index.browse.by')}
+													<PlayerLink player={list.ownerData} />
+												</span>
+											{/if}
+										</div>
+									</div>
+
+									{#if list.tags?.length}
+										<div class="cardTags">
+											{#each list.tags.slice(0, 4) as tag}
+												<Badge variant="outline">{tag}</Badge>
+											{/each}
+											{#if list.tags.length > 4}
+												<Badge variant="outline">+{list.tags.length - 4}</Badge>
+											{/if}
+										</div>
+									{/if}
+								</button>
+							{/each}
+						</div>
+					{/if}
+				</section>
+			{/if}
+		</Tabs.Content>
+	</Tabs.Root>
 </div>
 
 <style lang="scss">
@@ -507,6 +651,10 @@
 	}
 
 	/* Sections */
+	.tabsList {
+		align-self: flex-start;
+	}
+
 	.section {
 		display: flex;
 		flex-direction: column;
@@ -610,6 +758,7 @@
 		margin: 0;
 		font-size: 0.875rem;
 		color: hsl(var(--muted-foreground));
+		line-clamp: 2;
 		display: -webkit-box;
 		-webkit-line-clamp: 2;
 		-webkit-box-orient: vertical;

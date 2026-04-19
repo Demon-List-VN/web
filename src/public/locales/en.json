@@ -840,6 +840,7 @@
       "pending_review": "Your post is under review and will be visible after admin approval.",
       "validation_error": "Title is required",
       "attachment": "Attachment",
+      "attached_list": "Attached list",
       "my_records": "My Records",
       "attach_level": "Attach Level",
       "search_levels": "Search levels...",
@@ -1713,7 +1714,10 @@
     },
     "actions": {
       "view": "View list",
-      "manage": "Manage list"
+        "manage": "Manage list",
+        "star": "Star list",
+        "unstar": "Unstar list",
+        "post_about": "Post about this list"
     },
     "visibility": {
       "public": "Public",
@@ -1724,6 +1728,11 @@
       "title": "Lists",
       "subtitle": "Browse public lists and manage your own level collections.",
       "new_list": "New list",
+      "tabs": {
+        "browse": "Browse",
+        "mine": "My lists",
+        "starred": "Starred"
+      },
       "browse": {
         "heading": "Browse lists",
         "hint": "Public lists are discoverable by everyone.",
@@ -1749,20 +1758,38 @@
         "heading": "Your lists",
         "empty_title": "No lists yet",
         "empty_desc": "Create your first list to start organising levels."
+      },
+      "starred": {
+        "loading": "Loading your starred lists...",
+        "sign_in_title": "Sign in to view starred lists",
+        "sign_in_desc": "Your starred lists are saved to your account.",
+        "heading": "Starred lists",
+        "empty_title": "No starred lists yet",
+        "empty_desc": "Star a public list to keep it here."
       }
     },
     "detail": {
       "loading": "Loading list...",
       "error_title": "Unable to open this list",
       "levels_badge": "{count} levels",
+      "star_count": "{count} stars",
       "level_badge": "Level {id}",
       "updated": "Updated {date}",
       "no_description": "No description yet.",
+      "starred_tab": "Starred lists",
+      "starred_empty": "No starred custom lists include this level yet.",
+      "community_empty": "No community posts about this list yet.",
+      "tabs": {
+        "levels": "Levels",
+        "community": "Community posts"
+      },
       "delete_confirm": "Delete this list? This cannot be undone.",
       "edit": {
         "heading": "Edit metadata",
         "title_label": "Title",
         "description_label": "Description",
+        "community_label": "Community posts",
+        "community_hint": "Allow community posts to be attached to this list.",
         "type_label": "List type",
         "type_hint": "Platformer lists only accept platformer levels and display base time instead of percentage minimums.",
         "visibility_label": "Visibility",
@@ -1825,6 +1852,8 @@
       "mode_label": "Mode",
       "type_label": "List type",
       "type_hint": "Choose Platformer if this list should only contain platformer levels.",
+      "community_label": "Community posts",
+      "community_hint": "Allow community posts to be attached to this list. Enabled by default.",
       "mode_rating_hint": "Levels are rated 1–10 and shown from highest to lowest rated.",
       "mode_top_hint": "Arrange levels in a custom order by dragging."
     },
@@ -1843,12 +1872,16 @@
       "failed_add_level": "Failed to add level",
       "failed_remove_level": "Failed to remove level",
       "failed_load_own": "Failed to load your lists",
+      "failed_load_starred": "Failed to load your starred lists",
       "failed_browse": "Failed to browse lists",
       "failed_add_to_list": "Failed to add level to list",
       "level_updated": "Level updated",
       "failed_update_level": "Failed to update level",
       "reordered": "Order saved",
       "failed_reorder": "Failed to save order",
+      "starred": "List starred",
+      "unstarred": "List unstarred",
+	      "failed_star": "Failed to update list star",
       "rating_invalid": "Rating must be between 1 and 10",
       "min_progress_invalid": "Enter a valid min progress value"
     }

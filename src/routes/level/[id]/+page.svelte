@@ -1,8 +1,6 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card';
-	import * as Table from '$lib/components/ui/table';
 	import CommunityPostCard from '$lib/components/communityPostCard.svelte';
-	import type { PageData } from './$types';
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import { fade } from 'svelte/transition';
 	import { onMount } from 'svelte';
@@ -14,9 +12,18 @@
 	import { Button } from '$lib/components/ui/button';
 	import { goto } from '$app/navigation';
 	import { _ } from 'svelte-i18n';
-	import { MessageSquare, Tag, Link, Crown, Monitor, Smartphone, ExternalLink, ListPlus } from 'lucide-svelte';
+	import {
+		MessageSquare,
+		Tag,
+		Link,
+		Crown,
+		Monitor,
+		Smartphone,
+		ExternalLink,
+		ListPlus,
+	} from 'lucide-svelte';
 
-	export let data: PageData;
+	export let data: any;
 	let levelAPI: any = null;
 	let records: any[] = [];
 	let deathCount: any[] = [];
@@ -26,6 +33,23 @@
 	let activeTab = 'records';
 	let levelTags: any[] = [];
 	let levelVariants: any[] = [];
+
+	type StarredListEntry = {
+		id: number;
+		title: string;
+		description: string;
+		updated_at: string;
+		mode: 'rating' | 'top';
+		isPlatformer: boolean;
+		starCount: number;
+		ownerData?: any | null;
+		item?: {
+			created_at: string;
+			rating: number | null;
+			position: number | null;
+			minProgress: number | null;
+		} | null;
+	};
 
 	function getTimeString(ms: number) {
 		const minutes = Math.floor(ms / 60000);
@@ -128,7 +152,6 @@
 	}
 
 	function getList() {
-		console.log(data.level);
 		if (data.level.isChallenge) {
 			return $_('level.challenge_rating');
 		}
@@ -136,6 +159,42 @@
 		return data.level.isPlatformer ? $_('level.platformer_rating') : $_('level.classic_rating');
 	}
 
+	function formatStarredListPrimaryValue(list: StarredListEntry) {
+		if (list.mode === 'top') {
+			return `#${(list.item?.position ?? 0) + 1}`;
+		}
+
+		return `${list.item?.rating ?? '?'}pt`;
+	}
+
+	function handleStarredListCardKeydown(event: KeyboardEvent, listId: number) {
+		if (event.target instanceof Element && event.target.closest('[data-starred-list-author]')) {
+			return;
+		}
+
+		if (event.key !== 'Enter' && event.key !== ' ') {
+			return;
+		}
+
+		event.preventDefault();
+		goto(`/lists/${listId}`);
+	}
+
+	function handleStarredListCardClick(event: MouseEvent, listId: number) {
+		if (event.target instanceof Element && event.target.closest('[data-starred-list-author]')) {
+			return;
+		}
+
+		goto(`/lists/${listId}`);
+	}
+
+	function openLevelView(view: 'gdvn' | 'starred') {
+		goto(view === 'gdvn' ? `/level/${$page.params.id}` : `/level/${$page.params.id}?list=starred`);
+	}
+
+	$: hasLocalLevel = 'level' in data;
+	$: activeListView = hasLocalLevel && $page.url.searchParams.get('list') === 'starred' ? 'starred' : 'gdvn';
+	$: starredLists = (data?.starredLists ?? []) as StarredListEntry[];
 	$: ($page.params.id, fetchData());
 
 	onMount(() => {
@@ -176,8 +235,6 @@
 	/>
 </svelte:head>
 
-
-
 <img
 	in:fade={{ delay: 500, duration: 300 }}
 	class="bg"
@@ -212,8 +269,7 @@
 								{#each levelTags as tag}
 									<span
 										class="levelTagBadge"
-										style="background: {tag.color || '#666'}18; color: {tag.color ||
-											'#666'}; border: 1px solid {tag.color || '#666'}30"
+										style="background: {tag.color || '#666'}18; color: {tag.color || '#666'}; border: 1px solid {tag.color || '#666'}30"
 									>
 										<Tag class="h-3 w-3" />
 										{tag.name}
@@ -221,38 +277,72 @@
 								{/each}
 							</div>
 						{/if}
+						{#if 'level' in data}
 							<div class="levelActionRow">
-							<Button variant="outline" size="sm" on:click={() => goto(`/lists?levelId=${$page.params.id}`)}>
+								<Button variant="outline" size="sm" on:click={() => goto(`/lists?levelId=${$page.params.id}`)}>
 									<ListPlus class="mr-2 h-4 w-4" />
 									Add to List
 								</Button>
 							</div>
+						{/if}
 					</div>
 				</div>
 			</Card.Content>
 		</Card.Root>
-		<Tabs.Root value={'gdbrowser' in data ? 'other' : 'dlvn'} class="mt-[20px]">
-			<Tabs.List class="grid h-[50px] w-full grid-cols-2">
-				<Tabs.Trigger
-					class="h-[40px]"
-					value="dlvn"
-					on:click={() => goto(`/level/${$page.params.id}`)}>Geometry Dash Việt Nam</Tabs.Trigger
-				>
-				<Tabs.Trigger
-					class="h-[40px]"
-					value="other"
-					on:click={() => goto(`/level/${$page.params.id}?list=other`)}>Other lists</Tabs.Trigger
-				>
-			</Tabs.List>
-		</Tabs.Root>
+		{#if 'level' in data}
+			<Tabs.Root value={activeListView} class="mt-[20px]">
+				<Tabs.List class="grid h-[50px] w-full grid-cols-2">
+					<Tabs.Trigger
+						class="h-[40px]"
+						value="gdvn"
+						on:click={() => openLevelView('gdvn')}>Geometry Dash Việt Nam</Tabs.Trigger
+					>
+					<Tabs.Trigger
+						class="h-[40px]"
+						value="starred"
+						on:click={() => openLevelView('starred')}>{$_('custom_lists.detail.starred_tab')}</Tabs.Trigger
+					>
+				</Tabs.List>
+			</Tabs.Root>
+		{/if}
 	</div>
 </div>
+
 <div class="detailWrapper">
 	<div class="cardWrapper1 point">
 		<Card.Root>
 			<Card.Content>
-				<div class="content">
-					{#if 'level' in data}
+				<div class="content" class:starredListPanel={'level' in data && activeListView === 'starred'}>
+					{#if 'level' in data && activeListView === 'starred'}
+						{#if starredLists.length > 0}
+							<div class="starredLists">
+								{#each starredLists as list}
+									<div
+										class="starredListCard"
+										role="link"
+										tabindex="0"
+										on:click={(event) => handleStarredListCardClick(event, list.id)}
+										on:keydown={(event) => handleStarredListCardKeydown(event, list.id)}
+									>
+										<div class="starredListHeader">
+											<div class="starredListTitleWrap">
+												<h3>{list.title}</h3>
+												{#if list.ownerData}
+													<div class="starredListAuthor" data-starred-list-author>
+														<span>{$_('custom_lists.index.browse.by')}</span>
+														<PlayerLink player={list.ownerData} />
+													</div>
+												{/if}
+											</div>
+											<span class="starredListBadge">{formatStarredListPrimaryValue(list)}</span>
+										</div>
+									</div>
+								{/each}
+							</div>
+						{:else}
+							<p class="starredListEmpty">{$_('custom_lists.detail.starred_empty')}</p>
+						{/if}
+					{:else if 'level' in data}
 						<div class="pointLabel">
 							{getList()}: {data.level.rating}
 							<div class="top">#{data.level.dlTop}</div>
@@ -422,7 +512,7 @@
 								</div>
 
 								<span class="record-progress" class:progress-top1={index === 0}>
-									{data.level && data.level.isPlatformer
+									{'level' in data && data.level.isPlatformer
 										? getTimeString(record.progress)
 										: `${record.progress}%`}
 								</span>
@@ -469,7 +559,6 @@
 		padding-bottom: 20px;
 	}
 
-	/* ── Record list ── */
 	.records-list {
 		display: flex;
 		flex-direction: column;
@@ -603,12 +692,19 @@
 	}
 
 	@media (max-width: 600px) {
-		.record-meta { display: none; }
-		.record-detail-btn { opacity: 1; }
+		.record-meta {
+			display: none;
+		}
+
+		.record-detail-btn {
+			opacity: 1;
+		}
 	}
 
 	@media (hover: none) {
-		.record-detail-btn { opacity: 1; }
+		.record-detail-btn {
+			opacity: 1;
+		}
 	}
 
 	.chartWrapper {
@@ -636,6 +732,7 @@
 				line-height: 20px;
 				margin-bottom: 5px;
 			}
+
 			span {
 				color: var(--textColor2);
 			}
@@ -698,6 +795,7 @@
 		.content {
 			display: flex;
 			justify-content: space-evenly;
+			gap: 12px;
 
 			.pointLabel {
 				display: flex;
@@ -711,7 +809,79 @@
 					border-radius: 4px;
 				}
 			}
+
+			&.starredListPanel {
+				display: block;
+			}
 		}
+	}
+
+	.starredLists {
+		display: grid;
+		gap: 12px;
+		grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+	}
+
+	.starredListCard {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		padding: 14px;
+		border: 1px solid var(--border1);
+		border-radius: var(--radius);
+		text-decoration: none;
+		color: inherit;
+		transition: background 0.15s ease, border-color 0.15s ease;
+
+		&:hover {
+			background: hsl(var(--muted) / 0.25);
+			border-color: hsl(var(--border));
+		}
+	}
+
+	.starredListHeader {
+		display: flex;
+		justify-content: space-between;
+		gap: 12px;
+		align-items: center;
+	}
+
+	.starredListTitleWrap {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		min-width: 0;
+
+		h3 {
+			margin: 0;
+			font-size: 16px;
+			font-weight: 700;
+		}
+	}
+
+	.starredListAuthor {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 12px;
+		color: var(--textColor2);
+	}
+
+	.starredListBadge {
+		background: var(--textColor);
+		color: var(--textColorInverted);
+		padding: 4px 8px;
+		border-radius: 999px;
+		font-size: 12px;
+		font-weight: 700;
+		white-space: nowrap;
+	}
+
+	.starredListEmpty {
+		margin: 0;
+		text-align: center;
+		color: var(--textColor2);
+		padding: 8px 0;
 	}
 
 	.head {
