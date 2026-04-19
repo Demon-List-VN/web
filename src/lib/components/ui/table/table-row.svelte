@@ -10,6 +10,7 @@
 		className
 	)}
 	{...$$restProps}
+	on:mousedown
 	on:click
 	on:keydown
 >

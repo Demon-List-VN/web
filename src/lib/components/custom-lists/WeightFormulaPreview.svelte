@@ -15,9 +15,10 @@
 		position: '1',
 		levelCount: '25',
 		rating: '10',
-		minProgress: getDefaultMinProgress(isPlatformer)
+		minProgress: getDefaultMinProgress(isPlatformer),
+		progress: getDefaultProgress(isPlatformer)
 	};
-	let previewOutput: number | null = null;
+	let previewRecordPoint: number | null = null;
 	let previewError = '';
 	let previewLoading = false;
 	let previewSignature = '';
@@ -26,6 +27,10 @@
 	let formulaVariables: FormulaVariable[] = [];
 
 	function getDefaultMinProgress(platformer: boolean) {
+		return platformer ? '60000' : '100';
+	}
+
+	function getDefaultProgress(platformer: boolean) {
 		return platformer ? '60000' : '100';
 	}
 
@@ -49,7 +54,8 @@
 					position: previewInput.position,
 					levelCount: previewInput.levelCount,
 					rating: previewInput.rating,
-					minProgress: previewInput.minProgress
+					minProgress: previewInput.minProgress,
+					progress: previewInput.progress
 				})
 			});
 
@@ -63,14 +69,14 @@
 				throw new Error(payload?.error || $_('custom_lists.formula.preview_error'));
 			}
 
-			previewOutput = typeof payload?.output === 'number' ? payload.output : null;
+			previewRecordPoint = typeof payload?.output === 'number' ? payload.output : null;
 			previewError = '';
 		} catch (error) {
 			if (requestId !== previewRequestId) {
 				return;
 			}
 
-			previewOutput = null;
+			previewRecordPoint = null;
 			previewError = error instanceof Error ? error.message : $_('custom_lists.formula.preview_error');
 		} finally {
 			if (requestId === previewRequestId) {
@@ -83,7 +89,8 @@
 		previousPlatformer = isPlatformer;
 		previewInput = {
 			...previewInput,
-			minProgress: getDefaultMinProgress(isPlatformer)
+			minProgress: getDefaultMinProgress(isPlatformer),
+			progress: getDefaultProgress(isPlatformer)
 		};
 	}
 
@@ -91,6 +98,7 @@
 		{ token: 'position', label: $_('custom_lists.formula.position_label') },
 		{ token: 'levelCount', label: $_('custom_lists.formula.level_count_label') },
 		{ token: 'rating', label: $_('custom_lists.formula.rating_label') },
+		{ token: 'progress', label: $_('custom_lists.formula.progress_label') },
 		{
 			token: 'minProgress',
 			label: isPlatformer
@@ -105,6 +113,7 @@
 			previewInput.position,
 			previewInput.levelCount,
 			previewInput.rating,
+			previewInput.progress,
 			previewInput.minProgress,
 			isPlatformer ? 'platformer' : 'classic'
 		].join('|');
@@ -113,7 +122,7 @@
 			previewSignature = nextSignature;
 			previewRequestId += 1;
 			previewLoading = false;
-			previewOutput = null;
+			previewRecordPoint = null;
 			previewError = '';
 		}
 	}
@@ -156,6 +165,10 @@
 			<Input id="formula-preview-rating" type="number" min="0" bind:value={previewInput.rating} />
 		</div>
 		<div class="field">
+			<label for="formula-preview-progress">{$_('custom_lists.formula.progress_label')}</label>
+			<Input id="formula-preview-progress" type="number" min="0" bind:value={previewInput.progress} />
+		</div>
+		<div class="field">
 			<label for="formula-preview-min-progress">
 				{isPlatformer
 					? $_('custom_lists.formula.base_time_label')
@@ -169,8 +182,8 @@
 		<span class="formulaPreviewResultLabel">{$_('custom_lists.formula.output_label')}</span>
 		{#if previewError}
 			<span class="formulaPreviewResultValue">{previewError}</span>
-		{:else if previewOutput != null}
-			<span class="formulaPreviewResultValue">{formatOutput(previewOutput)}</span>
+		{:else if previewRecordPoint != null}
+			<span class="formulaPreviewResultValue">{formatOutput(previewRecordPoint)}</span>
 		{:else}
 			<span class="formulaPreviewResultValue formulaPreviewResultPlaceholder">
 				{$_('custom_lists.formula.preview_pending')}

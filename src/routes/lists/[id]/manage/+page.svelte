@@ -297,10 +297,13 @@
 			}
 
 			const refreshedTotal = typeof payload?.total === 'number' ? payload.total : null;
+			const refreshedRecordTotal = typeof payload?.totalRecords === 'number' ? payload.totalRecords : null;
 			toast.success(
 				refreshedTotal == null
 					? 'Leaderboard refreshed'
-					: `Leaderboard refreshed (${refreshedTotal} ranked players)`
+					: refreshedRecordTotal == null
+						? `Leaderboard refreshed (${refreshedTotal} ranked players)`
+						: `Leaderboard refreshed (${refreshedTotal} ranked players, ${refreshedRecordTotal} records)`
 			);
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : 'Failed to refresh leaderboard');
@@ -673,13 +676,18 @@
 									</div>
 									<div class="field">
 										<label for="list-weight-formula">{$_('custom_lists.formula.label')}</label>
-										<Input
+										<Textarea
 											id="list-weight-formula"
 											bind:value={editForm.weightFormula}
 											placeholder={$_('custom_lists.formula.placeholder')}
+											rows={5}
 										/>
 										<p class="hint">{$_('custom_lists.formula.hint')}</p>
-										<WeightFormulaPreview formula={editForm.weightFormula} isPlatformer={editForm.isPlatformer} />
+										<WeightFormulaPreview
+											formula={editForm.weightFormula}
+											isPlatformer={editForm.isPlatformer}
+											mode={editForm.mode}
+										/>
 									</div>
 								</div>
 								<div class="formActions">

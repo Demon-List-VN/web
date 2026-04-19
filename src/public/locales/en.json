@@ -1783,16 +1783,31 @@
       "tabs": {
         "levels": "Levels",
         "leaderboard": "Leaderboard",
+        "records": "Record points",
         "community": "Community posts"
       },
       "leaderboard": {
         "heading": "{title} leaderboard",
-        "subhead_top": "Score is the weighted count of eligible list records.",
-        "subhead_rating": "Score is the weighted sum of each eligible record contribution.",
-        "score_label": "Score",
+        "subhead_top": "Total score is the sum of the final points returned by the MathJS formula for each eligible record.",
+        "subhead_rating": "Total score is the sum of the final points returned by the MathJS formula for each eligible record.",
+        "score_label": "Total score",
+        "view_records_label": "View record points",
         "eligible_records_label": "Eligible Records",
         "empty": "No eligible records yet.",
         "failed_load": "Failed to load leaderboard"
+      },
+      "records": {
+        "heading": "{title} record points",
+        "subhead_top": "Each eligible record's final points are precalculated directly from the MathJS formula when the leaderboard is refreshed.",
+        "subhead_rating": "Each eligible record's final points are precalculated directly from the MathJS formula when the leaderboard is refreshed.",
+        "position_label": "Position",
+        "level_label": "Level",
+        "progress_label": "Progress",
+        "point_label": "Final point",
+        "select_player": "Click the view button at the end of a row to inspect that player's record points.",
+        "variable_values_label": "Variable values",
+        "empty": "No eligible records yet.",
+        "failed_load": "Failed to load record points"
       },
       "delete_confirm": "Delete this list? This cannot be undone.",
       "edit": {
@@ -1875,19 +1890,23 @@
       }
     },
     "formula": {
-      "label": "Weight formula",
+      "label": "Record point formula",
       "placeholder": "1",
-      "hint": "Use 1 for equal weight on every eligible record. Preview the formula before saving.",
+      "hint": "The formula returns the final points for each record directly. Use 1 if every eligible record should be worth 1 point. Use `rating` or an expression containing `rating` if level rating should affect the result.",
       "available_variables_label": "Available variables",
       "preview_title": "Formula preview",
-      "preview_hint": "Adjust sample inputs to inspect the resulting weight.",
+      "preview_hint": "Adjust sample inputs to inspect the final record points returned by the formula.",
       "preview_button": "Preview output",
       "preview_pending": "Run preview to see the output.",
       "preview_error": "Failed to preview formula",
-      "output_label": "Output",
+      "output_label": "Final record points",
+      "final_point_label": "Final record points",
+      "final_point_hint_top": "Top mode: the formula result is the final record points.",
+      "final_point_hint_rating": "Rating mode: include `rating` in the formula if level rating should affect the score.",
       "position_label": "Position",
       "level_count_label": "Level count",
       "rating_label": "Rating",
+      "progress_label": "Record progress",
       "min_progress_label": "Minimum progress",
       "base_time_label": "Base time (ms)"
     },

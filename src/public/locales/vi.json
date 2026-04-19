@@ -1782,16 +1782,31 @@
       "tabs": {
         "levels": "Levels",
         "leaderboard": "Bảng xếp hạng",
+        "records": "Điểm bản ghi",
         "community": "Bài viết cộng đồng"
       },
       "leaderboard": {
         "heading": "Bảng xếp hạng {title}",
-        "subhead_top": "Điểm là số lượng bản ghi hợp lệ đã được áp trọng số.",
-        "subhead_rating": "Điểm là tổng đóng góp của từng bản ghi hợp lệ sau khi áp trọng số.",
-        "score_label": "Điểm",
+        "subhead_top": "Tổng điểm là tổng điểm cuối cùng do công thức MathJS trả về cho từng bản ghi hợp lệ.",
+        "subhead_rating": "Tổng điểm là tổng điểm cuối cùng do công thức MathJS trả về cho từng bản ghi hợp lệ.",
+        "score_label": "Tổng điểm",
+        "view_records_label": "Xem điểm bản ghi",
         "eligible_records_label": "Bản ghi hợp lệ",
         "empty": "Chưa có bản ghi hợp lệ nào.",
         "failed_load": "Không thể tải bảng xếp hạng"
+      },
+      "records": {
+        "heading": "Điểm bản ghi của {title}",
+        "subhead_top": "Điểm cuối cùng của từng bản ghi hợp lệ được tính sẵn trực tiếp từ công thức MathJS khi làm mới bảng xếp hạng.",
+        "subhead_rating": "Điểm cuối cùng của từng bản ghi hợp lệ được tính sẵn trực tiếp từ công thức MathJS khi làm mới bảng xếp hạng.",
+        "position_label": "Hạng",
+        "level_label": "Level",
+        "progress_label": "Tiến độ",
+        "point_label": "Điểm cuối cùng",
+        "select_player": "Nhấn nút xem ở cuối dòng để xem điểm bản ghi của người chơi đó.",
+        "variable_values_label": "Giá trị biến",
+        "empty": "Chưa có bản ghi hợp lệ nào.",
+        "failed_load": "Không thể tải điểm bản ghi"
       },
       "delete_confirm": "Xoá danh sách này? Hành động này không thể hoàn tác.",
       "edit": {
@@ -1874,19 +1889,23 @@
       }
     },
     "formula": {
-      "label": "Công thức trọng số",
+      "label": "Công thức điểm bản ghi",
       "placeholder": "1",
-      "hint": "Dùng 1 để mọi bản ghi hợp lệ có cùng trọng số. Hãy xem trước công thức trước khi lưu.",
+      "hint": "Công thức trả về trực tiếp điểm cuối cùng của mỗi bản ghi. Dùng 1 nếu mọi bản ghi hợp lệ đều nên có 1 điểm. Dùng `rating` hoặc công thức có `rating` nếu muốn rating ảnh hưởng kết quả.",
       "available_variables_label": "Biến có thể dùng",
       "preview_title": "Xem trước công thức",
-      "preview_hint": "Điều chỉnh dữ liệu mẫu để kiểm tra trọng số trả về.",
+      "preview_hint": "Điều chỉnh dữ liệu mẫu để xem điểm bản ghi cuối cùng mà công thức trả về.",
       "preview_button": "Xem kết quả",
       "preview_pending": "Hãy xem trước để thấy kết quả.",
       "preview_error": "Không thể xem trước công thức",
-      "output_label": "Kết quả",
+      "output_label": "Điểm bản ghi cuối cùng",
+      "final_point_label": "Điểm bản ghi cuối cùng",
+      "final_point_hint_top": "Mode Top: điểm bản ghi cuối cùng bằng đúng kết quả công thức.",
+      "final_point_hint_rating": "Mode Rating: nếu muốn rating ảnh hưởng điểm, hãy dùng biến `rating` ngay trong công thức.",
       "position_label": "Vị trí",
       "level_count_label": "Số level",
       "rating_label": "Điểm",
+      "progress_label": "Tiến độ bản ghi",
       "min_progress_label": "Mốc tối thiểu",
       "base_time_label": "Base time (ms)"
     },

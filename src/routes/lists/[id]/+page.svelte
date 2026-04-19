@@ -5,9 +5,11 @@
 	import { toLevelCardProps } from '$lib/components/levelCardProps';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
+	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Pagination from '$lib/components/ui/pagination';
 	import * as Table from '$lib/components/ui/table';
 	import * as Tabs from '$lib/components/ui/tabs';
+	import * as Popover from '$lib/components/ui/popover';
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
@@ -22,6 +24,8 @@
 		Layers,
 		Clock,
 		ListOrdered,
+		Info,
+		MoreHorizontal,
 		Star,
 		MessageSquare
 	} from 'lucide-svelte';
@@ -63,6 +67,40 @@
 		items: CustomListItem[];
 	};
 
+	type CustomListRecordPoint = {
+		uid: string;
+		levelId: number;
+		progress: number;
+		timestamp: number | null;
+		point: number;
+		no: number;
+		formulaScope: {
+			position: number;
+			levelCount: number;
+			rating: number;
+			minProgress: number;
+			progress: number;
+		};
+		player: any | null;
+		level: {
+			id: number;
+			name: string | null;
+			creator: string | null;
+			difficulty: string | null;
+			isPlatformer: boolean;
+			rating: number | null;
+			minProgress: number | null;
+		} | null;
+	};
+
+	type LeaderboardPlayer = {
+		uid: string;
+		rank: number;
+		score: number;
+		completedCount: number;
+		name: string;
+	} & Record<string, any>;
+
 	type DetailTab = 'levels' | 'leaderboard' | 'community';
 
 	let list: CustomList | null = data?.list ?? null;
@@ -78,6 +116,15 @@
 	let leaderboardError = '';
 	let leaderboardLoading = false;
 	let leaderboardFetchKey = '';
+	let selectedLeaderboardPlayerUid = '';
+	let selectedLeaderboardPlayer: LeaderboardPlayer | null = null;
+	let recordPoints: CustomListRecordPoint[] = [];
+	let recordPointsCount = 0;
+	let recordPointsError = '';
+	let recordPointsLoading = false;
+	let recordPointsFetchKey = '';
+	let recordPointsPage = 1;
+	let recordPointsDialogOpen = false;
 	let listLevelsObserver: IntersectionObserver | undefined;
 	let listLevelsSentinel: HTMLDivElement | null = null;
 	let listLevelsLoading = false;
@@ -126,16 +173,17 @@
 		return list?.isPlatformer ? 'pl' : 'dl';
 	}
 
-	function getRequestedTab(): DetailTab {
-		const tab = $page.url.searchParams.get('tab');
+	function getRequestedTab(searchParams: URLSearchParams): DetailTab {
+		const tab = searchParams.get('tab');
 
 		if (tab === 'leaderboard') return 'leaderboard';
+		if (tab === 'records') return 'leaderboard';
 		if (tab === 'community') return 'community';
 		return 'levels';
 	}
 
-	function getRequestedLeaderboardPage() {
-		const parsed = Number.parseInt($page.url.searchParams.get('page') || '1', 10);
+	function getRequestedLeaderboardPage(searchParams: URLSearchParams) {
+		const parsed = Number.parseInt(searchParams.get('page') || '1', 10);
 		return Number.isInteger(parsed) && parsed > 0 ? parsed : 1;
 	}
 
@@ -167,14 +215,72 @@
 	}
 
 	function setLeaderboardPage(nextPage: number) {
+		selectedLeaderboardPlayerUid = '';
+		recordPointsPage = 1;
 		goto(buildDetailUrl('leaderboard', nextPage), {
 			keepFocus: true,
 			noScroll: true
 		});
 	}
 
+	function setRecordPointsPage(nextPage: number) {
+		recordPointsPage = nextPage;
+	}
+
+	function selectLeaderboardPlayer(player: LeaderboardPlayer) {
+		if (selectedLeaderboardPlayerUid !== player.uid) {
+			recordPointsPage = 1;
+			recordPoints = [];
+			recordPointsCount = 0;
+			recordPointsError = '';
+		}
+
+		selectedLeaderboardPlayerUid = player.uid;
+		recordPointsDialogOpen = true;
+	}
+
 	function formatScore(score: number) {
-		return Number.isInteger(score) ? score : Math.round(score * 1000) / 1000;
+		return Math.floor(score);
+	}
+
+	function formatPoint(point: number) {
+		const rounded = Math.round(point * 1000) / 1000;
+
+		if (Number.isInteger(rounded)) {
+			return String(rounded);
+		}
+
+		return rounded.toFixed(3).replace(/\.0+$|0+$/g, '').replace(/\.$/, '');
+	}
+
+	function getTimeString(ms: number) {
+		const minutes = Math.floor(ms / 60000);
+		const seconds = Math.floor((ms % 60000) / 1000);
+		const milliseconds = ms % 1000;
+		return `${minutes}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
+	}
+
+	function formatRecordProgress(progress: number) {
+		if (list?.isPlatformer) {
+			return getTimeString(progress);
+		}
+
+		return `${progress}%`;
+	}
+
+	function formatFormulaScopeValue(
+		key: keyof CustomListRecordPoint['formulaScope'],
+		value: number
+	) {
+		if (key === 'minProgress' || key === 'progress') {
+			if (list?.isPlatformer) {
+				return `${Math.round(value)} ms (${formatRecordProgress(Math.round(value))})`;
+			}
+
+			return formatRecordProgress(Math.round(value));
+		}
+
+		return formatPoint(value);
 	}
 
 	function buildListItemsQuery(start: number, end: number) {
@@ -438,14 +544,64 @@
 		}
 	}
 
+	async function fetchRecordPoints(fetchKey: string, uid: string, pageNumber: number) {
+		recordPointsLoading = true;
+		recordPointsError = '';
+
+		try {
+			const query = new URLSearchParams({
+				start: String((pageNumber - 1) * 50),
+				end: String(pageNumber * 50 - 1),
+				uid
+			});
+			const headers = $user.loggedIn
+				? {
+					Authorization: `Bearer ${await $user.token()}`
+				}
+				: undefined;
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${$page.params.id}/records?${query.toString()}`, {
+				headers
+			});
+			const payload = await res.json().catch(() => null);
+
+			if (fetchKey !== recordPointsFetchKey) {
+				return;
+			}
+
+			if (!res.ok) {
+				throw new Error(payload?.error || $_('custom_lists.detail.records.failed_load'));
+			}
+
+			recordPoints = payload?.data ?? [];
+			recordPointsCount = payload?.total ?? 0;
+			recordPointsError = '';
+		} catch (error) {
+			if (fetchKey !== recordPointsFetchKey) {
+				return;
+			}
+
+			recordPoints = [];
+			recordPointsCount = 0;
+			recordPointsError =
+				error instanceof Error ? error.message : $_('custom_lists.detail.records.failed_load');
+		} finally {
+			if (fetchKey === recordPointsFetchKey) {
+				recordPointsLoading = false;
+			}
+		}
+	}
+
 	$: isOwner = Boolean(list && $user.loggedIn && list.owner === $user.data?.uid);
 	$: listItems = list?.items ?? [];
 	$: listCardType = list?.isPlatformer ? 'pl' : 'dl';
 	$: canStarList = Boolean(list && list.id > 0 && list.visibility !== 'private');
 	$: canShowCommunity = Boolean(list && list.visibility !== 'private' && list.communityEnabled);
-	$: requestedTab = getRequestedTab();
-	$: activeLeaderboardPage = getRequestedLeaderboardPage();
+	$: requestedTab = getRequestedTab($page.url.searchParams);
+	$: activeLeaderboardPage = getRequestedLeaderboardPage($page.url.searchParams);
 	$: activeTab = requestedTab === 'community' && !canShowCommunity ? 'levels' : requestedTab;
+	$: selectedLeaderboardPlayer =
+		(leaderboard.find((player) => player.uid === selectedLeaderboardPlayerUid) as LeaderboardPlayer | undefined) ??
+		null;
 	$: if (!canShowCommunity) {
 		relatedPosts = [];
 		relatedPostsKey = '';
@@ -457,17 +613,30 @@
 			fetchRelatedPosts(list.id);
 		}
 	}
-	$: if (activeTab !== 'leaderboard') {
-		leaderboardFetchKey = '';
-		leaderboardLoading = false;
-		leaderboardError = '';
-	}
 	$: if (list?.id && activeTab === 'leaderboard') {
 		const nextKey = `${list.id}:${activeLeaderboardPage}:${$user.loggedIn ? $user.data?.uid || 'authed' : 'anon'}`;
 
 		if (nextKey !== leaderboardFetchKey) {
 			leaderboardFetchKey = nextKey;
 			fetchLeaderboard(nextKey);
+		}
+	}
+	$: if (!selectedLeaderboardPlayer && !leaderboardLoading) {
+		recordPoints = [];
+		recordPointsCount = 0;
+	}
+	$: if (activeTab !== 'leaderboard') {
+		recordPointsDialogOpen = false;
+	}
+	$: if (recordPointsDialogOpen && !selectedLeaderboardPlayer) {
+		recordPointsDialogOpen = false;
+	}
+	$: if (list?.id && activeTab === 'leaderboard' && recordPointsDialogOpen && selectedLeaderboardPlayer) {
+		const nextKey = `${list.id}:${selectedLeaderboardPlayer.uid}:${recordPointsPage}:${$user.loggedIn ? $user.data?.uid || 'authed' : 'anon'}`;
+
+		if (nextKey !== recordPointsFetchKey) {
+			recordPointsFetchKey = nextKey;
+			fetchRecordPoints(nextKey, selectedLeaderboardPlayer.uid, recordPointsPage);
 		}
 	}
 	$: if (browser) {
@@ -698,14 +867,16 @@
 										<Table.Head class="w-[100px] text-right">
 											{$_('custom_lists.detail.leaderboard.score_label')}
 										</Table.Head>
-										<Table.Head class="w-[120px] text-right">
-											{$_('custom_lists.detail.leaderboard.eligible_records_label')}
+										<Table.Head class="w-[56px] text-right">
+											<span class="sr-only">{$_('custom_lists.detail.leaderboard.view_records_label')}</span>
 										</Table.Head>
 									</Table.Row>
 								</Table.Header>
 								<Table.Body>
 									{#each leaderboard as player}
-										<Table.Row>
+										<Table.Row
+											class={`leaderboardRow ${selectedLeaderboardPlayerUid === player.uid ? 'selectedLeaderboardRow' : ''}`}
+										>
 											<Table.Cell class="font-medium">#{player.rank}</Table.Cell>
 											<Table.Cell>
 												<div class="playerNameWrapper">
@@ -717,14 +888,32 @@
 												</div>
 											</Table.Cell>
 											<Table.Cell class="text-right">{formatScore(player.score)}</Table.Cell>
-											<Table.Cell class="text-right">{player.completedCount}</Table.Cell>
+											<Table.Cell class="text-right">
+												<Button
+													variant="ghost"
+													size="icon"
+													class="ml-auto h-8 w-8"
+													title={$_('custom_lists.detail.leaderboard.view_records_label')}
+													aria-label={`${$_('custom_lists.detail.leaderboard.view_records_label')}: ${player.name || player.uid}`}
+													aria-pressed={selectedLeaderboardPlayerUid === player.uid}
+													on:click={() => selectLeaderboardPlayer(player)}
+												>
+													<MoreHorizontal class="h-4 w-4" />
+												</Button>
+											</Table.Cell>
 										</Table.Row>
 									{/each}
 								</Table.Body>
 							</Table.Root>
 						</div>
 
-						<Pagination.Root count={leaderboardCount} perPage={50} page={activeLeaderboardPage} let:pages let:currentPage>
+						<Pagination.Root
+							count={leaderboardCount}
+							perPage={50}
+							page={activeLeaderboardPage}
+							let:pages
+							let:currentPage
+						>
 							<Pagination.Content>
 								<Pagination.Item>
 									<Pagination.PrevButton
@@ -755,6 +944,168 @@
 								</Pagination.Item>
 							</Pagination.Content>
 						</Pagination.Root>
+
+						<Dialog.Root bind:open={recordPointsDialogOpen}>
+							{#if selectedLeaderboardPlayer}
+								<Dialog.Content class="max-h-[90vh] overflow-y-auto sm:max-w-[900px]">
+									<Dialog.Header>
+										<Dialog.Title>
+											{$_('custom_lists.detail.records.heading', { values: { title: list.title } })}
+										</Dialog.Title>
+										<Dialog.Description>
+											{list.mode === 'top'
+												? $_('custom_lists.detail.records.subhead_top')
+												: $_('custom_lists.detail.records.subhead_rating')}
+										</Dialog.Description>
+									</Dialog.Header>
+
+									<div class="recordPointsSection">
+										<div class="leaderboardHeader">
+											<div class="recordPointsHeading">
+												<h3>
+													<PlayerLink
+														player={selectedLeaderboardPlayer}
+														showTitle={!list.isPlatformer}
+														titleType={list.isPlatformer ? 'pl' : 'dl'}
+													/>
+												</h3>
+												<div class="recordPointsMeta">
+													<span class="metaChip">#{selectedLeaderboardPlayer.rank}</span>
+													<span class="metaChip">
+														{$_('custom_lists.detail.leaderboard.score_label')}: {formatScore(selectedLeaderboardPlayer.score)}
+													</span>
+												</div>
+											</div>
+											<Badge variant="outline">{recordPointsCount}</Badge>
+										</div>
+
+										{#if recordPointsLoading}
+											<div class="emptyState slim">{$_('general.loading')}...</div>
+										{:else if recordPointsError}
+											<div class="emptyState slim">
+												<h3>{$_('custom_lists.detail.error_title')}</h3>
+												<p>{recordPointsError}</p>
+											</div>
+										{:else if recordPoints.length === 0}
+											<div class="emptyState slim">
+												<p>{$_('custom_lists.detail.records.empty')}</p>
+											</div>
+										{:else}
+											<div class="tableWrapper">
+												<Table.Root>
+													<Table.Header>
+														<Table.Row>
+															<Table.Head class="w-[70px]">{$_('custom_lists.detail.records.position_label')}</Table.Head>
+															<Table.Head>{$_('custom_lists.detail.records.level_label')}</Table.Head>
+															<Table.Head class="w-[110px] text-right">{$_('custom_lists.detail.records.progress_label')}</Table.Head>
+															<Table.Head class="w-[150px] text-right">{$_('custom_lists.detail.records.point_label')}</Table.Head>
+														</Table.Row>
+													</Table.Header>
+													<Table.Body>
+														{#each recordPoints as entry}
+															<Table.Row>
+																<Table.Cell class="font-medium">#{entry.no}</Table.Cell>
+																<Table.Cell>
+																	<div class="recordLevelName">
+																		{entry.level?.name || $_('custom_lists.detail.level_badge', { values: { id: entry.levelId } })}
+																	</div>
+																	{#if entry.level?.creator}
+																		<div class="recordLevelMeta">{entry.level.creator}</div>
+																	{/if}
+																</Table.Cell>
+																<Table.Cell class="text-right">{formatRecordProgress(entry.progress)}</Table.Cell>
+																<Table.Cell class="text-right">
+																	<div class="recordPointCell">
+																		<span>{formatPoint(entry.point)}</span>
+																		<Popover.Root>
+																			<Popover.Trigger
+																				class="recordPointInfo"
+																				aria-label={$_('custom_lists.detail.records.variable_values_label')}
+																			>
+																				<Info class="h-3.5 w-3.5" />
+																			</Popover.Trigger>
+																			<Popover.Content class="recordPointPopover" align="end">
+																				<div class="recordPointPopoverTitle">
+																					{$_('custom_lists.detail.records.variable_values_label')}
+																				</div>
+																				<div class="recordPointPopoverGrid">
+																					<div>
+																						<span>{$_('custom_lists.formula.position_label')}</span>
+																						<span>{formatFormulaScopeValue('position', entry.formulaScope.position)}</span>
+																					</div>
+																					<div>
+																						<span>{$_('custom_lists.formula.level_count_label')}</span>
+																						<span>{formatFormulaScopeValue('levelCount', entry.formulaScope.levelCount)}</span>
+																					</div>
+																					<div>
+																						<span>{$_('custom_lists.formula.rating_label')}</span>
+																						<span>{formatFormulaScopeValue('rating', entry.formulaScope.rating)}</span>
+																					</div>
+																					<div>
+																						<span>{$_('custom_lists.formula.progress_label')}</span>
+																						<span>{formatFormulaScopeValue('progress', entry.formulaScope.progress)}</span>
+																					</div>
+																					<div>
+																						<span>
+																							{list.isPlatformer
+																								? $_('custom_lists.formula.base_time_label')
+																								: $_('custom_lists.formula.min_progress_label')}
+																						</span>
+																						<span>{formatFormulaScopeValue('minProgress', entry.formulaScope.minProgress)}</span>
+																					</div>
+																				</div>
+																			</Popover.Content>
+																		</Popover.Root>
+																	</div>
+																</Table.Cell>
+															</Table.Row>
+														{/each}
+													</Table.Body>
+												</Table.Root>
+											</div>
+
+											<Pagination.Root
+												count={recordPointsCount}
+												perPage={50}
+												page={recordPointsPage}
+												let:pages
+												let:currentPage
+											>
+												<Pagination.Content>
+													<Pagination.Item>
+														<Pagination.PrevButton
+															on:click={() => setRecordPointsPage(Math.max(1, currentPage - 1))}
+														/>
+													</Pagination.Item>
+													{#each pages as p (p.key)}
+														{#if p.type === 'ellipsis'}
+															<Pagination.Item>
+																<Pagination.Ellipsis />
+															</Pagination.Item>
+														{:else}
+															<Pagination.Item isVisible={currentPage == p.value}>
+																<Pagination.Link
+																	page={p}
+																	isActive={currentPage == p.value}
+																	on:click={() => setRecordPointsPage(p.value)}
+																>
+																	{p.value}
+																</Pagination.Link>
+															</Pagination.Item>
+														{/if}
+													{/each}
+													<Pagination.Item>
+														<Pagination.NextButton
+															on:click={() => setRecordPointsPage(currentPage + 1)}
+														/>
+													</Pagination.Item>
+												</Pagination.Content>
+											</Pagination.Root>
+										{/if}
+									</div>
+								</Dialog.Content>
+							{/if}
+						</Dialog.Root>
 					{/if}
 				</div>
 			</Tabs.Content>
@@ -986,8 +1337,93 @@
 		gap: 10px;
 	}
 
+	.recordPointsSection {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		padding-top: 8px;
+	}
+
+	.recordPointsHeading {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.recordPointsHeading h3 {
+		margin: 0;
+		font-size: 1.05rem;
+		font-weight: 600;
+	}
+
+	.recordPointsMeta {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	.recordLevelName {
+		font-weight: 600;
+	}
+
+	.recordLevelMeta {
+		font-size: 0.8rem;
+		color: hsl(var(--muted-foreground));
+	}
+
 	.tableWrapper {
 		margin-bottom: 8px;
+	}
+
+	.recordPointCell {
+		display: inline-flex;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 6px;
+	}
+
+	:global(.recordPointInfo) {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		color: hsl(var(--muted-foreground));
+		cursor: pointer;
+	}
+
+	:global(.recordPointPopover) {
+		width: min(22rem, calc(100vw - 2rem));
+		background: hsl(var(--popover));
+		color: hsl(var(--popover-foreground));
+	}
+
+	.recordPointPopoverTitle {
+		font-size: 0.8rem;
+		font-weight: 600;
+		margin-bottom: 8px;
+	}
+
+	.recordPointPopoverGrid {
+		display: grid;
+		gap: 8px;
+	}
+
+	.recordPointPopoverGrid div {
+		display: flex;
+		justify-content: space-between;
+		gap: 12px;
+		font-size: 0.8rem;
+	}
+
+	.recordPointPopoverGrid div span:first-child {
+		color: hsl(var(--muted-foreground));
+	}
+
+	:global(.leaderboardRow) {
+		transition: background-color 0.18s ease;
+	}
+
+	:global(.selectedLeaderboardRow) {
+		background: hsl(var(--muted) / 0.5);
 	}
 
 	.loadMoreSentinel {

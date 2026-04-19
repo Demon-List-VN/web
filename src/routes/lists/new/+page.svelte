@@ -223,13 +223,14 @@
 
 				<div class="field">
 					<label for="list-weight-formula">{$_('custom_lists.formula.label')}</label>
-					<Input
+					<Textarea
 						id="list-weight-formula"
 						bind:value={form.weightFormula}
 						placeholder={$_('custom_lists.formula.placeholder')}
+						rows={5}
 					/>
 					<p class="hint">{$_('custom_lists.formula.hint')}</p>
-					<WeightFormulaPreview formula={form.weightFormula} isPlatformer={form.isPlatformer} />
+					<WeightFormulaPreview formula={form.weightFormula} isPlatformer={form.isPlatformer} mode={form.mode} />
 				</div>
 			</div>
 
