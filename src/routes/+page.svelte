@@ -196,7 +196,7 @@
 				</div>
 
 				<div class="viewAllLink">
-					<a href="/list/{activeTab}" class="viewAllBtn">
+					<a href="/lists/{activeTab}" class="viewAllBtn">
 						{$_('home.view_all')}
 						<ArrowRight class="ml-1 h-4 w-4" />
 					</a>

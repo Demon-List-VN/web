@@ -38,11 +38,13 @@
 
 	type CustomList = {
 		id: number;
+		slug?: string | null;
 		owner: string;
 		title: string;
 		description: string;
 		communityEnabled: boolean;
 		isPlatformer: boolean;
+		isOfficial?: boolean;
 		visibility: 'private' | 'unlisted' | 'public';
 		mode: 'rating' | 'top';
 		tags: string[];
@@ -51,8 +53,17 @@
 		starCount?: number;
 		starred?: boolean;
 		ownerData?: any;
+		weightFormula?: string;
 		items: CustomListItem[];
 	};
+
+	function getListIdentifier(currentList: CustomList | null) {
+		if (!currentList) {
+			return $page.params.id;
+		}
+
+		return currentList.slug || currentList.id;
+	}
 
 	let list: CustomList | null = data?.list ?? null;
 	let loadingError = data?.error ?? '';
@@ -95,6 +106,14 @@
 
 	function getModeIcon(mode: string) {
 		return mode === 'top' ? ListOrdered : Star;
+	}
+
+	function getItemCardType(item: CustomListItem) {
+		if (list?.isOfficial && list.slug === 'fl') {
+			return item.level?.isPlatformer ? 'pl' : 'dl';
+		}
+
+		return list?.isPlatformer ? 'pl' : 'dl';
 	}
 
 	$: if ($user.checked && $user.loggedIn) {
@@ -195,6 +214,7 @@
 	$: isOwner = Boolean(list && $user.loggedIn && list.owner === $user.data?.uid);
 	$: listItems = list?.items ?? [];
 	$: listCardType = list?.isPlatformer ? 'pl' : 'dl';
+	$: canStarList = Boolean(list && list.id > 0 && list.visibility !== 'private');
 	$: canShowCommunity = Boolean(list && list.visibility !== 'private' && list.communityEnabled);
 	$: if (!canShowCommunity && activeTab === 'community') {
 		activeTab = 'levels';
@@ -233,6 +253,12 @@
 					{$_('custom_lists.actions.manage')}
 				</Button>
 			{/if}
+			{#if list}
+				<Button variant="outline" size="sm" on:click={() => goto(`/lists/${getListIdentifier(list)}/leaderboard`)}>
+					<MessageSquare class="mr-2 h-4 w-4" />
+					Leaderboard
+				</Button>
+			{/if}
 		</div>
 	</div>
 
@@ -253,7 +279,7 @@
 						<p class="heroDesc muted">{$_('custom_lists.detail.no_description')}</p>
 					{/if}
 				</div>
-				{#if list.visibility !== 'private'}
+				{#if canStarList}
 					<Button
 						variant="ghost"
 						size="icon"
@@ -289,10 +315,16 @@
 					<svelte:component this={getModeIcon(list.mode)} class="h-3.5 w-3.5" />
 					{getModeLabel(list.mode)}
 				</span>
+				{#if list.isOfficial}
+					<span class="metaChip">
+						<Star class="h-3.5 w-3.5 starFilled" />
+						Official
+					</span>
+				{/if}
 				<span class="metaChip">
 					{$_('custom_lists.detail.levels_badge', { values: { count: list.levelCount } })}
 				</span>
-				{#if list.visibility !== 'private'}
+				{#if canStarList}
 					<span class="metaChip">
 						<Star class={`h-3.5 w-3.5 ${list.starred ? 'starFilled' : ''}`} />
 						{$_('custom_lists.detail.star_count', { values: { count: list.starCount ?? 0 } })}
@@ -340,13 +372,14 @@
 						<div class="levels">
 							{#each listItems as item, i}
 								{#if item.level}
+									{@const itemCardType = getItemCardType(item)}
 									<LevelCard
-										{...toLevelCardProps(item.level, listCardType, {
+										{...toLevelCardProps(item.level, itemCardType, {
 											rating: list.mode === 'rating' ? (item.rating ?? item.level.rating) : item.level.rating,
 											top: i + 1,
 											minProgress: item.minProgress ?? item.level.minProgress ?? null
 										})}
-										type={listCardType}
+										type={itemCardType}
 										hideRating={list.mode === 'top'}
 										ratingPrediction={false}
 									/>

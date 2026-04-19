@@ -75,17 +75,15 @@
 		route?: string;
 		routes?: { route: string; name: string; icon?: ComponentType }[];
 	};
-	$: listUidQuery = $user.loggedIn ? `?uid=${$user.data.uid}` : '';
-
 	$: linkGroup = [
 		{
 			name: 'List',
 			icon: LayoutList,
 			routes: [
-				{ route: `/list/dl${listUidQuery}`, name: 'Classic', icon: List },
-				{ route: `/list/pl${listUidQuery}`, name: 'Platformer', icon: Gamepad2 },
-				{ route: `/list/fl${listUidQuery}`, name: 'Featured', icon: Award },
-				{ route: '/list/cl', name: 'Challenge', icon: Shuffle },
+				{ route: '/lists/dl', name: 'Classic', icon: List },
+				{ route: '/lists/pl', name: 'Platformer', icon: Gamepad2 },
+				{ route: '/lists/fl', name: 'Featured', icon: Award },
+				{ route: '/lists/cl', name: 'Challenge', icon: Shuffle },
 				{ route: '/lists', name: 'Custom', icon: LayoutList }
 			]
 		},

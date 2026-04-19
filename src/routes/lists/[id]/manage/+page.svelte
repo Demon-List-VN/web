@@ -47,16 +47,19 @@
 
 	type CustomList = {
 		id: number;
+		slug?: string | null;
 		owner: string;
 		title: string;
 		description: string;
 		communityEnabled: boolean;
 		isPlatformer: boolean;
+		isOfficial?: boolean;
 		visibility: 'private' | 'unlisted' | 'public';
 		mode: 'rating' | 'top';
 		tags: string[];
 		levelCount: number;
 		updated_at: string;
+		weightFormula?: string;
 		items: CustomListItem[];
 	};
 
@@ -84,7 +87,8 @@
 		isPlatformer: false,
 		visibility: 'private' as 'private' | 'unlisted' | 'public',
 		tags: '',
-		mode: 'rating' as 'rating' | 'top'
+		mode: 'rating' as 'rating' | 'top',
+		weightFormula: '1'
 	};
 
 	const visibilityOptions: Array<'private' | 'unlisted' | 'public'> = ['private', 'unlisted', 'public'];
@@ -111,6 +115,7 @@
 		editForm.visibility = list.visibility;
 		editForm.tags = list.tags.join(', ');
 		editForm.mode = list.mode;
+		editForm.weightFormula = list.weightFormula || '1';
 	}
 
 	// Sync form when list changes from SSR data
@@ -221,7 +226,8 @@
 					isPlatformer: editForm.isPlatformer,
 					visibility: editForm.visibility,
 					tags: parseTags(editForm.tags),
-					mode: editForm.mode
+					mode: editForm.mode,
+					weightFormula: editForm.weightFormula
 				})
 			});
 			const payload = await res.json();
@@ -503,7 +509,7 @@
 			</p>
 		</div>
 
-		{#if isOwner}
+		{#if isOwner && !list.isOfficial}
 			<!-- Owner Tools -->
 			<div class="ownerTools">
 				<!-- Edit Metadata -->
@@ -579,6 +585,11 @@
 							<label for="list-tags">{$_('custom_lists.detail.edit.tags_label')}</label>
 							<Input id="list-tags" bind:value={editForm.tags} placeholder="challenge, favorite" />
 						</div>
+						<div class="field">
+							<label for="list-weight-formula">Weight Formula</label>
+							<Input id="list-weight-formula" bind:value={editForm.weightFormula} placeholder="1" />
+							<p class="hint">Applied on top of the fixed mode score. Use <code>1</code> for equal weight on every record.</p>
+						</div>
 					</div>
 					<div class="formActions">
 						<Button on:click={saveMetadata} disabled={savingMetadata}>
@@ -607,6 +618,11 @@
 						</Button>
 					</div>
 				</div>
+			</div>
+		{:else if isOwner && list.isOfficial}
+			<div class="toolCard">
+				<h2 class="toolHeading">Official list</h2>
+				<p class="hint">Official lists are now admin-managed. Use the admin official list tools for slug, formula, and membership updates.</p>
 			</div>
 		{/if}
 

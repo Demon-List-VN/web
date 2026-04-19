@@ -29,7 +29,8 @@
 		tags: '',
 		mode: 'rating' as 'rating' | 'top',
 		isPlatformer: false,
-		communityEnabled: true
+		communityEnabled: true,
+		weightFormula: '1'
 	};
 
 	let creating = false;
@@ -74,7 +75,8 @@
 					tags: parseTags(form.tags),
 					mode: form.mode,
 					isPlatformer: form.isPlatformer,
-					communityEnabled: form.communityEnabled
+					communityEnabled: form.communityEnabled,
+					weightFormula: form.weightFormula
 				})
 			});
 
@@ -216,6 +218,12 @@
 						placeholder={$_('custom_lists.new.tags_placeholder')}
 					/>
 					<p class="hint">{$_('custom_lists.new.tags_hint')}</p>
+				</div>
+
+				<div class="field">
+					<label for="list-weight-formula">Weight Formula</label>
+					<Input id="list-weight-formula" bind:value={form.weightFormula} placeholder="1" />
+					<p class="hint">Use <code>1</code> to give every record equal weight. More advanced formulas will be validated by the API.</p>
 				</div>
 			</div>
 

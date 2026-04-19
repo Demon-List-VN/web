@@ -30,9 +30,11 @@
 
 	type ListSummary = {
 		id: number;
+		slug?: string | null;
 		title: string;
 		description: string;
 		isPlatformer: boolean;
+		isOfficial?: boolean;
 		visibility: 'private' | 'unlisted' | 'public';
 		tags: string[];
 		levelCount: number;
@@ -41,6 +43,7 @@
 		starCount?: number;
 		starred?: boolean;
 		ownerData?: any;
+		weightFormula?: string;
 	};
 
 	// SSR data
@@ -93,6 +96,10 @@
 		if (visibility === 'public') return Globe2;
 		if (visibility === 'unlisted') return EyeOff;
 		return Lock;
+	}
+
+	function getListHref(list: ListSummary) {
+		return `/lists/${list.slug || list.id}`;
 	}
 
 	// Pagination
@@ -309,7 +316,7 @@
 				{:else}
 					<div class="listGrid">
 						{#each lists as list}
-							<button class="listCard" on:click={() => goto(`/lists/${list.id}`)}>
+							<button class="listCard" on:click={() => goto(getListHref(list))}>
 								<div class="cardTop">
 									<h3 class="cardTitle">{list.title}</h3>
 									<p class="cardDesc">{list.description || $_('custom_lists.detail.no_description')}</p>
@@ -325,6 +332,12 @@
 											<Layers class="h-3.5 w-3.5" />
 											{formatListType(list.isPlatformer)}
 										</span>
+										{#if list.isOfficial}
+											<span class="metaItem">
+												<Star class="h-3.5 w-3.5" />
+												Official
+											</span>
+										{/if}
 										<span class="metaItem">
 											{$_('custom_lists.detail.levels_badge', { values: { count: list.levelCount } })}
 										</span>
@@ -433,7 +446,7 @@
 					{:else}
 						<div class="listGrid">
 							{#each ownLists as list}
-								<button class="listCard" on:click={() => goto(`/lists/${list.id}`)}>
+								<button class="listCard" on:click={() => goto(getListHref(list))}>
 									<div class="cardTop">
 										<h3 class="cardTitle">{list.title}</h3>
 										<p class="cardDesc">{list.description || $_('custom_lists.detail.no_description')}</p>
@@ -449,6 +462,12 @@
 												<Layers class="h-3.5 w-3.5" />
 												{formatListType(list.isPlatformer)}
 											</span>
+											{#if list.isOfficial}
+												<span class="metaItem">
+													<Star class="h-3.5 w-3.5" />
+													Official
+												</span>
+											{/if}
 											<span class="metaItem">
 												{$_('custom_lists.detail.levels_badge', { values: { count: list.levelCount } })}
 											</span>
@@ -533,7 +552,7 @@
 					{:else}
 						<div class="listGrid">
 							{#each starredLists as list}
-								<button class="listCard" on:click={() => goto(`/lists/${list.id}`)}>
+								<button class="listCard" on:click={() => goto(getListHref(list))}>
 									<div class="cardTop">
 										<h3 class="cardTitle">{list.title}</h3>
 										<p class="cardDesc">{list.description || $_('custom_lists.detail.no_description')}</p>
@@ -549,6 +568,12 @@
 												<Layers class="h-3.5 w-3.5" />
 												{formatListType(list.isPlatformer)}
 											</span>
+											{#if list.isOfficial}
+												<span class="metaItem">
+													<Star class="h-3.5 w-3.5" />
+													Official
+												</span>
+											{/if}
 											<span class="metaItem">
 												{$_('custom_lists.detail.levels_badge', { values: { count: list.levelCount } })}
 											</span>

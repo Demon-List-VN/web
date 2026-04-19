@@ -90,8 +90,8 @@ async function fetchMaxValues(): Promise<void> {
   
   try {
     const [dlResponse, flResponse] = await Promise.all([
-      fetch('https://api.gdvn.net/list/dl?start=0&end=0&sortBy=dlTop&ascending=false'),
-      fetch('https://api.gdvn.net/list/fl?start=0&end=0&sortBy=flTop&ascending=false'),
+      fetch(`${import.meta.env.VITE_API_URL}/lists/dl`),
+      fetch(`${import.meta.env.VITE_API_URL}/lists/fl`),
     ]);
 
     const [dlData, flData] = await Promise.all([
@@ -99,11 +99,8 @@ async function fetchMaxValues(): Promise<void> {
       safeJsonParse(flResponse),
     ]);
 
-    const dlLevels = Array.isArray(dlData) ? dlData : ((dlData as {data?: Level[]})?.data ?? []);
-    const flLevels = Array.isArray(flData) ? flData : ((flData as {data?: Level[]})?.data ?? []);
-
-    maxDlTop = dlLevels.length > 0 ? (dlLevels[0].dlTop ?? 1000) : 1000;
-    maxFlTop = flLevels.length > 0 ? (flLevels[0].flTop ?? 1000) : 1000;
+    maxDlTop = Number((dlData as {levelCount?: number} | null)?.levelCount ?? 1000);
+    maxFlTop = Number((flData as {levelCount?: number} | null)?.levelCount ?? 1000);
     
     isMaxValuesLoaded = true;
   } catch (error) {
@@ -176,7 +173,7 @@ async function fetchRandomLevel(): Promise<void> {
       const type = determineRandomListType();
       currentType = type;
       
-      const url = `https://api.gdvn.net/list/${type}/random?${CACHE_BUSTER_PARAM}=${Date.now()}`;
+      const url = `${import.meta.env.VITE_API_URL}/lists/${type}/random?${CACHE_BUSTER_PARAM}=${Date.now()}`;
       const response = await fetch(url);
       
       if (!response.ok) {
