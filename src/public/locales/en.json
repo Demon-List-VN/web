@@ -1892,7 +1892,7 @@
     "formula": {
       "label": "Record point formula",
       "placeholder": "1",
-      "hint": "The formula returns the final points for each record directly. Use 1 if every eligible record should be worth 1 point. Use `rating` or an expression containing `rating` if level rating should affect the result.",
+      "hint": "The formula returns the final points for each record directly. Use 1 if every eligible record should be worth 1 point. Use `rating` in rating mode or `top` in top mode if the level value should affect the result.",
       "available_variables_label": "Available variables",
       "preview_title": "Formula preview",
       "preview_hint": "Adjust sample inputs to inspect the final record points returned by the formula.",
@@ -1905,6 +1905,7 @@
       "final_point_hint_rating": "Rating mode: include `rating` in the formula if level rating should affect the score.",
       "position_label": "Position",
       "level_count_label": "Level count",
+      "top_label": "Level top",
       "rating_label": "Rating",
       "progress_label": "Record progress",
       "min_progress_label": "Minimum progress",

@@ -77,6 +77,7 @@
 		formulaScope: {
 			position: number;
 			levelCount: number;
+			top: number;
 			rating: number;
 			minProgress: number;
 			progress: number;
@@ -1037,10 +1038,17 @@
 																						<span>{$_('custom_lists.formula.level_count_label')}</span>
 																						<span>{formatFormulaScopeValue('levelCount', entry.formulaScope.levelCount)}</span>
 																					</div>
-																					<div>
-																						<span>{$_('custom_lists.formula.rating_label')}</span>
-																						<span>{formatFormulaScopeValue('rating', entry.formulaScope.rating)}</span>
-																					</div>
+																					{#if list.mode === 'top'}
+																						<div>
+																							<span>{$_('custom_lists.formula.top_label')}</span>
+																							<span>{formatFormulaScopeValue('top', entry.formulaScope.top)}</span>
+																						</div>
+																					{:else}
+																						<div>
+																							<span>{$_('custom_lists.formula.rating_label')}</span>
+																							<span>{formatFormulaScopeValue('rating', entry.formulaScope.rating)}</span>
+																						</div>
+																					{/if}
 																					<div>
 																						<span>{$_('custom_lists.formula.progress_label')}</span>
 																						<span>{formatFormulaScopeValue('progress', entry.formulaScope.progress)}</span>

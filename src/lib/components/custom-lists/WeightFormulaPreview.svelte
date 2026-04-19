@@ -5,6 +5,7 @@
 
 	export let formula = '1';
 	export let isPlatformer = false;
+	export let mode: 'rating' | 'top' = 'rating';
 
 	type FormulaVariable = {
 		token: string;
@@ -14,6 +15,7 @@
 	let previewInput = {
 		position: '1',
 		levelCount: '25',
+		top: '1',
 		rating: '10',
 		minProgress: getDefaultMinProgress(isPlatformer),
 		progress: getDefaultProgress(isPlatformer)
@@ -53,6 +55,7 @@
 					formula,
 					position: previewInput.position,
 					levelCount: previewInput.levelCount,
+					top: previewInput.top,
 					rating: previewInput.rating,
 					minProgress: previewInput.minProgress,
 					progress: previewInput.progress
@@ -97,7 +100,9 @@
 	$: formulaVariables = [
 		{ token: 'position', label: $_('custom_lists.formula.position_label') },
 		{ token: 'levelCount', label: $_('custom_lists.formula.level_count_label') },
-		{ token: 'rating', label: $_('custom_lists.formula.rating_label') },
+		...(mode === 'top'
+			? [{ token: 'top', label: $_('custom_lists.formula.top_label') }]
+			: [{ token: 'rating', label: $_('custom_lists.formula.rating_label') }]),
 		{ token: 'progress', label: $_('custom_lists.formula.progress_label') },
 		{
 			token: 'minProgress',
@@ -110,8 +115,10 @@
 	$: {
 		const nextSignature = [
 			formula,
+			mode,
 			previewInput.position,
 			previewInput.levelCount,
+			previewInput.top,
 			previewInput.rating,
 			previewInput.progress,
 			previewInput.minProgress,
@@ -161,8 +168,13 @@
 			<Input id="formula-preview-level-count" type="number" min="1" bind:value={previewInput.levelCount} />
 		</div>
 		<div class="field">
-			<label for="formula-preview-rating">{$_('custom_lists.formula.rating_label')}</label>
-			<Input id="formula-preview-rating" type="number" min="0" bind:value={previewInput.rating} />
+			{#if mode === 'top'}
+				<label for="formula-preview-top">{$_('custom_lists.formula.top_label')}</label>
+				<Input id="formula-preview-top" type="number" min="1" bind:value={previewInput.top} />
+			{:else}
+				<label for="formula-preview-rating">{$_('custom_lists.formula.rating_label')}</label>
+				<Input id="formula-preview-rating" type="number" min="0" bind:value={previewInput.rating} />
+			{/if}
 		</div>
 		<div class="field">
 			<label for="formula-preview-progress">{$_('custom_lists.formula.progress_label')}</label>

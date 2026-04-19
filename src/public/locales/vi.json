@@ -37,7 +37,7 @@
   "toast": {
     "clipboard": "Đã sao chép vào bảng nhớ tạm!",
     "payment": {
-      "no_player": "Không tìm thấy người chơi",
+      "hint": "Công thức trả về điểm cuối cùng cho từng bản ghi trực tiếp. Dùng 1 nếu mọi bản ghi hợp lệ đều có giá trị 1 điểm. Dùng `rating` ở mode Rating hoặc `top` ở mode Top nếu muốn giá trị của level ảnh hưởng đến kết quả.",
       "redirect": "Bạn sẽ được chuyển hướng đến cổng thanh toán của DLVN"
     },
     "player_edit": {
@@ -1891,7 +1891,7 @@
     "formula": {
       "label": "Công thức điểm bản ghi",
       "placeholder": "1",
-      "hint": "Công thức trả về trực tiếp điểm cuối cùng của mỗi bản ghi. Dùng 1 nếu mọi bản ghi hợp lệ đều nên có 1 điểm. Dùng `rating` hoặc công thức có `rating` nếu muốn rating ảnh hưởng kết quả.",
+      "hint": "Công thức trả về trực tiếp điểm cuối cùng của mỗi bản ghi. Dùng 1 nếu mọi bản ghi hợp lệ đều nên có 1 điểm. Dùng `rating` ở mode Rating hoặc `top` ở mode Top nếu muốn giá trị của level ảnh hưởng kết quả.",
       "available_variables_label": "Biến có thể dùng",
       "preview_title": "Xem trước công thức",
       "preview_hint": "Điều chỉnh dữ liệu mẫu để xem điểm bản ghi cuối cùng mà công thức trả về.",
@@ -1904,6 +1904,7 @@
       "final_point_hint_rating": "Mode Rating: nếu muốn rating ảnh hưởng điểm, hãy dùng biến `rating` ngay trong công thức.",
       "position_label": "Vị trí",
       "level_count_label": "Số level",
+      "top_label": "Top level",
       "rating_label": "Điểm",
       "progress_label": "Tiến độ bản ghi",
       "min_progress_label": "Mốc tối thiểu",
