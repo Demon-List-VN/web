@@ -178,23 +178,51 @@
 		}
 	}
 
-	async function use(inventoryId: number, redirect: string) {
-		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/inventory/${inventoryId}/consume`, {
+	function canUseItem(itemData: { useRedirect?: string | null; productId?: number | null } | null | undefined) {
+		return !!(itemData?.useRedirect || itemData?.productId);
+	}
+
+	async function use(inventoryId: number, fallbackRedirect: string | null = null) {
+		const consumeRequest = (async () => {
+			const response = await fetch(`${import.meta.env.VITE_API_URL}/inventory/${inventoryId}/consume`, {
 				method: 'DELETE',
 				headers: {
 					Authorization: 'Bearer ' + (await $user.token())
 				}
-			}),
-			{
-				success: () => {
-					goto(redirect);
-					return get(_)('inventory.redirect_success');
-				},
-				loading: get(_)('inventory.redirecting'),
-				error: get(_)('inventory.redirect_error')
+			});
+
+			const result = response.headers.get('content-type')?.includes('application/json')
+				? await response.json()
+				: null;
+
+			if (!response.ok) {
+				const errorMessage =
+					result && typeof result === 'object' && 'message' in result && typeof result.message === 'string'
+						? result.message
+						: get(_)('inventory.redirect_error');
+
+				throw new Error(errorMessage);
 			}
-		);
+
+			if (result && typeof result === 'object' && 'redirectTo' in result) {
+				return typeof result.redirectTo === 'string' ? result.redirectTo : fallbackRedirect;
+			}
+
+			return fallbackRedirect;
+		})();
+
+		toast.promise(consumeRequest, {
+			success: (redirectTo) => {
+				if (redirectTo) {
+					void goto(redirectTo);
+				}
+
+				return get(_)('inventory.redirect_success');
+			},
+			loading: get(_)('inventory.redirecting'),
+			error: (error) =>
+				error instanceof Error ? error.message : get(_)('inventory.redirect_error')
+		});
 	}
 </script>
 
@@ -351,11 +379,11 @@
 														/>
 													</AlertDialog.Content>
 												</AlertDialog.Root>
-											{:else if selectedItems[item.inventoryId].data.useRedirect}
+											{:else if canUseItem(selectedItems[item.inventoryId].data)}
 												<Button
 													variant="secondary"
 													on:click={() =>
-														use(item.inventoryId, selectedItems[item.inventoryId].data.useRedirect)}
+														use(item.inventoryId, selectedItems[item.inventoryId].data.useRedirect ?? null)}
 													>{$_('inventory.use')}</Button
 												>
 											{/if}
