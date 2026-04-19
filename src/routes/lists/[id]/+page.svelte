@@ -1,9 +1,12 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
 	import LevelCard from '$lib/components/levelCard.svelte';
 	import CommunityPostCard from '$lib/components/communityPostCard.svelte';
 	import { toLevelCardProps } from '$lib/components/levelCardProps';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
+	import * as Pagination from '$lib/components/ui/pagination';
+	import * as Table from '$lib/components/ui/table';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import { goto } from '$app/navigation';
@@ -22,9 +25,12 @@
 		Star,
 		MessageSquare
 	} from 'lucide-svelte';
+	import { onDestroy } from 'svelte';
 	import { _ } from 'svelte-i18n';
 
 	export let data: any;
+
+	const LEVELS_PAGE_SIZE = 50;
 
 	type CustomListItem = {
 		id: number;
@@ -57,13 +63,7 @@
 		items: CustomListItem[];
 	};
 
-	function getListIdentifier(currentList: CustomList | null) {
-		if (!currentList) {
-			return $page.params.id;
-		}
-
-		return currentList.slug || currentList.id;
-	}
+	type DetailTab = 'levels' | 'leaderboard' | 'community';
 
 	let list: CustomList | null = data?.list ?? null;
 	let loadingError = data?.error ?? '';
@@ -72,7 +72,17 @@
 	let relatedPostsKey = '';
 	let loadingRelatedPosts = false;
 	let starLoading = false;
-	let activeTab: 'levels' | 'community' = 'levels';
+	let activeTab: DetailTab = 'levels';
+	let leaderboard: any[] = [];
+	let leaderboardCount = 0;
+	let leaderboardError = '';
+	let leaderboardLoading = false;
+	let leaderboardFetchKey = '';
+	let listLevelsObserver: IntersectionObserver | undefined;
+	let listLevelsSentinel: HTMLDivElement | null = null;
+	let listLevelsLoading = false;
+	let listLevelsError = '';
+	let listLevelsFetchKey = '';
 
 	function formatVisibility(visibility: string) {
 		if (visibility === 'public') return $_('custom_lists.visibility.public');
@@ -116,6 +126,137 @@
 		return list?.isPlatformer ? 'pl' : 'dl';
 	}
 
+	function getRequestedTab(): DetailTab {
+		const tab = $page.url.searchParams.get('tab');
+
+		if (tab === 'leaderboard') return 'leaderboard';
+		if (tab === 'community') return 'community';
+		return 'levels';
+	}
+
+	function getRequestedLeaderboardPage() {
+		const parsed = Number.parseInt($page.url.searchParams.get('page') || '1', 10);
+		return Number.isInteger(parsed) && parsed > 0 ? parsed : 1;
+	}
+
+	function buildDetailUrl(nextTab: DetailTab, nextPage: number = 1) {
+		const query = new URLSearchParams($page.url.searchParams);
+
+		if (nextTab === 'levels') {
+			query.delete('tab');
+			query.delete('page');
+		} else {
+			query.set('tab', nextTab);
+
+			if (nextTab === 'leaderboard') {
+				query.set('page', String(nextPage));
+			} else {
+				query.delete('page');
+			}
+		}
+
+		const search = query.toString();
+		return `${$page.url.pathname}${search ? `?${search}` : ''}`;
+	}
+
+	function switchTab(nextTab: DetailTab) {
+		goto(buildDetailUrl(nextTab, nextTab === 'leaderboard' ? activeLeaderboardPage : 1), {
+			keepFocus: true,
+			noScroll: true
+		});
+	}
+
+	function setLeaderboardPage(nextPage: number) {
+		goto(buildDetailUrl('leaderboard', nextPage), {
+			keepFocus: true,
+			noScroll: true
+		});
+	}
+
+	function formatScore(score: number) {
+		return Number.isInteger(score) ? score : Math.round(score * 1000) / 1000;
+	}
+
+	function buildListItemsQuery(start: number, end: number) {
+		return new URLSearchParams({
+			start: String(start),
+			end: String(end)
+		}).toString();
+	}
+
+	function getListDetailUrl(start: number, end: number) {
+		return `${import.meta.env.VITE_API_URL}/lists/${$page.params.id}?${buildListItemsQuery(start, end)}`;
+	}
+
+	function getLoadedLevelCount(currentList: CustomList | null) {
+		return currentList?.items?.length ?? 0;
+	}
+
+	function hasMoreLevels(currentList: CustomList | null) {
+		return Boolean(currentList && getLoadedLevelCount(currentList) < currentList.levelCount);
+	}
+
+	function mergeListItems(existingItems: CustomListItem[], incomingItems: CustomListItem[]) {
+		const seenLevelIds = new Set(existingItems.map((item) => item.levelId));
+		const mergedItems = [...existingItems];
+
+		for (const item of incomingItems) {
+			if (seenLevelIds.has(item.levelId)) {
+				continue;
+			}
+
+			seenLevelIds.add(item.levelId);
+			mergedItems.push(item);
+		}
+
+		return mergedItems;
+	}
+
+	async function fetchListDetail(start: number, end: number, headers?: HeadersInit) {
+		const res = await fetch(getListDetailUrl(start, end), headers ? { headers } : undefined);
+		const payload = await res.json().catch(() => null);
+
+		if (!res.ok || !payload) {
+			throw new Error(payload?.error || 'Failed to load list');
+		}
+
+		return payload as CustomList;
+	}
+
+	function destroyLevelsObserver() {
+		if (listLevelsObserver) {
+			listLevelsObserver.disconnect();
+			listLevelsObserver = undefined;
+		}
+	}
+
+	function setupLevelsObserver() {
+		if (
+			!browser ||
+			activeTab !== 'levels' ||
+			!listLevelsSentinel ||
+			!hasMoreLevels(list) ||
+			listLevelsLoading ||
+			listLevelsError
+		) {
+			destroyLevelsObserver();
+			return;
+		}
+
+		destroyLevelsObserver();
+
+		listLevelsObserver = new IntersectionObserver(
+			(entries) => {
+				if (entries[0]?.isIntersecting) {
+					loadMoreLevels();
+				}
+			},
+			{ rootMargin: '200px' }
+		);
+
+		listLevelsObserver.observe(listLevelsSentinel);
+	}
+
 	$: if ($user.checked && $user.loggedIn) {
 		refetchWithAuth();
 	}
@@ -126,26 +267,66 @@
 		authFetchKey = key;
 
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${$page.params.id}`, {
-				headers: {
-					Authorization: `Bearer ${await $user.token()}`
-				}
+			list = await fetchListDetail(0, LEVELS_PAGE_SIZE - 1, {
+				Authorization: `Bearer ${await $user.token()}`
 			});
-
-			const payload = await res.json().catch(() => null);
-
-			if (res.ok && payload) {
-				list = payload as CustomList;
-				loadingError = '';
-				return;
-			}
-
-			if (!list) {
-				loadingError = payload?.error || loadingError || 'Failed to load list';
-			}
+			loadingError = '';
+			listLevelsError = '';
 		} catch {
 			// Keep the SSR state when auth recovery fails.
 		}
+	}
+
+	async function loadMoreLevels() {
+		if (!list || listLevelsLoading || !hasMoreLevels(list)) {
+			return;
+		}
+
+		const start = getLoadedLevelCount(list);
+		const end = start + LEVELS_PAGE_SIZE - 1;
+		const fetchKey = `${$page.params.id}:${$user.loggedIn ? $user.data?.uid || 'authed' : 'anon'}:${start}`;
+		const headers = $user.loggedIn
+			? {
+				Authorization: `Bearer ${await $user.token()}`
+			}
+			: undefined;
+
+		listLevelsFetchKey = fetchKey;
+		listLevelsLoading = true;
+		listLevelsError = '';
+
+		try {
+			const payload = await fetchListDetail(start, end, headers);
+
+			if (fetchKey !== listLevelsFetchKey) {
+				return;
+			}
+
+			list = list
+				? {
+					...list,
+					...payload,
+					items: mergeListItems(list.items, payload.items ?? [])
+				}
+				: payload;
+			loadingError = '';
+			listLevelsError = '';
+		} catch (error) {
+			if (fetchKey !== listLevelsFetchKey) {
+				return;
+			}
+
+			listLevelsError = error instanceof Error ? error.message : 'Failed to load list';
+		} finally {
+			if (fetchKey === listLevelsFetchKey) {
+				listLevelsLoading = false;
+			}
+		}
+	}
+
+	function retryLoadMoreLevels() {
+		listLevelsError = '';
+		loadMoreLevels();
 	}
 
 	async function toggleStar() {
@@ -211,14 +392,60 @@
 		goto(`/community/create?listId=${list.id}`);
 	}
 
+	async function fetchLeaderboard(fetchKey: string) {
+		leaderboardLoading = true;
+		leaderboardError = '';
+
+		try {
+			const query = new URLSearchParams({
+				start: String((activeLeaderboardPage - 1) * 50),
+				end: String(activeLeaderboardPage * 50 - 1)
+			});
+			const headers = $user.loggedIn
+				? {
+					Authorization: `Bearer ${await $user.token()}`
+				}
+				: undefined;
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${$page.params.id}/leaderboard?${query.toString()}`, {
+				headers
+			});
+			const payload = await res.json().catch(() => null);
+
+			if (fetchKey !== leaderboardFetchKey) {
+				return;
+			}
+
+			if (!res.ok) {
+				throw new Error(payload?.error || $_('custom_lists.detail.leaderboard.failed_load'));
+			}
+
+			leaderboard = payload?.data ?? [];
+			leaderboardCount = payload?.total ?? 0;
+			leaderboardError = '';
+		} catch (error) {
+			if (fetchKey !== leaderboardFetchKey) {
+				return;
+			}
+
+			leaderboard = [];
+			leaderboardCount = 0;
+			leaderboardError =
+				error instanceof Error ? error.message : $_('custom_lists.detail.leaderboard.failed_load');
+		} finally {
+			if (fetchKey === leaderboardFetchKey) {
+				leaderboardLoading = false;
+			}
+		}
+	}
+
 	$: isOwner = Boolean(list && $user.loggedIn && list.owner === $user.data?.uid);
 	$: listItems = list?.items ?? [];
 	$: listCardType = list?.isPlatformer ? 'pl' : 'dl';
 	$: canStarList = Boolean(list && list.id > 0 && list.visibility !== 'private');
 	$: canShowCommunity = Boolean(list && list.visibility !== 'private' && list.communityEnabled);
-	$: if (!canShowCommunity && activeTab === 'community') {
-		activeTab = 'levels';
-	}
+	$: requestedTab = getRequestedTab();
+	$: activeLeaderboardPage = getRequestedLeaderboardPage();
+	$: activeTab = requestedTab === 'community' && !canShowCommunity ? 'levels' : requestedTab;
 	$: if (!canShowCommunity) {
 		relatedPosts = [];
 		relatedPostsKey = '';
@@ -230,6 +457,30 @@
 			fetchRelatedPosts(list.id);
 		}
 	}
+	$: if (activeTab !== 'leaderboard') {
+		leaderboardFetchKey = '';
+		leaderboardLoading = false;
+		leaderboardError = '';
+	}
+	$: if (list?.id && activeTab === 'leaderboard') {
+		const nextKey = `${list.id}:${activeLeaderboardPage}:${$user.loggedIn ? $user.data?.uid || 'authed' : 'anon'}`;
+
+		if (nextKey !== leaderboardFetchKey) {
+			leaderboardFetchKey = nextKey;
+			fetchLeaderboard(nextKey);
+		}
+	}
+	$: if (browser) {
+		if (activeTab === 'levels' && listLevelsSentinel && hasMoreLevels(list) && !listLevelsError) {
+			setupLevelsObserver();
+		} else {
+			destroyLevelsObserver();
+		}
+	}
+
+	onDestroy(() => {
+		destroyLevelsObserver();
+	});
 </script>
 
 <svelte:head>
@@ -251,12 +502,6 @@
 				<Button size="sm" on:click={() => goto(`/lists/${$page.params.id}/manage`)}>
 					<Settings class="mr-2 h-4 w-4" />
 					{$_('custom_lists.actions.manage')}
-				</Button>
-			{/if}
-			{#if list}
-				<Button variant="outline" size="sm" on:click={() => goto(`/lists/${getListIdentifier(list)}/leaderboard`)}>
-					<MessageSquare class="mr-2 h-4 w-4" />
-					Leaderboard
 				</Button>
 			{/if}
 		</div>
@@ -318,7 +563,7 @@
 				{#if list.isOfficial}
 					<span class="metaChip">
 						<Star class="h-3.5 w-3.5 starFilled" />
-						Official
+						{$_('custom_lists.detail.official_badge')}
 					</span>
 				{/if}
 				<span class="metaChip">
@@ -346,21 +591,28 @@
 			</p>
 		</div>
 
-		<Tabs.Root bind:value={activeTab}>
-			{#if canShowCommunity}
-				<div class="tabsList">
-					<Tabs.List>
-						<Tabs.Trigger value="levels">{$_('custom_lists.detail.tabs.levels')}</Tabs.Trigger>
-						<Tabs.Trigger value="community">{$_('custom_lists.detail.tabs.community')}</Tabs.Trigger>
-					</Tabs.List>
-				</div>
-			{/if}
+		<Tabs.Root value={activeTab}>
+			<div class="tabsList">
+				<Tabs.List>
+					<Tabs.Trigger value="levels" on:click={() => switchTab('levels')}>
+						{$_('custom_lists.detail.tabs.levels')}
+					</Tabs.Trigger>
+					<Tabs.Trigger value="leaderboard" on:click={() => switchTab('leaderboard')}>
+						{$_('custom_lists.detail.tabs.leaderboard')}
+					</Tabs.Trigger>
+					{#if canShowCommunity}
+						<Tabs.Trigger value="community" on:click={() => switchTab('community')}>
+							{$_('custom_lists.detail.tabs.community')}
+						</Tabs.Trigger>
+					{/if}
+				</Tabs.List>
+			</div>
 
 			<Tabs.Content value="levels">
 				<div class="levelsSection">
 					<div class="sectionHeader">
 						<h2>{$_('custom_lists.detail.levels.heading')}</h2>
-						<Badge variant="outline">{list.items.length}</Badge>
+						<Badge variant="outline">{list.levelCount}</Badge>
 					</div>
 
 					{#if listItems.length === 0}
@@ -394,6 +646,115 @@
 								{/if}
 							{/each}
 						</div>
+						{#if hasMoreLevels(list)}
+							<div bind:this={listLevelsSentinel} class="loadMoreSentinel">
+								{#if listLevelsLoading}
+									<span class="loadMoreStatus">{$_('general.loading')}...</span>
+								{/if}
+							</div>
+						{/if}
+						{#if listLevelsError}
+							<div class="loadMoreError">
+								<p>{listLevelsError}</p>
+								<Button variant="outline" size="sm" on:click={retryLoadMoreLevels}>Retry</Button>
+							</div>
+						{/if}
+					{/if}
+				</div>
+			</Tabs.Content>
+
+			<Tabs.Content value="leaderboard">
+				<div class="levelsSection">
+					<div class="leaderboardHeader">
+						<div>
+							<h2>{$_('custom_lists.detail.leaderboard.heading', { values: { title: list.title } })}</h2>
+							<p class="leaderboardSubhead">
+								{list.mode === 'top'
+									? $_('custom_lists.detail.leaderboard.subhead_top')
+									: $_('custom_lists.detail.leaderboard.subhead_rating')}
+							</p>
+						</div>
+						<Badge variant="outline">{leaderboardCount}</Badge>
+					</div>
+
+					{#if leaderboardLoading}
+						<div class="emptyState slim">{$_('general.loading')}...</div>
+					{:else if leaderboardError}
+						<div class="emptyState slim">
+							<h3>{$_('custom_lists.detail.error_title')}</h3>
+							<p>{leaderboardError}</p>
+						</div>
+					{:else if leaderboard.length === 0}
+						<div class="emptyState slim">
+							<p>{$_('custom_lists.detail.leaderboard.empty')}</p>
+						</div>
+					{:else}
+						<div class="tableWrapper">
+							<Table.Root>
+								<Table.Header>
+									<Table.Row>
+										<Table.Head class="w-[55px]">{$_('list.tabs.rank')}</Table.Head>
+										<Table.Head>{$_('list.tabs.player')}</Table.Head>
+										<Table.Head class="w-[100px] text-right">
+											{$_('custom_lists.detail.leaderboard.score_label')}
+										</Table.Head>
+										<Table.Head class="w-[120px] text-right">
+											{$_('custom_lists.detail.leaderboard.eligible_records_label')}
+										</Table.Head>
+									</Table.Row>
+								</Table.Header>
+								<Table.Body>
+									{#each leaderboard as player}
+										<Table.Row>
+											<Table.Cell class="font-medium">#{player.rank}</Table.Cell>
+											<Table.Cell>
+												<div class="playerNameWrapper">
+													<PlayerLink
+														player={player}
+														showTitle={!list.isPlatformer}
+														titleType={list.isPlatformer ? 'pl' : 'dl'}
+													/>
+												</div>
+											</Table.Cell>
+											<Table.Cell class="text-right">{formatScore(player.score)}</Table.Cell>
+											<Table.Cell class="text-right">{player.completedCount}</Table.Cell>
+										</Table.Row>
+									{/each}
+								</Table.Body>
+							</Table.Root>
+						</div>
+
+						<Pagination.Root count={leaderboardCount} perPage={50} page={activeLeaderboardPage} let:pages let:currentPage>
+							<Pagination.Content>
+								<Pagination.Item>
+									<Pagination.PrevButton
+										on:click={() => setLeaderboardPage(Math.max(1, currentPage - 1))}
+									/>
+								</Pagination.Item>
+								{#each pages as p (p.key)}
+									{#if p.type === 'ellipsis'}
+										<Pagination.Item>
+											<Pagination.Ellipsis />
+										</Pagination.Item>
+									{:else}
+										<Pagination.Item isVisible={currentPage == p.value}>
+											<Pagination.Link
+												page={p}
+												isActive={currentPage == p.value}
+												on:click={() => setLeaderboardPage(p.value)}
+											>
+												{p.value}
+											</Pagination.Link>
+										</Pagination.Item>
+									{/if}
+								{/each}
+								<Pagination.Item>
+									<Pagination.NextButton
+										on:click={() => setLeaderboardPage(currentPage + 1)}
+									/>
+								</Pagination.Item>
+							</Pagination.Content>
+						</Pagination.Root>
 					{/if}
 				</div>
 			</Tabs.Content>
@@ -587,6 +948,26 @@
 		font-weight: 600;
 	}
 
+	.leaderboardHeader {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		gap: 12px;
+		flex-wrap: wrap;
+	}
+
+	.leaderboardHeader h2 {
+		margin: 0;
+		font-size: 1.2rem;
+		font-weight: 600;
+	}
+
+	.leaderboardSubhead {
+		margin: 6px 0 0;
+		color: hsl(var(--muted-foreground));
+		font-size: 0.9rem;
+	}
+
 	.levels {
 		display: grid;
 		align-items: start;
@@ -598,6 +979,41 @@
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 		gap: 12px;
+	}
+
+	.playerNameWrapper {
+		display: flex;
+		gap: 10px;
+	}
+
+	.tableWrapper {
+		margin-bottom: 8px;
+	}
+
+	.loadMoreSentinel {
+		min-height: 24px;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+	}
+
+	.loadMoreStatus {
+		font-size: 0.85rem;
+		color: hsl(var(--muted-foreground));
+	}
+
+	.loadMoreError {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		gap: 12px;
+		flex-wrap: wrap;
+	}
+
+	.loadMoreError p {
+		margin: 0;
+		font-size: 0.85rem;
+		color: hsl(var(--destructive));
 	}
 
 	/* Missing level card */

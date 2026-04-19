@@ -4,6 +4,8 @@
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Switch } from '$lib/components/ui/switch';
+	import * as Tabs from '$lib/components/ui/tabs';
+	import WeightFormulaPreview from '$lib/components/custom-lists/WeightFormulaPreview.svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { user } from '$lib/client';
@@ -22,6 +24,7 @@
 		Star,
 		ListOrdered,
 		Save,
+		RefreshCw,
 		AlertTriangle
 	} from 'lucide-svelte';
 	import { _ } from 'svelte-i18n';
@@ -59,9 +62,12 @@
 		tags: string[];
 		levelCount: number;
 		updated_at: string;
+		lastRefreshedAt?: string | null;
 		weightFormula?: string;
 		items: CustomListItem[];
 	};
+
+	type ManageTab = 'settings' | 'levels';
 
 	// SSR data - hydrate into reactive local state
 	let list: CustomList | null = data?.list ?? null;
@@ -78,6 +84,7 @@
 	let editingMinProgressValue: string | number | undefined = '';
 	let savingLevelItemId: number | null = null;
 	let savingReorder = false;
+	let refreshingLeaderboard = false;
 	let initialSyncDone = false;
 
 	const editForm = {
@@ -94,11 +101,22 @@
 	const visibilityOptions: Array<'private' | 'unlisted' | 'public'> = ['private', 'unlisted', 'public'];
 
 	let levelIdInput = '';
+	let activeTab: ManageTab = getInitialManageTab();
 
 	function getQuickLevelId() {
 		const raw = $page.url.searchParams.get('levelId');
 		const parsed = raw ? Number.parseInt(raw, 10) : Number.NaN;
 		return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+	}
+
+	function getInitialManageTab(): ManageTab {
+		const requestedTab = $page.url.searchParams.get('tab');
+
+		if (requestedTab === 'levels') {
+			return 'levels';
+		}
+
+		return getQuickLevelId() ? 'levels' : 'settings';
 	}
 
 	$: quickLevelId = getQuickLevelId();
@@ -177,6 +195,16 @@
 		});
 	}
 
+	function formatDateTime(value: string) {
+		return new Date(value).toLocaleString('vi-VN', {
+			year: 'numeric',
+			month: 'short',
+			day: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit'
+		});
+	}
+
 	function getTimeString(ms: number) {
 		const minutes = Math.floor(ms / 60000);
 		const seconds = Math.floor((ms % 60000) / 1000);
@@ -239,6 +267,45 @@
 			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_update'));
 		} finally {
 			savingMetadata = false;
+		}
+	}
+
+	async function refreshLeaderboardPrecalc() {
+		if (!list || refreshingLeaderboard) return;
+
+		refreshingLeaderboard = true;
+
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/leaderboard/refresh`, {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`
+				}
+			});
+
+			const payload = await res.json().catch(() => null);
+
+			if (!res.ok) {
+				throw new Error(payload?.error || 'Failed to refresh leaderboard');
+			}
+
+			if (list) {
+				list = {
+					...list,
+					lastRefreshedAt: payload?.lastRefreshedAt ?? list.lastRefreshedAt ?? null
+				};
+			}
+
+			const refreshedTotal = typeof payload?.total === 'number' ? payload.total : null;
+			toast.success(
+				refreshedTotal == null
+					? 'Leaderboard refreshed'
+					: `Leaderboard refreshed (${refreshedTotal} ranked players)`
+			);
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : 'Failed to refresh leaderboard');
+		} finally {
+			refreshingLeaderboard = false;
 		}
 	}
 
@@ -443,6 +510,9 @@
 	}
 
 	$: isOwner = Boolean(list && $user.loggedIn && list.owner === $user.data?.uid);
+	$: if (!isOwner && activeTab !== 'levels') {
+		activeTab = 'levels';
+	}
 </script>
 
 <svelte:head>
@@ -507,288 +577,317 @@
 				<Clock class="h-3.5 w-3.5" />
 				{$_('custom_lists.detail.updated', { values: { date: formatDate(list.updated_at) } })}
 			</p>
+			{#if list.lastRefreshedAt}
+				<p class="updatedAt">
+					<RefreshCw class="h-3.5 w-3.5" />
+					Leaderboard refreshed {formatDateTime(list.lastRefreshedAt)}
+				</p>
+			{/if}
 		</div>
 
-		{#if isOwner && !list.isOfficial}
-			<!-- Owner Tools -->
-			<div class="ownerTools">
-				<!-- Edit Metadata -->
-				<div class="toolCard">
-					<h2 class="toolHeading">{$_('custom_lists.detail.edit.heading')}</h2>
-					<div class="formGrid">
-						<div class="field">
-							<label for="list-title">{$_('custom_lists.detail.edit.title_label')}</label>
-							<Input id="list-title" bind:value={editForm.title} maxlength={100} />
-						</div>
-						<div class="field">
-							<label for="list-description">{$_('custom_lists.detail.edit.description_label')}</label>
-							<Textarea id="list-description" bind:value={editForm.description} rows={3} />
-						</div>
-						<div class="field">
-							<div class="switchRow">
-								<div>
-									<label for="list-platformer">{$_('custom_lists.detail.edit.type_label')}</label>
-									<p class="hint">{$_('custom_lists.detail.edit.type_hint')}</p>
-								</div>
-								<div class="switchControl">
-									<span class="switchLabel">{formatListType(editForm.isPlatformer)}</span>
-									<Switch id="list-platformer" bind:checked={editForm.isPlatformer} />
-								</div>
-							</div>
-						</div>
-						<div class="field">
-							<div class="switchRow">
-								<div>
-									<label for="list-community-enabled">{$_('custom_lists.detail.edit.community_label')}</label>
-									<p class="hint">{$_('custom_lists.detail.edit.community_hint')}</p>
-								</div>
-								<div class="switchControl">
-									<span class="switchLabel">{editForm.communityEnabled ? $_('general.yes') : $_('general.no')}</span>
-									<Switch id="list-community-enabled" bind:checked={editForm.communityEnabled} />
-								</div>
-							</div>
-						</div>
-						<div class="field">
-							<span class="fieldLabel">{$_('custom_lists.detail.edit.visibility_label')}</span>
-							<div class="optionRow">
-								{#each visibilityOptions as v}
-									<button
-										type="button"
-										class="optionBtn"
-										class:selected={editForm.visibility === v}
-										on:click={() => (editForm.visibility = v)}
-									>
-										<svelte:component this={getVisibilityIcon(v)} class="h-3.5 w-3.5" />
-										{formatVisibility(v)}
-									</button>
-								{/each}
-							</div>
-						</div>
-						<div class="field">
-							<span class="fieldLabel">{$_('custom_lists.detail.edit.mode_label')}</span>
-							<div class="optionRow">
-								{#each ['rating', 'top'] as m}
-									<button
-										type="button"
-										class="optionBtn"
-										class:selected={editForm.mode === m}
-										on:click={() => (editForm.mode = m === 'rating' ? 'rating' : 'top')}
-									>
-										{#if m === 'rating'}<Star class="h-3.5 w-3.5" />{:else}<ListOrdered class="h-3.5 w-3.5" />{/if}
-										{m === 'rating' ? $_('custom_lists.detail.edit.mode_rating') : $_('custom_lists.detail.edit.mode_top')}
-									</button>
-								{/each}
-							</div>
-							<p class="hint">{editForm.mode === 'rating' ? $_('custom_lists.detail.edit.mode_rating_hint') : $_('custom_lists.detail.edit.mode_top_hint')}</p>
-						</div>
-						<div class="field">
-							<label for="list-tags">{$_('custom_lists.detail.edit.tags_label')}</label>
-							<Input id="list-tags" bind:value={editForm.tags} placeholder="challenge, favorite" />
-						</div>
-						<div class="field">
-							<label for="list-weight-formula">Weight Formula</label>
-							<Input id="list-weight-formula" bind:value={editForm.weightFormula} placeholder="1" />
-							<p class="hint">Applied on top of the fixed mode score. Use <code>1</code> for equal weight on every record.</p>
-						</div>
-					</div>
-					<div class="formActions">
-						<Button on:click={saveMetadata} disabled={savingMetadata}>
-							<Save class="mr-2 h-4 w-4" />
-							{$_('custom_lists.detail.edit.save')}
-						</Button>
-						<Button variant="destructive" on:click={deleteList}>
-							<Trash2 class="mr-2 h-4 w-4" />
-							{$_('custom_lists.detail.edit.delete')}
-						</Button>
-					</div>
-				</div>
-
-				<!-- Add Level -->
-				<div class="toolCard">
-					<h2 class="toolHeading">{$_('custom_lists.detail.add_level.heading')}</h2>
-					<div class="field">
-						<label for="level-id">{$_('custom_lists.detail.add_level.id_label')}</label>
-						<Input id="level-id" bind:value={levelIdInput} inputmode="numeric" />
-					</div>
-					<p class="hint">{$_('custom_lists.detail.add_level.hint')}</p>
-					<div class="formActions">
-						<Button on:click={addLevel} disabled={addingLevel}>
-							<Plus class="mr-2 h-4 w-4" />
-							{$_('custom_lists.detail.add_level.button')}
-						</Button>
-					</div>
-				</div>
-			</div>
-		{:else if isOwner && list.isOfficial}
-			<div class="toolCard">
-				<h2 class="toolHeading">Official list</h2>
-				<p class="hint">Official lists are now admin-managed. Use the admin official list tools for slug, formula, and membership updates.</p>
-			</div>
-		{/if}
-
-		<!-- Levels List -->
-		<div class="levelsSection">
-			<div class="sectionHeader">
-				<h2>{$_('custom_lists.detail.levels.heading')}</h2>
-				<div class="sectionMeta">
-					{#if list.mode === 'rating'}
-						<Badge variant="secondary">
-							<Star class="mr-1 h-3 w-3" />
-							{$_('custom_lists.detail.edit.mode_rating')}
-						</Badge>
-					{:else}
-						<Badge variant="secondary">
-							<ListOrdered class="mr-1 h-3 w-3" />
-							{$_('custom_lists.detail.edit.mode_top')}
-						</Badge>
+		<Tabs.Root bind:value={activeTab}>
+			<div class="tabsList">
+				<Tabs.List class="flex h-fit w-fit flex-wrap">
+					{#if isOwner}
+						<Tabs.Trigger value="settings">{$_('custom_lists.manage.tabs.settings')}</Tabs.Trigger>
 					{/if}
-					<Badge variant="outline">{list.items.length}</Badge>
-				</div>
+					<Tabs.Trigger value="levels">{$_('custom_lists.manage.tabs.levels')}</Tabs.Trigger>
+				</Tabs.List>
 			</div>
 
-			{#if list.items.length === 0}
-				<div class="emptyState slim">
-					<h3>{$_('custom_lists.detail.levels.empty_title')}</h3>
-					<p>{isOwner ? $_('custom_lists.detail.levels.empty_owner') : $_('custom_lists.detail.levels.empty_visitor')}</p>
-				</div>
-			{:else}
-				<div class="levelList">
-					{#each list.items as item, i}
-						<div
-							class="levelItem"
-							class:isDraggable={isOwner && list.mode === 'top' && !savingReorder}
-							class:dragOver={isOwner && list.mode === 'top' && dragOverIndex === i}
-							class:dragging={isOwner && list.mode === 'top' && draggedIndex === i}
-							role="listitem"
-							draggable={isOwner && list.mode === 'top' && !savingReorder}
-							on:dragstart={(e) => { if (isOwner && list?.mode === 'top' && !savingReorder) onDragStart(e, i); }}
-							on:dragover={(e) => { if (isOwner && list?.mode === 'top' && !savingReorder) onDragOver(e, i); }}
-							on:drop={(e) => { if (isOwner && list?.mode === 'top' && !savingReorder) onDrop(e, i); }}
-							on:dragend={() => { if (isOwner && list?.mode === 'top') onDragEnd(); }}
-						>
-							<div class="levelRow">
-								{#if isOwner && list.mode === 'top'}
-									<div class="dragHandle" title={$_('custom_lists.detail.levels.drag_hint')}>
-										<GripVertical class="h-5 w-5" />
+			{#if isOwner}
+				<Tabs.Content value="settings">
+					<div class="tabContent">
+						<div class="ownerTools">
+							<div class="toolCard">
+								<h2 class="toolHeading">{$_('custom_lists.detail.edit.heading')}</h2>
+								<div class="formGrid">
+									<div class="field">
+										<label for="list-title">{$_('custom_lists.detail.edit.title_label')}</label>
+										<Input id="list-title" bind:value={editForm.title} maxlength={100} />
 									</div>
-								{/if}
-
-								<div class="rankBadge">#{i + 1}</div>
-
-								<div class="levelBody">
-									{#if item.level}
-										<a class="levelLink" href={`/level/${item.levelId}`}>{item.level.name || `Level #${item.levelId}`}</a>
-										<p class="levelMeta">
-											{$_('custom_lists.detail.levels.by')} {item.level.creator || 'Unknown'}
-											{#if item.level.difficulty} • {item.level.difficulty}{/if}
-											{#if item.level.isPlatformer} • {$_('custom_lists.detail.levels.platformer')}{/if}
-										</p>
-									{:else}
-										<span class="levelLink missing">{$_('custom_lists.detail.levels.unavailable', { values: { id: item.levelId } })}</span>
-										<p class="levelMeta">{$_('custom_lists.detail.levels.unavailable_desc')}</p>
-									{/if}
-								</div>
-
-								<div class="levelActions">
-									{#if list.mode === 'rating'}
-										{#if isOwner && editingRatingItemId === item.id}
-											<input
-												class="inlineInput ratingInput"
-												type="number"
-												min="1"
-												max="10"
-												bind:value={editingRatingValue}
-												on:blur={() => saveRatingEdit(item.levelId)}
-												on:keydown={(e) => e.key === 'Enter' && saveRatingEdit(item.levelId)}
-											/>
-										{:else}
-											<button
-												class="chipBtn"
-												class:editable={isOwner}
-												type="button"
-												on:click={isOwner ? () => startRatingEdit(item) : undefined}
-												title={isOwner ? $_('custom_lists.detail.levels.rating_edit_hint') : undefined}
-											>
-												★ {item.rating ?? 5}
-											</button>
-										{/if}
-									{/if}
-
-									{#if isOwner && editingMinProgressItemId === item.id}
-										<input
-											class="inlineInput minProgressInput"
-											type="number"
-											min="0"
-											max={list.isPlatformer ? undefined : '100'}
-											placeholder={item.level?.minProgress != null ? String(item.level.minProgress) : undefined}
-											bind:value={editingMinProgressValue}
-											on:blur={handleMinProgressBlur}
-											on:keydown={(e) => {
-												if (e.key === 'Enter') {
-													e.preventDefault();
-													saveMinProgressEdit(item.levelId);
-												}
-												if (e.key === 'Escape') {
-													e.preventDefault();
-													cancelMinProgressEdit();
-												}
-											}}
-										/>
-										<div class="inlineEditActions">
-											<button
-												type="button"
-												class="inlineEditBtn inlineEditBtnPrimary"
-												data-min-progress-action="save"
-												on:mousedown|preventDefault
-												on:click={() => saveMinProgressEdit(item.levelId)}
-												disabled={savingLevelItemId === item.levelId}
-											>
-												<Save class="mr-1.5 h-3.5 w-3.5" />
-												{$_('custom_lists.detail.levels.save_button')}
-											</button>
-											<button
-												type="button"
-												class="inlineEditBtn inlineEditBtnSecondary"
-												data-min-progress-action="cancel"
-												on:mousedown|preventDefault
-												on:click={cancelMinProgressEdit}
-												disabled={savingLevelItemId === item.levelId}
-											>
-												{$_('custom_lists.detail.levels.cancel_button')}
-											</button>
+									<div class="field">
+										<label for="list-description">{$_('custom_lists.detail.edit.description_label')}</label>
+										<Textarea id="list-description" bind:value={editForm.description} rows={3} />
+									</div>
+									<div class="field">
+										<div class="switchRow">
+											<div>
+												<label for="list-platformer">{$_('custom_lists.detail.edit.type_label')}</label>
+												<p class="hint">{$_('custom_lists.detail.edit.type_hint')}</p>
+											</div>
+											<div class="switchControl">
+												<span class="switchLabel">{formatListType(editForm.isPlatformer)}</span>
+												<Switch id="list-platformer" bind:checked={editForm.isPlatformer} />
+											</div>
 										</div>
-									{:else}
-										<button
-											class="chipBtn"
-											class:editable={isOwner}
-											type="button"
-											on:click={isOwner ? () => startMinProgressEdit(item) : undefined}
-											title={isOwner ? $_('custom_lists.detail.levels.min_progress_edit_hint') : undefined}
-										>
-											{getMinProgressLabel(item)}
-										</button>
-									{/if}
-
-									<Badge variant="outline">{$_('custom_lists.detail.levels.id_badge', { values: { id: item.levelId } })}</Badge>
-
-									{#if isOwner}
-										<Button
-											variant="destructive"
-											size="sm"
-											on:click={() => removeLevel(item.levelId)}
-											disabled={mutatingLevelId === item.levelId}
-										>
-											<Trash2 class="mr-1.5 h-3.5 w-3.5" />
-											{$_('custom_lists.detail.levels.remove')}
+									</div>
+									<div class="field">
+										<div class="switchRow">
+											<div>
+												<label for="list-community-enabled">{$_('custom_lists.detail.edit.community_label')}</label>
+												<p class="hint">{$_('custom_lists.detail.edit.community_hint')}</p>
+											</div>
+											<div class="switchControl">
+												<span class="switchLabel">{editForm.communityEnabled ? $_('general.yes') : $_('general.no')}</span>
+												<Switch id="list-community-enabled" bind:checked={editForm.communityEnabled} />
+											</div>
+										</div>
+									</div>
+									<div class="field">
+										<span class="fieldLabel">{$_('custom_lists.detail.edit.visibility_label')}</span>
+										<div class="optionRow">
+											{#each visibilityOptions as v}
+												<button
+													type="button"
+													class="optionBtn"
+													class:selected={editForm.visibility === v}
+													on:click={() => (editForm.visibility = v)}
+												>
+													<svelte:component this={getVisibilityIcon(v)} class="h-3.5 w-3.5" />
+													{formatVisibility(v)}
+												</button>
+											{/each}
+										</div>
+									</div>
+									<div class="field">
+										<span class="fieldLabel">{$_('custom_lists.detail.edit.mode_label')}</span>
+										<div class="optionRow">
+											{#each ['rating', 'top'] as m}
+												<button
+													type="button"
+													class="optionBtn"
+													class:selected={editForm.mode === m}
+													on:click={() => (editForm.mode = m === 'rating' ? 'rating' : 'top')}
+												>
+													{#if m === 'rating'}<Star class="h-3.5 w-3.5" />{:else}<ListOrdered class="h-3.5 w-3.5" />{/if}
+													{m === 'rating' ? $_('custom_lists.detail.edit.mode_rating') : $_('custom_lists.detail.edit.mode_top')}
+												</button>
+											{/each}
+										</div>
+										<p class="hint">{editForm.mode === 'rating' ? $_('custom_lists.detail.edit.mode_rating_hint') : $_('custom_lists.detail.edit.mode_top_hint')}</p>
+									</div>
+									<div class="field">
+										<label for="list-tags">{$_('custom_lists.detail.edit.tags_label')}</label>
+										<Input id="list-tags" bind:value={editForm.tags} placeholder="challenge, favorite" />
+									</div>
+									<div class="field">
+										<label for="list-weight-formula">{$_('custom_lists.formula.label')}</label>
+										<Input
+											id="list-weight-formula"
+											bind:value={editForm.weightFormula}
+											placeholder={$_('custom_lists.formula.placeholder')}
+										/>
+										<p class="hint">{$_('custom_lists.formula.hint')}</p>
+										<WeightFormulaPreview formula={editForm.weightFormula} isPlatformer={editForm.isPlatformer} />
+									</div>
+								</div>
+								<div class="formActions">
+									<Button on:click={saveMetadata} disabled={savingMetadata}>
+										<Save class="mr-2 h-4 w-4" />
+										{$_('custom_lists.detail.edit.save')}
+									</Button>
+									<Button variant="outline" on:click={refreshLeaderboardPrecalc} disabled={refreshingLeaderboard}>
+										<RefreshCw class="mr-2 h-4 w-4" />
+										{refreshingLeaderboard ? `${$_('general.loading')}...` : 'Refresh leaderboard'}
+									</Button>
+									{#if !list.isOfficial}
+										<Button variant="destructive" on:click={deleteList}>
+											<Trash2 class="mr-2 h-4 w-4" />
+											{$_('custom_lists.detail.edit.delete')}
 										</Button>
 									{/if}
 								</div>
 							</div>
 						</div>
-					{/each}
-				</div>
+					</div>
+				</Tabs.Content>
 			{/if}
-		</div>
+
+			<Tabs.Content value="levels">
+				<div class="tabContent">
+					{#if isOwner}
+						<div class="toolCard">
+							<h2 class="toolHeading">{$_('custom_lists.detail.add_level.heading')}</h2>
+							<div class="field">
+								<label for="level-id">{$_('custom_lists.detail.add_level.id_label')}</label>
+								<Input id="level-id" bind:value={levelIdInput} inputmode="numeric" />
+							</div>
+							<p class="hint">{$_('custom_lists.detail.add_level.hint')}</p>
+							<div class="formActions">
+								<Button on:click={addLevel} disabled={addingLevel}>
+									<Plus class="mr-2 h-4 w-4" />
+									{$_('custom_lists.detail.add_level.button')}
+								</Button>
+							</div>
+						</div>
+					{/if}
+
+					<div class="levelsSection">
+						<div class="sectionHeader">
+							<h2>{$_('custom_lists.detail.levels.heading')}</h2>
+							<div class="sectionMeta">
+								{#if list.mode === 'rating'}
+									<Badge variant="secondary">
+										<Star class="mr-1 h-3 w-3" />
+										{$_('custom_lists.detail.edit.mode_rating')}
+									</Badge>
+								{:else}
+									<Badge variant="secondary">
+										<ListOrdered class="mr-1 h-3 w-3" />
+										{$_('custom_lists.detail.edit.mode_top')}
+									</Badge>
+								{/if}
+								<Badge variant="outline">{list.items.length}</Badge>
+							</div>
+						</div>
+
+						{#if list.items.length === 0}
+							<div class="emptyState slim">
+								<h3>{$_('custom_lists.detail.levels.empty_title')}</h3>
+								<p>{isOwner ? $_('custom_lists.detail.levels.empty_owner') : $_('custom_lists.detail.levels.empty_visitor')}</p>
+							</div>
+						{:else}
+							<div class="levelList">
+								{#each list.items as item, i}
+									<div
+										class="levelItem"
+										class:isDraggable={isOwner && list.mode === 'top' && !savingReorder}
+										class:dragOver={isOwner && list.mode === 'top' && dragOverIndex === i}
+										class:dragging={isOwner && list.mode === 'top' && draggedIndex === i}
+										role="listitem"
+										draggable={isOwner && list.mode === 'top' && !savingReorder}
+										on:dragstart={(e) => { if (isOwner && list?.mode === 'top' && !savingReorder) onDragStart(e, i); }}
+										on:dragover={(e) => { if (isOwner && list?.mode === 'top' && !savingReorder) onDragOver(e, i); }}
+										on:drop={(e) => { if (isOwner && list?.mode === 'top' && !savingReorder) onDrop(e, i); }}
+										on:dragend={() => { if (isOwner && list?.mode === 'top') onDragEnd(); }}
+									>
+										<div class="levelRow">
+											{#if isOwner && list.mode === 'top'}
+												<div class="dragHandle" title={$_('custom_lists.detail.levels.drag_hint')}>
+													<GripVertical class="h-5 w-5" />
+												</div>
+											{/if}
+
+											<div class="rankBadge">#{i + 1}</div>
+
+											<div class="levelBody">
+												{#if item.level}
+													<a class="levelLink" href={`/level/${item.levelId}`}>{item.level.name || `Level #${item.levelId}`}</a>
+													<p class="levelMeta">
+														{$_('custom_lists.detail.levels.by')} {item.level.creator || 'Unknown'}
+														{#if item.level.difficulty} • {item.level.difficulty}{/if}
+														{#if item.level.isPlatformer} • {$_('custom_lists.detail.levels.platformer')}{/if}
+													</p>
+												{:else}
+													<span class="levelLink missing">{$_('custom_lists.detail.levels.unavailable', { values: { id: item.levelId } })}</span>
+													<p class="levelMeta">{$_('custom_lists.detail.levels.unavailable_desc')}</p>
+												{/if}
+											</div>
+
+											<div class="levelActions">
+												{#if list.mode === 'rating'}
+													{#if isOwner && editingRatingItemId === item.id}
+														<input
+															class="inlineInput ratingInput"
+															type="number"
+															min="1"
+															max="10"
+															bind:value={editingRatingValue}
+															on:blur={() => saveRatingEdit(item.levelId)}
+															on:keydown={(e) => e.key === 'Enter' && saveRatingEdit(item.levelId)}
+														/>
+													{:else}
+														<button
+															class="chipBtn"
+															class:editable={isOwner}
+															type="button"
+															on:click={isOwner ? () => startRatingEdit(item) : undefined}
+															title={isOwner ? $_('custom_lists.detail.levels.rating_edit_hint') : undefined}
+														>
+															★ {item.rating ?? 5}
+														</button>
+													{/if}
+												{/if}
+
+												{#if isOwner && editingMinProgressItemId === item.id}
+													<input
+														class="inlineInput minProgressInput"
+														type="number"
+														min="0"
+														max={list.isPlatformer ? undefined : '100'}
+														placeholder={item.level?.minProgress != null ? String(item.level.minProgress) : undefined}
+														bind:value={editingMinProgressValue}
+														on:blur={handleMinProgressBlur}
+														on:keydown={(e) => {
+															if (e.key === 'Enter') {
+																e.preventDefault();
+																saveMinProgressEdit(item.levelId);
+															}
+															if (e.key === 'Escape') {
+																e.preventDefault();
+																cancelMinProgressEdit();
+															}
+														}}
+													/>
+													<div class="inlineEditActions">
+														<button
+															type="button"
+															class="inlineEditBtn inlineEditBtnPrimary"
+															data-min-progress-action="save"
+															on:mousedown|preventDefault
+															on:click={() => saveMinProgressEdit(item.levelId)}
+															disabled={savingLevelItemId === item.levelId}
+														>
+															<Save class="mr-1.5 h-3.5 w-3.5" />
+															{$_('custom_lists.detail.levels.save_button')}
+														</button>
+														<button
+															type="button"
+															class="inlineEditBtn inlineEditBtnSecondary"
+															data-min-progress-action="cancel"
+															on:mousedown|preventDefault
+															on:click={cancelMinProgressEdit}
+															disabled={savingLevelItemId === item.levelId}
+														>
+															{$_('custom_lists.detail.levels.cancel_button')}
+														</button>
+													</div>
+												{:else}
+													<button
+														class="chipBtn"
+														class:editable={isOwner}
+														type="button"
+														on:click={isOwner ? () => startMinProgressEdit(item) : undefined}
+														title={isOwner ? $_('custom_lists.detail.levels.min_progress_edit_hint') : undefined}
+													>
+														{getMinProgressLabel(item)}
+													</button>
+												{/if}
+
+												<Badge variant="outline">{$_('custom_lists.detail.levels.id_badge', { values: { id: item.levelId } })}</Badge>
+
+												{#if isOwner}
+													<Button
+														variant="destructive"
+														size="sm"
+														on:click={() => removeLevel(item.levelId)}
+														disabled={mutatingLevelId === item.levelId}
+													>
+														<Trash2 class="mr-1.5 h-3.5 w-3.5" />
+														{$_('custom_lists.detail.levels.remove')}
+													</Button>
+												{/if}
+											</div>
+										</div>
+									</div>
+								{/each}
+							</div>
+						{/if}
+					</div>
+				</div>
+			</Tabs.Content>
+		</Tabs.Root>
 	{/if}
 </div>
 
@@ -871,6 +970,17 @@
 		margin: 0;
 		font-size: 0.8rem;
 		color: hsl(var(--muted-foreground));
+	}
+
+	.tabsList {
+		display: flex;
+	}
+
+	.tabContent {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		margin-top: 16px;
 	}
 
 	/* Owner Tools */

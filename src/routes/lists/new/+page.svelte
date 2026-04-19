@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
+	import WeightFormulaPreview from '$lib/components/custom-lists/WeightFormulaPreview.svelte';
 	import { Input } from '$lib/components/ui/input';
 	import { Switch } from '$lib/components/ui/switch';
 	import { Textarea } from '$lib/components/ui/textarea';
@@ -221,9 +222,14 @@
 				</div>
 
 				<div class="field">
-					<label for="list-weight-formula">Weight Formula</label>
-					<Input id="list-weight-formula" bind:value={form.weightFormula} placeholder="1" />
-					<p class="hint">Use <code>1</code> to give every record equal weight. More advanced formulas will be validated by the API.</p>
+					<label for="list-weight-formula">{$_('custom_lists.formula.label')}</label>
+					<Input
+						id="list-weight-formula"
+						bind:value={form.weightFormula}
+						placeholder={$_('custom_lists.formula.placeholder')}
+					/>
+					<p class="hint">{$_('custom_lists.formula.hint')}</p>
+					<WeightFormulaPreview formula={form.weightFormula} isPlatformer={form.isPlatformer} />
 				</div>
 			</div>
 

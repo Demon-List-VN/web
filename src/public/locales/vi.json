@@ -1770,6 +1770,7 @@
     "detail": {
       "loading": "Đang tải danh sách...",
       "error_title": "Không thể mở danh sách này",
+      "official_badge": "Chính thức",
       "levels_badge": "{count} level",
       "star_count": "{count} sao",
       "level_badge": "Level {id}",
@@ -1780,7 +1781,17 @@
       "community_empty": "Chưa có bài viết cộng đồng nào về danh sách này.",
       "tabs": {
         "levels": "Levels",
+        "leaderboard": "Bảng xếp hạng",
         "community": "Bài viết cộng đồng"
+      },
+      "leaderboard": {
+        "heading": "Bảng xếp hạng {title}",
+        "subhead_top": "Điểm là số lượng bản ghi hợp lệ đã được áp trọng số.",
+        "subhead_rating": "Điểm là tổng đóng góp của từng bản ghi hợp lệ sau khi áp trọng số.",
+        "score_label": "Điểm",
+        "eligible_records_label": "Bản ghi hợp lệ",
+        "empty": "Chưa có bản ghi hợp lệ nào.",
+        "failed_load": "Không thể tải bảng xếp hạng"
       },
       "delete_confirm": "Xoá danh sách này? Hành động này không thể hoàn tác.",
       "edit": {
@@ -1796,7 +1807,7 @@
         "mode_label": "Chế độ",
         "mode_rating": "Điểm",
         "mode_top": "Top",
-        "mode_rating_hint": "Mỗi level được chấm điểm từ 1-10, hiển thị từ cao đến thấp.",
+        "mode_rating_hint": "Mỗi level được chấm điểm, hiển thị từ cao đến thấp.",
         "mode_top_hint": "Sắp xếp level theo thứ tự tuỳ chỉnh bằng cách kéo thả.",
         "save": "Lưu thay đổi",
         "delete": "Xoá danh sách"
@@ -1855,6 +1866,29 @@
       "community_hint": "Cho phép gắn bài viết cộng đồng vào danh sách này. Mặc định là bật.",
       "mode_rating_hint": "Mỗi level được chấm điểm từ 1–10, hiển thị từ cao đến thấp.",
       "mode_top_hint": "Sắp xếp level theo thứ tự tuỳ chỉnh bằng cách kéo thả."
+    },
+    "manage": {
+      "tabs": {
+        "settings": "Thiết lập",
+        "levels": "Levels"
+      }
+    },
+    "formula": {
+      "label": "Công thức trọng số",
+      "placeholder": "1",
+      "hint": "Dùng 1 để mọi bản ghi hợp lệ có cùng trọng số. Hãy xem trước công thức trước khi lưu.",
+      "available_variables_label": "Biến có thể dùng",
+      "preview_title": "Xem trước công thức",
+      "preview_hint": "Điều chỉnh dữ liệu mẫu để kiểm tra trọng số trả về.",
+      "preview_button": "Xem kết quả",
+      "preview_pending": "Hãy xem trước để thấy kết quả.",
+      "preview_error": "Không thể xem trước công thức",
+      "output_label": "Kết quả",
+      "position_label": "Vị trí",
+      "level_count_label": "Số level",
+      "rating_label": "Điểm",
+      "min_progress_label": "Mốc tối thiểu",
+      "base_time_label": "Base time (ms)"
     },
     "toast": {
       "title_required": "Tiêu đề là bắt buộc",

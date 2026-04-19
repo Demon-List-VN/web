@@ -1771,6 +1771,7 @@
     "detail": {
       "loading": "Loading list...",
       "error_title": "Unable to open this list",
+      "official_badge": "Official",
       "levels_badge": "{count} levels",
       "star_count": "{count} stars",
       "level_badge": "Level {id}",
@@ -1781,7 +1782,17 @@
       "community_empty": "No community posts about this list yet.",
       "tabs": {
         "levels": "Levels",
+        "leaderboard": "Leaderboard",
         "community": "Community posts"
+      },
+      "leaderboard": {
+        "heading": "{title} leaderboard",
+        "subhead_top": "Score is the weighted count of eligible list records.",
+        "subhead_rating": "Score is the weighted sum of each eligible record contribution.",
+        "score_label": "Score",
+        "eligible_records_label": "Eligible Records",
+        "empty": "No eligible records yet.",
+        "failed_load": "Failed to load leaderboard"
       },
       "delete_confirm": "Delete this list? This cannot be undone.",
       "edit": {
@@ -1856,6 +1867,29 @@
       "community_hint": "Allow community posts to be attached to this list. Enabled by default.",
       "mode_rating_hint": "Levels are rated 1–10 and shown from highest to lowest rated.",
       "mode_top_hint": "Arrange levels in a custom order by dragging."
+    },
+    "manage": {
+      "tabs": {
+        "settings": "Settings",
+        "levels": "Levels"
+      }
+    },
+    "formula": {
+      "label": "Weight formula",
+      "placeholder": "1",
+      "hint": "Use 1 for equal weight on every eligible record. Preview the formula before saving.",
+      "available_variables_label": "Available variables",
+      "preview_title": "Formula preview",
+      "preview_hint": "Adjust sample inputs to inspect the resulting weight.",
+      "preview_button": "Preview output",
+      "preview_pending": "Run preview to see the output.",
+      "preview_error": "Failed to preview formula",
+      "output_label": "Output",
+      "position_label": "Position",
+      "level_count_label": "Level count",
+      "rating_label": "Rating",
+      "min_progress_label": "Minimum progress",
+      "base_time_label": "Base time (ms)"
     },
     "toast": {
       "title_required": "Title is required",

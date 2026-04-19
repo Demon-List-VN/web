@@ -1,5 +1,12 @@
 import { redirect } from '@sveltejs/kit';
 
 export async function load({ params, url }) {
-	throw redirect(307, `/lists/${params.list}/leaderboard${url.search}`);
+	const query = new URLSearchParams(url.searchParams);
+	query.set('tab', 'leaderboard');
+
+	if (!query.get('page')) {
+		query.set('page', '1');
+	}
+
+	throw redirect(307, `/lists/${params.list}?${query.toString()}`);
 }
