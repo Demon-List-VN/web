@@ -1907,9 +1907,11 @@
       "level_count_label": "Level count",
       "top_label": "Level top",
       "rating_label": "Rating",
+      "time_label": "Time",
       "progress_label": "Record progress",
       "min_progress_label": "Minimum progress",
-      "base_time_label": "Base time (ms)"
+      "base_time_label": "Base time (ms)",
+      "platformer_time_note": "For platformer lists, `time` and `baseTime` are measured in milliseconds (ms)."
     },
     "toast": {
       "title_required": "Title is required",

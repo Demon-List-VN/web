@@ -1050,7 +1050,7 @@
 																						</div>
 																					{/if}
 																					<div>
-																						<span>{$_('custom_lists.formula.progress_label')}</span>
+																						<span>{list.isPlatformer ? $_('custom_lists.formula.time_label') : $_('custom_lists.formula.progress_label')}</span>
 																						<span>{formatFormulaScopeValue('progress', entry.formulaScope.progress)}</span>
 																					</div>
 																					<div>

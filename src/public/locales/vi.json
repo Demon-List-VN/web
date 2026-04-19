@@ -1906,9 +1906,11 @@
       "level_count_label": "Số level",
       "top_label": "Top level",
       "rating_label": "Điểm",
+      "time_label": "Thời gian",
       "progress_label": "Tiến độ bản ghi",
       "min_progress_label": "Mốc tối thiểu",
-      "base_time_label": "Base time (ms)"
+      "base_time_label": "Base time (ms)",
+      "platformer_time_note": "Với platformer list, `time` và `baseTime` đều được tính bằng mili giây (ms)."
     },
     "toast": {
       "title_required": "Tiêu đề là bắt buộc",

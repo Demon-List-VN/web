@@ -17,8 +17,8 @@
 		levelCount: '25',
 		top: '1',
 		rating: '10',
-		minProgress: getDefaultMinProgress(isPlatformer),
-		progress: getDefaultProgress(isPlatformer)
+		baseTime: getDefaultMinProgress(isPlatformer),
+		time: getDefaultProgress(isPlatformer)
 	};
 	let previewRecordPoint: number | null = null;
 	let previewError = '';
@@ -57,8 +57,10 @@
 					levelCount: previewInput.levelCount,
 					top: previewInput.top,
 					rating: previewInput.rating,
-					minProgress: previewInput.minProgress,
-					progress: previewInput.progress
+					baseTime: previewInput.baseTime,
+					time: previewInput.time,
+					minProgress: previewInput.baseTime,
+					progress: previewInput.time
 				})
 			});
 
@@ -92,8 +94,8 @@
 		previousPlatformer = isPlatformer;
 		previewInput = {
 			...previewInput,
-			minProgress: getDefaultMinProgress(isPlatformer),
-			progress: getDefaultProgress(isPlatformer)
+			baseTime: getDefaultMinProgress(isPlatformer),
+			time: getDefaultProgress(isPlatformer)
 		};
 	}
 
@@ -103,9 +105,14 @@
 		...(mode === 'top'
 			? [{ token: 'top', label: $_('custom_lists.formula.top_label') }]
 			: [{ token: 'rating', label: $_('custom_lists.formula.rating_label') }]),
-		{ token: 'progress', label: $_('custom_lists.formula.progress_label') },
 		{
-			token: 'minProgress',
+			token: isPlatformer ? 'time' : 'progress',
+			label: isPlatformer
+				? $_('custom_lists.formula.time_label')
+				: $_('custom_lists.formula.progress_label')
+		},
+		{
+			token: isPlatformer ? 'baseTime' : 'minProgress',
 			label: isPlatformer
 				? $_('custom_lists.formula.base_time_label')
 				: $_('custom_lists.formula.min_progress_label')
@@ -120,8 +127,8 @@
 			previewInput.levelCount,
 			previewInput.top,
 			previewInput.rating,
-			previewInput.progress,
-			previewInput.minProgress,
+			previewInput.time,
+			previewInput.baseTime,
 			isPlatformer ? 'platformer' : 'classic'
 		].join('|');
 
@@ -156,6 +163,9 @@
 				</div>
 			{/each}
 		</div>
+		{#if isPlatformer}
+			<p class="formulaPreviewNote">{$_('custom_lists.formula.platformer_time_note')}</p>
+		{/if}
 	</div>
 
 	<div class="formulaPreviewGrid">
@@ -177,16 +187,20 @@
 			{/if}
 		</div>
 		<div class="field">
-			<label for="formula-preview-progress">{$_('custom_lists.formula.progress_label')}</label>
-			<Input id="formula-preview-progress" type="number" min="0" bind:value={previewInput.progress} />
+			<label for="formula-preview-time">
+				{isPlatformer
+					? $_('custom_lists.formula.time_label')
+					: $_('custom_lists.formula.progress_label')}
+			</label>
+			<Input id="formula-preview-time" type="number" min="0" bind:value={previewInput.time} />
 		</div>
 		<div class="field">
-			<label for="formula-preview-min-progress">
+			<label for="formula-preview-base-time">
 				{isPlatformer
 					? $_('custom_lists.formula.base_time_label')
 					: $_('custom_lists.formula.min_progress_label')}
 			</label>
-			<Input id="formula-preview-min-progress" type="number" min="0" bind:value={previewInput.minProgress} />
+			<Input id="formula-preview-base-time" type="number" min="0" bind:value={previewInput.baseTime} />
 		</div>
 	</div>
 
@@ -254,6 +268,12 @@
 	.formulaPreviewVariablesLabel {
 		font-size: 0.8rem;
 		font-weight: 600;
+	}
+
+	.formulaPreviewNote {
+		margin: 0;
+		font-size: 0.78rem;
+		color: hsl(var(--muted-foreground));
 	}
 
 	.formulaPreviewVariableList {
