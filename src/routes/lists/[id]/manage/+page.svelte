@@ -55,6 +55,7 @@
 		title: string;
 		description: string;
 		communityEnabled: boolean;
+		isBanned: boolean;
 		isPlatformer: boolean;
 		isOfficial?: boolean;
 		visibility: 'private' | 'unlisted' | 'public';
@@ -85,6 +86,7 @@
 	let savingLevelItemId: number | null = null;
 	let savingReorder = false;
 	let refreshingLeaderboard = false;
+	let savingBanState = false;
 	let initialSyncDone = false;
 
 	const editForm = {
@@ -233,7 +235,7 @@
 
 	// Mutations
 	async function saveMetadata() {
-		if (!list) return;
+		if (!list || !canManage) return;
 		if (!editForm.title.trim()) {
 			toast.error($_('custom_lists.toast.title_required'));
 			return;
@@ -271,7 +273,7 @@
 	}
 
 	async function refreshLeaderboardPrecalc() {
-		if (!list || refreshingLeaderboard) return;
+		if (!list || !canManage || refreshingLeaderboard) return;
 
 		refreshingLeaderboard = true;
 
@@ -313,7 +315,7 @@
 	}
 
 	async function deleteList() {
-		if (!list) return;
+		if (!list || !canDelete) return;
 		if (!confirm($_('custom_lists.detail.delete_confirm'))) return;
 
 		try {
@@ -333,7 +335,7 @@
 	}
 
 	async function addLevel() {
-		if (!list) return;
+		if (!list || !canManage) return;
 		const levelId = Number.parseInt(levelIdInput, 10);
 		if (!Number.isInteger(levelId) || levelId <= 0) {
 			toast.error($_('custom_lists.toast.level_id_invalid'));
@@ -363,7 +365,7 @@
 	}
 
 	async function removeLevel(levelId: number) {
-		if (!list) return;
+		if (!list || !canManage) return;
 		mutatingLevelId = levelId;
 		try {
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/levels/${levelId}`, {
@@ -382,11 +384,13 @@
 	}
 
 	function startRatingEdit(item: CustomListItem) {
+		if (!canManage) return;
 		editingRatingItemId = item.id;
 		editingRatingValue = String(item.rating ?? 5);
 	}
 
 	function startMinProgressEdit(item: CustomListItem) {
+		if (!canManage) return;
 		editingMinProgressItemId = item.id;
 		editingMinProgressValue = item.minProgress == null ? '' : String(item.minProgress);
 	}
@@ -434,7 +438,7 @@
 	}
 
 	async function updateLevelItem(levelId: number, patch: { rating?: number; minProgress?: number | null }) {
-		if (!list) return;
+		if (!list || !canManage) return;
 		savingLevelItemId = levelId;
 		try {
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/levels/${levelId}`, {
@@ -453,6 +457,38 @@
 			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_update_level'));
 		} finally {
 			savingLevelItemId = null;
+		}
+	}
+
+	async function setBanState(nextIsBanned: boolean) {
+		if (!list || !canBan || savingBanState) return;
+
+		const confirmationKey = nextIsBanned
+			? 'custom_lists.manage.ban_confirm'
+			: 'custom_lists.manage.unban_confirm';
+
+		if (!confirm($_(confirmationKey))) return;
+
+		savingBanState = true;
+
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/ban`, {
+				method: 'PATCH',
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`,
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ isBanned: nextIsBanned })
+			});
+			const payload = await res.json();
+			if (!res.ok) throw new Error(payload.error || $_('custom_lists.toast.failed_ban'));
+			list = payload;
+			syncForm();
+			toast.success($_(nextIsBanned ? 'custom_lists.toast.list_banned' : 'custom_lists.toast.list_unbanned'));
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_ban'));
+		} finally {
+			savingBanState = false;
 		}
 	}
 
@@ -490,7 +526,7 @@
 	}
 
 	async function reorderLevels(levelIds: number[]) {
-		if (!list) return;
+		if (!list || !canManage) return;
 		savingReorder = true;
 		try {
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/reorder`, {
@@ -512,8 +548,13 @@
 		}
 	}
 
+	$: isModerator = Boolean($user.loggedIn && ($user.data?.isAdmin || $user.data?.isManager));
 	$: isOwner = Boolean(list && $user.loggedIn && list.owner === $user.data?.uid);
-	$: if (!isOwner && activeTab !== 'levels') {
+	$: ownerCanManage = Boolean(list && isOwner && !list.isBanned);
+	$: canManage = Boolean(list && (ownerCanManage || isModerator));
+	$: canDelete = Boolean(list && ownerCanManage && !list.isOfficial);
+	$: canBan = Boolean(list && isModerator && !list.isOfficial);
+	$: if (!canManage && activeTab !== 'levels') {
 		activeTab = 'levels';
 	}
 </script>
@@ -588,17 +629,29 @@
 			{/if}
 		</div>
 
+		{#if list.isBanned}
+			<div class="toolCard moderationNotice">
+				<div class="moderationCopy">
+					<h2 class="toolHeading">{$_('custom_lists.manage.banned_title')}</h2>
+					<p class="hint">{canBan ? $_('custom_lists.manage.banned_manager_hint') : $_('custom_lists.manage.banned_owner_hint')}</p>
+				</div>
+				<div class="moderationIcon">
+					<AlertTriangle class="h-5 w-5" />
+				</div>
+			</div>
+		{/if}
+
 		<Tabs.Root bind:value={activeTab}>
 			<div class="tabsList">
 				<Tabs.List class="flex h-fit w-fit flex-wrap">
-					{#if isOwner}
+					{#if canManage}
 						<Tabs.Trigger value="settings">{$_('custom_lists.manage.tabs.settings')}</Tabs.Trigger>
 					{/if}
 					<Tabs.Trigger value="levels">{$_('custom_lists.manage.tabs.levels')}</Tabs.Trigger>
 				</Tabs.List>
 			</div>
 
-			{#if isOwner}
+			{#if canManage}
 				<Tabs.Content value="settings">
 					<div class="tabContent">
 						<div class="ownerTools">
@@ -645,6 +698,7 @@
 													type="button"
 													class="optionBtn"
 													class:selected={editForm.visibility === v}
+													disabled={list.isBanned}
 													on:click={() => (editForm.visibility = v)}
 												>
 													<svelte:component this={getVisibilityIcon(v)} class="h-3.5 w-3.5" />
@@ -699,7 +753,17 @@
 										<RefreshCw class="mr-2 h-4 w-4" />
 										{refreshingLeaderboard ? `${$_('general.loading')}...` : 'Refresh leaderboard'}
 									</Button>
-									{#if !list.isOfficial}
+									{#if canBan}
+										<Button
+											variant={list.isBanned ? 'outline' : 'destructive'}
+											on:click={() => list && setBanState(!list.isBanned)}
+											disabled={savingBanState}
+										>
+											<AlertTriangle class="mr-2 h-4 w-4" />
+											{list.isBanned ? $_('custom_lists.manage.unban') : $_('custom_lists.manage.ban')}
+										</Button>
+									{/if}
+									{#if canDelete}
 										<Button variant="destructive" on:click={deleteList}>
 											<Trash2 class="mr-2 h-4 w-4" />
 											{$_('custom_lists.detail.edit.delete')}
@@ -714,7 +778,7 @@
 
 			<Tabs.Content value="levels">
 				<div class="tabContent">
-					{#if isOwner}
+					{#if canManage}
 						<div class="toolCard">
 							<h2 class="toolHeading">{$_('custom_lists.detail.add_level.heading')}</h2>
 							<div class="field">
@@ -753,25 +817,25 @@
 						{#if list.items.length === 0}
 							<div class="emptyState slim">
 								<h3>{$_('custom_lists.detail.levels.empty_title')}</h3>
-								<p>{isOwner ? $_('custom_lists.detail.levels.empty_owner') : $_('custom_lists.detail.levels.empty_visitor')}</p>
+								<p>{canManage ? $_('custom_lists.detail.levels.empty_owner') : $_('custom_lists.detail.levels.empty_visitor')}</p>
 							</div>
 						{:else}
 							<div class="levelList">
 								{#each list.items as item, i}
 									<div
 										class="levelItem"
-										class:isDraggable={isOwner && list.mode === 'top' && !savingReorder}
-										class:dragOver={isOwner && list.mode === 'top' && dragOverIndex === i}
-										class:dragging={isOwner && list.mode === 'top' && draggedIndex === i}
+										class:isDraggable={canManage && list.mode === 'top' && !savingReorder}
+										class:dragOver={canManage && list.mode === 'top' && dragOverIndex === i}
+										class:dragging={canManage && list.mode === 'top' && draggedIndex === i}
 										role="listitem"
-										draggable={isOwner && list.mode === 'top' && !savingReorder}
-										on:dragstart={(e) => { if (isOwner && list?.mode === 'top' && !savingReorder) onDragStart(e, i); }}
-										on:dragover={(e) => { if (isOwner && list?.mode === 'top' && !savingReorder) onDragOver(e, i); }}
-										on:drop={(e) => { if (isOwner && list?.mode === 'top' && !savingReorder) onDrop(e, i); }}
-										on:dragend={() => { if (isOwner && list?.mode === 'top') onDragEnd(); }}
+										draggable={canManage && list.mode === 'top' && !savingReorder}
+										on:dragstart={(e) => { if (canManage && list?.mode === 'top' && !savingReorder) onDragStart(e, i); }}
+										on:dragover={(e) => { if (canManage && list?.mode === 'top' && !savingReorder) onDragOver(e, i); }}
+										on:drop={(e) => { if (canManage && list?.mode === 'top' && !savingReorder) onDrop(e, i); }}
+										on:dragend={() => { if (canManage && list?.mode === 'top') onDragEnd(); }}
 									>
 										<div class="levelRow">
-											{#if isOwner && list.mode === 'top'}
+											{#if canManage && list.mode === 'top'}
 												<div class="dragHandle" title={$_('custom_lists.detail.levels.drag_hint')}>
 													<GripVertical class="h-5 w-5" />
 												</div>
@@ -795,7 +859,7 @@
 
 											<div class="levelActions">
 												{#if list.mode === 'rating'}
-													{#if isOwner && editingRatingItemId === item.id}
+													{#if canManage && editingRatingItemId === item.id}
 														<input
 															class="inlineInput ratingInput"
 															type="number"
@@ -808,17 +872,17 @@
 													{:else}
 														<button
 															class="chipBtn"
-															class:editable={isOwner}
+															class:editable={canManage}
 															type="button"
-															on:click={isOwner ? () => startRatingEdit(item) : undefined}
-															title={isOwner ? $_('custom_lists.detail.levels.rating_edit_hint') : undefined}
+															on:click={canManage ? () => startRatingEdit(item) : undefined}
+															title={canManage ? $_('custom_lists.detail.levels.rating_edit_hint') : undefined}
 														>
 															★ {item.rating ?? 5}
 														</button>
 													{/if}
 												{/if}
 
-												{#if isOwner && editingMinProgressItemId === item.id}
+												{#if canManage && editingMinProgressItemId === item.id}
 													<input
 														class="inlineInput minProgressInput"
 														type="number"
@@ -864,10 +928,10 @@
 												{:else}
 													<button
 														class="chipBtn"
-														class:editable={isOwner}
+														class:editable={canManage}
 														type="button"
-														on:click={isOwner ? () => startMinProgressEdit(item) : undefined}
-														title={isOwner ? $_('custom_lists.detail.levels.min_progress_edit_hint') : undefined}
+														on:click={canManage ? () => startMinProgressEdit(item) : undefined}
+														title={canManage ? $_('custom_lists.detail.levels.min_progress_edit_hint') : undefined}
 													>
 														{getMinProgressLabel(item)}
 													</button>
@@ -875,7 +939,7 @@
 
 												<Badge variant="outline">{$_('custom_lists.detail.levels.id_badge', { values: { id: item.levelId } })}</Badge>
 
-												{#if isOwner}
+												{#if canManage}
 													<Button
 														variant="destructive"
 														size="sm"
@@ -1008,6 +1072,25 @@
 		gap: 14px;
 	}
 
+	.moderationNotice {
+		flex-direction: row;
+		align-items: flex-start;
+		justify-content: space-between;
+		background: hsl(var(--destructive) / 0.08);
+		border-color: hsl(var(--destructive) / 0.35);
+	}
+
+	.moderationCopy {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.moderationIcon {
+		color: hsl(var(--destructive));
+		flex-shrink: 0;
+	}
+
 	.toolHeading {
 		margin: 0;
 		font-size: 1.1rem;
@@ -1063,6 +1146,11 @@
 	.optionBtn.selected {
 		background: hsl(var(--primary) / 0.12);
 		border-color: hsl(var(--primary));
+	}
+
+	.optionBtn:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
 	}
 
 	.switchRow {

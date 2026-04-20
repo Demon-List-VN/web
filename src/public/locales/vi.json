@@ -1886,7 +1886,15 @@
       "tabs": {
         "settings": "Thiết lập",
         "levels": "Levels"
-      }
+      },
+      "banned_title": "Danh sách đã bị cấm",
+      "banned_owner_hint": "Danh sách này đã bị cấm và được chuyển sang riêng tư. Chỉ quản lý viên mới có thể chỉnh sửa hoặc bỏ cấm.",
+      "banned_manager_hint": "Danh sách này đang bị cấm và ở chế độ riêng tư. Quản lý viên vẫn có thể chỉnh sửa hoặc bỏ cấm tại đây.",
+      "ban": "Cấm danh sách",
+      "unban": "Bỏ cấm danh sách",
+      "ban_confirm": "Cấm danh sách này? Danh sách sẽ được đặt thành riêng tư và chủ sở hữu sẽ không thể chỉnh sửa nữa.",
+      "unban_confirm": "Bỏ cấm danh sách này? Chủ sở hữu sẽ có thể chỉnh sửa lại.",
+      "levels": "Levels"
     },
     "formula": {
       "label": "Công thức điểm bản ghi",
@@ -1942,6 +1950,9 @@
       "failed_update_level": "Không thể cập nhật level",
       "reordered": "Đã lưu thứ tự",
       "failed_reorder": "Không thể lưu thứ tự",
+      "list_banned": "Đã cấm danh sách",
+      "list_unbanned": "Đã bỏ cấm danh sách",
+      "failed_ban": "Không thể cập nhật trạng thái cấm",
       "starred": "Đã gắn sao danh sách",
       "unstarred": "Đã bỏ sao danh sách",
 	      "failed_star": "Không thể cập nhật trạng thái gắn sao",

@@ -53,6 +53,7 @@
 		title: string;
 		description: string;
 		communityEnabled: boolean;
+		isBanned: boolean;
 		isPlatformer: boolean;
 		isOfficial?: boolean;
 		visibility: 'private' | 'unlisted' | 'public';
@@ -592,7 +593,9 @@
 		}
 	}
 
+	$: isModerator = Boolean($user.loggedIn && ($user.data?.isAdmin || $user.data?.isManager));
 	$: isOwner = Boolean(list && $user.loggedIn && list.owner === $user.data?.uid);
+	$: canManageList = Boolean(list && (isModerator || (isOwner && !list.isBanned)));
 	$: listItems = list?.items ?? [];
 	$: listCardType = list?.isPlatformer ? 'pl' : 'dl';
 	$: canStarList = Boolean(list && list.id > 0 && list.visibility !== 'private');
@@ -668,7 +671,7 @@
 			{$_('custom_lists.back')}
 		</Button>
 		<div class="toolbarActions">
-			{#if list && isOwner}
+			{#if list && canManageList}
 				<Button size="sm" on:click={() => goto(`/lists/${$page.params.id}/manage`)}>
 					<Settings class="mr-2 h-4 w-4" />
 					{$_('custom_lists.actions.manage')}
@@ -788,7 +791,7 @@
 					{#if listItems.length === 0}
 						<div class="emptyState slim">
 							<h3>{$_('custom_lists.detail.levels.empty_title')}</h3>
-							<p>{isOwner ? $_('custom_lists.detail.levels.empty_owner_manage') : $_('custom_lists.detail.levels.empty_visitor')}</p>
+							<p>{canManageList ? $_('custom_lists.detail.levels.empty_owner_manage') : $_('custom_lists.detail.levels.empty_visitor')}</p>
 						</div>
 					{:else}
 						<div class="levels">
