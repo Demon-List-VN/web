@@ -73,6 +73,8 @@
 	// SSR data - hydrate into reactive local state
 	let list: CustomList | null = data?.list ?? null;
 	let loadingError = data?.error ?? '';
+	let requiresAuthRecovery = Boolean(data?.requiresAuthRecovery);
+	let authRecoveryLoading = requiresAuthRecovery;
 
 	let savingMetadata = false;
 	let addingLevel = false;
@@ -144,9 +146,14 @@
 		syncForm();
 	}
 
-	// Re-fetch with auth once user is available so owners can recover private lists.
+	// Re-fetch with auth once user is available so managers and owners can recover private lists.
 	$: if ($user.checked && $user.loggedIn) {
 		refetchWithAuth();
+	}
+	$: if (requiresAuthRecovery && $user.checked && !$user.loggedIn && !list) {
+		loadingError = 'This list is private';
+		authRecoveryLoading = false;
+		requiresAuthRecovery = false;
 	}
 
 	let authFetchKey = '';
@@ -154,6 +161,11 @@
 		const key = `${$page.params.id}:${$user.data?.uid}`;
 		if (key === authFetchKey) return;
 		authFetchKey = key;
+		const recoveringPrivateList = requiresAuthRecovery;
+
+		if (recoveringPrivateList) {
+			authRecoveryLoading = true;
+		}
 
 		try {
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${$page.params.id}`, {
@@ -167,11 +179,18 @@
 				return;
 			}
 
-			if (!list) {
-				loadingError = payload?.error || loadingError || 'Failed to load list';
+			if (recoveringPrivateList) {
+				loadingError = payload?.error || 'Failed to load list';
 			}
 		} catch {
-			// silently fail, we already have SSR data
+			if (recoveringPrivateList) {
+				loadingError = 'Failed to load list';
+			}
+		} finally {
+			if (recoveringPrivateList) {
+				authRecoveryLoading = false;
+				requiresAuthRecovery = false;
+			}
 		}
 	}
 
@@ -578,7 +597,13 @@
 		{/if}
 	</div>
 
-	{#if loadingError}
+	{#if authRecoveryLoading && !list}
+		<div class="emptyState">
+			<AlertTriangle class="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+			<h3>{$_('custom_lists.detail.loading')}</h3>
+			<p>{$_('custom_lists.detail.loading')}</p>
+		</div>
+	{:else if loadingError}
 		<div class="emptyState">
 			<AlertTriangle class="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
 			<h3>{$_('custom_lists.detail.error_title')}</h3>

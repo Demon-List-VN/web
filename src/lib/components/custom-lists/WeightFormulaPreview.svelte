@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
+	import { createPreviewCustomListWeightFormula } from '$lib/utils/customListWeightFormula';
 	import { _ } from 'svelte-i18n';
 
 	export let formula = '1';
@@ -37,6 +38,8 @@
 		showLabel: boolean;
 		isCurrent: boolean;
 	};
+
+	type FormulaPreviewEvaluator = ReturnType<typeof createPreviewCustomListWeightFormula>;
 
 	let previewInput: PreviewInput = {
 		position: '1',
@@ -125,22 +128,8 @@
 		};
 	}
 
-	async function fetchFormulaOutput(input: PreviewInput) {
-		const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/formula/preview`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify(getPreviewPayload(input))
-		});
-
-		const payload = await res.json().catch(() => null);
-
-		if (!res.ok) {
-			throw new Error(payload?.error || $_('custom_lists.formula.preview_error'));
-		}
-
-		const output = Number(payload?.output);
+	async function fetchFormulaOutput(input: PreviewInput, evaluator: FormulaPreviewEvaluator) {
+		const output = Number(evaluator.evaluate(getPreviewPayload(input)).output);
 
 		if (!Number.isFinite(output)) {
 			throw new Error($_('custom_lists.formula.preview_error'));
@@ -261,7 +250,11 @@
 		return buildSampleValues(range.min, range.max, currentValue);
 	}
 
-	async function buildGraphPoints(baseInput: PreviewInput, selectedVariable: FormulaVariable) {
+	async function buildGraphPoints(
+		baseInput: PreviewInput,
+		selectedVariable: FormulaVariable,
+		evaluator: FormulaPreviewEvaluator
+	) {
 		const graphSampleValues = getGraphSampleValues(selectedVariable);
 		const settled = await Promise.allSettled(
 			graphSampleValues.map(async (sampleValue) => ({
@@ -269,7 +262,7 @@
 				y: await fetchFormulaOutput({
 					...baseInput,
 					[selectedVariable.inputKey]: String(sampleValue)
-				})
+				}, evaluator)
 			}))
 		);
 
@@ -407,10 +400,11 @@
 				throw new Error($_('custom_lists.formula.preview_error'));
 			}
 
+			const evaluator = createPreviewCustomListWeightFormula(formula);
 			const baseInput = { ...previewInput };
 			const [currentResult, graphResult] = await Promise.allSettled([
-				fetchFormulaOutput(baseInput),
-				buildGraphPoints(baseInput, selectedVariable)
+				fetchFormulaOutput(baseInput, evaluator),
+				buildGraphPoints(baseInput, selectedVariable, evaluator)
 			]);
 
 			if (requestId !== previewRequestId) {

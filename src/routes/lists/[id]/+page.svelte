@@ -107,6 +107,8 @@
 
 	let list: CustomList | null = data?.list ?? null;
 	let loadingError = data?.error ?? '';
+	let requiresAuthRecovery = Boolean(data?.requiresAuthRecovery);
+	let authRecoveryLoading = requiresAuthRecovery;
 	let authFetchKey = '';
 	let relatedPosts: any[] = [];
 	let relatedPostsKey = '';
@@ -368,11 +370,21 @@
 	$: if ($user.checked && $user.loggedIn) {
 		refetchWithAuth();
 	}
+	$: if (requiresAuthRecovery && $user.checked && !$user.loggedIn && !list) {
+		loadingError = 'This list is private';
+		authRecoveryLoading = false;
+		requiresAuthRecovery = false;
+	}
 
 	async function refetchWithAuth() {
 		const key = `${$page.params.id}:${$user.data?.uid || 'authed'}`;
 		if (key === authFetchKey) return;
 		authFetchKey = key;
+		const recoveringPrivateList = requiresAuthRecovery;
+
+		if (recoveringPrivateList) {
+			authRecoveryLoading = true;
+		}
 
 		try {
 			list = await fetchListDetail(0, LEVELS_PAGE_SIZE - 1, {
@@ -380,8 +392,15 @@
 			});
 			loadingError = '';
 			listLevelsError = '';
-		} catch {
-			// Keep the SSR state when auth recovery fails.
+		} catch (error) {
+			if (recoveringPrivateList) {
+				loadingError = error instanceof Error ? error.message : 'Failed to load list';
+			}
+		} finally {
+			if (recoveringPrivateList) {
+				authRecoveryLoading = false;
+				requiresAuthRecovery = false;
+			}
 		}
 	}
 
@@ -680,7 +699,12 @@
 		</div>
 	</div>
 
-	{#if loadingError}
+	{#if authRecoveryLoading && !list}
+		<div class="emptyState">
+			<h3>{$_('custom_lists.detail.loading')}</h3>
+			<p>{$_('custom_lists.detail.loading')}</p>
+		</div>
+	{:else if loadingError}
 		<div class="emptyState">
 			<h3>{$_('custom_lists.detail.error_title')}</h3>
 			<p>{loadingError}</p>

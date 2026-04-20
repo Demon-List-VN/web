@@ -12,12 +12,18 @@ export const load: PageLoad = async ({ params, fetch }) => {
 
 		if (!res.ok) {
 			const payload = await res.json().catch(() => null);
-			return { list: null, error: payload?.error || 'Failed to load list' };
+			const error = payload?.error || 'Failed to load list';
+
+			if (error === 'This list is private') {
+				return { list: null, error: null, requiresAuthRecovery: true };
+			}
+
+			return { list: null, error, requiresAuthRecovery: false };
 		}
 
 		const list = await res.json();
-		return { list, error: null };
+		return { list, error: null, requiresAuthRecovery: false };
 	} catch {
-		return { list: null, error: 'Failed to load list' };
+		return { list: null, error: 'Failed to load list', requiresAuthRecovery: false };
 	}
 };
