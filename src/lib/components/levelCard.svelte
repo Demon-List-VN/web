@@ -74,6 +74,7 @@
 	export let rating: LevelCardProps['rating'] = null;
 	export let top: LevelCardProps['top'] = null;
 	export let minProgress: LevelCardProps['minProgress'] = null;
+	export let borderColor: LevelCardProps['borderColor'] = null;
 	export let creator: LevelCardProps['creator'] = null;
 	export let creatorId: LevelCardProps['creatorId'] = null;
 	export let creatorData: LevelCardProps['creatorData'] = null;
@@ -85,11 +86,15 @@
 	export let hideRating: boolean = false;
 	export let loading: boolean = false;
 	export let ratingPrediction: boolean = true;
+
+	$: levelCardStyle = borderColor
+		? `border-color: ${borderColor}; --level-card-border-color: ${borderColor};`
+		: undefined;
 </script>
 
 {#if !loading}
 	<div class="level">
-		<Card.Root>
+		<Card.Root style={levelCardStyle}>
 			<Card.Content>
 				<ContextMenu.Root>
 					<ContextMenu.Trigger>
@@ -239,7 +244,7 @@
 	</div>
 {:else}
 	<div class="level">
-		<Card.Root>
+		<Card.Root style={levelCardStyle}>
 			<Card.Content>
 				<ContextMenu.Root>
 					<ContextMenu.Trigger>
@@ -274,7 +279,7 @@
 		object-fit: cover;
 		margin-top: 20px;
 		border-radius: var(--radius);
-		border: 1px solid var(--border1);
+		border: 1px solid var(--level-card-border-color, var(--border1));
 		margin-bottom: 15px;
 		margin-inline: auto;
 	}

@@ -28,6 +28,9 @@
 
 	export let data: any;
 
+	type PublicListTab = 'custom' | 'official';
+	type ListTab = PublicListTab | 'mine' | 'starred';
+
 	type ListSummary = {
 		id: number;
 		slug?: string | null;
@@ -52,8 +55,9 @@
 	$: currentPage = data?.page ?? 1;
 	$: pageSize = data?.pageSize ?? 12;
 	$: searchQuery = data?.search ?? '';
+	$: publicTab = (data?.tab === 'official' ? 'official' : 'custom') as PublicListTab;
 	$: totalPages = Math.max(1, Math.ceil(total / pageSize));
-	let activeTab: 'browse' | 'mine' | 'starred' = 'browse';
+	let activeTab: ListTab = publicTab;
 
 	// Own lists (client-only, requires auth)
 	let ownLists: ListSummary[] = [];
@@ -102,23 +106,51 @@
 		return `/lists/${list.slug || list.id}`;
 	}
 
+	function buildPublicTabUrl(tab: PublicListTab, options: { page?: number; search?: string } = {}) {
+		const params = new URLSearchParams();
+		const nextPage = options.page ?? 1;
+		const nextSearch = (options.search ?? '').trim();
+
+		if (tab === 'custom') {
+			params.set('tab', 'custom');
+		}
+
+		if (nextPage > 1) {
+			params.set('page', String(nextPage));
+		}
+
+		if (nextSearch) {
+			params.set('search', nextSearch);
+		}
+
+		if (quickLevelId) {
+			params.set('levelId', String(quickLevelId));
+		}
+
+		const qs = params.toString();
+		return `/lists${qs ? `?${qs}` : ''}`;
+	}
+
+	function selectTab(nextTab: ListTab) {
+		if (nextTab === 'mine' || nextTab === 'starred') {
+			activeTab = nextTab;
+			return;
+		}
+
+		goto(buildPublicTabUrl(nextTab, { search: searchQuery }), {
+			keepFocus: true,
+			noScroll: true
+		});
+	}
+
 	// Pagination
 	function goToPage(p: number) {
-		const params = new URLSearchParams();
-		if (p > 1) params.set('page', String(p));
-		if (searchQuery) params.set('search', searchQuery);
-		if (quickLevelId) params.set('levelId', String(quickLevelId));
-		const qs = params.toString();
-		goto(`/lists${qs ? `?${qs}` : ''}`);
+		goto(buildPublicTabUrl(publicTab, { page: p, search: searchQuery }));
 	}
 
 	function handleSearch() {
 		const trimmed = searchInput.trim();
-		const params = new URLSearchParams();
-		if (trimmed) params.set('search', trimmed);
-		if (quickLevelId) params.set('levelId', String(quickLevelId));
-		const qs = params.toString();
-		goto(`/lists${qs ? `?${qs}` : ''}`);
+		goto(buildPublicTabUrl(publicTab, { search: trimmed }));
 	}
 
 	function handleSearchKeydown(event: KeyboardEvent) {
@@ -242,6 +274,9 @@
 
 	// Sync search input when data changes (e.g. back/forward nav)
 	$: searchInput = searchQuery;
+	$: if (activeTab !== 'mine' && activeTab !== 'starred') {
+		activeTab = publicTab;
+	}
 </script>
 
 <svelte:head>
@@ -280,13 +315,153 @@
 	<Tabs.Root bind:value={activeTab}>
 		<div class="tabsList">
 			<Tabs.List>
-				<Tabs.Trigger value="browse">{$_('custom_lists.index.tabs.browse')}</Tabs.Trigger>
-				<Tabs.Trigger value="mine">{$_('custom_lists.index.tabs.mine')}</Tabs.Trigger>
-				<Tabs.Trigger value="starred">{$_('custom_lists.index.tabs.starred')}</Tabs.Trigger>
+				<Tabs.Trigger value="official" on:click={() => selectTab('official')}
+					>{$_('custom_lists.index.tabs.official')}</Tabs.Trigger
+				>
+				<Tabs.Trigger value="custom" on:click={() => selectTab('custom')}
+					>{$_('custom_lists.index.tabs.custom')}</Tabs.Trigger
+				>
+				<Tabs.Trigger value="mine" on:click={() => selectTab('mine')}
+					>{$_('custom_lists.index.tabs.mine')}</Tabs.Trigger
+				>
+				<Tabs.Trigger value="starred" on:click={() => selectTab('starred')}
+					>{$_('custom_lists.index.tabs.starred')}</Tabs.Trigger
+				>
 			</Tabs.List>
 		</div>
 
-		<Tabs.Content value="browse">
+		<Tabs.Content value="official">
+			<section class="section">
+				<div class="sectionHeader">
+					<div class="sectionTitleRow">
+						<h2>{$_('custom_lists.index.official.heading')}</h2>
+						<Badge variant="outline">{total}</Badge>
+					</div>
+					<p class="sectionHint">{$_('custom_lists.index.official.hint')}</p>
+				</div>
+
+				<div class="searchRow">
+					<div class="searchInputWrap">
+						<span class="searchIcon"><Search class="h-4 w-4" /></span>
+						<Input
+							bind:value={searchInput}
+							placeholder={$_('custom_lists.index.official.search_placeholder')}
+							on:keydown={handleSearchKeydown}
+						/>
+					</div>
+					<Button variant="outline" on:click={handleSearch}>{$_('custom_lists.index.official.search_button')}</Button>
+				</div>
+
+				{#if lists.length === 0}
+					<div class="emptyState">
+						<h3>{$_('custom_lists.index.official.empty_title')}</h3>
+						<p>{searchQuery ? $_('custom_lists.index.official.empty_search_hint') : $_('custom_lists.index.official.empty_browse_hint')}</p>
+					</div>
+				{:else}
+					<div class="listGrid">
+						{#each lists as list}
+							<button class="listCard" on:click={() => goto(getListHref(list))}>
+								<div class="cardTop">
+									<h3 class="cardTitle">{list.title}</h3>
+									<p class="cardDesc">{list.description || $_('custom_lists.detail.no_description')}</p>
+								</div>
+
+								<div class="cardMeta">
+									<div class="metaBadges">
+										<span class="metaItem">
+											<svelte:component this={getVisibilityIcon(list.visibility)} class="h-3.5 w-3.5" />
+											{formatVisibility(list.visibility)}
+										</span>
+										<span class="metaItem">
+											<Layers class="h-3.5 w-3.5" />
+											{formatListType(list.isPlatformer)}
+										</span>
+										{#if list.isOfficial}
+											<span class="metaItem">
+												<Star class="h-3.5 w-3.5" />
+												Official
+											</span>
+										{/if}
+										<span class="metaItem">
+											{$_('custom_lists.detail.levels_badge', { values: { count: list.levelCount } })}
+										</span>
+										<span class="metaItem">
+											<Star class="h-3.5 w-3.5" />
+											{$_('custom_lists.detail.star_count', { values: { count: list.starCount ?? 0 } })}
+										</span>
+									</div>
+									<div class="cardFooter">
+										<span class="metaDate">
+											<Clock class="h-3.5 w-3.5" />
+											{formatDate(list.updated_at)}
+										</span>
+										{#if list.ownerData}
+											<span class="ownerInfo">
+												{$_('custom_lists.index.browse.by')}
+												<PlayerLink player={list.ownerData} />
+											</span>
+										{/if}
+									</div>
+								</div>
+
+								{#if list.tags?.length}
+									<div class="cardTags">
+										{#each list.tags.slice(0, 4) as tag}
+											<Badge variant="outline">{tag}</Badge>
+										{/each}
+										{#if list.tags.length > 4}
+											<Badge variant="outline">+{list.tags.length - 4}</Badge>
+										{/if}
+									</div>
+								{/if}
+							</button>
+						{/each}
+					</div>
+
+					{#if totalPages > 1}
+						<nav class="pagination" aria-label="Pagination">
+							<Button
+								variant="outline"
+								size="sm"
+								disabled={currentPage <= 1}
+								on:click={() => goToPage(currentPage - 1)}
+							>
+								<ChevronLeft class="h-4 w-4" />
+								<span class="paginationLabel">Prev</span>
+							</Button>
+
+							<div class="pageNumbers">
+								{#each paginationPages as p}
+									{#if p === '...'}
+										<span class="pageEllipsis">…</span>
+									{:else}
+										<Button
+											variant={p === currentPage ? 'default' : 'ghost'}
+											size="sm"
+											on:click={() => goToPage(p)}
+										>
+											{p}
+										</Button>
+									{/if}
+								{/each}
+							</div>
+
+							<Button
+								variant="outline"
+								size="sm"
+								disabled={currentPage >= totalPages}
+								on:click={() => goToPage(currentPage + 1)}
+							>
+								<span class="paginationLabel">Next</span>
+								<ChevronRight class="h-4 w-4" />
+							</Button>
+						</nav>
+					{/if}
+				{/if}
+			</section>
+		</Tabs.Content>
+
+		<Tabs.Content value="custom">
 			<section class="section">
 				<div class="sectionHeader">
 					<div class="sectionTitleRow">
@@ -340,6 +515,10 @@
 										{/if}
 										<span class="metaItem">
 											{$_('custom_lists.detail.levels_badge', { values: { count: list.levelCount } })}
+										</span>
+										<span class="metaItem">
+											<Star class="h-3.5 w-3.5" />
+											{$_('custom_lists.detail.star_count', { values: { count: list.starCount ?? 0 } })}
 										</span>
 									</div>
 									<div class="cardFooter">

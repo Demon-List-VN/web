@@ -1729,6 +1729,8 @@
       "new_list": "Tạo danh sách",
       "tabs": {
         "browse": "Khám phá",
+        "custom": "Tùy chỉnh",
+        "official": "Chính thức",
         "mine": "Danh sách của tôi",
         "starred": "Đã gắn sao"
       },
@@ -1746,6 +1748,15 @@
         "open": "Xem danh sách",
         "add_level": "Thêm level hiện tại",
         "by": "bởi"
+      },
+      "official": {
+        "heading": "Danh sách chính thức",
+        "hint": "Các danh sách chính thức được đội ngũ GDVN duy trì.",
+        "search_placeholder": "Tìm kiếm danh sách chính thức theo tên hoặc mô tả",
+        "search_button": "Tìm kiếm",
+        "empty_title": "Không tìm thấy danh sách chính thức",
+        "empty_search_hint": "Hãy thử từ khóa khác.",
+        "empty_browse_hint": "Danh sách chính thức sẽ xuất hiện ở đây khi sẵn sàng."
       },
       "own": {
         "loading": "Đang tải danh sách của bạn...",
@@ -1826,6 +1837,20 @@
         "mode_top": "Top",
         "mode_rating_hint": "Mỗi level được chấm điểm, hiển thị từ cao đến thấp.",
         "mode_top_hint": "Sắp xếp level theo thứ tự tuỳ chỉnh bằng cách kéo thả.",
+        "appearance_heading": "Giao diện",
+        "appearance_hint": "Tùy chỉnh banner, màu sắc và logo thanh điều hướng cho danh sách này.",
+        "background_color_label": "Màu nền",
+        "background_color_placeholder": "#0f172a",
+        "background_color_hint": "Màu hex tùy chọn áp dụng cho nền trang danh sách.",
+        "border_color_label": "Màu viền LevelCard",
+        "border_color_placeholder": "#0ea5e9",
+        "border_color_hint": "Màu hex tùy chọn áp dụng cho các LevelCard trên trang danh sách.",
+        "banner_url_label": "URL banner hero",
+        "banner_url_placeholder": "https://example.com/banner.webp",
+        "banner_url_hint": "URL ảnh tùy chọn hiển thị ở đầu phần hero header.",
+        "logo_url_label": "URL logo thanh điều hướng",
+        "logo_url_placeholder": "https://example.com/logo.webp",
+        "logo_url_hint": "URL ảnh tùy chọn thay thế logo ở góc trên bên trái trên trang danh sách này.",
         "rank_badges_label": "Huy hiệu hạng tùy chỉnh",
         "rank_badges_hint": "Đặt ngưỡng huy hiệu cho danh sách này. Kéo thả để đổi thứ tự ưu tiên từ cao xuống thấp.",
         "rank_badges_empty": "Chưa có huy hiệu hạng tùy chỉnh.",

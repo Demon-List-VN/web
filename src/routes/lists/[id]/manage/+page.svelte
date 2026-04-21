@@ -59,10 +59,14 @@
 		owner: string;
 		title: string;
 		description: string;
+		backgroundColor?: string | null;
+		bannerUrl?: string | null;
+		borderColor?: string | null;
 		communityEnabled: boolean;
 		isBanned: boolean;
 		isPlatformer: boolean;
 		isOfficial?: boolean;
+		logoUrl?: string | null;
 		visibility: 'private' | 'unlisted' | 'public';
 		mode: 'rating' | 'top';
 		tags: string[];
@@ -109,8 +113,12 @@
 	const editForm = {
 		title: '',
 		description: '',
+		backgroundColor: '',
+		bannerUrl: '',
+		borderColor: '',
 		communityEnabled: true,
 		isPlatformer: false,
+		logoUrl: '',
 		visibility: 'private' as 'private' | 'unlisted' | 'public',
 		tags: '',
 		mode: 'rating' as 'rating' | 'top',
@@ -152,8 +160,12 @@
 		if (!list) return;
 		editForm.title = list.title;
 		editForm.description = list.description;
+		editForm.backgroundColor = list.backgroundColor || '';
+		editForm.bannerUrl = list.bannerUrl || '';
+		editForm.borderColor = list.borderColor || '';
 		editForm.communityEnabled = list.communityEnabled;
 		editForm.isPlatformer = list.isPlatformer;
+		editForm.logoUrl = list.logoUrl || '';
 		editForm.visibility = list.visibility;
 		editForm.tags = list.tags.join(', ');
 		editForm.mode = list.mode;
@@ -260,6 +272,42 @@
 		return item.minProgress ?? item.level?.minProgress ?? null;
 	}
 
+	function isHexColor(value: string | null | undefined) {
+		return typeof value === 'string' && /^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(value.trim());
+	}
+
+	function withHexAlpha(color: string, alpha: string) {
+		const normalized = color.trim();
+		return normalized.length === 9 ? `${normalized.slice(0, 7)}${alpha}` : `${normalized}${alpha}`;
+	}
+
+	function getManageThemeColor() {
+		if (initialSyncDone && isHexColor(editForm.backgroundColor)) {
+			return editForm.backgroundColor.trim();
+		}
+
+		return isHexColor(list?.backgroundColor) ? list!.backgroundColor!.trim() : null;
+	}
+
+	function getManagePageStyle() {
+		const color = getManageThemeColor();
+
+		if (!color) {
+			return undefined;
+		}
+
+		return `background: linear-gradient(180deg, ${withHexAlpha(color, '18')} 0%, ${withHexAlpha(color, '08')} 220px, transparent 540px); border-radius: 18px;`;
+	}
+
+	function getManageHeroBannerUrl() {
+		if (initialSyncDone) {
+			const value = editForm.bannerUrl.trim();
+			return /^https?:\/\//i.test(value) ? value : null;
+		}
+
+		return list?.bannerUrl ?? null;
+	}
+
 	function getMinProgressLabel(item: CustomListItem) {
 		const minProgress = getEffectiveMinProgress(item);
 		if (minProgress == null) return $_('custom_lists.detail.levels.min_progress_label');
@@ -294,8 +342,12 @@
 				body: JSON.stringify({
 					title: editForm.title,
 					description: editForm.description,
+					backgroundColor: editForm.backgroundColor,
+					bannerUrl: editForm.bannerUrl,
+					borderColor: editForm.borderColor,
 					communityEnabled: editForm.communityEnabled,
 					isPlatformer: editForm.isPlatformer,
+					logoUrl: editForm.logoUrl,
 					visibility: editForm.visibility,
 					tags: parseTags(editForm.tags),
 					mode: editForm.mode,
@@ -659,7 +711,7 @@
 	<title>{list ? `Quản lý danh sách - ${list.title} - Geometry Dash Việt Nam` : 'Danh sách - Geometry Dash Việt Nam'}</title>
 </svelte:head>
 
-<div class="page">
+<div class="page" style={getManagePageStyle()}>
 	<!-- Navigation -->
 	<div class="navRow">
 		<Button variant="ghost" size="sm" on:click={() => goto('/lists')}>
@@ -688,7 +740,12 @@
 		</div>
 	{:else if list}
 		<!-- Hero Summary -->
-		<div class="hero">
+		<div class="hero" class:heroHasBanner={Boolean(getManageHeroBannerUrl())}>
+			{#if getManageHeroBannerUrl()}
+				<div class="heroBanner">
+					<img src={getManageHeroBannerUrl()} alt="" loading="lazy" decoding="async" />
+				</div>
+			{/if}
 			<div class="heroTop">
 				<div class="heroInfo">
 					<h1>{list.title}</h1>
@@ -830,6 +887,36 @@
 								<div class="field">
 									<label for="list-tags">{$_('custom_lists.detail.edit.tags_label')}</label>
 									<Input id="list-tags" bind:value={editForm.tags} placeholder="challenge, favorite" />
+								</div>
+								<div class="field">
+									<span class="fieldLabel">{$_('custom_lists.detail.edit.appearance_heading')}</span>
+									<p class="hint">{$_('custom_lists.detail.edit.appearance_hint')}</p>
+								</div>
+								<div class="field">
+									<label for="list-background-color">{$_('custom_lists.detail.edit.background_color_label')}</label>
+									<div class="colorFieldRow">
+										<span class="colorSwatch" style={isHexColor(editForm.backgroundColor) ? `background: ${editForm.backgroundColor}` : undefined}></span>
+										<Input id="list-background-color" bind:value={editForm.backgroundColor} placeholder={$_('custom_lists.detail.edit.background_color_placeholder')} />
+									</div>
+									<p class="hint">{$_('custom_lists.detail.edit.background_color_hint')}</p>
+								</div>
+								<div class="field">
+									<label for="list-border-color">{$_('custom_lists.detail.edit.border_color_label')}</label>
+									<div class="colorFieldRow">
+										<span class="colorSwatch" style={isHexColor(editForm.borderColor) ? `background: ${editForm.borderColor}` : undefined}></span>
+										<Input id="list-border-color" bind:value={editForm.borderColor} placeholder={$_('custom_lists.detail.edit.border_color_placeholder')} />
+									</div>
+									<p class="hint">{$_('custom_lists.detail.edit.border_color_hint')}</p>
+								</div>
+								<div class="field">
+									<label for="list-banner-url">{$_('custom_lists.detail.edit.banner_url_label')}</label>
+									<Input id="list-banner-url" bind:value={editForm.bannerUrl} placeholder={$_('custom_lists.detail.edit.banner_url_placeholder')} />
+									<p class="hint">{$_('custom_lists.detail.edit.banner_url_hint')}</p>
+								</div>
+								<div class="field">
+									<label for="list-logo-url">{$_('custom_lists.detail.edit.logo_url_label')}</label>
+									<Input id="list-logo-url" bind:value={editForm.logoUrl} placeholder={$_('custom_lists.detail.edit.logo_url_placeholder')} />
+									<p class="hint">{$_('custom_lists.detail.edit.logo_url_hint')}</p>
 								</div>
 							</div>
 						</div>
@@ -1168,6 +1255,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 20px;
+		background-repeat: no-repeat;
 	}
 
 	/* Nav */
@@ -1186,6 +1274,24 @@
 		display: flex;
 		flex-direction: column;
 		gap: 14px;
+	}
+
+	.heroHasBanner {
+		overflow: hidden;
+	}
+
+	.heroBanner {
+		margin: -24px -24px 0;
+		min-height: 140px;
+		border-bottom: 1px solid hsl(var(--border));
+		background: hsl(var(--muted) / 0.18);
+	}
+
+	.heroBanner img {
+		display: block;
+		width: 100%;
+		height: 180px;
+		object-fit: cover;
 	}
 
 	.heroTop {
@@ -1336,6 +1442,21 @@
 	.optionBtn.selected {
 		background: hsl(var(--primary) / 0.12);
 		border-color: hsl(var(--primary));
+	}
+
+	.colorFieldRow {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+	}
+
+	.colorSwatch {
+		width: 28px;
+		height: 28px;
+		border-radius: 999px;
+		border: 1px solid hsl(var(--border));
+		background: hsl(var(--muted) / 0.35);
+		flex-shrink: 0;
 	}
 
 	.optionBtn:disabled {
@@ -1700,6 +1821,14 @@
 	@media (max-width: 480px) {
 		.hero {
 			padding: 18px 16px;
+		}
+
+		.heroBanner {
+			margin: -18px -16px 0;
+		}
+
+		.heroBanner img {
+			height: 140px;
 		}
 
 		.rankBadgeEditorFields {

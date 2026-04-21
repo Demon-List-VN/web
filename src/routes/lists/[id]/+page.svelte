@@ -57,10 +57,14 @@
 		owner: string;
 		title: string;
 		description: string;
+		backgroundColor?: string | null;
+		bannerUrl?: string | null;
+		borderColor?: string | null;
 		communityEnabled: boolean;
 		isBanned: boolean;
 		isPlatformer: boolean;
 		isOfficial?: boolean;
+		logoUrl?: string | null;
 		visibility: 'private' | 'unlisted' | 'public';
 		mode: 'rating' | 'top';
 		tags: string[];
@@ -173,6 +177,23 @@
 
 	function getModeIcon(mode: string) {
 		return mode === 'top' ? ListOrdered : Star;
+	}
+
+	function isHexColor(value: string | null | undefined) {
+		return typeof value === 'string' && /^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(value.trim());
+	}
+
+	function withHexAlpha(color: string, alpha: string) {
+		const normalized = color.trim();
+		return normalized.length === 9 ? `${normalized.slice(0, 7)}${alpha}` : `${normalized}${alpha}`;
+	}
+
+	function getListPageStyle(currentList: CustomList | null) {
+		if (!currentList || !isHexColor(currentList.backgroundColor)) {
+			return undefined;
+		}
+
+		return `background: linear-gradient(180deg, ${withHexAlpha(currentList.backgroundColor!, '18')} 0%, ${withHexAlpha(currentList.backgroundColor!, '08')} 220px, transparent 540px); border-radius: 18px;`;
 	}
 
 	function getItemCardType(item: CustomListItem) {
@@ -692,7 +713,7 @@
 	{/if}
 </svelte:head>
 
-<div class="page">
+<div class="page" style={getListPageStyle(list)}>
 	<!-- Toolbar -->
 	<div class="toolbar">
 		<Button variant="ghost" size="sm" on:click={() => goto('/lists')}>
@@ -721,7 +742,12 @@
 		</div>
 	{:else if list}
 		<!-- Hero Card -->
-		<div class="hero">
+		<div class="hero" class:heroHasBanner={Boolean(list.bannerUrl)}>
+			{#if list.bannerUrl}
+				<div class="heroBanner">
+					<img src={list.bannerUrl} alt="" loading="lazy" decoding="async" />
+				</div>
+			{/if}
 			<div class="heroTop">
 				<div class="heroText">
 					<h1>{list.title}</h1>
@@ -838,6 +864,7 @@
 											top: i + 1,
 											minProgress: item.minProgress ?? item.level.minProgress ?? null
 										})}
+									borderColor={list.borderColor ?? null}
 										type={itemCardType}
 										hideRating={list.mode === 'top'}
 										ratingPrediction={false}
@@ -1197,6 +1224,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 20px;
+		background-repeat: no-repeat;
 	}
 
 	/* Toolbar */
@@ -1224,6 +1252,24 @@
 		display: flex;
 		flex-direction: column;
 		gap: 16px;
+	}
+
+	.heroHasBanner {
+		overflow: hidden;
+	}
+
+	.heroBanner {
+		margin: -24px -24px 0;
+		min-height: 140px;
+		border-bottom: 1px solid hsl(var(--border));
+		background: hsl(var(--muted) / 0.18);
+	}
+
+	.heroBanner img {
+		display: block;
+		width: 100%;
+		height: 180px;
+		object-fit: cover;
 	}
 
 	.heroText {
@@ -1562,6 +1608,14 @@
 	@media (max-width: 480px) {
 		.hero {
 			padding: 18px 16px;
+		}
+
+		.heroBanner {
+			margin: -18px -16px 0;
+		}
+
+		.heroBanner img {
+			height: 140px;
 		}
 
 		.heroTop h1 {

@@ -1730,6 +1730,8 @@
       "new_list": "New list",
       "tabs": {
         "browse": "Browse",
+        "custom": "Custom",
+        "official": "Official",
         "mine": "My lists",
         "starred": "Starred"
       },
@@ -1747,6 +1749,15 @@
         "open": "Open list",
         "add_level": "Add current level",
         "by": "by"
+      },
+      "official": {
+        "heading": "Official lists",
+        "hint": "Official lists are maintained by the GDVN team.",
+        "search_placeholder": "Search official lists by title or description",
+        "search_button": "Search",
+        "empty_title": "No official lists found",
+        "empty_search_hint": "Try a different search term.",
+        "empty_browse_hint": "Official lists will appear here once they are available."
       },
       "own": {
         "loading": "Loading your lists...",
@@ -1827,6 +1838,20 @@
         "mode_top": "Top",
         "mode_rating_hint": "Levels are rated 1–10 and shown from highest to lowest rated.",
         "mode_top_hint": "Arrange levels in a custom order by dragging.",
+        "appearance_heading": "Appearance",
+        "appearance_hint": "Customize banner, colors, and navbar branding for this list.",
+        "background_color_label": "Background color",
+        "background_color_placeholder": "#0f172a",
+        "background_color_hint": "Optional hex color applied to the page background.",
+        "border_color_label": "Level card border color",
+        "border_color_placeholder": "#0ea5e9",
+        "border_color_hint": "Optional hex color applied to level cards on the list page.",
+        "banner_url_label": "Hero banner URL",
+        "banner_url_placeholder": "https://example.com/banner.webp",
+        "banner_url_hint": "Optional image URL shown at the top of the hero header.",
+        "logo_url_label": "Navbar logo URL",
+        "logo_url_placeholder": "https://example.com/logo.webp",
+        "logo_url_hint": "Optional image URL that replaces the navbar logo on this list page.",
         "rank_badges_label": "Custom rank badges",
         "rank_badges_hint": "Set badge thresholds for this list. Drag badges to reorder priority from highest to lowest.",
         "rank_badges_empty": "No custom rank badges yet.",
