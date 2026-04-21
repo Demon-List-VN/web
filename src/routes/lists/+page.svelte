@@ -37,6 +37,8 @@
 		slug?: string | null;
 		title: string;
 		description: string;
+		backgroundColor?: string | null;
+		borderColor?: string | null;
 		isPlatformer: boolean;
 		isOfficial?: boolean;
 		visibility: 'private' | 'unlisted' | 'public';
@@ -114,6 +116,50 @@
 
 	function getListHref(list: ListSummary) {
 		return `/lists/${list.slug || list.id}`;
+	}
+
+	function isHexColor(value: string | null | undefined) {
+		return typeof value === 'string' && /^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(value.trim());
+	}
+
+	function withHexAlpha(color: string, alpha: string) {
+		const normalized = color.trim();
+		return normalized.length === 9 ? `${normalized.slice(0, 7)}${alpha}` : `${normalized}${alpha}`;
+	}
+
+	function hexToRgb(color: string) {
+		const normalized = color.trim().slice(1, 7);
+		return {
+			r: Number.parseInt(normalized.slice(0, 2), 16),
+			g: Number.parseInt(normalized.slice(2, 4), 16),
+			b: Number.parseInt(normalized.slice(4, 6), 16)
+		};
+	}
+
+	function isLightColor(color: string) {
+		const { r, g, b } = hexToRgb(color);
+		const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+		return luminance >= 0.62;
+	}
+
+	function getListCardStyle(list: ListSummary) {
+		const backgroundColor = isHexColor(list.backgroundColor) ? String(list.backgroundColor).trim() : null;
+		const borderColor = isHexColor(list.borderColor) ? String(list.borderColor).trim() : null;
+		const styles: string[] = [];
+
+		if (backgroundColor) {
+			const lightBackground = isLightColor(backgroundColor);
+			styles.push(
+				`background: ${backgroundColor}; --custom-surface-foreground: ${lightBackground ? '#0f172a' : '#f8fafc'}; --custom-surface-muted: ${lightBackground ? 'rgba(15, 23, 42, 0.72)' : 'rgba(248, 250, 252, 0.78)'}; --custom-surface-chip-background: ${lightBackground ? 'rgba(15, 23, 42, 0.12)' : 'rgba(248, 250, 252, 0.16)'};`
+			);
+		}
+
+		if (borderColor) {
+			styles.push(`border-color: ${borderColor};`);
+			styles.push(`--custom-surface-chip-border: ${withHexAlpha(borderColor, '55')};`);
+		}
+
+		return styles.length ? styles.join(' ') : undefined;
 	}
 
 	function buildPublicTabUrl(tab: PublicListTab, options: { page?: number; search?: string } = {}) {
@@ -370,7 +416,7 @@
 				{:else}
 					<div class="listGrid">
 						{#each lists as list}
-							<button class="listCard" on:click={() => goto(getListHref(list))}>
+							<button class="listCard" style={getListCardStyle(list)} on:click={() => goto(getListHref(list))}>
 								<div class="cardTop">
 									<h3 class="cardTitle">{list.title}</h3>
 									<p class="cardDesc">{list.description || $_('custom_lists.detail.no_description')}</p>
@@ -417,10 +463,10 @@
 								{#if list.tags?.length}
 									<div class="cardTags">
 										{#each list.tags.slice(0, 4) as tag}
-											<Badge variant="outline">{tag}</Badge>
+											<Badge variant="outline" class="cardTag">{tag}</Badge>
 										{/each}
 										{#if list.tags.length > 4}
-											<Badge variant="outline">+{list.tags.length - 4}</Badge>
+											<Badge variant="outline" class="cardTag">+{list.tags.length - 4}</Badge>
 										{/if}
 									</div>
 								{/if}
@@ -501,7 +547,7 @@
 				{:else}
 					<div class="listGrid">
 						{#each lists as list}
-							<button class="listCard" on:click={() => goto(getListHref(list))}>
+							<button class="listCard" style={getListCardStyle(list)} on:click={() => goto(getListHref(list))}>
 								<div class="cardTop">
 									<h3 class="cardTitle">{list.title}</h3>
 									<p class="cardDesc">{list.description || $_('custom_lists.detail.no_description')}</p>
@@ -548,10 +594,10 @@
 								{#if list.tags?.length}
 									<div class="cardTags">
 										{#each list.tags.slice(0, 4) as tag}
-											<Badge variant="outline">{tag}</Badge>
+											<Badge variant="outline" class="cardTag">{tag}</Badge>
 										{/each}
 										{#if list.tags.length > 4}
-											<Badge variant="outline">+{list.tags.length - 4}</Badge>
+											<Badge variant="outline" class="cardTag">+{list.tags.length - 4}</Badge>
 										{/if}
 									</div>
 								{/if}
@@ -635,7 +681,7 @@
 					{:else}
 						<div class="listGrid">
 							{#each ownLists as list}
-								<button class="listCard" on:click={() => goto(getListHref(list))}>
+								<button class="listCard" style={getListCardStyle(list)} on:click={() => goto(getListHref(list))}>
 									<div class="cardTop">
 										<h3 class="cardTitle">{list.title}</h3>
 										<p class="cardDesc">{list.description || $_('custom_lists.detail.no_description')}</p>
@@ -673,7 +719,7 @@
 									{#if list.tags?.length}
 										<div class="cardTags">
 											{#each list.tags.slice(0, 4) as tag}
-												<Badge variant="outline">{tag}</Badge>
+												<Badge variant="outline" class="cardTag">{tag}</Badge>
 											{/each}
 										</div>
 									{/if}
@@ -744,7 +790,7 @@
 					{:else}
 						<div class="listGrid">
 							{#each starredLists as list}
-								<button class="listCard" on:click={() => goto(getListHref(list))}>
+								<button class="listCard" style={getListCardStyle(list)} on:click={() => goto(getListHref(list))}>
 									<div class="cardTop">
 										<h3 class="cardTitle">{list.title}</h3>
 										<p class="cardDesc">{list.description || $_('custom_lists.detail.no_description')}</p>
@@ -791,10 +837,10 @@
 									{#if list.tags?.length}
 										<div class="cardTags">
 											{#each list.tags.slice(0, 4) as tag}
-												<Badge variant="outline">{tag}</Badge>
+												<Badge variant="outline" class="cardTag">{tag}</Badge>
 											{/each}
 											{#if list.tags.length > 4}
-												<Badge variant="outline">+{list.tags.length - 4}</Badge>
+												<Badge variant="outline" class="cardTag">+{list.tags.length - 4}</Badge>
 											{/if}
 										</div>
 									{/if}
@@ -945,8 +991,8 @@
 		border-radius: 12px;
 		text-align: left;
 		cursor: pointer;
-		color: hsl(var(--card-foreground));
-		transition: border-color 0.15s ease, box-shadow 0.15s ease;
+		color: var(--custom-surface-foreground, hsl(var(--card-foreground)));
+		transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 		width: 100%;
 	}
 
@@ -974,7 +1020,7 @@
 	.cardDesc {
 		margin: 0;
 		font-size: 0.875rem;
-		color: hsl(var(--muted-foreground));
+		color: var(--custom-surface-muted, hsl(var(--muted-foreground)));
 		line-clamp: 2;
 		display: -webkit-box;
 		-webkit-line-clamp: 2;
@@ -999,7 +1045,7 @@
 		align-items: center;
 		gap: 4px;
 		font-size: 0.8rem;
-		color: hsl(var(--muted-foreground));
+		color: var(--custom-surface-muted, hsl(var(--muted-foreground)));
 	}
 
 	.metaDate {
@@ -1007,7 +1053,7 @@
 		align-items: center;
 		gap: 4px;
 		font-size: 0.8rem;
-		color: hsl(var(--muted-foreground));
+		color: var(--custom-surface-muted, hsl(var(--muted-foreground)));
 	}
 
 	.cardFooter {
@@ -1022,13 +1068,23 @@
 		align-items: center;
 		gap: 6px;
 		font-size: 0.8rem;
-		color: hsl(var(--muted-foreground));
+		color: var(--custom-surface-muted, hsl(var(--muted-foreground)));
+	}
+
+	.ownerInfo :global(a) {
+		color: inherit;
 	}
 
 	.cardTags {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 6px;
+	}
+
+	.listCard :global(.cardTag) {
+		color: var(--custom-surface-foreground, hsl(var(--foreground)));
+		background: var(--custom-surface-chip-background, transparent);
+		border-color: var(--custom-surface-chip-border, hsl(var(--border)));
 	}
 
 	.cardActions {
