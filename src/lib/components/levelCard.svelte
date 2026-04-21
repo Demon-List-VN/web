@@ -68,12 +68,24 @@
 		return `${minutes}:${seconds.toString().padStart(2, '0')}.${milliseconds}`;
 	}
 
+	function isHexColor(value: string | null | undefined) {
+		return typeof value === 'string' && /^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(value.trim());
+	}
+
+	function withHexAlpha(color: string, alpha: string) {
+		const normalized = color.trim();
+		return normalized.length === 9 ? `${normalized.slice(0, 7)}${alpha}` : `${normalized}${alpha}`;
+	}
+
+	let levelCardStyle: string | undefined;
+
 	export let id: LevelCardProps['id'] = null;
 	export let videoID: LevelCardProps['videoID'] = null;
 	export let name: LevelCardProps['name'] = null;
 	export let rating: LevelCardProps['rating'] = null;
 	export let top: LevelCardProps['top'] = null;
 	export let minProgress: LevelCardProps['minProgress'] = null;
+	export let backgroundColor: LevelCardProps['backgroundColor'] = null;
 	export let borderColor: LevelCardProps['borderColor'] = null;
 	export let creator: LevelCardProps['creator'] = null;
 	export let creatorId: LevelCardProps['creatorId'] = null;
@@ -87,9 +99,22 @@
 	export let loading: boolean = false;
 	export let ratingPrediction: boolean = true;
 
-	$: levelCardStyle = borderColor
-		? `border-color: ${borderColor}; --level-card-border-color: ${borderColor};`
-		: undefined;
+	$: {
+		const nextStyle: string[] = [];
+
+		if (isHexColor(backgroundColor)) {
+			const resolvedBackgroundColor = String(backgroundColor).trim();
+			nextStyle.push(
+				`background: linear-gradient(180deg, ${withHexAlpha(resolvedBackgroundColor, '18')} 0%, ${withHexAlpha(resolvedBackgroundColor, '0d')} 100%), hsl(var(--card));`
+			);
+		}
+
+		if (borderColor) {
+			nextStyle.push(`border-color: ${borderColor}; --level-card-border-color: ${borderColor};`);
+		}
+
+		levelCardStyle = nextStyle.length ? nextStyle.join(' ') : undefined;
+	}
 </script>
 
 {#if !loading}

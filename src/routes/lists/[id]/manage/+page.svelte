@@ -305,7 +305,7 @@
 		editForm[field] = input.value;
 	}
 
-	function getManageThemeColor() {
+	function getManageThemeBackgroundColor() {
 		if (initialSyncDone && isHexColor(editForm.backgroundColor)) {
 			return editForm.backgroundColor.trim();
 		}
@@ -313,14 +313,39 @@
 		return isHexColor(list?.backgroundColor) ? list!.backgroundColor!.trim() : null;
 	}
 
-	function getManagePageStyle() {
-		const color = getManageThemeColor();
-
-		if (!color) {
-			return undefined;
+	function getManageThemeBorderColor() {
+		if (initialSyncDone && isHexColor(editForm.borderColor)) {
+			return editForm.borderColor.trim();
 		}
 
-		return `background: linear-gradient(180deg, ${withHexAlpha(color, '18')} 0%, ${withHexAlpha(color, '08')} 220px, transparent 540px); border-radius: 18px;`;
+		return isHexColor(list?.borderColor) ? list!.borderColor!.trim() : null;
+	}
+
+	function getThemedSurfaceStyle(backgroundColor: string | null, borderColor: string | null) {
+		const styles: string[] = [];
+
+		if (backgroundColor) {
+			styles.push(
+				`background: linear-gradient(180deg, ${withHexAlpha(backgroundColor, '18')} 0%, ${withHexAlpha(backgroundColor, '0d')} 100%), hsl(var(--card));`
+			);
+		}
+
+		if (borderColor) {
+			styles.push(`border-color: ${borderColor};`);
+			styles.push(`box-shadow: 0 0 0 1px ${withHexAlpha(borderColor, '22')};`);
+		}
+
+		return styles.length ? styles.join(' ') : undefined;
+	}
+
+	function getManageHeroStyle() {
+		return getThemedSurfaceStyle(getManageThemeBackgroundColor(), getManageThemeBorderColor());
+	}
+
+	function getManageHeroBannerStyle() {
+		const borderColor = getManageThemeBorderColor();
+
+		return borderColor ? `border-bottom-color: ${borderColor};` : undefined;
 	}
 
 	function getManageHeroBannerUrl() {
@@ -884,7 +909,7 @@
 	bind:this={logoFileInput}
 />
 
-<div class="page" style={getManagePageStyle()}>
+<div class="page">
 	<!-- Navigation -->
 	<div class="navRow">
 		<Button variant="ghost" size="sm" on:click={() => goto('/lists')}>
@@ -913,9 +938,9 @@
 		</div>
 	{:else if list}
 		<!-- Hero Summary -->
-		<div class="hero" class:heroHasBanner={Boolean(getManageHeroBannerUrl())}>
+		<div class="hero" class:heroHasBanner={Boolean(getManageHeroBannerUrl())} style={getManageHeroStyle()}>
 			{#if getManageHeroBannerUrl()}
-				<div class="heroBanner">
+				<div class="heroBanner" style={getManageHeroBannerStyle()}>
 					<img src={getManageHeroBannerUrl()} alt="" loading="lazy" decoding="async" />
 				</div>
 			{/if}

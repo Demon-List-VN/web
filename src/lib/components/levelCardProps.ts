@@ -10,6 +10,7 @@ export type LevelCardRecord = {
 
 export type LevelCardProps = {
 	type: string;
+	backgroundColor?: string | null;
 	borderColor?: string | null;
 	top?: number | null;
 	hideTop?: boolean;

@@ -188,12 +188,61 @@
 		return normalized.length === 9 ? `${normalized.slice(0, 7)}${alpha}` : `${normalized}${alpha}`;
 	}
 
-	function getListPageStyle(currentList: CustomList | null) {
-		if (!currentList || !isHexColor(currentList.backgroundColor)) {
-			return undefined;
+	function getListThemeBackgroundColor(currentList: CustomList | null) {
+		const backgroundColor = currentList?.backgroundColor;
+
+		if (!isHexColor(backgroundColor)) {
+			return null;
 		}
 
-		return `background: linear-gradient(180deg, ${withHexAlpha(currentList.backgroundColor!, '18')} 0%, ${withHexAlpha(currentList.backgroundColor!, '08')} 220px, transparent 540px); border-radius: 18px;`;
+		return String(backgroundColor).trim();
+	}
+
+	function getListThemeBorderColor(currentList: CustomList | null) {
+		const borderColor = currentList?.borderColor;
+
+		if (!isHexColor(borderColor)) {
+			return null;
+		}
+
+		return String(borderColor).trim();
+	}
+
+	function getThemedSurfaceStyle(backgroundColor: string | null, borderColor: string | null) {
+		const styles: string[] = [];
+
+		if (backgroundColor) {
+			styles.push(
+				`background: linear-gradient(180deg, ${withHexAlpha(backgroundColor, '18')} 0%, ${withHexAlpha(backgroundColor, '0d')} 100%), hsl(var(--card));`
+			);
+		}
+
+		if (borderColor) {
+			styles.push(`border-color: ${borderColor};`);
+			styles.push(`box-shadow: 0 0 0 1px ${withHexAlpha(borderColor, '22')};`);
+		}
+
+		return styles.length ? styles.join(' ') : undefined;
+	}
+
+	function getListHeroStyle(currentList: CustomList | null) {
+		return getThemedSurfaceStyle(
+			getListThemeBackgroundColor(currentList),
+			getListThemeBorderColor(currentList)
+		);
+	}
+
+	function getListHeroBannerStyle(currentList: CustomList | null) {
+		const borderColor = getListThemeBorderColor(currentList);
+
+		return borderColor ? `border-bottom-color: ${borderColor};` : undefined;
+	}
+
+	function getMissingLevelStyle(currentList: CustomList | null) {
+		return getThemedSurfaceStyle(
+			getListThemeBackgroundColor(currentList),
+			getListThemeBorderColor(currentList)
+		);
 	}
 
 	function getItemCardType(item: CustomListItem) {
@@ -713,7 +762,7 @@
 	{/if}
 </svelte:head>
 
-<div class="page" style={getListPageStyle(list)}>
+<div class="page">
 	<!-- Toolbar -->
 	<div class="toolbar">
 		<Button variant="ghost" size="sm" on:click={() => goto('/lists')}>
@@ -742,9 +791,9 @@
 		</div>
 	{:else if list}
 		<!-- Hero Card -->
-		<div class="hero" class:heroHasBanner={Boolean(list.bannerUrl)}>
+		<div class="hero" class:heroHasBanner={Boolean(list.bannerUrl)} style={getListHeroStyle(list)}>
 			{#if list.bannerUrl}
-				<div class="heroBanner">
+				<div class="heroBanner" style={getListHeroBannerStyle(list)}>
 					<img src={list.bannerUrl} alt="" loading="lazy" decoding="async" />
 				</div>
 			{/if}
@@ -864,13 +913,14 @@
 											top: i + 1,
 											minProgress: item.minProgress ?? item.level.minProgress ?? null
 										})}
+										backgroundColor={list.backgroundColor ?? null}
 									borderColor={list.borderColor ?? null}
 										type={itemCardType}
 										hideRating={list.mode === 'top'}
 										ratingPrediction={false}
 									/>
 								{:else}
-									<div class="missingLevel">
+									<div class="missingLevel" style={getMissingLevelStyle(list)}>
 										<div class="missingRank">#{i + 1}</div>
 										<div class="missingContent">
 											<h4>{$_('custom_lists.detail.levels.unavailable', { values: { id: item.levelId } })}</h4>
