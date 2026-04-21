@@ -10,6 +10,7 @@
 	import * as Table from '$lib/components/ui/table';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import * as Popover from '$lib/components/ui/popover';
+	import Ads from '$lib/components/ads.svelte';
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import {
 		normalizeCustomListRankBadges,
@@ -40,6 +41,7 @@
 	export let data: any;
 
 	const LEVELS_PAGE_SIZE = 50;
+	const LEVELS_AD_FREQUENCY = 6;
 
 	type CustomListItem = {
 		id: number;
@@ -405,6 +407,10 @@
 
 	function getLoadedLevelCount(currentList: CustomList | null) {
 		return currentList?.items?.length ?? 0;
+	}
+
+	function shouldShowLevelsAd(index: number, totalItems: number) {
+		return totalItems > LEVELS_AD_FREQUENCY && (index + 1) % LEVELS_AD_FREQUENCY === 0 && index < totalItems - 1;
 	}
 
 	function hasMoreLevels(currentList: CustomList | null) {
@@ -903,6 +909,10 @@
 			</p>
 		</div>
 
+		<div class="adSection">
+			<Ads dataAdFormat="auto" />
+		</div>
+
 		<Tabs.Root value={activeTab}>
 			<div class="tabsList">
 				<Tabs.List>
@@ -959,6 +969,11 @@
 										</div>
 									</div>
 								{/if}
+								{#if shouldShowLevelsAd(i, listItems.length)}
+									<div class="levelsAd">
+										<Ads dataAdFormat="auto" />
+									</div>
+								{/if}
 							{/each}
 						</div>
 						{#if hasMoreLevels(list)}
@@ -990,6 +1005,10 @@
 							</p>
 						</div>
 						<Badge variant="outline">{leaderboardCount}</Badge>
+					</div>
+
+					<div class="adSection">
+						<Ads dataAdFormat="auto" />
 					</div>
 
 					{#if leaderboardLoading}
@@ -1277,6 +1296,10 @@
 							{/if}
 						</div>
 
+						<div class="adSection">
+							<Ads dataAdFormat="auto" />
+						</div>
+
 						{#if loadingRelatedPosts}
 							<div class="emptyState slim">{$_('general.loading')}...</div>
 						{:else if relatedPosts.length === 0}
@@ -1446,6 +1469,10 @@
 		color: var(--custom-surface-muted, hsl(var(--muted-foreground)));
 	}
 
+	.adSection {
+		width: 100%;
+	}
+
 	/* Levels */
 	.levelsSection {
 		display: flex;
@@ -1495,6 +1522,10 @@
 		align-items: start;
 		gap: 10px;
 		grid-template-columns: repeat(2, 1fr);
+	}
+
+	.levelsAd {
+		grid-column: 1 / -1;
 	}
 
 	.relatedGrid {

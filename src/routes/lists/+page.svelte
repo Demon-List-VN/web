@@ -4,6 +4,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Tabs from '$lib/components/ui/tabs';
+	import Ads from '$lib/components/ads.svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { user } from '$lib/client';
@@ -31,6 +32,7 @@
 	type PublicListTab = 'custom' | 'official';
 	type ListTab = PublicListTab | 'mine' | 'starred';
 	type CustomListResolvedRole = 'viewer' | 'owner' | 'admin' | 'helper' | 'moderator';
+	const GRID_AD_FREQUENCY = 4;
 
 	type ListSummary = {
 		id: number;
@@ -116,6 +118,10 @@
 
 	function getListHref(list: ListSummary) {
 		return `/lists/${list.slug || list.id}`;
+	}
+
+	function shouldShowGridAd(index: number, totalItems: number) {
+		return totalItems > GRID_AD_FREQUENCY && (index + 1) % GRID_AD_FREQUENCY === 0 && index < totalItems - 1;
 	}
 
 	function isHexColor(value: string | null | undefined) {
@@ -368,6 +374,10 @@
 		</div>
 	{/if}
 
+	<div class="adSection">
+		<Ads dataAdFormat="auto" />
+	</div>
+
 	<Tabs.Root bind:value={activeTab}>
 		<div class="tabsList">
 			<Tabs.List>
@@ -415,7 +425,7 @@
 					</div>
 				{:else}
 					<div class="listGrid">
-						{#each lists as list}
+						{#each lists as list, index}
 							<button class="listCard" style={getListCardStyle(list)} on:click={() => goto(getListHref(list))}>
 								<div class="cardTop">
 									<h3 class="cardTitle">{list.title}</h3>
@@ -471,6 +481,11 @@
 									</div>
 								{/if}
 							</button>
+							{#if shouldShowGridAd(index, lists.length)}
+								<div class="listGridAd">
+									<Ads dataAdFormat="auto" />
+								</div>
+							{/if}
 						{/each}
 					</div>
 
@@ -546,7 +561,7 @@
 					</div>
 				{:else}
 					<div class="listGrid">
-						{#each lists as list}
+						{#each lists as list, index}
 							<button class="listCard" style={getListCardStyle(list)} on:click={() => goto(getListHref(list))}>
 								<div class="cardTop">
 									<h3 class="cardTitle">{list.title}</h3>
@@ -602,6 +617,11 @@
 									</div>
 								{/if}
 							</button>
+							{#if shouldShowGridAd(index, lists.length)}
+								<div class="listGridAd">
+									<Ads dataAdFormat="auto" />
+								</div>
+							{/if}
 						{/each}
 					</div>
 
@@ -680,7 +700,7 @@
 						</div>
 					{:else}
 						<div class="listGrid">
-							{#each ownLists as list}
+							{#each ownLists as list, index}
 								<button class="listCard" style={getListCardStyle(list)} on:click={() => goto(getListHref(list))}>
 									<div class="cardTop">
 										<h3 class="cardTitle">{list.title}</h3>
@@ -751,6 +771,11 @@
 										</Button>
 									</div>
 								</button>
+								{#if shouldShowGridAd(index, ownLists.length)}
+									<div class="listGridAd">
+										<Ads dataAdFormat="auto" />
+									</div>
+								{/if}
 							{/each}
 						</div>
 					{/if}
@@ -789,7 +814,7 @@
 						</div>
 					{:else}
 						<div class="listGrid">
-							{#each starredLists as list}
+							{#each starredLists as list, index}
 								<button class="listCard" style={getListCardStyle(list)} on:click={() => goto(getListHref(list))}>
 									<div class="cardTop">
 										<h3 class="cardTitle">{list.title}</h3>
@@ -845,6 +870,11 @@
 										</div>
 									{/if}
 								</button>
+								{#if shouldShowGridAd(index, starredLists.length)}
+									<div class="listGridAd">
+										<Ads dataAdFormat="auto" />
+									</div>
+								{/if}
 							{/each}
 						</div>
 					{/if}
@@ -899,6 +929,10 @@
 		align-items: flex-start;
 		gap: 12px;
 		color: hsl(var(--primary));
+	}
+
+	.adSection {
+		width: 100%;
 	}
 
 	.quickTitle {
@@ -978,6 +1012,10 @@
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
 		gap: 14px;
+	}
+
+	.listGridAd {
+		grid-column: 1 / -1;
 	}
 
 	/* List Card */
