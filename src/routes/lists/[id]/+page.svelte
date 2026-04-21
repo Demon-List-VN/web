@@ -11,6 +11,11 @@
 	import * as Tabs from '$lib/components/ui/tabs';
 	import * as Popover from '$lib/components/ui/popover';
 	import PlayerLink from '$lib/components/playerLink.svelte';
+	import {
+		normalizeCustomListRankBadges,
+		resolveCustomListRankBadge,
+		type CustomListRankBadge
+	} from '$lib/utils/customListRank';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { user } from '$lib/client';
@@ -64,6 +69,7 @@
 		starCount?: number;
 		starred?: boolean;
 		ownerData?: any;
+		rankBadges?: CustomListRankBadge[];
 		weightFormula?: string;
 		items: CustomListItem[];
 	};
@@ -255,6 +261,10 @@
 		}
 
 		return rounded.toFixed(3).replace(/\.0+$|0+$/g, '').replace(/\.$/, '');
+	}
+
+	function getLeaderboardRankBadge(player: LeaderboardPlayer | null | undefined) {
+		return resolveCustomListRankBadge(player, normalizeCustomListRankBadges(list?.rankBadges));
 	}
 
 	function getTimeString(ms: number) {
@@ -910,8 +920,7 @@
 												<div class="playerNameWrapper">
 													<PlayerLink
 														player={player}
-														showTitle={!list.isPlatformer}
-														titleType={list.isPlatformer ? 'pl' : 'dl'}
+														rankBadge={getLeaderboardRankBadge(player)}
 													/>
 												</div>
 											</Table.Cell>
@@ -993,8 +1002,7 @@
 												<h3>
 													<PlayerLink
 														player={selectedLeaderboardPlayer}
-														showTitle={!list.isPlatformer}
-														titleType={list.isPlatformer ? 'pl' : 'dl'}
+															rankBadge={getLeaderboardRankBadge(selectedLeaderboardPlayer)}
 													/>
 												</h3>
 												<div class="recordPointsMeta">

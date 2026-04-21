@@ -6,6 +6,11 @@
 	import { Switch } from '$lib/components/ui/switch';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import WeightFormulaPreview from '$lib/components/custom-lists/WeightFormulaPreview.svelte';
+	import {
+		createEmptyCustomListRankBadge,
+		normalizeCustomListRankBadges,
+		type CustomListRankBadge
+	} from '$lib/utils/customListRank';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { user } from '$lib/client';
@@ -61,14 +66,22 @@
 		visibility: 'private' | 'unlisted' | 'public';
 		mode: 'rating' | 'top';
 		tags: string[];
-		levelCount: number;
 		updated_at: string;
 		lastRefreshedAt?: string | null;
+		rankBadges?: CustomListRankBadge[];
 		weightFormula?: string;
 		items: CustomListItem[];
 	};
 
-	type ManageTab = 'settings' | 'levels';
+	type CustomListRankBadgeDraft = {
+		name: string;
+		shorthand: string;
+		color: string;
+		minRating: number | null | undefined;
+		minTop: number | null | undefined;
+	};
+
+	type ManageTab = 'basic' | 'formula' | 'rank' | 'levels';
 
 	// SSR data - hydrate into reactive local state
 	let list: CustomList | null = data?.list ?? null;
@@ -81,6 +94,8 @@
 	let mutatingLevelId: number | null = null;
 	let draggedIndex: number | null = null;
 	let dragOverIndex: number | null = null;
+	let draggedRankBadgeIndex: number | null = null;
+	let dragOverRankBadgeIndex: number | null = null;
 	let editingRatingItemId: number | null = null;
 	let editingRatingValue = '';
 	let editingMinProgressItemId: number | null = null;
@@ -99,6 +114,7 @@
 		visibility: 'private' as 'private' | 'unlisted' | 'public',
 		tags: '',
 		mode: 'rating' as 'rating' | 'top',
+		rankBadges: [] as CustomListRankBadgeDraft[],
 		weightFormula: '1'
 	};
 
@@ -116,11 +132,15 @@
 	function getInitialManageTab(): ManageTab {
 		const requestedTab = $page.url.searchParams.get('tab');
 
+		if (requestedTab === 'basic' || requestedTab === 'formula' || requestedTab === 'rank') {
+			return requestedTab;
+		}
+
 		if (requestedTab === 'levels') {
 			return 'levels';
 		}
 
-		return getQuickLevelId() ? 'levels' : 'settings';
+		return getQuickLevelId() ? 'levels' : 'basic';
 	}
 
 	$: quickLevelId = getQuickLevelId();
@@ -137,6 +157,9 @@
 		editForm.visibility = list.visibility;
 		editForm.tags = list.tags.join(', ');
 		editForm.mode = list.mode;
+		editForm.rankBadges = normalizeCustomListRankBadges(list.rankBadges).map((rankBadge) => ({
+			...rankBadge
+		}));
 		editForm.weightFormula = list.weightFormula || '1';
 	}
 
@@ -276,6 +299,13 @@
 					visibility: editForm.visibility,
 					tags: parseTags(editForm.tags),
 					mode: editForm.mode,
+					rankBadges: editForm.rankBadges.map((rankBadge) => ({
+						name: rankBadge.name,
+						shorthand: rankBadge.shorthand,
+						color: rankBadge.color,
+						minRating: rankBadge.minRating,
+						minTop: rankBadge.minTop
+					})),
 					weightFormula: editForm.weightFormula
 				})
 			});
@@ -528,6 +558,53 @@
 		dragOverIndex = null;
 	}
 
+	function addRankBadge() {
+		editForm.rankBadges = [...editForm.rankBadges, createEmptyCustomListRankBadge()];
+	}
+
+	function getRankBadgePreviewLabel(rankBadge: CustomListRankBadgeDraft) {
+		return rankBadge.shorthand.trim() || rankBadge.name.trim() || '?';
+	}
+
+	function removeRankBadge(index: number) {
+		editForm.rankBadges = editForm.rankBadges.filter((_, currentIndex) => currentIndex !== index);
+	}
+
+	function onRankBadgeDragStart(event: DragEvent, index: number) {
+		draggedRankBadgeIndex = index;
+		if (event.dataTransfer) {
+			event.dataTransfer.effectAllowed = 'move';
+		}
+	}
+
+	function onRankBadgeDragOver(event: DragEvent, index: number) {
+		event.preventDefault();
+		if (event.dataTransfer) {
+			event.dataTransfer.dropEffect = 'move';
+		}
+		dragOverRankBadgeIndex = index;
+	}
+
+	function onRankBadgeDragEnd() {
+		draggedRankBadgeIndex = null;
+		dragOverRankBadgeIndex = null;
+	}
+
+	function onRankBadgeDrop(event: DragEvent, targetIndex: number) {
+		event.preventDefault();
+
+		if (draggedRankBadgeIndex === null || draggedRankBadgeIndex === targetIndex) {
+			onRankBadgeDragEnd();
+			return;
+		}
+
+		const nextRankBadges = [...editForm.rankBadges];
+		const [movedRankBadge] = nextRankBadges.splice(draggedRankBadgeIndex, 1);
+		nextRankBadges.splice(targetIndex, 0, movedRankBadge);
+		editForm.rankBadges = nextRankBadges;
+		onRankBadgeDragEnd();
+	}
+
 	function onDrop(e: DragEvent, targetIndex: number) {
 		e.preventDefault();
 		if (draggedIndex === null || draggedIndex === targetIndex || !list) {
@@ -631,7 +708,7 @@
 						{list.mode === 'rating' ? $_('custom_lists.detail.edit.mode_rating') : $_('custom_lists.detail.edit.mode_top')}
 					</span>
 					<span class="chip">
-						{$_('custom_lists.detail.levels_badge', { values: { count: list.levelCount } })}
+						{$_('custom_lists.detail.levels_badge', { values: { count: list.items.length } })}
 					</span>
 				</div>
 			</div>
@@ -670,135 +747,230 @@
 			<div class="tabsList">
 				<Tabs.List class="flex h-fit w-fit flex-wrap">
 					{#if canManage}
-						<Tabs.Trigger value="settings">{$_('custom_lists.manage.tabs.settings')}</Tabs.Trigger>
+						<Tabs.Trigger value="basic">{$_('custom_lists.manage.tabs.basic')}</Tabs.Trigger>
+						<Tabs.Trigger value="formula">{$_('custom_lists.manage.tabs.formula')}</Tabs.Trigger>
+						<Tabs.Trigger value="rank">{$_('custom_lists.manage.tabs.rank')}</Tabs.Trigger>
 					{/if}
 					<Tabs.Trigger value="levels">{$_('custom_lists.manage.tabs.levels')}</Tabs.Trigger>
 				</Tabs.List>
 			</div>
 
 			{#if canManage}
-				<Tabs.Content value="settings">
+				<Tabs.Content value="basic">
 					<div class="tabContent">
-						<div class="ownerTools">
-							<div class="toolCard">
-								<h2 class="toolHeading">{$_('custom_lists.detail.edit.heading')}</h2>
-								<div class="formGrid">
-									<div class="field">
-										<label for="list-title">{$_('custom_lists.detail.edit.title_label')}</label>
-										<Input id="list-title" bind:value={editForm.title} maxlength={100} />
-									</div>
-									<div class="field">
-										<label for="list-description">{$_('custom_lists.detail.edit.description_label')}</label>
-										<Textarea id="list-description" bind:value={editForm.description} rows={3} />
-									</div>
-									<div class="field">
-										<div class="switchRow">
-											<div>
-												<label for="list-platformer">{$_('custom_lists.detail.edit.type_label')}</label>
-												<p class="hint">{$_('custom_lists.detail.edit.type_hint')}</p>
-											</div>
-											<div class="switchControl">
-												<span class="switchLabel">{formatListType(editForm.isPlatformer)}</span>
-												<Switch id="list-platformer" bind:checked={editForm.isPlatformer} />
-											</div>
+						<div class="toolCard">
+							<h2 class="toolHeading">{$_('custom_lists.detail.edit.heading')}</h2>
+							<div class="formGrid">
+								<div class="field">
+									<label for="list-title">{$_('custom_lists.detail.edit.title_label')}</label>
+									<Input id="list-title" bind:value={editForm.title} maxlength={100} />
+								</div>
+								<div class="field">
+									<label for="list-description">{$_('custom_lists.detail.edit.description_label')}</label>
+									<Textarea id="list-description" bind:value={editForm.description} rows={3} />
+								</div>
+								<div class="field">
+									<div class="switchRow">
+										<div>
+											<label for="list-platformer">{$_('custom_lists.detail.edit.type_label')}</label>
+											<p class="hint">{$_('custom_lists.detail.edit.type_hint')}</p>
 										</div>
-									</div>
-									<div class="field">
-										<div class="switchRow">
-											<div>
-												<label for="list-community-enabled">{$_('custom_lists.detail.edit.community_label')}</label>
-												<p class="hint">{$_('custom_lists.detail.edit.community_hint')}</p>
-											</div>
-											<div class="switchControl">
-												<span class="switchLabel">{editForm.communityEnabled ? $_('general.yes') : $_('general.no')}</span>
-												<Switch id="list-community-enabled" bind:checked={editForm.communityEnabled} />
-											</div>
+										<div class="switchControl">
+											<span class="switchLabel">{formatListType(editForm.isPlatformer)}</span>
+											<Switch id="list-platformer" bind:checked={editForm.isPlatformer} />
 										</div>
-									</div>
-									<div class="field">
-										<span class="fieldLabel">{$_('custom_lists.detail.edit.visibility_label')}</span>
-										<div class="optionRow">
-											{#each visibilityOptions as v}
-												<button
-													type="button"
-													class="optionBtn"
-													class:selected={editForm.visibility === v}
-													disabled={list.isBanned}
-													on:click={() => (editForm.visibility = v)}
-												>
-													<svelte:component this={getVisibilityIcon(v)} class="h-3.5 w-3.5" />
-													{formatVisibility(v)}
-												</button>
-											{/each}
-										</div>
-									</div>
-									<div class="field">
-										<span class="fieldLabel">{$_('custom_lists.detail.edit.mode_label')}</span>
-										<div class="optionRow">
-											{#each ['rating', 'top'] as m}
-												<button
-													type="button"
-													class="optionBtn"
-													class:selected={editForm.mode === m}
-													on:click={() => (editForm.mode = m === 'rating' ? 'rating' : 'top')}
-												>
-													{#if m === 'rating'}<Star class="h-3.5 w-3.5" />{:else}<ListOrdered class="h-3.5 w-3.5" />{/if}
-													{m === 'rating' ? $_('custom_lists.detail.edit.mode_rating') : $_('custom_lists.detail.edit.mode_top')}
-												</button>
-											{/each}
-										</div>
-										<p class="hint">{editForm.mode === 'rating' ? $_('custom_lists.detail.edit.mode_rating_hint') : $_('custom_lists.detail.edit.mode_top_hint')}</p>
-									</div>
-									<div class="field">
-										<label for="list-tags">{$_('custom_lists.detail.edit.tags_label')}</label>
-										<Input id="list-tags" bind:value={editForm.tags} placeholder="challenge, favorite" />
-									</div>
-									<div class="field">
-										<label for="list-weight-formula">{$_('custom_lists.formula.label')}</label>
-										<Textarea
-											id="list-weight-formula"
-											bind:value={editForm.weightFormula}
-											placeholder={$_('custom_lists.formula.placeholder')}
-											rows={5}
-										/>
-										<p class="hint">{$_('custom_lists.formula.hint')}</p>
-										<WeightFormulaPreview
-											formula={editForm.weightFormula}
-											isPlatformer={editForm.isPlatformer}
-											mode={editForm.mode}
-										/>
 									</div>
 								</div>
-								<div class="formActions">
-									<Button on:click={saveMetadata} disabled={savingMetadata}>
-										<Save class="mr-2 h-4 w-4" />
-										{$_('custom_lists.detail.edit.save')}
-									</Button>
-									<Button variant="outline" on:click={refreshLeaderboardPrecalc} disabled={refreshingLeaderboard}>
-										<RefreshCw class="mr-2 h-4 w-4" />
-										{refreshingLeaderboard ? `${$_('general.loading')}...` : 'Refresh leaderboard'}
-									</Button>
-									{#if canBan}
-										<Button
-											variant={list.isBanned ? 'outline' : 'destructive'}
-											on:click={() => list && setBanState(!list.isBanned)}
-											disabled={savingBanState}
-										>
-											<AlertTriangle class="mr-2 h-4 w-4" />
-											{list.isBanned ? $_('custom_lists.manage.unban') : $_('custom_lists.manage.ban')}
+								<div class="field">
+									<div class="switchRow">
+										<div>
+											<label for="list-community-enabled">{$_('custom_lists.detail.edit.community_label')}</label>
+											<p class="hint">{$_('custom_lists.detail.edit.community_hint')}</p>
+										</div>
+										<div class="switchControl">
+											<span class="switchLabel">{editForm.communityEnabled ? $_('general.yes') : $_('general.no')}</span>
+											<Switch id="list-community-enabled" bind:checked={editForm.communityEnabled} />
+										</div>
+									</div>
+								</div>
+								<div class="field">
+									<span class="fieldLabel">{$_('custom_lists.detail.edit.visibility_label')}</span>
+									<div class="optionRow">
+										{#each visibilityOptions as v}
+											<button
+												type="button"
+												class="optionBtn"
+												class:selected={editForm.visibility === v}
+												disabled={list.isBanned}
+												on:click={() => (editForm.visibility = v)}
+											>
+												<svelte:component this={getVisibilityIcon(v)} class="h-3.5 w-3.5" />
+												{formatVisibility(v)}
+											</button>
+										{/each}
+									</div>
+								</div>
+								<div class="field">
+									<span class="fieldLabel">{$_('custom_lists.detail.edit.mode_label')}</span>
+									<div class="optionRow">
+										{#each ['rating', 'top'] as m}
+											<button
+												type="button"
+												class="optionBtn"
+												class:selected={editForm.mode === m}
+												on:click={() => (editForm.mode = m === 'rating' ? 'rating' : 'top')}
+											>
+												{#if m === 'rating'}<Star class="h-3.5 w-3.5" />{:else}<ListOrdered class="h-3.5 w-3.5" />{/if}
+												{m === 'rating' ? $_('custom_lists.detail.edit.mode_rating') : $_('custom_lists.detail.edit.mode_top')}
+											</button>
+										{/each}
+									</div>
+									<p class="hint">{editForm.mode === 'rating' ? $_('custom_lists.detail.edit.mode_rating_hint') : $_('custom_lists.detail.edit.mode_top_hint')}</p>
+								</div>
+								<div class="field">
+									<label for="list-tags">{$_('custom_lists.detail.edit.tags_label')}</label>
+									<Input id="list-tags" bind:value={editForm.tags} placeholder="challenge, favorite" />
+								</div>
+							</div>
+						</div>
+					</div>
+				</Tabs.Content>
+
+				<Tabs.Content value="formula">
+					<div class="tabContent">
+						<div class="toolCard">
+							<h2 class="toolHeading">{$_('custom_lists.formula.label')}</h2>
+							<div class="formGrid">
+								<div class="field">
+									<label for="list-weight-formula">{$_('custom_lists.formula.label')}</label>
+									<Textarea
+										id="list-weight-formula"
+										bind:value={editForm.weightFormula}
+										placeholder={$_('custom_lists.formula.placeholder')}
+										rows={5}
+									/>
+									<p class="hint">{$_('custom_lists.formula.hint')}</p>
+									<WeightFormulaPreview
+										formula={editForm.weightFormula}
+										isPlatformer={editForm.isPlatformer}
+										mode={editForm.mode}
+									/>
+								</div>
+							</div>
+						</div>
+					</div>
+				</Tabs.Content>
+
+				<Tabs.Content value="rank">
+					<div class="tabContent">
+						<div class="toolCard">
+							<h2 class="toolHeading">{$_('custom_lists.detail.edit.rank_badges_label')}</h2>
+							<div class="formGrid">
+								<div class="field">
+									<div class="rankBadgeHeader">
+										<div>
+											<span class="fieldLabel">{$_('custom_lists.detail.edit.rank_badges_label')}</span>
+											<p class="hint">{$_('custom_lists.detail.edit.rank_badges_hint')}</p>
+										</div>
+										<Button type="button" variant="outline" size="sm" on:click={addRankBadge}>
+											<Plus class="mr-2 h-4 w-4" />
+											{$_('custom_lists.detail.edit.rank_badges_add')}
 										</Button>
-									{/if}
-									{#if canDelete}
-										<Button variant="destructive" on:click={deleteList}>
-											<Trash2 class="mr-2 h-4 w-4" />
-											{$_('custom_lists.detail.edit.delete')}
-										</Button>
+									</div>
+									{#if editForm.rankBadges.length === 0}
+										<p class="hint">{$_('custom_lists.detail.edit.rank_badges_empty')}</p>
+									{:else}
+										<div class="rankBadgeList" role="list">
+											{#each editForm.rankBadges as rankBadge, index}
+												<div
+													class="rankBadgeEditor"
+													class:dragOver={dragOverRankBadgeIndex === index}
+													class:dragging={draggedRankBadgeIndex === index}
+													role="listitem"
+													draggable="true"
+													on:dragstart={(event) => onRankBadgeDragStart(event, index)}
+													on:dragover={(event) => onRankBadgeDragOver(event, index)}
+													on:drop={(event) => onRankBadgeDrop(event, index)}
+													on:dragend={onRankBadgeDragEnd}
+												>
+													<div class="rankBadgeEditorHandle" title={$_('custom_lists.detail.edit.rank_badges_priority_hint')}>
+														<GripVertical class="h-5 w-5" />
+													</div>
+													<div class="rankBadgePreview" style={`background: ${rankBadge.color || '#64748b'}`}>
+														{getRankBadgePreviewLabel(rankBadge)}
+													</div>
+													<div class="rankBadgeEditorFields">
+														<div class="field compactField">
+															<label for={`rank-badge-name-${index}`}>{$_('custom_lists.detail.edit.rank_badges_name_label')}</label>
+															<Input id={`rank-badge-name-${index}`} bind:value={rankBadge.name} maxlength={30} placeholder={$_('custom_lists.detail.edit.rank_badges_name_placeholder')} />
+														</div>
+														<div class="field compactField">
+															<label for={`rank-badge-shorthand-${index}`}>{$_('custom_lists.detail.edit.rank_badges_shorthand_label')}</label>
+															<Input id={`rank-badge-shorthand-${index}`} bind:value={rankBadge.shorthand} maxlength={20} placeholder={$_('custom_lists.detail.edit.rank_badges_shorthand_placeholder')} />
+														</div>
+														<div class="field compactField">
+															<label for={`rank-badge-color-${index}`}>{$_('custom_lists.detail.edit.rank_badges_color_label')}</label>
+															<Input id={`rank-badge-color-${index}`} bind:value={rankBadge.color} placeholder={$_('custom_lists.detail.edit.rank_badges_color_placeholder')} />
+														</div>
+														<div class="field compactField">
+															<label for={`rank-badge-min-rating-${index}`}>{$_('custom_lists.detail.edit.rank_badges_min_rating_label')}</label>
+															<Input id={`rank-badge-min-rating-${index}`} type="number" bind:value={rankBadge.minRating} min="0" step="0.001" placeholder={$_('custom_lists.detail.edit.rank_badges_min_rating_placeholder')} />
+														</div>
+														<div class="field compactField">
+															<label for={`rank-badge-min-top-${index}`}>{$_('custom_lists.detail.edit.rank_badges_min_top_label')}</label>
+															<Input id={`rank-badge-min-top-${index}`} type="number" bind:value={rankBadge.minTop} min="1" step="1" placeholder={$_('custom_lists.detail.edit.rank_badges_min_top_placeholder')} />
+														</div>
+													</div>
+													<Button
+														type="button"
+														variant="ghost"
+														size="icon"
+														on:click={() => removeRankBadge(index)}
+														title={$_('custom_lists.detail.edit.rank_badges_remove')}
+														aria-label={$_('custom_lists.detail.edit.rank_badges_remove')}
+													>
+														<Trash2 class="h-4 w-4" />
+													</Button>
+												</div>
+											{/each}
+										</div>
 									{/if}
 								</div>
 							</div>
 						</div>
 					</div>
 				</Tabs.Content>
+
+			{#if canManage && activeTab !== 'levels'}
+				<div class="toolCard actionCard">
+					<div class="formActions">
+						<Button on:click={saveMetadata} disabled={savingMetadata}>
+							<Save class="mr-2 h-4 w-4" />
+							{$_('custom_lists.detail.edit.save')}
+						</Button>
+						<Button variant="outline" on:click={refreshLeaderboardPrecalc} disabled={refreshingLeaderboard}>
+							<RefreshCw class="mr-2 h-4 w-4" />
+							{refreshingLeaderboard ? `${$_('general.loading')}...` : 'Refresh leaderboard'}
+						</Button>
+						{#if canBan}
+							<Button
+								variant={list.isBanned ? 'outline' : 'destructive'}
+								on:click={() => list && setBanState(!list.isBanned)}
+								disabled={savingBanState}
+							>
+								<AlertTriangle class="mr-2 h-4 w-4" />
+								{list.isBanned ? $_('custom_lists.manage.unban') : $_('custom_lists.manage.ban')}
+							</Button>
+						{/if}
+						{#if canDelete}
+							<Button variant="destructive" on:click={deleteList}>
+								<Trash2 class="mr-2 h-4 w-4" />
+								{$_('custom_lists.detail.edit.delete')}
+							</Button>
+						{/if}
+					</div>
+				</div>
+			{/if}
 			{/if}
 
 			<Tabs.Content value="levels">
@@ -1080,13 +1252,6 @@
 		margin-top: 16px;
 	}
 
-	/* Owner Tools */
-	.ownerTools {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-		gap: 16px;
-	}
-
 	.toolCard {
 		background: hsl(var(--card));
 		border: 1px solid hsl(var(--border));
@@ -1202,6 +1367,78 @@
 		flex-wrap: wrap;
 		gap: 10px;
 		margin-top: 4px;
+	}
+
+	.actionCard {
+		padding-block: 18px;
+	}
+
+	.rankBadgeHeader {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 12px;
+		flex-wrap: wrap;
+	}
+
+	.rankBadgeList {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.rankBadgeEditor {
+		display: flex;
+		align-items: flex-start;
+		gap: 12px;
+		padding: 14px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 10px;
+		background: hsl(var(--muted) / 0.12);
+		transition: border-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+	}
+
+	.rankBadgeEditor.dragOver {
+		border-color: hsl(var(--primary));
+		box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
+	}
+
+	.rankBadgeEditor.dragging {
+		opacity: 0.45;
+	}
+
+	.rankBadgeEditorHandle {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: hsl(var(--muted-foreground));
+		padding-top: 7px;
+		cursor: grab;
+	}
+
+	.rankBadgePreview {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 68px;
+		padding: 7px 12px;
+		border-radius: 999px;
+		color: white;
+		font-size: 0.8rem;
+		font-weight: 700;
+		white-space: nowrap;
+		margin-top: 4px;
+	}
+
+	.rankBadgeEditorFields {
+		flex: 1;
+		display: grid;
+		grid-template-columns: repeat(5, minmax(0, 1fr));
+		gap: 12px;
+	}
+
+	.compactField {
+		min-width: 0;
 	}
 
 	/* Levels Section */
@@ -1436,6 +1673,15 @@
 			flex-direction: column;
 		}
 
+		.rankBadgeEditor {
+			flex-direction: column;
+		}
+
+		.rankBadgeEditorFields {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			width: 100%;
+		}
+
 		.levelRow {
 			flex-direction: column;
 			align-items: flex-start;
@@ -1449,15 +1695,15 @@
 			flex-direction: column;
 			align-items: flex-start;
 		}
-
-		.ownerTools {
-			grid-template-columns: 1fr;
-		}
 	}
 
 	@media (max-width: 480px) {
 		.hero {
 			padding: 18px 16px;
+		}
+
+		.rankBadgeEditorFields {
+			grid-template-columns: 1fr;
 		}
 
 		.heroInfo h1 {

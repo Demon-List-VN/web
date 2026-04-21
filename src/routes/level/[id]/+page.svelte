@@ -36,11 +36,13 @@
 
 	type StarredListEntry = {
 		id: number;
+		slug?: string | null;
 		title: string;
 		description: string;
 		updated_at: string;
 		mode: 'rating' | 'top';
 		isPlatformer: boolean;
+		isOfficial?: boolean;
 		starCount: number;
 		ownerData?: any | null;
 		item?: {
@@ -161,13 +163,140 @@
 
 	function formatStarredListPrimaryValue(list: StarredListEntry) {
 		if (list.mode === 'top') {
-			return `#${(list.item?.position ?? 0) + 1}`;
+			return list.item?.position != null ? `#${list.item.position + 1}` : '#?';
 		}
 
 		return `${list.item?.rating ?? '?'}pt`;
 	}
 
-	function handleStarredListCardKeydown(event: KeyboardEvent, listId: number) {
+	function getListHref(list: StarredListEntry) {
+		return `/lists/${list.slug || list.id}`;
+	}
+
+	function getOfficialLevelLists(level: any): StarredListEntry[] {
+		if (!level) {
+			return [];
+		}
+
+		const officialLists: StarredListEntry[] = [];
+		const createdAt = level.created_at || new Date().toISOString();
+		const updatedAt = level.updated_at || createdAt;
+
+		if (level.dlTop != null) {
+			if (level.isChallenge) {
+				officialLists.push({
+					id: -3,
+					slug: 'cl',
+					title: 'Challenge List',
+					description: 'Official Geometry Dash Việt Nam challenge list.',
+					updated_at: updatedAt,
+					mode: 'rating',
+					isPlatformer: false,
+					isOfficial: true,
+					starCount: 0,
+					item: {
+						created_at: createdAt,
+						rating: level.rating ?? null,
+						position: typeof level.dlTop === 'number' ? level.dlTop - 1 : null,
+						minProgress: level.minProgress ?? null
+					}
+				});
+			} else if (level.isPlatformer) {
+				officialLists.push({
+					id: -2,
+					slug: 'pl',
+					title: 'Platformer List',
+					description: 'Official Geometry Dash Việt Nam platformer list.',
+					updated_at: updatedAt,
+					mode: 'top',
+					isPlatformer: true,
+					isOfficial: true,
+					starCount: 0,
+					item: {
+						created_at: createdAt,
+						rating: level.rating ?? null,
+						position: typeof level.dlTop === 'number' ? level.dlTop - 1 : null,
+						minProgress: level.minProgress ?? null
+					}
+				});
+			} else {
+				officialLists.push({
+					id: -1,
+					slug: 'dl',
+					title: 'Classic List',
+					description: 'Official Geometry Dash Việt Nam classic demon list.',
+					updated_at: updatedAt,
+					mode: 'rating',
+					isPlatformer: false,
+					isOfficial: true,
+					starCount: 0,
+					item: {
+						created_at: createdAt,
+						rating: level.rating ?? null,
+						position: typeof level.dlTop === 'number' ? level.dlTop - 1 : null,
+						minProgress: level.minProgress ?? null
+					}
+				});
+			}
+		}
+
+		if (level.flTop != null) {
+			officialLists.push({
+				id: -4,
+				slug: 'fl',
+				title: 'Featured List',
+				description: 'Official Geometry Dash Việt Nam featured list.',
+				updated_at: updatedAt,
+				mode: 'top',
+				isPlatformer: Boolean(level.isPlatformer),
+				isOfficial: true,
+				starCount: 0,
+				item: {
+					created_at: createdAt,
+					rating: level.flPt ?? null,
+					position: typeof level.flTop === 'number' ? level.flTop - 1 : null,
+					minProgress: level.minProgress ?? null
+				}
+			});
+		}
+
+		return officialLists;
+	}
+
+	function mergeLevelLists(level: any, remoteLists: StarredListEntry[]) {
+		const remoteByKey = new Map(remoteLists.map((list) => [list.slug || String(list.id), list]));
+		const officialLists = getOfficialLevelLists(level).map((officialList) => {
+			const key = officialList.slug || String(officialList.id);
+			const remoteList = remoteByKey.get(key);
+
+			if (!remoteList) {
+				return officialList;
+			}
+
+			return {
+				...officialList,
+				...remoteList,
+				item: remoteList.item ?? officialList.item
+			};
+		});
+
+		const seen = new Set(officialLists.map((list) => list.slug || String(list.id)));
+		const merged = [...officialLists];
+
+		for (const list of remoteLists) {
+			const key = list.slug || String(list.id);
+			if (seen.has(key)) {
+				continue;
+			}
+
+			seen.add(key);
+			merged.push(list);
+		}
+
+		return merged;
+	}
+
+	function handleStarredListCardKeydown(event: KeyboardEvent, list: StarredListEntry) {
 		if (event.target instanceof Element && event.target.closest('[data-starred-list-author]')) {
 			return;
 		}
@@ -177,24 +306,19 @@
 		}
 
 		event.preventDefault();
-		goto(`/lists/${listId}`);
+		goto(getListHref(list));
 	}
 
-	function handleStarredListCardClick(event: MouseEvent, listId: number) {
+	function handleStarredListCardClick(event: MouseEvent, list: StarredListEntry) {
 		if (event.target instanceof Element && event.target.closest('[data-starred-list-author]')) {
 			return;
 		}
 
-		goto(`/lists/${listId}`);
-	}
-
-	function openLevelView(view: 'gdvn' | 'starred') {
-		goto(view === 'gdvn' ? `/level/${$page.params.id}` : `/level/${$page.params.id}?list=starred`);
+		goto(getListHref(list));
 	}
 
 	$: hasLocalLevel = 'level' in data;
-	$: activeListView = hasLocalLevel && $page.url.searchParams.get('list') === 'starred' ? 'starred' : 'gdvn';
-	$: starredLists = (data?.starredLists ?? []) as StarredListEntry[];
+	$: starredLists = mergeLevelLists(data?.level, (data?.starredLists ?? []) as StarredListEntry[]);
 	$: ($page.params.id, fetchData());
 
 	onMount(() => {
@@ -290,18 +414,11 @@
 			</Card.Content>
 		</Card.Root>
 		{#if 'level' in data}
-			<Tabs.Root value={activeListView} class="mt-[20px]">
-				<Tabs.List class="grid h-[50px] w-full grid-cols-2">
-					<Tabs.Trigger
-						class="h-[40px]"
-						value="gdvn"
-						on:click={() => openLevelView('gdvn')}>Geometry Dash Việt Nam</Tabs.Trigger
-					>
-					<Tabs.Trigger
-						class="h-[40px]"
-						value="starred"
-						on:click={() => openLevelView('starred')}>{$_('custom_lists.detail.starred_tab')}</Tabs.Trigger
-					>
+			<Tabs.Root value="custom" class="mt-[20px]">
+				<Tabs.List class="grid h-[50px] w-full grid-cols-1">
+					<Tabs.Trigger class="h-[40px]" value="custom">
+						{$_('custom_lists.detail.level_tab')}
+					</Tabs.Trigger>
 				</Tabs.List>
 			</Tabs.Root>
 		{/if}
@@ -312,8 +429,8 @@
 	<div class="cardWrapper1 point">
 		<Card.Root>
 			<Card.Content>
-				<div class="content" class:starredListPanel={'level' in data && activeListView === 'starred'}>
-					{#if 'level' in data && activeListView === 'starred'}
+				<div class="content" class:starredListPanel={'level' in data}>
+					{#if 'level' in data}
 						{#if starredLists.length > 0}
 							<div class="starredLists">
 								{#each starredLists as list}
@@ -321,13 +438,15 @@
 										class="starredListCard"
 										role="link"
 										tabindex="0"
-										on:click={(event) => handleStarredListCardClick(event, list.id)}
-										on:keydown={(event) => handleStarredListCardKeydown(event, list.id)}
+										on:click={(event) => handleStarredListCardClick(event, list)}
+										on:keydown={(event) => handleStarredListCardKeydown(event, list)}
 									>
 										<div class="starredListHeader">
 											<div class="starredListTitleWrap">
 												<h3>{list.title}</h3>
-												{#if list.ownerData}
+												{#if list.isOfficial}
+													<div class="starredListOfficial">{$_('custom_lists.detail.official_badge')}</div>
+												{:else if list.ownerData}
 													<div class="starredListAuthor" data-starred-list-author>
 														<span>{$_('custom_lists.index.browse.by')}</span>
 														<PlayerLink player={list.ownerData} />
@@ -340,17 +459,8 @@
 								{/each}
 							</div>
 						{:else}
-							<p class="starredListEmpty">{$_('custom_lists.detail.starred_empty')}</p>
+							<p class="starredListEmpty">{$_('custom_lists.detail.level_lists_empty')}</p>
 						{/if}
-					{:else if 'level' in data}
-						<div class="pointLabel">
-							{getList()}: {data.level.rating}
-							<div class="top">#{data.level.dlTop}</div>
-						</div>
-						<div class="pointLabel">
-							{$_('level.featured_list_point')}: {data.level.flPt}
-							<div class="top">#{data.level.flTop}</div>
-						</div>
 					{:else if 'pointercrate' in data && data.pointercrate.requirement != -1}
 						<div class="pointLabel">
 							Pointercrate:
@@ -864,6 +974,12 @@
 		align-items: center;
 		gap: 6px;
 		font-size: 12px;
+		color: var(--textColor2);
+	}
+
+	.starredListOfficial {
+		font-size: 12px;
+		font-weight: 600;
 		color: var(--textColor2);
 	}
 
