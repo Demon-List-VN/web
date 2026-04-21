@@ -76,17 +76,7 @@
 		routes?: { route: string; name: string; icon?: ComponentType }[];
 	};
 	$: linkGroup = [
-		{
-			name: 'List',
-			icon: LayoutList,
-			routes: [
-				{ route: '/lists/dl', name: 'Classic', icon: List },
-				{ route: '/lists/pl', name: 'Platformer', icon: Gamepad2 },
-				{ route: '/lists/fl', name: 'Featured', icon: Award },
-				{ route: '/lists/cl', name: 'Challenge', icon: Shuffle },
-				{ route: '/lists', name: 'Custom', icon: LayoutList }
-			]
-		},
+		{ route: '/lists', name: 'Lists', icon: LayoutList },
 		{ route: '/battlepass', name: 'Pass', icon: Ticket },
 		{ route: '/events', name: $locale === 'en' ? 'Event' : 'Sự kiện', icon: Calendar },
 		{
