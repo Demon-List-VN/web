@@ -426,15 +426,6 @@
 				</div>
 			</Card.Content>
 		</Card.Root>
-		{#if 'level' in data}
-			<Tabs.Root value="custom" class="mt-[20px]">
-				<Tabs.List class="grid h-[50px] w-full grid-cols-1">
-					<Tabs.Trigger class="h-[40px]" value="custom">
-						{$_('custom_lists.detail.level_tab')}
-					</Tabs.Trigger>
-				</Tabs.List>
-			</Tabs.Root>
-		{/if}
 	</div>
 </div>
 
