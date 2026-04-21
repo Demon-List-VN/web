@@ -162,12 +162,20 @@
 		return data.level.isPlatformer ? $_('level.platformer_rating') : $_('level.classic_rating');
 	}
 
+	function hasStarredListPositionBadge(list: StarredListEntry) {
+		return list.topEnabled ?? list.mode === 'top';
+	}
+
 	function formatStarredListPrimaryValue(list: StarredListEntry) {
-		if ((list.topEnabled ?? list.mode === 'top')) {
+		if (hasStarredListPositionBadge(list)) {
 			return list.item?.position != null ? `#${list.item.position + 1}` : '#?';
 		}
 
 		return `${list.item?.rating ?? '?'}pt`;
+	}
+
+	function formatStarredListRatingValue(list: StarredListEntry) {
+		return `${list.item?.rating}pt`;
 	}
 
 	function getListHref(list: StarredListEntry) {
@@ -458,7 +466,12 @@
 													</div>
 												{/if}
 											</div>
-											<span class="starredListBadge">{formatStarredListPrimaryValue(list)}</span>
+											<div class="starredListBadges">
+												<span class="starredListBadge">{formatStarredListPrimaryValue(list)}</span>
+												{#if list.mode === 'rating' && hasStarredListPositionBadge(list) && list.item?.rating != null}
+													<span class="starredListRatingChip">{formatStarredListRatingValue(list)}</span>
+												{/if}
+											</div>
 										</div>
 									</div>
 								{/each}
@@ -988,6 +1001,14 @@
 		color: var(--textColor2);
 	}
 
+	.starredListBadges {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		flex-wrap: wrap;
+		justify-content: flex-end;
+	}
+
 	.starredListBadge {
 		background: var(--textColor);
 		color: var(--textColorInverted);
@@ -996,6 +1017,17 @@
 		font-size: 12px;
 		font-weight: 700;
 		white-space: nowrap;
+	}
+
+	.starredListRatingChip {
+		background: hsl(var(--muted));
+		color: hsl(var(--foreground));
+		padding: 4px 8px;
+		border-radius: 999px;
+		font-size: 12px;
+		font-weight: 700;
+		white-space: nowrap;
+		border: 1px solid hsl(var(--border));
 	}
 
 	.starredListEmpty {

@@ -1,16 +1,16 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
-	import { Textarea } from '$lib/components/ui/textarea';
 	import { Badge } from '$lib/components/ui/badge';
-	import PlayerLink from '$lib/components/playerLink.svelte';
-	import { Switch } from '$lib/components/ui/switch';
-	import * as Select from '$lib/components/ui/select';
 	import * as Tabs from '$lib/components/ui/tabs';
-	import WeightFormulaPreview from '$lib/components/custom-lists/WeightFormulaPreview.svelte';
+	import AppearanceTab from './AppearanceTab.svelte';
+	import BasicTab from './BasicTab.svelte';
+	import CollaborationTab from './CollaborationTab.svelte';
+	import DangerTab from './DangerTab.svelte';
+	import FormulaTab from './FormulaTab.svelte';
+	import LevelsTab from './LevelsTab.svelte';
+	import RankTab from './RankTab.svelte';
 	import imageCompression from 'browser-image-compression';
 	import {
-		createEmptyCustomListRankBadge,
 		normalizeCustomListRankBadges,
 		type CustomListRankBadge
 	} from '$lib/utils/customListRank';
@@ -20,17 +20,12 @@
 	import { toast } from 'svelte-sonner';
 	import {
 		ArrowLeft,
-		Plus,
-		Trash2,
-		GripVertical,
 		Eye,
 		Globe2,
 		EyeOff,
 		Lock,
 		Layers,
 		Clock,
-		Star,
-		ListOrdered,
 		Save,
 		RefreshCw,
 		AlertTriangle
@@ -130,7 +125,6 @@
 	};
 
 	type ManageTab = 'basic' | 'appearance' | 'formula' | 'rank' | 'danger' | 'levels' | 'collaboration';
-	type AssetInputMode = 'upload' | 'link';
 
 	const defaultPermissions: CustomListPermissionFlags = {
 		canEditSettings: false,
@@ -153,31 +147,13 @@
 	let savingMetadata = false;
 	let addingLevel = false;
 	let mutatingLevelId: number | null = null;
-	let draggedIndex: number | null = null;
-	let dragOverIndex: number | null = null;
-	let draggedRankBadgeIndex: number | null = null;
-	let dragOverRankBadgeIndex: number | null = null;
-	let editingRatingItemId: number | null = null;
-	let editingRatingValue = '';
-	let editingMinProgressItemId: number | null = null;
-	let editingMinProgressValue: string | number | undefined = '';
 	let savingLevelItemId: number | null = null;
 	let savingReorder = false;
 	let refreshingLeaderboard = false;
 	let savingBanState = false;
 	let savingCollaboration = false;
 	let initialSyncDone = false;
-	let bannerFileInput: HTMLInputElement | null = null;
-	let logoFileInput: HTMLInputElement | null = null;
 	let uploadingAsset: 'banner' | 'logo' | null = null;
-	let bannerAssetMode: AssetInputMode = 'upload';
-	let logoAssetMode: AssetInputMode = 'upload';
-	let memberSearchLoading = false;
-	let memberSearchQuery = '';
-	let memberSearchResults: any[] = [];
-	let selectedMember: any | null = null;
-	let collaboratorRole: 'admin' | 'helper' = 'helper';
-	let adminsCanManageHelpers = false;
 
 	const CUSTOM_LIST_CDN_BASE_URL = 'https://cdn.gdvn.net';
 
@@ -198,18 +174,8 @@
 		weightFormula: '1'
 	};
 
-	const visibilityOptions: Array<'private' | 'unlisted' | 'public'> = ['private', 'unlisted', 'public'];
-
-	let levelIdInput = '';
 	let activeTab: ManageTab = getInitialManageTab();
 	let initialManageTabSettled = false;
-	let dangerConfirmName = '';
-
-	function getQuickLevelId() {
-		const raw = $page.url.searchParams.get('levelId');
-		const parsed = raw ? Number.parseInt(raw, 10) : Number.NaN;
-		return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
-	}
 
 	function getInitialManageTab(): ManageTab {
 		const requestedTab = $page.url.searchParams.get('tab');
@@ -232,11 +198,6 @@
 		return 'basic';
 	}
 
-	$: quickLevelId = getQuickLevelId();
-	$: if (quickLevelId && !levelIdInput) {
-		levelIdInput = String(quickLevelId);
-	}
-
 	function syncForm() {
 		if (!list) return;
 		editForm.title = list.title;
@@ -251,14 +212,6 @@
 		editForm.visibility = list.visibility;
 		editForm.tags = list.tags.join(', ');
 		editForm.mode = list.mode;
-		bannerAssetMode = inferAssetInputMode(list.bannerUrl);
-		logoAssetMode = inferAssetInputMode(list.logoUrl);
-		adminsCanManageHelpers = Boolean(list.adminsCanManageHelpers);
-		dangerConfirmName = '';
-		memberSearchQuery = '';
-		memberSearchResults = [];
-		selectedMember = null;
-		collaboratorRole = 'helper';
 		editForm.rankBadges = normalizeCustomListRankBadges(list.rankBadges).map((rankBadge) => ({
 			...rankBadge
 		}));
@@ -351,11 +304,7 @@
 		});
 	}
 
-	function getPlayerName(player: any, fallbackUid?: string | null) {
-		return player?.name || fallbackUid || $_('custom_lists.manage.collaboration.unknown_player');
-	}
-
-	function getRoleLabel(role: CustomListResolvedRole | 'admin' | 'helper') {
+	function getRoleLabel(role: string) {
 		if (role === 'owner') return $_('custom_lists.manage.roles.owner');
 		if (role === 'admin') return $_('custom_lists.manage.roles.admin');
 		if (role === 'helper') return $_('custom_lists.manage.roles.helper');
@@ -363,191 +312,27 @@
 		return $_('custom_lists.manage.roles.viewer');
 	}
 
-	function humanizeAuditField(field: string) {
-		if (field === 'backgroundColor') return $_('custom_lists.detail.edit.background_color_label');
-		if (field === 'bannerUrl') return $_('custom_lists.detail.edit.banner_url_label');
-		if (field === 'borderColor') return $_('custom_lists.detail.edit.border_color_label');
-		if (field === 'communityEnabled') return $_('custom_lists.detail.edit.community_label');
-		if (field === 'isPlatformer') return $_('custom_lists.detail.edit.type_label');
-		if (field === 'logoUrl') return $_('custom_lists.detail.edit.logo_url_label');
-		if (field === 'rankBadges') return $_('custom_lists.detail.edit.rank_badges_label');
-		if (field === 'topEnabled') return $_('custom_lists.detail.edit.top_enabled_label');
-		if (field === 'weightFormula') return $_('custom_lists.formula.label');
-		if (field === 'adminsCanManageHelpers') return $_('custom_lists.manage.collaboration.admin_helper_toggle_label');
-		return field;
-	}
-
-	function getAuditActionLabel(action: string) {
-		if (action === 'list_created') return $_('custom_lists.manage.audit.list_created');
-		if (action === 'list_updated') return $_('custom_lists.manage.audit.list_updated');
-		if (action === 'level_added') return $_('custom_lists.manage.audit.level_added');
-		if (action === 'level_removed') return $_('custom_lists.manage.audit.level_removed');
-		if (action === 'level_updated') return $_('custom_lists.manage.audit.level_updated');
-		if (action === 'levels_reordered') return $_('custom_lists.manage.audit.levels_reordered');
-		if (action === 'member_added') return $_('custom_lists.manage.audit.member_added');
-		if (action === 'member_removed') return $_('custom_lists.manage.audit.member_removed');
-		if (action === 'member_role_updated') return $_('custom_lists.manage.audit.member_role_updated');
-		if (action === 'ownership_transferred') return $_('custom_lists.manage.audit.ownership_transferred');
-		if (action === 'collaboration_settings_updated') return $_('custom_lists.manage.audit.collaboration_settings_updated');
-		if (action === 'ban_state_updated') return $_('custom_lists.manage.audit.ban_state_updated');
-		if (action === 'leaderboard_refreshed') return $_('custom_lists.manage.audit.leaderboard_refreshed');
-		return action.replaceAll('_', ' ');
-	}
-
-	function getAuditEntryDetail(entry: CustomListAuditLogEntry) {
-		const metadata = entry.metadata && typeof entry.metadata === 'object' ? entry.metadata : {};
-		const actor = getPlayerName(entry.actorData, entry.actorUid);
-		const target = getPlayerName(entry.targetData, entry.targetUid);
-		const fields = Array.isArray(metadata.fields)
-			? metadata.fields.map((field) => humanizeAuditField(String(field))).join(', ')
-			: '';
-
-		if (entry.action === 'list_created') {
-			return $_('custom_lists.manage.audit_detail.list_created', { values: { actor } });
+	async function searchPlayersForCollaboration(query: string) {
+		if (!query.trim().length) {
+			return [];
 		}
-
-		if (entry.action === 'list_updated') {
-			return $_('custom_lists.manage.audit_detail.list_updated', { values: { actor, fields: fields || '-' } });
-		}
-
-		if (entry.action === 'level_added' || entry.action === 'level_removed') {
-			return $_('custom_lists.manage.audit_detail.level_changed', {
-				values: {
-					actor,
-					levelId: String(metadata.levelId ?? '-')
-				}
-			});
-		}
-
-		if (entry.action === 'level_updated') {
-			return $_('custom_lists.manage.audit_detail.level_updated', {
-				values: {
-					actor,
-					levelId: String(metadata.levelId ?? '-'),
-					fields: fields || '-'
-				}
-			});
-		}
-
-		if (entry.action === 'levels_reordered') {
-			return $_('custom_lists.manage.audit_detail.levels_reordered', { values: { actor } });
-		}
-
-		if (entry.action === 'member_added' || entry.action === 'member_removed') {
-			return $_('custom_lists.manage.audit_detail.member_changed', {
-				values: {
-					actor,
-					target,
-					role: getRoleLabel(String(metadata.role || 'helper') as 'admin' | 'helper')
-				}
-			});
-		}
-
-		if (entry.action === 'member_role_updated') {
-			return $_('custom_lists.manage.audit_detail.member_role_updated', {
-				values: {
-					actor,
-					target,
-					fromRole: getRoleLabel(String(metadata.fromRole || 'helper') as 'admin' | 'helper'),
-					toRole: getRoleLabel(String(metadata.toRole || 'helper') as 'admin' | 'helper')
-				}
-			});
-		}
-
-		if (entry.action === 'ownership_transferred') {
-			return $_('custom_lists.manage.audit_detail.ownership_transferred', {
-				values: {
-					actor,
-					target
-				}
-			});
-		}
-
-		if (entry.action === 'collaboration_settings_updated') {
-			return $_('custom_lists.manage.audit_detail.collaboration_settings_updated', {
-				values: {
-					actor,
-					enabled: metadata.adminsCanManageHelpers ? $_('general.yes') : $_('general.no')
-				}
-			});
-		}
-
-		if (entry.action === 'ban_state_updated') {
-			return $_('custom_lists.manage.audit_detail.ban_state_updated', {
-				values: {
-					actor,
-					state: metadata.isBanned ? $_('custom_lists.manage.ban') : $_('custom_lists.manage.unban')
-				}
-			});
-		}
-
-		if (entry.action === 'leaderboard_refreshed') {
-			return $_('custom_lists.manage.audit_detail.leaderboard_refreshed', {
-				values: {
-					actor,
-					totalPlayers: String(metadata.totalPlayers ?? '-'),
-					totalRecords: String(metadata.totalRecords ?? '-')
-				}
-			});
-		}
-
-		return actor;
-	}
-
-	function getMemberByUid(uid: string | null | undefined) {
-		if (!uid || !list?.members) {
-			return null;
-		}
-
-		return list.members.find((member) => member.uid === uid) ?? null;
-	}
-
-	async function searchPlayersForCollaboration() {
-		if (!list) return;
-		const ownerUid = list.owner;
-		const query = memberSearchQuery.trim();
-
-		if (!query.length) {
-			memberSearchResults = [];
-			return;
-		}
-
-		memberSearchLoading = true;
 
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/players/search?q=${encodeURIComponent(query)}`);
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/players/search?q=${encodeURIComponent(query.trim())}`);
 			const payload = await res.json().catch(() => []);
 
 			if (!res.ok) {
 				throw new Error($_('custom_lists.toast.failed_player_search'));
 			}
 
-			memberSearchResults = (Array.isArray(payload) ? payload : []).filter((player: any) => player?.uid !== ownerUid);
+			return Array.isArray(payload) ? payload : [];
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_player_search'));
-		} finally {
-			memberSearchLoading = false;
+			return [];
 		}
 	}
 
-	function selectCollaborationMember(player: any) {
-		selectedMember = player;
-		memberSearchQuery = getPlayerName(player, player?.uid);
-		memberSearchResults = [];
-		const existingMember = getMemberByUid(player?.uid);
-		if (existingMember?.role === 'admin' || existingMember?.role === 'helper') {
-			collaboratorRole = existingMember.role;
-		}
-	}
-
-	function clearSelectedMember() {
-		selectedMember = null;
-		memberSearchQuery = '';
-		memberSearchResults = [];
-		collaboratorRole = 'helper';
-	}
-
-	async function updateCollaborationSettings() {
+	async function updateCollaborationSettings(adminsCanManageHelpers: boolean) {
 		if (!list || !canConfigureCollaboration) return;
 
 		savingCollaboration = true;
@@ -573,7 +358,7 @@
 		}
 	}
 
-	async function addCollaborator() {
+	async function addCollaborator(selectedMember: any, collaboratorRole: 'admin' | 'helper') {
 		if (!list || !selectedMember || !canManageMembers) return;
 
 		savingCollaboration = true;
@@ -653,7 +438,7 @@
 		}
 	}
 
-	async function transferOwnership() {
+	async function transferOwnership(selectedMember: any) {
 		if (!list || !selectedMember || !canTransferOwnership) return;
 
 		savingCollaboration = true;
@@ -686,17 +471,6 @@
 		return canEditSettings;
 	}
 
-	function getTimeString(ms: number) {
-		const minutes = Math.floor(ms / 60000);
-		const seconds = Math.floor((ms % 60000) / 1000);
-		const milliseconds = ms % 1000;
-		return `${minutes}:${seconds.toString().padStart(2, '0')}.${milliseconds}`;
-	}
-
-	function getEffectiveMinProgress(item: CustomListItem) {
-		return item.minProgress ?? item.level?.minProgress ?? null;
-	}
-
 	function isHexColor(value: string | null | undefined) {
 		return typeof value === 'string' && /^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(value.trim());
 	}
@@ -721,58 +495,6 @@
 		return luminance >= 0.62;
 	}
 
-	function getColorPickerValue(value: string | null | undefined) {
-		if (!isHexColor(value)) {
-			return '#000000';
-		}
-
-		return (typeof value === 'string' ? value.trim() : '').slice(0, 7);
-	}
-
-	function setThemeColorFromPicker(field: 'backgroundColor' | 'borderColor', event: Event) {
-		const input = event.currentTarget;
-
-		if (!(input instanceof HTMLInputElement)) {
-			return;
-		}
-
-		editForm = {
-			...editForm,
-			[field]: input.value
-		};
-	}
-
-	function resetThemeColor(field: 'backgroundColor' | 'borderColor') {
-		editForm = {
-			...editForm,
-			[field]: ''
-		};
-	}
-
-	function getManageThemeBackgroundColor() {
-		if (initialSyncDone) {
-			return isHexColor(editForm.backgroundColor) ? editForm.backgroundColor.trim() : null;
-		}
-
-		return isHexColor(list?.backgroundColor) ? list!.backgroundColor!.trim() : null;
-	}
-
-	function getManageThemeBorderColor() {
-		if (initialSyncDone) {
-			return isHexColor(editForm.borderColor) ? editForm.borderColor.trim() : null;
-		}
-
-		return isHexColor(list?.borderColor) ? list!.borderColor!.trim() : null;
-	}
-
-	function inferAssetInputMode(value: string | null | undefined): AssetInputMode {
-		if (typeof value !== 'string' || !value.trim()) {
-			return 'upload';
-		}
-
-		return value.startsWith(`${CUSTOM_LIST_CDN_BASE_URL}/custom-lists/`) ? 'upload' : 'link';
-	}
-
 	function getThemedSurfaceStyle(backgroundColor: string | null, borderColor: string | null) {
 		const styles: string[] = [];
 
@@ -791,16 +513,6 @@
 		return styles.length ? styles.join(' ') : undefined;
 	}
 
-	function getManageHeroStyle() {
-		return getThemedSurfaceStyle(getManageThemeBackgroundColor(), getManageThemeBorderColor());
-	}
-
-	function getManageHeroBannerStyle() {
-		const borderColor = getManageThemeBorderColor();
-
-		return borderColor ? `border-bottom-color: ${borderColor};` : undefined;
-	}
-
 	function getManageHeroBannerUrl() {
 		if (initialSyncDone) {
 			const value = editForm.bannerUrl.trim();
@@ -808,15 +520,6 @@
 		}
 
 		return list?.bannerUrl ?? null;
-	}
-
-	function getManageLogoPreviewUrl() {
-		if (initialSyncDone) {
-			const value = editForm.logoUrl.trim();
-			return /^https?:\/\//i.test(value) ? value : null;
-		}
-
-		return list?.logoUrl ?? null;
 	}
 
 	function getManagePreviewTitle() {
@@ -841,38 +544,6 @@
 		}
 
 		return list?.tags ?? [];
-	}
-
-	function getAssetModeLabel(mode: AssetInputMode) {
-		return mode === 'upload'
-			? $_('custom_lists.detail.edit.asset_mode_upload')
-			: $_('custom_lists.detail.edit.asset_mode_link');
-	}
-
-	function getAssetModeOption(mode: AssetInputMode) {
-		return {
-			value: mode,
-			label: getAssetModeLabel(mode)
-		};
-	}
-
-	function setAssetMode(asset: 'banner' | 'logo', selected: { value?: string } | undefined) {
-		const value = selected?.value;
-
-		if (value !== 'upload' && value !== 'link') {
-			return;
-		}
-
-		if (asset === 'banner') {
-			bannerAssetMode = value;
-			return;
-		}
-
-		logoAssetMode = value;
-	}
-
-	function hasDangerConfirmation() {
-		return Boolean(list && dangerConfirmName.trim() === list.title);
 	}
 
 	function getImageExtension(file: File) {
@@ -919,27 +590,19 @@
 			maxSizeMB: asset === 'banner' ? 4.5 : 0.35,
 			maxWidthOrHeight: asset === 'banner' ? 1920 : 512,
 			useWebWorker: true
-		});
+			});
 	}
 
-	async function handleCustomListAssetUpload(asset: 'banner' | 'logo', event: Event) {
+	async function uploadCustomListAsset(asset: 'banner' | 'logo', selectedFile: File) {
 		if (!list || !canEditSettings) return;
 
-		const input = event.currentTarget;
-		if (!(input instanceof HTMLInputElement)) {
-			return;
-		}
-
-		const selectedFile = input.files?.[0];
-
 		if (!selectedFile) {
-			return;
+			return null;
 		}
 
 		if (!selectedFile.type.startsWith('image/')) {
 			toast.error($_('custom_lists.toast.invalid_image'));
-			input.value = '';
-			return;
+			return null;
 		}
 
 		uploadingAsset = asset;
@@ -984,30 +647,14 @@
 
 			const uploadedUrl = getCustomListAssetUrl(assetPath);
 
-			if (asset === 'banner') {
-				editForm.bannerUrl = uploadedUrl;
-				bannerAssetMode = 'upload';
-			} else {
-				editForm.logoUrl = uploadedUrl;
-				logoAssetMode = 'upload';
-			}
-
 			toast.success($_('custom_lists.toast.image_uploaded_save'));
+			return uploadedUrl;
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_upload_image'));
+			return null;
 		} finally {
 			uploadingAsset = null;
-			input.value = '';
 		}
-	}
-
-	function getMinProgressLabel(item: CustomListItem) {
-		const minProgress = getEffectiveMinProgress(item);
-		if (minProgress == null) return $_('custom_lists.detail.levels.min_progress_label');
-		const value = list?.isPlatformer
-			? `${getTimeString(minProgress)} Base`
-			: `${minProgress}% Min`;
-		return item.minProgress == null ? value : `${value} *`;
 	}
 
 	function getVisibilityIcon(v: string) {
@@ -1109,9 +756,9 @@
 		}
 	}
 
-	async function deleteList() {
+	async function deleteList(confirmationName: string) {
 		if (!list || !canDelete) return;
-		if (!hasDangerConfirmation()) {
+		if (confirmationName.trim() !== list.title) {
 			toast.error($_('custom_lists.manage.confirm_title_error'));
 			return;
 		}
@@ -1132,13 +779,8 @@
 		}
 	}
 
-	async function addLevel() {
-		if (!list || !canEditLevels) return;
-		const levelId = Number.parseInt(levelIdInput, 10);
-		if (!Number.isInteger(levelId) || levelId <= 0) {
-			toast.error($_('custom_lists.toast.level_id_invalid'));
-			return;
-		}
+	async function addLevel(levelId: number) {
+		if (!list || !canEditLevels) return false;
 
 		addingLevel = true;
 		try {
@@ -1153,10 +795,11 @@
 			const payload = await res.json();
 			if (!res.ok) throw new Error(payload.error || $_('custom_lists.toast.failed_add_level'));
 			list = payload;
-			levelIdInput = '';
 			toast.success($_('custom_lists.toast.level_added'));
+			return true;
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_add_level'));
+			return false;
 		} finally {
 			addingLevel = false;
 		}
@@ -1179,60 +822,6 @@
 		} finally {
 			mutatingLevelId = null;
 		}
-	}
-
-	function startRatingEdit(item: CustomListItem) {
-		if (!canEditLevels) return;
-		editingRatingItemId = item.id;
-		editingRatingValue = String(item.rating ?? 5);
-	}
-
-	function startMinProgressEdit(item: CustomListItem) {
-		if (!canEditLevels) return;
-		editingMinProgressItemId = item.id;
-		editingMinProgressValue = item.minProgress == null ? '' : String(item.minProgress);
-	}
-
-	function cancelMinProgressEdit() {
-		editingMinProgressItemId = null;
-		editingMinProgressValue = '';
-	}
-
-	function handleMinProgressBlur(event: FocusEvent) {
-		const nextTarget = event.relatedTarget;
-		if (nextTarget instanceof HTMLElement && nextTarget.dataset.minProgressAction) {
-			return;
-		}
-
-		cancelMinProgressEdit();
-	}
-
-	async function saveRatingEdit(levelId: number) {
-		const rating = Number.parseInt(editingRatingValue, 10);
-		editingRatingItemId = null;
-		if (!Number.isInteger(rating) || rating < 1 || rating > 10) {
-			toast.error($_('custom_lists.toast.rating_invalid'));
-			return;
-		}
-		await updateLevelItem(levelId, { rating });
-	}
-
-	async function saveMinProgressEdit(levelId: number) {
-		if (!list) return;
-		const rawValue = editingMinProgressValue == null ? '' : String(editingMinProgressValue).trim();
-		editingMinProgressItemId = null;
-
-		if (!rawValue.length) {
-			await updateLevelItem(levelId, { minProgress: null });
-			return;
-		}
-
-		const minProgress = Number.parseInt(rawValue, 10);
-		if (!Number.isInteger(minProgress) || minProgress < 0 || (!list.isPlatformer && minProgress > 100)) {
-			toast.error($_('custom_lists.toast.min_progress_invalid'));
-			return;
-		}
-		await updateLevelItem(levelId, { minProgress });
 	}
 
 	async function updateLevelItem(levelId: number, patch: { rating?: number; minProgress?: number | null }) {
@@ -1258,9 +847,9 @@
 		}
 	}
 
-	async function setBanState(nextIsBanned: boolean) {
+	async function setBanState(nextIsBanned: boolean, confirmationName: string) {
 		if (!list || !canBan || savingBanState) return;
-		if (!hasDangerConfirmation()) {
+		if (confirmationName.trim() !== list.title) {
 			toast.error($_('custom_lists.manage.confirm_title_error'));
 			return;
 		}
@@ -1280,93 +869,12 @@
 			if (!res.ok) throw new Error(payload.error || $_('custom_lists.toast.failed_ban'));
 			list = payload;
 			syncForm();
-			dangerConfirmName = '';
 			toast.success($_(nextIsBanned ? 'custom_lists.toast.list_banned' : 'custom_lists.toast.list_unbanned'));
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_ban'));
 		} finally {
 			savingBanState = false;
 		}
-	}
-
-	// Drag & drop reorder
-	function onDragStart(e: DragEvent, index: number) {
-		draggedIndex = index;
-		if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
-	}
-
-	function onDragOver(e: DragEvent, index: number) {
-		e.preventDefault();
-		if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-		dragOverIndex = index;
-	}
-
-	function onDragEnd() {
-		draggedIndex = null;
-		dragOverIndex = null;
-	}
-
-	function addRankBadge() {
-		editForm.rankBadges = [...editForm.rankBadges, createEmptyCustomListRankBadge()];
-	}
-
-	function getRankBadgePreviewLabel(rankBadge: CustomListRankBadgeDraft) {
-		return rankBadge.shorthand.trim() || rankBadge.name.trim() || '?';
-	}
-
-	function removeRankBadge(index: number) {
-		editForm.rankBadges = editForm.rankBadges.filter((_, currentIndex) => currentIndex !== index);
-	}
-
-	function onRankBadgeDragStart(event: DragEvent, index: number) {
-		draggedRankBadgeIndex = index;
-		if (event.dataTransfer) {
-			event.dataTransfer.effectAllowed = 'move';
-		}
-	}
-
-	function onRankBadgeDragOver(event: DragEvent, index: number) {
-		event.preventDefault();
-		if (event.dataTransfer) {
-			event.dataTransfer.dropEffect = 'move';
-		}
-		dragOverRankBadgeIndex = index;
-	}
-
-	function onRankBadgeDragEnd() {
-		draggedRankBadgeIndex = null;
-		dragOverRankBadgeIndex = null;
-	}
-
-	function onRankBadgeDrop(event: DragEvent, targetIndex: number) {
-		event.preventDefault();
-
-		if (draggedRankBadgeIndex === null || draggedRankBadgeIndex === targetIndex) {
-			onRankBadgeDragEnd();
-			return;
-		}
-
-		const nextRankBadges = [...editForm.rankBadges];
-		const [movedRankBadge] = nextRankBadges.splice(draggedRankBadgeIndex, 1);
-		nextRankBadges.splice(targetIndex, 0, movedRankBadge);
-		editForm.rankBadges = nextRankBadges;
-		onRankBadgeDragEnd();
-	}
-
-	function onDrop(e: DragEvent, targetIndex: number) {
-		e.preventDefault();
-		if (draggedIndex === null || draggedIndex === targetIndex || !list) {
-			draggedIndex = null;
-			dragOverIndex = null;
-			return;
-		}
-		const newItems = [...list.items];
-		const [moved] = newItems.splice(draggedIndex, 1);
-		newItems.splice(targetIndex, 0, moved);
-		list = { ...list, items: newItems };
-		draggedIndex = null;
-		dragOverIndex = null;
-		reorderLevels(newItems.map((item) => item.levelId));
 	}
 
 	async function reorderLevels(levelIds: number[]) {
@@ -1432,22 +940,6 @@
 <svelte:head>
 	<title>{list ? `Quản lý danh sách - ${list.title} - Geometry Dash Việt Nam` : 'Danh sách - Geometry Dash Việt Nam'}</title>
 </svelte:head>
-
-<input
-	hidden
-	type="file"
-	accept="image/png,image/jpeg,image/webp,image/gif"
-	on:change={(event) => handleCustomListAssetUpload('banner', event)}
-	bind:this={bannerFileInput}
-/>
-
-<input
-	hidden
-	type="file"
-	accept="image/png,image/jpeg,image/webp,image/gif"
-	on:change={(event) => handleCustomListAssetUpload('logo', event)}
-	bind:this={logoFileInput}
-/>
 
 <div class="page">
 	<!-- Navigation -->
@@ -1568,578 +1060,62 @@
 
 			{#if canEditSettings}
 				<Tabs.Content value="basic">
-					<div class="tabContent">
-						<div class="toolCard">
-							<h2 class="toolHeading">{$_('custom_lists.detail.edit.heading')}</h2>
-							<div class="formGrid">
-								<div class="field">
-									<label for="list-title">{$_('custom_lists.detail.edit.title_label')}</label>
-									<Input id="list-title" bind:value={editForm.title} maxlength={100} />
-								</div>
-								<div class="field">
-									<label for="list-description">{$_('custom_lists.detail.edit.description_label')}</label>
-									<Textarea id="list-description" bind:value={editForm.description} rows={3} />
-								</div>
-								<div class="field">
-									<div class="switchRow">
-										<div>
-											<label for="list-platformer">{$_('custom_lists.detail.edit.type_label')}</label>
-											<p class="hint">{$_('custom_lists.detail.edit.type_hint')}</p>
-										</div>
-										<div class="switchControl">
-											<span class="switchLabel">{formatListType(editForm.isPlatformer)}</span>
-											<Switch id="list-platformer" bind:checked={editForm.isPlatformer} />
-										</div>
-									</div>
-								</div>
-								<div class="field">
-									<div class="switchRow">
-										<div>
-											<label for="list-community-enabled">{$_('custom_lists.detail.edit.community_label')}</label>
-											<p class="hint">{$_('custom_lists.detail.edit.community_hint')}</p>
-										</div>
-										<div class="switchControl">
-											<span class="switchLabel">{editForm.communityEnabled ? $_('general.yes') : $_('general.no')}</span>
-											<Switch id="list-community-enabled" bind:checked={editForm.communityEnabled} />
-										</div>
-									</div>
-								</div>
-								<div class="field">
-									<span class="fieldLabel">{$_('custom_lists.detail.edit.visibility_label')}</span>
-									<div class="optionRow">
-										{#each visibilityOptions as v}
-											<button
-												type="button"
-												class="optionBtn"
-												class:selected={editForm.visibility === v}
-												disabled={list.isBanned}
-												on:click={() => (editForm.visibility = v)}
-											>
-												<svelte:component this={getVisibilityIcon(v)} class="h-3.5 w-3.5" />
-												{formatVisibility(v)}
-											</button>
-										{/each}
-									</div>
-								</div>
-								<div class="field">
-									<span class="fieldLabel">{$_('custom_lists.detail.edit.mode_label')}</span>
-									<div class="optionRow">
-										{#each ['rating', 'top'] as m}
-											<button
-												type="button"
-												class="optionBtn"
-												class:selected={editForm.mode === m}
-												on:click={() => (editForm.mode = m === 'rating' ? 'rating' : 'top')}
-											>
-												{#if m === 'rating'}<Star class="h-3.5 w-3.5" />{:else}<ListOrdered class="h-3.5 w-3.5" />{/if}
-												{m === 'rating' ? $_('custom_lists.detail.edit.mode_rating') : $_('custom_lists.detail.edit.mode_top')}
-											</button>
-										{/each}
-									</div>
-									<p class="hint">{editForm.mode === 'rating' ? $_('custom_lists.detail.edit.mode_rating_hint') : $_('custom_lists.detail.edit.mode_top_hint')}</p>
-								</div>
-								<div class="field">
-									<label for="list-tags">{$_('custom_lists.detail.edit.tags_label')}</label>
-									<Input id="list-tags" bind:value={editForm.tags} placeholder="challenge, favorite" />
-								</div>
-								<div class="field">
-									<div class="switchRow">
-										<div>
-											<label for="list-top-enabled">{$_('custom_lists.detail.edit.top_enabled_label')}</label>
-											<p class="hint">{$_('custom_lists.detail.edit.top_enabled_hint')}</p>
-										</div>
-										<div class="switchControl">
-											<span class="switchLabel">{editForm.topEnabled ? $_('general.yes') : $_('general.no')}</span>
-											<Switch id="list-top-enabled" bind:checked={editForm.topEnabled} />
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
+					<BasicTab
+						bind:editForm
+						{list}
+					/>
 				</Tabs.Content>
 
 				<Tabs.Content value="appearance">
-					<div class="tabContent">
-						<div class="toolCard">
-							<h2 class="toolHeading">{$_('custom_lists.detail.edit.appearance_heading')}</h2>
-							<div class="formGrid">
-								<div class="field">
-									<span class="fieldLabel">{$_('custom_lists.detail.edit.appearance_heading')}</span>
-									<p class="hint">{$_('custom_lists.detail.edit.appearance_hint')}</p>
-								</div>
-								<div class="field">
-									<label for="list-background-color">{$_('custom_lists.detail.edit.background_color_label')}</label>
-									<div class="colorFieldRow">
-										<input
-											class="nativeColorInput"
-											type="color"
-											value={getColorPickerValue(editForm.backgroundColor)}
-											on:input={(event) => setThemeColorFromPicker('backgroundColor', event)}
-											aria-label={$_('custom_lists.detail.edit.background_color_label')}
-										/>
-										<Button variant="ghost" size="sm" on:click={() => resetThemeColor('backgroundColor')}>
-											{$_('general.reset')}
-										</Button>
-									</div>
-									<p class="hint">{$_('custom_lists.detail.edit.background_color_hint')}</p>
-								</div>
-								<div class="field">
-									<label for="list-border-color">{$_('custom_lists.detail.edit.border_color_label')}</label>
-									<div class="colorFieldRow">
-										<input
-											class="nativeColorInput"
-											type="color"
-											value={getColorPickerValue(editForm.borderColor)}
-											on:input={(event) => setThemeColorFromPicker('borderColor', event)}
-											aria-label={$_('custom_lists.detail.edit.border_color_label')}
-										/>
-										<Button variant="ghost" size="sm" on:click={() => resetThemeColor('borderColor')}>
-											{$_('general.reset')}
-										</Button>
-									</div>
-									<p class="hint">{$_('custom_lists.detail.edit.border_color_hint')}</p>
-								</div>
-								<div class="field">
-									<label for="list-banner-asset-mode">{$_('custom_lists.detail.edit.banner_url_label')}</label>
-									<div class="assetControlRow">
-										<div class="assetModeTrigger">
-											<Select.Root
-												selected={getAssetModeOption(bannerAssetMode)}
-												onSelectedChange={(selected) => setAssetMode('banner', selected)}
-											>
-												<Select.Trigger aria-label={$_('custom_lists.detail.edit.banner_url_label')}>
-													<Select.Value placeholder={getAssetModeLabel(bannerAssetMode)} />
-												</Select.Trigger>
-												<Select.Content>
-													<Select.Item value="upload">{$_('custom_lists.detail.edit.asset_mode_upload')}</Select.Item>
-													<Select.Item value="link">{$_('custom_lists.detail.edit.asset_mode_link')}</Select.Item>
-												</Select.Content>
-											</Select.Root>
-										</div>
-										{#if bannerAssetMode === 'upload'}
-											<div class="assetAction">
-												<Button
-													variant="outline"
-													size="sm"
-													on:click={() => bannerFileInput?.click()}
-													disabled={uploadingAsset === 'banner'}
-												>
-													{uploadingAsset === 'banner'
-														? `${$_('general.loading')}...`
-														: $_('custom_lists.detail.edit.banner_upload_button')}
-												</Button>
-											</div>
-										{:else}
-											<div class="assetFieldInput">
-												<Input
-													id="list-banner-url"
-													bind:value={editForm.bannerUrl}
-													placeholder={$_('custom_lists.detail.edit.banner_url_placeholder')}
-												/>
-											</div>
-										{/if}
-									</div>
-									<p class="hint">{bannerAssetMode === 'upload' ? $_('custom_lists.detail.edit.asset_upload_hint') : $_('custom_lists.detail.edit.banner_url_hint')}</p>
-								</div>
-								<div class="field">
-									<label for="list-logo-asset-mode">{$_('custom_lists.detail.edit.logo_url_label')}</label>
-									<div class="assetControlRow">
-										<div class="assetModeTrigger">
-											<Select.Root
-												selected={getAssetModeOption(logoAssetMode)}
-												onSelectedChange={(selected) => setAssetMode('logo', selected)}
-											>
-												<Select.Trigger aria-label={$_('custom_lists.detail.edit.logo_url_label')}>
-													<Select.Value placeholder={getAssetModeLabel(logoAssetMode)} />
-												</Select.Trigger>
-												<Select.Content>
-													<Select.Item value="upload">{$_('custom_lists.detail.edit.asset_mode_upload')}</Select.Item>
-													<Select.Item value="link">{$_('custom_lists.detail.edit.asset_mode_link')}</Select.Item>
-												</Select.Content>
-											</Select.Root>
-										</div>
-										{#if logoAssetMode === 'upload'}
-											<div class="assetAction">
-												<Button
-													variant="outline"
-													size="sm"
-													on:click={() => logoFileInput?.click()}
-													disabled={uploadingAsset === 'logo'}
-												>
-													{uploadingAsset === 'logo'
-														? `${$_('general.loading')}...`
-														: $_('custom_lists.detail.edit.logo_upload_button')}
-												</Button>
-											</div>
-										{:else}
-											<div class="assetFieldInput">
-												<Input
-													id="list-logo-url"
-													bind:value={editForm.logoUrl}
-													placeholder={$_('custom_lists.detail.edit.logo_url_placeholder')}
-												/>
-											</div>
-										{/if}
-									</div>
-									<p class="hint">{logoAssetMode === 'upload' ? $_('custom_lists.detail.edit.asset_upload_hint') : $_('custom_lists.detail.edit.logo_url_hint')}</p>
-									{#if getManageLogoPreviewUrl()}
-										<div class="assetPreview assetPreviewLogo">
-											<img src={getManageLogoPreviewUrl()} alt="" loading="lazy" decoding="async" />
-										</div>
-									{/if}
-								</div>
-							</div>
-						</div>
-					</div>
+					<AppearanceTab
+						bind:editForm
+						{list}
+						{uploadingAsset}
+						uploadAsset={uploadCustomListAsset}
+					/>
 				</Tabs.Content>
 
 				<Tabs.Content value="formula">
-					<div class="tabContent">
-						<div class="toolCard">
-							<h2 class="toolHeading">{$_('custom_lists.formula.label')}</h2>
-							<div class="formGrid">
-								<div class="field">
-									<label for="list-weight-formula">{$_('custom_lists.formula.label')}</label>
-									<Textarea
-										id="list-weight-formula"
-										bind:value={editForm.weightFormula}
-										placeholder={$_('custom_lists.formula.placeholder')}
-										rows={5}
-									/>
-									<p class="hint">{$_('custom_lists.formula.hint')}</p>
-									<WeightFormulaPreview
-										formula={editForm.weightFormula}
-										isPlatformer={editForm.isPlatformer}
-										mode={editForm.mode}
-									/>
-								</div>
-							</div>
-						</div>
-					</div>
+					<FormulaTab bind:editForm />
 				</Tabs.Content>
 
 				<Tabs.Content value="rank">
-					<div class="tabContent">
-						<div class="toolCard">
-							<h2 class="toolHeading">{$_('custom_lists.detail.edit.rank_badges_label')}</h2>
-							<div class="formGrid">
-								<div class="field">
-									<div class="rankBadgeHeader">
-										<div>
-											<span class="fieldLabel">{$_('custom_lists.detail.edit.rank_badges_label')}</span>
-											<p class="hint">{$_('custom_lists.detail.edit.rank_badges_hint')}</p>
-										</div>
-										<Button type="button" variant="outline" size="sm" on:click={addRankBadge}>
-											<Plus class="mr-2 h-4 w-4" />
-											{$_('custom_lists.detail.edit.rank_badges_add')}
-										</Button>
-									</div>
-									{#if editForm.rankBadges.length === 0}
-										<p class="hint">{$_('custom_lists.detail.edit.rank_badges_empty')}</p>
-									{:else}
-										<div class="rankBadgeList" role="list">
-											{#each editForm.rankBadges as rankBadge, index}
-												<div
-													class="rankBadgeEditor"
-													class:dragOver={dragOverRankBadgeIndex === index}
-													class:dragging={draggedRankBadgeIndex === index}
-													role="listitem"
-													draggable="true"
-													on:dragstart={(event) => onRankBadgeDragStart(event, index)}
-													on:dragover={(event) => onRankBadgeDragOver(event, index)}
-													on:drop={(event) => onRankBadgeDrop(event, index)}
-													on:dragend={onRankBadgeDragEnd}
-												>
-													<div class="rankBadgeEditorHandle" title={$_('custom_lists.detail.edit.rank_badges_priority_hint')}>
-														<GripVertical class="h-5 w-5" />
-													</div>
-													<div class="rankBadgePreview" style={`background: ${rankBadge.color || '#64748b'}`}>
-														{getRankBadgePreviewLabel(rankBadge)}
-													</div>
-													<div class="rankBadgeEditorFields">
-														<div class="field compactField">
-															<label for={`rank-badge-name-${index}`}>{$_('custom_lists.detail.edit.rank_badges_name_label')}</label>
-															<Input id={`rank-badge-name-${index}`} bind:value={rankBadge.name} maxlength={30} placeholder={$_('custom_lists.detail.edit.rank_badges_name_placeholder')} />
-														</div>
-														<div class="field compactField">
-															<label for={`rank-badge-shorthand-${index}`}>{$_('custom_lists.detail.edit.rank_badges_shorthand_label')}</label>
-															<Input id={`rank-badge-shorthand-${index}`} bind:value={rankBadge.shorthand} maxlength={20} placeholder={$_('custom_lists.detail.edit.rank_badges_shorthand_placeholder')} />
-														</div>
-														<div class="field compactField">
-															<label for={`rank-badge-color-${index}`}>{$_('custom_lists.detail.edit.rank_badges_color_label')}</label>
-															<Input id={`rank-badge-color-${index}`} bind:value={rankBadge.color} placeholder={$_('custom_lists.detail.edit.rank_badges_color_placeholder')} />
-														</div>
-														<div class="field compactField">
-															<label for={`rank-badge-min-rating-${index}`}>{$_('custom_lists.detail.edit.rank_badges_min_rating_label')}</label>
-															<Input id={`rank-badge-min-rating-${index}`} type="number" bind:value={rankBadge.minRating} min="0" step="0.001" placeholder={$_('custom_lists.detail.edit.rank_badges_min_rating_placeholder')} />
-														</div>
-														<div class="field compactField">
-															<label for={`rank-badge-min-top-${index}`}>{$_('custom_lists.detail.edit.rank_badges_min_top_label')}</label>
-															<Input id={`rank-badge-min-top-${index}`} type="number" bind:value={rankBadge.minTop} min="1" step="1" placeholder={$_('custom_lists.detail.edit.rank_badges_min_top_placeholder')} />
-														</div>
-													</div>
-													<Button
-														type="button"
-														variant="ghost"
-														size="icon"
-														on:click={() => removeRankBadge(index)}
-														title={$_('custom_lists.detail.edit.rank_badges_remove')}
-														aria-label={$_('custom_lists.detail.edit.rank_badges_remove')}
-													>
-														<Trash2 class="h-4 w-4" />
-													</Button>
-												</div>
-											{/each}
-										</div>
-									{/if}
-								</div>
-							</div>
-						</div>
-					</div>
+					<RankTab bind:editForm />
 				</Tabs.Content>
 
 				{#if canShowCollaboration}
 					<Tabs.Content value="collaboration">
-						<div class="tabContent">
-							{#if canConfigureCollaboration}
-								<div class="toolCard">
-									<h2 class="toolHeading">{$_('custom_lists.manage.collaboration.settings_title')}</h2>
-									<div class="field">
-										<div class="switchRow">
-											<div>
-												<label for="admins-can-manage-helpers">{$_('custom_lists.manage.collaboration.admin_helper_toggle_label')}</label>
-												<p class="hint">{$_('custom_lists.manage.collaboration.admin_helper_toggle_hint')}</p>
-											</div>
-											<div class="switchControl">
-												<span class="switchLabel">{adminsCanManageHelpers ? $_('general.yes') : $_('general.no')}</span>
-												<Switch id="admins-can-manage-helpers" bind:checked={adminsCanManageHelpers} />
-											</div>
-										</div>
-									</div>
-									<div class="formActions">
-										<Button on:click={updateCollaborationSettings} disabled={savingCollaboration}>
-											<Save class="mr-2 h-4 w-4" />
-											{$_('custom_lists.detail.edit.save')}
-										</Button>
-									</div>
-								</div>
-							{/if}
-
-							{#if canViewMembers || canManageMembers || canTransferOwnership}
-								<div class="toolCard">
-									<h2 class="toolHeading">{$_('custom_lists.manage.collaboration.members_title')}</h2>
-									<div class="field">
-										<label for="collaboration-player-search">{$_('custom_lists.manage.collaboration.search_label')}</label>
-										<div class="searchRow">
-											<Input
-												id="collaboration-player-search"
-												bind:value={memberSearchQuery}
-												placeholder={$_('custom_lists.manage.collaboration.search_placeholder')}
-												on:keydown={(event) => event.key === 'Enter' && searchPlayersForCollaboration()}
-											/>
-											<Button variant="outline" on:click={searchPlayersForCollaboration} disabled={memberSearchLoading}>
-												{memberSearchLoading ? `${$_('general.loading')}...` : $_('custom_lists.manage.collaboration.search_button')}
-											</Button>
-										</div>
-										<p class="hint">{$_('custom_lists.manage.collaboration.search_hint')}</p>
-									</div>
-
-									{#if memberSearchResults.length}
-										<div class="searchResults">
-											{#each memberSearchResults as player}
-												<button type="button" class="searchResult" on:click={() => selectCollaborationMember(player)}>
-													<span class="searchResultName">{getPlayerName(player, player?.uid)}</span>
-													<span class="searchResultMeta">{player.uid}</span>
-												</button>
-											{/each}
-										</div>
-									{/if}
-
-									{#if selectedMember}
-										<div class="selectedMemberCard">
-											<div class="selectedMemberInfo">
-												<strong>{getPlayerName(selectedMember, selectedMember?.uid)}</strong>
-												<span class="searchResultMeta">{selectedMember.uid}</span>
-											</div>
-											{#if canConfigureCollaboration}
-												<div class="optionRow">
-													<button
-														type="button"
-														class="optionBtn"
-														class:selected={collaboratorRole === 'helper'}
-														on:click={() => (collaboratorRole = 'helper')}
-													>
-														{$_('custom_lists.manage.roles.helper')}
-													</button>
-													<button
-														type="button"
-														class="optionBtn"
-														class:selected={collaboratorRole === 'admin'}
-														on:click={() => (collaboratorRole = 'admin')}
-													>
-														{$_('custom_lists.manage.roles.admin')}
-													</button>
-												</div>
-											{/if}
-											{#if getMemberByUid(selectedMember.uid)}
-												<p class="hint">
-													{$_('custom_lists.manage.collaboration.selected_member_existing', {
-														values: {
-															role: getRoleLabel(getMemberByUid(selectedMember.uid)?.role || 'helper')
-														}
-													})}
-												</p>
-											{/if}
-											<div class="formActions">
-												{#if canManageMembers && !getMemberByUid(selectedMember.uid)}
-													<Button on:click={addCollaborator} disabled={savingCollaboration}>
-														<Plus class="mr-2 h-4 w-4" />
-														{$_('custom_lists.manage.collaboration.add_button')}
-													</Button>
-												{:else if canConfigureCollaboration && getMemberByUid(selectedMember.uid) && getMemberByUid(selectedMember.uid)?.role !== collaboratorRole}
-													<Button on:click={() => updateCollaboratorRole(getMemberByUid(selectedMember.uid), collaboratorRole)} disabled={savingCollaboration}>
-														<Save class="mr-2 h-4 w-4" />
-														{$_('custom_lists.manage.collaboration.update_role_button')}
-													</Button>
-												{/if}
-												{#if canTransferOwnership}
-													<Button variant="outline" on:click={transferOwnership} disabled={savingCollaboration}>
-														{$_('custom_lists.manage.collaboration.transfer_button')}
-													</Button>
-												{/if}
-												<Button variant="ghost" on:click={clearSelectedMember} disabled={savingCollaboration}>
-													{$_('general.reset')}
-												</Button>
-											</div>
-										</div>
-									{/if}
-
-									{#if canViewMembers}
-										<div class="memberList">
-											<div class="memberRow">
-												<div class="memberInfo">
-													<div class="memberNameRow">
-														{#if list.ownerData}
-															<PlayerLink player={list.ownerData} />
-														{:else}
-															<span class="memberFallbackName">{list.owner}</span>
-														{/if}
-														<Badge variant="secondary">{$_('custom_lists.manage.roles.owner')}</Badge>
-													</div>
-													<p class="hint">{$_('custom_lists.manage.collaboration.owner_hint')}</p>
-												</div>
-											</div>
-
-											{#if list.members?.length}
-												{#each list.members as member}
-													<div class="memberRow">
-														<div class="memberInfo">
-															<div class="memberNameRow">
-																{#if member.playerData}
-																	<PlayerLink player={member.playerData} />
-																{:else}
-																	<span class="memberFallbackName">{member.uid}</span>
-																{/if}
-																<Badge variant="outline">{getRoleLabel(member.role)}</Badge>
-															</div>
-															<p class="hint">{$_('custom_lists.manage.collaboration.member_since', { values: { date: formatDate(member.created_at) } })}</p>
-														</div>
-														<div class="memberActions">
-															{#if canConfigureCollaboration}
-																<Button
-																	variant="outline"
-																	size="sm"
-																	on:click={() => updateCollaboratorRole(member, member.role === 'admin' ? 'helper' : 'admin')}
-																	disabled={savingCollaboration}
-																>
-																	{member.role === 'admin'
-																		? $_('custom_lists.manage.collaboration.demote_button')
-																		: $_('custom_lists.manage.collaboration.promote_button')}
-																</Button>
-															{/if}
-															{#if canManageMembers && (canConfigureCollaboration || member.role === 'helper')}
-																<Button
-																	variant="destructive"
-																	size="sm"
-																	on:click={() => removeCollaborator(member)}
-																	disabled={savingCollaboration}
-																>
-																	<Trash2 class="mr-1.5 h-3.5 w-3.5" />
-																	{$_('custom_lists.manage.collaboration.remove_button')}
-																</Button>
-															{/if}
-														</div>
-													</div>
-												{/each}
-											{:else}
-												<p class="hint">{$_('custom_lists.manage.collaboration.members_empty')}</p>
-											{/if}
-										</div>
-									{/if}
-								</div>
-							{/if}
-
-							{#if canViewAudit}
-								<div class="toolCard">
-									<h2 class="toolHeading">{$_('custom_lists.manage.collaboration.audit_title')}</h2>
-									<p class="hint">{$_('custom_lists.manage.collaboration.audit_hint')}</p>
-									{#if list.auditLog?.length}
-										<div class="auditList">
-											{#each list.auditLog as entry}
-												<div class="auditRow">
-													<div class="auditRowHeader">
-														<strong>{getAuditActionLabel(entry.action)}</strong>
-														<span class="auditTimestamp">{formatDateTime(entry.created_at)}</span>
-													</div>
-													<p class="hint">{getAuditEntryDetail(entry)}</p>
-												</div>
-											{/each}
-										</div>
-									{:else}
-										<p class="hint">{$_('custom_lists.manage.collaboration.audit_empty')}</p>
-									{/if}
-								</div>
-							{/if}
-						</div>
+						<CollaborationTab
+							{list}
+							{savingCollaboration}
+							{canConfigureCollaboration}
+							{canViewMembers}
+							{canManageMembers}
+							{canTransferOwnership}
+							{canViewAudit}
+							{updateCollaborationSettings}
+							{searchPlayersForCollaboration}
+							{addCollaborator}
+							{updateCollaboratorRole}
+							{transferOwnership}
+							{removeCollaborator}
+							{getRoleLabel}
+							{formatDate}
+							{formatDateTime}
+						/>
 					</Tabs.Content>
 				{/if}
 
 				{#if canBan || canDelete}
 					<Tabs.Content value="danger">
-						<div class="tabContent">
-							<div class="toolCard dangerCard">
-								<h2 class="toolHeading">{$_('custom_lists.manage.danger_heading')}</h2>
-								<p class="hint">{$_('custom_lists.manage.danger_hint')}</p>
-								<div class="field">
-									<label for="danger-confirm-name">{$_('custom_lists.manage.confirm_title_label')}</label>
-									<Input
-										id="danger-confirm-name"
-										bind:value={dangerConfirmName}
-										placeholder={list.title}
-									/>
-									<p class="hint">{$_('custom_lists.manage.confirm_title_hint', { values: { title: list.title } })}</p>
-								</div>
-								<div class="formActions">
-									{#if canBan}
-										<Button
-											variant={list.isBanned ? 'outline' : 'destructive'}
-											on:click={() => list && setBanState(!list.isBanned)}
-											disabled={savingBanState || !hasDangerConfirmation()}
-										>
-											<AlertTriangle class="mr-2 h-4 w-4" />
-											{list.isBanned ? $_('custom_lists.manage.unban') : $_('custom_lists.manage.ban')}
-										</Button>
-									{/if}
-									{#if canDelete}
-										<Button variant="destructive" on:click={deleteList} disabled={!hasDangerConfirmation()}>
-											<Trash2 class="mr-2 h-4 w-4" />
-											{$_('custom_lists.detail.edit.delete')}
-										</Button>
-									{/if}
-								</div>
-							</div>
-						</div>
+						<DangerTab
+							{list}
+							{canBan}
+							{canDelete}
+							{savingBanState}
+							{setBanState}
+							{deleteList}
+						/>
 					</Tabs.Content>
 				{/if}
 
@@ -2160,187 +1136,18 @@
 			{/if}
 
 			<Tabs.Content value="levels">
-				<div class="tabContent">
-					{#if canEditLevels}
-						<div class="toolCard">
-							<h2 class="toolHeading">{$_('custom_lists.detail.add_level.heading')}</h2>
-							<div class="field">
-								<label for="level-id">{$_('custom_lists.detail.add_level.id_label')}</label>
-								<Input id="level-id" bind:value={levelIdInput} inputmode="numeric" />
-							</div>
-							<p class="hint">{$_('custom_lists.detail.add_level.hint')}</p>
-							<div class="formActions">
-								<Button on:click={addLevel} disabled={addingLevel}>
-									<Plus class="mr-2 h-4 w-4" />
-									{$_('custom_lists.detail.add_level.button')}
-								</Button>
-							</div>
-						</div>
-					{/if}
-
-					<div class="levelsSection">
-						<div class="sectionHeader">
-							<h2>{$_('custom_lists.detail.levels.heading')}</h2>
-							<div class="sectionMeta">
-								{#if list.mode === 'rating'}
-									<Badge variant="secondary">
-										<Star class="mr-1 h-3 w-3" />
-										{$_('custom_lists.detail.edit.mode_rating')}
-									</Badge>
-								{:else}
-									<Badge variant="secondary">
-										<ListOrdered class="mr-1 h-3 w-3" />
-										{$_('custom_lists.detail.edit.mode_top')}
-									</Badge>
-								{/if}
-								<Badge variant="outline">{list.items.length}</Badge>
-							</div>
-						</div>
-
-						{#if list.items.length === 0}
-							<div class="emptyState slim">
-								<h3>{$_('custom_lists.detail.levels.empty_title')}</h3>
-								<p>{canEditLevels ? $_('custom_lists.detail.levels.empty_owner') : $_('custom_lists.detail.levels.empty_visitor')}</p>
-							</div>
-						{:else}
-							<div class="levelList">
-								{#each list.items as item, i}
-									<div
-										class="levelItem"
-										class:isDraggable={canEditLevels && list.mode === 'top' && !savingReorder}
-										class:dragOver={canEditLevels && list.mode === 'top' && dragOverIndex === i}
-										class:dragging={canEditLevels && list.mode === 'top' && draggedIndex === i}
-										role="listitem"
-										draggable={canEditLevels && list.mode === 'top' && !savingReorder}
-										on:dragstart={(e) => { if (canEditLevels && list?.mode === 'top' && !savingReorder) onDragStart(e, i); }}
-										on:dragover={(e) => { if (canEditLevels && list?.mode === 'top' && !savingReorder) onDragOver(e, i); }}
-										on:drop={(e) => { if (canEditLevels && list?.mode === 'top' && !savingReorder) onDrop(e, i); }}
-										on:dragend={() => { if (canEditLevels && list?.mode === 'top') onDragEnd(); }}
-									>
-										<div class="levelRow">
-											{#if canEditLevels && list.mode === 'top'}
-												<div class="dragHandle" title={$_('custom_lists.detail.levels.drag_hint')}>
-													<GripVertical class="h-5 w-5" />
-												</div>
-											{/if}
-
-											<div class="rankBadge">#{i + 1}</div>
-
-											<div class="levelBody">
-												{#if item.level}
-													<a class="levelLink" href={`/level/${item.levelId}`}>{item.level.name || `Level #${item.levelId}`}</a>
-													<p class="levelMeta">
-														{$_('custom_lists.detail.levels.by')} {item.level.creator || 'Unknown'}
-														{#if item.level.difficulty} • {item.level.difficulty}{/if}
-														{#if item.level.isPlatformer} • {$_('custom_lists.detail.levels.platformer')}{/if}
-													</p>
-												{:else}
-													<span class="levelLink missing">{$_('custom_lists.detail.levels.unavailable', { values: { id: item.levelId } })}</span>
-													<p class="levelMeta">{$_('custom_lists.detail.levels.unavailable_desc')}</p>
-												{/if}
-											</div>
-
-											<div class="levelActions">
-												{#if list.mode === 'rating'}
-													{#if canEditLevels && editingRatingItemId === item.id}
-														<input
-															class="inlineInput ratingInput"
-															type="number"
-															min="1"
-															max="10"
-															bind:value={editingRatingValue}
-															on:blur={() => saveRatingEdit(item.levelId)}
-															on:keydown={(e) => e.key === 'Enter' && saveRatingEdit(item.levelId)}
-														/>
-													{:else}
-														<button
-															class="chipBtn"
-															class:editable={canEditLevels}
-															type="button"
-															on:click={canEditLevels ? () => startRatingEdit(item) : undefined}
-															title={canEditLevels ? $_('custom_lists.detail.levels.rating_edit_hint') : undefined}
-														>
-															★ {item.rating ?? 5}
-														</button>
-													{/if}
-												{/if}
-
-												{#if canEditLevels && editingMinProgressItemId === item.id}
-													<input
-														class="inlineInput minProgressInput"
-														type="number"
-														min="0"
-														max={list.isPlatformer ? undefined : '100'}
-														placeholder={item.level?.minProgress != null ? String(item.level.minProgress) : undefined}
-														bind:value={editingMinProgressValue}
-														on:blur={handleMinProgressBlur}
-														on:keydown={(e) => {
-															if (e.key === 'Enter') {
-																e.preventDefault();
-																saveMinProgressEdit(item.levelId);
-															}
-															if (e.key === 'Escape') {
-																e.preventDefault();
-																cancelMinProgressEdit();
-															}
-														}}
-													/>
-													<div class="inlineEditActions">
-														<button
-															type="button"
-															class="inlineEditBtn inlineEditBtnPrimary"
-															data-min-progress-action="save"
-															on:mousedown|preventDefault
-															on:click={() => saveMinProgressEdit(item.levelId)}
-															disabled={savingLevelItemId === item.levelId}
-														>
-															<Save class="mr-1.5 h-3.5 w-3.5" />
-															{$_('custom_lists.detail.levels.save_button')}
-														</button>
-														<button
-															type="button"
-															class="inlineEditBtn inlineEditBtnSecondary"
-															data-min-progress-action="cancel"
-															on:mousedown|preventDefault
-															on:click={cancelMinProgressEdit}
-															disabled={savingLevelItemId === item.levelId}
-														>
-															{$_('custom_lists.detail.levels.cancel_button')}
-														</button>
-													</div>
-												{:else}
-													<button
-														class="chipBtn"
-														class:editable={canEditLevels}
-														type="button"
-														on:click={canEditLevels ? () => startMinProgressEdit(item) : undefined}
-														title={canEditLevels ? $_('custom_lists.detail.levels.min_progress_edit_hint') : undefined}
-													>
-														{getMinProgressLabel(item)}
-													</button>
-												{/if}
-
-												<Badge variant="outline">{$_('custom_lists.detail.levels.id_badge', { values: { id: item.levelId } })}</Badge>
-
-												{#if canEditLevels}
-													<Button
-														variant="destructive"
-														size="sm"
-														on:click={() => removeLevel(item.levelId)}
-														disabled={mutatingLevelId === item.levelId}
-													>
-														<Trash2 class="mr-1.5 h-3.5 w-3.5" />
-														{$_('custom_lists.detail.levels.remove')}
-													</Button>
-												{/if}
-											</div>
-										</div>
-									</div>
-								{/each}
-							</div>
-						{/if}
-					</div>
-				</div>
+				<LevelsTab
+					{list}
+					{canEditLevels}
+					{addingLevel}
+					{mutatingLevelId}
+					{savingLevelItemId}
+					{savingReorder}
+					{addLevel}
+					{removeLevel}
+					{updateLevelItem}
+					{reorderLevels}
+				/>
 			</Tabs.Content>
 		</Tabs.Root>
 	{/if}
@@ -2461,13 +1268,6 @@
 		color: hsl(var(--destructive));
 	}
 
-	.tabContent {
-		display: flex;
-		flex-direction: column;
-		gap: 16px;
-		margin-top: 16px;
-	}
-
 	.toolCard {
 		background: hsl(var(--card));
 		border: 1px solid hsl(var(--border));
@@ -2503,135 +1303,10 @@
 		font-weight: 600;
 	}
 
-	.formGrid {
-		display: grid;
-		gap: 14px;
-	}
-
-	.field {
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-	}
-
-	label, .fieldLabel {
-		font-size: 0.9rem;
-		font-weight: 500;
-	}
-
 	.hint {
 		font-size: 0.8rem;
 		color: hsl(var(--muted-foreground));
 		margin: 0;
-	}
-
-	.optionRow {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 8px;
-	}
-
-	.optionBtn {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		border: 1px solid hsl(var(--border));
-		background: transparent;
-		color: hsl(var(--foreground));
-		padding: 7px 14px;
-		border-radius: 999px;
-		cursor: pointer;
-		font-size: 0.85rem;
-		transition: background 0.15s ease, border-color 0.15s ease;
-	}
-
-	.optionBtn:hover {
-		background: hsl(var(--muted) / 0.5);
-	}
-
-	.optionBtn.selected {
-		background: hsl(var(--primary) / 0.12);
-		border-color: hsl(var(--primary));
-	}
-
-	.assetControlRow {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-		flex-wrap: wrap;
-	}
-
-	.assetModeTrigger {
-		min-width: 180px;
-	}
-
-	.assetAction {
-		flex-shrink: 0;
-	}
-
-	.assetFieldInput {
-		flex: 1 1 240px;
-		min-width: min(100%, 240px);
-	}
-
-	.colorFieldRow {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-	}
-
-	.dangerCard {
-		border-color: hsl(var(--destructive) / 0.35);
-		background: hsl(var(--destructive) / 0.04);
-	}
-
-	.nativeColorInput {
-		width: 42px;
-		height: 42px;
-		padding: 0;
-		border: 1px solid hsl(var(--border));
-		border-radius: 10px;
-		background: transparent;
-		cursor: pointer;
-		flex-shrink: 0;
-	}
-
-	.nativeColorInput::-webkit-color-swatch-wrapper {
-		padding: 4px;
-	}
-
-	.nativeColorInput::-webkit-color-swatch {
-		border: none;
-		border-radius: 8px;
-	}
-
-	.nativeColorInput::-moz-color-swatch {
-		border: none;
-		border-radius: 8px;
-	}
-
-	.optionBtn:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
-	}
-
-	.switchRow {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-		flex-wrap: wrap;
-	}
-
-	.switchControl {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-	}
-
-	.switchLabel {
-		font-size: 0.9rem;
-		font-weight: 500;
 	}
 
 	.formActions {
@@ -2645,373 +1320,6 @@
 		padding-block: 18px;
 	}
 
-	.searchRow {
-		display: flex;
-		gap: 10px;
-		flex-wrap: wrap;
-	}
-
-	.searchResults,
-	.memberList,
-	.auditList {
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-	}
-
-	.searchResult,
-	.memberRow,
-	.auditRow,
-	.selectedMemberCard {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-		padding: 14px;
-		border: 1px solid hsl(var(--border));
-		border-radius: 10px;
-		background: hsl(var(--muted) / 0.12);
-	}
-
-	.searchResult {
-		cursor: pointer;
-		text-align: left;
-	}
-
-	.searchResult:hover {
-		border-color: hsl(var(--primary));
-		background: hsl(var(--primary) / 0.08);
-	}
-
-	.searchResultName,
-	.memberFallbackName {
-		font-weight: 600;
-	}
-
-	.searchResultMeta,
-	.auditTimestamp {
-		font-size: 0.8rem;
-		color: hsl(var(--muted-foreground));
-	}
-
-	.selectedMemberCard,
-	.memberRow,
-	.auditRow {
-		align-items: flex-start;
-	}
-
-	.selectedMemberInfo,
-	.memberInfo {
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-		min-width: 0;
-	}
-
-	.memberNameRow,
-	.auditRowHeader {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		flex-wrap: wrap;
-	}
-
-	.memberActions {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		flex-wrap: wrap;
-		justify-content: flex-end;
-	}
-
-	.assetPreview {
-		width: fit-content;
-		padding: 10px;
-		border: 1px solid hsl(var(--border));
-		border-radius: 10px;
-		background: hsl(var(--muted) / 0.12);
-	}
-
-	.assetPreview img {
-		display: block;
-		max-width: 100%;
-	}
-
-	.assetPreviewLogo img {
-		width: 56px;
-		height: 56px;
-		object-fit: contain;
-	}
-
-	.rankBadgeHeader {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 12px;
-		flex-wrap: wrap;
-	}
-
-	.rankBadgeList {
-		display: flex;
-		flex-direction: column;
-		gap: 12px;
-	}
-
-	.rankBadgeEditor {
-		display: flex;
-		align-items: flex-start;
-		gap: 12px;
-		padding: 14px;
-		border: 1px solid hsl(var(--border));
-		border-radius: 10px;
-		background: hsl(var(--muted) / 0.12);
-		transition: border-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
-	}
-
-	.rankBadgeEditor.dragOver {
-		border-color: hsl(var(--primary));
-		box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
-	}
-
-	.rankBadgeEditor.dragging {
-		opacity: 0.45;
-	}
-
-	.rankBadgeEditorHandle {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		color: hsl(var(--muted-foreground));
-		padding-top: 7px;
-		cursor: grab;
-	}
-
-	.rankBadgePreview {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		min-width: 68px;
-		padding: 7px 12px;
-		border-radius: 999px;
-		color: white;
-		font-size: 0.8rem;
-		font-weight: 700;
-		white-space: nowrap;
-		margin-top: 4px;
-	}
-
-	.rankBadgeEditorFields {
-		flex: 1;
-		display: grid;
-		grid-template-columns: repeat(5, minmax(0, 1fr));
-		gap: 12px;
-	}
-
-	.compactField {
-		min-width: 0;
-	}
-
-	/* Levels Section */
-	.levelsSection {
-		display: flex;
-		flex-direction: column;
-		gap: 16px;
-	}
-
-	.sectionHeader {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 10px;
-	}
-
-	.sectionHeader h2 {
-		margin: 0;
-		font-size: 1.2rem;
-		font-weight: 600;
-	}
-
-	.sectionMeta {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-	}
-
-	.levelList {
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-	}
-
-	.levelItem {
-		background: hsl(var(--card));
-		border: 1px solid hsl(var(--border));
-		border-radius: 10px;
-		padding: 14px 18px;
-		transition: opacity 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
-	}
-
-	.levelItem.isDraggable {
-		cursor: grab;
-	}
-
-	.levelItem.isDraggable:active {
-		cursor: grabbing;
-	}
-
-	.levelItem.dragging {
-		opacity: 0.4;
-	}
-
-	.levelItem.dragOver {
-		border-color: hsl(var(--primary));
-		box-shadow: 0 0 0 2px hsl(var(--primary) / 0.25);
-	}
-
-	.levelRow {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-	}
-
-	.dragHandle {
-		color: hsl(var(--muted-foreground));
-		flex-shrink: 0;
-		display: flex;
-		align-items: center;
-	}
-
-	.rankBadge {
-		font-size: 0.85rem;
-		font-weight: 700;
-		color: hsl(var(--muted-foreground));
-		min-width: 28px;
-		text-align: center;
-		flex-shrink: 0;
-	}
-
-	.levelBody {
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-		flex: 1;
-		min-width: 0;
-	}
-
-	.levelLink {
-		font-weight: 600;
-		text-decoration: none;
-		color: hsl(var(--foreground));
-		font-size: 0.95rem;
-	}
-
-	.levelLink:hover {
-		text-decoration: underline;
-	}
-
-	.levelLink.missing {
-		color: hsl(var(--destructive));
-	}
-
-	.levelMeta {
-		margin: 0;
-		font-size: 0.8rem;
-		color: hsl(var(--muted-foreground));
-	}
-
-	.levelActions {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		flex-wrap: wrap;
-		flex-shrink: 0;
-	}
-
-	.chipBtn {
-		background: hsl(var(--muted));
-		border: 1px solid hsl(var(--border));
-		color: hsl(var(--foreground));
-		font-size: 0.8rem;
-		font-weight: 600;
-		padding: 4px 10px;
-		border-radius: 999px;
-		cursor: default;
-		white-space: nowrap;
-	}
-
-	.chipBtn.editable {
-		cursor: pointer;
-		transition: background 0.15s ease, border-color 0.15s ease;
-	}
-
-	.chipBtn.editable:hover {
-		background: hsl(var(--primary) / 0.12);
-		border-color: hsl(var(--primary));
-	}
-
-	.inlineInput {
-		padding: 4px 8px;
-		border: 1px solid hsl(var(--primary));
-		border-radius: 6px;
-		background: hsl(var(--background));
-		color: hsl(var(--foreground));
-		font-size: 0.85rem;
-		text-align: center;
-	}
-
-	.ratingInput {
-		width: 60px;
-	}
-
-	.minProgressInput {
-		width: 120px;
-	}
-
-	.inlineEditActions {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-	}
-
-	.inlineEditBtn {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		gap: 6px;
-		min-height: 32px;
-		padding: 0 12px;
-		border-radius: 8px;
-		border: 1px solid hsl(var(--border));
-		font-size: 0.8rem;
-		font-weight: 600;
-		cursor: pointer;
-		transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-	}
-
-	.inlineEditBtn:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
-	}
-
-	.inlineEditBtnPrimary {
-		background: hsl(var(--primary));
-		border-color: hsl(var(--primary));
-		color: hsl(var(--primary-foreground));
-	}
-
-	.inlineEditBtnPrimary:hover:not(:disabled) {
-		background: hsl(var(--primary) / 0.9);
-	}
-
-	.inlineEditBtnSecondary {
-		background: hsl(var(--background));
-		color: hsl(var(--foreground));
-	}
-
-	.inlineEditBtnSecondary:hover:not(:disabled) {
-		background: hsl(var(--muted) / 0.5);
-	}
-
 	/* Empty State */
 	.emptyState {
 		border: 1px dashed hsl(var(--border));
@@ -3019,10 +1327,6 @@
 		padding: 40px 24px;
 		text-align: center;
 		background: hsl(var(--muted) / 0.12);
-	}
-
-	.emptyState.slim {
-		padding: 28px 20px;
 	}
 
 	.emptyState h3 {
@@ -3042,29 +1346,6 @@
 		.heroTop {
 			flex-direction: column;
 		}
-
-		.rankBadgeEditor {
-			flex-direction: column;
-		}
-
-		.rankBadgeEditorFields {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-			width: 100%;
-		}
-
-		.levelRow {
-			flex-direction: column;
-			align-items: flex-start;
-		}
-
-		.levelActions {
-			width: 100%;
-		}
-
-		.sectionHeader {
-			flex-direction: column;
-			align-items: flex-start;
-		}
 	}
 
 	@media (max-width: 480px) {
@@ -3080,25 +1361,12 @@
 			height: 140px;
 		}
 
-		.rankBadgeEditorFields {
-			grid-template-columns: 1fr;
-		}
-
 		.heroInfo h1 {
 			font-size: 1.2rem;
 		}
 
 		.toolCard {
 			padding: 16px;
-		}
-
-		.levelItem {
-			padding: 12px 14px;
-		}
-
-		.optionBtn {
-			padding: 6px 12px;
-			font-size: 0.8rem;
 		}
 	}
 </style>
