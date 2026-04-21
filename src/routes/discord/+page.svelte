@@ -51,7 +51,7 @@
 			params: [{ name: 'query', description: 'Tên hoặc ID của level', required: true }]
 		},
 		{
-			name: '/list',
+			name: '/lists',
 			description: 'Lấy level trong list, sắp xếp theo top',
 			params: [
 				{ name: 'list', description: 'Chọn list', required: true },

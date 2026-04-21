@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
+	import WeightFormulaPreview from '$lib/components/custom-lists/WeightFormulaPreview.svelte';
 	import { Input } from '$lib/components/ui/input';
 	import { Switch } from '$lib/components/ui/switch';
 	import { Textarea } from '$lib/components/ui/textarea';
@@ -29,7 +30,8 @@
 		tags: '',
 		mode: 'rating' as 'rating' | 'top',
 		isPlatformer: false,
-		communityEnabled: true
+		communityEnabled: true,
+		weightFormula: '1'
 	};
 
 	let creating = false;
@@ -74,7 +76,8 @@
 					tags: parseTags(form.tags),
 					mode: form.mode,
 					isPlatformer: form.isPlatformer,
-					communityEnabled: form.communityEnabled
+					communityEnabled: form.communityEnabled,
+					weightFormula: form.weightFormula
 				})
 			});
 
@@ -216,6 +219,18 @@
 						placeholder={$_('custom_lists.new.tags_placeholder')}
 					/>
 					<p class="hint">{$_('custom_lists.new.tags_hint')}</p>
+				</div>
+
+				<div class="field">
+					<label for="list-weight-formula">{$_('custom_lists.formula.label')}</label>
+					<Textarea
+						id="list-weight-formula"
+						bind:value={form.weightFormula}
+						placeholder={$_('custom_lists.formula.placeholder')}
+						rows={5}
+					/>
+					<p class="hint">{$_('custom_lists.formula.hint')}</p>
+					<WeightFormulaPreview formula={form.weightFormula} isPlatformer={form.isPlatformer} mode={form.mode} />
 				</div>
 			</div>
 

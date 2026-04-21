@@ -1,27 +1,33 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
-	import { Textarea } from '$lib/components/ui/textarea';
 	import { Badge } from '$lib/components/ui/badge';
-	import { Switch } from '$lib/components/ui/switch';
+	import * as Tabs from '$lib/components/ui/tabs';
+	import AppearanceTab from './AppearanceTab.svelte';
+	import BasicTab from './BasicTab.svelte';
+	import CollaborationTab from './CollaborationTab.svelte';
+	import DangerTab from './DangerTab.svelte';
+	import FormulaTab from './FormulaTab.svelte';
+	import LevelsTab from './LevelsTab.svelte';
+	import RankTab from './RankTab.svelte';
+	import imageCompression from 'browser-image-compression';
+	import {
+		normalizeCustomListRankBadges,
+		type CustomListRankBadge
+	} from '$lib/utils/customListRank';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { user } from '$lib/client';
 	import { toast } from 'svelte-sonner';
 	import {
 		ArrowLeft,
-		Plus,
-		Trash2,
-		GripVertical,
 		Eye,
 		Globe2,
 		EyeOff,
 		Lock,
 		Layers,
 		Clock,
-		Star,
-		ListOrdered,
 		Save,
+		RefreshCw,
 		AlertTriangle
 	} from 'lucide-svelte';
 	import { _ } from 'svelte-i18n';
@@ -45,72 +51,171 @@
 		} | null;
 	};
 
+	type CustomListResolvedRole = 'viewer' | 'owner' | 'admin' | 'helper' | 'moderator';
+
+	type CustomListPermissionFlags = {
+		canEditSettings: boolean;
+		canEditLevels: boolean;
+		canDelete: boolean;
+		canBan: boolean;
+		canManageMembers: boolean;
+		canConfigureCollaboration: boolean;
+		canTransferOwnership: boolean;
+		canViewMembers: boolean;
+		canViewAudit: boolean;
+	};
+
+	type CustomListMember = {
+		id: number;
+		uid: string;
+		role: 'admin' | 'helper';
+		created_at: string;
+		updated_at: string;
+		playerData?: any | null;
+	};
+
+	type CustomListAuditLogEntry = {
+		id: number;
+		created_at: string;
+		action: string;
+		actorUid: string | null;
+		targetUid: string | null;
+		metadata?: Record<string, any> | null;
+		actorData?: any | null;
+		targetData?: any | null;
+	};
+
 	type CustomList = {
 		id: number;
+		slug?: string | null;
+		adminsCanManageHelpers?: boolean;
 		owner: string;
 		title: string;
 		description: string;
+		backgroundColor?: string | null;
+		bannerUrl?: string | null;
+		borderColor?: string | null;
 		communityEnabled: boolean;
+		isBanned: boolean;
 		isPlatformer: boolean;
+		isOfficial?: boolean;
+		logoUrl?: string | null;
+		topEnabled?: boolean;
 		visibility: 'private' | 'unlisted' | 'public';
 		mode: 'rating' | 'top';
 		tags: string[];
-		levelCount: number;
 		updated_at: string;
+		lastRefreshedAt?: string | null;
+		currentUserRole?: CustomListResolvedRole;
+		permissions?: CustomListPermissionFlags;
+		members?: CustomListMember[];
+		auditLog?: CustomListAuditLogEntry[];
+		rankBadges?: CustomListRankBadge[];
+		weightFormula?: string;
 		items: CustomListItem[];
+		ownerData?: any;
+	};
+
+	type CustomListRankBadgeDraft = {
+		name: string;
+		shorthand: string;
+		color: string;
+		minRating: number | null | undefined;
+		minTop: number | null | undefined;
+	};
+
+	type ManageTab = 'basic' | 'appearance' | 'formula' | 'rank' | 'danger' | 'levels' | 'collaboration';
+
+	const defaultPermissions: CustomListPermissionFlags = {
+		canEditSettings: false,
+		canEditLevels: false,
+		canDelete: false,
+		canBan: false,
+		canManageMembers: false,
+		canConfigureCollaboration: false,
+		canTransferOwnership: false,
+		canViewMembers: false,
+		canViewAudit: false
 	};
 
 	// SSR data - hydrate into reactive local state
 	let list: CustomList | null = data?.list ?? null;
 	let loadingError = data?.error ?? '';
+	let requiresAuthRecovery = Boolean(data?.requiresAuthRecovery);
+	let authRecoveryLoading = requiresAuthRecovery;
 
 	let savingMetadata = false;
 	let addingLevel = false;
 	let mutatingLevelId: number | null = null;
-	let draggedIndex: number | null = null;
-	let dragOverIndex: number | null = null;
-	let editingRatingItemId: number | null = null;
-	let editingRatingValue = '';
-	let editingMinProgressItemId: number | null = null;
-	let editingMinProgressValue: string | number | undefined = '';
 	let savingLevelItemId: number | null = null;
 	let savingReorder = false;
+	let refreshingLeaderboard = false;
+	let savingBanState = false;
+	let savingCollaboration = false;
 	let initialSyncDone = false;
+	let uploadingAsset: 'banner' | 'logo' | null = null;
 
-	const editForm = {
+	const CUSTOM_LIST_CDN_BASE_URL = 'https://cdn.gdvn.net';
+
+	let editForm = {
 		title: '',
 		description: '',
+		backgroundColor: '',
+		bannerUrl: '',
+		borderColor: '',
 		communityEnabled: true,
 		isPlatformer: false,
+		logoUrl: '',
+		topEnabled: true,
 		visibility: 'private' as 'private' | 'unlisted' | 'public',
 		tags: '',
-		mode: 'rating' as 'rating' | 'top'
+		mode: 'rating' as 'rating' | 'top',
+		rankBadges: [] as CustomListRankBadgeDraft[],
+		weightFormula: '1'
 	};
 
-	const visibilityOptions: Array<'private' | 'unlisted' | 'public'> = ['private', 'unlisted', 'public'];
+	let activeTab: ManageTab = getInitialManageTab();
+	let initialManageTabSettled = false;
 
-	let levelIdInput = '';
+	function getInitialManageTab(): ManageTab {
+		const requestedTab = $page.url.searchParams.get('tab');
 
-	function getQuickLevelId() {
-		const raw = $page.url.searchParams.get('levelId');
-		const parsed = raw ? Number.parseInt(raw, 10) : Number.NaN;
-		return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
-	}
+		if (
+			requestedTab === 'basic'
+			|| requestedTab === 'appearance'
+			|| requestedTab === 'formula'
+			|| requestedTab === 'rank'
+			|| requestedTab === 'collaboration'
+			|| requestedTab === 'danger'
+		) {
+			return requestedTab;
+		}
 
-	$: quickLevelId = getQuickLevelId();
-	$: if (quickLevelId && !levelIdInput) {
-		levelIdInput = String(quickLevelId);
+		if (requestedTab === 'levels') {
+			return 'levels';
+		}
+
+		return 'basic';
 	}
 
 	function syncForm() {
 		if (!list) return;
 		editForm.title = list.title;
 		editForm.description = list.description;
+		editForm.backgroundColor = list.backgroundColor || '';
+		editForm.bannerUrl = list.bannerUrl || '';
+		editForm.borderColor = list.borderColor || '';
 		editForm.communityEnabled = list.communityEnabled;
 		editForm.isPlatformer = list.isPlatformer;
+		editForm.logoUrl = list.logoUrl || '';
+		editForm.topEnabled = list.topEnabled ?? true;
 		editForm.visibility = list.visibility;
 		editForm.tags = list.tags.join(', ');
 		editForm.mode = list.mode;
+		editForm.rankBadges = normalizeCustomListRankBadges(list.rankBadges).map((rankBadge) => ({
+			...rankBadge
+		}));
+		editForm.weightFormula = list.weightFormula || '1';
 	}
 
 	// Sync form when list changes from SSR data
@@ -119,9 +224,14 @@
 		syncForm();
 	}
 
-	// Re-fetch with auth once user is available so owners can recover private lists.
+	// Re-fetch with auth once user is available so managers and owners can recover private lists.
 	$: if ($user.checked && $user.loggedIn) {
 		refetchWithAuth();
+	}
+	$: if (requiresAuthRecovery && $user.checked && !$user.loggedIn && !list) {
+		loadingError = 'This list is private';
+		authRecoveryLoading = false;
+		requiresAuthRecovery = false;
 	}
 
 	let authFetchKey = '';
@@ -129,6 +239,11 @@
 		const key = `${$page.params.id}:${$user.data?.uid}`;
 		if (key === authFetchKey) return;
 		authFetchKey = key;
+		const recoveringPrivateList = requiresAuthRecovery;
+
+		if (recoveringPrivateList) {
+			authRecoveryLoading = true;
+		}
 
 		try {
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${$page.params.id}`, {
@@ -142,11 +257,18 @@
 				return;
 			}
 
-			if (!list) {
-				loadingError = payload?.error || loadingError || 'Failed to load list';
+			if (recoveringPrivateList) {
+				loadingError = payload?.error || 'Failed to load list';
 			}
 		} catch {
-			// silently fail, we already have SSR data
+			if (recoveringPrivateList) {
+				loadingError = 'Failed to load list';
+			}
+		} finally {
+			if (recoveringPrivateList) {
+				authRecoveryLoading = false;
+				requiresAuthRecovery = false;
+			}
 		}
 	}
 
@@ -172,24 +294,367 @@
 		});
 	}
 
-	function getTimeString(ms: number) {
-		const minutes = Math.floor(ms / 60000);
-		const seconds = Math.floor((ms % 60000) / 1000);
-		const milliseconds = ms % 1000;
-		return `${minutes}:${seconds.toString().padStart(2, '0')}.${milliseconds}`;
+	function formatDateTime(value: string) {
+		return new Date(value).toLocaleString('vi-VN', {
+			year: 'numeric',
+			month: 'short',
+			day: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit'
+		});
 	}
 
-	function getEffectiveMinProgress(item: CustomListItem) {
-		return item.minProgress ?? item.level?.minProgress ?? null;
+	function getRoleLabel(role: string) {
+		if (role === 'owner') return $_('custom_lists.manage.roles.owner');
+		if (role === 'admin') return $_('custom_lists.manage.roles.admin');
+		if (role === 'helper') return $_('custom_lists.manage.roles.helper');
+		if (role === 'moderator') return $_('custom_lists.manage.roles.moderator');
+		return $_('custom_lists.manage.roles.viewer');
 	}
 
-	function getMinProgressLabel(item: CustomListItem) {
-		const minProgress = getEffectiveMinProgress(item);
-		if (minProgress == null) return $_('custom_lists.detail.levels.min_progress_label');
-		const value = list?.isPlatformer
-			? `${getTimeString(minProgress)} Base`
-			: `${minProgress}% Min`;
-		return item.minProgress == null ? value : `${value} *`;
+	async function searchPlayersForCollaboration(query: string) {
+		if (!query.trim().length) {
+			return [];
+		}
+
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/players/search?q=${encodeURIComponent(query.trim())}`);
+			const payload = await res.json().catch(() => []);
+
+			if (!res.ok) {
+				throw new Error($_('custom_lists.toast.failed_player_search'));
+			}
+
+			return Array.isArray(payload) ? payload : [];
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_player_search'));
+			return [];
+		}
+	}
+
+	async function updateCollaborationSettings(adminsCanManageHelpers: boolean) {
+		if (!list || !canConfigureCollaboration) return;
+
+		savingCollaboration = true;
+
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/collaboration`, {
+				method: 'PATCH',
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`,
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ adminsCanManageHelpers })
+			});
+			const payload = await res.json();
+			if (!res.ok) throw new Error(payload.error || $_('custom_lists.toast.failed_collaboration_update'));
+			list = payload;
+			syncForm();
+			toast.success($_('custom_lists.toast.collaboration_updated'));
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_collaboration_update'));
+		} finally {
+			savingCollaboration = false;
+		}
+	}
+
+	async function addCollaborator(selectedMember: any, collaboratorRole: 'admin' | 'helper') {
+		if (!list || !selectedMember || !canManageMembers) return;
+
+		savingCollaboration = true;
+
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/members`, {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`,
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					uid: selectedMember.uid,
+					role: canConfigureCollaboration ? collaboratorRole : 'helper'
+				})
+			});
+			const payload = await res.json();
+			if (!res.ok) throw new Error(payload.error || $_('custom_lists.toast.failed_add_collaborator'));
+			list = payload;
+			syncForm();
+			toast.success($_('custom_lists.toast.collaborator_added'));
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_add_collaborator'));
+		} finally {
+			savingCollaboration = false;
+		}
+	}
+
+	async function updateCollaboratorRole(member: CustomListMember | null, role: 'admin' | 'helper') {
+		if (!list || !member || !canConfigureCollaboration) return;
+
+		savingCollaboration = true;
+
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/members/${member.uid}`, {
+				method: 'PATCH',
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`,
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ role })
+			});
+			const payload = await res.json();
+			if (!res.ok) throw new Error(payload.error || $_('custom_lists.toast.failed_update_collaborator'));
+			list = payload;
+			syncForm();
+			toast.success($_('custom_lists.toast.collaborator_role_updated'));
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_update_collaborator'));
+		} finally {
+			savingCollaboration = false;
+		}
+	}
+
+	async function removeCollaborator(member: CustomListMember) {
+		if (!list || !canManageMembers) return;
+		if (!canConfigureCollaboration && member.role !== 'helper') return;
+
+		savingCollaboration = true;
+
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/members/${member.uid}`, {
+				method: 'DELETE',
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`
+				}
+			});
+			const payload = await res.json();
+			if (!res.ok) throw new Error(payload.error || $_('custom_lists.toast.failed_remove_collaborator'));
+			list = payload;
+			syncForm();
+			toast.success($_('custom_lists.toast.collaborator_removed'));
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_remove_collaborator'));
+		} finally {
+			savingCollaboration = false;
+		}
+	}
+
+	async function transferOwnership(selectedMember: any) {
+		if (!list || !selectedMember || !canTransferOwnership) return;
+
+		savingCollaboration = true;
+
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/ownership`, {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`,
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ uid: selectedMember.uid })
+			});
+			const payload = await res.json();
+			if (!res.ok) throw new Error(payload.error || $_('custom_lists.toast.failed_transfer_ownership'));
+			list = payload;
+			syncForm();
+			toast.success($_('custom_lists.toast.ownership_transferred'));
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_transfer_ownership'));
+		} finally {
+			savingCollaboration = false;
+		}
+	}
+
+	function isTabAllowed(tab: ManageTab) {
+		if (tab === 'levels') return true;
+		if (tab === 'danger') return canBan || canDelete;
+		if (tab === 'collaboration') return canShowCollaboration;
+		return canEditSettings;
+	}
+
+	function isHexColor(value: string | null | undefined) {
+		return typeof value === 'string' && /^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(value.trim());
+	}
+
+	function withHexAlpha(color: string, alpha: string) {
+		const normalized = color.trim();
+		return normalized.length === 9 ? `${normalized.slice(0, 7)}${alpha}` : `${normalized}${alpha}`;
+	}
+
+	function hexToRgb(color: string) {
+		const normalized = color.trim().slice(1, 7);
+		return {
+			r: Number.parseInt(normalized.slice(0, 2), 16),
+			g: Number.parseInt(normalized.slice(2, 4), 16),
+			b: Number.parseInt(normalized.slice(4, 6), 16)
+		};
+	}
+
+	function isLightColor(color: string) {
+		const { r, g, b } = hexToRgb(color);
+		const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+		return luminance >= 0.62;
+	}
+
+	function getThemedSurfaceStyle(backgroundColor: string | null, borderColor: string | null) {
+		const styles: string[] = [];
+
+		if (backgroundColor) {
+			const lightBackground = isLightColor(backgroundColor);
+			styles.push(
+				`background: ${backgroundColor}; --custom-surface-foreground: ${lightBackground ? '#0f172a' : '#f8fafc'}; --custom-surface-muted: ${lightBackground ? 'rgba(15, 23, 42, 0.72)' : 'rgba(248, 250, 252, 0.78)'}; --custom-surface-chip-background: ${lightBackground ? 'rgba(15, 23, 42, 0.12)' : 'rgba(248, 250, 252, 0.16)'};`
+			);
+		}
+
+		if (borderColor) {
+			styles.push(`border-color: ${borderColor};`);
+			styles.push(`box-shadow: 0 0 0 1px ${withHexAlpha(borderColor, '22')};`);
+		}
+
+		return styles.length ? styles.join(' ') : undefined;
+	}
+
+	function getManageHeroBannerUrl() {
+		if (initialSyncDone) {
+			const value = editForm.bannerUrl.trim();
+			return /^https?:\/\//i.test(value) ? value : null;
+		}
+
+		return list?.bannerUrl ?? null;
+	}
+
+	function getManagePreviewTitle() {
+		if (initialSyncDone) {
+			return editForm.title.trim() || $_('custom_lists.detail.edit.preview_title');
+		}
+
+		return list?.title || $_('custom_lists.detail.edit.preview_title');
+	}
+
+	function getManagePreviewDescription() {
+		if (initialSyncDone) {
+			return editForm.description.trim() || $_('custom_lists.detail.no_description');
+		}
+
+		return list?.description || $_('custom_lists.detail.no_description');
+	}
+
+	function getManagePreviewTags() {
+		if (initialSyncDone) {
+			return parseTags(editForm.tags);
+		}
+
+		return list?.tags ?? [];
+	}
+
+	function getImageExtension(file: File) {
+		const normalizedType = file.type.toLowerCase();
+		if (normalizedType === 'image/png') return 'png';
+		if (normalizedType === 'image/webp') return 'webp';
+		if (normalizedType === 'image/gif') return 'gif';
+
+		const normalizedName = file.name.toLowerCase();
+		if (normalizedName.endsWith('.png')) return 'png';
+		if (normalizedName.endsWith('.webp')) return 'webp';
+		if (normalizedName.endsWith('.gif')) return 'gif';
+
+		return 'jpg';
+	}
+
+	function getImageContentType(file: File, extension: string) {
+		if (file.type) {
+			return file.type;
+		}
+
+		if (extension === 'png') return 'image/png';
+		if (extension === 'webp') return 'image/webp';
+		if (extension === 'gif') return 'image/gif';
+		return 'image/jpeg';
+	}
+
+	function getCustomListAssetPath(asset: 'banner' | 'logo', extension: string) {
+		return `custom-lists/${$user.data?.uid}/${list?.id}/${asset}.${extension}`;
+	}
+
+	function getCustomListAssetUrl(path: string) {
+		return `${CUSTOM_LIST_CDN_BASE_URL}/${path}?v=${Date.now()}`;
+	}
+
+	async function normalizeCustomListAsset(file: File, asset: 'banner' | 'logo') {
+		const extension = getImageExtension(file);
+
+		if (extension === 'gif') {
+			return file;
+		}
+
+		return imageCompression(file, {
+			maxSizeMB: asset === 'banner' ? 4.5 : 0.35,
+			maxWidthOrHeight: asset === 'banner' ? 1920 : 512,
+			useWebWorker: true
+			});
+	}
+
+	async function uploadCustomListAsset(asset: 'banner' | 'logo', selectedFile: File) {
+		if (!list || !canEditSettings) return;
+
+		if (!selectedFile) {
+			return null;
+		}
+
+		if (!selectedFile.type.startsWith('image/')) {
+			toast.error($_('custom_lists.toast.invalid_image'));
+			return null;
+		}
+
+		uploadingAsset = asset;
+
+		try {
+			const token = await $user.token();
+			const ownerUid = $user.data?.uid;
+
+			if (!token || !ownerUid) {
+				throw new Error($_('custom_lists.toast.failed_upload_image'));
+			}
+
+			const preparedFile = await normalizeCustomListAsset(selectedFile, asset);
+			const extension = getImageExtension(preparedFile);
+			const assetPath = getCustomListAssetPath(asset, extension);
+
+			const presignRes = await fetch(
+				`${import.meta.env.VITE_API_URL}/storage/presign?path=${encodeURIComponent(assetPath)}`,
+				{
+					headers: {
+						Authorization: `Bearer ${token}`
+					}
+				}
+			);
+
+			if (!presignRes.ok) {
+				throw new Error($_('custom_lists.toast.failed_upload_image'));
+			}
+
+			const presignedUrl = await presignRes.text();
+			const uploadRes = await fetch(presignedUrl, {
+				method: 'PUT',
+				headers: {
+					'Content-Type': getImageContentType(preparedFile, extension)
+				},
+				body: preparedFile
+			});
+
+			if (!uploadRes.ok) {
+				throw new Error($_('custom_lists.toast.failed_upload_image'));
+			}
+
+			const uploadedUrl = getCustomListAssetUrl(assetPath);
+
+			toast.success($_('custom_lists.toast.image_uploaded_save'));
+			return uploadedUrl;
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_upload_image'));
+			return null;
+		} finally {
+			uploadingAsset = null;
+		}
 	}
 
 	function getVisibilityIcon(v: string) {
@@ -200,7 +665,7 @@
 
 	// Mutations
 	async function saveMetadata() {
-		if (!list) return;
+		if (!list || !canEditSettings) return;
 		if (!editForm.title.trim()) {
 			toast.error($_('custom_lists.toast.title_required'));
 			return;
@@ -217,11 +682,24 @@
 				body: JSON.stringify({
 					title: editForm.title,
 					description: editForm.description,
+					backgroundColor: editForm.backgroundColor,
+					bannerUrl: editForm.bannerUrl,
+					borderColor: editForm.borderColor,
 					communityEnabled: editForm.communityEnabled,
 					isPlatformer: editForm.isPlatformer,
+					logoUrl: editForm.logoUrl,
+					topEnabled: editForm.topEnabled,
 					visibility: editForm.visibility,
 					tags: parseTags(editForm.tags),
-					mode: editForm.mode
+					mode: editForm.mode,
+					rankBadges: editForm.rankBadges.map((rankBadge) => ({
+						name: rankBadge.name,
+						shorthand: rankBadge.shorthand,
+						color: rankBadge.color,
+						minRating: rankBadge.minRating,
+						minTop: rankBadge.minTop
+					})),
+					weightFormula: editForm.weightFormula
 				})
 			});
 			const payload = await res.json();
@@ -236,9 +714,54 @@
 		}
 	}
 
-	async function deleteList() {
-		if (!list) return;
-		if (!confirm($_('custom_lists.detail.delete_confirm'))) return;
+	async function refreshLeaderboardPrecalc() {
+		if (!list || !canEditSettings || refreshingLeaderboard) return;
+
+		refreshingLeaderboard = true;
+
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/leaderboard/refresh`, {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`
+				}
+			});
+
+			const payload = await res.json().catch(() => null);
+
+			if (!res.ok) {
+				throw new Error(payload?.error || 'Failed to refresh leaderboard');
+			}
+
+			if (list) {
+				list = {
+					...list,
+					lastRefreshedAt: payload?.lastRefreshedAt ?? list.lastRefreshedAt ?? null
+				};
+			}
+
+			const refreshedTotal = typeof payload?.total === 'number' ? payload.total : null;
+			const refreshedRecordTotal = typeof payload?.totalRecords === 'number' ? payload.totalRecords : null;
+			toast.success(
+				refreshedTotal == null
+					? 'Leaderboard refreshed'
+					: refreshedRecordTotal == null
+						? `Leaderboard refreshed (${refreshedTotal} ranked players)`
+						: `Leaderboard refreshed (${refreshedTotal} ranked players, ${refreshedRecordTotal} records)`
+			);
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : 'Failed to refresh leaderboard');
+		} finally {
+			refreshingLeaderboard = false;
+		}
+	}
+
+	async function deleteList(confirmationName: string) {
+		if (!list || !canDelete) return;
+		if (confirmationName.trim() !== list.title) {
+			toast.error($_('custom_lists.manage.confirm_title_error'));
+			return;
+		}
 
 		try {
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}`, {
@@ -256,13 +779,8 @@
 		}
 	}
 
-	async function addLevel() {
-		if (!list) return;
-		const levelId = Number.parseInt(levelIdInput, 10);
-		if (!Number.isInteger(levelId) || levelId <= 0) {
-			toast.error($_('custom_lists.toast.level_id_invalid'));
-			return;
-		}
+	async function addLevel(levelId: number) {
+		if (!list || !canEditLevels) return false;
 
 		addingLevel = true;
 		try {
@@ -277,17 +795,18 @@
 			const payload = await res.json();
 			if (!res.ok) throw new Error(payload.error || $_('custom_lists.toast.failed_add_level'));
 			list = payload;
-			levelIdInput = '';
 			toast.success($_('custom_lists.toast.level_added'));
+			return true;
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_add_level'));
+			return false;
 		} finally {
 			addingLevel = false;
 		}
 	}
 
 	async function removeLevel(levelId: number) {
-		if (!list) return;
+		if (!list || !canEditLevels) return;
 		mutatingLevelId = levelId;
 		try {
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/levels/${levelId}`, {
@@ -305,60 +824,8 @@
 		}
 	}
 
-	function startRatingEdit(item: CustomListItem) {
-		editingRatingItemId = item.id;
-		editingRatingValue = String(item.rating ?? 5);
-	}
-
-	function startMinProgressEdit(item: CustomListItem) {
-		editingMinProgressItemId = item.id;
-		editingMinProgressValue = item.minProgress == null ? '' : String(item.minProgress);
-	}
-
-	function cancelMinProgressEdit() {
-		editingMinProgressItemId = null;
-		editingMinProgressValue = '';
-	}
-
-	function handleMinProgressBlur(event: FocusEvent) {
-		const nextTarget = event.relatedTarget;
-		if (nextTarget instanceof HTMLElement && nextTarget.dataset.minProgressAction) {
-			return;
-		}
-
-		cancelMinProgressEdit();
-	}
-
-	async function saveRatingEdit(levelId: number) {
-		const rating = Number.parseInt(editingRatingValue, 10);
-		editingRatingItemId = null;
-		if (!Number.isInteger(rating) || rating < 1 || rating > 10) {
-			toast.error($_('custom_lists.toast.rating_invalid'));
-			return;
-		}
-		await updateLevelItem(levelId, { rating });
-	}
-
-	async function saveMinProgressEdit(levelId: number) {
-		if (!list) return;
-		const rawValue = editingMinProgressValue == null ? '' : String(editingMinProgressValue).trim();
-		editingMinProgressItemId = null;
-
-		if (!rawValue.length) {
-			await updateLevelItem(levelId, { minProgress: null });
-			return;
-		}
-
-		const minProgress = Number.parseInt(rawValue, 10);
-		if (!Number.isInteger(minProgress) || minProgress < 0 || (!list.isPlatformer && minProgress > 100)) {
-			toast.error($_('custom_lists.toast.min_progress_invalid'));
-			return;
-		}
-		await updateLevelItem(levelId, { minProgress });
-	}
-
 	async function updateLevelItem(levelId: number, patch: { rating?: number; minProgress?: number | null }) {
-		if (!list) return;
+		if (!list || !canEditLevels) return;
 		savingLevelItemId = levelId;
 		try {
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/levels/${levelId}`, {
@@ -380,41 +847,38 @@
 		}
 	}
 
-	// Drag & drop reorder
-	function onDragStart(e: DragEvent, index: number) {
-		draggedIndex = index;
-		if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
-	}
-
-	function onDragOver(e: DragEvent, index: number) {
-		e.preventDefault();
-		if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-		dragOverIndex = index;
-	}
-
-	function onDragEnd() {
-		draggedIndex = null;
-		dragOverIndex = null;
-	}
-
-	function onDrop(e: DragEvent, targetIndex: number) {
-		e.preventDefault();
-		if (draggedIndex === null || draggedIndex === targetIndex || !list) {
-			draggedIndex = null;
-			dragOverIndex = null;
+	async function setBanState(nextIsBanned: boolean, confirmationName: string) {
+		if (!list || !canBan || savingBanState) return;
+		if (confirmationName.trim() !== list.title) {
+			toast.error($_('custom_lists.manage.confirm_title_error'));
 			return;
 		}
-		const newItems = [...list.items];
-		const [moved] = newItems.splice(draggedIndex, 1);
-		newItems.splice(targetIndex, 0, moved);
-		list = { ...list, items: newItems };
-		draggedIndex = null;
-		dragOverIndex = null;
-		reorderLevels(newItems.map((item) => item.levelId));
+
+		savingBanState = true;
+
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/ban`, {
+				method: 'PATCH',
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`,
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ isBanned: nextIsBanned })
+			});
+			const payload = await res.json();
+			if (!res.ok) throw new Error(payload.error || $_('custom_lists.toast.failed_ban'));
+			list = payload;
+			syncForm();
+			toast.success($_(nextIsBanned ? 'custom_lists.toast.list_banned' : 'custom_lists.toast.list_unbanned'));
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_ban'));
+		} finally {
+			savingBanState = false;
+		}
 	}
 
 	async function reorderLevels(levelIds: number[]) {
-		if (!list) return;
+		if (!list || !canEditLevels) return;
 		savingReorder = true;
 		try {
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/reorder`, {
@@ -436,7 +900,41 @@
 		}
 	}
 
-	$: isOwner = Boolean(list && $user.loggedIn && list.owner === $user.data?.uid);
+	$: permissions = list?.permissions ?? defaultPermissions;
+	$: canEditSettings = Boolean(list && permissions.canEditSettings);
+	$: canEditLevels = Boolean(list && permissions.canEditLevels);
+	$: canDelete = Boolean(list && permissions.canDelete);
+	$: canBan = Boolean(list && permissions.canBan);
+	$: canManageMembers = Boolean(list && permissions.canManageMembers);
+	$: canConfigureCollaboration = Boolean(list && permissions.canConfigureCollaboration);
+	$: canTransferOwnership = Boolean(list && permissions.canTransferOwnership);
+	$: canViewMembers = Boolean(list && permissions.canViewMembers);
+	$: canViewAudit = Boolean(list && permissions.canViewAudit);
+	$: canShowCollaboration = Boolean(list && (canViewMembers || canViewAudit || canManageMembers || canConfigureCollaboration || canTransferOwnership));
+	$: if (list && $user.checked && !initialManageTabSettled) {
+		initialManageTabSettled = true;
+		const requestedTab = getInitialManageTab();
+		activeTab = isTabAllowed(requestedTab)
+			? requestedTab
+			: canEditSettings
+				? 'basic'
+				: canShowCollaboration
+					? 'collaboration'
+					: 'levels';
+	}
+	$: if (list && $user.checked && !isTabAllowed(activeTab)) {
+		activeTab = canEditSettings ? 'basic' : canShowCollaboration ? 'collaboration' : 'levels';
+	}
+
+	// Reactive hero preview colors — update live from editForm without saving
+	$: _heroPreviewBg = initialSyncDone
+		? (isHexColor(editForm.backgroundColor) ? editForm.backgroundColor.trim() : null)
+		: (isHexColor(list?.backgroundColor) ? list!.backgroundColor!.trim() : null);
+	$: _heroPreviewBorder = initialSyncDone
+		? (isHexColor(editForm.borderColor) ? editForm.borderColor.trim() : null)
+		: (isHexColor(list?.borderColor) ? list!.borderColor!.trim() : null);
+	$: heroStyle = getThemedSurfaceStyle(_heroPreviewBg, _heroPreviewBorder);
+	$: heroBannerStyle = _heroPreviewBorder ? `border-bottom-color: ${_heroPreviewBorder};` : undefined;
 </script>
 
 <svelte:head>
@@ -458,7 +956,13 @@
 		{/if}
 	</div>
 
-	{#if loadingError}
+	{#if authRecoveryLoading && !list}
+		<div class="emptyState">
+			<AlertTriangle class="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+			<h3>{$_('custom_lists.detail.loading')}</h3>
+			<p>{$_('custom_lists.detail.loading')}</p>
+		</div>
+	{:else if loadingError}
 		<div class="emptyState">
 			<AlertTriangle class="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
 			<h3>{$_('custom_lists.detail.error_title')}</h3>
@@ -466,33 +970,41 @@
 		</div>
 	{:else if list}
 		<!-- Hero Summary -->
-		<div class="hero">
+		<div class="hero" class:heroHasBanner={Boolean(getManageHeroBannerUrl())} style={heroStyle}>
+			{#if getManageHeroBannerUrl()}
+				<div class="heroBanner" style={heroBannerStyle}>
+					<img src={getManageHeroBannerUrl()} alt="" loading="lazy" decoding="async" />
+				</div>
+			{/if}
 			<div class="heroTop">
 				<div class="heroInfo">
-					<h1>{list.title}</h1>
-					<p class="heroDesc">{list.description || $_('custom_lists.detail.no_description')}</p>
+					<h1>{getManagePreviewTitle()}</h1>
+					<p class="heroDesc">{getManagePreviewDescription()}</p>
 				</div>
 				<div class="heroChips">
 					<span class="chip">
-						<svelte:component this={getVisibilityIcon(list.visibility)} class="h-3.5 w-3.5" />
-						{formatVisibility(list.visibility)}
+						<svelte:component this={getVisibilityIcon(editForm.visibility)} class="h-3.5 w-3.5" />
+						{formatVisibility(editForm.visibility)}
 					</span>
 					<span class="chip">
 						<Layers class="h-3.5 w-3.5" />
-						{formatListType(list.isPlatformer)}
+						{formatListType(editForm.isPlatformer)}
 					</span>
 					<span class="chip">
-						{list.mode === 'top' ? '🔢' : '⭐'}
-						{list.mode === 'rating' ? $_('custom_lists.detail.edit.mode_rating') : $_('custom_lists.detail.edit.mode_top')}
+						{editForm.mode === 'top' ? '🔢' : '⭐'}
+						{editForm.mode === 'rating' ? $_('custom_lists.detail.edit.mode_rating') : $_('custom_lists.detail.edit.mode_top')}
 					</span>
 					<span class="chip">
-						{$_('custom_lists.detail.levels_badge', { values: { count: list.levelCount } })}
+						{$_('custom_lists.detail.levels_badge', { values: { count: list.items.length } })}
 					</span>
+					{#if list.currentUserRole && list.currentUserRole !== 'viewer'}
+						<span class="chip">{getRoleLabel(list.currentUserRole)}</span>
+					{/if}
 				</div>
 			</div>
-			{#if list.tags?.length}
+			{#if getManagePreviewTags().length}
 				<div class="tagRow">
-					{#each list.tags as tag}
+					{#each getManagePreviewTags() as tag}
 						<Badge variant="outline">{tag}</Badge>
 					{/each}
 				</div>
@@ -501,278 +1013,143 @@
 				<Clock class="h-3.5 w-3.5" />
 				{$_('custom_lists.detail.updated', { values: { date: formatDate(list.updated_at) } })}
 			</p>
+			{#if list.lastRefreshedAt}
+				<p class="updatedAt">
+					<RefreshCw class="h-3.5 w-3.5" />
+					Leaderboard refreshed {formatDateTime(list.lastRefreshedAt)}
+				</p>
+			{/if}
 		</div>
 
-		{#if isOwner}
-			<!-- Owner Tools -->
-			<div class="ownerTools">
-				<!-- Edit Metadata -->
-				<div class="toolCard">
-					<h2 class="toolHeading">{$_('custom_lists.detail.edit.heading')}</h2>
-					<div class="formGrid">
-						<div class="field">
-							<label for="list-title">{$_('custom_lists.detail.edit.title_label')}</label>
-							<Input id="list-title" bind:value={editForm.title} maxlength={100} />
-						</div>
-						<div class="field">
-							<label for="list-description">{$_('custom_lists.detail.edit.description_label')}</label>
-							<Textarea id="list-description" bind:value={editForm.description} rows={3} />
-						</div>
-						<div class="field">
-							<div class="switchRow">
-								<div>
-									<label for="list-platformer">{$_('custom_lists.detail.edit.type_label')}</label>
-									<p class="hint">{$_('custom_lists.detail.edit.type_hint')}</p>
-								</div>
-								<div class="switchControl">
-									<span class="switchLabel">{formatListType(editForm.isPlatformer)}</span>
-									<Switch id="list-platformer" bind:checked={editForm.isPlatformer} />
-								</div>
-							</div>
-						</div>
-						<div class="field">
-							<div class="switchRow">
-								<div>
-									<label for="list-community-enabled">{$_('custom_lists.detail.edit.community_label')}</label>
-									<p class="hint">{$_('custom_lists.detail.edit.community_hint')}</p>
-								</div>
-								<div class="switchControl">
-									<span class="switchLabel">{editForm.communityEnabled ? $_('general.yes') : $_('general.no')}</span>
-									<Switch id="list-community-enabled" bind:checked={editForm.communityEnabled} />
-								</div>
-							</div>
-						</div>
-						<div class="field">
-							<span class="fieldLabel">{$_('custom_lists.detail.edit.visibility_label')}</span>
-							<div class="optionRow">
-								{#each visibilityOptions as v}
-									<button
-										type="button"
-										class="optionBtn"
-										class:selected={editForm.visibility === v}
-										on:click={() => (editForm.visibility = v)}
-									>
-										<svelte:component this={getVisibilityIcon(v)} class="h-3.5 w-3.5" />
-										{formatVisibility(v)}
-									</button>
-								{/each}
-							</div>
-						</div>
-						<div class="field">
-							<span class="fieldLabel">{$_('custom_lists.detail.edit.mode_label')}</span>
-							<div class="optionRow">
-								{#each ['rating', 'top'] as m}
-									<button
-										type="button"
-										class="optionBtn"
-										class:selected={editForm.mode === m}
-										on:click={() => (editForm.mode = m === 'rating' ? 'rating' : 'top')}
-									>
-										{#if m === 'rating'}<Star class="h-3.5 w-3.5" />{:else}<ListOrdered class="h-3.5 w-3.5" />{/if}
-										{m === 'rating' ? $_('custom_lists.detail.edit.mode_rating') : $_('custom_lists.detail.edit.mode_top')}
-									</button>
-								{/each}
-							</div>
-							<p class="hint">{editForm.mode === 'rating' ? $_('custom_lists.detail.edit.mode_rating_hint') : $_('custom_lists.detail.edit.mode_top_hint')}</p>
-						</div>
-						<div class="field">
-							<label for="list-tags">{$_('custom_lists.detail.edit.tags_label')}</label>
-							<Input id="list-tags" bind:value={editForm.tags} placeholder="challenge, favorite" />
-						</div>
-					</div>
+		{#if list.isBanned}
+			<div class="toolCard moderationNotice">
+				<div class="moderationCopy">
+					<h2 class="toolHeading">{$_('custom_lists.manage.banned_title')}</h2>
+					<p class="hint">
+						{canBan
+							? $_('custom_lists.manage.banned_manager_hint')
+							: list.currentUserRole === 'admin' || list.currentUserRole === 'helper'
+								? $_('custom_lists.manage.banned_collaborator_hint')
+								: $_('custom_lists.manage.banned_owner_hint')}
+					</p>
+				</div>
+				<div class="moderationIcon">
+					<AlertTriangle class="h-5 w-5" />
+				</div>
+			</div>
+		{/if}
+
+		<Tabs.Root bind:value={activeTab}>
+			<div class="tabsList">
+				<Tabs.List class="flex h-fit w-fit flex-wrap">
+					{#if canEditSettings}
+						<Tabs.Trigger value="basic">{$_('custom_lists.manage.tabs.basic')}</Tabs.Trigger>
+						<Tabs.Trigger value="appearance">{$_('custom_lists.manage.tabs.appearance')}</Tabs.Trigger>
+						<Tabs.Trigger value="formula">{$_('custom_lists.manage.tabs.formula')}</Tabs.Trigger>
+						<Tabs.Trigger value="rank">{$_('custom_lists.manage.tabs.rank')}</Tabs.Trigger>
+					{/if}
+					<Tabs.Trigger value="levels">{$_('custom_lists.manage.tabs.levels')}</Tabs.Trigger>
+					{#if canShowCollaboration}
+						<Tabs.Trigger value="collaboration">{$_('custom_lists.manage.tabs.collaboration')}</Tabs.Trigger>
+					{/if}
+					{#if canBan || canDelete}
+						<Tabs.Trigger value="danger" class="dangerTabTrigger">{$_('custom_lists.manage.tabs.danger')}</Tabs.Trigger>
+					{/if}
+				</Tabs.List>
+			</div>
+
+			{#if canEditSettings}
+				<Tabs.Content value="basic">
+					<BasicTab
+						bind:editForm
+						{list}
+					/>
+				</Tabs.Content>
+
+				<Tabs.Content value="appearance">
+					<AppearanceTab
+						bind:editForm
+						{list}
+						{uploadingAsset}
+						uploadAsset={uploadCustomListAsset}
+					/>
+				</Tabs.Content>
+
+				<Tabs.Content value="formula">
+					<FormulaTab bind:editForm />
+				</Tabs.Content>
+
+				<Tabs.Content value="rank">
+					<RankTab bind:editForm />
+				</Tabs.Content>
+
+				{#if canShowCollaboration}
+					<Tabs.Content value="collaboration">
+						<CollaborationTab
+							{list}
+							{savingCollaboration}
+							{canConfigureCollaboration}
+							{canViewMembers}
+							{canManageMembers}
+							{canTransferOwnership}
+							{canViewAudit}
+							{updateCollaborationSettings}
+							{searchPlayersForCollaboration}
+							{addCollaborator}
+							{updateCollaboratorRole}
+							{transferOwnership}
+							{removeCollaborator}
+							{getRoleLabel}
+							{formatDate}
+							{formatDateTime}
+						/>
+					</Tabs.Content>
+				{/if}
+
+				{#if canBan || canDelete}
+					<Tabs.Content value="danger">
+						<DangerTab
+							{list}
+							{canBan}
+							{canDelete}
+							{savingBanState}
+							{setBanState}
+							{deleteList}
+						/>
+					</Tabs.Content>
+				{/if}
+
+			{#if canEditSettings && activeTab !== 'levels' && activeTab !== 'danger' && activeTab !== 'collaboration'}
+				<div class="toolCard actionCard">
 					<div class="formActions">
 						<Button on:click={saveMetadata} disabled={savingMetadata}>
 							<Save class="mr-2 h-4 w-4" />
 							{$_('custom_lists.detail.edit.save')}
 						</Button>
-						<Button variant="destructive" on:click={deleteList}>
-							<Trash2 class="mr-2 h-4 w-4" />
-							{$_('custom_lists.detail.edit.delete')}
+						<Button variant="outline" on:click={refreshLeaderboardPrecalc} disabled={refreshingLeaderboard}>
+							<RefreshCw class="mr-2 h-4 w-4" />
+							{refreshingLeaderboard ? `${$_('general.loading')}...` : 'Refresh leaderboard'}
 						</Button>
 					</div>
-				</div>
-
-				<!-- Add Level -->
-				<div class="toolCard">
-					<h2 class="toolHeading">{$_('custom_lists.detail.add_level.heading')}</h2>
-					<div class="field">
-						<label for="level-id">{$_('custom_lists.detail.add_level.id_label')}</label>
-						<Input id="level-id" bind:value={levelIdInput} inputmode="numeric" />
-					</div>
-					<p class="hint">{$_('custom_lists.detail.add_level.hint')}</p>
-					<div class="formActions">
-						<Button on:click={addLevel} disabled={addingLevel}>
-							<Plus class="mr-2 h-4 w-4" />
-							{$_('custom_lists.detail.add_level.button')}
-						</Button>
-					</div>
-				</div>
-			</div>
-		{/if}
-
-		<!-- Levels List -->
-		<div class="levelsSection">
-			<div class="sectionHeader">
-				<h2>{$_('custom_lists.detail.levels.heading')}</h2>
-				<div class="sectionMeta">
-					{#if list.mode === 'rating'}
-						<Badge variant="secondary">
-							<Star class="mr-1 h-3 w-3" />
-							{$_('custom_lists.detail.edit.mode_rating')}
-						</Badge>
-					{:else}
-						<Badge variant="secondary">
-							<ListOrdered class="mr-1 h-3 w-3" />
-							{$_('custom_lists.detail.edit.mode_top')}
-						</Badge>
-					{/if}
-					<Badge variant="outline">{list.items.length}</Badge>
-				</div>
-			</div>
-
-			{#if list.items.length === 0}
-				<div class="emptyState slim">
-					<h3>{$_('custom_lists.detail.levels.empty_title')}</h3>
-					<p>{isOwner ? $_('custom_lists.detail.levels.empty_owner') : $_('custom_lists.detail.levels.empty_visitor')}</p>
-				</div>
-			{:else}
-				<div class="levelList">
-					{#each list.items as item, i}
-						<div
-							class="levelItem"
-							class:isDraggable={isOwner && list.mode === 'top' && !savingReorder}
-							class:dragOver={isOwner && list.mode === 'top' && dragOverIndex === i}
-							class:dragging={isOwner && list.mode === 'top' && draggedIndex === i}
-							role="listitem"
-							draggable={isOwner && list.mode === 'top' && !savingReorder}
-							on:dragstart={(e) => { if (isOwner && list?.mode === 'top' && !savingReorder) onDragStart(e, i); }}
-							on:dragover={(e) => { if (isOwner && list?.mode === 'top' && !savingReorder) onDragOver(e, i); }}
-							on:drop={(e) => { if (isOwner && list?.mode === 'top' && !savingReorder) onDrop(e, i); }}
-							on:dragend={() => { if (isOwner && list?.mode === 'top') onDragEnd(); }}
-						>
-							<div class="levelRow">
-								{#if isOwner && list.mode === 'top'}
-									<div class="dragHandle" title={$_('custom_lists.detail.levels.drag_hint')}>
-										<GripVertical class="h-5 w-5" />
-									</div>
-								{/if}
-
-								<div class="rankBadge">#{i + 1}</div>
-
-								<div class="levelBody">
-									{#if item.level}
-										<a class="levelLink" href={`/level/${item.levelId}`}>{item.level.name || `Level #${item.levelId}`}</a>
-										<p class="levelMeta">
-											{$_('custom_lists.detail.levels.by')} {item.level.creator || 'Unknown'}
-											{#if item.level.difficulty} • {item.level.difficulty}{/if}
-											{#if item.level.isPlatformer} • {$_('custom_lists.detail.levels.platformer')}{/if}
-										</p>
-									{:else}
-										<span class="levelLink missing">{$_('custom_lists.detail.levels.unavailable', { values: { id: item.levelId } })}</span>
-										<p class="levelMeta">{$_('custom_lists.detail.levels.unavailable_desc')}</p>
-									{/if}
-								</div>
-
-								<div class="levelActions">
-									{#if list.mode === 'rating'}
-										{#if isOwner && editingRatingItemId === item.id}
-											<input
-												class="inlineInput ratingInput"
-												type="number"
-												min="1"
-												max="10"
-												bind:value={editingRatingValue}
-												on:blur={() => saveRatingEdit(item.levelId)}
-												on:keydown={(e) => e.key === 'Enter' && saveRatingEdit(item.levelId)}
-											/>
-										{:else}
-											<button
-												class="chipBtn"
-												class:editable={isOwner}
-												type="button"
-												on:click={isOwner ? () => startRatingEdit(item) : undefined}
-												title={isOwner ? $_('custom_lists.detail.levels.rating_edit_hint') : undefined}
-											>
-												★ {item.rating ?? 5}
-											</button>
-										{/if}
-									{/if}
-
-									{#if isOwner && editingMinProgressItemId === item.id}
-										<input
-											class="inlineInput minProgressInput"
-											type="number"
-											min="0"
-											max={list.isPlatformer ? undefined : '100'}
-											placeholder={item.level?.minProgress != null ? String(item.level.minProgress) : undefined}
-											bind:value={editingMinProgressValue}
-											on:blur={handleMinProgressBlur}
-											on:keydown={(e) => {
-												if (e.key === 'Enter') {
-													e.preventDefault();
-													saveMinProgressEdit(item.levelId);
-												}
-												if (e.key === 'Escape') {
-													e.preventDefault();
-													cancelMinProgressEdit();
-												}
-											}}
-										/>
-										<div class="inlineEditActions">
-											<button
-												type="button"
-												class="inlineEditBtn inlineEditBtnPrimary"
-												data-min-progress-action="save"
-												on:mousedown|preventDefault
-												on:click={() => saveMinProgressEdit(item.levelId)}
-												disabled={savingLevelItemId === item.levelId}
-											>
-												<Save class="mr-1.5 h-3.5 w-3.5" />
-												{$_('custom_lists.detail.levels.save_button')}
-											</button>
-											<button
-												type="button"
-												class="inlineEditBtn inlineEditBtnSecondary"
-												data-min-progress-action="cancel"
-												on:mousedown|preventDefault
-												on:click={cancelMinProgressEdit}
-												disabled={savingLevelItemId === item.levelId}
-											>
-												{$_('custom_lists.detail.levels.cancel_button')}
-											</button>
-										</div>
-									{:else}
-										<button
-											class="chipBtn"
-											class:editable={isOwner}
-											type="button"
-											on:click={isOwner ? () => startMinProgressEdit(item) : undefined}
-											title={isOwner ? $_('custom_lists.detail.levels.min_progress_edit_hint') : undefined}
-										>
-											{getMinProgressLabel(item)}
-										</button>
-									{/if}
-
-									<Badge variant="outline">{$_('custom_lists.detail.levels.id_badge', { values: { id: item.levelId } })}</Badge>
-
-									{#if isOwner}
-										<Button
-											variant="destructive"
-											size="sm"
-											on:click={() => removeLevel(item.levelId)}
-											disabled={mutatingLevelId === item.levelId}
-										>
-											<Trash2 class="mr-1.5 h-3.5 w-3.5" />
-											{$_('custom_lists.detail.levels.remove')}
-										</Button>
-									{/if}
-								</div>
-							</div>
-						</div>
-					{/each}
 				</div>
 			{/if}
-		</div>
+			{/if}
+
+			<Tabs.Content value="levels">
+				<LevelsTab
+					{list}
+					{canEditLevels}
+					{addingLevel}
+					{mutatingLevelId}
+					{savingLevelItemId}
+					{savingReorder}
+					{addLevel}
+					{removeLevel}
+					{updateLevelItem}
+					{reorderLevels}
+				/>
+			</Tabs.Content>
+		</Tabs.Root>
 	{/if}
 </div>
 
@@ -784,6 +1161,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 20px;
+		background-repeat: no-repeat;
 	}
 
 	/* Nav */
@@ -802,6 +1180,25 @@
 		display: flex;
 		flex-direction: column;
 		gap: 14px;
+		color: var(--custom-surface-foreground, inherit);
+	}
+
+	.heroHasBanner {
+		overflow: hidden;
+	}
+
+	.heroBanner {
+		margin: -24px -24px 0;
+		min-height: 140px;
+		border-bottom: 1px solid hsl(var(--border));
+		background: hsl(var(--muted) / 0.18);
+	}
+
+	.heroBanner img {
+		display: block;
+		width: 100%;
+		height: 180px;
+		object-fit: cover;
 	}
 
 	.heroTop {
@@ -820,7 +1217,7 @@
 
 	.heroDesc {
 		margin: 4px 0 0;
-		color: hsl(var(--muted-foreground));
+		color: var(--custom-surface-muted, hsl(var(--muted-foreground)));
 		font-size: 0.9rem;
 	}
 
@@ -835,8 +1232,8 @@
 		align-items: center;
 		gap: 5px;
 		font-size: 0.8rem;
-		color: hsl(var(--muted-foreground));
-		background: hsl(var(--muted) / 0.4);
+		color: var(--custom-surface-muted, hsl(var(--muted-foreground)));
+		background: var(--custom-surface-chip-background, hsl(var(--muted) / 0.4));
 		padding: 4px 10px;
 		border-radius: 999px;
 		white-space: nowrap;
@@ -854,14 +1251,21 @@
 		gap: 5px;
 		margin: 0;
 		font-size: 0.8rem;
-		color: hsl(var(--muted-foreground));
+		color: var(--custom-surface-muted, hsl(var(--muted-foreground)));
 	}
 
-	/* Owner Tools */
-	.ownerTools {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-		gap: 16px;
+	.tabsList {
+		display: flex;
+	}
+
+	:global(.dangerTabTrigger) {
+		margin-left: 16px;
+		color: hsl(var(--destructive) / 0.75);
+	}
+
+	:global(.dangerTabTrigger[data-state='active']),
+	:global(.dangerTabTrigger:hover) {
+		color: hsl(var(--destructive));
 	}
 
 	.toolCard {
@@ -871,7 +1275,26 @@
 		padding: 22px;
 		display: flex;
 		flex-direction: column;
-		gap: 14px;
+		gap: 16px;
+	}
+
+	.moderationNotice {
+		flex-direction: row;
+		align-items: flex-start;
+		justify-content: space-between;
+		background: hsl(var(--destructive) / 0.08);
+		border-color: hsl(var(--destructive) / 0.35);
+	}
+
+	.moderationCopy {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.moderationIcon {
+		color: hsl(var(--destructive));
+		flex-shrink: 0;
 	}
 
 	.toolHeading {
@@ -880,74 +1303,10 @@
 		font-weight: 600;
 	}
 
-	.formGrid {
-		display: grid;
-		gap: 14px;
-	}
-
-	.field {
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-	}
-
-	label, .fieldLabel {
-		font-size: 0.9rem;
-		font-weight: 500;
-	}
-
 	.hint {
 		font-size: 0.8rem;
 		color: hsl(var(--muted-foreground));
 		margin: 0;
-	}
-
-	.optionRow {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 8px;
-	}
-
-	.optionBtn {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		border: 1px solid hsl(var(--border));
-		background: transparent;
-		color: hsl(var(--foreground));
-		padding: 7px 14px;
-		border-radius: 999px;
-		cursor: pointer;
-		font-size: 0.85rem;
-		transition: background 0.15s ease, border-color 0.15s ease;
-	}
-
-	.optionBtn:hover {
-		background: hsl(var(--muted) / 0.5);
-	}
-
-	.optionBtn.selected {
-		background: hsl(var(--primary) / 0.12);
-		border-color: hsl(var(--primary));
-	}
-
-	.switchRow {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-		flex-wrap: wrap;
-	}
-
-	.switchControl {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-	}
-
-	.switchLabel {
-		font-size: 0.9rem;
-		font-weight: 500;
 	}
 
 	.formActions {
@@ -957,205 +1316,8 @@
 		margin-top: 4px;
 	}
 
-	/* Levels Section */
-	.levelsSection {
-		display: flex;
-		flex-direction: column;
-		gap: 16px;
-	}
-
-	.sectionHeader {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 10px;
-	}
-
-	.sectionHeader h2 {
-		margin: 0;
-		font-size: 1.2rem;
-		font-weight: 600;
-	}
-
-	.sectionMeta {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-	}
-
-	.levelList {
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-	}
-
-	.levelItem {
-		background: hsl(var(--card));
-		border: 1px solid hsl(var(--border));
-		border-radius: 10px;
-		padding: 14px 18px;
-		transition: opacity 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
-	}
-
-	.levelItem.isDraggable {
-		cursor: grab;
-	}
-
-	.levelItem.isDraggable:active {
-		cursor: grabbing;
-	}
-
-	.levelItem.dragging {
-		opacity: 0.4;
-	}
-
-	.levelItem.dragOver {
-		border-color: hsl(var(--primary));
-		box-shadow: 0 0 0 2px hsl(var(--primary) / 0.25);
-	}
-
-	.levelRow {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-	}
-
-	.dragHandle {
-		color: hsl(var(--muted-foreground));
-		flex-shrink: 0;
-		display: flex;
-		align-items: center;
-	}
-
-	.rankBadge {
-		font-size: 0.85rem;
-		font-weight: 700;
-		color: hsl(var(--muted-foreground));
-		min-width: 28px;
-		text-align: center;
-		flex-shrink: 0;
-	}
-
-	.levelBody {
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-		flex: 1;
-		min-width: 0;
-	}
-
-	.levelLink {
-		font-weight: 600;
-		text-decoration: none;
-		color: hsl(var(--foreground));
-		font-size: 0.95rem;
-	}
-
-	.levelLink:hover {
-		text-decoration: underline;
-	}
-
-	.levelLink.missing {
-		color: hsl(var(--destructive));
-	}
-
-	.levelMeta {
-		margin: 0;
-		font-size: 0.8rem;
-		color: hsl(var(--muted-foreground));
-	}
-
-	.levelActions {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		flex-wrap: wrap;
-		flex-shrink: 0;
-	}
-
-	.chipBtn {
-		background: hsl(var(--muted));
-		border: 1px solid hsl(var(--border));
-		color: hsl(var(--foreground));
-		font-size: 0.8rem;
-		font-weight: 600;
-		padding: 4px 10px;
-		border-radius: 999px;
-		cursor: default;
-		white-space: nowrap;
-	}
-
-	.chipBtn.editable {
-		cursor: pointer;
-		transition: background 0.15s ease, border-color 0.15s ease;
-	}
-
-	.chipBtn.editable:hover {
-		background: hsl(var(--primary) / 0.12);
-		border-color: hsl(var(--primary));
-	}
-
-	.inlineInput {
-		padding: 4px 8px;
-		border: 1px solid hsl(var(--primary));
-		border-radius: 6px;
-		background: hsl(var(--background));
-		color: hsl(var(--foreground));
-		font-size: 0.85rem;
-		text-align: center;
-	}
-
-	.ratingInput {
-		width: 60px;
-	}
-
-	.minProgressInput {
-		width: 120px;
-	}
-
-	.inlineEditActions {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-	}
-
-	.inlineEditBtn {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		gap: 6px;
-		min-height: 32px;
-		padding: 0 12px;
-		border-radius: 8px;
-		border: 1px solid hsl(var(--border));
-		font-size: 0.8rem;
-		font-weight: 600;
-		cursor: pointer;
-		transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-	}
-
-	.inlineEditBtn:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
-	}
-
-	.inlineEditBtnPrimary {
-		background: hsl(var(--primary));
-		border-color: hsl(var(--primary));
-		color: hsl(var(--primary-foreground));
-	}
-
-	.inlineEditBtnPrimary:hover:not(:disabled) {
-		background: hsl(var(--primary) / 0.9);
-	}
-
-	.inlineEditBtnSecondary {
-		background: hsl(var(--background));
-		color: hsl(var(--foreground));
-	}
-
-	.inlineEditBtnSecondary:hover:not(:disabled) {
-		background: hsl(var(--muted) / 0.5);
+	.actionCard {
+		padding-block: 18px;
 	}
 
 	/* Empty State */
@@ -1165,10 +1327,6 @@
 		padding: 40px 24px;
 		text-align: center;
 		background: hsl(var(--muted) / 0.12);
-	}
-
-	.emptyState.slim {
-		padding: 28px 20px;
 	}
 
 	.emptyState h3 {
@@ -1188,29 +1346,19 @@
 		.heroTop {
 			flex-direction: column;
 		}
-
-		.levelRow {
-			flex-direction: column;
-			align-items: flex-start;
-		}
-
-		.levelActions {
-			width: 100%;
-		}
-
-		.sectionHeader {
-			flex-direction: column;
-			align-items: flex-start;
-		}
-
-		.ownerTools {
-			grid-template-columns: 1fr;
-		}
 	}
 
 	@media (max-width: 480px) {
 		.hero {
 			padding: 18px 16px;
+		}
+
+		.heroBanner {
+			margin: -18px -16px 0;
+		}
+
+		.heroBanner img {
+			height: 140px;
 		}
 
 		.heroInfo h1 {
@@ -1219,15 +1367,6 @@
 
 		.toolCard {
 			padding: 16px;
-		}
-
-		.levelItem {
-			padding: 12px 14px;
-		}
-
-		.optionBtn {
-			padding: 6px 12px;
-			font-size: 0.8rem;
 		}
 	}
 </style>

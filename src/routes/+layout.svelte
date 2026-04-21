@@ -75,20 +75,8 @@
 		route?: string;
 		routes?: { route: string; name: string; icon?: ComponentType }[];
 	};
-	$: listUidQuery = $user.loggedIn ? `?uid=${$user.data.uid}` : '';
-
 	$: linkGroup = [
-		{
-			name: 'List',
-			icon: LayoutList,
-			routes: [
-				{ route: `/list/dl${listUidQuery}`, name: 'Classic', icon: List },
-				{ route: `/list/pl${listUidQuery}`, name: 'Platformer', icon: Gamepad2 },
-				{ route: `/list/fl${listUidQuery}`, name: 'Featured', icon: Award },
-				{ route: '/list/cl', name: 'Challenge', icon: Shuffle },
-				{ route: '/lists', name: 'Custom', icon: LayoutList }
-			]
-		},
+		{ route: '/lists', name: 'Lists', icon: LayoutList },
 		{ route: '/battlepass', name: 'Pass', icon: Ticket },
 		{ route: '/events', name: $locale === 'en' ? 'Event' : 'Sự kiện', icon: Calendar },
 		{
@@ -144,6 +132,19 @@
 	let removePad = false;
 	let pathname = '';
 	let supporterAlertDismissed = false;
+	let currentCustomLogoUrl = '';
+	let customLogoFailed = false;
+
+	$: customListLogoUrl = typeof $page.data?.list?.logoUrl === 'string' ? $page.data.list.logoUrl : '';
+	$: if (customListLogoUrl !== currentCustomLogoUrl) {
+		currentCustomLogoUrl = customListLogoUrl;
+		customLogoFailed = false;
+	}
+	$: useCustomListLogo = Boolean(customListLogoUrl && !customLogoFailed);
+	$: navLogoSrc = useCustomListLogo ? customListLogoUrl : '/logo.png';
+	$: navLogoAlt = useCustomListLogo && typeof $page.data?.list?.title === 'string'
+		? `${$page.data.list.title} logo`
+		: 'logo';
 	
 	onMount(() => {
 		supporterAlertDismissed = localStorage.getItem('supporterAlertDismissed') === 'true';
@@ -285,7 +286,12 @@
 				{/if}
 			</button>
 			<a href="/" class="logo-link" data-sveltekit-preload-data="tap">
-				<img src="/logo.png" alt="logo" />
+				<img
+					src={navLogoSrc}
+					alt={navLogoAlt}
+					class:customListLogo={useCustomListLogo}
+					on:error={() => (customLogoFailed = true)}
+				/>
 			</a>
 		</div>
 		<div class="topbar-right">
@@ -510,7 +516,16 @@
 		img {
 			filter: invert(var(--inverted));
 			max-width: 65px;
+			max-height: 42px;
 			margin-bottom: 12px;
+			object-fit: contain;
+		}
+
+		img.customListLogo {
+			filter: none;
+			max-width: 120px;
+			max-height: 34px;
+			margin-bottom: 0;
 		}
 	}
 

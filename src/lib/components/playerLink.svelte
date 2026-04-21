@@ -5,6 +5,7 @@
 	import { getTitle } from '$lib/client';
 	import { badgeVariants } from '$lib/components/ui/badge';
 	import { isActive } from '$lib/client/isSupporterActive';
+	import type { PlayerLinkRankBadge } from '$lib/utils/customListRank';
 	import { BadgeCheck, CheckCheck, Crown } from 'lucide-svelte';
 	import PlayerCard from '$lib/components/playerCard.svelte';
 
@@ -13,9 +14,12 @@
 	export let showAvatar = false;
 	export let titleType: string = 'dl';
 	export let truncate: number | null = null;
+	export let rankBadge: PlayerLinkRankBadge | null = null;
 
 	let isPopoverOpen = false;
 	let playerRoleBadge: 'manager' | 'admin' | 'trusted' | null = null;
+	let resolvedRankBadge: PlayerLinkRankBadge | null = null;
+	let resolvedRankBadgeStyle = '';
 
 	$: playerRoleBadge = player?.isManager
 		? 'manager'
@@ -24,6 +28,21 @@
 			: player?.isTrusted
 				? 'trusted'
 				: null;
+	$: builtInRankBadge = showTitle ? getTitle(titleType, player) : null;
+	$: resolvedRankBadge = rankBadge
+		? rankBadge
+		: builtInRankBadge?.title
+			? {
+					label: builtInRankBadge.title,
+					name: builtInRankBadge.fullTitle || builtInRankBadge.title,
+					color: builtInRankBadge.color
+				}
+			: null;
+	$: resolvedRankBadgeStyle = rankBadge
+		? `background: ${rankBadge.color}`
+		: builtInRankBadge?.title
+			? `background-color: ${builtInRankBadge.color}`
+			: '';
 
 	function truncateText(str: string) {
 		if (!truncate) {
@@ -32,7 +51,7 @@
 
 		let x = truncate;
 
-		if (showTitle) {
+		if (resolvedRankBadge) {
 			x -= 2;
 		}
 
@@ -60,14 +79,14 @@
 		</Avatar.Root>
 	{/if}
 	<Popover.Root bind:open={isPopoverOpen}>
-		{#if showTitle && getTitle(titleType, player)?.title}
+		{#if resolvedRankBadge?.label}
 			<Tooltip.Root>
 				<Tooltip.Trigger>
-					<div class="rank" style={`background-color: ${getTitle(titleType, player)?.color}`}>
-						<span>{getTitle(titleType, player)?.title}</span>
+					<div class="rank" style={resolvedRankBadgeStyle}>
+						<span>{resolvedRankBadge.label}</span>
 					</div>
 				</Tooltip.Trigger>
-				<Tooltip.Content>{getTitle(titleType, player)?.fullTitle}</Tooltip.Content>
+				<Tooltip.Content>{resolvedRankBadge.name}</Tooltip.Content>
 			</Tooltip.Root>
 		{/if}
 		{#if player.clan && isActive(player.clans.boostedUntil)}

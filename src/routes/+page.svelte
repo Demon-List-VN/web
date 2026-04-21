@@ -139,69 +139,6 @@
 					{/if}
 				</div>
 			</section>
-
-			<!-- Latest Levels with Tabs -->
-			<section class="section">
-				<div class="sectionHeader">
-					<h4>{$_('home.latest_levels')}</h4>
-					<div class="tabGroup">
-						<button
-							class="tab"
-							class:tabActive={activeTab === 'dl'}
-							on:click={() => (activeTab = 'dl')}
-						>
-							Demon List
-						</button>
-						<button
-							class="tab"
-							class:tabActive={activeTab === 'fl'}
-							on:click={() => (activeTab = 'fl')}
-						>
-							Featured List
-						</button>
-						<button
-							class="tab"
-							class:tabActive={activeTab === 'pl'}
-							on:click={() => (activeTab = 'pl')}
-						>
-							Platformer List
-						</button>
-					</div>
-				</div>
-
-				<div class="carouselWrapper">
-					{#key activeTab}
-						{#if levels[activeTab]}
-							<Carousel.Root>
-								<Carousel.Content>
-									{#each levels[activeTab] as level}
-										<Carousel.Item class="sm:basis-1/1 md:basis-1/2 lg:basis-1/3">
-											<LevelCard {...toLevelCardProps(level, activeTab)} type={activeTab} />
-										</Carousel.Item>
-									{/each}
-								</Carousel.Content>
-							</Carousel.Root>
-						{:else}
-							<Carousel.Root>
-								<Carousel.Content>
-									{#each { length: 4 } as _}
-										<Carousel.Item class="sm:basis-1/1 md:basis-1/2 lg:basis-1/3">
-											<LevelCard loading type={activeTab} />
-										</Carousel.Item>
-									{/each}
-								</Carousel.Content>
-							</Carousel.Root>
-						{/if}
-					{/key}
-				</div>
-
-				<div class="viewAllLink">
-					<a href="/list/{activeTab}" class="viewAllBtn">
-						{$_('home.view_all')}
-						<ArrowRight class="ml-1 h-4 w-4" />
-					</a>
-				</div>
-			</section>
 		</div>
 
 		<!-- Side Column: Clans -->
