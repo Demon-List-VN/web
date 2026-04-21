@@ -4,7 +4,9 @@
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Switch } from '$lib/components/ui/switch';
+	import * as Select from '$lib/components/ui/select';
 	import * as Tabs from '$lib/components/ui/tabs';
+	import LevelCard from '$lib/components/levelCard.svelte';
 	import WeightFormulaPreview from '$lib/components/custom-lists/WeightFormulaPreview.svelte';
 	import imageCompression from 'browser-image-compression';
 	import {
@@ -68,6 +70,7 @@
 		isPlatformer: boolean;
 		isOfficial?: boolean;
 		logoUrl?: string | null;
+		topEnabled?: boolean;
 		visibility: 'private' | 'unlisted' | 'public';
 		mode: 'rating' | 'top';
 		tags: string[];
@@ -86,7 +89,8 @@
 		minTop: number | null | undefined;
 	};
 
-	type ManageTab = 'basic' | 'formula' | 'rank' | 'levels';
+	type ManageTab = 'basic' | 'appearance' | 'formula' | 'rank' | 'levels';
+	type AssetInputMode = 'upload' | 'link';
 
 	// SSR data - hydrate into reactive local state
 	let list: CustomList | null = data?.list ?? null;
@@ -113,6 +117,8 @@
 	let bannerFileInput: HTMLInputElement | null = null;
 	let logoFileInput: HTMLInputElement | null = null;
 	let uploadingAsset: 'banner' | 'logo' | null = null;
+	let bannerAssetMode: AssetInputMode = 'upload';
+	let logoAssetMode: AssetInputMode = 'upload';
 
 	const CUSTOM_LIST_CDN_BASE_URL = 'https://cdn.gdvn.net';
 
@@ -125,6 +131,7 @@
 		communityEnabled: true,
 		isPlatformer: false,
 		logoUrl: '',
+		topEnabled: true,
 		visibility: 'private' as 'private' | 'unlisted' | 'public',
 		tags: '',
 		mode: 'rating' as 'rating' | 'top',
@@ -146,7 +153,12 @@
 	function getInitialManageTab(): ManageTab {
 		const requestedTab = $page.url.searchParams.get('tab');
 
-		if (requestedTab === 'basic' || requestedTab === 'formula' || requestedTab === 'rank') {
+		if (
+			requestedTab === 'basic'
+			|| requestedTab === 'appearance'
+			|| requestedTab === 'formula'
+			|| requestedTab === 'rank'
+		) {
 			return requestedTab;
 		}
 
@@ -154,7 +166,7 @@
 			return 'levels';
 		}
 
-		return getQuickLevelId() ? 'levels' : 'basic';
+		return 'basic';
 	}
 
 	$: quickLevelId = getQuickLevelId();
@@ -172,9 +184,12 @@
 		editForm.communityEnabled = list.communityEnabled;
 		editForm.isPlatformer = list.isPlatformer;
 		editForm.logoUrl = list.logoUrl || '';
+		editForm.topEnabled = list.topEnabled ?? true;
 		editForm.visibility = list.visibility;
 		editForm.tags = list.tags.join(', ');
 		editForm.mode = list.mode;
+		bannerAssetMode = inferAssetInputMode(list.bannerUrl);
+		logoAssetMode = inferAssetInputMode(list.logoUrl);
 		editForm.rankBadges = normalizeCustomListRankBadges(list.rankBadges).map((rankBadge) => ({
 			...rankBadge
 		}));
@@ -287,6 +302,21 @@
 		return normalized.length === 9 ? `${normalized.slice(0, 7)}${alpha}` : `${normalized}${alpha}`;
 	}
 
+	function hexToRgb(color: string) {
+		const normalized = color.trim().slice(1, 7);
+		return {
+			r: Number.parseInt(normalized.slice(0, 2), 16),
+			g: Number.parseInt(normalized.slice(2, 4), 16),
+			b: Number.parseInt(normalized.slice(4, 6), 16)
+		};
+	}
+
+	function isLightColor(color: string) {
+		const { r, g, b } = hexToRgb(color);
+		const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+		return luminance >= 0.62;
+	}
+
 	function getColorPickerValue(value: string | null | undefined) {
 		if (!isHexColor(value)) {
 			return '#000000';
@@ -321,12 +351,21 @@
 		return isHexColor(list?.borderColor) ? list!.borderColor!.trim() : null;
 	}
 
+	function inferAssetInputMode(value: string | null | undefined): AssetInputMode {
+		if (typeof value !== 'string' || !value.trim()) {
+			return 'upload';
+		}
+
+		return value.startsWith(`${CUSTOM_LIST_CDN_BASE_URL}/custom-lists/`) ? 'upload' : 'link';
+	}
+
 	function getThemedSurfaceStyle(backgroundColor: string | null, borderColor: string | null) {
 		const styles: string[] = [];
 
 		if (backgroundColor) {
+			const lightBackground = isLightColor(backgroundColor);
 			styles.push(
-				`background: linear-gradient(180deg, ${withHexAlpha(backgroundColor, '18')} 0%, ${withHexAlpha(backgroundColor, '0d')} 100%), hsl(var(--card));`
+				`background: ${backgroundColor}; --custom-surface-foreground: ${lightBackground ? '#0f172a' : '#f8fafc'}; --custom-surface-muted: ${lightBackground ? 'rgba(15, 23, 42, 0.72)' : 'rgba(248, 250, 252, 0.78)'}; --custom-surface-chip-background: ${lightBackground ? 'rgba(15, 23, 42, 0.12)' : 'rgba(248, 250, 252, 0.16)'};`
 			);
 		}
 
@@ -364,6 +403,85 @@
 		}
 
 		return list?.logoUrl ?? null;
+	}
+
+	function getManagePreviewTitle() {
+		if (initialSyncDone) {
+			return editForm.title.trim() || $_('custom_lists.detail.edit.preview_title');
+		}
+
+		return list?.title || $_('custom_lists.detail.edit.preview_title');
+	}
+
+	function getManagePreviewDescription() {
+		if (initialSyncDone) {
+			return editForm.description.trim() || $_('custom_lists.detail.no_description');
+		}
+
+		return list?.description || $_('custom_lists.detail.no_description');
+	}
+
+	function getManagePreviewTags() {
+		if (initialSyncDone) {
+			return parseTags(editForm.tags);
+		}
+
+		return list?.tags ?? [];
+	}
+
+	function getAssetModeLabel(mode: AssetInputMode) {
+		return mode === 'upload'
+			? $_('custom_lists.detail.edit.asset_mode_upload')
+			: $_('custom_lists.detail.edit.asset_mode_link');
+	}
+
+	function getAssetModeOption(mode: AssetInputMode) {
+		return {
+			value: mode,
+			label: getAssetModeLabel(mode)
+		};
+	}
+
+	function setAssetMode(asset: 'banner' | 'logo', selected: { value?: string } | undefined) {
+		const value = selected?.value;
+
+		if (value !== 'upload' && value !== 'link') {
+			return;
+		}
+
+		if (asset === 'banner') {
+			bannerAssetMode = value;
+			return;
+		}
+
+		logoAssetMode = value;
+	}
+
+	function getManagePreviewLevelId() {
+		return list?.items[0]?.levelId ?? 0;
+	}
+
+	function getManagePreviewLevelName() {
+		return list?.items[0]?.level?.name || $_('custom_lists.detail.edit.preview_level_name');
+	}
+
+	function getManagePreviewLevelCreator() {
+		return list?.items[0]?.level?.creator || $_('custom_lists.detail.edit.preview_level_creator');
+	}
+
+	function getManagePreviewLevelRating() {
+		return list?.items[0]?.rating ?? 7;
+	}
+
+	function getManagePreviewLevelMinProgress() {
+		const item = list?.items[0];
+		const value = item?.minProgress ?? item?.level?.minProgress;
+
+		if (value != null) {
+			return value;
+		}
+
+		return editForm.isPlatformer ? 90750 : 51;
 	}
 
 	function getImageExtension(file: File) {
@@ -477,8 +595,10 @@
 
 			if (asset === 'banner') {
 				editForm.bannerUrl = uploadedUrl;
+				bannerAssetMode = 'upload';
 			} else {
 				editForm.logoUrl = uploadedUrl;
+				logoAssetMode = 'upload';
 			}
 
 			toast.success($_('custom_lists.toast.image_uploaded_save'));
@@ -530,6 +650,7 @@
 					communityEnabled: editForm.communityEnabled,
 					isPlatformer: editForm.isPlatformer,
 					logoUrl: editForm.logoUrl,
+					topEnabled: editForm.topEnabled,
 					visibility: editForm.visibility,
 					tags: parseTags(editForm.tags),
 					mode: editForm.mode,
@@ -946,30 +1067,30 @@
 			{/if}
 			<div class="heroTop">
 				<div class="heroInfo">
-					<h1>{list.title}</h1>
-					<p class="heroDesc">{list.description || $_('custom_lists.detail.no_description')}</p>
+					<h1>{getManagePreviewTitle()}</h1>
+					<p class="heroDesc">{getManagePreviewDescription()}</p>
 				</div>
 				<div class="heroChips">
 					<span class="chip">
-						<svelte:component this={getVisibilityIcon(list.visibility)} class="h-3.5 w-3.5" />
-						{formatVisibility(list.visibility)}
+						<svelte:component this={getVisibilityIcon(editForm.visibility)} class="h-3.5 w-3.5" />
+						{formatVisibility(editForm.visibility)}
 					</span>
 					<span class="chip">
 						<Layers class="h-3.5 w-3.5" />
-						{formatListType(list.isPlatformer)}
+						{formatListType(editForm.isPlatformer)}
 					</span>
 					<span class="chip">
-						{list.mode === 'top' ? '🔢' : '⭐'}
-						{list.mode === 'rating' ? $_('custom_lists.detail.edit.mode_rating') : $_('custom_lists.detail.edit.mode_top')}
+						{editForm.mode === 'top' ? '🔢' : '⭐'}
+						{editForm.mode === 'rating' ? $_('custom_lists.detail.edit.mode_rating') : $_('custom_lists.detail.edit.mode_top')}
 					</span>
 					<span class="chip">
 						{$_('custom_lists.detail.levels_badge', { values: { count: list.items.length } })}
 					</span>
 				</div>
 			</div>
-			{#if list.tags?.length}
+			{#if getManagePreviewTags().length}
 				<div class="tagRow">
-					{#each list.tags as tag}
+					{#each getManagePreviewTags() as tag}
 						<Badge variant="outline">{tag}</Badge>
 					{/each}
 				</div>
@@ -1003,6 +1124,7 @@
 				<Tabs.List class="flex h-fit w-fit flex-wrap">
 					{#if canManage}
 						<Tabs.Trigger value="basic">{$_('custom_lists.manage.tabs.basic')}</Tabs.Trigger>
+						<Tabs.Trigger value="appearance">{$_('custom_lists.manage.tabs.appearance')}</Tabs.Trigger>
 						<Tabs.Trigger value="formula">{$_('custom_lists.manage.tabs.formula')}</Tabs.Trigger>
 						<Tabs.Trigger value="rank">{$_('custom_lists.manage.tabs.rank')}</Tabs.Trigger>
 					{/if}
@@ -1087,6 +1209,28 @@
 									<Input id="list-tags" bind:value={editForm.tags} placeholder="challenge, favorite" />
 								</div>
 								<div class="field">
+									<div class="switchRow">
+										<div>
+											<label for="list-top-enabled">{$_('custom_lists.detail.edit.top_enabled_label')}</label>
+											<p class="hint">{$_('custom_lists.detail.edit.top_enabled_hint')}</p>
+										</div>
+										<div class="switchControl">
+											<span class="switchLabel">{editForm.topEnabled ? $_('general.yes') : $_('general.no')}</span>
+											<Switch id="list-top-enabled" bind:checked={editForm.topEnabled} />
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</Tabs.Content>
+
+				<Tabs.Content value="appearance">
+					<div class="tabContent">
+						<div class="toolCard">
+							<h2 class="toolHeading">{$_('custom_lists.detail.edit.appearance_heading')}</h2>
+							<div class="formGrid">
+								<div class="field">
 									<span class="fieldLabel">{$_('custom_lists.detail.edit.appearance_heading')}</span>
 									<p class="hint">{$_('custom_lists.detail.edit.appearance_hint')}</p>
 								</div>
@@ -1100,8 +1244,6 @@
 											on:input={(event) => setThemeColorFromPicker('backgroundColor', event)}
 											aria-label={$_('custom_lists.detail.edit.background_color_label')}
 										/>
-										<span class="colorSwatch" style={isHexColor(editForm.backgroundColor) ? `background: ${editForm.backgroundColor}` : undefined}></span>
-										<Input id="list-background-color" bind:value={editForm.backgroundColor} placeholder={$_('custom_lists.detail.edit.background_color_placeholder')} />
 										<Button variant="ghost" size="sm" on:click={() => (editForm.backgroundColor = '')}>
 											{$_('general.reset')}
 										</Button>
@@ -1118,8 +1260,6 @@
 											on:input={(event) => setThemeColorFromPicker('borderColor', event)}
 											aria-label={$_('custom_lists.detail.edit.border_color_label')}
 										/>
-										<span class="colorSwatch" style={isHexColor(editForm.borderColor) ? `background: ${editForm.borderColor}` : undefined}></span>
-										<Input id="list-border-color" bind:value={editForm.borderColor} placeholder={$_('custom_lists.detail.edit.border_color_placeholder')} />
 										<Button variant="ghost" size="sm" on:click={() => (editForm.borderColor = '')}>
 											{$_('general.reset')}
 										</Button>
@@ -1127,45 +1267,116 @@
 									<p class="hint">{$_('custom_lists.detail.edit.border_color_hint')}</p>
 								</div>
 								<div class="field">
-									<div class="assetFieldHeader">
-										<label for="list-banner-url">{$_('custom_lists.detail.edit.banner_url_label')}</label>
-										<Button
-											variant="outline"
-											size="sm"
-											on:click={() => bannerFileInput?.click()}
-											disabled={uploadingAsset === 'banner'}
-										>
-											{uploadingAsset === 'banner'
-												? `${$_('general.loading')}...`
-												: $_('custom_lists.detail.edit.banner_upload_button')}
-										</Button>
+									<label for="list-banner-asset-mode">{$_('custom_lists.detail.edit.banner_url_label')}</label>
+									<div class="assetControlRow">
+										<div class="assetModeTrigger">
+											<Select.Root
+												selected={getAssetModeOption(bannerAssetMode)}
+												onSelectedChange={(selected) => setAssetMode('banner', selected)}
+											>
+												<Select.Trigger aria-label={$_('custom_lists.detail.edit.banner_url_label')}>
+													<Select.Value placeholder={getAssetModeLabel(bannerAssetMode)} />
+												</Select.Trigger>
+												<Select.Content>
+													<Select.Item value="upload">{$_('custom_lists.detail.edit.asset_mode_upload')}</Select.Item>
+													<Select.Item value="link">{$_('custom_lists.detail.edit.asset_mode_link')}</Select.Item>
+												</Select.Content>
+											</Select.Root>
+										</div>
+										{#if bannerAssetMode === 'upload'}
+											<div class="assetAction">
+												<Button
+													variant="outline"
+													size="sm"
+													on:click={() => bannerFileInput?.click()}
+													disabled={uploadingAsset === 'banner'}
+												>
+													{uploadingAsset === 'banner'
+														? `${$_('general.loading')}...`
+														: $_('custom_lists.detail.edit.banner_upload_button')}
+												</Button>
+											</div>
+										{:else}
+											<div class="assetFieldInput">
+												<Input
+													id="list-banner-url"
+													bind:value={editForm.bannerUrl}
+													placeholder={$_('custom_lists.detail.edit.banner_url_placeholder')}
+												/>
+											</div>
+										{/if}
 									</div>
-									<Input id="list-banner-url" bind:value={editForm.bannerUrl} placeholder={$_('custom_lists.detail.edit.banner_url_placeholder')} />
-									<p class="hint">{$_('custom_lists.detail.edit.banner_url_hint')}</p>
-									<p class="hint">{$_('custom_lists.detail.edit.asset_upload_hint')}</p>
+									<p class="hint">{bannerAssetMode === 'upload' ? $_('custom_lists.detail.edit.asset_upload_hint') : $_('custom_lists.detail.edit.banner_url_hint')}</p>
 								</div>
 								<div class="field">
-									<div class="assetFieldHeader">
-										<label for="list-logo-url">{$_('custom_lists.detail.edit.logo_url_label')}</label>
-										<Button
-											variant="outline"
-											size="sm"
-											on:click={() => logoFileInput?.click()}
-											disabled={uploadingAsset === 'logo'}
-										>
-											{uploadingAsset === 'logo'
-												? `${$_('general.loading')}...`
-												: $_('custom_lists.detail.edit.logo_upload_button')}
-										</Button>
+									<label for="list-logo-asset-mode">{$_('custom_lists.detail.edit.logo_url_label')}</label>
+									<div class="assetControlRow">
+										<div class="assetModeTrigger">
+											<Select.Root
+												selected={getAssetModeOption(logoAssetMode)}
+												onSelectedChange={(selected) => setAssetMode('logo', selected)}
+											>
+												<Select.Trigger aria-label={$_('custom_lists.detail.edit.logo_url_label')}>
+													<Select.Value placeholder={getAssetModeLabel(logoAssetMode)} />
+												</Select.Trigger>
+												<Select.Content>
+													<Select.Item value="upload">{$_('custom_lists.detail.edit.asset_mode_upload')}</Select.Item>
+													<Select.Item value="link">{$_('custom_lists.detail.edit.asset_mode_link')}</Select.Item>
+												</Select.Content>
+											</Select.Root>
+										</div>
+										{#if logoAssetMode === 'upload'}
+											<div class="assetAction">
+												<Button
+													variant="outline"
+													size="sm"
+													on:click={() => logoFileInput?.click()}
+													disabled={uploadingAsset === 'logo'}
+												>
+													{uploadingAsset === 'logo'
+														? `${$_('general.loading')}...`
+														: $_('custom_lists.detail.edit.logo_upload_button')}
+												</Button>
+											</div>
+										{:else}
+											<div class="assetFieldInput">
+												<Input
+													id="list-logo-url"
+													bind:value={editForm.logoUrl}
+													placeholder={$_('custom_lists.detail.edit.logo_url_placeholder')}
+												/>
+											</div>
+										{/if}
 									</div>
-									<Input id="list-logo-url" bind:value={editForm.logoUrl} placeholder={$_('custom_lists.detail.edit.logo_url_placeholder')} />
+									<p class="hint">{logoAssetMode === 'upload' ? $_('custom_lists.detail.edit.asset_upload_hint') : $_('custom_lists.detail.edit.logo_url_hint')}</p>
 									{#if getManageLogoPreviewUrl()}
 										<div class="assetPreview assetPreviewLogo">
 											<img src={getManageLogoPreviewUrl()} alt="" loading="lazy" decoding="async" />
 										</div>
 									{/if}
-									<p class="hint">{$_('custom_lists.detail.edit.logo_url_hint')}</p>
-									<p class="hint">{$_('custom_lists.detail.edit.asset_upload_hint')}</p>
+								</div>
+								<div class="field">
+									<span class="fieldLabel">{$_('custom_lists.detail.edit.preview_heading')}</span>
+									<p class="hint">{$_('custom_lists.detail.edit.preview_hint')}</p>
+									<div class="previewCardStack">
+										<div class="previewLevelCard">
+											<LevelCard
+												id={getManagePreviewLevelId()}
+												name={getManagePreviewLevelName()}
+												creator={getManagePreviewLevelCreator()}
+												rating={getManagePreviewLevelRating()}
+												top={1}
+												minProgress={getManagePreviewLevelMinProgress()}
+												backgroundColor={getManageThemeBackgroundColor()}
+												borderColor={getManageThemeBorderColor()}
+												isPlatformer={editForm.isPlatformer}
+												type={editForm.isPlatformer ? 'pl' : 'dl'}
+												hideRating={editForm.mode === 'top'}
+												hideTop={!editForm.topEnabled}
+												ratingPrediction={false}
+											/>
+										</div>
+									</div>
 								</div>
 							</div>
 						</div>
@@ -1523,6 +1734,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 14px;
+		color: var(--custom-surface-foreground, inherit);
 	}
 
 	.heroHasBanner {
@@ -1559,7 +1771,7 @@
 
 	.heroDesc {
 		margin: 4px 0 0;
-		color: hsl(var(--muted-foreground));
+		color: var(--custom-surface-muted, hsl(var(--muted-foreground)));
 		font-size: 0.9rem;
 	}
 
@@ -1574,8 +1786,8 @@
 		align-items: center;
 		gap: 5px;
 		font-size: 0.8rem;
-		color: hsl(var(--muted-foreground));
-		background: hsl(var(--muted) / 0.4);
+		color: var(--custom-surface-muted, hsl(var(--muted-foreground)));
+		background: var(--custom-surface-chip-background, hsl(var(--muted) / 0.4));
 		padding: 4px 10px;
 		border-radius: 999px;
 		white-space: nowrap;
@@ -1593,7 +1805,7 @@
 		gap: 5px;
 		margin: 0;
 		font-size: 0.8rem;
-		color: hsl(var(--muted-foreground));
+		color: var(--custom-surface-muted, hsl(var(--muted-foreground)));
 	}
 
 	.tabsList {
@@ -1614,7 +1826,7 @@
 		padding: 22px;
 		display: flex;
 		flex-direction: column;
-		gap: 14px;
+		gap: 16px;
 	}
 
 	.moderationNotice {
@@ -1693,19 +1905,40 @@
 		border-color: hsl(var(--primary));
 	}
 
-	.assetFieldHeader {
+	.assetControlRow {
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
+		gap: 10px;
 		flex-wrap: wrap;
+	}
+
+	.assetModeTrigger {
+		min-width: 180px;
+	}
+
+	.assetAction {
+		flex-shrink: 0;
+	}
+
+	.assetFieldInput {
+		flex: 1 1 240px;
+		min-width: min(100%, 240px);
 	}
 
 	.colorFieldRow {
 		display: flex;
 		align-items: center;
 		gap: 10px;
-		flex-wrap: wrap;
+	}
+
+	.previewCardStack {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+	}
+
+	.previewLevelCard {
+		pointer-events: none;
 	}
 
 	.nativeColorInput {
@@ -1731,15 +1964,6 @@
 	.nativeColorInput::-moz-color-swatch {
 		border: none;
 		border-radius: 8px;
-	}
-
-	.colorSwatch {
-		width: 28px;
-		height: 28px;
-		border-radius: 999px;
-		border: 1px solid hsl(var(--border));
-		background: hsl(var(--muted) / 0.35);
-		flex-shrink: 0;
 	}
 
 	.optionBtn:disabled {

@@ -44,6 +44,7 @@
 		isPlatformer: boolean;
 		isOfficial?: boolean;
 		starCount: number;
+		topEnabled?: boolean;
 		ownerData?: any | null;
 		item?: {
 			created_at: string;
@@ -162,7 +163,7 @@
 	}
 
 	function formatStarredListPrimaryValue(list: StarredListEntry) {
-		if (list.mode === 'top') {
+		if ((list.topEnabled ?? list.mode === 'top')) {
 			return list.item?.position != null ? `#${list.item.position + 1}` : '#?';
 		}
 
@@ -194,6 +195,7 @@
 					isPlatformer: false,
 					isOfficial: true,
 					starCount: 0,
+					topEnabled: false,
 					item: {
 						created_at: createdAt,
 						rating: level.rating ?? null,
@@ -212,6 +214,7 @@
 					isPlatformer: true,
 					isOfficial: true,
 					starCount: 0,
+					topEnabled: true,
 					item: {
 						created_at: createdAt,
 						rating: level.rating ?? null,
@@ -230,6 +233,7 @@
 					isPlatformer: false,
 					isOfficial: true,
 					starCount: 0,
+					topEnabled: false,
 					item: {
 						created_at: createdAt,
 						rating: level.rating ?? null,
@@ -251,6 +255,7 @@
 				isPlatformer: Boolean(level.isPlatformer),
 				isOfficial: true,
 				starCount: 0,
+				topEnabled: true,
 				item: {
 					created_at: createdAt,
 					rating: level.flPt ?? null,

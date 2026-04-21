@@ -77,6 +77,21 @@
 		return normalized.length === 9 ? `${normalized.slice(0, 7)}${alpha}` : `${normalized}${alpha}`;
 	}
 
+	function hexToRgb(color: string) {
+		const normalized = color.trim().slice(1, 7);
+		return {
+			r: Number.parseInt(normalized.slice(0, 2), 16),
+			g: Number.parseInt(normalized.slice(2, 4), 16),
+			b: Number.parseInt(normalized.slice(4, 6), 16)
+		};
+	}
+
+	function isLightColor(color: string) {
+		const { r, g, b } = hexToRgb(color);
+		const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+		return luminance >= 0.62;
+	}
+
 	let levelCardStyle: string | undefined;
 
 	export let id: LevelCardProps['id'] = null;
@@ -104,8 +119,9 @@
 
 		if (isHexColor(backgroundColor)) {
 			const resolvedBackgroundColor = String(backgroundColor).trim();
+			const lightBackground = isLightColor(resolvedBackgroundColor);
 			nextStyle.push(
-				`background: linear-gradient(180deg, ${withHexAlpha(resolvedBackgroundColor, '18')} 0%, ${withHexAlpha(resolvedBackgroundColor, '0d')} 100%), hsl(var(--card));`
+				`background: ${resolvedBackgroundColor}; --level-card-foreground-color: ${lightBackground ? '#0f172a' : '#f8fafc'}; --level-card-muted-color: ${lightBackground ? 'rgba(15, 23, 42, 0.72)' : 'rgba(248, 250, 252, 0.78)'}; --level-card-badge-background: ${lightBackground ? 'rgba(15, 23, 42, 0.14)' : 'rgba(248, 250, 252, 0.18)'}; --level-card-badge-foreground: ${lightBackground ? '#0f172a' : '#f8fafc'};`
 			);
 		}
 
@@ -311,6 +327,7 @@
 
 	.level {
 		overflow: hidden;
+		color: var(--level-card-foreground-color, inherit);
 
 		.levelInfo {
 			margin-top: -5px;
@@ -338,8 +355,8 @@
 					gap: 5px;
 
 					.pt {
-						background-color: var(--textColor);
-						color: var(--textColorInverted);
+						background-color: var(--level-card-badge-background, var(--textColor));
+						color: var(--level-card-badge-foreground, var(--textColorInverted));
 						padding: 4px;
 						font-size: 11px;
 						border-radius: var(--radius);
@@ -348,7 +365,7 @@
 				}
 
 				.creator {
-					color: var(--textColor2);
+					color: var(--level-card-muted-color, var(--textColor2));
 				}
 
 				.levelTags {

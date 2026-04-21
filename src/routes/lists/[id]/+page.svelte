@@ -65,6 +65,7 @@
 		isPlatformer: boolean;
 		isOfficial?: boolean;
 		logoUrl?: string | null;
+		topEnabled?: boolean;
 		visibility: 'private' | 'unlisted' | 'public';
 		mode: 'rating' | 'top';
 		tags: string[];
@@ -188,6 +189,21 @@
 		return normalized.length === 9 ? `${normalized.slice(0, 7)}${alpha}` : `${normalized}${alpha}`;
 	}
 
+	function hexToRgb(color: string) {
+		const normalized = color.trim().slice(1, 7);
+		return {
+			r: Number.parseInt(normalized.slice(0, 2), 16),
+			g: Number.parseInt(normalized.slice(2, 4), 16),
+			b: Number.parseInt(normalized.slice(4, 6), 16)
+		};
+	}
+
+	function isLightColor(color: string) {
+		const { r, g, b } = hexToRgb(color);
+		const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+		return luminance >= 0.62;
+	}
+
 	function getListThemeBackgroundColor(currentList: CustomList | null) {
 		const backgroundColor = currentList?.backgroundColor;
 
@@ -212,8 +228,9 @@
 		const styles: string[] = [];
 
 		if (backgroundColor) {
+			const lightBackground = isLightColor(backgroundColor);
 			styles.push(
-				`background: linear-gradient(180deg, ${withHexAlpha(backgroundColor, '18')} 0%, ${withHexAlpha(backgroundColor, '0d')} 100%), hsl(var(--card));`
+				`background: ${backgroundColor}; --custom-surface-foreground: ${lightBackground ? '#0f172a' : '#f8fafc'}; --custom-surface-muted: ${lightBackground ? 'rgba(15, 23, 42, 0.72)' : 'rgba(248, 250, 252, 0.78)'}; --custom-surface-chip-background: ${lightBackground ? 'rgba(15, 23, 42, 0.12)' : 'rgba(248, 250, 252, 0.16)'};`
 			);
 		}
 
@@ -916,6 +933,7 @@
 										backgroundColor={list.backgroundColor ?? null}
 									borderColor={list.borderColor ?? null}
 										type={itemCardType}
+											hideTop={list.topEnabled === false}
 										hideRating={list.mode === 'top'}
 										ratingPrediction={false}
 									/>
@@ -1302,6 +1320,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 16px;
+		color: var(--custom-surface-foreground, inherit);
 	}
 
 	.heroHasBanner {
@@ -1355,12 +1374,12 @@
 	.heroDesc {
 		margin: 6px 0 0;
 		font-size: 0.95rem;
-		color: hsl(var(--foreground));
+		color: var(--custom-surface-foreground, hsl(var(--foreground)));
 		line-height: 1.5;
 	}
 
 	.heroDesc.muted {
-		color: hsl(var(--muted-foreground));
+		color: var(--custom-surface-muted, hsl(var(--muted-foreground)));
 		font-style: italic;
 	}
 
@@ -1375,8 +1394,8 @@
 		align-items: center;
 		gap: 5px;
 		font-size: 0.8rem;
-		color: hsl(var(--muted-foreground));
-		background: hsl(var(--muted) / 0.4);
+		color: var(--custom-surface-muted, hsl(var(--muted-foreground)));
+		background: var(--custom-surface-chip-background, hsl(var(--muted) / 0.4));
 		padding: 4px 10px;
 		border-radius: 999px;
 		white-space: nowrap;
@@ -1384,7 +1403,7 @@
 
 	.metaOwner {
 		font-weight: 600;
-		color: hsl(var(--foreground));
+		color: var(--custom-surface-foreground, hsl(var(--foreground)));
 	}
 
 	.metaOwner :global(.wrapper) {
@@ -1411,7 +1430,7 @@
 		gap: 5px;
 		margin: 0;
 		font-size: 0.8rem;
-		color: hsl(var(--muted-foreground));
+		color: var(--custom-surface-muted, hsl(var(--muted-foreground)));
 	}
 
 	/* Levels */
