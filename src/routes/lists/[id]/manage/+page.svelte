@@ -6,6 +6,7 @@
 	import { Switch } from '$lib/components/ui/switch';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import WeightFormulaPreview from '$lib/components/custom-lists/WeightFormulaPreview.svelte';
+	import imageCompression from 'browser-image-compression';
 	import {
 		createEmptyCustomListRankBadge,
 		normalizeCustomListRankBadges,
@@ -109,6 +110,11 @@
 	let refreshingLeaderboard = false;
 	let savingBanState = false;
 	let initialSyncDone = false;
+	let bannerFileInput: HTMLInputElement | null = null;
+	let logoFileInput: HTMLInputElement | null = null;
+	let uploadingAsset: 'banner' | 'logo' | null = null;
+
+	const CUSTOM_LIST_CDN_BASE_URL = 'https://cdn.gdvn.net';
 
 	const editForm = {
 		title: '',
@@ -281,6 +287,24 @@
 		return normalized.length === 9 ? `${normalized.slice(0, 7)}${alpha}` : `${normalized}${alpha}`;
 	}
 
+	function getColorPickerValue(value: string | null | undefined) {
+		if (!isHexColor(value)) {
+			return '#000000';
+		}
+
+		return (typeof value === 'string' ? value.trim() : '').slice(0, 7);
+	}
+
+	function setThemeColorFromPicker(field: 'backgroundColor' | 'borderColor', event: Event) {
+		const input = event.currentTarget;
+
+		if (!(input instanceof HTMLInputElement)) {
+			return;
+		}
+
+		editForm[field] = input.value;
+	}
+
 	function getManageThemeColor() {
 		if (initialSyncDone && isHexColor(editForm.backgroundColor)) {
 			return editForm.backgroundColor.trim();
@@ -306,6 +330,139 @@
 		}
 
 		return list?.bannerUrl ?? null;
+	}
+
+	function getManageLogoPreviewUrl() {
+		if (initialSyncDone) {
+			const value = editForm.logoUrl.trim();
+			return /^https?:\/\//i.test(value) ? value : null;
+		}
+
+		return list?.logoUrl ?? null;
+	}
+
+	function getImageExtension(file: File) {
+		const normalizedType = file.type.toLowerCase();
+		if (normalizedType === 'image/png') return 'png';
+		if (normalizedType === 'image/webp') return 'webp';
+		if (normalizedType === 'image/gif') return 'gif';
+
+		const normalizedName = file.name.toLowerCase();
+		if (normalizedName.endsWith('.png')) return 'png';
+		if (normalizedName.endsWith('.webp')) return 'webp';
+		if (normalizedName.endsWith('.gif')) return 'gif';
+
+		return 'jpg';
+	}
+
+	function getImageContentType(file: File, extension: string) {
+		if (file.type) {
+			return file.type;
+		}
+
+		if (extension === 'png') return 'image/png';
+		if (extension === 'webp') return 'image/webp';
+		if (extension === 'gif') return 'image/gif';
+		return 'image/jpeg';
+	}
+
+	function getCustomListAssetPath(asset: 'banner' | 'logo', extension: string) {
+		return `custom-lists/${$user.data?.uid}/${list?.id}/${asset}.${extension}`;
+	}
+
+	function getCustomListAssetUrl(path: string) {
+		return `${CUSTOM_LIST_CDN_BASE_URL}/${path}?v=${Date.now()}`;
+	}
+
+	async function normalizeCustomListAsset(file: File, asset: 'banner' | 'logo') {
+		const extension = getImageExtension(file);
+
+		if (extension === 'gif') {
+			return file;
+		}
+
+		return imageCompression(file, {
+			maxSizeMB: asset === 'banner' ? 4.5 : 0.35,
+			maxWidthOrHeight: asset === 'banner' ? 1920 : 512,
+			useWebWorker: true
+		});
+	}
+
+	async function handleCustomListAssetUpload(asset: 'banner' | 'logo', event: Event) {
+		if (!list || !canManage) return;
+
+		const input = event.currentTarget;
+		if (!(input instanceof HTMLInputElement)) {
+			return;
+		}
+
+		const selectedFile = input.files?.[0];
+
+		if (!selectedFile) {
+			return;
+		}
+
+		if (!selectedFile.type.startsWith('image/')) {
+			toast.error($_('custom_lists.toast.invalid_image'));
+			input.value = '';
+			return;
+		}
+
+		uploadingAsset = asset;
+
+		try {
+			const token = await $user.token();
+			const ownerUid = $user.data?.uid;
+
+			if (!token || !ownerUid) {
+				throw new Error($_('custom_lists.toast.failed_upload_image'));
+			}
+
+			const preparedFile = await normalizeCustomListAsset(selectedFile, asset);
+			const extension = getImageExtension(preparedFile);
+			const assetPath = getCustomListAssetPath(asset, extension);
+
+			const presignRes = await fetch(
+				`${import.meta.env.VITE_API_URL}/storage/presign?path=${encodeURIComponent(assetPath)}`,
+				{
+					headers: {
+						Authorization: `Bearer ${token}`
+					}
+				}
+			);
+
+			if (!presignRes.ok) {
+				throw new Error($_('custom_lists.toast.failed_upload_image'));
+			}
+
+			const presignedUrl = await presignRes.text();
+			const uploadRes = await fetch(presignedUrl, {
+				method: 'PUT',
+				headers: {
+					'Content-Type': getImageContentType(preparedFile, extension)
+				},
+				body: preparedFile
+			});
+
+			if (!uploadRes.ok) {
+				throw new Error($_('custom_lists.toast.failed_upload_image'));
+			}
+
+			const uploadedUrl = getCustomListAssetUrl(assetPath);
+
+			if (asset === 'banner') {
+				editForm.bannerUrl = uploadedUrl;
+			} else {
+				editForm.logoUrl = uploadedUrl;
+			}
+
+			toast.success($_('custom_lists.toast.image_uploaded_save'));
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_upload_image'));
+		} finally {
+			uploadingAsset = null;
+			input.value = '';
+		}
 	}
 
 	function getMinProgressLabel(item: CustomListItem) {
@@ -711,6 +868,22 @@
 	<title>{list ? `Quản lý danh sách - ${list.title} - Geometry Dash Việt Nam` : 'Danh sách - Geometry Dash Việt Nam'}</title>
 </svelte:head>
 
+<input
+	hidden
+	type="file"
+	accept="image/png,image/jpeg,image/webp,image/gif"
+	on:change={(event) => handleCustomListAssetUpload('banner', event)}
+	bind:this={bannerFileInput}
+/>
+
+<input
+	hidden
+	type="file"
+	accept="image/png,image/jpeg,image/webp,image/gif"
+	on:change={(event) => handleCustomListAssetUpload('logo', event)}
+	bind:this={logoFileInput}
+/>
+
 <div class="page" style={getManagePageStyle()}>
 	<!-- Navigation -->
 	<div class="navRow">
@@ -895,28 +1068,79 @@
 								<div class="field">
 									<label for="list-background-color">{$_('custom_lists.detail.edit.background_color_label')}</label>
 									<div class="colorFieldRow">
+										<input
+											class="nativeColorInput"
+											type="color"
+											value={getColorPickerValue(editForm.backgroundColor)}
+											on:input={(event) => setThemeColorFromPicker('backgroundColor', event)}
+											aria-label={$_('custom_lists.detail.edit.background_color_label')}
+										/>
 										<span class="colorSwatch" style={isHexColor(editForm.backgroundColor) ? `background: ${editForm.backgroundColor}` : undefined}></span>
 										<Input id="list-background-color" bind:value={editForm.backgroundColor} placeholder={$_('custom_lists.detail.edit.background_color_placeholder')} />
+										<Button variant="ghost" size="sm" on:click={() => (editForm.backgroundColor = '')}>
+											{$_('general.reset')}
+										</Button>
 									</div>
 									<p class="hint">{$_('custom_lists.detail.edit.background_color_hint')}</p>
 								</div>
 								<div class="field">
 									<label for="list-border-color">{$_('custom_lists.detail.edit.border_color_label')}</label>
 									<div class="colorFieldRow">
+										<input
+											class="nativeColorInput"
+											type="color"
+											value={getColorPickerValue(editForm.borderColor)}
+											on:input={(event) => setThemeColorFromPicker('borderColor', event)}
+											aria-label={$_('custom_lists.detail.edit.border_color_label')}
+										/>
 										<span class="colorSwatch" style={isHexColor(editForm.borderColor) ? `background: ${editForm.borderColor}` : undefined}></span>
 										<Input id="list-border-color" bind:value={editForm.borderColor} placeholder={$_('custom_lists.detail.edit.border_color_placeholder')} />
+										<Button variant="ghost" size="sm" on:click={() => (editForm.borderColor = '')}>
+											{$_('general.reset')}
+										</Button>
 									</div>
 									<p class="hint">{$_('custom_lists.detail.edit.border_color_hint')}</p>
 								</div>
 								<div class="field">
-									<label for="list-banner-url">{$_('custom_lists.detail.edit.banner_url_label')}</label>
+									<div class="assetFieldHeader">
+										<label for="list-banner-url">{$_('custom_lists.detail.edit.banner_url_label')}</label>
+										<Button
+											variant="outline"
+											size="sm"
+											on:click={() => bannerFileInput?.click()}
+											disabled={uploadingAsset === 'banner'}
+										>
+											{uploadingAsset === 'banner'
+												? `${$_('general.loading')}...`
+												: $_('custom_lists.detail.edit.banner_upload_button')}
+										</Button>
+									</div>
 									<Input id="list-banner-url" bind:value={editForm.bannerUrl} placeholder={$_('custom_lists.detail.edit.banner_url_placeholder')} />
 									<p class="hint">{$_('custom_lists.detail.edit.banner_url_hint')}</p>
+									<p class="hint">{$_('custom_lists.detail.edit.asset_upload_hint')}</p>
 								</div>
 								<div class="field">
-									<label for="list-logo-url">{$_('custom_lists.detail.edit.logo_url_label')}</label>
+									<div class="assetFieldHeader">
+										<label for="list-logo-url">{$_('custom_lists.detail.edit.logo_url_label')}</label>
+										<Button
+											variant="outline"
+											size="sm"
+											on:click={() => logoFileInput?.click()}
+											disabled={uploadingAsset === 'logo'}
+										>
+											{uploadingAsset === 'logo'
+												? `${$_('general.loading')}...`
+												: $_('custom_lists.detail.edit.logo_upload_button')}
+										</Button>
+									</div>
 									<Input id="list-logo-url" bind:value={editForm.logoUrl} placeholder={$_('custom_lists.detail.edit.logo_url_placeholder')} />
+									{#if getManageLogoPreviewUrl()}
+										<div class="assetPreview assetPreviewLogo">
+											<img src={getManageLogoPreviewUrl()} alt="" loading="lazy" decoding="async" />
+										</div>
+									{/if}
 									<p class="hint">{$_('custom_lists.detail.edit.logo_url_hint')}</p>
+									<p class="hint">{$_('custom_lists.detail.edit.asset_upload_hint')}</p>
 								</div>
 							</div>
 						</div>
@@ -1444,10 +1668,44 @@
 		border-color: hsl(var(--primary));
 	}
 
+	.assetFieldHeader {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		flex-wrap: wrap;
+	}
+
 	.colorFieldRow {
 		display: flex;
 		align-items: center;
 		gap: 10px;
+		flex-wrap: wrap;
+	}
+
+	.nativeColorInput {
+		width: 42px;
+		height: 42px;
+		padding: 0;
+		border: 1px solid hsl(var(--border));
+		border-radius: 10px;
+		background: transparent;
+		cursor: pointer;
+		flex-shrink: 0;
+	}
+
+	.nativeColorInput::-webkit-color-swatch-wrapper {
+		padding: 4px;
+	}
+
+	.nativeColorInput::-webkit-color-swatch {
+		border: none;
+		border-radius: 8px;
+	}
+
+	.nativeColorInput::-moz-color-swatch {
+		border: none;
+		border-radius: 8px;
 	}
 
 	.colorSwatch {
@@ -1492,6 +1750,25 @@
 
 	.actionCard {
 		padding-block: 18px;
+	}
+
+	.assetPreview {
+		width: fit-content;
+		padding: 10px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 10px;
+		background: hsl(var(--muted) / 0.12);
+	}
+
+	.assetPreview img {
+		display: block;
+		max-width: 100%;
+	}
+
+	.assetPreviewLogo img {
+		width: 56px;
+		height: 56px;
+		object-fit: contain;
 	}
 
 	.rankBadgeHeader {

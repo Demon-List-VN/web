@@ -1849,9 +1849,12 @@
         "banner_url_label": "Hero banner URL",
         "banner_url_placeholder": "https://example.com/banner.webp",
         "banner_url_hint": "Optional image URL shown at the top of the hero header.",
+        "banner_upload_button": "Upload banner",
         "logo_url_label": "Navbar logo URL",
         "logo_url_placeholder": "https://example.com/logo.webp",
         "logo_url_hint": "Optional image URL that replaces the navbar logo on this list page.",
+        "logo_upload_button": "Upload logo",
+        "asset_upload_hint": "Paste a URL or upload an image file. Uploaded files fill this field automatically; save changes to apply them.",
         "rank_badges_label": "Custom rank badges",
         "rank_badges_hint": "Set badge thresholds for this list. Drag badges to reorder priority from highest to lowest.",
         "rank_badges_empty": "No custom rank badges yet.",
@@ -2002,7 +2005,10 @@
       "unstarred": "List unstarred",
 	      "failed_star": "Failed to update list star",
       "rating_invalid": "Rating must be between 1 and 10",
-      "min_progress_invalid": "Enter a valid min progress value"
+        "min_progress_invalid": "Enter a valid min progress value",
+        "invalid_image": "Choose a valid image file",
+        "image_uploaded_save": "Image uploaded. Save changes to apply it.",
+        "failed_upload_image": "Failed to upload image"
     }
   }
 }

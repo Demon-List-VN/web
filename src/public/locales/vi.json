@@ -1848,9 +1848,12 @@
         "banner_url_label": "URL banner hero",
         "banner_url_placeholder": "https://example.com/banner.webp",
         "banner_url_hint": "URL ảnh tùy chọn hiển thị ở đầu phần hero header.",
+        "banner_upload_button": "Tải banner lên",
         "logo_url_label": "URL logo thanh điều hướng",
         "logo_url_placeholder": "https://example.com/logo.webp",
         "logo_url_hint": "URL ảnh tùy chọn thay thế logo ở góc trên bên trái trên trang danh sách này.",
+        "logo_upload_button": "Tải logo lên",
+        "asset_upload_hint": "Dán URL hoặc tải ảnh lên. Ảnh tải lên sẽ tự điền vào ô này; hãy lưu thay đổi để áp dụng.",
         "rank_badges_label": "Huy hiệu hạng tùy chỉnh",
         "rank_badges_hint": "Đặt ngưỡng huy hiệu cho danh sách này. Kéo thả để đổi thứ tự ưu tiên từ cao xuống thấp.",
         "rank_badges_empty": "Chưa có huy hiệu hạng tùy chỉnh.",
@@ -2002,7 +2005,10 @@
       "unstarred": "Đã bỏ sao danh sách",
 	      "failed_star": "Không thể cập nhật trạng thái gắn sao",
       "rating_invalid": "Điểm đánh giá phải từ 1 đến 10",
-      "min_progress_invalid": "Nhập mốc tối thiểu hợp lệ"
+      "min_progress_invalid": "Nhập mốc tối thiểu hợp lệ",
+      "invalid_image": "Vui lòng chọn tệp hình ảnh hợp lệ",
+      "image_uploaded_save": "Đã tải ảnh lên. Hãy lưu thay đổi để áp dụng.",
+      "failed_upload_image": "Không thể tải ảnh lên"
     }
   }
 }
