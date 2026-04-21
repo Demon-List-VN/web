@@ -30,6 +30,7 @@
 
 	type PublicListTab = 'custom' | 'official';
 	type ListTab = PublicListTab | 'mine' | 'starred';
+	type CustomListResolvedRole = 'viewer' | 'owner' | 'admin' | 'helper' | 'moderator';
 
 	type ListSummary = {
 		id: number;
@@ -46,6 +47,7 @@
 		starCount?: number;
 		starred?: boolean;
 		ownerData?: any;
+		currentUserRole?: CustomListResolvedRole;
 		weightFormula?: string;
 	};
 
@@ -86,6 +88,14 @@
 
 	function formatListType(isPlatformer: boolean) {
 		return isPlatformer ? $_('custom_lists.type.platformer') : $_('custom_lists.type.classic');
+	}
+
+	function getRoleLabel(role: CustomListResolvedRole | undefined) {
+		if (role === 'admin') return $_('custom_lists.manage.roles.admin');
+		if (role === 'helper') return $_('custom_lists.manage.roles.helper');
+		if (role === 'moderator') return $_('custom_lists.manage.roles.moderator');
+		if (role === 'owner') return $_('custom_lists.manage.roles.owner');
+		return null;
 	}
 
 	function formatDate(value: string) {
@@ -646,6 +656,9 @@
 													<Star class="h-3.5 w-3.5" />
 													Official
 												</span>
+											{/if}
+											{#if getRoleLabel(list.currentUserRole) && list.currentUserRole !== 'owner'}
+												<span class="metaItem">{getRoleLabel(list.currentUserRole)}</span>
 											{/if}
 											<span class="metaItem">
 												{$_('custom_lists.detail.levels_badge', { values: { count: list.levelCount } })}

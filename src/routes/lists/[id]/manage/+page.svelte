@@ -3,6 +3,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Badge } from '$lib/components/ui/badge';
+	import PlayerLink from '$lib/components/playerLink.svelte';
 	import { Switch } from '$lib/components/ui/switch';
 	import * as Select from '$lib/components/ui/select';
 	import * as Tabs from '$lib/components/ui/tabs';
@@ -55,9 +56,44 @@
 		} | null;
 	};
 
+	type CustomListResolvedRole = 'viewer' | 'owner' | 'admin' | 'helper' | 'moderator';
+
+	type CustomListPermissionFlags = {
+		canEditSettings: boolean;
+		canEditLevels: boolean;
+		canDelete: boolean;
+		canBan: boolean;
+		canManageMembers: boolean;
+		canConfigureCollaboration: boolean;
+		canTransferOwnership: boolean;
+		canViewMembers: boolean;
+		canViewAudit: boolean;
+	};
+
+	type CustomListMember = {
+		id: number;
+		uid: string;
+		role: 'admin' | 'helper';
+		created_at: string;
+		updated_at: string;
+		playerData?: any | null;
+	};
+
+	type CustomListAuditLogEntry = {
+		id: number;
+		created_at: string;
+		action: string;
+		actorUid: string | null;
+		targetUid: string | null;
+		metadata?: Record<string, any> | null;
+		actorData?: any | null;
+		targetData?: any | null;
+	};
+
 	type CustomList = {
 		id: number;
 		slug?: string | null;
+		adminsCanManageHelpers?: boolean;
 		owner: string;
 		title: string;
 		description: string;
@@ -75,9 +111,14 @@
 		tags: string[];
 		updated_at: string;
 		lastRefreshedAt?: string | null;
+		currentUserRole?: CustomListResolvedRole;
+		permissions?: CustomListPermissionFlags;
+		members?: CustomListMember[];
+		auditLog?: CustomListAuditLogEntry[];
 		rankBadges?: CustomListRankBadge[];
 		weightFormula?: string;
 		items: CustomListItem[];
+		ownerData?: any;
 	};
 
 	type CustomListRankBadgeDraft = {
@@ -88,8 +129,20 @@
 		minTop: number | null | undefined;
 	};
 
-	type ManageTab = 'basic' | 'appearance' | 'formula' | 'rank' | 'danger' | 'levels';
+	type ManageTab = 'basic' | 'appearance' | 'formula' | 'rank' | 'danger' | 'levels' | 'collaboration';
 	type AssetInputMode = 'upload' | 'link';
+
+	const defaultPermissions: CustomListPermissionFlags = {
+		canEditSettings: false,
+		canEditLevels: false,
+		canDelete: false,
+		canBan: false,
+		canManageMembers: false,
+		canConfigureCollaboration: false,
+		canTransferOwnership: false,
+		canViewMembers: false,
+		canViewAudit: false
+	};
 
 	// SSR data - hydrate into reactive local state
 	let list: CustomList | null = data?.list ?? null;
@@ -112,12 +165,19 @@
 	let savingReorder = false;
 	let refreshingLeaderboard = false;
 	let savingBanState = false;
+	let savingCollaboration = false;
 	let initialSyncDone = false;
 	let bannerFileInput: HTMLInputElement | null = null;
 	let logoFileInput: HTMLInputElement | null = null;
 	let uploadingAsset: 'banner' | 'logo' | null = null;
 	let bannerAssetMode: AssetInputMode = 'upload';
 	let logoAssetMode: AssetInputMode = 'upload';
+	let memberSearchLoading = false;
+	let memberSearchQuery = '';
+	let memberSearchResults: any[] = [];
+	let selectedMember: any | null = null;
+	let collaboratorRole: 'admin' | 'helper' = 'helper';
+	let adminsCanManageHelpers = false;
 
 	const CUSTOM_LIST_CDN_BASE_URL = 'https://cdn.gdvn.net';
 
@@ -159,6 +219,7 @@
 			|| requestedTab === 'appearance'
 			|| requestedTab === 'formula'
 			|| requestedTab === 'rank'
+			|| requestedTab === 'collaboration'
 			|| requestedTab === 'danger'
 		) {
 			return requestedTab;
@@ -192,7 +253,12 @@
 		editForm.mode = list.mode;
 		bannerAssetMode = inferAssetInputMode(list.bannerUrl);
 		logoAssetMode = inferAssetInputMode(list.logoUrl);
+		adminsCanManageHelpers = Boolean(list.adminsCanManageHelpers);
 		dangerConfirmName = '';
+		memberSearchQuery = '';
+		memberSearchResults = [];
+		selectedMember = null;
+		collaboratorRole = 'helper';
 		editForm.rankBadges = normalizeCustomListRankBadges(list.rankBadges).map((rankBadge) => ({
 			...rankBadge
 		}));
@@ -283,6 +349,341 @@
 			hour: '2-digit',
 			minute: '2-digit'
 		});
+	}
+
+	function getPlayerName(player: any, fallbackUid?: string | null) {
+		return player?.name || fallbackUid || $_('custom_lists.manage.collaboration.unknown_player');
+	}
+
+	function getRoleLabel(role: CustomListResolvedRole | 'admin' | 'helper') {
+		if (role === 'owner') return $_('custom_lists.manage.roles.owner');
+		if (role === 'admin') return $_('custom_lists.manage.roles.admin');
+		if (role === 'helper') return $_('custom_lists.manage.roles.helper');
+		if (role === 'moderator') return $_('custom_lists.manage.roles.moderator');
+		return $_('custom_lists.manage.roles.viewer');
+	}
+
+	function humanizeAuditField(field: string) {
+		if (field === 'backgroundColor') return $_('custom_lists.detail.edit.background_color_label');
+		if (field === 'bannerUrl') return $_('custom_lists.detail.edit.banner_url_label');
+		if (field === 'borderColor') return $_('custom_lists.detail.edit.border_color_label');
+		if (field === 'communityEnabled') return $_('custom_lists.detail.edit.community_label');
+		if (field === 'isPlatformer') return $_('custom_lists.detail.edit.type_label');
+		if (field === 'logoUrl') return $_('custom_lists.detail.edit.logo_url_label');
+		if (field === 'rankBadges') return $_('custom_lists.detail.edit.rank_badges_label');
+		if (field === 'topEnabled') return $_('custom_lists.detail.edit.top_enabled_label');
+		if (field === 'weightFormula') return $_('custom_lists.formula.label');
+		if (field === 'adminsCanManageHelpers') return $_('custom_lists.manage.collaboration.admin_helper_toggle_label');
+		return field;
+	}
+
+	function getAuditActionLabel(action: string) {
+		if (action === 'list_created') return $_('custom_lists.manage.audit.list_created');
+		if (action === 'list_updated') return $_('custom_lists.manage.audit.list_updated');
+		if (action === 'level_added') return $_('custom_lists.manage.audit.level_added');
+		if (action === 'level_removed') return $_('custom_lists.manage.audit.level_removed');
+		if (action === 'level_updated') return $_('custom_lists.manage.audit.level_updated');
+		if (action === 'levels_reordered') return $_('custom_lists.manage.audit.levels_reordered');
+		if (action === 'member_added') return $_('custom_lists.manage.audit.member_added');
+		if (action === 'member_removed') return $_('custom_lists.manage.audit.member_removed');
+		if (action === 'member_role_updated') return $_('custom_lists.manage.audit.member_role_updated');
+		if (action === 'ownership_transferred') return $_('custom_lists.manage.audit.ownership_transferred');
+		if (action === 'collaboration_settings_updated') return $_('custom_lists.manage.audit.collaboration_settings_updated');
+		if (action === 'ban_state_updated') return $_('custom_lists.manage.audit.ban_state_updated');
+		if (action === 'leaderboard_refreshed') return $_('custom_lists.manage.audit.leaderboard_refreshed');
+		return action.replaceAll('_', ' ');
+	}
+
+	function getAuditEntryDetail(entry: CustomListAuditLogEntry) {
+		const metadata = entry.metadata && typeof entry.metadata === 'object' ? entry.metadata : {};
+		const actor = getPlayerName(entry.actorData, entry.actorUid);
+		const target = getPlayerName(entry.targetData, entry.targetUid);
+		const fields = Array.isArray(metadata.fields)
+			? metadata.fields.map((field) => humanizeAuditField(String(field))).join(', ')
+			: '';
+
+		if (entry.action === 'list_created') {
+			return $_('custom_lists.manage.audit_detail.list_created', { values: { actor } });
+		}
+
+		if (entry.action === 'list_updated') {
+			return $_('custom_lists.manage.audit_detail.list_updated', { values: { actor, fields: fields || '-' } });
+		}
+
+		if (entry.action === 'level_added' || entry.action === 'level_removed') {
+			return $_('custom_lists.manage.audit_detail.level_changed', {
+				values: {
+					actor,
+					levelId: String(metadata.levelId ?? '-')
+				}
+			});
+		}
+
+		if (entry.action === 'level_updated') {
+			return $_('custom_lists.manage.audit_detail.level_updated', {
+				values: {
+					actor,
+					levelId: String(metadata.levelId ?? '-'),
+					fields: fields || '-'
+				}
+			});
+		}
+
+		if (entry.action === 'levels_reordered') {
+			return $_('custom_lists.manage.audit_detail.levels_reordered', { values: { actor } });
+		}
+
+		if (entry.action === 'member_added' || entry.action === 'member_removed') {
+			return $_('custom_lists.manage.audit_detail.member_changed', {
+				values: {
+					actor,
+					target,
+					role: getRoleLabel(String(metadata.role || 'helper') as 'admin' | 'helper')
+				}
+			});
+		}
+
+		if (entry.action === 'member_role_updated') {
+			return $_('custom_lists.manage.audit_detail.member_role_updated', {
+				values: {
+					actor,
+					target,
+					fromRole: getRoleLabel(String(metadata.fromRole || 'helper') as 'admin' | 'helper'),
+					toRole: getRoleLabel(String(metadata.toRole || 'helper') as 'admin' | 'helper')
+				}
+			});
+		}
+
+		if (entry.action === 'ownership_transferred') {
+			return $_('custom_lists.manage.audit_detail.ownership_transferred', {
+				values: {
+					actor,
+					target
+				}
+			});
+		}
+
+		if (entry.action === 'collaboration_settings_updated') {
+			return $_('custom_lists.manage.audit_detail.collaboration_settings_updated', {
+				values: {
+					actor,
+					enabled: metadata.adminsCanManageHelpers ? $_('general.yes') : $_('general.no')
+				}
+			});
+		}
+
+		if (entry.action === 'ban_state_updated') {
+			return $_('custom_lists.manage.audit_detail.ban_state_updated', {
+				values: {
+					actor,
+					state: metadata.isBanned ? $_('custom_lists.manage.ban') : $_('custom_lists.manage.unban')
+				}
+			});
+		}
+
+		if (entry.action === 'leaderboard_refreshed') {
+			return $_('custom_lists.manage.audit_detail.leaderboard_refreshed', {
+				values: {
+					actor,
+					totalPlayers: String(metadata.totalPlayers ?? '-'),
+					totalRecords: String(metadata.totalRecords ?? '-')
+				}
+			});
+		}
+
+		return actor;
+	}
+
+	function getMemberByUid(uid: string | null | undefined) {
+		if (!uid || !list?.members) {
+			return null;
+		}
+
+		return list.members.find((member) => member.uid === uid) ?? null;
+	}
+
+	async function searchPlayersForCollaboration() {
+		if (!list) return;
+		const ownerUid = list.owner;
+		const query = memberSearchQuery.trim();
+
+		if (!query.length) {
+			memberSearchResults = [];
+			return;
+		}
+
+		memberSearchLoading = true;
+
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/players/search?q=${encodeURIComponent(query)}`);
+			const payload = await res.json().catch(() => []);
+
+			if (!res.ok) {
+				throw new Error($_('custom_lists.toast.failed_player_search'));
+			}
+
+			memberSearchResults = (Array.isArray(payload) ? payload : []).filter((player: any) => player?.uid !== ownerUid);
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_player_search'));
+		} finally {
+			memberSearchLoading = false;
+		}
+	}
+
+	function selectCollaborationMember(player: any) {
+		selectedMember = player;
+		memberSearchQuery = getPlayerName(player, player?.uid);
+		memberSearchResults = [];
+		const existingMember = getMemberByUid(player?.uid);
+		if (existingMember?.role === 'admin' || existingMember?.role === 'helper') {
+			collaboratorRole = existingMember.role;
+		}
+	}
+
+	function clearSelectedMember() {
+		selectedMember = null;
+		memberSearchQuery = '';
+		memberSearchResults = [];
+		collaboratorRole = 'helper';
+	}
+
+	async function updateCollaborationSettings() {
+		if (!list || !canConfigureCollaboration) return;
+
+		savingCollaboration = true;
+
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/collaboration`, {
+				method: 'PATCH',
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`,
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ adminsCanManageHelpers })
+			});
+			const payload = await res.json();
+			if (!res.ok) throw new Error(payload.error || $_('custom_lists.toast.failed_collaboration_update'));
+			list = payload;
+			syncForm();
+			toast.success($_('custom_lists.toast.collaboration_updated'));
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_collaboration_update'));
+		} finally {
+			savingCollaboration = false;
+		}
+	}
+
+	async function addCollaborator() {
+		if (!list || !selectedMember || !canManageMembers) return;
+
+		savingCollaboration = true;
+
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/members`, {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`,
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					uid: selectedMember.uid,
+					role: canConfigureCollaboration ? collaboratorRole : 'helper'
+				})
+			});
+			const payload = await res.json();
+			if (!res.ok) throw new Error(payload.error || $_('custom_lists.toast.failed_add_collaborator'));
+			list = payload;
+			syncForm();
+			toast.success($_('custom_lists.toast.collaborator_added'));
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_add_collaborator'));
+		} finally {
+			savingCollaboration = false;
+		}
+	}
+
+	async function updateCollaboratorRole(member: CustomListMember | null, role: 'admin' | 'helper') {
+		if (!list || !member || !canConfigureCollaboration) return;
+
+		savingCollaboration = true;
+
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/members/${member.uid}`, {
+				method: 'PATCH',
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`,
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ role })
+			});
+			const payload = await res.json();
+			if (!res.ok) throw new Error(payload.error || $_('custom_lists.toast.failed_update_collaborator'));
+			list = payload;
+			syncForm();
+			toast.success($_('custom_lists.toast.collaborator_role_updated'));
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_update_collaborator'));
+		} finally {
+			savingCollaboration = false;
+		}
+	}
+
+	async function removeCollaborator(member: CustomListMember) {
+		if (!list || !canManageMembers) return;
+		if (!canConfigureCollaboration && member.role !== 'helper') return;
+
+		savingCollaboration = true;
+
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/members/${member.uid}`, {
+				method: 'DELETE',
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`
+				}
+			});
+			const payload = await res.json();
+			if (!res.ok) throw new Error(payload.error || $_('custom_lists.toast.failed_remove_collaborator'));
+			list = payload;
+			syncForm();
+			toast.success($_('custom_lists.toast.collaborator_removed'));
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_remove_collaborator'));
+		} finally {
+			savingCollaboration = false;
+		}
+	}
+
+	async function transferOwnership() {
+		if (!list || !selectedMember || !canTransferOwnership) return;
+
+		savingCollaboration = true;
+
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/ownership`, {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`,
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ uid: selectedMember.uid })
+			});
+			const payload = await res.json();
+			if (!res.ok) throw new Error(payload.error || $_('custom_lists.toast.failed_transfer_ownership'));
+			list = payload;
+			syncForm();
+			toast.success($_('custom_lists.toast.ownership_transferred'));
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_transfer_ownership'));
+		} finally {
+			savingCollaboration = false;
+		}
+	}
+
+	function isTabAllowed(tab: ManageTab) {
+		if (tab === 'levels') return true;
+		if (tab === 'danger') return canBan || canDelete;
+		if (tab === 'collaboration') return canShowCollaboration;
+		return canEditSettings;
 	}
 
 	function getTimeString(ms: number) {
@@ -522,7 +923,7 @@
 	}
 
 	async function handleCustomListAssetUpload(asset: 'banner' | 'logo', event: Event) {
-		if (!list || !canManage) return;
+		if (!list || !canEditSettings) return;
 
 		const input = event.currentTarget;
 		if (!(input instanceof HTMLInputElement)) {
@@ -617,7 +1018,7 @@
 
 	// Mutations
 	async function saveMetadata() {
-		if (!list || !canManage) return;
+		if (!list || !canEditSettings) return;
 		if (!editForm.title.trim()) {
 			toast.error($_('custom_lists.toast.title_required'));
 			return;
@@ -667,7 +1068,7 @@
 	}
 
 	async function refreshLeaderboardPrecalc() {
-		if (!list || !canManage || refreshingLeaderboard) return;
+		if (!list || !canEditSettings || refreshingLeaderboard) return;
 
 		refreshingLeaderboard = true;
 
@@ -732,7 +1133,7 @@
 	}
 
 	async function addLevel() {
-		if (!list || !canManage) return;
+		if (!list || !canEditLevels) return;
 		const levelId = Number.parseInt(levelIdInput, 10);
 		if (!Number.isInteger(levelId) || levelId <= 0) {
 			toast.error($_('custom_lists.toast.level_id_invalid'));
@@ -762,7 +1163,7 @@
 	}
 
 	async function removeLevel(levelId: number) {
-		if (!list || !canManage) return;
+		if (!list || !canEditLevels) return;
 		mutatingLevelId = levelId;
 		try {
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/levels/${levelId}`, {
@@ -781,13 +1182,13 @@
 	}
 
 	function startRatingEdit(item: CustomListItem) {
-		if (!canManage) return;
+		if (!canEditLevels) return;
 		editingRatingItemId = item.id;
 		editingRatingValue = String(item.rating ?? 5);
 	}
 
 	function startMinProgressEdit(item: CustomListItem) {
-		if (!canManage) return;
+		if (!canEditLevels) return;
 		editingMinProgressItemId = item.id;
 		editingMinProgressValue = item.minProgress == null ? '' : String(item.minProgress);
 	}
@@ -835,7 +1236,7 @@
 	}
 
 	async function updateLevelItem(levelId: number, patch: { rating?: number; minProgress?: number | null }) {
-		if (!list || !canManage) return;
+		if (!list || !canEditLevels) return;
 		savingLevelItemId = levelId;
 		try {
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/levels/${levelId}`, {
@@ -969,7 +1370,7 @@
 	}
 
 	async function reorderLevels(levelIds: number[]) {
-		if (!list || !canManage) return;
+		if (!list || !canEditLevels) return;
 		savingReorder = true;
 		try {
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/reorder`, {
@@ -991,18 +1392,30 @@
 		}
 	}
 
-	$: isModerator = Boolean($user.loggedIn && ($user.data?.isAdmin || $user.data?.isManager));
-	$: isOwner = Boolean(list && $user.loggedIn && list.owner === $user.data?.uid);
-	$: ownerCanManage = Boolean(list && isOwner && !list.isBanned);
-	$: canManage = Boolean(list && (ownerCanManage || isModerator));
-	$: canDelete = Boolean(list && ownerCanManage && !list.isOfficial);
-	$: canBan = Boolean(list && isModerator && !list.isOfficial);
+	$: permissions = list?.permissions ?? defaultPermissions;
+	$: canEditSettings = Boolean(list && permissions.canEditSettings);
+	$: canEditLevels = Boolean(list && permissions.canEditLevels);
+	$: canDelete = Boolean(list && permissions.canDelete);
+	$: canBan = Boolean(list && permissions.canBan);
+	$: canManageMembers = Boolean(list && permissions.canManageMembers);
+	$: canConfigureCollaboration = Boolean(list && permissions.canConfigureCollaboration);
+	$: canTransferOwnership = Boolean(list && permissions.canTransferOwnership);
+	$: canViewMembers = Boolean(list && permissions.canViewMembers);
+	$: canViewAudit = Boolean(list && permissions.canViewAudit);
+	$: canShowCollaboration = Boolean(list && (canViewMembers || canViewAudit || canManageMembers || canConfigureCollaboration || canTransferOwnership));
 	$: if (list && $user.checked && !initialManageTabSettled) {
 		initialManageTabSettled = true;
-		activeTab = canManage ? getInitialManageTab() : 'levels';
+		const requestedTab = getInitialManageTab();
+		activeTab = isTabAllowed(requestedTab)
+			? requestedTab
+			: canEditSettings
+				? 'basic'
+				: canShowCollaboration
+					? 'collaboration'
+					: 'levels';
 	}
-	$: if (list && $user.checked && !canManage && activeTab !== 'levels') {
-		activeTab = 'levels';
+	$: if (list && $user.checked && !isTabAllowed(activeTab)) {
+		activeTab = canEditSettings ? 'basic' : canShowCollaboration ? 'collaboration' : 'levels';
 	}
 
 	// Reactive hero preview colors — update live from editForm without saving
@@ -1092,6 +1505,9 @@
 					<span class="chip">
 						{$_('custom_lists.detail.levels_badge', { values: { count: list.items.length } })}
 					</span>
+					{#if list.currentUserRole && list.currentUserRole !== 'viewer'}
+						<span class="chip">{getRoleLabel(list.currentUserRole)}</span>
+					{/if}
 				</div>
 			</div>
 			{#if getManagePreviewTags().length}
@@ -1117,7 +1533,13 @@
 			<div class="toolCard moderationNotice">
 				<div class="moderationCopy">
 					<h2 class="toolHeading">{$_('custom_lists.manage.banned_title')}</h2>
-					<p class="hint">{canBan ? $_('custom_lists.manage.banned_manager_hint') : $_('custom_lists.manage.banned_owner_hint')}</p>
+					<p class="hint">
+						{canBan
+							? $_('custom_lists.manage.banned_manager_hint')
+							: list.currentUserRole === 'admin' || list.currentUserRole === 'helper'
+								? $_('custom_lists.manage.banned_collaborator_hint')
+								: $_('custom_lists.manage.banned_owner_hint')}
+					</p>
 				</div>
 				<div class="moderationIcon">
 					<AlertTriangle class="h-5 w-5" />
@@ -1128,20 +1550,23 @@
 		<Tabs.Root bind:value={activeTab}>
 			<div class="tabsList">
 				<Tabs.List class="flex h-fit w-fit flex-wrap">
-					{#if canManage}
+					{#if canEditSettings}
 						<Tabs.Trigger value="basic">{$_('custom_lists.manage.tabs.basic')}</Tabs.Trigger>
 						<Tabs.Trigger value="appearance">{$_('custom_lists.manage.tabs.appearance')}</Tabs.Trigger>
 						<Tabs.Trigger value="formula">{$_('custom_lists.manage.tabs.formula')}</Tabs.Trigger>
 						<Tabs.Trigger value="rank">{$_('custom_lists.manage.tabs.rank')}</Tabs.Trigger>
 					{/if}
 					<Tabs.Trigger value="levels">{$_('custom_lists.manage.tabs.levels')}</Tabs.Trigger>
-					{#if canManage && (canBan || canDelete)}
+					{#if canShowCollaboration}
+						<Tabs.Trigger value="collaboration">{$_('custom_lists.manage.tabs.collaboration')}</Tabs.Trigger>
+					{/if}
+					{#if canBan || canDelete}
 						<Tabs.Trigger value="danger" class="dangerTabTrigger">{$_('custom_lists.manage.tabs.danger')}</Tabs.Trigger>
 					{/if}
 				</Tabs.List>
 			</div>
 
-			{#if canManage}
+			{#if canEditSettings}
 				<Tabs.Content value="basic">
 					<div class="tabContent">
 						<div class="toolCard">
@@ -1474,6 +1899,212 @@
 					</div>
 				</Tabs.Content>
 
+				{#if canShowCollaboration}
+					<Tabs.Content value="collaboration">
+						<div class="tabContent">
+							{#if canConfigureCollaboration}
+								<div class="toolCard">
+									<h2 class="toolHeading">{$_('custom_lists.manage.collaboration.settings_title')}</h2>
+									<div class="field">
+										<div class="switchRow">
+											<div>
+												<label for="admins-can-manage-helpers">{$_('custom_lists.manage.collaboration.admin_helper_toggle_label')}</label>
+												<p class="hint">{$_('custom_lists.manage.collaboration.admin_helper_toggle_hint')}</p>
+											</div>
+											<div class="switchControl">
+												<span class="switchLabel">{adminsCanManageHelpers ? $_('general.yes') : $_('general.no')}</span>
+												<Switch id="admins-can-manage-helpers" bind:checked={adminsCanManageHelpers} />
+											</div>
+										</div>
+									</div>
+									<div class="formActions">
+										<Button on:click={updateCollaborationSettings} disabled={savingCollaboration}>
+											<Save class="mr-2 h-4 w-4" />
+											{$_('custom_lists.detail.edit.save')}
+										</Button>
+									</div>
+								</div>
+							{/if}
+
+							{#if canViewMembers || canManageMembers || canTransferOwnership}
+								<div class="toolCard">
+									<h2 class="toolHeading">{$_('custom_lists.manage.collaboration.members_title')}</h2>
+									<div class="field">
+										<label for="collaboration-player-search">{$_('custom_lists.manage.collaboration.search_label')}</label>
+										<div class="searchRow">
+											<Input
+												id="collaboration-player-search"
+												bind:value={memberSearchQuery}
+												placeholder={$_('custom_lists.manage.collaboration.search_placeholder')}
+												on:keydown={(event) => event.key === 'Enter' && searchPlayersForCollaboration()}
+											/>
+											<Button variant="outline" on:click={searchPlayersForCollaboration} disabled={memberSearchLoading}>
+												{memberSearchLoading ? `${$_('general.loading')}...` : $_('custom_lists.manage.collaboration.search_button')}
+											</Button>
+										</div>
+										<p class="hint">{$_('custom_lists.manage.collaboration.search_hint')}</p>
+									</div>
+
+									{#if memberSearchResults.length}
+										<div class="searchResults">
+											{#each memberSearchResults as player}
+												<button type="button" class="searchResult" on:click={() => selectCollaborationMember(player)}>
+													<span class="searchResultName">{getPlayerName(player, player?.uid)}</span>
+													<span class="searchResultMeta">{player.uid}</span>
+												</button>
+											{/each}
+										</div>
+									{/if}
+
+									{#if selectedMember}
+										<div class="selectedMemberCard">
+											<div class="selectedMemberInfo">
+												<strong>{getPlayerName(selectedMember, selectedMember?.uid)}</strong>
+												<span class="searchResultMeta">{selectedMember.uid}</span>
+											</div>
+											{#if canConfigureCollaboration}
+												<div class="optionRow">
+													<button
+														type="button"
+														class="optionBtn"
+														class:selected={collaboratorRole === 'helper'}
+														on:click={() => (collaboratorRole = 'helper')}
+													>
+														{$_('custom_lists.manage.roles.helper')}
+													</button>
+													<button
+														type="button"
+														class="optionBtn"
+														class:selected={collaboratorRole === 'admin'}
+														on:click={() => (collaboratorRole = 'admin')}
+													>
+														{$_('custom_lists.manage.roles.admin')}
+													</button>
+												</div>
+											{/if}
+											{#if getMemberByUid(selectedMember.uid)}
+												<p class="hint">
+													{$_('custom_lists.manage.collaboration.selected_member_existing', {
+														values: {
+															role: getRoleLabel(getMemberByUid(selectedMember.uid)?.role || 'helper')
+														}
+													})}
+												</p>
+											{/if}
+											<div class="formActions">
+												{#if canManageMembers && !getMemberByUid(selectedMember.uid)}
+													<Button on:click={addCollaborator} disabled={savingCollaboration}>
+														<Plus class="mr-2 h-4 w-4" />
+														{$_('custom_lists.manage.collaboration.add_button')}
+													</Button>
+												{:else if canConfigureCollaboration && getMemberByUid(selectedMember.uid) && getMemberByUid(selectedMember.uid)?.role !== collaboratorRole}
+													<Button on:click={() => updateCollaboratorRole(getMemberByUid(selectedMember.uid), collaboratorRole)} disabled={savingCollaboration}>
+														<Save class="mr-2 h-4 w-4" />
+														{$_('custom_lists.manage.collaboration.update_role_button')}
+													</Button>
+												{/if}
+												{#if canTransferOwnership}
+													<Button variant="outline" on:click={transferOwnership} disabled={savingCollaboration}>
+														{$_('custom_lists.manage.collaboration.transfer_button')}
+													</Button>
+												{/if}
+												<Button variant="ghost" on:click={clearSelectedMember} disabled={savingCollaboration}>
+													{$_('general.reset')}
+												</Button>
+											</div>
+										</div>
+									{/if}
+
+									{#if canViewMembers}
+										<div class="memberList">
+											<div class="memberRow">
+												<div class="memberInfo">
+													<div class="memberNameRow">
+														{#if list.ownerData}
+															<PlayerLink player={list.ownerData} />
+														{:else}
+															<span class="memberFallbackName">{list.owner}</span>
+														{/if}
+														<Badge variant="secondary">{$_('custom_lists.manage.roles.owner')}</Badge>
+													</div>
+													<p class="hint">{$_('custom_lists.manage.collaboration.owner_hint')}</p>
+												</div>
+											</div>
+
+											{#if list.members?.length}
+												{#each list.members as member}
+													<div class="memberRow">
+														<div class="memberInfo">
+															<div class="memberNameRow">
+																{#if member.playerData}
+																	<PlayerLink player={member.playerData} />
+																{:else}
+																	<span class="memberFallbackName">{member.uid}</span>
+																{/if}
+																<Badge variant="outline">{getRoleLabel(member.role)}</Badge>
+															</div>
+															<p class="hint">{$_('custom_lists.manage.collaboration.member_since', { values: { date: formatDate(member.created_at) } })}</p>
+														</div>
+														<div class="memberActions">
+															{#if canConfigureCollaboration}
+																<Button
+																	variant="outline"
+																	size="sm"
+																	on:click={() => updateCollaboratorRole(member, member.role === 'admin' ? 'helper' : 'admin')}
+																	disabled={savingCollaboration}
+																>
+																	{member.role === 'admin'
+																		? $_('custom_lists.manage.collaboration.demote_button')
+																		: $_('custom_lists.manage.collaboration.promote_button')}
+																</Button>
+															{/if}
+															{#if canManageMembers && (canConfigureCollaboration || member.role === 'helper')}
+																<Button
+																	variant="destructive"
+																	size="sm"
+																	on:click={() => removeCollaborator(member)}
+																	disabled={savingCollaboration}
+																>
+																	<Trash2 class="mr-1.5 h-3.5 w-3.5" />
+																	{$_('custom_lists.manage.collaboration.remove_button')}
+																</Button>
+															{/if}
+														</div>
+													</div>
+												{/each}
+											{:else}
+												<p class="hint">{$_('custom_lists.manage.collaboration.members_empty')}</p>
+											{/if}
+										</div>
+									{/if}
+								</div>
+							{/if}
+
+							{#if canViewAudit}
+								<div class="toolCard">
+									<h2 class="toolHeading">{$_('custom_lists.manage.collaboration.audit_title')}</h2>
+									<p class="hint">{$_('custom_lists.manage.collaboration.audit_hint')}</p>
+									{#if list.auditLog?.length}
+										<div class="auditList">
+											{#each list.auditLog as entry}
+												<div class="auditRow">
+													<div class="auditRowHeader">
+														<strong>{getAuditActionLabel(entry.action)}</strong>
+														<span class="auditTimestamp">{formatDateTime(entry.created_at)}</span>
+													</div>
+													<p class="hint">{getAuditEntryDetail(entry)}</p>
+												</div>
+											{/each}
+										</div>
+									{:else}
+										<p class="hint">{$_('custom_lists.manage.collaboration.audit_empty')}</p>
+									{/if}
+								</div>
+							{/if}
+						</div>
+					</Tabs.Content>
+				{/if}
+
 				{#if canBan || canDelete}
 					<Tabs.Content value="danger">
 						<div class="tabContent">
@@ -1512,7 +2143,7 @@
 					</Tabs.Content>
 				{/if}
 
-			{#if canManage && activeTab !== 'levels' && activeTab !== 'danger'}
+			{#if canEditSettings && activeTab !== 'levels' && activeTab !== 'danger' && activeTab !== 'collaboration'}
 				<div class="toolCard actionCard">
 					<div class="formActions">
 						<Button on:click={saveMetadata} disabled={savingMetadata}>
@@ -1530,7 +2161,7 @@
 
 			<Tabs.Content value="levels">
 				<div class="tabContent">
-					{#if canManage}
+					{#if canEditLevels}
 						<div class="toolCard">
 							<h2 class="toolHeading">{$_('custom_lists.detail.add_level.heading')}</h2>
 							<div class="field">
@@ -1569,25 +2200,25 @@
 						{#if list.items.length === 0}
 							<div class="emptyState slim">
 								<h3>{$_('custom_lists.detail.levels.empty_title')}</h3>
-								<p>{canManage ? $_('custom_lists.detail.levels.empty_owner') : $_('custom_lists.detail.levels.empty_visitor')}</p>
+								<p>{canEditLevels ? $_('custom_lists.detail.levels.empty_owner') : $_('custom_lists.detail.levels.empty_visitor')}</p>
 							</div>
 						{:else}
 							<div class="levelList">
 								{#each list.items as item, i}
 									<div
 										class="levelItem"
-										class:isDraggable={canManage && list.mode === 'top' && !savingReorder}
-										class:dragOver={canManage && list.mode === 'top' && dragOverIndex === i}
-										class:dragging={canManage && list.mode === 'top' && draggedIndex === i}
+										class:isDraggable={canEditLevels && list.mode === 'top' && !savingReorder}
+										class:dragOver={canEditLevels && list.mode === 'top' && dragOverIndex === i}
+										class:dragging={canEditLevels && list.mode === 'top' && draggedIndex === i}
 										role="listitem"
-										draggable={canManage && list.mode === 'top' && !savingReorder}
-										on:dragstart={(e) => { if (canManage && list?.mode === 'top' && !savingReorder) onDragStart(e, i); }}
-										on:dragover={(e) => { if (canManage && list?.mode === 'top' && !savingReorder) onDragOver(e, i); }}
-										on:drop={(e) => { if (canManage && list?.mode === 'top' && !savingReorder) onDrop(e, i); }}
-										on:dragend={() => { if (canManage && list?.mode === 'top') onDragEnd(); }}
+										draggable={canEditLevels && list.mode === 'top' && !savingReorder}
+										on:dragstart={(e) => { if (canEditLevels && list?.mode === 'top' && !savingReorder) onDragStart(e, i); }}
+										on:dragover={(e) => { if (canEditLevels && list?.mode === 'top' && !savingReorder) onDragOver(e, i); }}
+										on:drop={(e) => { if (canEditLevels && list?.mode === 'top' && !savingReorder) onDrop(e, i); }}
+										on:dragend={() => { if (canEditLevels && list?.mode === 'top') onDragEnd(); }}
 									>
 										<div class="levelRow">
-											{#if canManage && list.mode === 'top'}
+											{#if canEditLevels && list.mode === 'top'}
 												<div class="dragHandle" title={$_('custom_lists.detail.levels.drag_hint')}>
 													<GripVertical class="h-5 w-5" />
 												</div>
@@ -1611,7 +2242,7 @@
 
 											<div class="levelActions">
 												{#if list.mode === 'rating'}
-													{#if canManage && editingRatingItemId === item.id}
+													{#if canEditLevels && editingRatingItemId === item.id}
 														<input
 															class="inlineInput ratingInput"
 															type="number"
@@ -1624,17 +2255,17 @@
 													{:else}
 														<button
 															class="chipBtn"
-															class:editable={canManage}
+															class:editable={canEditLevels}
 															type="button"
-															on:click={canManage ? () => startRatingEdit(item) : undefined}
-															title={canManage ? $_('custom_lists.detail.levels.rating_edit_hint') : undefined}
+															on:click={canEditLevels ? () => startRatingEdit(item) : undefined}
+															title={canEditLevels ? $_('custom_lists.detail.levels.rating_edit_hint') : undefined}
 														>
 															★ {item.rating ?? 5}
 														</button>
 													{/if}
 												{/if}
 
-												{#if canManage && editingMinProgressItemId === item.id}
+												{#if canEditLevels && editingMinProgressItemId === item.id}
 													<input
 														class="inlineInput minProgressInput"
 														type="number"
@@ -1680,10 +2311,10 @@
 												{:else}
 													<button
 														class="chipBtn"
-														class:editable={canManage}
+														class:editable={canEditLevels}
 														type="button"
-														on:click={canManage ? () => startMinProgressEdit(item) : undefined}
-														title={canManage ? $_('custom_lists.detail.levels.min_progress_edit_hint') : undefined}
+														on:click={canEditLevels ? () => startMinProgressEdit(item) : undefined}
+														title={canEditLevels ? $_('custom_lists.detail.levels.min_progress_edit_hint') : undefined}
 													>
 														{getMinProgressLabel(item)}
 													</button>
@@ -1691,7 +2322,7 @@
 
 												<Badge variant="outline">{$_('custom_lists.detail.levels.id_badge', { values: { id: item.levelId } })}</Badge>
 
-												{#if canManage}
+												{#if canEditLevels}
 													<Button
 														variant="destructive"
 														size="sm"
@@ -2012,6 +2643,85 @@
 
 	.actionCard {
 		padding-block: 18px;
+	}
+
+	.searchRow {
+		display: flex;
+		gap: 10px;
+		flex-wrap: wrap;
+	}
+
+	.searchResults,
+	.memberList,
+	.auditList {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+
+	.searchResult,
+	.memberRow,
+	.auditRow,
+	.selectedMemberCard {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		padding: 14px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 10px;
+		background: hsl(var(--muted) / 0.12);
+	}
+
+	.searchResult {
+		cursor: pointer;
+		text-align: left;
+	}
+
+	.searchResult:hover {
+		border-color: hsl(var(--primary));
+		background: hsl(var(--primary) / 0.08);
+	}
+
+	.searchResultName,
+	.memberFallbackName {
+		font-weight: 600;
+	}
+
+	.searchResultMeta,
+	.auditTimestamp {
+		font-size: 0.8rem;
+		color: hsl(var(--muted-foreground));
+	}
+
+	.selectedMemberCard,
+	.memberRow,
+	.auditRow {
+		align-items: flex-start;
+	}
+
+	.selectedMemberInfo,
+	.memberInfo {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		min-width: 0;
+	}
+
+	.memberNameRow,
+	.auditRowHeader {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex-wrap: wrap;
+	}
+
+	.memberActions {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex-wrap: wrap;
+		justify-content: flex-end;
 	}
 
 	.assetPreview {

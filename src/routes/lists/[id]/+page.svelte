@@ -51,6 +51,13 @@
 		level: any | null;
 	};
 
+	type CustomListPermissionFlags = {
+		canEditSettings: boolean;
+		canEditLevels: boolean;
+		canViewAudit?: boolean;
+		canViewMembers?: boolean;
+	};
+
 	type CustomList = {
 		id: number;
 		slug?: string | null;
@@ -74,6 +81,7 @@
 		starCount?: number;
 		starred?: boolean;
 		ownerData?: any;
+		permissions?: CustomListPermissionFlags;
 		rankBadges?: CustomListRankBadge[];
 		weightFormula?: string;
 		items: CustomListItem[];
@@ -709,9 +717,14 @@
 		}
 	}
 
-	$: isModerator = Boolean($user.loggedIn && ($user.data?.isAdmin || $user.data?.isManager));
-	$: isOwner = Boolean(list && $user.loggedIn && list.owner === $user.data?.uid);
-	$: canManageList = Boolean(list && (isModerator || (isOwner && !list.isBanned)));
+	$: canManageList = Boolean(
+		list && (
+			list.permissions?.canEditSettings
+			|| list.permissions?.canEditLevels
+			|| list.permissions?.canViewAudit
+			|| list.permissions?.canViewMembers
+		)
+	);
 	$: listItems = list?.items ?? [];
 	$: listCardType = list?.isPlatformer ? 'pl' : 'dl';
 	$: canStarList = Boolean(list && list.id > 0 && list.visibility !== 'private');
