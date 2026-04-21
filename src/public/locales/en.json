@@ -1945,6 +1945,7 @@
         "appearance": "Appearance",
         "formula": "Formula",
         "rank": "Rank",
+        "danger": "Dangerous",
         "levels": "Levels"
       },
       "banned_title": "List banned",
@@ -1952,6 +1953,11 @@
       "banned_manager_hint": "This list is banned and private. Managers can still edit it here or remove the ban.",
       "ban": "Ban list",
       "unban": "Unban list",
+      "danger_heading": "Dangerous actions",
+      "danger_hint": "Ban and delete actions require you to type the current list name exactly before continuing.",
+      "confirm_title_label": "Type list name to confirm",
+      "confirm_title_hint": "Enter `{title}` exactly to enable these actions.",
+      "confirm_title_error": "Enter the current list name exactly to confirm this action.",
       "ban_confirm": "Ban this list? It will be set to private and the owner will no longer be able to edit it.",
       "unban_confirm": "Unban this list? The owner will be able to edit it again."
     },

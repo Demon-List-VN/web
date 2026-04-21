@@ -1944,6 +1944,7 @@
         "appearance": "Giao diện",
         "formula": "Công thức",
         "rank": "Hạng",
+        "danger": "Nguy hiểm",
         "levels": "Levels"
       },
       "banned_title": "Danh sách đã bị cấm",
@@ -1951,6 +1952,11 @@
       "banned_manager_hint": "Danh sách này đang bị cấm và ở chế độ riêng tư. Quản lý viên vẫn có thể chỉnh sửa hoặc bỏ cấm tại đây.",
       "ban": "Cấm danh sách",
       "unban": "Bỏ cấm danh sách",
+      "danger_heading": "Hành động nguy hiểm",
+      "danger_hint": "Các thao tác cấm và xóa yêu cầu bạn nhập chính xác tên hiện tại của danh sách trước khi tiếp tục.",
+      "confirm_title_label": "Nhập tên danh sách để xác nhận",
+      "confirm_title_hint": "Nhập chính xác `{title}` để bật các hành động này.",
+      "confirm_title_error": "Hãy nhập chính xác tên hiện tại của danh sách để xác nhận thao tác này.",
       "ban_confirm": "Cấm danh sách này? Danh sách sẽ được đặt thành riêng tư và chủ sở hữu sẽ không thể chỉnh sửa nữa.",
       "unban_confirm": "Bỏ cấm danh sách này? Chủ sở hữu sẽ có thể chỉnh sửa lại.",
       "levels": "Levels"

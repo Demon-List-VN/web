@@ -6,7 +6,6 @@
 	import { Switch } from '$lib/components/ui/switch';
 	import * as Select from '$lib/components/ui/select';
 	import * as Tabs from '$lib/components/ui/tabs';
-	import LevelCard from '$lib/components/levelCard.svelte';
 	import WeightFormulaPreview from '$lib/components/custom-lists/WeightFormulaPreview.svelte';
 	import imageCompression from 'browser-image-compression';
 	import {
@@ -89,7 +88,7 @@
 		minTop: number | null | undefined;
 	};
 
-	type ManageTab = 'basic' | 'appearance' | 'formula' | 'rank' | 'levels';
+	type ManageTab = 'basic' | 'appearance' | 'formula' | 'rank' | 'danger' | 'levels';
 	type AssetInputMode = 'upload' | 'link';
 
 	// SSR data - hydrate into reactive local state
@@ -122,7 +121,7 @@
 
 	const CUSTOM_LIST_CDN_BASE_URL = 'https://cdn.gdvn.net';
 
-	const editForm = {
+	let editForm = {
 		title: '',
 		description: '',
 		backgroundColor: '',
@@ -143,6 +142,8 @@
 
 	let levelIdInput = '';
 	let activeTab: ManageTab = getInitialManageTab();
+	let initialManageTabSettled = false;
+	let dangerConfirmName = '';
 
 	function getQuickLevelId() {
 		const raw = $page.url.searchParams.get('levelId');
@@ -158,6 +159,7 @@
 			|| requestedTab === 'appearance'
 			|| requestedTab === 'formula'
 			|| requestedTab === 'rank'
+			|| requestedTab === 'danger'
 		) {
 			return requestedTab;
 		}
@@ -190,6 +192,7 @@
 		editForm.mode = list.mode;
 		bannerAssetMode = inferAssetInputMode(list.bannerUrl);
 		logoAssetMode = inferAssetInputMode(list.logoUrl);
+		dangerConfirmName = '';
 		editForm.rankBadges = normalizeCustomListRankBadges(list.rankBadges).map((rankBadge) => ({
 			...rankBadge
 		}));
@@ -332,20 +335,30 @@
 			return;
 		}
 
-		editForm[field] = input.value;
+		editForm = {
+			...editForm,
+			[field]: input.value
+		};
+	}
+
+	function resetThemeColor(field: 'backgroundColor' | 'borderColor') {
+		editForm = {
+			...editForm,
+			[field]: ''
+		};
 	}
 
 	function getManageThemeBackgroundColor() {
-		if (initialSyncDone && isHexColor(editForm.backgroundColor)) {
-			return editForm.backgroundColor.trim();
+		if (initialSyncDone) {
+			return isHexColor(editForm.backgroundColor) ? editForm.backgroundColor.trim() : null;
 		}
 
 		return isHexColor(list?.backgroundColor) ? list!.backgroundColor!.trim() : null;
 	}
 
 	function getManageThemeBorderColor() {
-		if (initialSyncDone && isHexColor(editForm.borderColor)) {
-			return editForm.borderColor.trim();
+		if (initialSyncDone) {
+			return isHexColor(editForm.borderColor) ? editForm.borderColor.trim() : null;
 		}
 
 		return isHexColor(list?.borderColor) ? list!.borderColor!.trim() : null;
@@ -457,31 +470,8 @@
 		logoAssetMode = value;
 	}
 
-	function getManagePreviewLevelId() {
-		return list?.items[0]?.levelId ?? 0;
-	}
-
-	function getManagePreviewLevelName() {
-		return list?.items[0]?.level?.name || $_('custom_lists.detail.edit.preview_level_name');
-	}
-
-	function getManagePreviewLevelCreator() {
-		return list?.items[0]?.level?.creator || $_('custom_lists.detail.edit.preview_level_creator');
-	}
-
-	function getManagePreviewLevelRating() {
-		return list?.items[0]?.rating ?? 7;
-	}
-
-	function getManagePreviewLevelMinProgress() {
-		const item = list?.items[0];
-		const value = item?.minProgress ?? item?.level?.minProgress;
-
-		if (value != null) {
-			return value;
-		}
-
-		return editForm.isPlatformer ? 90750 : 51;
+	function hasDangerConfirmation() {
+		return Boolean(list && dangerConfirmName.trim() === list.title);
 	}
 
 	function getImageExtension(file: File) {
@@ -720,7 +710,10 @@
 
 	async function deleteList() {
 		if (!list || !canDelete) return;
-		if (!confirm($_('custom_lists.detail.delete_confirm'))) return;
+		if (!hasDangerConfirmation()) {
+			toast.error($_('custom_lists.manage.confirm_title_error'));
+			return;
+		}
 
 		try {
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}`, {
@@ -866,12 +859,10 @@
 
 	async function setBanState(nextIsBanned: boolean) {
 		if (!list || !canBan || savingBanState) return;
-
-		const confirmationKey = nextIsBanned
-			? 'custom_lists.manage.ban_confirm'
-			: 'custom_lists.manage.unban_confirm';
-
-		if (!confirm($_(confirmationKey))) return;
+		if (!hasDangerConfirmation()) {
+			toast.error($_('custom_lists.manage.confirm_title_error'));
+			return;
+		}
 
 		savingBanState = true;
 
@@ -888,6 +879,7 @@
 			if (!res.ok) throw new Error(payload.error || $_('custom_lists.toast.failed_ban'));
 			list = payload;
 			syncForm();
+			dangerConfirmName = '';
 			toast.success($_(nextIsBanned ? 'custom_lists.toast.list_banned' : 'custom_lists.toast.list_unbanned'));
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_ban'));
@@ -1005,7 +997,11 @@
 	$: canManage = Boolean(list && (ownerCanManage || isModerator));
 	$: canDelete = Boolean(list && ownerCanManage && !list.isOfficial);
 	$: canBan = Boolean(list && isModerator && !list.isOfficial);
-	$: if (!canManage && activeTab !== 'levels') {
+	$: if (list && $user.checked && !initialManageTabSettled) {
+		initialManageTabSettled = true;
+		activeTab = canManage ? getInitialManageTab() : 'levels';
+	}
+	$: if (list && $user.checked && !canManage && activeTab !== 'levels') {
 		activeTab = 'levels';
 	}
 </script>
@@ -1127,6 +1123,9 @@
 						<Tabs.Trigger value="appearance">{$_('custom_lists.manage.tabs.appearance')}</Tabs.Trigger>
 						<Tabs.Trigger value="formula">{$_('custom_lists.manage.tabs.formula')}</Tabs.Trigger>
 						<Tabs.Trigger value="rank">{$_('custom_lists.manage.tabs.rank')}</Tabs.Trigger>
+						{#if canBan || canDelete}
+							<Tabs.Trigger value="danger">{$_('custom_lists.manage.tabs.danger')}</Tabs.Trigger>
+						{/if}
 					{/if}
 					<Tabs.Trigger value="levels">{$_('custom_lists.manage.tabs.levels')}</Tabs.Trigger>
 				</Tabs.List>
@@ -1244,7 +1243,7 @@
 											on:input={(event) => setThemeColorFromPicker('backgroundColor', event)}
 											aria-label={$_('custom_lists.detail.edit.background_color_label')}
 										/>
-										<Button variant="ghost" size="sm" on:click={() => (editForm.backgroundColor = '')}>
+										<Button variant="ghost" size="sm" on:click={() => resetThemeColor('backgroundColor')}>
 											{$_('general.reset')}
 										</Button>
 									</div>
@@ -1260,7 +1259,7 @@
 											on:input={(event) => setThemeColorFromPicker('borderColor', event)}
 											aria-label={$_('custom_lists.detail.edit.border_color_label')}
 										/>
-										<Button variant="ghost" size="sm" on:click={() => (editForm.borderColor = '')}>
+										<Button variant="ghost" size="sm" on:click={() => resetThemeColor('borderColor')}>
 											{$_('general.reset')}
 										</Button>
 									</div>
@@ -1354,29 +1353,6 @@
 											<img src={getManageLogoPreviewUrl()} alt="" loading="lazy" decoding="async" />
 										</div>
 									{/if}
-								</div>
-								<div class="field">
-									<span class="fieldLabel">{$_('custom_lists.detail.edit.preview_heading')}</span>
-									<p class="hint">{$_('custom_lists.detail.edit.preview_hint')}</p>
-									<div class="previewCardStack">
-										<div class="previewLevelCard">
-											<LevelCard
-												id={getManagePreviewLevelId()}
-												name={getManagePreviewLevelName()}
-												creator={getManagePreviewLevelCreator()}
-												rating={getManagePreviewLevelRating()}
-												top={1}
-												minProgress={getManagePreviewLevelMinProgress()}
-												backgroundColor={getManageThemeBackgroundColor()}
-												borderColor={getManageThemeBorderColor()}
-												isPlatformer={editForm.isPlatformer}
-												type={editForm.isPlatformer ? 'pl' : 'dl'}
-												hideRating={editForm.mode === 'top'}
-												hideTop={!editForm.topEnabled}
-												ratingPrediction={false}
-											/>
-										</div>
-									</div>
 								</div>
 							</div>
 						</div>
@@ -1488,7 +1464,45 @@
 					</div>
 				</Tabs.Content>
 
-			{#if canManage && activeTab !== 'levels'}
+				{#if canBan || canDelete}
+					<Tabs.Content value="danger">
+						<div class="tabContent">
+							<div class="toolCard dangerCard">
+								<h2 class="toolHeading">{$_('custom_lists.manage.danger_heading')}</h2>
+								<p class="hint">{$_('custom_lists.manage.danger_hint')}</p>
+								<div class="field">
+									<label for="danger-confirm-name">{$_('custom_lists.manage.confirm_title_label')}</label>
+									<Input
+										id="danger-confirm-name"
+										bind:value={dangerConfirmName}
+										placeholder={list.title}
+									/>
+									<p class="hint">{$_('custom_lists.manage.confirm_title_hint', { values: { title: list.title } })}</p>
+								</div>
+								<div class="formActions">
+									{#if canBan}
+										<Button
+											variant={list.isBanned ? 'outline' : 'destructive'}
+											on:click={() => list && setBanState(!list.isBanned)}
+											disabled={savingBanState || !hasDangerConfirmation()}
+										>
+											<AlertTriangle class="mr-2 h-4 w-4" />
+											{list.isBanned ? $_('custom_lists.manage.unban') : $_('custom_lists.manage.ban')}
+										</Button>
+									{/if}
+									{#if canDelete}
+										<Button variant="destructive" on:click={deleteList} disabled={!hasDangerConfirmation()}>
+											<Trash2 class="mr-2 h-4 w-4" />
+											{$_('custom_lists.detail.edit.delete')}
+										</Button>
+									{/if}
+								</div>
+							</div>
+						</div>
+					</Tabs.Content>
+				{/if}
+
+			{#if canManage && activeTab !== 'levels' && activeTab !== 'danger'}
 				<div class="toolCard actionCard">
 					<div class="formActions">
 						<Button on:click={saveMetadata} disabled={savingMetadata}>
@@ -1499,22 +1513,6 @@
 							<RefreshCw class="mr-2 h-4 w-4" />
 							{refreshingLeaderboard ? `${$_('general.loading')}...` : 'Refresh leaderboard'}
 						</Button>
-						{#if canBan}
-							<Button
-								variant={list.isBanned ? 'outline' : 'destructive'}
-								on:click={() => list && setBanState(!list.isBanned)}
-								disabled={savingBanState}
-							>
-								<AlertTriangle class="mr-2 h-4 w-4" />
-								{list.isBanned ? $_('custom_lists.manage.unban') : $_('custom_lists.manage.ban')}
-							</Button>
-						{/if}
-						{#if canDelete}
-							<Button variant="destructive" on:click={deleteList}>
-								<Trash2 class="mr-2 h-4 w-4" />
-								{$_('custom_lists.detail.edit.delete')}
-							</Button>
-						{/if}
 					</div>
 				</div>
 			{/if}
@@ -1931,14 +1929,9 @@
 		gap: 10px;
 	}
 
-	.previewCardStack {
-		display: flex;
-		flex-direction: column;
-		gap: 16px;
-	}
-
-	.previewLevelCard {
-		pointer-events: none;
+	.dangerCard {
+		border-color: hsl(var(--destructive) / 0.35);
+		background: hsl(var(--destructive) / 0.04);
 	}
 
 	.nativeColorInput {
