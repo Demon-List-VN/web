@@ -10,6 +10,7 @@
 	import * as Table from '$lib/components/ui/table';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import * as Popover from '$lib/components/ui/popover';
+	import Ads from '$lib/components/ads.svelte';
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import {
 		normalizeCustomListRankBadges,
@@ -40,6 +41,7 @@
 	export let data: any;
 
 	const LEVELS_PAGE_SIZE = 50;
+	const LEVELS_AD_FREQUENCY = 6;
 
 	type CustomListItem = {
 		id: number;
@@ -355,7 +357,10 @@
 			return String(rounded);
 		}
 
-		return rounded.toFixed(3).replace(/\.0+$|0+$/g, '').replace(/\.$/, '');
+		return rounded
+			.toFixed(3)
+			.replace(/\.0+$|0+$/g, '')
+			.replace(/\.$/, '');
 	}
 
 	function getLeaderboardRankBadge(player: LeaderboardPlayer | null | undefined) {
@@ -405,6 +410,14 @@
 
 	function getLoadedLevelCount(currentList: CustomList | null) {
 		return currentList?.items?.length ?? 0;
+	}
+
+	function shouldShowLevelsAd(index: number, totalItems: number) {
+		return (
+			totalItems > LEVELS_AD_FREQUENCY &&
+			(index + 1) % LEVELS_AD_FREQUENCY === 0 &&
+			index < totalItems - 1
+		);
 	}
 
 	function hasMoreLevels(currentList: CustomList | null) {
@@ -519,8 +532,8 @@
 		const fetchKey = `${$page.params.id}:${$user.loggedIn ? $user.data?.uid || 'authed' : 'anon'}:${start}`;
 		const headers = $user.loggedIn
 			? {
-				Authorization: `Bearer ${await $user.token()}`
-			}
+					Authorization: `Bearer ${await $user.token()}`
+				}
 			: undefined;
 
 		listLevelsFetchKey = fetchKey;
@@ -536,10 +549,10 @@
 
 			list = list
 				? {
-					...list,
-					...payload,
-					items: mergeListItems(list.items, payload.items ?? [])
-				}
+						...list,
+						...payload,
+						items: mergeListItems(list.items, payload.items ?? [])
+					}
 				: payload;
 			loadingError = '';
 			listLevelsError = '';
@@ -605,7 +618,9 @@
 		loadingRelatedPosts = true;
 
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/lists/${listId}/posts?limit=6`);
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/community/lists/${listId}/posts?limit=6`
+			);
 			if (!res.ok) {
 				relatedPosts = [];
 				return;
@@ -635,12 +650,15 @@
 			});
 			const headers = $user.loggedIn
 				? {
-					Authorization: `Bearer ${await $user.token()}`
-				}
+						Authorization: `Bearer ${await $user.token()}`
+					}
 				: undefined;
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${$page.params.id}/leaderboard?${query.toString()}`, {
-				headers
-			});
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/lists/${$page.params.id}/leaderboard?${query.toString()}`,
+				{
+					headers
+				}
+			);
 			const payload = await res.json().catch(() => null);
 
 			if (fetchKey !== leaderboardFetchKey) {
@@ -682,12 +700,15 @@
 			});
 			const headers = $user.loggedIn
 				? {
-					Authorization: `Bearer ${await $user.token()}`
-				}
+						Authorization: `Bearer ${await $user.token()}`
+					}
 				: undefined;
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${$page.params.id}/records?${query.toString()}`, {
-				headers
-			});
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/lists/${$page.params.id}/records?${query.toString()}`,
+				{
+					headers
+				}
+			);
 			const payload = await res.json().catch(() => null);
 
 			if (fetchKey !== recordPointsFetchKey) {
@@ -718,12 +739,11 @@
 	}
 
 	$: canManageList = Boolean(
-		list && (
-			list.permissions?.canEditSettings
-			|| list.permissions?.canEditLevels
-			|| list.permissions?.canViewAudit
-			|| list.permissions?.canViewMembers
-		)
+		list &&
+			(list.permissions?.canEditSettings ||
+				list.permissions?.canEditLevels ||
+				list.permissions?.canViewAudit ||
+				list.permissions?.canViewMembers)
 	);
 	$: listItems = list?.items ?? [];
 	$: listCardType = list?.isPlatformer ? 'pl' : 'dl';
@@ -733,8 +753,9 @@
 	$: activeLeaderboardPage = getRequestedLeaderboardPage($page.url.searchParams);
 	$: activeTab = requestedTab === 'community' && !canShowCommunity ? 'levels' : requestedTab;
 	$: selectedLeaderboardPlayer =
-		(leaderboard.find((player) => player.uid === selectedLeaderboardPlayerUid) as LeaderboardPlayer | undefined) ??
-		null;
+		(leaderboard.find((player) => player.uid === selectedLeaderboardPlayerUid) as
+			| LeaderboardPlayer
+			| undefined) ?? null;
 	$: if (!canShowCommunity) {
 		relatedPosts = [];
 		relatedPostsKey = '';
@@ -764,7 +785,12 @@
 	$: if (recordPointsDialogOpen && !selectedLeaderboardPlayer) {
 		recordPointsDialogOpen = false;
 	}
-	$: if (list?.id && activeTab === 'leaderboard' && recordPointsDialogOpen && selectedLeaderboardPlayer) {
+	$: if (
+		list?.id &&
+		activeTab === 'leaderboard' &&
+		recordPointsDialogOpen &&
+		selectedLeaderboardPlayer
+	) {
 		const nextKey = `${list.id}:${selectedLeaderboardPlayer.uid}:${recordPointsPage}:${$user.loggedIn ? $user.data?.uid || 'authed' : 'anon'}`;
 
 		if (nextKey !== recordPointsFetchKey) {
@@ -786,7 +812,11 @@
 </script>
 
 <svelte:head>
-	<title>{list ? `${list.title} - Danh sách - Geometry Dash Việt Nam` : 'Danh sách - Geometry Dash Việt Nam'}</title>
+	<title
+		>{list
+			? `${list.title} - Danh sách - Geometry Dash Việt Nam`
+			: 'Danh sách - Geometry Dash Việt Nam'}</title
+	>
 	{#if list?.description}
 		<meta name="description" content={list.description} />
 	{/if}
@@ -843,8 +873,12 @@
 						class={list.starred ? 'heroStarButton heroStarButtonStarred' : 'heroStarButton'}
 						on:click={toggleStar}
 						disabled={starLoading}
-						aria-label={list.starred ? $_('custom_lists.actions.unstar') : $_('custom_lists.actions.star')}
-						title={list.starred ? $_('custom_lists.actions.unstar') : $_('custom_lists.actions.star')}
+						aria-label={list.starred
+							? $_('custom_lists.actions.unstar')
+							: $_('custom_lists.actions.star')}
+						title={list.starred
+							? $_('custom_lists.actions.unstar')
+							: $_('custom_lists.actions.star')}
 					>
 						<Star class={`h-5 w-5 ${list.starred ? 'starFilled' : ''}`} />
 					</Button>
@@ -874,7 +908,7 @@
 				</span>
 				{#if list.isOfficial}
 					<span class="metaChip">
-						<Star class="h-3.5 w-3.5 starFilled" />
+						<Star class="starFilled h-3.5 w-3.5" />
 						{$_('custom_lists.detail.official_badge')}
 					</span>
 				{/if}
@@ -901,6 +935,10 @@
 				<Clock class="h-3.5 w-3.5" />
 				{$_('custom_lists.detail.updated', { values: { date: formatDate(list.updated_at) } })}
 			</p>
+		</div>
+
+		<div class="adSection">
+			<Ads dataAdFormat="auto" />
 		</div>
 
 		<Tabs.Root value={activeTab}>
@@ -930,7 +968,11 @@
 					{#if listItems.length === 0}
 						<div class="emptyState slim">
 							<h3>{$_('custom_lists.detail.levels.empty_title')}</h3>
-							<p>{canManageList ? $_('custom_lists.detail.levels.empty_owner_manage') : $_('custom_lists.detail.levels.empty_visitor')}</p>
+							<p>
+								{canManageList
+									? $_('custom_lists.detail.levels.empty_owner_manage')
+									: $_('custom_lists.detail.levels.empty_visitor')}
+							</p>
 						</div>
 					{:else}
 						<div class="levels">
@@ -939,14 +981,17 @@
 									{@const itemCardType = getItemCardType(item)}
 									<LevelCard
 										{...toLevelCardProps(item.level, itemCardType, {
-											rating: list.mode === 'rating' ? (item.rating ?? item.level.rating) : item.level.rating,
+											rating:
+												list.mode === 'rating'
+													? (item.rating ?? item.level.rating)
+													: item.level.rating,
 											top: i + 1,
 											minProgress: item.minProgress ?? item.level.minProgress ?? null
 										})}
 										backgroundColor={list.backgroundColor ?? null}
-									borderColor={list.borderColor ?? null}
+										borderColor={list.borderColor ?? null}
 										type={itemCardType}
-											hideTop={list.topEnabled === false}
+										hideTop={list.topEnabled === false}
 										hideRating={list.mode === 'top'}
 										ratingPrediction={false}
 									/>
@@ -954,9 +999,18 @@
 									<div class="missingLevel" style={getMissingLevelStyle(list)}>
 										<div class="missingRank">#{i + 1}</div>
 										<div class="missingContent">
-											<h4>{$_('custom_lists.detail.levels.unavailable', { values: { id: item.levelId } })}</h4>
+											<h4>
+												{$_('custom_lists.detail.levels.unavailable', {
+													values: { id: item.levelId }
+												})}
+											</h4>
 											<p>{$_('custom_lists.detail.levels.unavailable_desc')}</p>
 										</div>
+									</div>
+								{/if}
+								{#if shouldShowLevelsAd(i, listItems.length)}
+									<div class="levelsAd">
+										<Ads dataAdFormat="auto" />
 									</div>
 								{/if}
 							{/each}
@@ -982,7 +1036,9 @@
 				<div class="levelsSection">
 					<div class="leaderboardHeader">
 						<div>
-							<h2>{$_('custom_lists.detail.leaderboard.heading', { values: { title: list.title } })}</h2>
+							<h2>
+								{$_('custom_lists.detail.leaderboard.heading', { values: { title: list.title } })}
+							</h2>
 							<p class="leaderboardSubhead">
 								{list.mode === 'top'
 									? $_('custom_lists.detail.leaderboard.subhead_top')
@@ -990,6 +1046,10 @@
 							</p>
 						</div>
 						<Badge variant="outline">{leaderboardCount}</Badge>
+					</div>
+
+					<div class="adSection">
+						<Ads dataAdFormat="auto" />
 					</div>
 
 					{#if leaderboardLoading}
@@ -1014,7 +1074,9 @@
 											{$_('custom_lists.detail.leaderboard.score_label')}
 										</Table.Head>
 										<Table.Head class="w-[56px] text-right">
-											<span class="sr-only">{$_('custom_lists.detail.leaderboard.view_records_label')}</span>
+											<span class="sr-only"
+												>{$_('custom_lists.detail.leaderboard.view_records_label')}</span
+											>
 										</Table.Head>
 									</Table.Row>
 								</Table.Header>
@@ -1026,10 +1088,7 @@
 											<Table.Cell class="font-medium">#{player.rank}</Table.Cell>
 											<Table.Cell>
 												<div class="playerNameWrapper">
-													<PlayerLink
-														player={player}
-														rankBadge={getLeaderboardRankBadge(player)}
-													/>
+													<PlayerLink {player} rankBadge={getLeaderboardRankBadge(player)} />
 												</div>
 											</Table.Cell>
 											<Table.Cell class="text-right">{formatScore(player.score)}</Table.Cell>
@@ -1083,9 +1142,7 @@
 									{/if}
 								{/each}
 								<Pagination.Item>
-									<Pagination.NextButton
-										on:click={() => setLeaderboardPage(currentPage + 1)}
-									/>
+									<Pagination.NextButton on:click={() => setLeaderboardPage(currentPage + 1)} />
 								</Pagination.Item>
 							</Pagination.Content>
 						</Pagination.Root>
@@ -1110,13 +1167,15 @@
 												<h3>
 													<PlayerLink
 														player={selectedLeaderboardPlayer}
-															rankBadge={getLeaderboardRankBadge(selectedLeaderboardPlayer)}
+														rankBadge={getLeaderboardRankBadge(selectedLeaderboardPlayer)}
 													/>
 												</h3>
 												<div class="recordPointsMeta">
 													<span class="metaChip">#{selectedLeaderboardPlayer.rank}</span>
 													<span class="metaChip">
-														{$_('custom_lists.detail.leaderboard.score_label')}: {formatScore(selectedLeaderboardPlayer.score)}
+														{$_('custom_lists.detail.leaderboard.score_label')}: {formatScore(
+															selectedLeaderboardPlayer.score
+														)}
 													</span>
 												</div>
 											</div>
@@ -1139,10 +1198,18 @@
 												<Table.Root>
 													<Table.Header>
 														<Table.Row>
-															<Table.Head class="w-[70px]">{$_('custom_lists.detail.records.position_label')}</Table.Head>
-															<Table.Head>{$_('custom_lists.detail.records.level_label')}</Table.Head>
-															<Table.Head class="w-[110px] text-right">{$_('custom_lists.detail.records.progress_label')}</Table.Head>
-															<Table.Head class="w-[150px] text-right">{$_('custom_lists.detail.records.point_label')}</Table.Head>
+															<Table.Head class="w-[70px]"
+																>{$_('custom_lists.detail.records.position_label')}</Table.Head
+															>
+															<Table.Head
+																>{$_('custom_lists.detail.records.level_label')}</Table.Head
+															>
+															<Table.Head class="w-[110px] text-right"
+																>{$_('custom_lists.detail.records.progress_label')}</Table.Head
+															>
+															<Table.Head class="w-[150px] text-right"
+																>{$_('custom_lists.detail.records.point_label')}</Table.Head
+															>
 														</Table.Row>
 													</Table.Header>
 													<Table.Body>
@@ -1151,20 +1218,27 @@
 																<Table.Cell class="font-medium">#{entry.no}</Table.Cell>
 																<Table.Cell>
 																	<div class="recordLevelName">
-																		{entry.level?.name || $_('custom_lists.detail.level_badge', { values: { id: entry.levelId } })}
+																		{entry.level?.name ||
+																			$_('custom_lists.detail.level_badge', {
+																				values: { id: entry.levelId }
+																			})}
 																	</div>
 																	{#if entry.level?.creator}
 																		<div class="recordLevelMeta">{entry.level.creator}</div>
 																	{/if}
 																</Table.Cell>
-																<Table.Cell class="text-right">{formatRecordProgress(entry.progress)}</Table.Cell>
+																<Table.Cell class="text-right"
+																	>{formatRecordProgress(entry.progress)}</Table.Cell
+																>
 																<Table.Cell class="text-right">
 																	<div class="recordPointCell">
 																		<span>{formatPoint(entry.point)}</span>
 																		<Popover.Root>
 																			<Popover.Trigger
 																				class="recordPointInfo"
-																				aria-label={$_('custom_lists.detail.records.variable_values_label')}
+																				aria-label={$_(
+																					'custom_lists.detail.records.variable_values_label'
+																				)}
 																			>
 																				<Info class="h-3.5 w-3.5" />
 																			</Popover.Trigger>
@@ -1175,26 +1249,57 @@
 																				<div class="recordPointPopoverGrid">
 																					<div>
 																						<span>{$_('custom_lists.formula.position_label')}</span>
-																						<span>{formatFormulaScopeValue('position', entry.formulaScope.position)}</span>
+																						<span
+																							>{formatFormulaScopeValue(
+																								'position',
+																								entry.formulaScope.position
+																							)}</span
+																						>
 																					</div>
 																					<div>
-																						<span>{$_('custom_lists.formula.level_count_label')}</span>
-																						<span>{formatFormulaScopeValue('levelCount', entry.formulaScope.levelCount)}</span>
+																						<span
+																							>{$_('custom_lists.formula.level_count_label')}</span
+																						>
+																						<span
+																							>{formatFormulaScopeValue(
+																								'levelCount',
+																								entry.formulaScope.levelCount
+																							)}</span
+																						>
 																					</div>
 																					{#if list.mode === 'top'}
 																						<div>
 																							<span>{$_('custom_lists.formula.top_label')}</span>
-																							<span>{formatFormulaScopeValue('top', entry.formulaScope.top)}</span>
+																							<span
+																								>{formatFormulaScopeValue(
+																									'top',
+																									entry.formulaScope.top
+																								)}</span
+																							>
 																						</div>
 																					{:else}
 																						<div>
 																							<span>{$_('custom_lists.formula.rating_label')}</span>
-																							<span>{formatFormulaScopeValue('rating', entry.formulaScope.rating)}</span>
+																							<span
+																								>{formatFormulaScopeValue(
+																									'rating',
+																									entry.formulaScope.rating
+																								)}</span
+																							>
 																						</div>
 																					{/if}
 																					<div>
-																						<span>{list.isPlatformer ? $_('custom_lists.formula.time_label') : $_('custom_lists.formula.progress_label')}</span>
-																						<span>{formatFormulaScopeValue('progress', entry.formulaScope.progress)}</span>
+																						<span
+																							>{list.isPlatformer
+																								? $_('custom_lists.formula.time_label')
+																								: $_('custom_lists.formula.progress_label')}</span
+																						>
+																						<span
+																							>{formatFormulaScopeValue(
+																								'progress',
+																								entry.formulaScope.progress
+																							)}</span
+																						>
 																					</div>
 																					<div>
 																						<span>
@@ -1202,7 +1307,12 @@
 																								? $_('custom_lists.formula.base_time_label')
 																								: $_('custom_lists.formula.min_progress_label')}
 																						</span>
-																						<span>{formatFormulaScopeValue('minProgress', entry.formulaScope.minProgress)}</span>
+																						<span
+																							>{formatFormulaScopeValue(
+																								'minProgress',
+																								entry.formulaScope.minProgress
+																							)}</span
+																						>
 																					</div>
 																				</div>
 																			</Popover.Content>
@@ -1275,6 +1385,10 @@
 									{$_('custom_lists.actions.post_about')}
 								</Button>
 							{/if}
+						</div>
+
+						<div class="adSection">
+							<Ads dataAdFormat="auto" />
 						</div>
 
 						{#if loadingRelatedPosts}
@@ -1446,6 +1560,10 @@
 		color: var(--custom-surface-muted, hsl(var(--muted-foreground)));
 	}
 
+	.adSection {
+		width: 100%;
+	}
+
 	/* Levels */
 	.levelsSection {
 		display: flex;
@@ -1495,6 +1613,10 @@
 		align-items: start;
 		gap: 10px;
 		grid-template-columns: repeat(2, 1fr);
+	}
+
+	.levelsAd {
+		grid-column: 1 / -1;
 	}
 
 	.relatedGrid {

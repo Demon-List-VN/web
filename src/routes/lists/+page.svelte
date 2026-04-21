@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
-	import * as Card from '$lib/components/ui/card';
 	import { Input } from '$lib/components/ui/input';
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Tabs from '$lib/components/ui/tabs';
+	import Ads from '$lib/components/ads.svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { user } from '$lib/client';
@@ -17,7 +17,6 @@
 		Settings,
 		ChevronLeft,
 		ChevronRight,
-		Eye,
 		EyeOff,
 		Lock,
 		Layers,
@@ -31,6 +30,7 @@
 	type PublicListTab = 'custom' | 'official';
 	type ListTab = PublicListTab | 'mine' | 'starred';
 	type CustomListResolvedRole = 'viewer' | 'owner' | 'admin' | 'helper' | 'moderator';
+	const GRID_AD_FREQUENCY = 4;
 
 	type ListSummary = {
 		id: number;
@@ -118,6 +118,14 @@
 		return `/lists/${list.slug || list.id}`;
 	}
 
+	function shouldShowGridAd(index: number, totalItems: number) {
+		return (
+			totalItems > GRID_AD_FREQUENCY &&
+			(index + 1) % GRID_AD_FREQUENCY === 0 &&
+			index < totalItems - 1
+		);
+	}
+
 	function isHexColor(value: string | null | undefined) {
 		return typeof value === 'string' && /^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(value.trim());
 	}
@@ -143,7 +151,9 @@
 	}
 
 	function getListCardStyle(list: ListSummary) {
-		const backgroundColor = isHexColor(list.backgroundColor) ? String(list.backgroundColor).trim() : null;
+		const backgroundColor = isHexColor(list.backgroundColor)
+			? String(list.backgroundColor).trim()
+			: null;
 		const borderColor = isHexColor(list.borderColor) ? String(list.borderColor).trim() : null;
 		const styles: string[] = [];
 
@@ -250,7 +260,9 @@
 
 			ownLists = await res.json();
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_load_own'));
+			toast.error(
+				error instanceof Error ? error.message : $_('custom_lists.toast.failed_load_own')
+			);
 		} finally {
 			ownLoading = false;
 		}
@@ -276,7 +288,9 @@
 			toast.success($_('custom_lists.toast.level_added'));
 			goto(`/lists/${listId}/manage`);
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_add_to_list'));
+			toast.error(
+				error instanceof Error ? error.message : $_('custom_lists.toast.failed_add_to_list')
+			);
 		} finally {
 			actionListId = null;
 		}
@@ -302,7 +316,9 @@
 
 			starredLists = await res.json();
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_load_starred'));
+			toast.error(
+				error instanceof Error ? error.message : $_('custom_lists.toast.failed_load_starred')
+			);
 		} finally {
 			starredLoading = false;
 		}
@@ -337,7 +353,10 @@
 
 <svelte:head>
 	<title>Danh sách - Geometry Dash Việt Nam</title>
-	<meta name="description" content="Xem các danh sách công khai và quản lý bộ sưu tập level của bạn." />
+	<meta
+		name="description"
+		content="Xem các danh sách công khai và quản lý bộ sưu tập level của bạn."
+	/>
 </svelte:head>
 
 <div class="page">
@@ -348,7 +367,9 @@
 			<p class="subtitle">{$_('custom_lists.index.subtitle')}</p>
 		</div>
 		{#if $user.loggedIn}
-			<Button on:click={() => goto(quickLevelId ? `/lists/new?levelId=${quickLevelId}` : '/lists/new')}>
+			<Button
+				on:click={() => goto(quickLevelId ? `/lists/new?levelId=${quickLevelId}` : '/lists/new')}
+			>
 				<Plus class="mr-2 h-4 w-4" />
 				{$_('custom_lists.index.new_list')}
 			</Button>
@@ -361,12 +382,18 @@
 			<div class="quickBannerContent">
 				<LinkIcon class="h-5 w-5 flex-shrink-0" />
 				<div>
-					<p class="quickTitle">{$_('custom_lists.index.own.quick_title', { values: { id: quickLevelId } })}</p>
+					<p class="quickTitle">
+						{$_('custom_lists.index.own.quick_title', { values: { id: quickLevelId } })}
+					</p>
 					<p class="quickDesc">{$_('custom_lists.index.own.quick_desc')}</p>
 				</div>
 			</div>
 		</div>
 	{/if}
+
+	<div class="adSection">
+		<Ads dataAdFormat="auto" />
+	</div>
 
 	<Tabs.Root bind:value={activeTab}>
 		<div class="tabsList">
@@ -405,27 +432,42 @@
 							on:keydown={handleSearchKeydown}
 						/>
 					</div>
-					<Button variant="outline" on:click={handleSearch}>{$_('custom_lists.index.official.search_button')}</Button>
+					<Button variant="outline" on:click={handleSearch}
+						>{$_('custom_lists.index.official.search_button')}</Button
+					>
 				</div>
 
 				{#if lists.length === 0}
 					<div class="emptyState">
 						<h3>{$_('custom_lists.index.official.empty_title')}</h3>
-						<p>{searchQuery ? $_('custom_lists.index.official.empty_search_hint') : $_('custom_lists.index.official.empty_browse_hint')}</p>
+						<p>
+							{searchQuery
+								? $_('custom_lists.index.official.empty_search_hint')
+								: $_('custom_lists.index.official.empty_browse_hint')}
+						</p>
 					</div>
 				{:else}
 					<div class="listGrid">
-						{#each lists as list}
-							<button class="listCard" style={getListCardStyle(list)} on:click={() => goto(getListHref(list))}>
+						{#each lists as list, index}
+							<button
+								class="listCard"
+								style={getListCardStyle(list)}
+								on:click={() => goto(getListHref(list))}
+							>
 								<div class="cardTop">
 									<h3 class="cardTitle">{list.title}</h3>
-									<p class="cardDesc">{list.description || $_('custom_lists.detail.no_description')}</p>
+									<p class="cardDesc">
+										{list.description || $_('custom_lists.detail.no_description')}
+									</p>
 								</div>
 
 								<div class="cardMeta">
 									<div class="metaBadges">
 										<span class="metaItem">
-											<svelte:component this={getVisibilityIcon(list.visibility)} class="h-3.5 w-3.5" />
+											<svelte:component
+												this={getVisibilityIcon(list.visibility)}
+												class="h-3.5 w-3.5"
+											/>
 											{formatVisibility(list.visibility)}
 										</span>
 										<span class="metaItem">
@@ -439,11 +481,15 @@
 											</span>
 										{/if}
 										<span class="metaItem">
-											{$_('custom_lists.detail.levels_badge', { values: { count: list.levelCount } })}
+											{$_('custom_lists.detail.levels_badge', {
+												values: { count: list.levelCount }
+											})}
 										</span>
 										<span class="metaItem">
 											<Star class="h-3.5 w-3.5" />
-											{$_('custom_lists.detail.star_count', { values: { count: list.starCount ?? 0 } })}
+											{$_('custom_lists.detail.star_count', {
+												values: { count: list.starCount ?? 0 }
+											})}
 										</span>
 									</div>
 									<div class="cardFooter">
@@ -471,6 +517,11 @@
 									</div>
 								{/if}
 							</button>
+							{#if shouldShowGridAd(index, lists.length)}
+								<div class="listGridAd">
+									<Ads dataAdFormat="auto" />
+								</div>
+							{/if}
 						{/each}
 					</div>
 
@@ -536,27 +587,42 @@
 							on:keydown={handleSearchKeydown}
 						/>
 					</div>
-					<Button variant="outline" on:click={handleSearch}>{$_('custom_lists.index.browse.search_button')}</Button>
+					<Button variant="outline" on:click={handleSearch}
+						>{$_('custom_lists.index.browse.search_button')}</Button
+					>
 				</div>
 
 				{#if lists.length === 0}
 					<div class="emptyState">
 						<h3>{$_('custom_lists.index.browse.empty_title')}</h3>
-						<p>{searchQuery ? $_('custom_lists.index.browse.empty_search_hint') : $_('custom_lists.index.browse.empty_browse_hint')}</p>
+						<p>
+							{searchQuery
+								? $_('custom_lists.index.browse.empty_search_hint')
+								: $_('custom_lists.index.browse.empty_browse_hint')}
+						</p>
 					</div>
 				{:else}
 					<div class="listGrid">
-						{#each lists as list}
-							<button class="listCard" style={getListCardStyle(list)} on:click={() => goto(getListHref(list))}>
+						{#each lists as list, index}
+							<button
+								class="listCard"
+								style={getListCardStyle(list)}
+								on:click={() => goto(getListHref(list))}
+							>
 								<div class="cardTop">
 									<h3 class="cardTitle">{list.title}</h3>
-									<p class="cardDesc">{list.description || $_('custom_lists.detail.no_description')}</p>
+									<p class="cardDesc">
+										{list.description || $_('custom_lists.detail.no_description')}
+									</p>
 								</div>
 
 								<div class="cardMeta">
 									<div class="metaBadges">
 										<span class="metaItem">
-											<svelte:component this={getVisibilityIcon(list.visibility)} class="h-3.5 w-3.5" />
+											<svelte:component
+												this={getVisibilityIcon(list.visibility)}
+												class="h-3.5 w-3.5"
+											/>
 											{formatVisibility(list.visibility)}
 										</span>
 										<span class="metaItem">
@@ -570,11 +636,15 @@
 											</span>
 										{/if}
 										<span class="metaItem">
-											{$_('custom_lists.detail.levels_badge', { values: { count: list.levelCount } })}
+											{$_('custom_lists.detail.levels_badge', {
+												values: { count: list.levelCount }
+											})}
 										</span>
 										<span class="metaItem">
 											<Star class="h-3.5 w-3.5" />
-											{$_('custom_lists.detail.star_count', { values: { count: list.starCount ?? 0 } })}
+											{$_('custom_lists.detail.star_count', {
+												values: { count: list.starCount ?? 0 }
+											})}
 										</span>
 									</div>
 									<div class="cardFooter">
@@ -602,6 +672,11 @@
 									</div>
 								{/if}
 							</button>
+							{#if shouldShowGridAd(index, lists.length)}
+								<div class="listGridAd">
+									<Ads dataAdFormat="auto" />
+								</div>
+							{/if}
 						{/each}
 					</div>
 
@@ -661,7 +736,11 @@
 				<section class="section">
 					<div class="emptyState">
 						<h3>{$_('custom_lists.index.own.sign_in_title')}</h3>
-						<p>{quickLevelId ? $_('custom_lists.index.own.sign_in_quickadd', { values: { id: quickLevelId } }) : $_('custom_lists.index.own.sign_in_desc')}</p>
+						<p>
+							{quickLevelId
+								? $_('custom_lists.index.own.sign_in_quickadd', { values: { id: quickLevelId } })
+								: $_('custom_lists.index.own.sign_in_desc')}
+						</p>
 					</div>
 				</section>
 			{:else}
@@ -680,17 +759,26 @@
 						</div>
 					{:else}
 						<div class="listGrid">
-							{#each ownLists as list}
-								<button class="listCard" style={getListCardStyle(list)} on:click={() => goto(getListHref(list))}>
+							{#each ownLists as list, index}
+								<button
+									class="listCard"
+									style={getListCardStyle(list)}
+									on:click={() => goto(getListHref(list))}
+								>
 									<div class="cardTop">
 										<h3 class="cardTitle">{list.title}</h3>
-										<p class="cardDesc">{list.description || $_('custom_lists.detail.no_description')}</p>
+										<p class="cardDesc">
+											{list.description || $_('custom_lists.detail.no_description')}
+										</p>
 									</div>
 
 									<div class="cardMeta">
 										<div class="metaBadges">
 											<span class="metaItem">
-												<svelte:component this={getVisibilityIcon(list.visibility)} class="h-3.5 w-3.5" />
+												<svelte:component
+													this={getVisibilityIcon(list.visibility)}
+													class="h-3.5 w-3.5"
+												/>
 												{formatVisibility(list.visibility)}
 											</span>
 											<span class="metaItem">
@@ -707,7 +795,9 @@
 												<span class="metaItem">{getRoleLabel(list.currentUserRole)}</span>
 											{/if}
 											<span class="metaItem">
-												{$_('custom_lists.detail.levels_badge', { values: { count: list.levelCount } })}
+												{$_('custom_lists.detail.levels_badge', {
+													values: { count: list.levelCount }
+												})}
 											</span>
 										</div>
 										<span class="metaDate">
@@ -751,6 +841,11 @@
 										</Button>
 									</div>
 								</button>
+								{#if shouldShowGridAd(index, ownLists.length)}
+									<div class="listGridAd">
+										<Ads dataAdFormat="auto" />
+									</div>
+								{/if}
 							{/each}
 						</div>
 					{/if}
@@ -789,17 +884,26 @@
 						</div>
 					{:else}
 						<div class="listGrid">
-							{#each starredLists as list}
-								<button class="listCard" style={getListCardStyle(list)} on:click={() => goto(getListHref(list))}>
+							{#each starredLists as list, index}
+								<button
+									class="listCard"
+									style={getListCardStyle(list)}
+									on:click={() => goto(getListHref(list))}
+								>
 									<div class="cardTop">
 										<h3 class="cardTitle">{list.title}</h3>
-										<p class="cardDesc">{list.description || $_('custom_lists.detail.no_description')}</p>
+										<p class="cardDesc">
+											{list.description || $_('custom_lists.detail.no_description')}
+										</p>
 									</div>
 
 									<div class="cardMeta">
 										<div class="metaBadges">
 											<span class="metaItem">
-												<svelte:component this={getVisibilityIcon(list.visibility)} class="h-3.5 w-3.5" />
+												<svelte:component
+													this={getVisibilityIcon(list.visibility)}
+													class="h-3.5 w-3.5"
+												/>
 												{formatVisibility(list.visibility)}
 											</span>
 											<span class="metaItem">
@@ -813,11 +917,15 @@
 												</span>
 											{/if}
 											<span class="metaItem">
-												{$_('custom_lists.detail.levels_badge', { values: { count: list.levelCount } })}
+												{$_('custom_lists.detail.levels_badge', {
+													values: { count: list.levelCount }
+												})}
 											</span>
 											<span class="metaItem">
 												<Star class="h-3.5 w-3.5" />
-												{$_('custom_lists.detail.star_count', { values: { count: list.starCount ?? 0 } })}
+												{$_('custom_lists.detail.star_count', {
+													values: { count: list.starCount ?? 0 }
+												})}
 											</span>
 										</div>
 										<div class="cardFooter">
@@ -845,6 +953,11 @@
 										</div>
 									{/if}
 								</button>
+								{#if shouldShowGridAd(index, starredLists.length)}
+									<div class="listGridAd">
+										<Ads dataAdFormat="auto" />
+									</div>
+								{/if}
 							{/each}
 						</div>
 					{/if}
@@ -899,6 +1012,10 @@
 		align-items: flex-start;
 		gap: 12px;
 		color: hsl(var(--primary));
+	}
+
+	.adSection {
+		width: 100%;
 	}
 
 	.quickTitle {
@@ -980,6 +1097,10 @@
 		gap: 14px;
 	}
 
+	.listGridAd {
+		grid-column: 1 / -1;
+	}
+
 	/* List Card */
 	.listCard {
 		display: flex;
@@ -992,7 +1113,10 @@
 		text-align: left;
 		cursor: pointer;
 		color: var(--custom-surface-foreground, hsl(var(--card-foreground)));
-		transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+		transition:
+			background 0.15s ease,
+			border-color 0.15s ease,
+			box-shadow 0.15s ease;
 		width: 100%;
 	}
 
@@ -1123,7 +1247,9 @@
 		font-size: 0.875rem;
 		font-weight: 500;
 		cursor: pointer;
-		transition: background 0.15s ease, border-color 0.15s ease;
+		transition:
+			background 0.15s ease,
+			border-color 0.15s ease;
 	}
 
 	.pageBtn:hover {
