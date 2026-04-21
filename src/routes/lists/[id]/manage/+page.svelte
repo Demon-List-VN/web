@@ -1004,6 +1004,16 @@
 	$: if (list && $user.checked && !canManage && activeTab !== 'levels') {
 		activeTab = 'levels';
 	}
+
+	// Reactive hero preview colors — update live from editForm without saving
+	$: _heroPreviewBg = initialSyncDone
+		? (isHexColor(editForm.backgroundColor) ? editForm.backgroundColor.trim() : null)
+		: (isHexColor(list?.backgroundColor) ? list!.backgroundColor!.trim() : null);
+	$: _heroPreviewBorder = initialSyncDone
+		? (isHexColor(editForm.borderColor) ? editForm.borderColor.trim() : null)
+		: (isHexColor(list?.borderColor) ? list!.borderColor!.trim() : null);
+	$: heroStyle = getThemedSurfaceStyle(_heroPreviewBg, _heroPreviewBorder);
+	$: heroBannerStyle = _heroPreviewBorder ? `border-bottom-color: ${_heroPreviewBorder};` : undefined;
 </script>
 
 <svelte:head>
@@ -1055,9 +1065,9 @@
 		</div>
 	{:else if list}
 		<!-- Hero Summary -->
-		<div class="hero" class:heroHasBanner={Boolean(getManageHeroBannerUrl())} style={getManageHeroStyle()}>
+		<div class="hero" class:heroHasBanner={Boolean(getManageHeroBannerUrl())} style={heroStyle}>
 			{#if getManageHeroBannerUrl()}
-				<div class="heroBanner" style={getManageHeroBannerStyle()}>
+				<div class="heroBanner" style={heroBannerStyle}>
 					<img src={getManageHeroBannerUrl()} alt="" loading="lazy" decoding="async" />
 				</div>
 			{/if}
@@ -1123,11 +1133,11 @@
 						<Tabs.Trigger value="appearance">{$_('custom_lists.manage.tabs.appearance')}</Tabs.Trigger>
 						<Tabs.Trigger value="formula">{$_('custom_lists.manage.tabs.formula')}</Tabs.Trigger>
 						<Tabs.Trigger value="rank">{$_('custom_lists.manage.tabs.rank')}</Tabs.Trigger>
-						{#if canBan || canDelete}
-							<Tabs.Trigger value="danger">{$_('custom_lists.manage.tabs.danger')}</Tabs.Trigger>
-						{/if}
 					{/if}
 					<Tabs.Trigger value="levels">{$_('custom_lists.manage.tabs.levels')}</Tabs.Trigger>
+					{#if canManage && (canBan || canDelete)}
+						<Tabs.Trigger value="danger" class="dangerTabTrigger">{$_('custom_lists.manage.tabs.danger')}</Tabs.Trigger>
+					{/if}
 				</Tabs.List>
 			</div>
 
@@ -1808,6 +1818,16 @@
 
 	.tabsList {
 		display: flex;
+	}
+
+	:global(.dangerTabTrigger) {
+		margin-left: 16px;
+		color: hsl(var(--destructive) / 0.75);
+	}
+
+	:global(.dangerTabTrigger[data-state='active']),
+	:global(.dangerTabTrigger:hover) {
+		color: hsl(var(--destructive));
 	}
 
 	.tabContent {
