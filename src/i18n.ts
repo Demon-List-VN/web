@@ -31,6 +31,14 @@ export function resolveLocale(candidate?: string | null) {
 	return DEFAULT_LOCALE;
 }
 
+export function resolveLocaleFromCountry(candidate?: string | null) {
+	if (!candidate) {
+		return null;
+	}
+
+	return candidate.toUpperCase() === 'VN' ? 'vi' : 'en';
+}
+
 export function setAppLocale(candidate?: string | null) {
 	const nextLocale = resolveLocale(candidate);
 	locale.set(nextLocale);
