@@ -11,6 +11,7 @@
 
 	type BatchAddLevelInput = {
 		levelId: number;
+		createdAt?: string;
 		rating?: number;
 		top?: number;
 		minProgress?: number;
@@ -19,27 +20,47 @@
 
 	type BatchAddLevelsResult = {
 		added: number;
+		updated: number;
 		skipped: number;
 		failed: Array<{
 			levelId: number;
 			message: string;
 		}>;
+		aborted: boolean;
+	};
+
+	type BatchAddProgress = {
+		total: number;
+		completed: number;
+		added: number;
+		updated: number;
+		skipped: number;
+		failed: number;
+		phase: 'adding' | 'updating' | 'reordering';
+		currentLevelId: number | null;
+		retrying: boolean;
+		retryElapsedMs: number;
+		aborted: boolean;
 	};
 
 	export let list: any = null;
 	export let canEditLevels = false;
 	export let addingLevel = false;
+	export let batchAddProgress: BatchAddProgress | null = null;
+	export let abortBatchAddImport: () => void | Promise<void> = async () => {};
 	export let mutatingLevelId: number | null = null;
 	export let savingLevelItemId: number | null = null;
 	export let savingReorder = false;
 	export let addLevel: (levelId: number) => boolean | Promise<boolean> = async () => false;
 	export let addLevels: (levelInputs: BatchAddLevelInput[]) => BatchAddLevelsResult | Promise<BatchAddLevelsResult> = async () => ({
 		added: 0,
+		updated: 0,
 		skipped: 0,
-		failed: []
+		failed: [],
+		aborted: false
 	});
 	export let removeLevel: (levelId: number) => void | Promise<void> = async () => {};
-	export let updateLevelItem: (levelId: number, patch: { rating?: number; minProgress?: number | null; videoID?: string | null }) => void | Promise<void> = async () => {};
+	export let updateLevelItem: (levelId: number, patch: { rating?: number; minProgress?: number | null; videoID?: string | null; createdAt?: string }) => void | Promise<void> = async () => {};
 	export let reorderLevels: (levelIds: number[]) => void | Promise<void> = async () => {};
 
 	let displayedItems: any[] = [];
@@ -57,17 +78,44 @@
 	let csvFileInput: HTMLInputElement | null = null;
 	let csvAddSummary: (BatchAddLevelsResult & { invalidRows: number }) | null = null;
 	let addToolsOpen = false;
-	const csvExampleColumns = ['levelId', 'top', 'rating', 'minProgress', 'videoId'];
+	const csvExampleColumns = ['levelId', 'createdAt', 'top', 'rating', 'minProgress', 'videoId'];
 	const csvExampleRows = [
-		['128', '3', '5', '47', 'dQw4w9WgXcQ'],
-		['13519', '9', '10', '100', 'M7lc1UVf-VE'],
-		['65742217', '1', '7', '22', 'rYEDA3JcQqw']
+		['128', '2024-01-05T12:00:00Z', '3', '5', '47', 'dQw4w9WgXcQ'],
+		['13519', '2024-02-18T09:30:00Z', '9', '10', '100', 'M7lc1UVf-VE'],
+		['65742217', '2024-03-01T00:00:00Z', '1', '7', '22', 'rYEDA3JcQqw']
 	];
 
 	$: displayedItems = list?.items ? [...list.items] : [];
+	$: canDragReorder = canEditLevels && list?.mode === 'top' && list?.itemSort !== 'created_at' && !savingReorder;
 	$: quickLevelId = getQuickLevelId();
+	$: csvProgressPercent = batchAddProgress?.total
+		? Math.min((batchAddProgress.completed / batchAddProgress.total) * 100, 100)
+		: 0;
 	$: if (quickLevelId && !levelIdInput) {
 		levelIdInput = String(quickLevelId);
+	}
+
+	function getCsvProgressPhaseLabel(phase: BatchAddProgress['phase']) {
+		if (phase === 'adding') return $_('custom_lists.detail.add_level.csv_progress_phase_adding');
+		if (phase === 'updating') return $_('custom_lists.detail.add_level.csv_progress_phase_updating');
+		return $_('custom_lists.detail.add_level.csv_progress_phase_reordering');
+	}
+
+	function getCsvProgressCurrentLabel(progress: BatchAddProgress) {
+		const phase = getCsvProgressPhaseLabel(progress.phase);
+
+		if (progress.currentLevelId) {
+			return $_('custom_lists.detail.add_level.csv_progress_current', {
+				values: {
+					phase,
+					levelId: progress.currentLevelId
+				}
+			});
+		}
+
+		return $_('custom_lists.detail.add_level.csv_progress_current_no_level', {
+			values: { phase }
+		});
 	}
 	function getQuickLevelId() {
 		const raw = $page.url.searchParams.get('levelId');
@@ -108,6 +156,14 @@
 
 		const suffix = item.videoID == null ? '' : ' *';
 		return `${$_('custom_lists.detail.levels.video_id_label')}: ${videoId}${suffix}`;
+	}
+
+	function getListItemTop(item: any, index: number) {
+		if (item.position == null) {
+			return index + 1;
+		}
+
+		return list?.isOfficial ? Number(item.position) : Number(item.position) + 1;
 	}
 
 	function normalizeVideoIdValue(value: string) {
@@ -337,7 +393,7 @@
 	}
 
 	function getCsvColumnIndexes(cells: string[]) {
-		const indexes: { levelId?: number; top?: number; rating?: number; minProgress?: number; videoId?: number } = {};
+		const indexes: { levelId?: number; createdAt?: number; top?: number; rating?: number; minProgress?: number; videoId?: number } = {};
 
 		cells.forEach((cell, index) => {
 			const normalizedCell = normalizeColumnName(cell);
@@ -348,6 +404,10 @@
 
 			if (indexes.top === undefined && ['top', 'rank', 'position', 'listtop'].includes(normalizedCell)) {
 				indexes.top = index;
+			}
+
+			if (indexes.createdAt === undefined && ['createdat', 'created', 'createdtime', 'createddate', 'datecreated'].includes(normalizedCell)) {
+				indexes.createdAt = index;
 			}
 
 			if (indexes.rating === undefined && ['rating', 'rate'].includes(normalizedCell)) {
@@ -363,7 +423,7 @@
 			}
 		});
 
-		return indexes.levelId === undefined ? null : indexes as { levelId: number; top?: number; rating?: number; minProgress?: number; videoId?: number };
+		return indexes.levelId === undefined ? null : indexes as { levelId: number; createdAt?: number; top?: number; rating?: number; minProgress?: number; videoId?: number };
 	}
 
 	function parsePositiveIntegerCell(value: string | undefined) {
@@ -396,6 +456,20 @@
 		}
 
 		return normalizeVideoIdValue(normalizedValue);
+	}
+
+	function parseOptionalCreatedAtCell(value: string | undefined) {
+		const normalizedValue = value?.trim();
+		if (!normalizedValue?.length) {
+			return undefined;
+		}
+
+		const timestamp = Date.parse(normalizedValue);
+		if (Number.isNaN(timestamp)) {
+			return null;
+		}
+
+		return new Date(timestamp).toISOString();
 	}
 
 	function parseSingleLineIds(input: string) {
@@ -448,20 +522,24 @@
 			}
 
 			const levelIdCell = headerIndexes ? cells[headerIndexes.levelId] : cells[0];
+			const createdAtCell = headerIndexes
+				? (headerIndexes.createdAt === undefined ? undefined : cells[headerIndexes.createdAt])
+				: cells[1];
 			const ratingCell = headerIndexes
 				? (headerIndexes.rating === undefined ? undefined : cells[headerIndexes.rating])
-				: (list?.mode === 'top' ? cells[2] : cells[1]);
+				: (list?.mode === 'top' ? cells[3] : cells[2]);
 			const topCell = headerIndexes
 				? (headerIndexes.top === undefined ? undefined : cells[headerIndexes.top])
-				: (list?.mode === 'top' ? cells[1] : undefined);
+				: (list?.mode === 'top' ? cells[2] : undefined);
 			const minProgressCell = headerIndexes
 				? (headerIndexes.minProgress === undefined ? undefined : cells[headerIndexes.minProgress])
-				: (list?.mode === 'top' ? cells[3] : cells[2]);
+				: (list?.mode === 'top' ? cells[4] : cells[3]);
 			const videoIdCell = headerIndexes
 				? (headerIndexes.videoId === undefined ? undefined : cells[headerIndexes.videoId])
-				: (list?.mode === 'top' ? cells[4] : cells[3]);
+				: (list?.mode === 'top' ? cells[5] : cells[4]);
 
 			const levelId = parsePositiveIntegerCell(levelIdCell);
+			const createdAt = parseOptionalCreatedAtCell(createdAtCell);
 			const rating = parseOptionalIntegerCell(ratingCell);
 			const top = parseOptionalIntegerCell(topCell);
 			const minProgress = parseOptionalIntegerCell(minProgressCell);
@@ -499,7 +577,16 @@
 				continue;
 			}
 
+			if (createdAt === null) {
+				invalidRows += 1;
+				continue;
+			}
+
 			const levelInput: BatchAddLevelInput = { levelId };
+
+			if (typeof createdAt === 'string' && createdAt.length) {
+				levelInput.createdAt = createdAt;
+			}
 
 			if (Number.isInteger(rating)) {
 				levelInput.rating = rating;
@@ -549,10 +636,12 @@
 		if (!levelInputs.length) {
 			csvAddSummary = {
 				added: 0,
+				updated: 0,
 				skipped: 0,
 				failed: [],
+				aborted: false,
 				invalidRows
-			};
+			} as BatchAddLevelsResult & { invalidRows: number };
 			toast.error($_('custom_lists.toast.level_csv_invalid'));
 			return;
 		}
@@ -563,22 +652,33 @@
 			invalidRows
 		};
 
-		const resultMessage = $_('custom_lists.detail.add_level.csv_result', {
+		const resultMessage = $_(
+			summary.aborted
+				? 'custom_lists.detail.add_level.csv_result_aborted'
+				: 'custom_lists.detail.add_level.csv_result',
+			{
 			values: {
 				added: summary.added,
+				updated: summary.updated,
 				skipped: summary.skipped,
 				failed: summary.failed.length,
 				invalid: invalidRows
 			}
-		});
+			}
+		);
 
-		if (summary.added > 0 && summary.failed.length === 0 && invalidRows === 0) {
+		if (summary.aborted) {
+			toast.info($_('custom_lists.detail.add_level.csv_aborted_toast'));
+			return;
+		}
+
+		if ((summary.added > 0 || summary.updated > 0) && summary.failed.length === 0 && invalidRows === 0) {
 			toast.success(resultMessage);
 			csvInput = '';
 			return;
 		}
 
-		if (summary.added > 0) {
+		if (summary.added > 0 || summary.updated > 0) {
 			toast.info(resultMessage);
 			return;
 		}
@@ -591,23 +691,26 @@
 	{#if canEditLevels}
 		<Collapsible.Root bind:open={addToolsOpen}>
 			<div class="toolCard addToolsCard">
-				<Collapsible.Trigger asChild let:builder>
-					<Button
-						variant="ghost"
-						builders={[builder]}
-						class="h-auto w-full justify-between p-0 text-left hover:bg-transparent hover:text-current focus-visible:ring-0 focus-visible:ring-offset-0"
-					>
-						<div class="addToolsTriggerText">
-							<h2 class="toolHeading">{$_('custom_lists.detail.add_level.heading')}</h2>
-							<p class="addToolsSummaryHint">{$_('custom_lists.detail.add_level.hint')}</p>
-						</div>
-						<span class="addToolsIndicator" aria-hidden="true" class:isOpen={addToolsOpen}>
-							<ChevronRight class="h-4 w-4" />
-						</span>
-					</Button>
-				</Collapsible.Trigger>
+				<Button
+					type="button"
+					variant="ghost"
+					class="h-auto w-full justify-between p-0 text-left hover:bg-transparent hover:text-current focus-visible:ring-0 focus-visible:ring-offset-0"
+					aria-expanded={addToolsOpen}
+					aria-controls="csv-add-tools-panel"
+					on:click={() => {
+						addToolsOpen = !addToolsOpen;
+					}}
+				>
+					<div class="addToolsTriggerText">
+						<h2 class="toolHeading">{$_('custom_lists.detail.add_level.heading')}</h2>
+						<p class="addToolsSummaryHint">{$_('custom_lists.detail.add_level.hint')}</p>
+					</div>
+					<span class="addToolsIndicator" aria-hidden="true" class:isOpen={addToolsOpen}>
+						<ChevronRight class="h-4 w-4" />
+					</span>
+				</Button>
 
-				<Collapsible.Content>
+				<Collapsible.Content id="csv-add-tools-panel">
 					<div class="addToolsBody">
 				<div class="field">
 					<label for="level-id">{$_('custom_lists.detail.add_level.id_label')}</label>
@@ -684,15 +787,68 @@
 					</Button>
 				</div>
 
+				{#if batchAddProgress}
+					<div class="csvProgress" aria-live="polite">
+						<div class="csvProgressHeader">
+							<div class="csvProgressHeaderCopy">
+								<p class="csvProgressTitle">{$_('custom_lists.detail.add_level.csv_progress_label')}</p>
+								<p class="csvProgressValue">{batchAddProgress.completed}/{batchAddProgress.total}</p>
+							</div>
+							{#if addingLevel}
+								<Button type="button" variant="outline" size="sm" on:click={() => abortBatchAddImport()}>
+									{$_('custom_lists.detail.add_level.csv_abort_button')}
+								</Button>
+							{/if}
+						</div>
+						<div
+							class="csvProgressBar"
+							role="progressbar"
+							aria-valuemin="0"
+							aria-valuemax={batchAddProgress.total}
+							aria-valuenow={batchAddProgress.completed}
+						>
+							<div class="csvProgressFill" style={`width: ${csvProgressPercent}%`}></div>
+						</div>
+						<p class="csvProgressStats">
+							{$_('custom_lists.detail.add_level.csv_progress_status', {
+								values: {
+									completed: batchAddProgress.completed,
+									total: batchAddProgress.total,
+									added: batchAddProgress.added,
+									updated: batchAddProgress.updated,
+									skipped: batchAddProgress.skipped,
+									failed: batchAddProgress.failed
+								}
+							})}
+						</p>
+						<p class="csvProgressWarning">{$_('custom_lists.detail.add_level.csv_progress_warning')}</p>
+						<p class="csvProgressCurrent">
+							{batchAddProgress.aborted
+								? $_('custom_lists.detail.add_level.csv_progress_aborted')
+								: addingLevel
+									? getCsvProgressCurrentLabel(batchAddProgress)
+									: $_('custom_lists.detail.add_level.csv_progress_complete')}
+						</p>
+						{#if batchAddProgress.retrying}
+							<p class="csvProgressRetry">
+								{$_('custom_lists.detail.add_level.csv_progress_retry')}
+							</p>
+						{/if}
+					</div>
+				{/if}
+
 				{#if csvAddSummary}
 					<div
 						class="csvSummary"
 						class:hasIssues={csvAddSummary.failed.length > 0 || csvAddSummary.invalidRows > 0}
 					>
 						<p>
-							{$_('custom_lists.detail.add_level.csv_result', {
+							{$_(csvAddSummary.aborted
+								? 'custom_lists.detail.add_level.csv_result_aborted'
+								: 'custom_lists.detail.add_level.csv_result', {
 								values: {
 									added: csvAddSummary.added,
+									updated: csvAddSummary.updated,
 									skipped: csvAddSummary.skipped,
 									failed: csvAddSummary.failed.length,
 									invalid: csvAddSummary.invalidRows
@@ -751,40 +907,40 @@
 				{#each displayedItems as item, index}
 					<div
 						class="levelItem"
-						class:isDraggable={canEditLevels && list?.mode === 'top' && !savingReorder}
-						class:dragOver={canEditLevels && list?.mode === 'top' && dragOverIndex === index}
-						class:dragging={canEditLevels && list?.mode === 'top' && draggedIndex === index}
+						class:isDraggable={canDragReorder}
+						class:dragOver={canDragReorder && dragOverIndex === index}
+						class:dragging={canDragReorder && draggedIndex === index}
 						role="listitem"
-						draggable={canEditLevels && list?.mode === 'top' && !savingReorder}
+						draggable={canDragReorder}
 						on:dragstart={(event) => {
-							if (canEditLevels && list?.mode === 'top' && !savingReorder) {
+							if (canDragReorder) {
 								onDragStart(event, index);
 							}
 						}}
 						on:dragover={(event) => {
-							if (canEditLevels && list?.mode === 'top' && !savingReorder) {
+							if (canDragReorder) {
 								onDragOver(event, index);
 							}
 						}}
 						on:drop={(event) => {
-							if (canEditLevels && list?.mode === 'top' && !savingReorder) {
+							if (canDragReorder) {
 								onDrop(event, index);
 							}
 						}}
 						on:dragend={() => {
-							if (canEditLevels && list?.mode === 'top') {
+							if (canDragReorder) {
 								onDragEnd();
 							}
 						}}
 					>
 						<div class="levelRow">
-							{#if canEditLevels && list?.mode === 'top'}
+							{#if canDragReorder}
 								<div class="dragHandle" title={$_('custom_lists.detail.levels.drag_hint')}>
 									<GripVertical class="h-5 w-5" />
 								</div>
 							{/if}
 
-							<div class="rankBadge">#{index + 1}</div>
+							<div class="rankBadge">#{getListItemTop(item, index)}</div>
 
 							<div class="levelBody">
 								{#if item.level}
@@ -1080,6 +1236,71 @@
 	.csvSummary p {
 		margin: 0;
 		font-size: 0.9rem;
+	}
+
+	.csvProgress {
+		border: 1px solid hsl(var(--border));
+		border-radius: 10px;
+		background: hsl(var(--muted) / 0.08);
+		padding: 14px 16px;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+
+	.csvProgressHeader {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+	}
+
+	.csvProgressHeaderCopy {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+
+	.csvProgressTitle,
+	.csvProgressValue,
+	.csvProgressStats,
+	.csvProgressCurrent,
+	.csvProgressRetry {
+		margin: 0;
+	}
+
+	.csvProgressTitle {
+		font-size: 0.9rem;
+		font-weight: 600;
+	}
+
+	.csvProgressValue {
+		font-size: 0.82rem;
+		color: hsl(var(--muted-foreground));
+	}
+
+	.csvProgressBar {
+		height: 10px;
+		border-radius: 999px;
+		background: hsl(var(--muted));
+		overflow: hidden;
+	}
+
+	.csvProgressFill {
+		height: 100%;
+		background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary) / 0.65));
+		transition: width 0.2s ease;
+	}
+
+	.csvProgressStats,
+	.csvProgressCurrent,
+	.csvProgressRetry {
+		font-size: 0.85rem;
+	}
+
+	.csvProgressCurrent,
+	.csvProgressRetry {
+		color: hsl(var(--muted-foreground));
 	}
 
 	.csvSummaryHeading {

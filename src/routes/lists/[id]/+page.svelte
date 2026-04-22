@@ -286,6 +286,14 @@
 		return list?.isPlatformer ? 'pl' : 'dl';
 	}
 
+	function getListItemTop(item: CustomListItem, index: number) {
+		if (item.position == null) {
+			return index + 1;
+		}
+
+		return list?.isOfficial ? Number(item.position) : Number(item.position) + 1;
+	}
+
 	function getRequestedTab(searchParams: URLSearchParams): DetailTab {
 		const tab = searchParams.get('tab');
 
@@ -996,7 +1004,7 @@
 												list.mode === 'rating'
 													? (item.rating ?? item.level.rating)
 													: item.level.rating,
-											top: i + 1,
+												top: getListItemTop(item, i),
 											minProgress: item.minProgress ?? item.level.minProgress ?? null
 										})}
 										backgroundColor={list.backgroundColor ?? null}
@@ -1008,7 +1016,7 @@
 									/>
 								{:else}
 									<div class="missingLevel" style={getMissingLevelStyle(list)}>
-										<div class="missingRank">#{i + 1}</div>
+										<div class="missingRank">#{getListItemTop(item, i)}</div>
 										<div class="missingContent">
 											<h4>
 												{$_('custom_lists.detail.levels.unavailable', {
@@ -1117,25 +1125,25 @@
 							count={leaderboardCount}
 							perPage={50}
 							page={activeLeaderboardPage}
-							let:pages
-							let:currentPage
+							let:pages={leaderboardPages}
+							let:currentPage={leaderboardCurrentPage}
 						>
 							<Pagination.Content>
 								<Pagination.Item>
 									<Pagination.PrevButton
-										on:click={() => setLeaderboardPage(Math.max(1, currentPage - 1))}
+										on:click={() => setLeaderboardPage(Math.max(1, leaderboardCurrentPage - 1))}
 									/>
 								</Pagination.Item>
-								{#each pages as p (p.key)}
+								{#each leaderboardPages as p (p.key)}
 									{#if p.type === 'ellipsis'}
 										<Pagination.Item>
 											<Pagination.Ellipsis />
 										</Pagination.Item>
 									{:else}
-										<Pagination.Item isVisible={currentPage == p.value}>
+										<Pagination.Item isVisible={leaderboardCurrentPage == p.value}>
 											<Pagination.Link
 												page={p}
-												isActive={currentPage == p.value}
+												isActive={leaderboardCurrentPage == p.value}
 												on:click={() => setLeaderboardPage(p.value)}
 											>
 												{p.value}
@@ -1144,7 +1152,7 @@
 									{/if}
 								{/each}
 								<Pagination.Item>
-									<Pagination.NextButton on:click={() => setLeaderboardPage(currentPage + 1)} />
+									<Pagination.NextButton on:click={() => setLeaderboardPage(leaderboardCurrentPage + 1)} />
 								</Pagination.Item>
 							</Pagination.Content>
 						</Pagination.Root>
@@ -1331,25 +1339,25 @@
 												count={recordPointsCount}
 												perPage={50}
 												page={recordPointsPage}
-												let:pages
-												let:currentPage
+												let:pages={recordPointsPages}
+												let:currentPage={recordPointsCurrentPage}
 											>
 												<Pagination.Content>
 													<Pagination.Item>
 														<Pagination.PrevButton
-															on:click={() => setRecordPointsPage(Math.max(1, currentPage - 1))}
+															on:click={() => setRecordPointsPage(Math.max(1, recordPointsCurrentPage - 1))}
 														/>
 													</Pagination.Item>
-													{#each pages as p (p.key)}
+													{#each recordPointsPages as p (p.key)}
 														{#if p.type === 'ellipsis'}
 															<Pagination.Item>
 																<Pagination.Ellipsis />
 															</Pagination.Item>
 														{:else}
-															<Pagination.Item isVisible={currentPage == p.value}>
+															<Pagination.Item isVisible={recordPointsCurrentPage == p.value}>
 																<Pagination.Link
 																	page={p}
-																	isActive={currentPage == p.value}
+																	isActive={recordPointsCurrentPage == p.value}
 																	on:click={() => setRecordPointsPage(p.value)}
 																>
 																	{p.value}
@@ -1359,7 +1367,7 @@
 													{/each}
 													<Pagination.Item>
 														<Pagination.NextButton
-															on:click={() => setRecordPointsPage(currentPage + 1)}
+															on:click={() => setRecordPointsPage(recordPointsCurrentPage + 1)}
 														/>
 													</Pagination.Item>
 												</Pagination.Content>

@@ -102,6 +102,24 @@
 				<p class="hint">{editForm.mode === 'rating' ? $_('custom_lists.detail.edit.mode_rating_hint') : $_('custom_lists.detail.edit.mode_top_hint')}</p>
 			</div>
 			<div class="field">
+				<span class="fieldLabel">{$_('custom_lists.detail.edit.item_sort_label')}</span>
+				<div class="optionRow">
+					{#each ['mode_default', 'created_at'] as itemSort}
+						<button
+							type="button"
+							class="optionBtn"
+							class:selected={editForm.itemSort === itemSort}
+							on:click={() => (editForm.itemSort = itemSort === 'created_at' ? 'created_at' : 'mode_default')}
+						>
+							{itemSort === 'created_at'
+								? $_('custom_lists.detail.edit.item_sort_created_at')
+								: $_('custom_lists.detail.edit.item_sort_mode_default')}
+						</button>
+					{/each}
+				</div>
+				<p class="hint">{$_('custom_lists.detail.edit.item_sort_hint')}</p>
+			</div>
+			<div class="field">
 				<label for="list-tags">{$_('custom_lists.detail.edit.tags_label')}</label>
 				<Input id="list-tags" bind:value={editForm.tags} placeholder="challenge, favorite" />
 			</div>

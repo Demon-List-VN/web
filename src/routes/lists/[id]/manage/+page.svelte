@@ -10,7 +10,7 @@
 	import LevelsTab from './LevelsTab.svelte';
 	import RankTab from './RankTab.svelte';
 	import imageCompression from 'browser-image-compression';
-	import { onDestroy } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import {
 		clearCustomListBranding,
 		setCustomListBranding
@@ -109,6 +109,7 @@
 		isOfficial?: boolean;
 		logoUrl?: string | null;
 		topEnabled?: boolean;
+		itemSort?: 'mode_default' | 'created_at';
 		visibility: 'private' | 'unlisted' | 'public';
 		mode: 'rating' | 'top';
 		tags: string[];
@@ -143,12 +144,31 @@
 		top?: number;
 		minProgress?: number;
 		videoId?: string;
+		createdAt?: string;
 	};
 
 	type BatchAddLevelsResult = {
 		added: number;
+		updated: number;
 		skipped: number;
 		failed: BatchAddLevelFailure[];
+		aborted: boolean;
+	};
+
+	type BatchAddProgressPhase = 'adding' | 'updating' | 'reordering';
+
+	type BatchAddProgress = {
+		total: number;
+		completed: number;
+		added: number;
+		updated: number;
+		skipped: number;
+		failed: number;
+		phase: BatchAddProgressPhase;
+		currentLevelId: number | null;
+		retrying: boolean;
+		retryElapsedMs: number;
+		aborted: boolean;
 	};
 
 	type ManageTab = 'basic' | 'appearance' | 'formula' | 'rank' | 'danger' | 'levels' | 'collaboration';
@@ -181,8 +201,19 @@
 	let savingCollaboration = false;
 	let initialSyncDone = false;
 	let uploadingAsset: 'banner' | 'favicon' | 'logo' | null = null;
+	let batchAddProgress: BatchAddProgress | null = null;
+	let batchAddAbortController: AbortController | null = null;
 
 	const CUSTOM_LIST_CDN_BASE_URL = 'https://cdn.gdvn.net';
+	const CSV_IMPORT_RATE_LIMIT_RETRY_MS = 1000;
+	const CSV_IMPORT_RATE_LIMIT_TIMEOUT_MS = 15000;
+
+	class BatchAddImportAbortedError extends Error {
+		constructor() {
+			super('Batch add import aborted');
+			this.name = 'BatchAddImportAbortedError';
+		}
+	}
 
 	let editForm = {
 		title: '',
@@ -195,6 +226,7 @@
 		isPlatformer: false,
 		logoUrl: '',
 		topEnabled: true,
+		itemSort: 'mode_default' as 'mode_default' | 'created_at',
 		visibility: 'private' as 'private' | 'unlisted' | 'public',
 		tags: '',
 		mode: 'rating' as 'rating' | 'top',
@@ -238,6 +270,7 @@
 		editForm.isPlatformer = list.isPlatformer;
 		editForm.logoUrl = list.logoUrl || '';
 		editForm.topEnabled = list.topEnabled ?? true;
+		editForm.itemSort = list.itemSort || 'mode_default';
 		editForm.visibility = list.visibility;
 		editForm.tags = list.tags.join(', ');
 		editForm.mode = list.mode;
@@ -263,10 +296,28 @@
 		requiresAuthRecovery = false;
 	}
 
+	onMount(() => {
+		const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+			if (!addingLevel) {
+				return;
+			}
+
+			event.preventDefault();
+			event.returnValue = $_('custom_lists.detail.add_level.csv_close_warning');
+			return event.returnValue;
+		};
+
+		window.addEventListener('beforeunload', handleBeforeUnload);
+
+		return () => {
+			window.removeEventListener('beforeunload', handleBeforeUnload);
+		};
+	});
+
 	let authFetchKey = '';
-	async function refetchWithAuth() {
+	async function refetchWithAuth(force: boolean = false) {
 		const key = `${$page.params.id}:${$user.data?.uid}`;
-		if (key === authFetchKey) return;
+		if (!force && key === authFetchKey) return;
 		authFetchKey = key;
 		const recoveringPrivateList = requiresAuthRecovery;
 
@@ -695,6 +746,28 @@
 		return Lock;
 	}
 
+	function getLeaderboardRefreshToastMessage(payload: { total?: number; totalRecords?: number } | null) {
+		const refreshedTotal = typeof payload?.total === 'number' ? payload.total : null;
+		const refreshedRecordTotal = typeof payload?.totalRecords === 'number' ? payload.totalRecords : null;
+
+		if (refreshedTotal == null) {
+			return $_('custom_lists.toast.leaderboard_refreshed');
+		}
+
+		if (refreshedRecordTotal == null) {
+			return $_('custom_lists.toast.leaderboard_refreshed_players', {
+				values: { total: refreshedTotal }
+			});
+		}
+
+		return $_('custom_lists.toast.leaderboard_refreshed_records', {
+			values: {
+				total: refreshedTotal,
+				totalRecords: refreshedRecordTotal
+			}
+		});
+	}
+
 	// Mutations
 	async function saveMetadata() {
 		if (!list || !canEditSettings) return;
@@ -704,6 +777,7 @@
 		}
 
 		savingMetadata = true;
+		const savingToast = toast.loading($_('custom_lists.toast.saving_list'));
 		try {
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}`, {
 				method: 'PATCH',
@@ -722,6 +796,7 @@
 					isPlatformer: editForm.isPlatformer,
 					logoUrl: editForm.logoUrl,
 					topEnabled: editForm.topEnabled,
+					itemSort: editForm.itemSort,
 					visibility: editForm.visibility,
 					tags: parseTags(editForm.tags),
 					mode: editForm.mode,
@@ -739,18 +814,24 @@
 			if (!res.ok) throw new Error(payload.error || $_('custom_lists.toast.failed_update'));
 			list = payload;
 			syncForm();
+			toast.dismiss(savingToast);
 			toast.success($_('custom_lists.toast.list_updated'));
+			await refreshLeaderboardPrecalc({
+				reloadList: true
+			});
 		} catch (error) {
+			toast.dismiss(savingToast);
 			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_update'));
 		} finally {
 			savingMetadata = false;
 		}
 	}
 
-	async function refreshLeaderboardPrecalc() {
+	async function refreshLeaderboardPrecalc(options: { reloadList?: boolean } = {}) {
 		if (!list || !canEditSettings || refreshingLeaderboard) return;
 
 		refreshingLeaderboard = true;
+		const refreshToast = toast.loading($_('custom_lists.toast.refreshing_leaderboard'));
 
 		try {
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/leaderboard/refresh`, {
@@ -773,20 +854,22 @@
 				};
 			}
 
-			const refreshedTotal = typeof payload?.total === 'number' ? payload.total : null;
-			const refreshedRecordTotal = typeof payload?.totalRecords === 'number' ? payload.totalRecords : null;
-			toast.success(
-				refreshedTotal == null
-					? 'Leaderboard refreshed'
-					: refreshedRecordTotal == null
-						? `Leaderboard refreshed (${refreshedTotal} ranked players)`
-						: `Leaderboard refreshed (${refreshedTotal} ranked players, ${refreshedRecordTotal} records)`
-			);
+			if (options.reloadList !== false) {
+				await refetchWithAuth(true);
+			}
+
+			toast.dismiss(refreshToast);
+			toast.success(getLeaderboardRefreshToastMessage(payload));
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Failed to refresh leaderboard');
+			toast.dismiss(refreshToast);
+			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_refresh_leaderboard'));
 		} finally {
 			refreshingLeaderboard = false;
 		}
+	}
+
+	function handleRefreshLeaderboardClick() {
+		void refreshLeaderboardPrecalc();
 	}
 
 	async function deleteList(confirmationName: string) {
@@ -812,20 +895,200 @@
 		}
 	}
 
-	async function requestAddLevel(listId: number, levelId: number) {
+	function isBatchAddAbortError(error: unknown) {
+		return error instanceof BatchAddImportAbortedError
+			|| (error instanceof DOMException && error.name === 'AbortError')
+			|| (error instanceof Error && error.name === 'AbortError');
+	}
+
+	function throwIfBatchAddAborted(signal?: AbortSignal) {
+		if (signal?.aborted) {
+			throw new BatchAddImportAbortedError();
+		}
+	}
+
+	function sleep(ms: number, signal?: AbortSignal) {
+		return new Promise<void>((resolve, reject) => {
+			if (signal?.aborted) {
+				reject(new BatchAddImportAbortedError());
+				return;
+			}
+
+			const timeoutId = setTimeout(() => {
+				signal?.removeEventListener('abort', onAbort);
+				resolve();
+			}, ms);
+
+			function onAbort() {
+				clearTimeout(timeoutId);
+				signal?.removeEventListener('abort', onAbort);
+				reject(new BatchAddImportAbortedError());
+			}
+
+			signal?.addEventListener('abort', onAbort, { once: true });
+		});
+	}
+
+	function hasBatchLevelPatch(levelInput: BatchAddLevelInput) {
+		return Number.isInteger(levelInput.rating)
+			|| Number.isInteger(levelInput.minProgress)
+			|| (typeof levelInput.videoId === 'string' && levelInput.videoId.length > 0)
+			|| (typeof levelInput.createdAt === 'string' && levelInput.createdAt.length > 0);
+	}
+
+	function hasBatchLevelTopOverride(levelInput: BatchAddLevelInput) {
+		return Number.isInteger(levelInput.top);
+	}
+
+	function buildBatchUpdateLevelPatch(levelInput: BatchAddLevelInput) {
+		const patch: { rating?: number; minProgress?: number; videoID?: string | null; createdAt?: string } = {};
+
+		if (Number.isInteger(levelInput.rating)) {
+			patch.rating = levelInput.rating;
+		}
+
+		if (Number.isInteger(levelInput.minProgress)) {
+			patch.minProgress = levelInput.minProgress;
+		}
+
+		if (typeof levelInput.videoId === 'string' && levelInput.videoId.length) {
+			patch.videoID = levelInput.videoId;
+		}
+
+		if (typeof levelInput.createdAt === 'string' && levelInput.createdAt.length) {
+			patch.createdAt = levelInput.createdAt;
+		}
+
+		return patch;
+	}
+
+	function createBatchAddProgress(total: number, skipped: number): BatchAddProgress {
+		return {
+			total,
+			completed: 0,
+			added: 0,
+			updated: 0,
+			skipped,
+			failed: 0,
+			phase: 'adding',
+			currentLevelId: null,
+			retrying: false,
+			retryElapsedMs: 0,
+			aborted: false
+		};
+	}
+
+	function updateBatchAddProgress(patch: Partial<BatchAddProgress>) {
+		if (!batchAddProgress) return;
+
+		batchAddProgress = {
+			...batchAddProgress,
+			...patch
+		};
+	}
+
+	function incrementBatchAddProgress(patch: Partial<BatchAddProgress> = {}) {
+		if (!batchAddProgress) return;
+
+		const nextCompleted = Math.min(batchAddProgress.completed + 1, batchAddProgress.total);
+		batchAddProgress = {
+			...batchAddProgress,
+			...patch,
+			completed: nextCompleted,
+			retrying: false,
+			retryElapsedMs: 0
+		};
+	}
+
+	async function withRateLimitRetry<T extends { ok: boolean; status?: number; error?: string }>(
+		request: () => Promise<T>,
+		options: {
+			phase: BatchAddProgressPhase;
+			levelId: number | null;
+			timeoutError: string;
+			signal?: AbortSignal;
+		}
+	) {
+		const startedAt = Date.now();
+
+		while (true) {
+			throwIfBatchAddAborted(options.signal);
+			updateBatchAddProgress({
+				phase: options.phase,
+				currentLevelId: options.levelId,
+				retrying: false,
+				aborted: false
+			});
+
+			let result: T;
+
+			try {
+				result = await request();
+			} catch (error) {
+				if (isBatchAddAbortError(error)) {
+					throw new BatchAddImportAbortedError();
+				}
+
+				throw error;
+			}
+
+			if (result.ok || result.status !== 429) {
+				updateBatchAddProgress({
+					phase: options.phase,
+					currentLevelId: options.levelId,
+					retrying: false,
+					retryElapsedMs: 0,
+					aborted: false
+				});
+				return result;
+			}
+
+			const elapsed = Date.now() - startedAt;
+			if (elapsed + CSV_IMPORT_RATE_LIMIT_RETRY_MS > CSV_IMPORT_RATE_LIMIT_TIMEOUT_MS) {
+				updateBatchAddProgress({
+					phase: options.phase,
+					currentLevelId: options.levelId,
+					retrying: false,
+					retryElapsedMs: CSV_IMPORT_RATE_LIMIT_TIMEOUT_MS
+				});
+
+				return {
+					...result,
+					error: options.timeoutError
+				};
+			}
+
+			updateBatchAddProgress({
+				phase: options.phase,
+				currentLevelId: options.levelId,
+				retrying: true,
+				retryElapsedMs: elapsed + CSV_IMPORT_RATE_LIMIT_RETRY_MS,
+				aborted: false
+			});
+
+			await sleep(CSV_IMPORT_RATE_LIMIT_RETRY_MS, options.signal);
+		}
+	}
+
+	async function requestAddLevel(listId: number, levelId: number, createdAt?: string, signal?: AbortSignal) {
 		const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${listId}/levels`, {
 			method: 'POST',
+			signal,
 			headers: {
 				Authorization: `Bearer ${await $user.token()}`,
 				'Content-Type': 'application/json'
 			},
-			body: JSON.stringify({ levelId })
+			body: JSON.stringify({
+				levelId,
+				...(createdAt ? { createdAt } : {})
+			})
 		});
 		const payload = await res.json().catch(() => null);
 
 		if (!res.ok) {
 			return {
 				ok: false as const,
+				status: res.status,
 				error: payload?.error || $_('custom_lists.toast.failed_add_level')
 			};
 		}
@@ -836,9 +1099,10 @@
 		};
 	}
 
-	async function requestUpdateLevel(listId: number, levelId: number, patch: { rating?: number; minProgress?: number | null; videoID?: string | null }) {
+	async function requestUpdateLevel(listId: number, levelId: number, patch: { rating?: number; minProgress?: number | null; videoID?: string | null; createdAt?: string }, signal?: AbortSignal) {
 		const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${listId}/levels/${levelId}`, {
 			method: 'PATCH',
+			signal,
 			headers: {
 				Authorization: `Bearer ${await $user.token()}`,
 				'Content-Type': 'application/json'
@@ -850,6 +1114,7 @@
 		if (!res.ok) {
 			return {
 				ok: false as const,
+				status: res.status,
 				error: payload?.error || $_('custom_lists.toast.failed_update_level')
 			};
 		}
@@ -860,9 +1125,10 @@
 		};
 	}
 
-	async function requestReorderLevels(listId: number, levelIds: number[]) {
+	async function requestReorderLevels(listId: number, levelIds: number[], signal?: AbortSignal) {
 		const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${listId}/reorder`, {
 			method: 'PATCH',
+			signal,
 			headers: {
 				Authorization: `Bearer ${await $user.token()}`,
 				'Content-Type': 'application/json'
@@ -874,6 +1140,7 @@
 		if (!res.ok) {
 			return {
 				ok: false as const,
+				status: res.status,
 				error: payload?.error || $_('custom_lists.toast.failed_reorder')
 			};
 		}
@@ -903,6 +1170,8 @@
 	async function addLevel(levelId: number) {
 		if (!list || !canEditLevels) return false;
 
+		batchAddProgress = null;
+		batchAddAbortController = null;
 		addingLevel = true;
 		try {
 			const result = await requestAddLevel(list.id, levelId);
@@ -920,91 +1189,194 @@
 
 	async function addLevels(levelInputs: BatchAddLevelInput[]): Promise<BatchAddLevelsResult> {
 		if (!list || !canEditLevels) {
+			batchAddProgress = null;
 			return {
 				added: 0,
+				updated: 0,
 				skipped: levelInputs.length,
-				failed: []
+				failed: [],
+				aborted: false
 			};
 		}
 
 		addingLevel = true;
+		batchAddProgress = null;
+		batchAddAbortController = new AbortController();
+		const importSignal = batchAddAbortController.signal;
 		const listId = list.id;
-		const queuedLevelInputs: Array<BatchAddLevelInput & { inputIndex: number }> = [];
-		const seenLevelIds = new Set(list.items.map((item) => item.levelId));
+		const addLevelInputs: Array<BatchAddLevelInput & { inputIndex: number }> = [];
+		const existingLevelIds = new Set(list.items.map((item) => item.levelId));
+		const processedLevelIds = new Set<number>();
+		const existingPatchInputs: Array<BatchAddLevelInput & { inputIndex: number }> = [];
+		const reorderInputs: Array<BatchAddLevelInput & { inputIndex: number }> = [];
 		let skipped = 0;
 		const failed: BatchAddLevelFailure[] = [];
 		let added = 0;
+		let updated = 0;
 
 		for (const [inputIndex, levelInput] of levelInputs.entries()) {
-			if (seenLevelIds.has(levelInput.levelId)) {
+			if (processedLevelIds.has(levelInput.levelId)) {
 				skipped += 1;
 				continue;
 			}
 
-			seenLevelIds.add(levelInput.levelId);
-			queuedLevelInputs.push({
+			processedLevelIds.add(levelInput.levelId);
+
+			const enrichedInput = {
 				...levelInput,
 				inputIndex
-			});
+			};
+
+			if (existingLevelIds.has(levelInput.levelId)) {
+				if (hasBatchLevelPatch(levelInput)) {
+					existingPatchInputs.push(enrichedInput);
+				}
+
+				if (list.mode === 'top' && hasBatchLevelTopOverride(levelInput)) {
+					reorderInputs.push(enrichedInput);
+				}
+
+				if (!hasBatchLevelPatch(levelInput) && !(list.mode === 'top' && hasBatchLevelTopOverride(levelInput))) {
+					skipped += 1;
+				}
+
+				continue;
+			}
+
+			addLevelInputs.push(enrichedInput);
 		}
 
+		if (!addLevelInputs.length && !existingPatchInputs.length && !reorderInputs.length) {
+			return {
+				added,
+				updated,
+				skipped,
+				failed,
+				aborted: false
+			};
+		}
+
+		const newPatchCount = addLevelInputs.filter((levelInput) => hasBatchLevelPatch(levelInput)).length;
+		const shouldRunReorder = list.mode === 'top' && levelInputs.some((levelInput) => hasBatchLevelTopOverride(levelInput));
+		const totalSteps = addLevelInputs.length + existingPatchInputs.length + newPatchCount + (shouldRunReorder ? 1 : 0);
+		const rateLimitTimeoutError = $_('custom_lists.detail.add_level.csv_rate_limit_timeout');
+		batchAddProgress = createBatchAddProgress(totalSteps, skipped);
+
 		try {
-				const addedInputs: Array<BatchAddLevelInput & { inputIndex: number }> = [];
+			const postAddPatchInputs: Array<BatchAddLevelInput & { inputIndex: number }> = [];
+			const reorderCandidates = [...reorderInputs];
 
-			for (const levelInput of queuedLevelInputs) {
-				const result = await requestAddLevel(listId, levelInput.levelId);
+			for (const levelInput of addLevelInputs) {
+				throwIfBatchAddAborted(importSignal);
+
+				const result = await withRateLimitRetry(
+					() => requestAddLevel(listId, levelInput.levelId, levelInput.createdAt, importSignal),
+					{
+						phase: 'adding',
+						levelId: levelInput.levelId,
+						timeoutError: rateLimitTimeoutError,
+						signal: importSignal
+					}
+				);
+
 				if (!result.ok) {
 					failed.push({
 						levelId: levelInput.levelId,
 						message: result.error
 					});
+					incrementBatchAddProgress({
+						phase: 'adding',
+						currentLevelId: levelInput.levelId,
+						added,
+						updated,
+						failed: failed.length,
+						skipped
+					});
 					continue;
 				}
 
 				list = result.payload;
-				addedInputs.push(levelInput);
 				added += 1;
+
+				if (hasBatchLevelPatch(levelInput)) {
+					postAddPatchInputs.push(levelInput);
+				}
+
+				if (list.mode === 'top' && hasBatchLevelTopOverride(levelInput)) {
+					reorderCandidates.push(levelInput);
+				}
+
+				incrementBatchAddProgress({
+					phase: 'adding',
+					currentLevelId: levelInput.levelId,
+					added,
+					updated,
+					failed: failed.length,
+					skipped
+				});
 			}
 
-			for (const levelInput of addedInputs) {
-				const patch: { rating?: number; minProgress?: number; videoID?: string | null } = {};
+			for (const levelInput of [...existingPatchInputs, ...postAddPatchInputs]) {
+				throwIfBatchAddAborted(importSignal);
 
-				if (Number.isInteger(levelInput.rating)) {
-					patch.rating = levelInput.rating;
-				}
+				const patch = buildBatchUpdateLevelPatch(levelInput);
 
-				if (Number.isInteger(levelInput.minProgress)) {
-					patch.minProgress = levelInput.minProgress;
-				}
+				const result = await withRateLimitRetry(
+					() => requestUpdateLevel(listId, levelInput.levelId, patch, importSignal),
+					{
+						phase: 'updating',
+						levelId: levelInput.levelId,
+						timeoutError: rateLimitTimeoutError,
+						signal: importSignal
+					}
+				);
 
-				if (typeof levelInput.videoId === 'string' && levelInput.videoId.length) {
-					patch.videoID = levelInput.videoId;
-				}
-
-				if (!Object.keys(patch).length) {
-					continue;
-				}
-
-				const result = await requestUpdateLevel(listId, levelInput.levelId, patch);
 				if (!result.ok) {
 					failed.push({
 						levelId: levelInput.levelId,
 						message: result.error
 					});
+					incrementBatchAddProgress({
+						phase: 'updating',
+						currentLevelId: levelInput.levelId,
+						added,
+						updated,
+						failed: failed.length,
+						skipped
+					});
 					continue;
 				}
 
 				list = result.payload;
+				updated += 1;
+				incrementBatchAddProgress({
+					phase: 'updating',
+					currentLevelId: levelInput.levelId,
+					added,
+					updated,
+					failed: failed.length,
+					skipped
+				});
 			}
 
-			if (list.mode === 'top') {
-				const levelsWithTop = addedInputs.filter((levelInput) => Number.isInteger(levelInput.top));
+			if (shouldRunReorder) {
+				throwIfBatchAddAborted(importSignal);
+
+				const levelsWithTop = reorderCandidates.filter((levelInput) => Number.isInteger(levelInput.top));
 				if (levelsWithTop.length) {
 					const reorderedLevelIds = buildReorderedLevelIds(
 						list.items.map((item) => item.levelId),
 						levelsWithTop
 					);
-					const result = await requestReorderLevels(listId, reorderedLevelIds);
+					const result = await withRateLimitRetry(
+						() => requestReorderLevels(listId, reorderedLevelIds, importSignal),
+						{
+							phase: 'reordering',
+							levelId: null,
+							timeoutError: rateLimitTimeoutError,
+							signal: importSignal
+						}
+					);
 
 					if (!result.ok) {
 						for (const levelInput of levelsWithTop) {
@@ -1017,16 +1389,66 @@
 						list = result.payload;
 					}
 				}
+
+				incrementBatchAddProgress({
+					phase: 'reordering',
+					currentLevelId: null,
+					added,
+					updated,
+					failed: failed.length,
+					skipped
+				});
 			}
+
+			updateBatchAddProgress({
+				completed: totalSteps,
+				added,
+				updated,
+				skipped,
+				failed: failed.length,
+				phase: shouldRunReorder ? 'reordering' : 'updating',
+				currentLevelId: null,
+				retrying: false,
+				retryElapsedMs: 0,
+				aborted: false
+			});
 
 			return {
 				added,
+				updated,
 				skipped,
-				failed
+				failed,
+				aborted: false
 			};
+		} catch (error) {
+			if (isBatchAddAbortError(error)) {
+				updateBatchAddProgress({
+					currentLevelId: null,
+					retrying: false,
+					retryElapsedMs: 0,
+					aborted: true
+				});
+
+				return {
+					added,
+					updated,
+					skipped,
+					failed,
+					aborted: true
+				};
+			}
+
+			throw error;
 		} finally {
+			batchAddAbortController = null;
 			addingLevel = false;
 		}
+	}
+
+	function abortBatchAddImport() {
+		if (!addingLevel || !batchAddAbortController) return;
+
+		batchAddAbortController.abort();
 	}
 
 	async function removeLevel(levelId: number) {
@@ -1048,7 +1470,7 @@
 		}
 	}
 
-	async function updateLevelItem(levelId: number, patch: { rating?: number; minProgress?: number | null; videoID?: string | null }) {
+	async function updateLevelItem(levelId: number, patch: { rating?: number; minProgress?: number | null; videoID?: string | null; createdAt?: string }) {
 		if (!list || !canEditLevels) return;
 		savingLevelItemId = levelId;
 		try {
@@ -1166,6 +1588,7 @@
 	$: heroBannerStyle = _heroPreviewBorder ? `border-bottom-color: ${_heroPreviewBorder};` : undefined;
 
 	onDestroy(() => {
+		batchAddAbortController?.abort();
 		clearCustomListBranding();
 	});
 </script>
@@ -1359,7 +1782,7 @@
 							<Save class="mr-2 h-4 w-4" />
 							{$_('custom_lists.detail.edit.save')}
 						</Button>
-						<Button variant="outline" on:click={refreshLeaderboardPrecalc} disabled={refreshingLeaderboard}>
+						<Button variant="outline" on:click={handleRefreshLeaderboardClick} disabled={refreshingLeaderboard}>
 							<RefreshCw class="mr-2 h-4 w-4" />
 							{refreshingLeaderboard ? `${$_('general.loading')}...` : 'Refresh leaderboard'}
 						</Button>
@@ -1373,6 +1796,8 @@
 					{list}
 					{canEditLevels}
 					{addingLevel}
+					{batchAddProgress}
+					{abortBatchAddImport}
 					{mutatingLevelId}
 					{savingLevelItemId}
 					{savingReorder}
