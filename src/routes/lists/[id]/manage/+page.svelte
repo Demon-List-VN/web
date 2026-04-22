@@ -130,6 +130,17 @@
 		minTop: number | null | undefined;
 	};
 
+	type BatchAddLevelFailure = {
+		levelId: number;
+		message: string;
+	};
+
+	type BatchAddLevelsResult = {
+		added: number;
+		skipped: number;
+		failed: BatchAddLevelFailure[];
+	};
+
 	type ManageTab = 'basic' | 'appearance' | 'formula' | 'rank' | 'danger' | 'levels' | 'collaboration';
 
 	const defaultPermissions: CustomListPermissionFlags = {
@@ -791,27 +802,95 @@
 		}
 	}
 
+	async function requestAddLevel(listId: number, levelId: number) {
+		const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${listId}/levels`, {
+			method: 'POST',
+			headers: {
+				Authorization: `Bearer ${await $user.token()}`,
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({ levelId })
+		});
+		const payload = await res.json().catch(() => null);
+
+		if (!res.ok) {
+			return {
+				ok: false as const,
+				error: payload?.error || $_('custom_lists.toast.failed_add_level')
+			};
+		}
+
+		return {
+			ok: true as const,
+			payload: payload as CustomList
+		};
+	}
+
 	async function addLevel(levelId: number) {
 		if (!list || !canEditLevels) return false;
 
 		addingLevel = true;
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/levels`, {
-				method: 'POST',
-				headers: {
-					Authorization: `Bearer ${await $user.token()}`,
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({ levelId })
-			});
-			const payload = await res.json();
-			if (!res.ok) throw new Error(payload.error || $_('custom_lists.toast.failed_add_level'));
-			list = payload;
+			const result = await requestAddLevel(list.id, levelId);
+			if (!result.ok) throw new Error(result.error);
+			list = result.payload;
 			toast.success($_('custom_lists.toast.level_added'));
 			return true;
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_add_level'));
 			return false;
+		} finally {
+			addingLevel = false;
+		}
+	}
+
+	async function addLevels(levelIds: number[]): Promise<BatchAddLevelsResult> {
+		if (!list || !canEditLevels) {
+			return {
+				added: 0,
+				skipped: levelIds.length,
+				failed: []
+			};
+		}
+
+		addingLevel = true;
+		const listId = list.id;
+		const queuedLevelIds: number[] = [];
+		const seenLevelIds = new Set(list.items.map((item) => item.levelId));
+		let skipped = 0;
+		const failed: BatchAddLevelFailure[] = [];
+		let added = 0;
+
+		for (const levelId of levelIds) {
+			if (seenLevelIds.has(levelId)) {
+				skipped += 1;
+				continue;
+			}
+
+			seenLevelIds.add(levelId);
+			queuedLevelIds.push(levelId);
+		}
+
+		try {
+			for (const levelId of queuedLevelIds) {
+				const result = await requestAddLevel(listId, levelId);
+				if (!result.ok) {
+					failed.push({
+						levelId,
+						message: result.error
+					});
+					continue;
+				}
+
+				list = result.payload;
+				added += 1;
+			}
+
+			return {
+				added,
+				skipped,
+				failed
+			};
 		} finally {
 			addingLevel = false;
 		}
@@ -1165,6 +1244,7 @@
 					{savingLevelItemId}
 					{savingReorder}
 					{addLevel}
+					{addLevels}
 					{removeLevel}
 					{updateLevelItem}
 					{reorderLevels}

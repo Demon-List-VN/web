@@ -1891,7 +1891,15 @@
         "heading": "Thêm level",
         "id_label": "ID Level Geometry Dash",
         "hint": "Chỉ chấp nhận ID level Geometry Dash chính thức.",
-        "button": "Thêm level"
+        "button": "Thêm level",
+        "csv_label": "Thêm nhanh bằng CSV",
+        "csv_placeholder": "Dán mỗi ID level trên một dòng hoặc dán các dòng CSV có cột đầu tiên là ID level",
+        "csv_hint": "Dán ID level theo từng dòng hoặc dán/tải lên tệp CSV mà cột đầu tiên chứa ID level.",
+        "csv_file_button": "Tải tệp CSV",
+        "csv_button": "Thêm level từ CSV",
+        "csv_result": "Đã thêm {added}. Bỏ qua {skipped}. Lỗi {failed}. Dòng không hợp lệ {invalid}.",
+        "csv_failures": "ID bị lỗi",
+        "csv_failure_more": "Và còn {count} lỗi khác."
       },
       "levels": {
         "heading": "Levels",
@@ -2070,6 +2078,7 @@
       "failed_delete": "Không thể xoá danh sách",
       "failed_create": "Không thể tạo danh sách",
       "failed_add_level": "Không thể thêm level",
+      "level_csv_invalid": "Hãy dán ít nhất một ID level hợp lệ hoặc một dòng CSV hợp lệ",
       "failed_remove_level": "Không thể xoá level",
       "failed_load_own": "Không thể tải danh sách của bạn",
       "failed_load_starred": "Không thể tải danh sách đã gắn sao",
@@ -2079,6 +2088,7 @@
       "failed_update_level": "Không thể cập nhật level",
       "reordered": "Đã lưu thứ tự",
       "failed_reorder": "Không thể lưu thứ tự",
+      "failed_read_csv": "Không thể đọc tệp CSV",
       "collaboration_updated": "Đã cập nhật thiết lập cộng tác",
       "failed_collaboration_update": "Không thể cập nhật thiết lập cộng tác",
       "failed_player_search": "Không thể tìm người chơi",

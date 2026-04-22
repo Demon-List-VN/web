@@ -1892,7 +1892,15 @@
         "heading": "Add a level",
         "id_label": "Geometry Dash Level ID",
         "hint": "Only official Geometry Dash level IDs are accepted.",
-        "button": "Add level"
+        "button": "Add level",
+        "csv_label": "Quick add by CSV",
+        "csv_placeholder": "Paste one level ID per line, or paste CSV rows with the level ID in the first column",
+        "csv_hint": "Paste level IDs line by line, or paste/upload a CSV file where the first column contains the level ID.",
+        "csv_file_button": "Load CSV file",
+        "csv_button": "Add CSV levels",
+        "csv_result": "Added {added}. Skipped {skipped}. Failed {failed}. Invalid rows {invalid}.",
+        "csv_failures": "Failed IDs",
+        "csv_failure_more": "And {count} more failures."
       },
       "levels": {
         "heading": "Levels",
@@ -2071,6 +2079,7 @@
       "failed_delete": "Failed to delete list",
       "failed_create": "Failed to create list",
       "failed_add_level": "Failed to add level",
+      "level_csv_invalid": "Paste at least one valid level ID or CSV row",
       "failed_remove_level": "Failed to remove level",
       "failed_load_own": "Failed to load your lists",
       "failed_load_starred": "Failed to load your starred lists",
@@ -2080,6 +2089,7 @@
       "failed_update_level": "Failed to update level",
       "reordered": "Order saved",
       "failed_reorder": "Failed to save order",
+      "failed_read_csv": "Failed to read CSV file",
       "collaboration_updated": "Collaboration settings updated",
       "failed_collaboration_update": "Failed to update collaboration settings",
       "failed_player_search": "Failed to search players",

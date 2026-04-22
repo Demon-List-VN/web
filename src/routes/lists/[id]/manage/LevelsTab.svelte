@@ -3,9 +3,19 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
+	import { Textarea } from '$lib/components/ui/textarea';
 	import { toast } from 'svelte-sonner';
 	import { GripVertical, ListOrdered, Plus, Save, Star, Trash2 } from 'lucide-svelte';
 	import { _ } from 'svelte-i18n';
+
+	type BatchAddLevelsResult = {
+		added: number;
+		skipped: number;
+		failed: Array<{
+			levelId: number;
+			message: string;
+		}>;
+	};
 
 	export let list: any = null;
 	export let canEditLevels = false;
@@ -14,12 +24,18 @@
 	export let savingLevelItemId: number | null = null;
 	export let savingReorder = false;
 	export let addLevel: (levelId: number) => boolean | Promise<boolean> = async () => false;
+	export let addLevels: (levelIds: number[]) => BatchAddLevelsResult | Promise<BatchAddLevelsResult> = async () => ({
+		added: 0,
+		skipped: 0,
+		failed: []
+	});
 	export let removeLevel: (levelId: number) => void | Promise<void> = async () => {};
 	export let updateLevelItem: (levelId: number, patch: { rating?: number; minProgress?: number | null }) => void | Promise<void> = async () => {};
 	export let reorderLevels: (levelIds: number[]) => void | Promise<void> = async () => {};
 
 	let displayedItems: any[] = [];
 	let levelIdInput = '';
+	let csvInput = '';
 	let quickLevelId: number | null = null;
 	let draggedIndex: number | null = null;
 	let dragOverIndex: number | null = null;
@@ -27,6 +43,8 @@
 	let editingRatingValue = '';
 	let editingMinProgressItemId: number | null = null;
 	let editingMinProgressValue: string | number | undefined = '';
+	let csvFileInput: HTMLInputElement | null = null;
+	let csvAddSummary: (BatchAddLevelsResult & { invalidRows: number }) | null = null;
 
 	$: displayedItems = list?.items ? [...list.items] : [];
 	$: quickLevelId = getQuickLevelId();
@@ -161,6 +179,165 @@
 			levelIdInput = '';
 		}
 	}
+
+	function getFirstCsvCell(line: string) {
+		let value = '';
+		let inQuotes = false;
+
+		for (let index = 0; index < line.length; index += 1) {
+			const char = line[index];
+
+			if (char === '"') {
+				if (inQuotes && line[index + 1] === '"') {
+					value += '"';
+					index += 1;
+					continue;
+				}
+
+				inQuotes = !inQuotes;
+				continue;
+			}
+
+			if (!inQuotes && (char === ',' || char === ';' || char === '\t')) {
+				break;
+			}
+
+			value += char;
+		}
+
+		return value.trim();
+	}
+
+	function parseSingleLineIds(input: string) {
+		const tokens = input.split(/[\s,;\t]+/).map((token) => token.trim()).filter(Boolean);
+		const levelIds: number[] = [];
+		let invalidRows = 0;
+
+		for (const token of tokens) {
+			if (!/^\d+$/.test(token)) {
+				invalidRows += 1;
+				continue;
+			}
+
+			const levelId = Number.parseInt(token, 10);
+			if (!Number.isInteger(levelId) || levelId <= 0) {
+				invalidRows += 1;
+				continue;
+			}
+
+			levelIds.push(levelId);
+		}
+
+		return { levelIds, invalidRows };
+	}
+
+	function parseCsvLevelIds(rawInput: string) {
+		const input = rawInput.replace(/^\uFEFF/, '').trim();
+		if (!input) {
+			return {
+				levelIds: [],
+				invalidRows: 0
+			};
+		}
+
+		if (!input.includes('\n') && /^[\d\s,;\t]+$/.test(input)) {
+			return parseSingleLineIds(input);
+		}
+
+		const levelIds: number[] = [];
+		let invalidRows = 0;
+
+		for (const rawLine of input.split(/\r?\n/)) {
+			const line = rawLine.trim();
+			if (!line) continue;
+
+			const firstCell = getFirstCsvCell(line).replace(/^\uFEFF/, '').trim();
+			if (!firstCell) continue;
+
+			const normalizedCell = firstCell.toLowerCase();
+			if (normalizedCell === 'id' || normalizedCell === 'level id' || normalizedCell === 'levelid') {
+				continue;
+			}
+
+			if (!/^\d+$/.test(firstCell)) {
+				invalidRows += 1;
+				continue;
+			}
+
+			const levelId = Number.parseInt(firstCell, 10);
+			if (!Number.isInteger(levelId) || levelId <= 0) {
+				invalidRows += 1;
+				continue;
+			}
+
+			levelIds.push(levelId);
+		}
+
+		return {
+			levelIds,
+			invalidRows
+		};
+	}
+
+	async function handleCsvFileChange(event: Event) {
+		const input = event.currentTarget as HTMLInputElement | null;
+		const file = input?.files?.[0];
+		if (!file) return;
+
+		try {
+			csvInput = await file.text();
+			csvAddSummary = null;
+		} catch {
+			toast.error($_('custom_lists.toast.failed_read_csv'));
+		} finally {
+			if (input) {
+				input.value = '';
+			}
+		}
+	}
+
+	async function submitAddCsvLevels() {
+		const { levelIds, invalidRows } = parseCsvLevelIds(csvInput);
+
+		if (!levelIds.length) {
+			csvAddSummary = {
+				added: 0,
+				skipped: 0,
+				failed: [],
+				invalidRows
+			};
+			toast.error($_('custom_lists.toast.level_csv_invalid'));
+			return;
+		}
+
+		const summary = await addLevels(levelIds);
+		csvAddSummary = {
+			...summary,
+			invalidRows
+		};
+
+		const resultMessage = $_('custom_lists.detail.add_level.csv_result', {
+			values: {
+				added: summary.added,
+				skipped: summary.skipped,
+				failed: summary.failed.length,
+				invalid: invalidRows
+			}
+		});
+
+		if (summary.added > 0 && summary.failed.length === 0 && invalidRows === 0) {
+			toast.success(resultMessage);
+			csvInput = '';
+			return;
+		}
+
+		if (summary.added > 0) {
+			toast.info(resultMessage);
+			return;
+		}
+
+		toast.error(resultMessage);
+	}
 </script>
 
 <div class="tabContent">
@@ -173,11 +350,84 @@
 			</div>
 			<p class="hint">{$_('custom_lists.detail.add_level.hint')}</p>
 			<div class="formActions">
-				<Button on:click={submitAddLevel} disabled={addingLevel}>
+				<Button type="button" on:click={submitAddLevel} disabled={addingLevel}>
 					<Plus class="mr-2 h-4 w-4" />
 					{$_('custom_lists.detail.add_level.button')}
 				</Button>
 			</div>
+
+			<div class="toolDivider"></div>
+
+			<div class="field">
+				<label for="level-csv">{$_('custom_lists.detail.add_level.csv_label')}</label>
+				<div class="csvInputWrap">
+					<Textarea
+						id="level-csv"
+						rows={6}
+						bind:value={csvInput}
+						placeholder={$_('custom_lists.detail.add_level.csv_placeholder')}
+						on:input={() => {
+							csvAddSummary = null;
+						}}
+					/>
+				</div>
+			</div>
+			<p class="hint">{$_('custom_lists.detail.add_level.csv_hint')}</p>
+			<div class="formActions">
+				<input
+					bind:this={csvFileInput}
+					class="csvFileInput"
+					id="level-csv-file"
+					type="file"
+					accept=".csv,text/csv"
+					on:change={handleCsvFileChange}
+				/>
+				<Button
+					type="button"
+					variant="outline"
+					on:click={() => csvFileInput?.click()}
+					disabled={addingLevel}
+				>
+					{$_('custom_lists.detail.add_level.csv_file_button')}
+				</Button>
+				<Button type="button" on:click={submitAddCsvLevels} disabled={addingLevel}>
+					<Plus class="mr-2 h-4 w-4" />
+					{$_('custom_lists.detail.add_level.csv_button')}
+				</Button>
+			</div>
+
+			{#if csvAddSummary}
+				<div
+					class="csvSummary"
+					class:hasIssues={csvAddSummary.failed.length > 0 || csvAddSummary.invalidRows > 0}
+				>
+					<p>
+						{$_('custom_lists.detail.add_level.csv_result', {
+							values: {
+								added: csvAddSummary.added,
+								skipped: csvAddSummary.skipped,
+								failed: csvAddSummary.failed.length,
+								invalid: csvAddSummary.invalidRows
+							}
+						})}
+					</p>
+					{#if csvAddSummary.failed.length > 0}
+						<p class="csvSummaryHeading">{$_('custom_lists.detail.add_level.csv_failures')}</p>
+						<ul class="csvFailureList">
+							{#each csvAddSummary.failed.slice(0, 5) as failure}
+								<li>#{failure.levelId}: {failure.message}</li>
+							{/each}
+							{#if csvAddSummary.failed.length > 5}
+								<li>
+									{$_('custom_lists.detail.add_level.csv_failure_more', {
+										values: { count: csvAddSummary.failed.length - 5 }
+									})}
+								</li>
+							{/if}
+						</ul>
+					{/if}
+				</div>
+			{/if}
 		</div>
 	{/if}
 
@@ -385,6 +635,11 @@
 		font-weight: 600;
 	}
 
+	.toolDivider {
+		height: 1px;
+		background: hsl(var(--border));
+	}
+
 	.field {
 		display: flex;
 		flex-direction: column;
@@ -406,6 +661,51 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 10px;
+		margin-top: 4px;
+	}
+
+	.csvInputWrap :global(textarea) {
+		min-height: 140px;
+		resize: vertical;
+		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+	}
+
+	.csvFileInput {
+		display: none;
+	}
+
+	.csvSummary {
+		border: 1px solid hsl(var(--border));
+		border-radius: 10px;
+		background: hsl(var(--muted) / 0.12);
+		padding: 14px 16px;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+
+	.csvSummary.hasIssues {
+		border-color: hsl(var(--primary));
+		background: hsl(var(--primary) / 0.08);
+	}
+
+	.csvSummary p {
+		margin: 0;
+		font-size: 0.9rem;
+	}
+
+	.csvSummaryHeading {
+		font-weight: 600;
+	}
+
+	.csvFailureList {
+		margin: 0;
+		padding-left: 18px;
+		font-size: 0.85rem;
+		color: hsl(var(--muted-foreground));
+	}
+
+	.csvFailureList li + li {
 		margin-top: 4px;
 	}
 
