@@ -1996,7 +1996,8 @@
         "rank": "Rank",
         "danger": "Dangerous",
         "levels": "Levels",
-        "collaboration": "Collaboration"
+        "collaboration": "Collaboration",
+        "submissions": "Submissions"
       },
       "roles": {
         "owner": "Owner",

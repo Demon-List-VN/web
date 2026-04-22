@@ -1995,7 +1995,8 @@
         "rank": "Hạng",
         "danger": "Nguy hiểm",
         "levels": "Levels",
-        "collaboration": "Cộng tác"
+        "collaboration": "Cộng tác",
+        "submissions": "Nộp level"
       },
       "roles": {
         "owner": "Chủ sở hữu",
