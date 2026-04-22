@@ -13,6 +13,10 @@
 	import Ads from '$lib/components/ads.svelte';
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import {
+		clearCustomListBranding,
+		setCustomListBranding
+	} from '$lib/client/customListBranding';
+	import {
 		normalizeCustomListRankBadges,
 		resolveCustomListRankBadge,
 		type CustomListRankBadge
@@ -805,8 +809,10 @@
 			destroyLevelsObserver();
 		}
 	}
+	$: setCustomListBranding(list ? { logoUrl: list.logoUrl, title: list.title } : null);
 
 	onDestroy(() => {
+		clearCustomListBranding();
 		destroyLevelsObserver();
 	});
 </script>
@@ -1545,10 +1551,6 @@
 		color: var(--custom-surface-muted, hsl(var(--muted-foreground)));
 	}
 
-	.adSection {
-		width: 100%;
-	}
-
 	/* Levels */
 	.levelsSection {
 		display: flex;
@@ -1598,10 +1600,6 @@
 		align-items: start;
 		gap: 10px;
 		grid-template-columns: repeat(2, 1fr);
-	}
-
-	.levelsAd {
-		grid-column: 1 / -1;
 	}
 
 	.relatedGrid {

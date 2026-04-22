@@ -27,9 +27,10 @@
 	import NotificationButton from '$lib/components/notificationButton.svelte';
 	import { onMount } from 'svelte';
 	import { isActive } from '$lib/client/isSupporterActive';
-	import * as Alert from '$lib/components/ui/alert/index.js';
+	import { customListBranding } from '$lib/client/customListBranding';
 	import { page } from '$app/stores';
 	import { _, locale } from 'svelte-i18n';
+	import { derived, writable } from 'svelte/store';
 	import UserPopover from '$lib/components/userPopover.svelte';
 	import {
 		sidebarOpen,
@@ -48,9 +49,6 @@
 		BookOpen,
 		ShoppingBag,
 		MoreHorizontal,
-		List,
-		Gamepad2,
-		Award,
 		Shuffle,
 		GitCompare,
 		CreditCard,
@@ -127,36 +125,53 @@
 
 	let searchQuery = '';
 	let searchToggled = false;
-	let isVisible = false;
 	let hideNav = false;
 	let removePad = false;
 	let pathname = '';
-	let supporterAlertDismissed = false;
 	let currentCustomLogoUrl = '';
-	let customLogoFailed = false;
 	const defaultNavLogoSrc = '/logo.png';
 	const defaultFaviconHref = '/favicon.png';
+	const customLogoFailed = writable(false);
 
 	function normalizeThemeAssetUrl(value: unknown) {
 		return typeof value === 'string' ? value.trim() : '';
 	}
 
-	$: customListLogoUrl = normalizeThemeAssetUrl($page.data?.list?.logoUrl);
-	$: customListTitle = normalizeThemeAssetUrl($page.data?.list?.title);
-	$: if (customListLogoUrl !== currentCustomLogoUrl) {
-		currentCustomLogoUrl = customListLogoUrl;
-		customLogoFailed = false;
+	const activeCustomListBranding = derived([page, customListBranding], ([$page, $branding]) => ({
+		logoUrl: normalizeThemeAssetUrl($branding?.logoUrl ?? $page.data?.list?.logoUrl),
+		title: normalizeThemeAssetUrl($branding?.title ?? $page.data?.list?.title)
+	}));
+	const customListLogoUrl = derived(activeCustomListBranding, ($branding) =>
+		normalizeThemeAssetUrl($branding.logoUrl)
+	);
+	const customListTitle = derived(activeCustomListBranding, ($branding) =>
+		normalizeThemeAssetUrl($branding.title)
+	);
+	const useCustomListLogo = derived(
+		[customListLogoUrl, customLogoFailed],
+		([$customListLogoUrl, $customLogoFailed]) => Boolean($customListLogoUrl && !$customLogoFailed)
+	);
+	const navLogoSrc = derived(
+		[customListLogoUrl, useCustomListLogo],
+		([$customListLogoUrl, $useCustomListLogo]) =>
+			$useCustomListLogo ? $customListLogoUrl : defaultNavLogoSrc
+	);
+	const faviconHref = derived(
+		[customListLogoUrl, useCustomListLogo],
+		([$customListLogoUrl, $useCustomListLogo]) =>
+			$useCustomListLogo ? $customListLogoUrl : defaultFaviconHref
+	);
+	const navLogoAlt = derived(
+		[customListTitle, useCustomListLogo],
+		([$customListTitle, $useCustomListLogo]) =>
+			$useCustomListLogo && $customListTitle ? `${$customListTitle} logo` : 'logo'
+	);
+
+	$: if ($customListLogoUrl !== currentCustomLogoUrl) {
+		currentCustomLogoUrl = $customListLogoUrl;
+		customLogoFailed.set(false);
 	}
-	$: useCustomListLogo = Boolean(customListLogoUrl && !customLogoFailed);
-	$: navLogoSrc = useCustomListLogo ? customListLogoUrl : defaultNavLogoSrc;
-	$: faviconHref = useCustomListLogo ? customListLogoUrl : defaultFaviconHref;
-	$: navLogoAlt = useCustomListLogo && customListTitle
-		? `${customListTitle} logo`
-		: 'logo';
-	
-	onMount(() => {
-		supporterAlertDismissed = localStorage.getItem('supporterAlertDismissed') === 'true';
-	});
+
 	$: pathname = $page.url.pathname;
 
 	const isDesktop = mediaQuery('(min-width: 1025px)');
@@ -243,8 +258,6 @@
 			setTheme(currentTheme);
 		}
 
-		isVisible = true;
-
 		const urlParams = new URLSearchParams(window.location.search);
 		hideNav = urlParams.has('hideNav');
 		removePad = urlParams.has('removePad');
@@ -255,15 +268,10 @@
 			unsubscribeLocale();
 		};
 	});
-
-	function dismissSupporterAlert() {
-		supporterAlertDismissed = true;
-		localStorage.setItem('supporterAlertDismissed', 'true');
-	}
 </script>
 
 <svelte:head>
-	<link rel="icon" href={faviconHref} />
+	<link rel="icon" href={$faviconHref} />
 </svelte:head>
 
 <ModeWatcher defaultMode="system" />
@@ -298,12 +306,14 @@
 				{/if}
 			</button>
 			<a href="/" class="logo-link" data-sveltekit-preload-data="tap">
-				<img
-					src={navLogoSrc}
-					alt={navLogoAlt}
-					class:customListLogo={useCustomListLogo}
-					on:error={() => (customLogoFailed = true)}
-				/>
+				{#key $navLogoSrc}
+					<img
+						src={$navLogoSrc}
+						alt={$navLogoAlt}
+						class:customListLogo={$useCustomListLogo}
+						on:error={() => customLogoFailed.set(true)}
+					/>
+				{/key}
 			</a>
 		</div>
 		<div class="topbar-right">
