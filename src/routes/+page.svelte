@@ -13,6 +13,7 @@
 	import FeatureDiscovery from '$lib/components/homepage/FeatureDiscovery.svelte';
 	import OnboardingProgress from '$lib/components/homepage/OnboardingProgress.svelte';
 	import OnboardingModal from '$lib/components/OnboardingModal.svelte';
+	import CustomListPromo from '$lib/components/homepage/CustomListPromo.svelte';
 	import RecordCardPromo from '$lib/components/homepage/RecordCardPromo.svelte';
 
 	export let data: any;
@@ -83,9 +84,10 @@
 </div>
 
 <div class="wrapper">
-	<!-- Record Card Promo — full-width top -->
+	<!-- Top promos -->
 	<div class="promoRow">
 		<RecordCardPromo />
+		<CustomListPromo />
 	</div>
 
 	<!-- Onboarding progress banner (new users only) -->
@@ -159,18 +161,39 @@
 	}
 
 	.promoRow {
-		padding: 20px 50px 0;
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 24px;
+		padding: 28px 50px 0;
+
+		> :global(*) {
+			min-width: 0;
+		}
+
+		@media screen and (max-width: 1180px) {
+			:global(.record-card-promo),
+			:global(.custom-list-promo) {
+				flex-direction: column;
+				align-items: stretch;
+			}
+
+			:global(.record-card-promo .demo-card-wrap),
+			:global(.custom-list-promo .preview-wrap) {
+				width: 100%;
+			}
+		}
 
 		@media screen and (max-width: 900px) {
-			padding: 20px 16px 0;
+			grid-template-columns: minmax(0, 1fr);
+			padding: 24px 16px 0;
 		}
 	}
 
 	.onboardingWrap {
-		padding: 20px 50px 0;
+		padding: 28px 50px 0;
 
 		@media screen and (max-width: 900px) {
-			padding: 20px 16px 0;
+			padding: 24px 16px 0;
 		}
 	}
 
@@ -181,14 +204,14 @@
 	}
 
 	.section {
-		padding-top: 30px;
+		padding-top: 38px;
 	}
 
 	/* Full-width top row: BP + Supporter side by side */
 	.topRow {
 		display: flex;
 		gap: 24px;
-		padding: 20px 50px 0;
+		padding: 28px 50px 0;
 	}
 
 	.topRow :global(.bpWidget),
@@ -227,7 +250,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 24px;
-		padding-top: 30px;
+		padding-top: 38px;
 	}
 
 	.sideCol :global(.clanSpotlight) {
@@ -239,7 +262,7 @@
 	}
 
 	.fullWidthSection {
-		padding-bottom: 30px;
+		padding-bottom: 38px;
 	}
 
 	.sectionHeader {
@@ -336,7 +359,7 @@
 	@media screen and (max-width: 1100px) {
 		.topRow {
 			flex-direction: column;
-			padding: 20px 50px 0;
+			padding: 28px 50px 0;
 		}
 
 		.twoColGrid {
@@ -375,7 +398,7 @@
 
 	@media screen and (max-width: 900px) {
 		.topRow {
-			padding: 20px 16px 0;
+			padding: 24px 16px 0;
 		}
 
 		.topRow :global(.topSupportersSection) {
