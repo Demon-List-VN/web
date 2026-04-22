@@ -10,6 +10,11 @@
 	import LevelsTab from './LevelsTab.svelte';
 	import RankTab from './RankTab.svelte';
 	import imageCompression from 'browser-image-compression';
+	import { onDestroy } from 'svelte';
+	import {
+		clearCustomListBranding,
+		setCustomListBranding
+	} from '$lib/client/customListBranding';
 	import {
 		normalizeCustomListRankBadges,
 		type CustomListRankBadge
@@ -96,6 +101,7 @@
 		bannerUrl?: string | null;
 		borderColor?: string | null;
 		communityEnabled: boolean;
+		faviconUrl?: string | null;
 		isBanned: boolean;
 		isPlatformer: boolean;
 		isOfficial?: boolean;
@@ -153,7 +159,7 @@
 	let savingBanState = false;
 	let savingCollaboration = false;
 	let initialSyncDone = false;
-	let uploadingAsset: 'banner' | 'logo' | null = null;
+	let uploadingAsset: 'banner' | 'favicon' | 'logo' | null = null;
 
 	const CUSTOM_LIST_CDN_BASE_URL = 'https://cdn.gdvn.net';
 
@@ -164,6 +170,7 @@
 		bannerUrl: '',
 		borderColor: '',
 		communityEnabled: true,
+		faviconUrl: '',
 		isPlatformer: false,
 		logoUrl: '',
 		topEnabled: true,
@@ -206,6 +213,7 @@
 		editForm.bannerUrl = list.bannerUrl || '';
 		editForm.borderColor = list.borderColor || '';
 		editForm.communityEnabled = list.communityEnabled;
+		editForm.faviconUrl = list.faviconUrl || '';
 		editForm.isPlatformer = list.isPlatformer;
 		editForm.logoUrl = list.logoUrl || '';
 		editForm.topEnabled = list.topEnabled ?? true;
@@ -548,11 +556,13 @@
 
 	function getImageExtension(file: File) {
 		const normalizedType = file.type.toLowerCase();
+		if (normalizedType === 'image/x-icon' || normalizedType === 'image/vnd.microsoft.icon') return 'ico';
 		if (normalizedType === 'image/png') return 'png';
 		if (normalizedType === 'image/webp') return 'webp';
 		if (normalizedType === 'image/gif') return 'gif';
 
 		const normalizedName = file.name.toLowerCase();
+		if (normalizedName.endsWith('.ico')) return 'ico';
 		if (normalizedName.endsWith('.png')) return 'png';
 		if (normalizedName.endsWith('.webp')) return 'webp';
 		if (normalizedName.endsWith('.gif')) return 'gif';
@@ -566,12 +576,13 @@
 		}
 
 		if (extension === 'png') return 'image/png';
+		if (extension === 'ico') return 'image/x-icon';
 		if (extension === 'webp') return 'image/webp';
 		if (extension === 'gif') return 'image/gif';
 		return 'image/jpeg';
 	}
 
-	function getCustomListAssetPath(asset: 'banner' | 'logo', extension: string) {
+	function getCustomListAssetPath(asset: 'banner' | 'favicon' | 'logo', extension: string) {
 		return `custom-lists/${$user.data?.uid}/${list?.id}/${asset}.${extension}`;
 	}
 
@@ -579,21 +590,21 @@
 		return `${CUSTOM_LIST_CDN_BASE_URL}/${path}?v=${Date.now()}`;
 	}
 
-	async function normalizeCustomListAsset(file: File, asset: 'banner' | 'logo') {
+	async function normalizeCustomListAsset(file: File, asset: 'banner' | 'favicon' | 'logo') {
 		const extension = getImageExtension(file);
 
-		if (extension === 'gif') {
+		if (extension === 'gif' || extension === 'ico') {
 			return file;
 		}
 
 		return imageCompression(file, {
-			maxSizeMB: asset === 'banner' ? 4.5 : 0.35,
-			maxWidthOrHeight: asset === 'banner' ? 1920 : 512,
+			maxSizeMB: asset === 'banner' ? 4.5 : asset === 'favicon' ? 0.2 : 0.35,
+			maxWidthOrHeight: asset === 'banner' ? 1920 : asset === 'favicon' ? 128 : 512,
 			useWebWorker: true
 			});
 	}
 
-	async function uploadCustomListAsset(asset: 'banner' | 'logo', selectedFile: File) {
+	async function uploadCustomListAsset(asset: 'banner' | 'favicon' | 'logo', selectedFile: File) {
 		if (!list || !canEditSettings) return;
 
 		if (!selectedFile) {
@@ -686,6 +697,7 @@
 					bannerUrl: editForm.bannerUrl,
 					borderColor: editForm.borderColor,
 					communityEnabled: editForm.communityEnabled,
+					faviconUrl: editForm.faviconUrl,
 					isPlatformer: editForm.isPlatformer,
 					logoUrl: editForm.logoUrl,
 					topEnabled: editForm.topEnabled,
@@ -933,8 +945,17 @@
 	$: _heroPreviewBorder = initialSyncDone
 		? (isHexColor(editForm.borderColor) ? editForm.borderColor.trim() : null)
 		: (isHexColor(list?.borderColor) ? list!.borderColor!.trim() : null);
+	$: setCustomListBranding(
+		list
+			? { faviconUrl: list.faviconUrl, logoUrl: list.logoUrl, title: list.title }
+			: null
+	);
 	$: heroStyle = getThemedSurfaceStyle(_heroPreviewBg, _heroPreviewBorder);
 	$: heroBannerStyle = _heroPreviewBorder ? `border-bottom-color: ${_heroPreviewBorder};` : undefined;
+
+	onDestroy(() => {
+		clearCustomListBranding();
+	});
 </script>
 
 <svelte:head>
@@ -1070,7 +1091,7 @@
 					<AppearanceTab
 						bind:editForm
 						{list}
-						{uploadingAsset}
+						uploadingThemeAsset={uploadingAsset}
 						uploadAsset={uploadCustomListAsset}
 					/>
 				</Tabs.Content>

@@ -74,6 +74,7 @@
 		bannerUrl?: string | null;
 		borderColor?: string | null;
 		communityEnabled: boolean;
+		faviconUrl?: string | null;
 		isBanned: boolean;
 		isPlatformer: boolean;
 		isOfficial?: boolean;
@@ -809,7 +810,11 @@
 			destroyLevelsObserver();
 		}
 	}
-	$: setCustomListBranding(list ? { logoUrl: list.logoUrl, title: list.title } : null);
+	$: setCustomListBranding(
+		list
+			? { faviconUrl: list.faviconUrl, logoUrl: list.logoUrl, title: list.title }
+			: null
+	);
 
 	onDestroy(() => {
 		clearCustomListBranding();

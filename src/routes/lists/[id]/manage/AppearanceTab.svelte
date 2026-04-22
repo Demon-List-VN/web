@@ -9,16 +9,19 @@
 
 	export let editForm: any;
 	export let list: any = null;
-	export let uploadingAsset: 'banner' | 'logo' | null = null;
-	export let uploadAsset: (asset: 'banner' | 'logo', file: File) => Promise<string | null | undefined> = async () => null;
+	export let uploadingThemeAsset: 'banner' | 'favicon' | 'logo' | null = null;
+	export let uploadAsset: (asset: 'banner' | 'favicon' | 'logo', file: File) => Promise<string | null | undefined> = async () => null;
 
 	let bannerAssetMode: AssetInputMode = 'upload';
+	let faviconAssetMode: AssetInputMode = 'upload';
 	let logoAssetMode: AssetInputMode = 'upload';
 	let bannerFileInput: HTMLInputElement | null = null;
+	let faviconFileInput: HTMLInputElement | null = null;
 	let logoFileInput: HTMLInputElement | null = null;
 
 	$: if (list) {
 		bannerAssetMode = inferAssetInputMode(list.bannerUrl);
+		faviconAssetMode = inferAssetInputMode(list.faviconUrl);
 		logoAssetMode = inferAssetInputMode(list.logoUrl);
 	}
 
@@ -75,7 +78,7 @@
 		};
 	}
 
-	function updateEditFormField(field: 'backgroundColor' | 'borderColor' | 'bannerUrl' | 'logoUrl', value: string) {
+	function updateEditFormField(field: 'backgroundColor' | 'borderColor' | 'bannerUrl' | 'faviconUrl' | 'logoUrl', value: string) {
 		editForm = {
 			...editForm,
 			[field]: value
@@ -87,7 +90,7 @@
 		return target instanceof HTMLInputElement ? target.value : '';
 	}
 
-	function setAssetMode(asset: 'banner' | 'logo', selected: { value?: string } | undefined) {
+	function setAssetMode(asset: 'banner' | 'favicon' | 'logo', selected: { value?: string } | undefined) {
 		const value = selected?.value;
 
 		if (value !== 'upload' && value !== 'link') {
@@ -99,7 +102,17 @@
 			return;
 		}
 
+		if (asset === 'favicon') {
+			faviconAssetMode = value;
+			return;
+		}
+
 		logoAssetMode = value;
+	}
+
+	function getFaviconPreviewUrl() {
+		const value = editForm.faviconUrl?.trim();
+		return /^https?:\/\//i.test(value) ? value : null;
 	}
 
 	function getLogoPreviewUrl() {
@@ -111,11 +124,15 @@
 		bannerFileInput?.click();
 	}
 
+	function openFaviconFilePicker() {
+		faviconFileInput?.click();
+	}
+
 	function openLogoFilePicker() {
 		logoFileInput?.click();
 	}
 
-	async function handleAssetSelection(asset: 'banner' | 'logo', event: Event) {
+	async function handleAssetSelection(asset: 'banner' | 'favicon' | 'logo', event: Event) {
 		const input = event.currentTarget;
 
 		if (!(input instanceof HTMLInputElement)) {
@@ -131,9 +148,14 @@
 		const uploadedUrl = await uploadAsset(asset, selectedFile);
 
 		if (uploadedUrl) {
-			updateEditFormField(asset === 'banner' ? 'bannerUrl' : 'logoUrl', uploadedUrl);
+			updateEditFormField(
+				asset === 'banner' ? 'bannerUrl' : asset === 'favicon' ? 'faviconUrl' : 'logoUrl',
+				uploadedUrl
+			);
 			if (asset === 'banner') {
 				bannerAssetMode = 'upload';
+			} else if (asset === 'favicon') {
+				faviconAssetMode = 'upload';
 			} else {
 				logoAssetMode = 'upload';
 			}
@@ -149,6 +171,14 @@
 	accept="image/png,image/jpeg,image/webp,image/gif"
 	on:change={(event) => handleAssetSelection('banner', event)}
 	bind:this={bannerFileInput}
+/>
+
+<input
+	hidden
+	type="file"
+	accept="image/png,image/jpeg,image/webp,image/gif,image/x-icon,.ico"
+	on:change={(event) => handleAssetSelection('favicon', event)}
+	bind:this={faviconFileInput}
 />
 
 <input
@@ -218,8 +248,8 @@
 					</div>
 					{#if bannerAssetMode === 'upload'}
 						<div class="assetAction">
-							<Button variant="outline" size="sm" on:click={openBannerFilePicker} disabled={uploadingAsset === 'banner'}>
-								{uploadingAsset === 'banner'
+							<Button variant="outline" size="sm" on:click={openBannerFilePicker} disabled={uploadingThemeAsset === 'banner'}>
+								{uploadingThemeAsset === 'banner'
 									? `${$_('general.loading')}...`
 									: $_('custom_lists.detail.edit.banner_upload_button')}
 							</Button>
@@ -236,6 +266,49 @@
 					{/if}
 				</div>
 				<p class="hint">{bannerAssetMode === 'upload' ? $_('custom_lists.detail.edit.asset_upload_hint') : $_('custom_lists.detail.edit.banner_url_hint')}</p>
+			</div>
+			<div class="field">
+				<label for="list-favicon-asset-mode">{$_('custom_lists.detail.edit.favicon_url_label')}</label>
+				<div class="assetControlRow">
+					<div class="assetModeTrigger">
+						<Select.Root
+							selected={getAssetModeOption(faviconAssetMode)}
+							onSelectedChange={(selected) => setAssetMode('favicon', selected)}
+						>
+							<Select.Trigger aria-label={$_('custom_lists.detail.edit.favicon_url_label')}>
+								<Select.Value placeholder={getAssetModeLabel(faviconAssetMode)} />
+							</Select.Trigger>
+							<Select.Content>
+								<Select.Item value="upload">{$_('custom_lists.detail.edit.asset_mode_upload')}</Select.Item>
+								<Select.Item value="link">{$_('custom_lists.detail.edit.asset_mode_link')}</Select.Item>
+							</Select.Content>
+						</Select.Root>
+					</div>
+					{#if faviconAssetMode === 'upload'}
+						<div class="assetAction">
+							<Button variant="outline" size="sm" on:click={openFaviconFilePicker} disabled={uploadingThemeAsset === 'favicon'}>
+								{uploadingThemeAsset === 'favicon'
+									? `${$_('general.loading')}...`
+									: $_('custom_lists.detail.edit.favicon_upload_button')}
+							</Button>
+						</div>
+					{:else}
+						<div class="assetFieldInput">
+							<Input
+								id="list-favicon-url"
+								value={editForm.faviconUrl}
+								placeholder={$_('custom_lists.detail.edit.favicon_url_placeholder')}
+								on:input={(event) => updateEditFormField('faviconUrl', getInputValue(event))}
+							/>
+						</div>
+					{/if}
+				</div>
+				<p class="hint">{faviconAssetMode === 'upload' ? $_('custom_lists.detail.edit.asset_upload_hint') : $_('custom_lists.detail.edit.favicon_url_hint')}</p>
+				{#if getFaviconPreviewUrl()}
+					<div class="assetPreview assetPreviewFavicon">
+						<img src={getFaviconPreviewUrl()} alt="" loading="lazy" decoding="async" />
+					</div>
+				{/if}
 			</div>
 			<div class="field">
 				<label for="list-logo-asset-mode">{$_('custom_lists.detail.edit.logo_url_label')}</label>
@@ -256,8 +329,8 @@
 					</div>
 					{#if logoAssetMode === 'upload'}
 						<div class="assetAction">
-							<Button variant="outline" size="sm" on:click={openLogoFilePicker} disabled={uploadingAsset === 'logo'}>
-								{uploadingAsset === 'logo'
+							<Button variant="outline" size="sm" on:click={openLogoFilePicker} disabled={uploadingThemeAsset === 'logo'}>
+								{uploadingThemeAsset === 'logo'
 									? `${$_('general.loading')}...`
 									: $_('custom_lists.detail.edit.logo_upload_button')}
 							</Button>
@@ -398,6 +471,12 @@
 	.assetPreviewLogo img {
 		width: 56px;
 		height: 56px;
+		object-fit: contain;
+	}
+
+	.assetPreviewFavicon img {
+		width: 32px;
+		height: 32px;
 		object-fit: contain;
 	}
 

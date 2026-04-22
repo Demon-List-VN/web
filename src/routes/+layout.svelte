@@ -138,9 +138,13 @@
 	}
 
 	const activeCustomListBranding = derived([page, customListBranding], ([$page, $branding]) => ({
+		faviconUrl: normalizeThemeAssetUrl($branding?.faviconUrl ?? $page.data?.list?.faviconUrl),
 		logoUrl: normalizeThemeAssetUrl($branding?.logoUrl ?? $page.data?.list?.logoUrl),
 		title: normalizeThemeAssetUrl($branding?.title ?? $page.data?.list?.title)
 	}));
+	const customListFaviconUrl = derived(activeCustomListBranding, ($branding) =>
+		normalizeThemeAssetUrl($branding.faviconUrl)
+	);
 	const customListLogoUrl = derived(activeCustomListBranding, ($branding) =>
 		normalizeThemeAssetUrl($branding.logoUrl)
 	);
@@ -157,9 +161,9 @@
 			$useCustomListLogo ? $customListLogoUrl : defaultNavLogoSrc
 	);
 	const faviconHref = derived(
-		[customListLogoUrl, useCustomListLogo],
-		([$customListLogoUrl, $useCustomListLogo]) =>
-			$useCustomListLogo ? $customListLogoUrl : defaultFaviconHref
+		[customListFaviconUrl, customListLogoUrl, useCustomListLogo],
+		([$customListFaviconUrl, $customListLogoUrl, $useCustomListLogo]) =>
+			$customListFaviconUrl || ($useCustomListLogo ? $customListLogoUrl : defaultFaviconHref)
 	);
 	const navLogoAlt = derived(
 		[customListTitle, useCustomListLogo],
