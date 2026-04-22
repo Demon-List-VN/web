@@ -322,19 +322,10 @@
 	let activeTab: ManageTab = getInitialManageTab();
 	let initialManageTabSettled = false;
 
-	function getRequestedItemSort() {
-		return $page.url.searchParams.get('itemSort') === 'created_at' ? 'created_at' : DEFAULT_ITEM_SORT;
+	function buildListRequestUrl() {
+		return `${import.meta.env.VITE_API_URL}/lists/${$page.params.id}`;
 	}
 
-	function buildListRequestUrl(itemSort: 'mode_default' | 'created_at' = getRequestedItemSort()) {
-		const query = new URLSearchParams();
-
-		if (itemSort === 'created_at') {
-			query.set('itemSort', itemSort);
-		}
-
-		return `${import.meta.env.VITE_API_URL}/lists/${$page.params.id}${query.size ? `?${query.toString()}` : ''}`;
-	}
 
 	function getInitialManageTab(): ManageTab {
 		const requestedTab = $page.url.searchParams.get('tab');
@@ -405,6 +396,7 @@
 			isPlatformer: currentList.isPlatformer,
 			logoUrl: currentList.logoUrl || '',
 			topEnabled: currentList.topEnabled ?? true,
+			itemSort: currentList.itemSort || DEFAULT_ITEM_SORT,
 			visibility: currentList.visibility,
 			tags: currentList.tags,
 			mode: currentList.mode,
@@ -413,23 +405,24 @@
 		};
 	}
 
-	function getEditableSettingsSnapshot() {
+	function getEditableSettingsSnapshot(currentForm: typeof editForm) {
 		return {
-			title: editForm.title,
-			description: editForm.description,
-			backgroundColor: editForm.backgroundColor,
-			bannerUrl: editForm.bannerUrl,
-			borderColor: editForm.borderColor,
-			communityEnabled: editForm.communityEnabled,
-			faviconUrl: editForm.faviconUrl,
-			isPlatformer: editForm.isPlatformer,
-			logoUrl: editForm.logoUrl,
-			topEnabled: editForm.topEnabled,
-			visibility: editForm.visibility,
-			tags: parseTags(editForm.tags),
-			mode: editForm.mode,
-			rankBadges: getRankBadgeSnapshot(editForm.rankBadges),
-			weightFormula: editForm.weightFormula
+			title: currentForm.title,
+			description: currentForm.description,
+			backgroundColor: currentForm.backgroundColor,
+			bannerUrl: currentForm.bannerUrl,
+			borderColor: currentForm.borderColor,
+			communityEnabled: currentForm.communityEnabled,
+			faviconUrl: currentForm.faviconUrl,
+			isPlatformer: currentForm.isPlatformer,
+			logoUrl: currentForm.logoUrl,
+			topEnabled: currentForm.topEnabled,
+			itemSort: currentForm.itemSort || DEFAULT_ITEM_SORT,
+			visibility: currentForm.visibility,
+			tags: parseTags(currentForm.tags),
+			mode: currentForm.mode,
+			rankBadges: getRankBadgeSnapshot(currentForm.rankBadges),
+			weightFormula: currentForm.weightFormula
 		};
 	}
 
@@ -648,7 +641,7 @@
 	$: hasUnsavedSettings = Boolean(
 		list
 		&& canEditSettings
-		&& getSettingsSnapshotKey(getEditableSettingsSnapshot()) !== getSettingsSnapshotKey(getSavedSettingsSnapshot(list))
+		&& getSettingsSnapshotKey(getEditableSettingsSnapshot(editForm)) !== getSettingsSnapshotKey(getSavedSettingsSnapshot(list))
 	);
 	$: hasUnsavedLevelEdits = Boolean(
 		canEditLevels
@@ -710,8 +703,8 @@
 	});
 
 	let authFetchKey = '';
-	async function refetchWithAuth(force: boolean = false, itemSort: 'mode_default' | 'created_at' = getRequestedItemSort()) {
-		const key = `${$page.params.id}:${$user.data?.uid}:${itemSort}`;
+	async function refetchWithAuth(force: boolean = false) {
+		const key = `${$page.params.id}:${$user.data?.uid}`;
 		if (!force && key === authFetchKey) return;
 		authFetchKey = key;
 		const recoveringPrivateList = requiresAuthRecovery;
@@ -721,7 +714,7 @@
 		}
 
 		try {
-			const res = await fetch(buildListRequestUrl(itemSort), {
+			const res = await fetch(buildListRequestUrl(), {
 				headers: { Authorization: `Bearer ${await $user.token()}` }
 			});
 			const payload = await res.json().catch(() => null);
@@ -747,29 +740,9 @@
 		}
 	}
 
-	async function updateItemSort(nextItemSort: 'mode_default' | 'created_at') {
+	function updateItemSort(nextItemSort: 'mode_default' | 'created_at') {
 		if (!list) return;
-		if (editForm.itemSort === nextItemSort && (list.itemSort || DEFAULT_ITEM_SORT) === nextItemSort) {
-			return;
-		}
-
 		editForm.itemSort = nextItemSort;
-
-		const nextSearchParams = new URLSearchParams($page.url.searchParams);
-
-		if (nextItemSort === DEFAULT_ITEM_SORT) {
-			nextSearchParams.delete('itemSort');
-		} else {
-			nextSearchParams.set('itemSort', nextItemSort);
-		}
-
-		const nextSearch = nextSearchParams.toString();
-		await goto(`${$page.url.pathname}${nextSearch ? `?${nextSearch}` : ''}`, {
-			keepFocus: true,
-			noScroll: true,
-			replaceState: true
-		});
-		await refetchWithAuth(true, nextItemSort);
 	}
 
 	function parseTags(tags: string) {
@@ -1196,9 +1169,8 @@
 			return;
 		}
 
-		const currentItemSort = editForm.itemSort;
 		const formulaChanged = Boolean(
-			list && getEditableSettingsSnapshot().weightFormula !== getSavedSettingsSnapshot(list)?.weightFormula
+			list && getEditableSettingsSnapshot(editForm).weightFormula !== getSavedSettingsSnapshot(list)?.weightFormula
 		);
 
 		savingMetadata = true;
@@ -1221,6 +1193,7 @@
 					isPlatformer: editForm.isPlatformer,
 					logoUrl: editForm.logoUrl,
 					topEnabled: editForm.topEnabled,
+					itemSort: editForm.itemSort,
 					visibility: editForm.visibility,
 					tags: parseTags(editForm.tags),
 					mode: editForm.mode,
@@ -1236,21 +1209,13 @@
 			});
 			const payload = await res.json();
 			if (!res.ok) throw new Error(payload.error || $_('custom_lists.toast.failed_update'));
-			list = {
-				...payload,
-				itemSort: currentItemSort
-			};
+			list = payload;
 			syncForm();
 			toast.dismiss(savingToast);
 			toast.success($_('custom_lists.toast.list_updated'));
 
 			if (formulaChanged) {
-				await refreshLeaderboardPrecalc({
-					reloadList: true,
-					itemSort: currentItemSort
-				});
-			} else if (currentItemSort === 'created_at') {
-				await refetchWithAuth(true, currentItemSort);
+				await refreshLeaderboardPrecalc({ reloadList: true });
 			}
 		} catch (error) {
 			toast.dismiss(savingToast);
@@ -1260,7 +1225,7 @@
 		}
 	}
 
-	async function refreshLeaderboardPrecalc(options: { reloadList?: boolean; itemSort?: 'mode_default' | 'created_at' } = {}) {
+	async function refreshLeaderboardPrecalc(options: { reloadList?: boolean } = {}) {
 		if (!list || !canEditSettings || refreshingLeaderboard) return;
 
 		refreshingLeaderboard = true;
@@ -1288,7 +1253,7 @@
 			}
 
 			if (options.reloadList !== false) {
-				await refetchWithAuth(true, options.itemSort ?? editForm.itemSort);
+				await refetchWithAuth(true);
 			}
 
 			toast.dismiss(refreshToast);
