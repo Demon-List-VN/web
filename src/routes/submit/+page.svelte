@@ -7,13 +7,13 @@
 	import { toast } from 'svelte-sonner';
 	import { fly } from 'svelte/transition';
 	import { ArrowLeft } from 'lucide-svelte';
-	import { isActive } from '$lib/client/isSupporterActive';
 
 	import SubmitStepper from '$lib/components/submit/SubmitStepper.svelte';
 	import StepTypeSelect from '$lib/components/submit/StepTypeSelect.svelte';
 	import StepRules from '$lib/components/submit/StepRules.svelte';
 	import StepLevelId from '$lib/components/submit/StepLevelId.svelte';
 	import StepConfirmLevel from '$lib/components/submit/StepConfirmLevel.svelte';
+	import EligibleListsPanel from '$lib/components/submit/EligibleListsPanel.svelte';
 	import StepRequiredFields from '$lib/components/submit/StepRequiredFields.svelte';
 	import StepOptionalFields from '$lib/components/submit/StepOptionalFields.svelte';
 	import StepLevelDetails from '$lib/components/submit/StepLevelDetails.svelte';
@@ -31,6 +31,31 @@
 	let state: SubmitState = createDefaultState($user.data?.uid || '');
 	let submitted = false;
 	let direction = 1;
+	type EligibleListEntry = {
+		id: number;
+		slug?: string | null;
+		title: string;
+		description: string;
+		mode: 'rating' | 'top';
+		isPlatformer: boolean;
+		isOfficial?: boolean;
+		topEnabled?: boolean;
+		ownerData?: any | null;
+		eligible?: boolean | null;
+		item?: {
+			created_at?: string;
+			rating?: number | null;
+			position?: number | null;
+			minProgress?: number | null;
+			videoID?: string | null;
+		} | null;
+	};
+	let eligibleLists: EligibleListEntry[] = [];
+	let eligibleListsLoading = false;
+	let eligibleListsError = '';
+	let eligibleListsRequestKey = '';
+	let eligibleListsRequestToken = 0;
+	let eligibleListPanelMode: 'preview' | 'eligible' = 'preview';
 
 	$: steps = getSteps(state.type).map((s) => {
 		const labels: Record<string, { vi: string; en: string }> = {
@@ -49,6 +74,136 @@
 
 	function t(vi: string, en: string) {
 		return $locale == 'vi' ? vi : en;
+	}
+
+	function getEligibleProgress(
+		type: SubmitState['type'],
+		apiLevel: any,
+		time: SubmitState['time'],
+		progress: number
+	) {
+		if (type !== 'record') {
+			return null;
+		}
+
+		if (apiLevel?.length == 5) {
+			return validTime(time) ? getMs(time) : null;
+		}
+
+		const progressValue = Number(progress);
+		return Number.isFinite(progressValue) ? progressValue : null;
+	}
+
+	function getActiveEligibleLevelId(
+		type: SubmitState['type'],
+		selectedVariantId: number | null,
+		apiLevel: any,
+		levelid: number
+	) {
+		if (type !== 'record') {
+			return null;
+		}
+
+		const candidateLevelId = selectedVariantId ?? apiLevel?.id ?? levelid;
+		const levelId = Number(candidateLevelId);
+
+		if (!Number.isInteger(levelId) || levelId <= 0) {
+			return null;
+		}
+
+		return levelId;
+	}
+
+	async function loadEligibleLists(levelId: number, progress: number | null, requestKey: string) {
+		const requestToken = ++eligibleListsRequestToken;
+		eligibleListsLoading = true;
+		eligibleListsError = '';
+
+		try {
+			const headers: HeadersInit = {};
+
+			if ($user.loggedIn) {
+				headers.Authorization = `Bearer ${await $user.token()}`;
+			}
+
+			const params = new URLSearchParams();
+
+			if (progress != null) {
+				params.set('progress', String(progress));
+			}
+
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/lists/levels/${levelId}/eligible${params.size ? `?${params.toString()}` : ''}`,
+				{ headers }
+			);
+			const payload = await res.json().catch(() => null);
+
+			if (requestToken !== eligibleListsRequestToken || eligibleListsRequestKey !== requestKey) {
+				return;
+			}
+
+			if (!res.ok) {
+				throw new Error(
+					payload?.error ||
+						t('Không thể tải danh sách đủ điều kiện', 'Failed to load eligible lists')
+				);
+			}
+
+			eligibleLists = Array.isArray(payload) ? payload : [];
+		} catch (error) {
+			if (requestToken !== eligibleListsRequestToken || eligibleListsRequestKey !== requestKey) {
+				return;
+			}
+
+			eligibleLists = [];
+			eligibleListsError =
+				error instanceof Error
+					? error.message
+					: t('Không thể tải danh sách đủ điều kiện', 'Failed to load eligible lists');
+		} finally {
+			if (requestToken === eligibleListsRequestToken && eligibleListsRequestKey === requestKey) {
+				eligibleListsLoading = false;
+			}
+		}
+	}
+
+	$: activeEligibleProgress = getEligibleProgress(state.type, state.apiLevel, state.time, state.progress);
+	$: activeEligibleLevelId = getActiveEligibleLevelId(
+		state.type,
+		state.selectedVariantId,
+		state.apiLevel,
+		state.levelid
+	);
+	$: showEligibleListsPanel =
+		state.type === 'record' &&
+		(state.step === 3 || state.step === 4) &&
+		activeEligibleLevelId !== null;
+	$: eligibleListPanelMode =
+		state.step === 4 && activeEligibleProgress != null ? 'eligible' : 'preview';
+
+	$: {
+		const progress = activeEligibleProgress;
+		const levelId = activeEligibleLevelId;
+		const canLoadEligibleLists =
+			state.type === 'record' &&
+			(state.step === 3 || state.step === 4) &&
+			levelId !== null;
+
+		if (!canLoadEligibleLists) {
+			eligibleLists = [];
+			eligibleListsLoading = false;
+			eligibleListsError = '';
+			eligibleListsRequestKey = '';
+		} else {
+			const requestKey = `${levelId}:${progress ?? 'preview'}`;
+
+			if (eligibleListsRequestKey !== requestKey) {
+				eligibleListsRequestKey = requestKey;
+				eligibleLists = [];
+				eligibleListsError = '';
+				loadEligibleLists(levelId, progress, requestKey);
+			}
+		}
 	}
 
 	onMount(() => {
@@ -292,6 +447,10 @@
 		state = createDefaultState($user.data?.uid || '');
 		submitted = false;
 		direction = 1;
+		eligibleLists = [];
+		eligibleListsLoading = false;
+		eligibleListsError = '';
+		eligibleListsRequestKey = '';
 	}
 </script>
 
@@ -386,6 +545,15 @@
 							</div>
 						{/key}
 					</div>
+
+						{#if showEligibleListsPanel}
+							<EligibleListsPanel
+								lists={eligibleLists}
+								loading={eligibleListsLoading}
+								errorMessage={eligibleListsError}
+								mode={eligibleListPanelMode}
+							/>
+						{/if}
 
 					<div class="step-footer">
 						{#if state.step > 0}
