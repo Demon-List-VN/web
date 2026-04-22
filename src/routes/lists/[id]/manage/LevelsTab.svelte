@@ -102,12 +102,15 @@
 		['65742217', '2024-03-01T00:00:00Z', '1', '7', '22', 'rYEDA3JcQqw']
 	];
 
-	$: displayedItems = list?.items
-		? list.items
-			.filter((item: any) => !levelDeletionDraftIds.includes(item.levelId))
-			.map((item: any) => applyDraftToItem(item, levelDrafts))
+	$: displayedItems = list
+		? getDisplayedItems(list, levelDrafts, levelDeletionDraftIds)
 		: [];
-	$: canDragReorder = canEditLevels && list?.mode === 'top' && list?.itemSort !== 'created_at' && !savingReorder && !levelDeletionDraftIds.length;
+	$: canDragReorder = canEditLevels
+		&& list?.mode === 'top'
+		&& list?.itemSort !== 'created_at'
+		&& !savingReorder
+		&& !levelDeletionDraftIds.length
+		&& !getPendingAdditionCount(list);
 	$: quickLevelId = getQuickLevelId();
 	$: csvProgressPercent = batchAddProgress?.total
 		? Math.min((batchAddProgress.completed / batchAddProgress.total) * 100, 100)
@@ -222,8 +225,80 @@
 		};
 	}
 
+	function sortItemsForDisplay(items: any[], currentList: any) {
+		const itemSort = currentList?.itemSort || 'mode_default';
+
+		return [...items].sort((left, right) => {
+			if (itemSort === 'created_at') {
+				const createdAtDifference = new Date(left.created_at).getTime() - new Date(right.created_at).getTime();
+
+				if (createdAtDifference !== 0) {
+					return createdAtDifference;
+				}
+
+				return left.id - right.id;
+			}
+
+			if (currentList?.mode === 'top') {
+				const leftPosition = left.position;
+				const rightPosition = right.position;
+
+				if (leftPosition == null && rightPosition == null) {
+					const createdAtDifference = new Date(left.created_at).getTime() - new Date(right.created_at).getTime();
+
+					if (createdAtDifference !== 0) {
+						return createdAtDifference;
+					}
+
+					return left.id - right.id;
+				}
+
+				if (leftPosition == null) return 1;
+				if (rightPosition == null) return -1;
+
+				if (leftPosition !== rightPosition) {
+					return leftPosition - rightPosition;
+				}
+			} else {
+				const leftRating = left.rating ?? 5;
+				const rightRating = right.rating ?? 5;
+
+				if (leftRating !== rightRating) {
+					return rightRating - leftRating;
+				}
+			}
+
+			const createdAtDifference = new Date(left.created_at).getTime() - new Date(right.created_at).getTime();
+
+			if (createdAtDifference !== 0) {
+				return createdAtDifference;
+			}
+
+			return left.id - right.id;
+		});
+	}
+
+	function getPendingAdditionCount(currentList: any) {
+		return currentList?.items?.filter((item: any) => item?.isPendingAddition).length ?? 0;
+	}
+
+	function getDisplayedItems(
+		currentList: any,
+		drafts: Record<number, LevelItemPatch>,
+		deletionDraftIds: number[]
+	) {
+		const deletedLevelIds = new Set(deletionDraftIds);
+
+		return sortItemsForDisplay(
+			(currentList?.items ?? [])
+				.filter((item: any) => !deletedLevelIds.has(item.levelId))
+				.map((item: any) => applyDraftToItem(item, drafts)),
+			currentList
+		);
+	}
+
 	function hasPendingDraft(levelId: number) {
-		return Boolean(levelDrafts[levelId]);
+		return Boolean(levelDrafts[levelId] || list?.items?.some((item: any) => item.levelId === levelId && item.isPendingAddition));
 	}
 
 	export function scrollToPendingChanges() {

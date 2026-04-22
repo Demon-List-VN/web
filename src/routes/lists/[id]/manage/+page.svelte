@@ -57,6 +57,28 @@
 			minProgress: number | null;
 			videoID?: string | null;
 		} | null;
+		isPendingAddition?: boolean;
+	};
+
+	type PreparedCustomListLevel = {
+		id: number;
+		name: string | null;
+		creator: string | null;
+		difficulty: string | null;
+		isPlatformer: boolean;
+		minProgress: number | null;
+		videoID?: string | null;
+	};
+
+	type PendingLevelAddition = CustomListItem & {
+		stagedCreatedAt?: string | null;
+		crawlStatus?: 'crawled' | 'skipped';
+		isPendingAddition: true;
+	};
+
+	type PendingLevelOrderDraft = {
+		top: number;
+		inputIndex: number;
 	};
 
 	type CustomListResolvedRole = 'viewer' | 'owner' | 'admin' | 'helper' | 'moderator';
@@ -156,6 +178,21 @@
 		aborted: boolean;
 	};
 
+	type BatchCrawlLevelResult = {
+		id: number;
+		status: 'skipped' | 'crawled' | 'not_found';
+		level?: PreparedCustomListLevel;
+		error?: string;
+	};
+
+	type BatchCrawlLevelsResponse = {
+		forced: boolean;
+		results: BatchCrawlLevelResult[];
+		crawled: number;
+		skipped: number;
+		notFound: number;
+	};
+
 	type BatchAddExistingLevelsResponse = {
 		added: number;
 		missingLevelIds: number[];
@@ -182,6 +219,7 @@
 		rating?: number;
 		minProgress?: number | null;
 		videoID?: string | null;
+		createdAt?: string;
 	};
 
 	type PendingLevelAuditChange = {
@@ -193,16 +231,17 @@
 		rating: number;
 		minProgress: number | null;
 		videoID: string | null;
+		createdAt: string | null;
 		position: number;
 	};
 
 	type PendingLevelAuditEntry = {
-		action: 'level_removed' | 'level_updated';
+		action: 'level_added' | 'level_removed' | 'level_updated';
 		levelId: number;
 		levelItemId: number;
 		levelName: string;
 		creator: string | null;
-		fields: Array<keyof LevelItemPatch>;
+		fields: Array<keyof LevelItemPatch | 'position'>;
 		metadata: Record<string, any>;
 	};
 
@@ -242,13 +281,17 @@
 	let batchAddAbortController: AbortController | null = null;
 	let levelDrafts: Record<number, LevelItemPatch> = {};
 	let levelDeletionDraftIds: number[] = [];
+	let pendingLevelAdditions: PendingLevelAddition[] = [];
+	let pendingLevelOrderDrafts: Record<number, PendingLevelOrderDraft> = {};
+	let levelsTabList: (CustomList & { items: CustomListItem[] }) | null = null;
 	let showPendingLevelChangesDialog = false;
+	let nextPendingLevelItemId = -1;
 
 	const CUSTOM_LIST_CDN_BASE_URL = 'https://cdn.gdvn.net';
 	const CSV_IMPORT_RATE_LIMIT_RETRY_MS = 1000;
 	const CSV_IMPORT_RATE_LIMIT_TIMEOUT_MS = 15000;
 	const DEFAULT_ITEM_SORT: 'mode_default' | 'created_at' = 'mode_default';
-	const LEVEL_AUDIT_MUTABLE_FIELDS: Array<keyof LevelItemPatch> = ['rating', 'minProgress', 'videoID'];
+	const LEVEL_AUDIT_MUTABLE_FIELDS: Array<keyof LevelItemPatch> = ['rating', 'minProgress', 'videoID', 'createdAt'];
 
 	class BatchAddImportAbortedError extends Error {
 		constructor() {
@@ -394,6 +437,209 @@
 		return JSON.stringify(value);
 	}
 
+	function hasDraftValue(patch: LevelItemPatch | undefined, key: keyof LevelItemPatch) {
+		return patch ? Object.prototype.hasOwnProperty.call(patch, key) : false;
+	}
+
+	function applyDraftToLevelItem(item: CustomListItem, drafts: Record<number, LevelItemPatch>) {
+		const patch = drafts[item.levelId];
+
+		if (!patch) {
+			return item;
+		}
+
+		return {
+			...item,
+			...(patch.rating !== undefined ? { rating: patch.rating } : {}),
+			...(hasDraftValue(patch, 'minProgress') ? { minProgress: patch.minProgress ?? null } : {}),
+			...(hasDraftValue(patch, 'videoID') ? { videoID: patch.videoID ?? null } : {}),
+			...(hasDraftValue(patch, 'createdAt') ? { created_at: patch.createdAt ?? item.created_at } : {}),
+		};
+	}
+
+	function getPendingLevelOrderEntries(orderDrafts: Record<number, PendingLevelOrderDraft> = pendingLevelOrderDrafts) {
+		return Object.entries(orderDrafts)
+			.map(([levelId, draft]) => ({
+				levelId: Number(levelId),
+				top: draft.top,
+				inputIndex: draft.inputIndex
+			}))
+			.filter((entry) => Number.isInteger(entry.levelId) && entry.levelId > 0 && Number.isInteger(entry.top) && entry.top > 0);
+	}
+
+	function applyPendingOrderDrafts(items: CustomListItem[], currentList: CustomList | null, orderDrafts: Record<number, PendingLevelOrderDraft>) {
+		if (!currentList || currentList.mode !== 'top' || currentList.itemSort === 'created_at') {
+			return sortLevelItemsForDisplay(items, currentList);
+		}
+
+		const orderedItems = sortLevelItemsForDisplay(items, currentList);
+		const itemsByLevelId = new Map(orderedItems.map((item) => [item.levelId, item]));
+		const topOverrides = getPendingLevelOrderEntries(orderDrafts).filter((entry) => itemsByLevelId.has(entry.levelId));
+		const baseLevelIds = orderedItems.map((item) => item.levelId);
+		const reorderedLevelIds = topOverrides.length
+			? buildReorderedLevelIds(baseLevelIds, topOverrides)
+			: baseLevelIds;
+
+		return reorderedLevelIds.map((levelId, index) => ({
+			...itemsByLevelId.get(levelId)!,
+			position: index
+		}));
+	}
+
+	function sortLevelItemsForDisplay(items: CustomListItem[], currentList: CustomList | null) {
+		const itemSort = currentList?.itemSort || DEFAULT_ITEM_SORT;
+
+		return [...items].sort((left, right) => {
+			if (itemSort === 'created_at') {
+				const createdAtDifference = new Date(left.created_at).getTime() - new Date(right.created_at).getTime();
+
+				if (createdAtDifference !== 0) {
+					return createdAtDifference;
+				}
+
+				return left.id - right.id;
+			}
+
+			if (currentList?.mode === 'top') {
+				const leftPosition = left.position;
+				const rightPosition = right.position;
+
+				if (leftPosition == null && rightPosition == null) {
+					const createdAtDifference = new Date(left.created_at).getTime() - new Date(right.created_at).getTime();
+
+					if (createdAtDifference !== 0) {
+						return createdAtDifference;
+					}
+
+					return left.id - right.id;
+				}
+
+				if (leftPosition == null) return 1;
+				if (rightPosition == null) return -1;
+
+				if (leftPosition !== rightPosition) {
+					return leftPosition - rightPosition;
+				}
+			} else {
+				const leftRating = left.rating ?? 5;
+				const rightRating = right.rating ?? 5;
+
+				if (leftRating !== rightRating) {
+					return rightRating - leftRating;
+				}
+			}
+
+			const createdAtDifference = new Date(left.created_at).getTime() - new Date(right.created_at).getTime();
+
+			if (createdAtDifference !== 0) {
+				return createdAtDifference;
+			}
+
+			return left.id - right.id;
+		});
+	}
+
+	function getCombinedLevelItems(currentList: CustomList | null = list) {
+		return [
+			...(currentList?.items ?? []),
+			...pendingLevelAdditions
+		];
+	}
+
+	function getLevelsTabList(currentList: CustomList | null = list) {
+		if (!currentList) {
+			return null;
+		}
+
+		return {
+			...currentList,
+			items: getDisplayedLevelItems(currentList)
+		};
+	}
+
+	function getDisplayedLevelItems(
+		currentList: CustomList | null = list,
+		drafts: Record<number, LevelItemPatch> = levelDrafts,
+		deletionDraftIds: number[] = levelDeletionDraftIds,
+		orderDrafts: Record<number, PendingLevelOrderDraft> = pendingLevelOrderDrafts
+	) {
+		const deletionDraftSet = new Set(deletionDraftIds);
+
+		return applyPendingOrderDrafts(
+			getCombinedLevelItems(currentList)
+				.filter((item) => !deletionDraftSet.has(item.levelId))
+				.map((item) => applyDraftToLevelItem(item, drafts)),
+			currentList,
+			orderDrafts
+		);
+	}
+
+	function normalizeMutationListPayload(payload: CustomList) {
+		return {
+			...payload,
+			itemSort: editForm.itemSort || list?.itemSort || DEFAULT_ITEM_SORT
+		};
+	}
+
+	function buildPendingLevelAddition(level: PreparedCustomListLevel & { crawlStatus?: 'crawled' | 'skipped' }, options: {
+		createdAt?: string;
+		crawlStatus?: 'crawled' | 'skipped';
+	} = {}): PendingLevelAddition {
+		return {
+			id: nextPendingLevelItemId--,
+			levelId: level.id,
+			created_at: options.createdAt ?? new Date().toISOString(),
+			minProgress: null,
+			rating: 5,
+			position: null,
+			videoID: null,
+			stagedCreatedAt: options.createdAt ?? null,
+			crawlStatus: options.crawlStatus ?? level.crawlStatus,
+			level: {
+				id: level.id,
+				name: level.name,
+				creator: level.creator,
+				difficulty: level.difficulty,
+				isPlatformer: level.isPlatformer,
+				minProgress: level.minProgress ?? null,
+				videoID: level.videoID ?? null
+			},
+			isPendingAddition: true
+		};
+	}
+
+	function stageLevelOrderDraft(levelId: number, top: number, inputIndex: number) {
+		if (!list || list.mode !== 'top' || !Number.isInteger(top) || top < 1) {
+			return;
+		}
+
+		const { [levelId]: _removedDraft, ...remainingDrafts } = pendingLevelOrderDrafts;
+		const currentPosition = getDisplayedLevelItems(list, levelDrafts, levelDeletionDraftIds, remainingDrafts)
+			.findIndex((item) => item.levelId === levelId) + 1;
+
+		if (currentPosition === top) {
+			pendingLevelOrderDrafts = remainingDrafts;
+			return;
+		}
+
+		pendingLevelOrderDrafts = {
+			...remainingDrafts,
+			[levelId]: {
+				top,
+				inputIndex
+			}
+		};
+	}
+
+	function clearLevelOrderDraft(levelId: number) {
+		if (!pendingLevelOrderDrafts[levelId]) {
+			return;
+		}
+
+		const { [levelId]: _removedDraft, ...remainingDrafts } = pendingLevelOrderDrafts;
+		pendingLevelOrderDrafts = remainingDrafts;
+	}
+
 	// Sync form when list changes from SSR data
 	$: if (list && !initialSyncDone) {
 		initialSyncDone = true;
@@ -404,16 +650,26 @@
 		&& canEditSettings
 		&& getSettingsSnapshotKey(getEditableSettingsSnapshot()) !== getSettingsSnapshotKey(getSavedSettingsSnapshot(list))
 	);
-	$: hasUnsavedLevelEdits = Boolean(canEditLevels && (Object.keys(levelDrafts).length || levelDeletionDraftIds.length));
+	$: hasUnsavedLevelEdits = Boolean(
+		canEditLevels
+		&& (Object.keys(levelDrafts).length || levelDeletionDraftIds.length || pendingLevelAdditions.length || Object.keys(pendingLevelOrderDrafts).length)
+	);
 	$: if (list) {
-		const availableLevelIds = new Set(list.items.map((item) => item.levelId));
+		const availableLevelIds = new Set(getCombinedLevelItems(list).map((item) => item.levelId));
 		const nextLevelDrafts = Object.fromEntries(
 			Object.entries(levelDrafts).filter(([levelId]) => availableLevelIds.has(Number(levelId)))
 		) as Record<number, LevelItemPatch>;
+		const nextPendingLevelOrderDrafts = Object.fromEntries(
+			Object.entries(pendingLevelOrderDrafts).filter(([levelId]) => availableLevelIds.has(Number(levelId)))
+		) as Record<number, PendingLevelOrderDraft>;
 		const nextLevelDeletionDraftIds = levelDeletionDraftIds.filter((levelId) => availableLevelIds.has(levelId));
 
 		if (Object.keys(nextLevelDrafts).length !== Object.keys(levelDrafts).length) {
 			levelDrafts = nextLevelDrafts;
+		}
+
+		if (Object.keys(nextPendingLevelOrderDrafts).length !== Object.keys(pendingLevelOrderDrafts).length) {
+			pendingLevelOrderDrafts = nextPendingLevelOrderDrafts;
 		}
 
 		if (nextLevelDeletionDraftIds.length !== levelDeletionDraftIds.length) {
@@ -1284,6 +1540,57 @@
 		};
 	}
 
+	async function requestCrawlLevel(levelId: number, signal?: AbortSignal) {
+		const res = await fetch(`${import.meta.env.VITE_API_URL}/levels/${levelId}/crawl`, {
+			method: 'POST',
+			signal,
+			headers: {
+				Authorization: `Bearer ${await $user.token()}`,
+				'Content-Type': 'application/json'
+			}
+		});
+		const payload = await res.json().catch(() => null);
+
+		if (!res.ok) {
+			return {
+				ok: false as const,
+				status: res.status,
+				error: payload?.error || $_('custom_lists.toast.failed_add_level')
+			};
+		}
+
+		return {
+			ok: true as const,
+			payload: payload as PreparedCustomListLevel & { crawlStatus?: 'crawled' | 'skipped' }
+		};
+	}
+
+	async function requestBatchCrawlLevels(levelIds: number[], signal?: AbortSignal) {
+		const query = new URLSearchParams({ ids: levelIds.join(',') });
+		const res = await fetch(`${import.meta.env.VITE_API_URL}/levels/crawl?${query.toString()}`, {
+			method: 'POST',
+			signal,
+			headers: {
+				Authorization: `Bearer ${await $user.token()}`,
+				'Content-Type': 'application/json'
+			}
+		});
+		const payload = await res.json().catch(() => null);
+
+		if (!res.ok) {
+			return {
+				ok: false as const,
+				status: res.status,
+				error: payload?.error || $_('custom_lists.toast.failed_add_level')
+			};
+		}
+
+		return {
+			ok: true as const,
+			payload: payload as BatchCrawlLevelsResponse
+		};
+	}
+
 	async function requestBatchAddExistingLevels(listId: number, levelInputs: Array<Pick<BatchAddLevelInput, 'levelId' | 'createdAt'>>, signal?: AbortSignal) {
 		const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${listId}/levels/batch`, {
 			method: 'POST',
@@ -1404,15 +1711,24 @@
 
 	async function addLevel(levelId: number) {
 		if (!list || !canEditLevels) return false;
+		if (getCombinedLevelItems().some((item) => item.levelId === levelId)) {
+			toast.error($_('custom_lists.toast.level_already_in_list'));
+			return false;
+		}
 
 		batchAddProgress = null;
 		batchAddAbortController = null;
 		addingLevel = true;
 		try {
-			const result = await requestAddLevel(list.id, levelId);
+			const result = await requestCrawlLevel(levelId);
 			if (!result.ok) throw new Error(result.error);
-			list = result.payload;
-			toast.success($_('custom_lists.toast.level_added'));
+
+			if (Boolean(result.payload.isPlatformer) !== Boolean(list.isPlatformer)) {
+				throw new Error($_('custom_lists.toast.level_type_mismatch'));
+			}
+
+			pendingLevelAdditions = [...pendingLevelAdditions, buildPendingLevelAddition(result.payload)];
+			toast.success($_('custom_lists.toast.level_staged'));
 			return true;
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_add_level'));
@@ -1438,12 +1754,10 @@
 		batchAddProgress = null;
 		batchAddAbortController = new AbortController();
 		const importSignal = batchAddAbortController.signal;
-		const listId = list.id;
-		const addLevelInputs: Array<BatchAddLevelInput & { inputIndex: number }> = [];
 		const existingLevelIds = new Set(list.items.map((item) => item.levelId));
+		const pendingLevelIds = new Set(pendingLevelAdditions.map((item) => item.levelId));
 		const processedLevelIds = new Set<number>();
-		const existingPatchInputs: Array<BatchAddLevelInput & { inputIndex: number }> = [];
-		const reorderInputs: Array<BatchAddLevelInput & { inputIndex: number }> = [];
+		const actionableLevelInputs: Array<BatchAddLevelInput & { inputIndex: number }> = [];
 		let skipped = 0;
 		const failed: BatchAddLevelFailure[] = [];
 		let added = 0;
@@ -1456,32 +1770,13 @@
 			}
 
 			processedLevelIds.add(levelInput.levelId);
-
-			const enrichedInput = {
+			actionableLevelInputs.push({
 				...levelInput,
 				inputIndex
-			};
-
-			if (existingLevelIds.has(levelInput.levelId)) {
-				if (hasBatchLevelPatch(levelInput)) {
-					existingPatchInputs.push(enrichedInput);
-				}
-
-				if (list.mode === 'top' && hasBatchLevelTopOverride(levelInput)) {
-					reorderInputs.push(enrichedInput);
-				}
-
-				if (!hasBatchLevelPatch(levelInput) && !(list.mode === 'top' && hasBatchLevelTopOverride(levelInput))) {
-					skipped += 1;
-				}
-
-				continue;
-			}
-
-			addLevelInputs.push(enrichedInput);
+			});
 		}
 
-		if (!addLevelInputs.length && !existingPatchInputs.length && !reorderInputs.length) {
+		if (!actionableLevelInputs.length) {
 			return {
 				added,
 				updated,
@@ -1491,192 +1786,155 @@
 			};
 		}
 
-		const newPatchCount = addLevelInputs.filter((levelInput) => hasBatchLevelPatch(levelInput)).length;
-		const shouldRunReorder = list.mode === 'top' && levelInputs.some((levelInput) => hasBatchLevelTopOverride(levelInput));
-		const totalSteps = addLevelInputs.length + existingPatchInputs.length + newPatchCount + (shouldRunReorder ? 1 : 0);
-		const rateLimitTimeoutError = $_('custom_lists.detail.add_level.csv_rate_limit_timeout');
+		const newLevelInputs = actionableLevelInputs.filter((levelInput) => !existingLevelIds.has(levelInput.levelId) && !pendingLevelIds.has(levelInput.levelId));
+		const totalSteps = actionableLevelInputs.length;
 		batchAddProgress = createBatchAddProgress(totalSteps, skipped);
 
 		try {
-			const postAddPatchInputs: Array<BatchAddLevelInput & { inputIndex: number }> = [];
-			const reorderCandidates = [...reorderInputs];
-			let missingAddLevelInputs = addLevelInputs;
+			const crawledLevelsById = new Map<number, BatchCrawlLevelResult>();
 
-			if (addLevelInputs.length) {
-				const batchResult = await requestBatchAddExistingLevels(
-					listId,
-					addLevelInputs.map((levelInput) => ({
-						levelId: levelInput.levelId,
-						...(levelInput.createdAt ? { createdAt: levelInput.createdAt } : {})
-					})),
+			if (newLevelInputs.length) {
+				const crawlResult = await requestBatchCrawlLevels(
+					newLevelInputs.map((levelInput) => levelInput.levelId),
 					importSignal
 				);
 
-				if (!batchResult.ok) {
-					throw new Error(batchResult.error);
+				if (!crawlResult.ok) {
+					throw new Error(crawlResult.error);
 				}
 
-				list = batchResult.payload.list;
-				added += batchResult.payload.added;
-
-				const missingLevelIds = new Set(batchResult.payload.missingLevelIds);
-				const fastPathInputs = addLevelInputs.filter((levelInput) => !missingLevelIds.has(levelInput.levelId));
-
-				for (const levelInput of fastPathInputs) {
-					if (hasBatchLevelPatch(levelInput)) {
-						postAddPatchInputs.push(levelInput);
-					}
-
-					if (list.mode === 'top' && hasBatchLevelTopOverride(levelInput)) {
-						reorderCandidates.push(levelInput);
-					}
+				for (const result of crawlResult.payload.results) {
+					crawledLevelsById.set(result.id, result);
 				}
-
-				if (fastPathInputs.length) {
-					updateBatchAddProgress({
-						completed: Math.min((batchAddProgress?.completed ?? 0) + fastPathInputs.length, totalSteps),
-						phase: 'adding',
-						currentLevelId: null,
-						added,
-						updated,
-						failed: failed.length,
-						skipped,
-						retrying: false,
-						retryElapsedMs: 0,
-						aborted: false
-					});
-				}
-
-				missingAddLevelInputs = addLevelInputs.filter((levelInput) => missingLevelIds.has(levelInput.levelId));
 			}
 
-			for (const levelInput of missingAddLevelInputs) {
+			for (const levelInput of actionableLevelInputs) {
 				throwIfBatchAddAborted(importSignal);
 
-				const result = await withRateLimitRetry(
-					() => requestAddLevel(listId, levelInput.levelId, levelInput.createdAt, importSignal),
-					{
-						phase: 'adding',
-						levelId: levelInput.levelId,
-						timeoutError: rateLimitTimeoutError,
-						signal: importSignal
+				let stagedChange = false;
+				let stagedAddition = false;
+				const hasSavedListItem = existingLevelIds.has(levelInput.levelId);
+				const hasPendingListItem = pendingLevelIds.has(levelInput.levelId);
+
+				if (!hasSavedListItem && !hasPendingListItem) {
+					const crawlResult = crawledLevelsById.get(levelInput.levelId);
+
+					if (!crawlResult?.level || crawlResult.status === 'not_found') {
+						failed.push({
+							levelId: levelInput.levelId,
+							message: crawlResult?.error || $_('custom_lists.toast.failed_add_level')
+						});
+						incrementBatchAddProgress({
+							phase: 'adding',
+							currentLevelId: levelInput.levelId,
+							added,
+							updated,
+							failed: failed.length,
+							skipped
+						});
+						continue;
 					}
-				);
 
-				if (!result.ok) {
-					failed.push({
-						levelId: levelInput.levelId,
-						message: result.error
-					});
-					incrementBatchAddProgress({
-						phase: 'adding',
-						currentLevelId: levelInput.levelId,
-						added,
-						updated,
-						failed: failed.length,
-						skipped
-					});
-					continue;
+					if (Boolean(crawlResult.level.isPlatformer) !== Boolean(list.isPlatformer)) {
+						failed.push({
+							levelId: levelInput.levelId,
+							message: $_('custom_lists.toast.level_type_mismatch')
+						});
+						incrementBatchAddProgress({
+							phase: 'adding',
+							currentLevelId: levelInput.levelId,
+							added,
+							updated,
+							failed: failed.length,
+							skipped
+						});
+						continue;
+					}
+
+					pendingLevelAdditions = [
+						...pendingLevelAdditions,
+						buildPendingLevelAddition(crawlResult.level, {
+							createdAt: levelInput.createdAt,
+							crawlStatus: crawlResult.status === 'skipped' ? 'skipped' : 'crawled'
+						})
+					];
+					pendingLevelIds.add(levelInput.levelId);
+					added += 1;
+					stagedAddition = true;
 				}
 
-				list = result.payload;
-				added += 1;
+				if (pendingLevelIds.has(levelInput.levelId) && typeof levelInput.createdAt === 'string' && levelInput.createdAt.length) {
+					const previousPendingSignature = JSON.stringify(
+						pendingLevelAdditions.find((item) => item.levelId === levelInput.levelId) ?? null
+					);
 
-				if (hasBatchLevelPatch(levelInput)) {
-					postAddPatchInputs.push(levelInput);
+					pendingLevelAdditions = pendingLevelAdditions.map((item) => item.levelId === levelInput.levelId
+						? {
+							...item,
+							created_at: levelInput.createdAt!,
+							stagedCreatedAt: levelInput.createdAt!
+						}
+						: item);
+
+					const nextPendingSignature = JSON.stringify(
+						pendingLevelAdditions.find((item) => item.levelId === levelInput.levelId) ?? null
+					);
+
+					if (previousPendingSignature !== nextPendingSignature) {
+						stagedChange = true;
+					}
 				}
 
-				if (list.mode === 'top' && hasBatchLevelTopOverride(levelInput)) {
-					reorderCandidates.push(levelInput);
+				const nextPatch: Partial<LevelItemPatch> = {};
+
+				if (Number.isInteger(levelInput.rating)) {
+					nextPatch.rating = levelInput.rating;
+				}
+
+				if (Number.isInteger(levelInput.minProgress)) {
+					nextPatch.minProgress = levelInput.minProgress;
+				}
+
+				if (typeof levelInput.videoId === 'string' && levelInput.videoId.length) {
+					nextPatch.videoID = levelInput.videoId;
+				}
+
+				if (hasSavedListItem && typeof levelInput.createdAt === 'string' && levelInput.createdAt.length) {
+					nextPatch.createdAt = levelInput.createdAt;
+				}
+
+				if (Object.keys(nextPatch).length) {
+					const previousDraftSignature = JSON.stringify(levelDrafts[levelInput.levelId] ?? null);
+					stageLevelDraft(levelInput.levelId, nextPatch);
+					const nextDraftSignature = JSON.stringify(levelDrafts[levelInput.levelId] ?? null);
+
+					if (previousDraftSignature !== nextDraftSignature) {
+						stagedChange = true;
+					}
+				}
+
+				if (list.mode === 'top' && Number.isInteger(levelInput.top)) {
+					const nextTop = levelInput.top as number;
+					const previousOrderDraftSignature = JSON.stringify(pendingLevelOrderDrafts[levelInput.levelId] ?? null);
+					stageLevelOrderDraft(levelInput.levelId, nextTop, levelInput.inputIndex);
+					const nextOrderDraftSignature = JSON.stringify(pendingLevelOrderDrafts[levelInput.levelId] ?? null);
+
+					if (previousOrderDraftSignature !== nextOrderDraftSignature) {
+						stagedChange = true;
+					}
+				}
+
+				if (!stagedAddition && !stagedChange) {
+					skipped += 1;
+				}
+
+				if (stagedChange) {
+					updated += 1;
 				}
 
 				incrementBatchAddProgress({
 					phase: 'adding',
 					currentLevelId: levelInput.levelId,
-					added,
-					updated,
-					failed: failed.length,
-					skipped
-				});
-			}
-
-			for (const levelInput of [...existingPatchInputs, ...postAddPatchInputs]) {
-				throwIfBatchAddAborted(importSignal);
-
-				const patch = buildBatchUpdateLevelPatch(levelInput);
-
-				const result = await withRateLimitRetry(
-					() => requestUpdateLevel(listId, levelInput.levelId, patch, importSignal),
-					{
-						phase: 'updating',
-						levelId: levelInput.levelId,
-						timeoutError: rateLimitTimeoutError,
-						signal: importSignal
-					}
-				);
-
-				if (!result.ok) {
-					failed.push({
-						levelId: levelInput.levelId,
-						message: result.error
-					});
-					incrementBatchAddProgress({
-						phase: 'updating',
-						currentLevelId: levelInput.levelId,
-						added,
-						updated,
-						failed: failed.length,
-						skipped
-					});
-					continue;
-				}
-
-				list = result.payload;
-				updated += 1;
-				incrementBatchAddProgress({
-					phase: 'updating',
-					currentLevelId: levelInput.levelId,
-					added,
-					updated,
-					failed: failed.length,
-					skipped
-				});
-			}
-
-			if (shouldRunReorder) {
-				throwIfBatchAddAborted(importSignal);
-
-				const levelsWithTop = reorderCandidates.filter((levelInput) => Number.isInteger(levelInput.top));
-				if (levelsWithTop.length) {
-					const reorderedLevelIds = buildReorderedLevelIds(
-						list.items.map((item) => item.levelId),
-						levelsWithTop
-					);
-					const result = await withRateLimitRetry(
-						() => requestReorderLevels(listId, reorderedLevelIds, importSignal),
-						{
-							phase: 'reordering',
-							levelId: null,
-							timeoutError: rateLimitTimeoutError,
-							signal: importSignal
-						}
-					);
-
-					if (!result.ok) {
-						for (const levelInput of levelsWithTop) {
-							failed.push({
-								levelId: levelInput.levelId,
-								message: result.error
-							});
-						}
-					} else {
-						list = result.payload;
-					}
-				}
-
-				incrementBatchAddProgress({
-					phase: 'reordering',
-					currentLevelId: null,
 					added,
 					updated,
 					failed: failed.length,
@@ -1690,7 +1948,7 @@
 				updated,
 				skipped,
 				failed: failed.length,
-				phase: shouldRunReorder ? 'reordering' : 'updating',
+				phase: 'adding',
 				currentLevelId: null,
 				retrying: false,
 				retryElapsedMs: 0,
@@ -1736,7 +1994,7 @@
 	}
 
 	function getLevelItem(levelId: number) {
-		return list?.items.find((item) => item.levelId === levelId) ?? null;
+		return getCombinedLevelItems().find((item) => item.levelId === levelId) ?? null;
 	}
 
 	function getLevelItemPosition(currentList: CustomList, item: CustomListItem) {
@@ -1754,6 +2012,7 @@
 			rating: item.rating ?? 5,
 			minProgress: item.minProgress ?? null,
 			videoID: item.videoID ?? null,
+			createdAt: item.created_at ?? null,
 			position: getLevelItemPosition(currentList, item)
 		};
 	}
@@ -1796,6 +2055,7 @@
 
 	function buildPendingLevelAuditEntries(
 		currentList: CustomList | null,
+		pendingAdditions: PendingLevelAddition[],
 		drafts: Record<number, LevelItemPatch>,
 		deletionDraftIds: number[]
 	): PendingLevelAuditEntry[] {
@@ -1805,6 +2065,37 @@
 
 		const entries: PendingLevelAuditEntry[] = [];
 		const deletionDraftSet = new Set(deletionDraftIds);
+		const displayedItems = getDisplayedLevelItems(currentList, drafts, deletionDraftIds);
+		const displayedPositionByLevelId = new Map(
+			displayedItems.map((item, index) => [item.levelId, index + 1])
+		);
+
+		for (const item of pendingAdditions) {
+			const draft = drafts[item.levelId];
+			const nextState: PendingLevelAuditState = {
+				rating: draft?.rating ?? item.rating ?? 5,
+				minProgress: hasDraftValue(draft, 'minProgress') ? draft?.minProgress ?? null : item.minProgress ?? null,
+				videoID: hasDraftValue(draft, 'videoID') ? draft?.videoID ?? null : item.videoID ?? null,
+				createdAt: hasDraftValue(draft, 'createdAt') ? draft?.createdAt ?? null : item.stagedCreatedAt ?? item.created_at ?? null,
+				position: displayedPositionByLevelId.get(item.levelId) ?? displayedItems.length + 1
+			};
+
+			entries.push({
+				action: 'level_added',
+				levelId: item.levelId,
+				levelItemId: item.id,
+				levelName: getPendingLevelAuditDisplayName(item, item.levelId),
+				creator: item.level?.creator ?? null,
+				fields: [],
+				metadata: {
+					levelId: item.levelId,
+					levelItemId: item.id,
+					levelName: item.level?.name ?? null,
+					creator: item.level?.creator ?? null,
+					nextState
+				}
+			});
+		}
 
 		for (const levelId of deletionDraftIds) {
 			const item = currentList.items.find((candidate) => candidate.levelId === levelId);
@@ -1838,18 +2129,24 @@
 			}
 
 			const patch = drafts[item.levelId];
-			if (!patch) {
+			const orderDraft = pendingLevelOrderDrafts[item.levelId];
+			if (!patch && !orderDraft) {
 				continue;
 			}
 
 			const previousState = getLevelAuditState(currentList, item);
 			const nextState: PendingLevelAuditState = {
 				...previousState,
-				...(patch.rating !== undefined ? { rating: patch.rating } : {}),
-				...(Object.prototype.hasOwnProperty.call(patch, 'minProgress') ? { minProgress: patch.minProgress ?? null } : {}),
-				...(Object.prototype.hasOwnProperty.call(patch, 'videoID') ? { videoID: patch.videoID ?? null } : {})
+				...(patch?.rating !== undefined ? { rating: patch.rating } : {}),
+				...(Object.prototype.hasOwnProperty.call(patch ?? {}, 'minProgress') ? { minProgress: patch?.minProgress ?? null } : {}),
+				...(Object.prototype.hasOwnProperty.call(patch ?? {}, 'videoID') ? { videoID: patch?.videoID ?? null } : {}),
+				...(Object.prototype.hasOwnProperty.call(patch ?? {}, 'createdAt') ? { createdAt: patch?.createdAt ?? null } : {}),
+				...(orderDraft ? { position: orderDraft.top } : {})
 			};
-			const fields = LEVEL_AUDIT_MUTABLE_FIELDS.filter((field) => Object.prototype.hasOwnProperty.call(patch, field));
+			const fields = [
+				...LEVEL_AUDIT_MUTABLE_FIELDS.filter((field) => Object.prototype.hasOwnProperty.call(patch ?? {}, field)),
+				...(orderDraft && previousState.position !== orderDraft.top ? ['position' as const] : [])
+			];
 
 			if (!fields.length) {
 				continue;
@@ -1883,12 +2180,30 @@
 	}
 
 	function getPendingLevelAuditEntryActionLabel(entry: PendingLevelAuditEntry) {
+		if (entry.action === 'level_added') {
+			return $_('custom_lists.manage.unsaved_level_edits_dialog_action_added');
+		}
+
 		return entry.action === 'level_removed'
 			? $_('custom_lists.manage.unsaved_level_edits_dialog_action_removed')
 			: $_('custom_lists.manage.unsaved_level_edits_dialog_action_updated');
 	}
 
 	function getPendingLevelAuditEntryDetail(entry: PendingLevelAuditEntry) {
+		if (entry.action === 'level_added') {
+			const position = entry.metadata.nextState?.position;
+
+			if (list?.mode === 'top' && typeof position === 'number') {
+				return $_('custom_lists.manage.unsaved_level_edits_dialog_added_summary_with_position', {
+					values: {
+						position: formatPendingLevelAuditValue('position', position)
+					}
+				});
+			}
+
+			return $_('custom_lists.manage.unsaved_level_edits_dialog_added_summary');
+		}
+
 		if (entry.action === 'level_removed') {
 			return $_('custom_lists.manage.unsaved_level_edits_dialog_removed_summary', {
 				values: {
@@ -1907,7 +2222,18 @@
 			{ field: 'position' as const, value: entry.metadata.previousState?.position },
 			{ field: 'rating' as const, value: entry.metadata.previousState?.rating },
 			{ field: 'minProgress' as const, value: entry.metadata.previousState?.minProgress },
-			{ field: 'videoID' as const, value: entry.metadata.previousState?.videoID }
+			{ field: 'videoID' as const, value: entry.metadata.previousState?.videoID },
+			{ field: 'createdAt' as const, value: entry.metadata.previousState?.createdAt }
+		];
+	}
+
+	function getPendingLevelAdditionPreviewRows(entry: PendingLevelAuditEntry) {
+		return [
+			{ field: 'position' as const, value: entry.metadata.nextState?.position },
+			{ field: 'rating' as const, value: entry.metadata.nextState?.rating },
+			{ field: 'minProgress' as const, value: entry.metadata.nextState?.minProgress },
+			{ field: 'videoID' as const, value: entry.metadata.nextState?.videoID },
+			{ field: 'createdAt' as const, value: entry.metadata.nextState?.createdAt }
 		];
 	}
 
@@ -1929,6 +2255,8 @@
 		const nextMinProgress = hasMinProgress ? mergedPatch.minProgress ?? null : item.minProgress;
 		const hasVideoId = Object.prototype.hasOwnProperty.call(mergedPatch, 'videoID');
 		const nextVideoId = hasVideoId ? mergedPatch.videoID ?? null : item.videoID;
+		const hasCreatedAt = Object.prototype.hasOwnProperty.call(mergedPatch, 'createdAt');
+		const nextCreatedAt = hasCreatedAt ? mergedPatch.createdAt ?? item.created_at : item.created_at;
 
 		if (nextRating !== (item.rating ?? 5)) {
 			normalizedPatch.rating = nextRating;
@@ -1940,6 +2268,10 @@
 
 		if ((nextVideoId ?? null) !== (item.videoID ?? null)) {
 			normalizedPatch.videoID = nextVideoId ?? null;
+		}
+
+		if ((nextCreatedAt ?? null) !== (item.created_at ?? null) && typeof nextCreatedAt === 'string') {
+			normalizedPatch.createdAt = nextCreatedAt;
 		}
 
 		return Object.keys(normalizedPatch).length ? normalizedPatch : null;
@@ -1983,6 +2315,17 @@
 	function stageLevelDeletion(levelId: number) {
 		if (!list || !canEditLevels || !getLevelItem(levelId)) return;
 
+		if (pendingLevelAdditions.some((item) => item.levelId === levelId)) {
+			pendingLevelAdditions = pendingLevelAdditions.filter((item) => item.levelId !== levelId);
+			const { [levelId]: _removedOrderDraft, ...remainingOrderDrafts } = pendingLevelOrderDrafts;
+			pendingLevelOrderDrafts = remainingOrderDrafts;
+			const { [levelId]: _removedDraft, ...remainingDrafts } = levelDrafts;
+			levelDrafts = remainingDrafts;
+			return;
+		}
+
+		const { [levelId]: _removedOrderDraft, ...remainingOrderDrafts } = pendingLevelOrderDrafts;
+		pendingLevelOrderDrafts = remainingOrderDrafts;
 		const { [levelId]: _removedDraft, ...remainingDrafts } = levelDrafts;
 		levelDrafts = remainingDrafts;
 
@@ -1995,23 +2338,37 @@
 		if (!list || !canEditLevels || !levelIds.length) return;
 
 		const existingLevelIds = new Set(list.items.map((item) => item.levelId));
+		const pendingLevelIds = new Set(pendingLevelAdditions.map((item) => item.levelId));
 		const nextDeletionDraftIds = new Set(levelDeletionDraftIds);
 		const nextDrafts = { ...levelDrafts };
+		const nextOrderDrafts = { ...pendingLevelOrderDrafts };
+		const nextPendingLevelAdditions = pendingLevelAdditions.filter((item) => !levelIds.includes(item.levelId));
 
 		for (const levelId of levelIds) {
+			if (pendingLevelIds.has(levelId)) {
+				delete nextDrafts[levelId];
+				delete nextOrderDrafts[levelId];
+				continue;
+			}
+
 			if (!existingLevelIds.has(levelId)) continue;
 
 			delete nextDrafts[levelId];
+			delete nextOrderDrafts[levelId];
 			nextDeletionDraftIds.add(levelId);
 		}
 
 		levelDrafts = nextDrafts;
+		pendingLevelOrderDrafts = nextOrderDrafts;
+		pendingLevelAdditions = nextPendingLevelAdditions;
 		levelDeletionDraftIds = [...nextDeletionDraftIds];
 	}
 
 	function discardLevelDrafts() {
 		levelDrafts = {};
 		levelDeletionDraftIds = [];
+		pendingLevelAdditions = [];
+		pendingLevelOrderDrafts = {};
 		showPendingLevelChangesDialog = false;
 	}
 
@@ -2019,21 +2376,24 @@
 		if (
 			!list
 			|| !canEditLevels
-			|| (!Object.keys(levelDrafts).length && !levelDeletionDraftIds.length)
+			|| (!Object.keys(levelDrafts).length && !levelDeletionDraftIds.length && !pendingLevelAdditions.length && !Object.keys(pendingLevelOrderDrafts).length)
 			|| savingLevelDrafts
 		) return;
 
 		savingLevelDrafts = true;
 		const currentDrafts = { ...levelDrafts };
 		const currentDeletionDraftIds = [...levelDeletionDraftIds];
-		const currentUpdateEntries = Object.entries(currentDrafts).filter(
-			([levelId]) => !currentDeletionDraftIds.includes(Number(levelId))
-		);
+		const currentPendingLevelAdditions = [...pendingLevelAdditions];
+		const currentPendingOrderDrafts = { ...pendingLevelOrderDrafts };
+		const currentPendingLevelIds = new Set(currentPendingLevelAdditions.map((item) => item.levelId));
 		const failedDrafts: Record<number, LevelItemPatch> = {};
 		const failedDeletionDraftIds: number[] = [];
+		const failedPendingLevelAdditions: PendingLevelAddition[] = [];
+		const failedPendingOrderDrafts: Record<number, PendingLevelOrderDraft> = {};
 		const failureMessages: string[] = [];
 		let nextList = list;
-		const totalPendingChanges = currentDeletionDraftIds.length + currentUpdateEntries.length;
+		const persistedPendingLevelIds = new Set<number>();
+		const totalPendingChanges = currentPendingLevelAdditions.length + currentDeletionDraftIds.length + Object.keys(currentDrafts).length + Object.keys(currentPendingOrderDrafts).length;
 
 		if (!totalPendingChanges) {
 			savingLevelDrafts = false;
@@ -2041,6 +2401,30 @@
 		}
 
 		try {
+			for (const pendingItem of currentPendingLevelAdditions) {
+				savingLevelItemId = pendingItem.levelId;
+				const result = await requestAddLevel(
+					list.id,
+					pendingItem.levelId,
+					pendingItem.stagedCreatedAt ?? pendingItem.created_at ?? undefined
+				);
+
+				if (!result.ok) {
+					failedPendingLevelAdditions.push(pendingItem);
+					if (currentDrafts[pendingItem.levelId]) {
+						failedDrafts[pendingItem.levelId] = currentDrafts[pendingItem.levelId];
+					}
+					if (currentPendingOrderDrafts[pendingItem.levelId]) {
+						failedPendingOrderDrafts[pendingItem.levelId] = currentPendingOrderDrafts[pendingItem.levelId];
+					}
+					failureMessages.push(result.error || $_('custom_lists.toast.failed_add_level'));
+					continue;
+				}
+
+				nextList = normalizeMutationListPayload(result.payload);
+				persistedPendingLevelIds.add(pendingItem.levelId);
+			}
+
 			for (const levelId of currentDeletionDraftIds) {
 				savingLevelItemId = levelId;
 				const result = await requestRemoveLevel(list.id, levelId);
@@ -2051,8 +2435,22 @@
 					continue;
 				}
 
-				nextList = result.payload;
+				nextList = normalizeMutationListPayload(result.payload);
 			}
+
+			const currentUpdateEntries = Object.entries(currentDrafts).filter(([levelId]) => {
+				const numericLevelId = Number(levelId);
+
+				if (currentDeletionDraftIds.includes(numericLevelId)) {
+					return false;
+				}
+
+				if (!currentPendingLevelIds.has(numericLevelId)) {
+					return true;
+				}
+
+				return persistedPendingLevelIds.has(numericLevelId);
+			});
 
 			for (const [levelIdKey, patch] of currentUpdateEntries) {
 				const levelId = Number(levelIdKey);
@@ -2065,14 +2463,46 @@
 					continue;
 				}
 
-				nextList = result.payload;
+				nextList = normalizeMutationListPayload(result.payload);
+			}
+
+			const reorderEntries = getPendingLevelOrderEntries(currentPendingOrderDrafts).filter((entry) => {
+				if (currentDeletionDraftIds.includes(entry.levelId)) {
+					return false;
+				}
+
+				if (!currentPendingLevelIds.has(entry.levelId)) {
+					return true;
+				}
+
+				return persistedPendingLevelIds.has(entry.levelId);
+			});
+
+			if (reorderEntries.length) {
+				savingLevelItemId = null;
+				const reorderedLevelIds = buildReorderedLevelIds(
+					nextList.items.map((item) => item.levelId),
+					reorderEntries
+				);
+				const result = await requestReorderLevels(list.id, reorderedLevelIds);
+
+				if (!result.ok) {
+					for (const entry of reorderEntries) {
+						failedPendingOrderDrafts[entry.levelId] = currentPendingOrderDrafts[entry.levelId];
+					}
+					failureMessages.push(result.error || $_('custom_lists.toast.failed_reorder'));
+				} else {
+					nextList = normalizeMutationListPayload(result.payload);
+				}
 			}
 
 			list = nextList;
+			pendingLevelAdditions = failedPendingLevelAdditions;
 			levelDrafts = failedDrafts;
 			levelDeletionDraftIds = failedDeletionDraftIds;
+			pendingLevelOrderDrafts = failedPendingOrderDrafts;
 
-			if (!Object.keys(failedDrafts).length && !failedDeletionDraftIds.length) {
+			if (!Object.keys(failedDrafts).length && !failedDeletionDraftIds.length && !failedPendingLevelAdditions.length && !Object.keys(failedPendingOrderDrafts).length) {
 				toast.success($_('custom_lists.toast.levels_updated', {
 					values: { count: totalPendingChanges }
 				}));
@@ -2082,13 +2512,17 @@
 			toast.error(
 				failureMessages[0]
 				|| $_('custom_lists.toast.failed_update_levels', {
-					values: { count: Object.keys(failedDrafts).length + failedDeletionDraftIds.length }
+					values: {
+						count: Object.keys(failedDrafts).length + failedDeletionDraftIds.length + failedPendingLevelAdditions.length + Object.keys(failedPendingOrderDrafts).length
+					}
 				})
 			);
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_update_level'));
+			pendingLevelAdditions = currentPendingLevelAdditions;
 			levelDrafts = currentDrafts;
 			levelDeletionDraftIds = currentDeletionDraftIds;
+			pendingLevelOrderDrafts = currentPendingOrderDrafts;
 		} finally {
 			savingLevelItemId = null;
 			savingLevelDrafts = false;
@@ -2139,7 +2573,7 @@
 			});
 			const payload = await res.json();
 			if (!res.ok) throw new Error(payload.error || $_('custom_lists.toast.failed_reorder'));
-			list = payload;
+			list = normalizeMutationListPayload(payload);
 			toast.success($_('custom_lists.toast.reordered'));
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_reorder'));
@@ -2159,12 +2593,14 @@
 	$: canViewMembers = Boolean(list && permissions.canViewMembers);
 	$: canViewAudit = Boolean(list && permissions.canViewAudit);
 	$: canShowCollaboration = Boolean(list && (canViewMembers || canViewAudit || canManageMembers || canConfigureCollaboration || canTransferOwnership));
-	$: pendingLevelAuditEntries = buildPendingLevelAuditEntries(list, levelDrafts, levelDeletionDraftIds);
+	$: pendingLevelAuditEntries = buildPendingLevelAuditEntries(list, pendingLevelAdditions, levelDrafts, levelDeletionDraftIds);
+	$: pendingLevelAuditAddedCount = pendingLevelAuditEntries.filter((entry) => entry.action === 'level_added').length;
 	$: pendingLevelAuditUpdatedCount = pendingLevelAuditEntries.filter((entry) => entry.action === 'level_updated').length;
 	$: pendingLevelAuditRemovedCount = pendingLevelAuditEntries.filter((entry) => entry.action === 'level_removed').length;
 	$: if (showPendingLevelChangesDialog && !pendingLevelAuditEntries.length) {
 		showPendingLevelChangesDialog = false;
 	}
+	$: levelsTabList = getLevelsTabList(list);
 	$: if (list && $user.checked && !initialManageTabSettled) {
 		initialManageTabSettled = true;
 		const requestedTab = getInitialManageTab();
@@ -2414,7 +2850,7 @@
 
 			<Tabs.Content value="levels">
 				<LevelsTab
-					{list}
+					list={levelsTabList}
 					{canEditLevels}
 					{levelDrafts}
 					{levelDeletionDraftIds}
@@ -2444,6 +2880,11 @@
 				</Dialog.Header>
 
 				<div class="pendingChangesSummary">
+					<Badge variant="secondary">
+						{$_('custom_lists.manage.unsaved_level_edits_dialog_added_count', {
+							values: { count: pendingLevelAuditAddedCount }
+						})}
+					</Badge>
 					<Badge variant="secondary">
 						{$_('custom_lists.manage.unsaved_level_edits_dialog_updated_count', {
 							values: { count: pendingLevelAuditUpdatedCount }
@@ -2489,6 +2930,17 @@
 													<span class="pendingChangeFieldValue pendingChangeFieldValueOld">{formatPendingLevelAuditValue(field, entry.metadata.changes?.[field]?.old)}</span>
 													<span class="pendingChangeFieldArrow" aria-hidden="true">→</span>
 													<span class="pendingChangeFieldValue pendingChangeFieldValueNew">{formatPendingLevelAuditValue(field, entry.metadata.changes?.[field]?.new)}</span>
+												</div>
+											</div>
+										{/each}
+									</div>
+								{:else if entry.action === 'level_added'}
+									<div class="pendingChangeFieldList">
+										{#each getPendingLevelAdditionPreviewRows(entry) as row}
+											<div class="pendingChangeFieldRow">
+												<div class="pendingChangeFieldLabel">{getPendingLevelAuditFieldLabel(row.field)}</div>
+												<div class="pendingChangeFieldValues pendingChangeFieldValuesSingle">
+													<span class="pendingChangeFieldValue pendingChangeFieldValueNew">{formatPendingLevelAuditValue(row.field, row.value)}</span>
 												</div>
 											</div>
 										{/each}
