@@ -38,9 +38,11 @@
 		title: string;
 		description: string;
 		backgroundColor?: string | null;
+		bannerUrl?: string | null;
 		borderColor?: string | null;
 		isPlatformer: boolean;
 		isOfficial?: boolean;
+		logoUrl?: string | null;
 		visibility: 'private' | 'unlisted' | 'public';
 		tags: string[];
 		levelCount: number;
@@ -167,6 +169,31 @@
 		if (borderColor) {
 			styles.push(`border-color: ${borderColor};`);
 			styles.push(`--custom-surface-chip-border: ${withHexAlpha(borderColor, '55')};`);
+		}
+
+		return styles.length ? styles.join(' ') : undefined;
+	}
+
+	function getListAssetUrl(value: string | null | undefined) {
+		const normalized = typeof value === 'string' ? value.trim() : '';
+		return normalized.length ? normalized : null;
+	}
+
+	function getListCardBannerStyle(list: ListSummary) {
+		const backgroundColor = isHexColor(list.backgroundColor)
+			? String(list.backgroundColor).trim()
+			: null;
+		const borderColor = isHexColor(list.borderColor) ? String(list.borderColor).trim() : null;
+		const styles: string[] = [];
+
+		if (backgroundColor) {
+			styles.push(
+				`background: linear-gradient(180deg, ${withHexAlpha(backgroundColor, 'F0')} 0%, ${withHexAlpha(backgroundColor, 'C2')} 100%);`
+			);
+		}
+
+		if (borderColor) {
+			styles.push(`--custom-card-accent: ${borderColor};`);
 		}
 
 		return styles.length ? styles.join(' ') : undefined;
@@ -445,11 +472,38 @@
 				{:else}
 					<div class="listGrid">
 						{#each lists as list, index}
+							{@const bannerUrl = getListAssetUrl(list.bannerUrl)}
+							{@const logoUrl = getListAssetUrl(list.logoUrl)}
 							<button
 								class="listCard"
 								style={getListCardStyle(list)}
 								on:click={() => goto(getListHref(list))}
 							>
+								{#if bannerUrl || logoUrl}
+									<div class="cardMedia" style={getListCardBannerStyle(list)}>
+										{#if bannerUrl}
+											<img
+												class="cardBanner"
+												src={bannerUrl}
+												alt=""
+												loading="lazy"
+												decoding="async"
+											/>
+										{/if}
+										<div class="cardMediaShade"></div>
+										{#if logoUrl}
+											<div class="cardLogoWrap">
+												<img
+													class="cardLogo"
+													src={logoUrl}
+													alt={`${list.title} logo`}
+													loading="lazy"
+													decoding="async"
+												/>
+											</div>
+										{/if}
+									</div>
+								{/if}
 								<div class="cardTop">
 									<h3 class="cardTitle">{list.title}</h3>
 									<p class="cardDesc">
@@ -595,11 +649,38 @@
 				{:else}
 					<div class="listGrid">
 						{#each lists as list, index}
+							{@const bannerUrl = getListAssetUrl(list.bannerUrl)}
+							{@const logoUrl = getListAssetUrl(list.logoUrl)}
 							<button
 								class="listCard"
 								style={getListCardStyle(list)}
 								on:click={() => goto(getListHref(list))}
 							>
+								{#if bannerUrl || logoUrl}
+									<div class="cardMedia" style={getListCardBannerStyle(list)}>
+										{#if bannerUrl}
+											<img
+												class="cardBanner"
+												src={bannerUrl}
+												alt=""
+												loading="lazy"
+												decoding="async"
+											/>
+										{/if}
+										<div class="cardMediaShade"></div>
+										{#if logoUrl}
+											<div class="cardLogoWrap">
+												<img
+													class="cardLogo"
+													src={logoUrl}
+													alt={`${list.title} logo`}
+													loading="lazy"
+													decoding="async"
+												/>
+											</div>
+										{/if}
+									</div>
+								{/if}
 								<div class="cardTop">
 									<h3 class="cardTitle">{list.title}</h3>
 									<p class="cardDesc">
@@ -746,11 +827,38 @@
 					{:else}
 						<div class="listGrid">
 							{#each ownLists as list, index}
+								{@const bannerUrl = getListAssetUrl(list.bannerUrl)}
+								{@const logoUrl = getListAssetUrl(list.logoUrl)}
 								<button
 									class="listCard"
 									style={getListCardStyle(list)}
 									on:click={() => goto(getListHref(list))}
 								>
+									{#if bannerUrl || logoUrl}
+										<div class="cardMedia" style={getListCardBannerStyle(list)}>
+											{#if bannerUrl}
+												<img
+													class="cardBanner"
+													src={bannerUrl}
+													alt=""
+													loading="lazy"
+													decoding="async"
+												/>
+											{/if}
+											<div class="cardMediaShade"></div>
+											{#if logoUrl}
+												<div class="cardLogoWrap">
+													<img
+														class="cardLogo"
+														src={logoUrl}
+														alt={`${list.title} logo`}
+														loading="lazy"
+														decoding="async"
+													/>
+												</div>
+											{/if}
+										</div>
+									{/if}
 									<div class="cardTop">
 										<h3 class="cardTitle">{list.title}</h3>
 										<p class="cardDesc">
@@ -866,11 +974,38 @@
 					{:else}
 						<div class="listGrid">
 							{#each starredLists as list, index}
+								{@const bannerUrl = getListAssetUrl(list.bannerUrl)}
+								{@const logoUrl = getListAssetUrl(list.logoUrl)}
 								<button
 									class="listCard"
 									style={getListCardStyle(list)}
 									on:click={() => goto(getListHref(list))}
 								>
+									{#if bannerUrl || logoUrl}
+										<div class="cardMedia" style={getListCardBannerStyle(list)}>
+											{#if bannerUrl}
+												<img
+													class="cardBanner"
+													src={bannerUrl}
+													alt=""
+													loading="lazy"
+													decoding="async"
+												/>
+											{/if}
+											<div class="cardMediaShade"></div>
+											{#if logoUrl}
+												<div class="cardLogoWrap">
+													<img
+														class="cardLogo"
+														src={logoUrl}
+														alt={`${list.title} logo`}
+														loading="lazy"
+														decoding="async"
+													/>
+												</div>
+											{/if}
+										</div>
+									{/if}
 									<div class="cardTop">
 										<h3 class="cardTitle">{list.title}</h3>
 										<p class="cardDesc">
@@ -1069,10 +1204,6 @@
 		gap: 14px;
 	}
 
-	.listGridAd {
-		grid-column: 1 / -1;
-	}
-
 	/* List Card */
 	.listCard {
 		display: flex;
@@ -1085,6 +1216,7 @@
 		text-align: left;
 		cursor: pointer;
 		color: var(--custom-surface-foreground, hsl(var(--card-foreground)));
+		overflow: hidden;
 		transition:
 			background 0.15s ease,
 			border-color 0.15s ease,
@@ -1095,6 +1227,57 @@
 	.listCard:hover {
 		border-color: hsl(var(--primary) / 0.4);
 		box-shadow: 0 2px 12px hsl(var(--foreground) / 0.06);
+	}
+
+	.cardMedia {
+		position: relative;
+		display: flex;
+		align-items: flex-end;
+		min-height: 128px;
+		margin: -18px -18px 2px;
+		padding: 16px 18px;
+		border-bottom: 1px solid hsl(var(--border) / 0.75);
+		background:
+			linear-gradient(180deg, rgb(15 23 42 / 0.18) 0%, rgb(15 23 42 / 0.48) 100%),
+			linear-gradient(135deg, hsl(var(--muted)) 0%, hsl(var(--card)) 100%);
+		isolation: isolate;
+	}
+
+	.cardBanner {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.cardMediaShade {
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(180deg, rgb(15 23 42 / 0.08) 0%, rgb(15 23 42 / 0.48) 100%);
+		pointer-events: none;
+	}
+
+	.cardLogoWrap {
+		position: relative;
+		z-index: 1;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 76px;
+		height: 76px;
+		padding: 10px;
+		border-radius: 20px;
+		border: 1px solid var(--custom-card-accent, rgb(255 255 255 / 0.38));
+		background: rgb(255 255 255 / 0.94);
+		box-shadow: 0 16px 36px rgb(15 23 42 / 0.2);
+		backdrop-filter: blur(10px);
+	}
+
+	.cardLogo {
+		max-width: 100%;
+		max-height: 100%;
+		object-fit: contain;
 	}
 
 	.cardTop {

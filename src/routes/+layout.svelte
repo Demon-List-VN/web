@@ -134,16 +134,24 @@
 	let supporterAlertDismissed = false;
 	let currentCustomLogoUrl = '';
 	let customLogoFailed = false;
+	const defaultNavLogoSrc = '/logo.png';
+	const defaultFaviconHref = '/favicon.png';
 
-	$: customListLogoUrl = typeof $page.data?.list?.logoUrl === 'string' ? $page.data.list.logoUrl : '';
+	function normalizeThemeAssetUrl(value: unknown) {
+		return typeof value === 'string' ? value.trim() : '';
+	}
+
+	$: customListLogoUrl = normalizeThemeAssetUrl($page.data?.list?.logoUrl);
+	$: customListTitle = normalizeThemeAssetUrl($page.data?.list?.title);
 	$: if (customListLogoUrl !== currentCustomLogoUrl) {
 		currentCustomLogoUrl = customListLogoUrl;
 		customLogoFailed = false;
 	}
 	$: useCustomListLogo = Boolean(customListLogoUrl && !customLogoFailed);
-	$: navLogoSrc = useCustomListLogo ? customListLogoUrl : '/logo.png';
-	$: navLogoAlt = useCustomListLogo && typeof $page.data?.list?.title === 'string'
-		? `${$page.data.list.title} logo`
+	$: navLogoSrc = useCustomListLogo ? customListLogoUrl : defaultNavLogoSrc;
+	$: faviconHref = useCustomListLogo ? customListLogoUrl : defaultFaviconHref;
+	$: navLogoAlt = useCustomListLogo && customListTitle
+		? `${customListTitle} logo`
 		: 'logo';
 	
 	onMount(() => {
@@ -253,6 +261,10 @@
 		localStorage.setItem('supporterAlertDismissed', 'true');
 	}
 </script>
+
+<svelte:head>
+	<link rel="icon" href={faviconHref} />
+</svelte:head>
 
 <ModeWatcher defaultMode="system" />
 <Toaster position="top-center" />
