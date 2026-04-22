@@ -69,8 +69,7 @@
 		return labels[s] ? ($locale == 'vi' ? labels[s].vi : labels[s].en) : s;
 	});
 	// Record: last step = 5, Level: last step = 3 (with apiLevel loaded)
-	$: isLastStep =
-		state.type === 'level' ? state.step === 3 && state.apiLevel : state.step === 5;
+	$: isLastStep = state.type === 'level' ? state.step === 3 && state.apiLevel : state.step === 5;
 
 	function t(vi: string, en: string) {
 		return $locale == 'vi' ? vi : en;
@@ -167,7 +166,12 @@
 		}
 	}
 
-	$: activeEligibleProgress = getEligibleProgress(state.type, state.apiLevel, state.time, state.progress);
+	$: activeEligibleProgress = getEligibleProgress(
+		state.type,
+		state.apiLevel,
+		state.time,
+		state.progress
+	);
 	$: activeEligibleLevelId = getActiveEligibleLevelId(
 		state.type,
 		state.selectedVariantId,
@@ -185,9 +189,7 @@
 		const progress = activeEligibleProgress;
 		const levelId = activeEligibleLevelId;
 		const canLoadEligibleLists =
-			state.type === 'record' &&
-			(state.step === 3 || state.step === 4) &&
-			levelId !== null;
+			state.type === 'record' && (state.step === 3 || state.step === 4) && levelId !== null;
 
 		if (!canLoadEligibleLists) {
 			eligibleLists = [];
@@ -226,9 +228,7 @@
 		const levelId = state.type === 'level' ? state.levelSubmission.levelId : state.levelid;
 
 		try {
-			state.level = await (
-				await fetch(`${import.meta.env.VITE_API_URL}/levels/${levelId}`)
-			).json();
+			state.level = await (await fetch(`${import.meta.env.VITE_API_URL}/levels/${levelId}`)).json();
 		} catch {
 			state.level = null;
 		}
@@ -241,9 +241,7 @@
 		state.selectedVariantId = null;
 		if (state.type === 'record') {
 			try {
-				const varRes = await fetch(
-					`${import.meta.env.VITE_API_URL}/levels/${levelId}/variants`
-				);
+				const varRes = await fetch(`${import.meta.env.VITE_API_URL}/levels/${levelId}/variants`);
 				if (varRes.ok) {
 					state.levelVariants = await varRes.json();
 				}
@@ -274,7 +272,9 @@
 				return;
 			}
 			if (!isValidYouTubeLink(state.levelSubmission.videoLink)) {
-				toast.error(t('Link video không hợp lệ', 'Invalid video link. Please enter a valid YouTube link.'));
+				toast.error(
+					t('Link video không hợp lệ', 'Invalid video link. Please enter a valid YouTube link.')
+				);
 				return;
 			}
 			submitLevel();
@@ -292,13 +292,17 @@
 				}
 			} else {
 				if (!state.progress) {
-					toast.error(t('Vui lòng điền đầy đủ các trường bắt buộc', 'Please fill in all required fields'));
+					toast.error(
+						t('Vui lòng điền đầy đủ các trường bắt buộc', 'Please fill in all required fields')
+					);
 					return;
 				}
 			}
 
 			if (!state.refreshRate || !state.videoLink || !state.mobile) {
-				toast.error(t('Vui lòng điền đầy đủ các trường bắt buộc', 'Please fill in all required fields'));
+				toast.error(
+					t('Vui lòng điền đầy đủ các trường bắt buộc', 'Please fill in all required fields')
+				);
 				return;
 			}
 
@@ -307,16 +311,22 @@
 					(!state.level.flTop || state.level.rating) &&
 					!(state.level.isChallenge && state.level.rating < 2600);
 				if (needsRaw && !state.raw) {
-					toast.error(t('Vui lòng điền đầy đủ các trường bắt buộc', 'Please fill in all required fields'));
+					toast.error(
+						t('Vui lòng điền đầy đủ các trường bắt buộc', 'Please fill in all required fields')
+					);
 					return;
 				}
 			} else if (!state.raw) {
-				toast.error(t('Vui lòng điền đầy đủ các trường bắt buộc', 'Please fill in all required fields'));
+				toast.error(
+					t('Vui lòng điền đầy đủ các trường bắt buộc', 'Please fill in all required fields')
+				);
 				return;
 			}
 
 			if (state.raw && state.raw === state.videoLink) {
-				toast.error(t('Video thô không được trùng với video hoàn thành', 'Raw is not completion video.'));
+				toast.error(
+					t('Video thô không được trùng với video hoàn thành', 'Raw is not completion video.')
+				);
 				return;
 			}
 
@@ -369,17 +379,14 @@
 		state.submitId = new Date().getTime();
 
 		try {
-			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/submission?id=${state.submitId}`,
-				{
-					method: 'POST',
-					body: JSON.stringify(submitData),
-					headers: {
-						Authorization: `Bearer ${await $user.token()}`,
-						'Content-Type': 'application/json'
-					}
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/submission?id=${state.submitId}`, {
+				method: 'POST',
+				body: JSON.stringify(submitData),
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`,
+					'Content-Type': 'application/json'
 				}
-			);
+			});
 
 			state.sendStatus = res.ok ? 1 : 2;
 
@@ -503,10 +510,7 @@
 											submissionType="level"
 										/>
 									{:else}
-										<StepLevelId
-											bind:levelId={state.levelid}
-											submissionType="record"
-										/>
+										<StepLevelId bind:levelId={state.levelid} submissionType="record" />
 									{/if}
 								{:else if state.step === 3}
 									{#if state.type === 'level'}
@@ -522,6 +526,14 @@
 											levelVariants={state.levelVariants}
 											bind:selectedVariantId={state.selectedVariantId}
 										/>
+										{#if showEligibleListsPanel}
+											<EligibleListsPanel
+												lists={eligibleLists}
+												loading={eligibleListsLoading}
+												errorMessage={eligibleListsError}
+												mode={eligibleListPanelMode}
+											/>
+										{/if}
 									{/if}
 								{:else if state.step === 4}
 									<StepRequiredFields
@@ -545,15 +557,6 @@
 							</div>
 						{/key}
 					</div>
-
-						{#if showEligibleListsPanel}
-							<EligibleListsPanel
-								lists={eligibleLists}
-								loading={eligibleListsLoading}
-								errorMessage={eligibleListsError}
-								mode={eligibleListPanelMode}
-							/>
-						{/if}
 
 					<div class="step-footer">
 						{#if state.step > 0}
