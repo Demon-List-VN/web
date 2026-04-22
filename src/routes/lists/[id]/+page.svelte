@@ -291,7 +291,7 @@
 			return index + 1;
 		}
 
-		return list?.isOfficial ? Number(item.position) : Number(item.position) + 1;
+		return Number(item.position);
 	}
 
 	function getRequestedTab(searchParams: URLSearchParams): DetailTab {

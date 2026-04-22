@@ -168,7 +168,7 @@
 
 	function formatStarredListPrimaryValue(list: StarredListEntry) {
 		if (hasStarredListPositionBadge(list)) {
-			return list.item?.position != null ? `#${list.item.position + 1}` : '#?';
+			return list.item?.position != null ? `#${list.item.position}` : '#?';
 		}
 
 		return `${list.item?.rating ?? '?'}pt`;
