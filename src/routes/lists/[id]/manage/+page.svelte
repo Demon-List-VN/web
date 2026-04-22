@@ -177,6 +177,12 @@
 		aborted: boolean;
 	};
 
+	type LevelItemPatch = {
+		rating?: number;
+		minProgress?: number | null;
+		videoID?: string | null;
+	};
+
 	type ManageTab = 'basic' | 'appearance' | 'formula' | 'rank' | 'danger' | 'levels' | 'collaboration';
 
 	const defaultPermissions: CustomListPermissionFlags = {
@@ -199,17 +205,20 @@
 
 	let savingMetadata = false;
 	let addingLevel = false;
-	let mutatingLevelId: number | null = null;
 	let savingLevelItemId: number | null = null;
+	let savingLevelDrafts = false;
 	let savingReorder = false;
 	let refreshingLeaderboard = false;
 	let savingBanState = false;
 	let savingCollaboration = false;
 	let hasUnsavedSettings = false;
+	let hasUnsavedLevelEdits = false;
 	let initialSyncDone = false;
 	let uploadingAsset: 'banner' | 'favicon' | 'logo' | null = null;
 	let batchAddProgress: BatchAddProgress | null = null;
 	let batchAddAbortController: AbortController | null = null;
+	let levelDrafts: Record<number, LevelItemPatch> = {};
+	let levelDeletionDraftIds: number[] = [];
 
 	const CUSTOM_LIST_CDN_BASE_URL = 'https://cdn.gdvn.net';
 	const CSV_IMPORT_RATE_LIMIT_RETRY_MS = 1000;
@@ -370,6 +379,22 @@
 		&& canEditSettings
 		&& getSettingsSnapshotKey(getEditableSettingsSnapshot()) !== getSettingsSnapshotKey(getSavedSettingsSnapshot(list))
 	);
+	$: hasUnsavedLevelEdits = Boolean(canEditLevels && (Object.keys(levelDrafts).length || levelDeletionDraftIds.length));
+	$: if (list) {
+		const availableLevelIds = new Set(list.items.map((item) => item.levelId));
+		const nextLevelDrafts = Object.fromEntries(
+			Object.entries(levelDrafts).filter(([levelId]) => availableLevelIds.has(Number(levelId)))
+		) as Record<number, LevelItemPatch>;
+		const nextLevelDeletionDraftIds = levelDeletionDraftIds.filter((levelId) => availableLevelIds.has(levelId));
+
+		if (Object.keys(nextLevelDrafts).length !== Object.keys(levelDrafts).length) {
+			levelDrafts = nextLevelDrafts;
+		}
+
+		if (nextLevelDeletionDraftIds.length !== levelDeletionDraftIds.length) {
+			levelDeletionDraftIds = nextLevelDeletionDraftIds;
+		}
+	}
 
 	// Re-fetch with auth once user is available so managers and owners can recover private lists.
 	$: if ($user.checked && $user.loggedIn) {
@@ -383,14 +408,16 @@
 
 	onMount(() => {
 		const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-			if (!addingLevel && !hasUnsavedSettings) {
+			if (!addingLevel && !hasUnsavedSettings && !hasUnsavedLevelEdits) {
 				return;
 			}
 
 			event.preventDefault();
 			event.returnValue = addingLevel
 				? $_('custom_lists.detail.add_level.csv_close_warning')
-				: $_('custom_lists.manage.unsaved_settings_close_warning');
+				: hasUnsavedLevelEdits
+					? $_('custom_lists.manage.unsaved_level_edits_close_warning')
+					: $_('custom_lists.manage.unsaved_settings_close_warning');
 			return event.returnValue;
 		};
 
@@ -1276,6 +1303,30 @@
 		};
 	}
 
+	async function requestRemoveLevel(listId: number, levelId: number, signal?: AbortSignal) {
+		const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${listId}/levels/${levelId}`, {
+			method: 'DELETE',
+			signal,
+			headers: {
+				Authorization: `Bearer ${await $user.token()}`
+			}
+		});
+		const payload = await res.json().catch(() => null);
+
+		if (!res.ok) {
+			return {
+				ok: false as const,
+				status: res.status,
+				error: payload?.error || $_('custom_lists.toast.failed_remove_level')
+			};
+		}
+
+		return {
+			ok: true as const,
+			payload: payload as CustomList
+		};
+	}
+
 	async function requestReorderLevels(listId: number, levelIds: number[], signal?: AbortSignal) {
 		const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${listId}/reorder`, {
 			method: 'PATCH',
@@ -1651,45 +1702,190 @@
 		batchAddAbortController.abort();
 	}
 
-	async function removeLevel(levelId: number) {
+	function getLevelItem(levelId: number) {
+		return list?.items.find((item) => item.levelId === levelId) ?? null;
+	}
+
+	function getNormalizedLevelPatch(
+		levelId: number,
+		patch: Partial<LevelItemPatch>,
+		drafts: Record<number, LevelItemPatch> = levelDrafts
+	) {
+		const item = getLevelItem(levelId);
+		if (!item) return null;
+
+		const mergedPatch = {
+			...(drafts[levelId] ?? {}),
+			...patch
+		};
+		const normalizedPatch: LevelItemPatch = {};
+		const nextRating = mergedPatch.rating ?? item.rating ?? 5;
+		const hasMinProgress = Object.prototype.hasOwnProperty.call(mergedPatch, 'minProgress');
+		const nextMinProgress = hasMinProgress ? mergedPatch.minProgress ?? null : item.minProgress;
+		const hasVideoId = Object.prototype.hasOwnProperty.call(mergedPatch, 'videoID');
+		const nextVideoId = hasVideoId ? mergedPatch.videoID ?? null : item.videoID;
+
+		if (nextRating !== (item.rating ?? 5)) {
+			normalizedPatch.rating = nextRating;
+		}
+
+		if ((nextMinProgress ?? null) !== (item.minProgress ?? null)) {
+			normalizedPatch.minProgress = nextMinProgress ?? null;
+		}
+
+		if ((nextVideoId ?? null) !== (item.videoID ?? null)) {
+			normalizedPatch.videoID = nextVideoId ?? null;
+		}
+
+		return Object.keys(normalizedPatch).length ? normalizedPatch : null;
+	}
+
+	function stageLevelDraft(levelId: number, patch: Partial<LevelItemPatch>) {
 		if (!list || !canEditLevels) return;
-		mutatingLevelId = levelId;
-		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/levels/${levelId}`, {
-				method: 'DELETE',
-				headers: { Authorization: `Bearer ${await $user.token()}` }
-			});
-			const payload = await res.json();
-			if (!res.ok) throw new Error(payload.error || $_('custom_lists.toast.failed_remove_level'));
-			list = payload;
-			toast.success($_('custom_lists.toast.level_removed'));
-		} catch (error) {
-			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_remove_level'));
-		} finally {
-			mutatingLevelId = null;
+
+		const nextPatch = getNormalizedLevelPatch(levelId, patch);
+		if (!nextPatch) {
+			const { [levelId]: _removedDraft, ...remainingDrafts } = levelDrafts;
+			levelDrafts = remainingDrafts;
+			return;
+		}
+
+		levelDrafts = {
+			...levelDrafts,
+			[levelId]: nextPatch
+		};
+	}
+
+	function stageMultipleLevelDrafts(levelIds: number[], patch: Partial<LevelItemPatch>) {
+		if (!list || !canEditLevels || !levelIds.length) return;
+
+		const nextDrafts = { ...levelDrafts };
+
+		for (const levelId of levelIds) {
+			const nextPatch = getNormalizedLevelPatch(levelId, patch, nextDrafts);
+
+			if (!nextPatch) {
+				delete nextDrafts[levelId];
+				continue;
+			}
+
+			nextDrafts[levelId] = nextPatch;
+		}
+
+		levelDrafts = nextDrafts;
+	}
+
+	function stageLevelDeletion(levelId: number) {
+		if (!list || !canEditLevels || !getLevelItem(levelId)) return;
+
+		const { [levelId]: _removedDraft, ...remainingDrafts } = levelDrafts;
+		levelDrafts = remainingDrafts;
+
+		if (!levelDeletionDraftIds.includes(levelId)) {
+			levelDeletionDraftIds = [...levelDeletionDraftIds, levelId];
 		}
 	}
 
-	async function updateLevelItem(levelId: number, patch: { rating?: number; minProgress?: number | null; videoID?: string | null; createdAt?: string }) {
-		if (!list || !canEditLevels) return;
-		savingLevelItemId = levelId;
+	function stageMultipleLevelDeletions(levelIds: number[]) {
+		if (!list || !canEditLevels || !levelIds.length) return;
+
+		const existingLevelIds = new Set(list.items.map((item) => item.levelId));
+		const nextDeletionDraftIds = new Set(levelDeletionDraftIds);
+		const nextDrafts = { ...levelDrafts };
+
+		for (const levelId of levelIds) {
+			if (!existingLevelIds.has(levelId)) continue;
+
+			delete nextDrafts[levelId];
+			nextDeletionDraftIds.add(levelId);
+		}
+
+		levelDrafts = nextDrafts;
+		levelDeletionDraftIds = [...nextDeletionDraftIds];
+	}
+
+	function discardLevelDrafts() {
+		levelDrafts = {};
+		levelDeletionDraftIds = [];
+	}
+
+	async function saveLevelDrafts() {
+		if (
+			!list
+			|| !canEditLevels
+			|| (!Object.keys(levelDrafts).length && !levelDeletionDraftIds.length)
+			|| savingLevelDrafts
+		) return;
+
+		savingLevelDrafts = true;
+		const currentDrafts = { ...levelDrafts };
+		const currentDeletionDraftIds = [...levelDeletionDraftIds];
+		const currentUpdateEntries = Object.entries(currentDrafts).filter(
+			([levelId]) => !currentDeletionDraftIds.includes(Number(levelId))
+		);
+		const failedDrafts: Record<number, LevelItemPatch> = {};
+		const failedDeletionDraftIds: number[] = [];
+		const failureMessages: string[] = [];
+		let nextList = list;
+		const totalPendingChanges = currentDeletionDraftIds.length + currentUpdateEntries.length;
+
+		if (!totalPendingChanges) {
+			savingLevelDrafts = false;
+			return;
+		}
+
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/levels/${levelId}`, {
-				method: 'PATCH',
-				headers: {
-					Authorization: `Bearer ${await $user.token()}`,
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify(patch)
-			});
-			const payload = await res.json();
-			if (!res.ok) throw new Error(payload.error || $_('custom_lists.toast.failed_update_level'));
-			list = payload;
-			toast.success($_('custom_lists.toast.level_updated'));
+			for (const levelId of currentDeletionDraftIds) {
+				savingLevelItemId = levelId;
+				const result = await requestRemoveLevel(list.id, levelId);
+
+				if (!result.ok) {
+					failedDeletionDraftIds.push(levelId);
+					failureMessages.push(result.error || $_('custom_lists.toast.failed_remove_level'));
+					continue;
+				}
+
+				nextList = result.payload;
+			}
+
+			for (const [levelIdKey, patch] of currentUpdateEntries) {
+				const levelId = Number(levelIdKey);
+				savingLevelItemId = levelId;
+				const result = await requestUpdateLevel(list.id, levelId, patch);
+
+				if (!result.ok) {
+					failedDrafts[levelId] = patch;
+					failureMessages.push(result.error || $_('custom_lists.toast.failed_update_level'));
+					continue;
+				}
+
+				nextList = result.payload;
+			}
+
+			list = nextList;
+			levelDrafts = failedDrafts;
+			levelDeletionDraftIds = failedDeletionDraftIds;
+
+			if (!Object.keys(failedDrafts).length && !failedDeletionDraftIds.length) {
+				toast.success($_('custom_lists.toast.levels_updated', {
+					values: { count: totalPendingChanges }
+				}));
+				return;
+			}
+
+			toast.error(
+				failureMessages[0]
+				|| $_('custom_lists.toast.failed_update_levels', {
+					values: { count: Object.keys(failedDrafts).length + failedDeletionDraftIds.length }
+				})
+			);
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_update_level'));
+			levelDrafts = currentDrafts;
+			levelDeletionDraftIds = currentDeletionDraftIds;
 		} finally {
 			savingLevelItemId = null;
+			savingLevelDrafts = false;
 		}
 	}
 
@@ -2008,20 +2204,42 @@
 				<LevelsTab
 					{list}
 					{canEditLevels}
+					{levelDrafts}
+					{levelDeletionDraftIds}
 					{addingLevel}
 					{batchAddProgress}
 					{abortBatchAddImport}
-					{mutatingLevelId}
 					{savingLevelItemId}
+					{savingLevelDrafts}
 					{savingReorder}
 					{addLevel}
 					{addLevels}
-					{removeLevel}
-					{updateLevelItem}
+					{stageLevelDraft}
+					{stageMultipleLevelDrafts}
+					{stageLevelDeletion}
+					{stageMultipleLevelDeletions}
 					{reorderLevels}
 				/>
 			</Tabs.Content>
 		</Tabs.Root>
+
+		{#if canEditLevels && hasUnsavedLevelEdits}
+			<div class="toolCard unsavedLevelNotice" role="status" aria-live="polite">
+				<div class="moderationCopy">
+					<h2 class="toolHeading">{$_('custom_lists.manage.unsaved_level_edits_title')}</h2>
+					<p class="hint">{$_('custom_lists.manage.unsaved_level_edits_hint')}</p>
+				</div>
+				<div class="unsavedLevelActions">
+					<Button variant="outline" on:click={discardLevelDrafts} disabled={savingLevelDrafts}>
+						{$_('custom_lists.detail.levels.cancel_button')}
+					</Button>
+					<Button on:click={saveLevelDrafts} disabled={savingLevelDrafts}>
+						<Save class="mr-2 h-4 w-4" />
+						{savingLevelDrafts ? `${$_('general.loading')}...` : $_('custom_lists.detail.edit.save')}
+					</Button>
+				</div>
+			</div>
+		{/if}
 	{/if}
 </div>
 
@@ -2029,7 +2247,7 @@
 	.page {
 		max-width: 1100px;
 		margin: 0 auto;
-		padding: 24px 16px 48px;
+		padding: 24px 16px 140px;
 		display: flex;
 		flex-direction: column;
 		gap: 20px;
@@ -2170,10 +2388,32 @@
 		color: hsl(var(--primary));
 	}
 
+	.unsavedLevelNotice {
+		position: fixed;
+		left: 50%;
+		bottom: 20px;
+		transform: translateX(-50%);
+		z-index: 40;
+		width: min(680px, calc(100vw - 24px));
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+		gap: 16px;
+		background: hsl(var(--card));
+		box-shadow: 0 20px 40px hsl(var(--foreground) / 0.16);
+	}
+
 	.moderationCopy {
 		display: flex;
 		flex-direction: column;
 		gap: 6px;
+	}
+
+	.unsavedLevelActions {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		flex-shrink: 0;
 	}
 
 	.moderationIcon {
@@ -2251,6 +2491,18 @@
 
 		.toolCard {
 			padding: 16px;
+		}
+
+		.unsavedLevelNotice {
+			bottom: 12px;
+			width: calc(100vw - 20px);
+			align-items: stretch;
+		}
+
+		.unsavedLevelActions {
+			width: 100%;
+			justify-content: stretch;
+			flex-direction: column;
 		}
 	}
 </style>

@@ -5,6 +5,7 @@
 	import * as Collapsible from '$lib/components/ui/collapsible';
 	import { Input } from '$lib/components/ui/input';
 	import { Textarea } from '$lib/components/ui/textarea';
+	import { tick } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { ChevronRight, GripVertical, ListOrdered, Plus, Save, Star, Trash2 } from 'lucide-svelte';
 	import { _ } from 'svelte-i18n';
@@ -43,13 +44,21 @@
 		aborted: boolean;
 	};
 
+	type LevelItemPatch = {
+		rating?: number;
+		minProgress?: number | null;
+		videoID?: string | null;
+	};
+
 	export let list: any = null;
 	export let canEditLevels = false;
+	export let levelDrafts: Record<number, LevelItemPatch> = {};
+	export let levelDeletionDraftIds: number[] = [];
 	export let addingLevel = false;
 	export let batchAddProgress: BatchAddProgress | null = null;
 	export let abortBatchAddImport: () => void | Promise<void> = async () => {};
-	export let mutatingLevelId: number | null = null;
 	export let savingLevelItemId: number | null = null;
+	export let savingLevelDrafts = false;
 	export let savingReorder = false;
 	export let addLevel: (levelId: number) => boolean | Promise<boolean> = async () => false;
 	export let addLevels: (levelInputs: BatchAddLevelInput[]) => BatchAddLevelsResult | Promise<BatchAddLevelsResult> = async () => ({
@@ -59,8 +68,10 @@
 		failed: [],
 		aborted: false
 	});
-	export let removeLevel: (levelId: number) => void | Promise<void> = async () => {};
-	export let updateLevelItem: (levelId: number, patch: { rating?: number; minProgress?: number | null; videoID?: string | null; createdAt?: string }) => void | Promise<void> = async () => {};
+	export let stageLevelDraft: (levelId: number, patch: LevelItemPatch) => void | Promise<void> = async () => {};
+	export let stageMultipleLevelDrafts: (levelIds: number[], patch: LevelItemPatch) => void | Promise<void> = async () => {};
+	export let stageLevelDeletion: (levelId: number) => void | Promise<void> = async () => {};
+	export let stageMultipleLevelDeletions: (levelIds: number[]) => void | Promise<void> = async () => {};
 	export let reorderLevels: (levelIds: number[]) => void | Promise<void> = async () => {};
 
 	let displayedItems: any[] = [];
@@ -75,6 +86,11 @@
 	let editingMinProgressValue: string | number | undefined = '';
 	let editingVideoIdItemId: number | null = null;
 	let editingVideoIdValue = '';
+	let selectedLevelIds: number[] = [];
+	let lastSelectedIndex: number | null = null;
+	let bulkRatingValue = '';
+	let bulkMinProgressValue = '';
+	let bulkVideoIdValue = '';
 	let csvFileInput: HTMLInputElement | null = null;
 	let csvAddSummary: (BatchAddLevelsResult & { invalidRows: number }) | null = null;
 	let addToolsOpen = false;
@@ -85,12 +101,28 @@
 		['65742217', '2024-03-01T00:00:00Z', '1', '7', '22', 'rYEDA3JcQqw']
 	];
 
-	$: displayedItems = list?.items ? [...list.items] : [];
-	$: canDragReorder = canEditLevels && list?.mode === 'top' && list?.itemSort !== 'created_at' && !savingReorder;
+	$: displayedItems = list?.items
+		? list.items.filter((item: any) => !isLevelMarkedForDeletion(item.levelId)).map((item: any) => applyDraftToItem(item))
+		: [];
+	$: canDragReorder = canEditLevels && list?.mode === 'top' && list?.itemSort !== 'created_at' && !savingReorder && !levelDeletionDraftIds.length;
 	$: quickLevelId = getQuickLevelId();
 	$: csvProgressPercent = batchAddProgress?.total
 		? Math.min((batchAddProgress.completed / batchAddProgress.total) * 100, 100)
 		: 0;
+	$: {
+		const availableLevelIds = new Set(displayedItems.map((item) => item.levelId));
+		const nextSelectedLevelIds = selectedLevelIds.filter((levelId) => availableLevelIds.has(levelId));
+
+		if (nextSelectedLevelIds.length !== selectedLevelIds.length) {
+			selectedLevelIds = nextSelectedLevelIds;
+		}
+
+		if (!displayedItems.length) {
+			lastSelectedIndex = null;
+		} else if (lastSelectedIndex != null && lastSelectedIndex >= displayedItems.length) {
+			lastSelectedIndex = displayedItems.length - 1;
+		}
+	}
 	$: if (quickLevelId && !levelIdInput) {
 		levelIdInput = String(quickLevelId);
 	}
@@ -166,6 +198,81 @@
 		return list?.isOfficial ? Number(item.position) : Number(item.position) + 1;
 	}
 
+	function hasDraftValue(patch: LevelItemPatch | undefined, key: keyof LevelItemPatch) {
+		return patch ? Object.prototype.hasOwnProperty.call(patch, key) : false;
+	}
+
+	function applyDraftToItem(item: any) {
+		const patch = levelDrafts[item.levelId];
+		if (!patch) return item;
+
+		return {
+			...item,
+			...(patch.rating !== undefined ? { rating: patch.rating } : {}),
+			...(hasDraftValue(patch, 'minProgress') ? { minProgress: patch.minProgress ?? null } : {}),
+			...(hasDraftValue(patch, 'videoID') ? { videoID: patch.videoID ?? null } : {})
+		};
+	}
+
+	function hasPendingDraft(levelId: number) {
+		return Boolean(levelDrafts[levelId]);
+	}
+
+	function isLevelMarkedForDeletion(levelId: number) {
+		return levelDeletionDraftIds.includes(levelId);
+	}
+
+	function isLevelSelected(levelId: number) {
+		return selectedLevelIds.includes(levelId);
+	}
+
+	async function handleLevelSelectionClick(event: MouseEvent, index: number) {
+		const target = event.currentTarget;
+		if (!(target instanceof HTMLInputElement)) return;
+
+		if (event.shiftKey && lastSelectedIndex !== null) {
+			const checked = target.checked;
+			await tick();
+
+			const nextSelected = new Set(selectedLevelIds);
+			const startIndex = Math.min(lastSelectedIndex, index);
+			const endIndex = Math.max(lastSelectedIndex, index);
+
+			for (const rangeItem of displayedItems.slice(startIndex, endIndex + 1)) {
+				if (checked) {
+					nextSelected.add(rangeItem.levelId);
+				} else {
+					nextSelected.delete(rangeItem.levelId);
+				}
+			}
+
+			selectedLevelIds = [...nextSelected];
+		}
+
+		lastSelectedIndex = index;
+	}
+
+	function selectAllLevels() {
+		selectedLevelIds = displayedItems.map((item) => item.levelId);
+		lastSelectedIndex = displayedItems.length ? displayedItems.length - 1 : null;
+	}
+
+	function clearLevelSelection() {
+		selectedLevelIds = [];
+		lastSelectedIndex = null;
+	}
+
+	async function deleteSelectedLevels() {
+		if (!selectedLevelIds.length) return;
+
+		await stageMultipleLevelDeletions(selectedLevelIds);
+		clearLevelSelection();
+	}
+
+	async function deleteLevel(levelId: number) {
+		await stageLevelDeletion(levelId);
+	}
+
 	function normalizeVideoIdValue(value: string) {
 		const trimmed = value.trim();
 		const patterns = [
@@ -234,7 +341,7 @@
 			toast.error($_('custom_lists.toast.rating_invalid'));
 			return;
 		}
-		await updateLevelItem(levelId, { rating });
+		await stageLevelDraft(levelId, { rating });
 	}
 
 	async function saveMinProgressEdit(levelId: number) {
@@ -243,7 +350,7 @@
 		editingMinProgressItemId = null;
 
 		if (!rawValue.length) {
-			await updateLevelItem(levelId, { minProgress: null });
+			await stageLevelDraft(levelId, { minProgress: null });
 			return;
 		}
 
@@ -252,7 +359,7 @@
 			toast.error($_('custom_lists.toast.min_progress_invalid'));
 			return;
 		}
-		await updateLevelItem(levelId, { minProgress });
+		await stageLevelDraft(levelId, { minProgress });
 	}
 
 	async function saveVideoIdEdit(levelId: number) {
@@ -260,7 +367,7 @@
 		editingVideoIdItemId = null;
 
 		if (!rawValue.length) {
-			await updateLevelItem(levelId, { videoID: null });
+			await stageLevelDraft(levelId, { videoID: null });
 			return;
 		}
 
@@ -271,7 +378,55 @@
 			return;
 		}
 
-		await updateLevelItem(levelId, { videoID });
+		await stageLevelDraft(levelId, { videoID });
+	}
+
+	async function applyBulkRating() {
+		if (!selectedLevelIds.length) return;
+
+		const rating = Number.parseInt(bulkRatingValue, 10);
+		if (!Number.isInteger(rating) || rating < 1 || rating > 10) {
+			toast.error($_('custom_lists.toast.rating_invalid'));
+			return;
+		}
+
+		await stageMultipleLevelDrafts(selectedLevelIds, { rating });
+	}
+
+	async function applyBulkMinProgress() {
+		if (!list || !selectedLevelIds.length) return;
+
+		const rawValue = bulkMinProgressValue.trim();
+		if (!rawValue.length) {
+			await stageMultipleLevelDrafts(selectedLevelIds, { minProgress: null });
+			return;
+		}
+
+		const minProgress = Number.parseInt(rawValue, 10);
+		if (!Number.isInteger(minProgress) || minProgress < 0 || (!list.isPlatformer && minProgress > 100)) {
+			toast.error($_('custom_lists.toast.min_progress_invalid'));
+			return;
+		}
+
+		await stageMultipleLevelDrafts(selectedLevelIds, { minProgress });
+	}
+
+	async function applyBulkVideoId() {
+		if (!selectedLevelIds.length) return;
+
+		const rawValue = bulkVideoIdValue.trim();
+		if (!rawValue.length) {
+			await stageMultipleLevelDrafts(selectedLevelIds, { videoID: null });
+			return;
+		}
+
+		const videoID = normalizeVideoIdValue(rawValue);
+		if (!videoID) {
+			toast.error($_('custom_lists.toast.video_id_invalid'));
+			return;
+		}
+
+		await stageMultipleLevelDrafts(selectedLevelIds, { videoID });
 	}
 
 	function onDragStart(event: DragEvent, index: number) {
@@ -897,10 +1052,97 @@
 			</div>
 		</div>
 
+		{#if canEditLevels && displayedItems.length > 0}
+			<div class="selectionPanel" class:isSticky={selectedLevelIds.length > 0}>
+				<div class="selectionToolbar">
+					<div class="selectionSummary">
+						<Badge variant={selectedLevelIds.length ? 'secondary' : 'outline'}>
+							{$_('custom_lists.detail.levels.selected_count', { values: { count: selectedLevelIds.length } })}
+						</Badge>
+						{#if levelDeletionDraftIds.length > 0}
+							<Badge variant="secondary">
+								{$_('custom_lists.detail.levels.pending_remove_count', { values: { count: levelDeletionDraftIds.length } })}
+							</Badge>
+						{/if}
+						<p class="selectionHint">{$_('custom_lists.detail.levels.selection_hint')}</p>
+					</div>
+					<div class="selectionActions">
+						<Button type="button" variant="destructive" size="sm" on:click={deleteSelectedLevels} disabled={!selectedLevelIds.length || savingLevelDrafts}>
+							<Trash2 class="mr-1.5 h-3.5 w-3.5" />
+							{$_('custom_lists.detail.levels.remove_selected')}
+						</Button>
+						<Button type="button" variant="outline" size="sm" on:click={selectAllLevels}>
+							{$_('custom_lists.detail.levels.select_all')}
+						</Button>
+						<Button type="button" variant="outline" size="sm" on:click={clearLevelSelection} disabled={!selectedLevelIds.length}>
+							{$_('custom_lists.detail.levels.clear_selection')}
+						</Button>
+					</div>
+				</div>
+
+				{#if selectedLevelIds.length > 0}
+					<div class="toolCard bulkEditCard">
+						<div class="bulkEditHeader">
+							<h3 class="toolHeading">{$_('custom_lists.detail.levels.bulk_edit_title')}</h3>
+							<Badge variant="secondary">
+								{$_('custom_lists.detail.levels.selected_count', { values: { count: selectedLevelIds.length } })}
+							</Badge>
+						</div>
+						<p class="hint">{$_('custom_lists.detail.levels.bulk_edit_hint')}</p>
+						<div class="bulkEditGrid">
+							{#if list?.mode === 'rating'}
+								<div class="bulkEditField">
+									<label for="bulk-rating">{$_('custom_lists.detail.levels.rating_label')}</label>
+									<div class="bulkEditControl">
+										<Input id="bulk-rating" type="number" min="1" max="10" bind:value={bulkRatingValue} />
+										<Button type="button" size="sm" on:click={applyBulkRating} disabled={savingLevelDrafts}>
+											{$_('custom_lists.detail.levels.apply_to_selected')}
+										</Button>
+									</div>
+								</div>
+							{/if}
+
+							<div class="bulkEditField">
+								<label for="bulk-min-progress">{$_('custom_lists.detail.levels.min_progress_label')}</label>
+								<div class="bulkEditControl">
+									<Input
+										id="bulk-min-progress"
+										type="number"
+										min="0"
+										max={list?.isPlatformer ? undefined : '100'}
+										bind:value={bulkMinProgressValue}
+									/>
+									<Button type="button" size="sm" on:click={applyBulkMinProgress} disabled={savingLevelDrafts}>
+										{$_('custom_lists.detail.levels.apply_to_selected')}
+									</Button>
+								</div>
+							</div>
+
+							<div class="bulkEditField">
+								<label for="bulk-video-id">{$_('custom_lists.detail.levels.video_id_label')}</label>
+								<div class="bulkEditControl">
+									<Input id="bulk-video-id" type="text" bind:value={bulkVideoIdValue} />
+									<Button type="button" size="sm" on:click={applyBulkVideoId} disabled={savingLevelDrafts}>
+										{$_('custom_lists.detail.levels.apply_to_selected')}
+									</Button>
+								</div>
+							</div>
+						</div>
+					</div>
+				{/if}
+			</div>
+		{/if}
+
 		{#if displayedItems.length === 0}
 			<div class="emptyState slim">
 				<h3>{$_('custom_lists.detail.levels.empty_title')}</h3>
-				<p>{canEditLevels ? $_('custom_lists.detail.levels.empty_owner') : $_('custom_lists.detail.levels.empty_visitor')}</p>
+				<p>
+					{levelDeletionDraftIds.length > 0
+						? $_('custom_lists.detail.levels.empty_pending_delete')
+						: canEditLevels
+							? $_('custom_lists.detail.levels.empty_owner')
+							: $_('custom_lists.detail.levels.empty_visitor')}
+				</p>
 			</div>
 		{:else}
 			<div class="levelList">
@@ -910,6 +1152,7 @@
 						class:isDraggable={canDragReorder}
 						class:dragOver={canDragReorder && dragOverIndex === index}
 						class:dragging={canDragReorder && draggedIndex === index}
+						class:selected={isLevelSelected(item.levelId)}
 						role="listitem"
 						draggable={canDragReorder}
 						on:dragstart={(event) => {
@@ -934,6 +1177,18 @@
 						}}
 					>
 						<div class="levelRow">
+							{#if canEditLevels}
+								<label class="selectToggle">
+									<input
+										type="checkbox"
+										bind:group={selectedLevelIds}
+										value={item.levelId}
+										aria-label={$_('custom_lists.detail.levels.select_level', { values: { id: item.levelId } })}
+										on:click={(event) => handleLevelSelectionClick(event, index)}
+									/>
+								</label>
+							{/if}
+
 							{#if canDragReorder}
 								<div class="dragHandle" title={$_('custom_lists.detail.levels.drag_hint')}>
 									<GripVertical class="h-5 w-5" />
@@ -965,6 +1220,7 @@
 											min="1"
 											max="10"
 											bind:value={editingRatingValue}
+											disabled={savingLevelDrafts}
 											on:blur={() => saveRatingEdit(item.levelId)}
 											on:keydown={(event) => event.key === 'Enter' && saveRatingEdit(item.levelId)}
 										/>
@@ -973,6 +1229,7 @@
 											class="chipBtn"
 											class:editable={canEditLevels}
 											type="button"
+											disabled={savingLevelDrafts}
 											on:click={canEditLevels ? () => startRatingEdit(item) : undefined}
 											title={canEditLevels ? $_('custom_lists.detail.levels.rating_edit_hint') : undefined}
 										>
@@ -989,6 +1246,7 @@
 										max={list?.isPlatformer ? undefined : '100'}
 										placeholder={item.level?.minProgress != null ? String(item.level.minProgress) : undefined}
 										bind:value={editingMinProgressValue}
+										disabled={savingLevelDrafts}
 										on:blur={handleMinProgressBlur}
 										on:keydown={(event) => {
 											if (event.key === 'Enter') {
@@ -1008,7 +1266,7 @@
 											data-min-progress-action="save"
 											on:mousedown|preventDefault
 											on:click={() => saveMinProgressEdit(item.levelId)}
-											disabled={savingLevelItemId === item.levelId}
+											disabled={savingLevelDrafts || savingLevelItemId === item.levelId}
 										>
 											<Save class="mr-1.5 h-3.5 w-3.5" />
 											{$_('custom_lists.detail.levels.save_button')}
@@ -1019,7 +1277,7 @@
 											data-min-progress-action="cancel"
 											on:mousedown|preventDefault
 											on:click={cancelMinProgressEdit}
-											disabled={savingLevelItemId === item.levelId}
+											disabled={savingLevelDrafts || savingLevelItemId === item.levelId}
 										>
 											{$_('custom_lists.detail.levels.cancel_button')}
 										</button>
@@ -1029,6 +1287,7 @@
 										class="chipBtn"
 										class:editable={canEditLevels}
 										type="button"
+										disabled={savingLevelDrafts}
 										on:click={canEditLevels ? () => startMinProgressEdit(item) : undefined}
 										title={canEditLevels ? $_('custom_lists.detail.levels.min_progress_edit_hint') : undefined}
 									>
@@ -1042,6 +1301,7 @@
 											type="text"
 											placeholder={item.videoID == null && item.level?.videoID ? item.level.videoID : undefined}
 											bind:value={editingVideoIdValue}
+											disabled={savingLevelDrafts}
 											on:blur={handleVideoIdBlur}
 											on:keydown={(event) => {
 												if (event.key === 'Enter') {
@@ -1061,7 +1321,7 @@
 												data-video-id-action="save"
 												on:mousedown|preventDefault
 												on:click={() => saveVideoIdEdit(item.levelId)}
-												disabled={savingLevelItemId === item.levelId}
+												disabled={savingLevelDrafts || savingLevelItemId === item.levelId}
 											>
 												<Save class="mr-1.5 h-3.5 w-3.5" />
 												{$_('custom_lists.detail.levels.save_button')}
@@ -1072,7 +1332,7 @@
 												data-video-id-action="cancel"
 												on:mousedown|preventDefault
 												on:click={cancelVideoIdEdit}
-												disabled={savingLevelItemId === item.levelId}
+												disabled={savingLevelDrafts || savingLevelItemId === item.levelId}
 											>
 												{$_('custom_lists.detail.levels.cancel_button')}
 											</button>
@@ -1082,11 +1342,18 @@
 											class="chipBtn"
 											class:editable={canEditLevels}
 											type="button"
+											disabled={savingLevelDrafts}
 											on:click={canEditLevels ? () => startVideoIdEdit(item) : undefined}
 											title={canEditLevels ? $_('custom_lists.detail.levels.video_id_edit_hint') : undefined}
 										>
 											{getVideoIdLabel(item)}
 										</button>
+									{/if}
+
+									{#if hasPendingDraft(item.levelId)}
+										<Badge variant="secondary">
+											{$_('custom_lists.detail.levels.draft_badge')}
+										</Badge>
 									{/if}
 
 								<Badge variant="outline">{$_('custom_lists.detail.levels.id_badge', { values: { id: item.levelId } })}</Badge>
@@ -1095,8 +1362,8 @@
 									<Button
 										variant="destructive"
 										size="sm"
-										on:click={() => removeLevel(item.levelId)}
-										disabled={mutatingLevelId === item.levelId}
+										on:click={() => deleteLevel(item.levelId)}
+										disabled={savingLevelDrafts}
 									>
 										<Trash2 class="mr-1.5 h-3.5 w-3.5" />
 										{$_('custom_lists.detail.levels.remove')}
@@ -1400,6 +1667,85 @@
 		gap: 8px;
 	}
 
+	.selectionToolbar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		flex-wrap: wrap;
+	}
+
+	.selectionPanel {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.selectionPanel.isSticky {
+		position: sticky;
+		top: 48px;
+		z-index: 40;
+		padding: 12px 0;
+		background: hsl(var(--background) / 0.96);
+		backdrop-filter: blur(12px);
+		border-bottom: 1px solid hsl(var(--border) / 0.7);
+	}
+
+	.selectionSummary {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		flex-wrap: wrap;
+	}
+
+	.selectionHint {
+		margin: 0;
+		font-size: 0.82rem;
+		color: hsl(var(--muted-foreground));
+	}
+
+	.selectionActions {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex-wrap: wrap;
+	}
+
+	.bulkEditCard {
+		background: hsl(var(--primary) / 0.06);
+		border-color: hsl(var(--primary) / 0.22);
+	}
+
+	.bulkEditHeader {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		flex-wrap: wrap;
+	}
+
+	.bulkEditGrid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+		gap: 14px;
+	}
+
+	.bulkEditField {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.bulkEditControl {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+	}
+
+	.bulkEditControl :global(input) {
+		flex: 1;
+	}
+
 	.levelList {
 		display: flex;
 		flex-direction: column;
@@ -1412,6 +1758,11 @@
 		border-radius: 10px;
 		padding: 14px 18px;
 		transition: opacity 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+	}
+
+	.levelItem.selected {
+		border-color: hsl(var(--primary));
+		box-shadow: 0 0 0 2px hsl(var(--primary) / 0.12);
 	}
 
 	.levelItem.isDraggable {
@@ -1435,6 +1786,20 @@
 		display: flex;
 		align-items: center;
 		gap: 12px;
+	}
+
+	.selectToggle {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.selectToggle input {
+		width: 16px;
+		height: 16px;
+		cursor: pointer;
+		accent-color: hsl(var(--primary));
 	}
 
 	.dragHandle {
@@ -1610,12 +1975,22 @@
 			align-items: flex-start;
 		}
 
+		.bulkEditControl {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
 		.levelActions {
 			width: 100%;
 		}
 
 		.sectionHeader {
 			flex-direction: column;
+			align-items: flex-start;
+		}
+
+		.selectionToolbar,
+		.bulkEditHeader {
 			align-items: flex-start;
 		}
 	}
