@@ -9,20 +9,16 @@
 	import { ArrowLeft } from 'lucide-svelte';
 
 	import SubmitStepper from '$lib/components/submit/SubmitStepper.svelte';
-	import StepTypeSelect from '$lib/components/submit/StepTypeSelect.svelte';
 	import StepRules from '$lib/components/submit/StepRules.svelte';
 	import StepLevelId from '$lib/components/submit/StepLevelId.svelte';
 	import StepConfirmLevel from '$lib/components/submit/StepConfirmLevel.svelte';
 	import EligibleListsPanel from '$lib/components/submit/EligibleListsPanel.svelte';
 	import StepRequiredFields from '$lib/components/submit/StepRequiredFields.svelte';
 	import StepOptionalFields from '$lib/components/submit/StepOptionalFields.svelte';
-	import StepLevelDetails from '$lib/components/submit/StepLevelDetails.svelte';
 	import SubmitResult from '$lib/components/submit/SubmitResult.svelte';
 	import {
 		createDefaultState,
 		getSteps,
-		extractYouTubeVideoId,
-		isValidYouTubeLink,
 		getMs,
 		validTime,
 		type SubmitState
@@ -59,7 +55,6 @@
 
 	$: steps = getSteps(state.type).map((s) => {
 		const labels: Record<string, { vi: string; en: string }> = {
-			Type: { vi: 'Loại', en: 'Type' },
 			Rules: { vi: 'Lưu ý', en: 'Rules' },
 			Level: { vi: 'Level', en: 'Level' },
 			Confirm: { vi: 'Xác nhận', en: 'Confirm' },
@@ -68,8 +63,8 @@
 		};
 		return labels[s] ? ($locale == 'vi' ? labels[s].vi : labels[s].en) : s;
 	});
-	// Record: last step = 5, Level: last step = 3 (with apiLevel loaded)
-	$: isLastStep = state.type === 'level' ? state.step === 3 && state.apiLevel : state.step === 5;
+	// Record: last step = 4 (with apiLevel loaded)
+	$: isLastStep = state.step === 4;
 
 	function t(vi: string, en: string) {
 		return $locale == 'vi' ? vi : en;
@@ -180,16 +175,16 @@
 	);
 	$: showEligibleListsPanel =
 		state.type === 'record' &&
-		(state.step === 3 || state.step === 4) &&
+		(state.step === 2 || state.step === 3) &&
 		activeEligibleLevelId !== null;
 	$: eligibleListPanelMode =
-		state.step === 4 && activeEligibleProgress != null ? 'eligible' : 'preview';
+		state.step === 3 && activeEligibleProgress != null ? 'eligible' : 'preview';
 
 	$: {
 		const progress = activeEligibleProgress;
 		const levelId = activeEligibleLevelId;
 		const canLoadEligibleLists =
-			state.type === 'record' && (state.step === 3 || state.step === 4) && levelId !== null;
+			state.type === 'record' && (state.step === 2 || state.step === 3) && levelId !== null;
 
 		if (!canLoadEligibleLists) {
 			eligibleLists = [];
@@ -210,22 +205,19 @@
 
 	onMount(() => {
 		const params = $page.url.searchParams;
-		const type = params.get('type');
 		const levelId = params.get('levelId');
 
-		if (type === 'level') state.type = 'level';
 		if (levelId) {
 			const id = parseInt(levelId);
 			if (!isNaN(id)) {
 				state.levelid = id;
-				state.levelSubmission.levelId = id;
-				state.step = 2;
+				state.step = 1;
 			}
 		}
 	});
 
 	async function fetchLevel() {
-		const levelId = state.type === 'level' ? state.levelSubmission.levelId : state.levelid;
+		const levelId = state.levelid;
 
 		try {
 			state.level = await (await fetch(`${import.meta.env.VITE_API_URL}/levels/${levelId}`)).json();
@@ -239,20 +231,17 @@
 
 		state.levelVariants = [];
 		state.selectedVariantId = null;
-		if (state.type === 'record') {
-			try {
-				const varRes = await fetch(`${import.meta.env.VITE_API_URL}/levels/${levelId}/variants`);
-				if (varRes.ok) {
-					state.levelVariants = await varRes.json();
-				}
-			} catch {}
-		}
+		try {
+			const varRes = await fetch(`${import.meta.env.VITE_API_URL}/levels/${levelId}/variants`);
+			if (varRes.ok) {
+				state.levelVariants = await varRes.json();
+			}
+		} catch {}
 	}
 
 	function next() {
-		// Step 2: Level ID → fetch level data
-		if (state.step === 2) {
-			const levelId = state.type === 'level' ? state.levelSubmission.levelId : state.levelid;
+		if (state.step === 1) {
+			const levelId = state.levelid;
 			if (!levelId || isNaN(levelId)) {
 				toast.error(t('Vui lòng nhập Level ID hợp lệ', 'Please enter a valid Level ID'));
 				return;
@@ -265,24 +254,8 @@
 			});
 		}
 
-		// Level submission: validate on step 3
-		if (state.type === 'level' && state.step === 3) {
-			if (!state.levelSubmission.videoLink) {
-				toast.error(t('Vui lòng nhập link video YouTube', 'Please enter a YouTube video link'));
-				return;
-			}
-			if (!isValidYouTubeLink(state.levelSubmission.videoLink)) {
-				toast.error(
-					t('Link video không hợp lệ', 'Invalid video link. Please enter a valid YouTube link.')
-				);
-				return;
-			}
-			submitLevel();
-			return;
-		}
-
-		// Record: validate step 4 (required fields)
-		if (state.type === 'record' && state.step === 4) {
+		// Record: validate step 3 (required fields)
+		if (state.step === 3) {
 			const isPlatformer = state.apiLevel?.length == 5;
 
 			if (isPlatformer) {
@@ -337,7 +310,8 @@
 		}
 
 		// Record: step 5 (optional) → submit
-		if (state.type === 'record' && state.step === 5) {
+		// Record: step 4 (optional) → submit
+		if (state.step === 4) {
 			submitRecord();
 			return;
 		}
@@ -407,49 +381,6 @@
 		state = state;
 	}
 
-	async function submitLevel() {
-		submitted = true;
-		state.sendStatus = 0;
-		state = state;
-
-		state.submitId = new Date().getTime();
-		const videoID = state.levelSubmission.videoLink
-			? extractYouTubeVideoId(state.levelSubmission.videoLink)
-			: null;
-
-		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/level-submissions`, {
-				method: 'POST',
-				body: JSON.stringify({
-					levelId: state.levelSubmission.levelId,
-					comment: state.levelSubmission.comment,
-					videoID
-				}),
-				headers: {
-					Authorization: `Bearer ${await $user.token()}`,
-					'Content-Type': 'application/json'
-				}
-			});
-
-			state.sendStatus = res.ok ? 1 : 2;
-
-			const responseText = await res.text();
-			state.errorResponse = responseText;
-			try {
-				const resJson = JSON.parse(responseText);
-				state.submitLog = resJson.logs || [];
-				state.errorMessage = $locale == 'vi' ? resJson.vi : resJson.en;
-			} catch {
-				state.errorMessage = responseText;
-			}
-		} catch (err) {
-			state.sendStatus = 2;
-			state.errorMessage = String(err);
-		}
-
-		state = state;
-	}
-
 	function resetForm() {
 		state = createDefaultState($user.data?.uid || '');
 		submitted = false;
@@ -471,8 +402,8 @@
 			<h2>{$locale == 'vi' ? 'Đăng nhập để nộp' : 'Sign in to submit'}</h2>
 			<p class="text-muted">
 				{$locale == 'vi'
-					? 'Bạn cần đăng nhập để nộp record hoặc challenge level.'
-					: 'You need to sign in to submit a record or challenge level.'}
+					? 'Bạn cần đăng nhập để nộp record.'
+					: 'You need to sign in to submit a record.'}
 			</p>
 		</div>
 	{:else}
@@ -493,33 +424,11 @@
 								in:fly={{ x: direction * 40, duration: 250, delay: 100 }}
 								out:fly={{ x: direction * -40, duration: 150 }}
 							>
-								{#if state.step === 0}
-									<StepTypeSelect
-										submissionType={state.type}
-										onSelect={(t) => {
-											state.type = t;
-											state = state;
-										}}
-									/>
-								{:else if state.step === 1}
-									<StepRules submissionType={state.type} />
-								{:else if state.step === 2}
-									{#if state.type === 'level'}
-										<StepLevelId
-											bind:levelId={state.levelSubmission.levelId}
-											submissionType="level"
-										/>
-									{:else}
+									{#if state.step === 0}
+										<StepRules submissionType={state.type} />
+									{:else if state.step === 1}
 										<StepLevelId bind:levelId={state.levelid} submissionType="record" />
-									{/if}
-								{:else if state.step === 3}
-									{#if state.type === 'level'}
-										<StepLevelDetails
-											apiLevel={state.apiLevel}
-											bind:videoLink={state.levelSubmission.videoLink}
-											bind:comment={state.levelSubmission.comment}
-										/>
-									{:else}
+									{:else if state.step === 2}
 										<StepConfirmLevel
 											apiLevel={state.apiLevel}
 											level={state.level}
@@ -534,8 +443,7 @@
 												mode={eligibleListPanelMode}
 											/>
 										{/if}
-									{/if}
-								{:else if state.step === 4}
+									{:else if state.step === 3}
 									<StepRequiredFields
 										apiLevel={state.apiLevel}
 										level={state.level}
@@ -546,7 +454,7 @@
 										bind:mobile={state.mobile}
 										bind:time={state.time}
 									/>
-								{:else if state.step === 5}
+									{:else if state.step === 4}
 									<StepOptionalFields
 										apiLevel={state.apiLevel}
 										progress={state.progress}

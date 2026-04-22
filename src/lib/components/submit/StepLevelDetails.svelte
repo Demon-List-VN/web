@@ -9,6 +9,7 @@
 	export let apiLevel: any;
 	export let videoLink: string;
 	export let comment: string;
+	export let targetLabel: string | null = null;
 </script>
 
 <div class="step-content">
@@ -29,9 +30,9 @@
 
 		<div class="level-context">
 			{#if $locale == 'vi'}
-				Bạn đang đề xuất level này vào Challenge List
+				Bạn đang nộp level này vào {targetLabel || 'danh sách này'}
 			{:else}
-				You are submitting this level to the Challenge List
+				You are submitting this level to {targetLabel || 'this list'}
 			{/if}
 		</div>
 

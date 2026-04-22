@@ -40,7 +40,7 @@
 		MessageSquare
 	} from 'lucide-svelte';
 	import { onDestroy } from 'svelte';
-	import { _ } from 'svelte-i18n';
+	import { locale, _ } from 'svelte-i18n';
 
 	export let data: any;
 
@@ -850,6 +850,15 @@
 			{$_('custom_lists.back')}
 		</Button>
 		<div class="toolbarActions">
+			{#if list && !list.isOfficial}
+				<Button variant="outline" size="sm" on:click={() => goto(`/lists/${$page.params.id}/submit`)}>
+					{#if $locale == 'vi'}
+						Nộp level
+					{:else}
+						Submit level
+					{/if}
+				</Button>
+			{/if}
 			{#if list && canManageList}
 				<Button size="sm" on:click={() => goto(`/lists/${$page.params.id}/manage`)}>
 					<Settings class="mr-2 h-4 w-4" />

@@ -10,6 +10,7 @@
 	import FormulaTab from './FormulaTab.svelte';
 	import LevelsTab from './LevelsTab.svelte';
 	import RankTab from './RankTab.svelte';
+	import SubmissionsTab from './SubmissionsTab.svelte';
 	import imageCompression from 'browser-image-compression';
 	import { onDestroy, onMount } from 'svelte';
 	import {
@@ -81,11 +82,38 @@
 		inputIndex: number;
 	};
 
+	type CustomListSubmission = {
+		id: number;
+		created_at: string;
+		listId: number;
+		levelId: number;
+		addedBy: string;
+		rating: number;
+		position: number | null;
+		minProgress: number | null;
+		videoID: string | null;
+		submissionComment?: string | null;
+		level?: {
+			id: number;
+			name: string | null;
+			creator: string | null;
+			difficulty: string | null;
+			isPlatformer: boolean;
+			minProgress: number | null;
+			videoID?: string | null;
+		} | null;
+		submitterData?: {
+			uid: string;
+			name?: string | null;
+		} | null;
+	};
+
 	type CustomListResolvedRole = 'viewer' | 'owner' | 'admin' | 'helper' | 'moderator';
 
 	type CustomListPermissionFlags = {
 		canEditSettings: boolean;
 		canEditLevels: boolean;
+		canReviewSubmissions: boolean;
 		canDelete: boolean;
 		canBan: boolean;
 		canManageMembers: boolean;
@@ -245,11 +273,12 @@
 		metadata: Record<string, any>;
 	};
 
-	type ManageTab = 'basic' | 'appearance' | 'formula' | 'rank' | 'danger' | 'levels' | 'collaboration';
+	type ManageTab = 'basic' | 'appearance' | 'formula' | 'rank' | 'danger' | 'levels' | 'submissions' | 'collaboration';
 
 	const defaultPermissions: CustomListPermissionFlags = {
 		canEditSettings: false,
 		canEditLevels: false,
+		canReviewSubmissions: false,
 		canDelete: false,
 		canBan: false,
 		canManageMembers: false,
@@ -283,6 +312,11 @@
 	let levelDeletionDraftIds: number[] = [];
 	let pendingLevelAdditions: PendingLevelAddition[] = [];
 	let pendingLevelOrderDrafts: Record<number, PendingLevelOrderDraft> = {};
+	let pendingSubmissions: CustomListSubmission[] = [];
+	let pendingSubmissionsLoading = false;
+	let pendingSubmissionsError = '';
+	let pendingSubmissionsRequestKey = '';
+	let savingSubmissionId: number | null = null;
 	let levelsTabList: (CustomList & { items: CustomListItem[] }) | null = null;
 	let showPendingLevelChangesDialog = false;
 	let nextPendingLevelItemId = -1;
@@ -740,6 +774,53 @@
 		}
 	}
 
+	let pendingSubmissionsFetchAbortController: AbortController | null = null;
+
+	async function loadPendingSubmissions(force: boolean = false) {
+		if (!list || !canReviewSubmissions || !$user.checked || !$user.loggedIn) {
+			pendingSubmissions = [];
+			pendingSubmissionsError = '';
+			pendingSubmissionsLoading = false;
+			pendingSubmissionsRequestKey = '';
+			pendingSubmissionsFetchAbortController?.abort();
+			pendingSubmissionsFetchAbortController = null;
+			return;
+		}
+
+		const key = `${list.id}:${$user.data?.uid || ''}`;
+		if (!force && key === pendingSubmissionsRequestKey) {
+			return;
+		}
+
+		pendingSubmissionsRequestKey = key;
+		pendingSubmissionsError = '';
+		pendingSubmissionsLoading = true;
+		pendingSubmissionsFetchAbortController?.abort();
+		pendingSubmissionsFetchAbortController = new AbortController();
+
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/submissions`, {
+				signal: pendingSubmissionsFetchAbortController.signal,
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`
+				}
+			});
+			const payload = await res.json().catch(() => null);
+
+			if (!res.ok) {
+				throw new Error(payload?.error || $_('custom_lists.toast.failed_update_level'));
+			}
+
+			pendingSubmissions = Array.isArray(payload) ? payload : [];
+		} catch (error) {
+			pendingSubmissions = [];
+			pendingSubmissionsError = error instanceof Error ? error.message : $_('custom_lists.toast.failed_update_level');
+		} finally {
+			pendingSubmissionsLoading = false;
+			pendingSubmissionsFetchAbortController = null;
+		}
+	}
+
 	function updateItemSort(nextItemSort: 'mode_default' | 'created_at') {
 		if (!list) return;
 		editForm.itemSort = nextItemSort;
@@ -939,6 +1020,7 @@
 
 	function isTabAllowed(tab: ManageTab) {
 		if (tab === 'levels') return true;
+		if (tab === 'submissions') return canReviewSubmissions;
 		if (tab === 'danger') return canBan || canDelete;
 		if (tab === 'collaboration') return canShowCollaboration;
 		return canEditSettings;
@@ -2350,14 +2432,7 @@
 		const currentDeletionDraftIds = [...levelDeletionDraftIds];
 		const currentPendingLevelAdditions = [...pendingLevelAdditions];
 		const currentPendingOrderDrafts = { ...pendingLevelOrderDrafts };
-		const currentPendingLevelIds = new Set(currentPendingLevelAdditions.map((item) => item.levelId));
-		const failedDrafts: Record<number, LevelItemPatch> = {};
-		const failedDeletionDraftIds: number[] = [];
-		const failedPendingLevelAdditions: PendingLevelAddition[] = [];
-		const failedPendingOrderDrafts: Record<number, PendingLevelOrderDraft> = {};
-		const failureMessages: string[] = [];
 		let nextList = list;
-		const persistedPendingLevelIds = new Set<number>();
 		const totalPendingChanges = currentPendingLevelAdditions.length + currentDeletionDraftIds.length + Object.keys(currentDrafts).length + Object.keys(currentPendingOrderDrafts).length;
 
 		if (!totalPendingChanges) {
@@ -2366,81 +2441,67 @@
 		}
 
 		try {
-			for (const pendingItem of currentPendingLevelAdditions) {
-				savingLevelItemId = pendingItem.levelId;
-				const result = await requestAddLevel(
-					list.id,
-					pendingItem.levelId,
-					pendingItem.stagedCreatedAt ?? pendingItem.created_at ?? undefined
-				);
+			const createInputs = currentPendingLevelAdditions.map((pendingItem) => {
+				const draft = currentDrafts[pendingItem.levelId];
+				const orderDraft = currentPendingOrderDrafts[pendingItem.levelId];
+				const createInput: Record<string, unknown> = {
+					levelId: pendingItem.levelId,
+					createdAt: pendingItem.stagedCreatedAt ?? pendingItem.created_at ?? undefined,
+					rating: draft?.rating ?? pendingItem.rating ?? 5,
+					minProgress: Object.prototype.hasOwnProperty.call(draft ?? {}, 'minProgress')
+						? draft?.minProgress ?? null
+						: pendingItem.minProgress ?? null,
+					videoID: Object.prototype.hasOwnProperty.call(draft ?? {}, 'videoID')
+						? draft?.videoID ?? null
+						: pendingItem.videoID ?? null
+				};
 
-				if (!result.ok) {
-					failedPendingLevelAdditions.push(pendingItem);
-					if (currentDrafts[pendingItem.levelId]) {
-						failedDrafts[pendingItem.levelId] = currentDrafts[pendingItem.levelId];
-					}
-					if (currentPendingOrderDrafts[pendingItem.levelId]) {
-						failedPendingOrderDrafts[pendingItem.levelId] = currentPendingOrderDrafts[pendingItem.levelId];
-					}
-					failureMessages.push(result.error || $_('custom_lists.toast.failed_add_level'));
-					continue;
+				if (orderDraft) {
+					createInput.top = orderDraft.top;
 				}
 
-				nextList = normalizeMutationListPayload(result.payload);
-				persistedPendingLevelIds.add(pendingItem.levelId);
-			}
-
-			for (const levelId of currentDeletionDraftIds) {
-				savingLevelItemId = levelId;
-				const result = await requestRemoveLevel(list.id, levelId);
-
-				if (!result.ok) {
-					failedDeletionDraftIds.push(levelId);
-					failureMessages.push(result.error || $_('custom_lists.toast.failed_remove_level'));
-					continue;
-				}
-
-				nextList = normalizeMutationListPayload(result.payload);
-			}
-
-			const currentUpdateEntries = Object.entries(currentDrafts).filter(([levelId]) => {
-				const numericLevelId = Number(levelId);
-
-				if (currentDeletionDraftIds.includes(numericLevelId)) {
-					return false;
-				}
-
-				if (!currentPendingLevelIds.has(numericLevelId)) {
-					return true;
-				}
-
-				return persistedPendingLevelIds.has(numericLevelId);
+				return createInput;
 			});
 
-			for (const [levelIdKey, patch] of currentUpdateEntries) {
-				const levelId = Number(levelIdKey);
-				savingLevelItemId = levelId;
-				const result = await requestUpdateLevel(list.id, levelId, patch);
+			const updateInputs = Object.entries(currentDrafts)
+				.filter(([levelId]) => !currentDeletionDraftIds.includes(Number(levelId)))
+				.filter(([levelId]) => !currentPendingLevelAdditions.some((pendingItem) => pendingItem.levelId === Number(levelId)))
+				.map(([levelId, patch]) => ({
+					levelId: Number(levelId),
+					...patch
+				}));
 
-				if (!result.ok) {
-					failedDrafts[levelId] = patch;
-					failureMessages.push(result.error || $_('custom_lists.toast.failed_update_level'));
-					continue;
-				}
+			const batchPayload = {
+				creates: createInputs,
+				updates: updateInputs,
+				deletes: currentDeletionDraftIds,
+				auditEntries: pendingLevelAuditEntries.map((entry) => ({
+					action: entry.action,
+					actorUid: entry.metadata?.actorUid ?? null,
+					targetUid: entry.metadata?.targetUid ?? null,
+					metadata: entry.metadata
+				}))
+			};
 
-				nextList = normalizeMutationListPayload(result.payload);
+			savingLevelItemId = null;
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/levels/batch`, {
+				method: 'PATCH',
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`,
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify(batchPayload)
+			});
+			const payload = await res.json().catch(() => null);
+
+			if (!res.ok) {
+				throw new Error(payload?.error || $_('custom_lists.toast.failed_update_level'));
 			}
 
+			nextList = normalizeMutationListPayload(payload);
+
 			const reorderEntries = getPendingLevelOrderEntries(currentPendingOrderDrafts).filter((entry) => {
-				if (currentDeletionDraftIds.includes(entry.levelId)) {
-					return false;
-				}
-
-				if (!currentPendingLevelIds.has(entry.levelId)) {
-					return true;
-				}
-
-				return persistedPendingLevelIds.has(entry.levelId);
+				return !currentDeletionDraftIds.includes(entry.levelId);
 			});
 
 			if (reorderEntries.length) {
@@ -2452,36 +2513,43 @@
 				const result = await requestReorderLevels(list.id, reorderedLevelIds);
 
 				if (!result.ok) {
-					for (const entry of reorderEntries) {
-						failedPendingOrderDrafts[entry.levelId] = currentPendingOrderDrafts[entry.levelId];
-					}
-					failureMessages.push(result.error || $_('custom_lists.toast.failed_reorder'));
+						throw new Error(result.error || $_('custom_lists.toast.failed_reorder'));
 				} else {
 					nextList = normalizeMutationListPayload(result.payload);
 				}
 			}
 
 			list = nextList;
-			pendingLevelAdditions = failedPendingLevelAdditions;
-			levelDrafts = failedDrafts;
-			levelDeletionDraftIds = failedDeletionDraftIds;
-			pendingLevelOrderDrafts = failedPendingOrderDrafts;
+			pendingLevelAdditions = [];
+			levelDrafts = {};
+			levelDeletionDraftIds = [];
+			pendingLevelOrderDrafts = {};
 
-			if (!Object.keys(failedDrafts).length && !failedDeletionDraftIds.length && !failedPendingLevelAdditions.length && !Object.keys(failedPendingOrderDrafts).length) {
-				toast.success($_('custom_lists.toast.levels_updated', {
-					values: { count: totalPendingChanges }
-				}));
-				return;
+			if (reorderEntries.length) {
+				try {
+					savingLevelItemId = null;
+					const reorderedLevelIds = buildReorderedLevelIds(
+						nextList.items.map((item) => item.levelId),
+						reorderEntries
+					);
+					const result = await requestReorderLevels(list.id, reorderedLevelIds);
+
+					if (!result.ok) {
+						throw new Error(result.error || $_('custom_lists.toast.failed_reorder'));
+					}
+
+					nextList = normalizeMutationListPayload(result.payload);
+					list = nextList;
+				} catch (error) {
+					pendingLevelOrderDrafts = currentPendingOrderDrafts;
+					toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_reorder'));
+					return;
+				}
 			}
 
-			toast.error(
-				failureMessages[0]
-				|| $_('custom_lists.toast.failed_update_levels', {
-					values: {
-						count: Object.keys(failedDrafts).length + failedDeletionDraftIds.length + failedPendingLevelAdditions.length + Object.keys(failedPendingOrderDrafts).length
-					}
-				})
-			);
+			toast.success($_('custom_lists.toast.levels_updated', {
+				values: { count: totalPendingChanges }
+			}));
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_update_level'));
 			pendingLevelAdditions = currentPendingLevelAdditions;
@@ -2547,6 +2615,46 @@
 		}
 	}
 
+	async function reviewPendingSubmission(submission: CustomListSubmission, payload: {
+		accept: boolean;
+		rating?: number | null;
+		minProgress?: number | null;
+		position?: number | null;
+	}) {
+		if (!list || !canReviewSubmissions) return;
+
+		savingSubmissionId = submission.id;
+
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/submissions/${submission.levelId}`, {
+				method: 'PATCH',
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`,
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify(payload)
+			});
+			const responsePayload = await res.json().catch(() => null);
+
+			if (!res.ok) {
+				throw new Error(responsePayload?.error || $_('custom_lists.toast.failed_update_level'));
+			}
+
+			list = normalizeMutationListPayload(responsePayload);
+			syncForm();
+			await loadPendingSubmissions(true);
+			toast.success(payload.accept ? 'Submission approved' : 'Submission rejected');
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_update_level'));
+		} finally {
+			savingSubmissionId = null;
+		}
+	}
+
+	async function rejectPendingSubmission(submission: CustomListSubmission) {
+		await reviewPendingSubmission(submission, { accept: false });
+	}
+
 	$: permissions = list?.permissions ?? defaultPermissions;
 	$: canEditSettings = Boolean(list && permissions.canEditSettings);
 	$: canEditLevels = Boolean(list && permissions.canEditLevels);
@@ -2557,11 +2665,24 @@
 	$: canTransferOwnership = Boolean(list && permissions.canTransferOwnership);
 	$: canViewMembers = Boolean(list && permissions.canViewMembers);
 	$: canViewAudit = Boolean(list && permissions.canViewAudit);
+	$: canReviewSubmissions = Boolean(list && permissions.canReviewSubmissions);
 	$: canShowCollaboration = Boolean(list && (canViewMembers || canViewAudit || canManageMembers || canConfigureCollaboration || canTransferOwnership));
 	$: pendingLevelAuditEntries = buildPendingLevelAuditEntries(list, pendingLevelAdditions, levelDrafts, levelDeletionDraftIds);
 	$: pendingLevelAuditAddedCount = pendingLevelAuditEntries.filter((entry) => entry.action === 'level_added').length;
 	$: pendingLevelAuditUpdatedCount = pendingLevelAuditEntries.filter((entry) => entry.action === 'level_updated').length;
 	$: pendingLevelAuditRemovedCount = pendingLevelAuditEntries.filter((entry) => entry.action === 'level_removed').length;
+	$: if (list && $user.checked && canReviewSubmissions) {
+		const requestKey = `${list.id}:${$user.data?.uid || ''}`;
+
+		if (pendingSubmissionsRequestKey !== requestKey && !pendingSubmissionsLoading) {
+			void loadPendingSubmissions();
+		}
+	} else if (!canReviewSubmissions && pendingSubmissions.length) {
+		pendingSubmissions = [];
+		pendingSubmissionsError = '';
+		pendingSubmissionsRequestKey = '';
+		pendingSubmissionsLoading = false;
+	}
 	$: if (showPendingLevelChangesDialog && !pendingLevelAuditEntries.length) {
 		showPendingLevelChangesDialog = false;
 	}
@@ -2598,6 +2719,7 @@
 
 	onDestroy(() => {
 		batchAddAbortController?.abort();
+		pendingSubmissionsFetchAbortController?.abort();
 		clearCustomListBranding();
 	});
 </script>
@@ -2726,6 +2848,9 @@
 						<Tabs.Trigger value="rank">{$_('custom_lists.manage.tabs.rank')}</Tabs.Trigger>
 					{/if}
 					<Tabs.Trigger value="levels">{$_('custom_lists.manage.tabs.levels')}</Tabs.Trigger>
+					{#if canReviewSubmissions}
+						<Tabs.Trigger value="submissions">{$_('custom_lists.manage.tabs.submissions')}</Tabs.Trigger>
+					{/if}
 					{#if canShowCollaboration}
 						<Tabs.Trigger value="collaboration">{$_('custom_lists.manage.tabs.collaboration')}</Tabs.Trigger>
 					{/if}
@@ -2834,6 +2959,21 @@
 					{reorderLevels}
 				/>
 			</Tabs.Content>
+
+			{#if canReviewSubmissions}
+				<Tabs.Content value="submissions">
+					<SubmissionsTab
+						{list}
+						submissions={pendingSubmissions}
+						{canReviewSubmissions}
+						loading={pendingSubmissionsLoading}
+						errorMessage={pendingSubmissionsError}
+						savingSubmissionId={savingSubmissionId}
+						reviewSubmission={reviewPendingSubmission}
+						rejectSubmission={rejectPendingSubmission}
+					/>
+				</Tabs.Content>
+			{/if}
 		</Tabs.Root>
 
 		<Dialog.Root bind:open={showPendingLevelChangesDialog}>

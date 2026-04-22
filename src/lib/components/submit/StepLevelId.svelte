@@ -8,6 +8,7 @@
 
 	export let levelId: number;
 	export let submissionType: 'record' | 'level';
+	export let targetLabel: string | null = null;
 </script>
 
 <div class="step-content">
@@ -25,8 +26,8 @@
 					: 'Enter the ID of the level you want to submit a record for. You can find the ID in Geometry Dash.'}
 			{:else}
 				{$locale == 'vi'
-					? 'Nhập ID của challenge level bạn muốn đề xuất thêm vào danh sách.'
-					: 'Enter the ID of the challenge level you want to suggest for the list.'}
+					? `Nhập ID của level bạn muốn nộp vào ${targetLabel || 'danh sách này'}.`
+					: `Enter the ID of the level you want to submit to ${targetLabel || 'this list'}.`}
 			{/if}
 		</p>
 	</div>
@@ -44,7 +45,7 @@
 	</div>
 
 	{#if submissionType === 'record' && !isActive($user.data.supporterUntil)}
-		<Alert.Root class="tip-alert">
+		<Alert.Root>
 			<Alert.Description class="flex items-center gap-[10px]">
 				<Lightbulb size={18} class="shrink-0" />
 				<span class="text-sm">
@@ -119,10 +120,5 @@
 		padding: 12px 16px;
 		height: auto;
 		letter-spacing: 0.5px;
-	}
-
-	.tip-alert {
-		max-width: 420px;
-		margin: 0 auto;
 	}
 </style>

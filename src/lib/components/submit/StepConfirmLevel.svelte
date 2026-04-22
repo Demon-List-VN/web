@@ -9,6 +9,7 @@
 	export let level: any;
 	export let levelVariants: any[];
 	export let selectedVariantId: number | null;
+	export let targetLabel: string | null = null;
 
 	let thumbFailed = false;
 </script>
@@ -46,6 +47,15 @@
 				<div class="level-meta">
 					{$locale == 'vi' ? 'bởi' : 'by'} <span class="author">{apiLevel.author}</span>
 				</div>
+				{#if targetLabel}
+					<div class="level-context">
+						{#if $locale == 'vi'}
+							Bạn đang nộp level này vào {targetLabel}
+						{:else}
+							You are submitting this level to {targetLabel}
+						{/if}
+					</div>
+				{/if}
 				<div class="level-id-badge">
 					ID: {apiLevel.id}
 				</div>
@@ -154,6 +164,11 @@
 	}
 
 	.level-meta {
+		font-size: 13px;
+		color: hsl(var(--muted-foreground));
+	}
+
+	.level-context {
 		font-size: 13px;
 		color: hsl(var(--muted-foreground));
 	}
