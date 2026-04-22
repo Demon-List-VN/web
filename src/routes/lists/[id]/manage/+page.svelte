@@ -135,6 +135,13 @@
 		message: string;
 	};
 
+	type BatchAddLevelInput = {
+		levelId: number;
+		rating?: number;
+		top?: number;
+		minProgress?: number;
+	};
+
 	type BatchAddLevelsResult = {
 		added: number;
 		skipped: number;
@@ -826,6 +833,70 @@
 		};
 	}
 
+	async function requestUpdateLevel(listId: number, levelId: number, patch: { rating?: number; minProgress?: number | null }) {
+		const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${listId}/levels/${levelId}`, {
+			method: 'PATCH',
+			headers: {
+				Authorization: `Bearer ${await $user.token()}`,
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify(patch)
+		});
+		const payload = await res.json().catch(() => null);
+
+		if (!res.ok) {
+			return {
+				ok: false as const,
+				error: payload?.error || $_('custom_lists.toast.failed_update_level')
+			};
+		}
+
+		return {
+			ok: true as const,
+			payload: payload as CustomList
+		};
+	}
+
+	async function requestReorderLevels(listId: number, levelIds: number[]) {
+		const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${listId}/reorder`, {
+			method: 'PATCH',
+			headers: {
+				Authorization: `Bearer ${await $user.token()}`,
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({ levelIds })
+		});
+		const payload = await res.json().catch(() => null);
+
+		if (!res.ok) {
+			return {
+				ok: false as const,
+				error: payload?.error || $_('custom_lists.toast.failed_reorder')
+			};
+		}
+
+		return {
+			ok: true as const,
+			payload: payload as CustomList
+		};
+	}
+
+	function buildReorderedLevelIds(currentLevelIds: number[], levelsWithTop: Array<BatchAddLevelInput & { inputIndex: number }>) {
+		const orderedOverrides = levelsWithTop
+			.filter((entry): entry is BatchAddLevelInput & { top: number; inputIndex: number } => Number.isInteger(entry.top))
+			.sort((left, right) => (left.top - right.top) || (left.inputIndex - right.inputIndex));
+
+		const overrideIds = new Set(orderedOverrides.map((entry) => entry.levelId));
+		const reorderedLevelIds = currentLevelIds.filter((levelId) => !overrideIds.has(levelId));
+
+		for (const entry of orderedOverrides) {
+			const insertIndex = Math.min(Math.max(entry.top - 1, 0), reorderedLevelIds.length);
+			reorderedLevelIds.splice(insertIndex, 0, entry.levelId);
+		}
+
+		return reorderedLevelIds;
+	}
+
 	async function addLevel(levelId: number) {
 		if (!list || !canEditLevels) return false;
 
@@ -844,46 +915,101 @@
 		}
 	}
 
-	async function addLevels(levelIds: number[]): Promise<BatchAddLevelsResult> {
+	async function addLevels(levelInputs: BatchAddLevelInput[]): Promise<BatchAddLevelsResult> {
 		if (!list || !canEditLevels) {
 			return {
 				added: 0,
-				skipped: levelIds.length,
+				skipped: levelInputs.length,
 				failed: []
 			};
 		}
 
 		addingLevel = true;
 		const listId = list.id;
-		const queuedLevelIds: number[] = [];
+		const queuedLevelInputs: Array<BatchAddLevelInput & { inputIndex: number }> = [];
 		const seenLevelIds = new Set(list.items.map((item) => item.levelId));
 		let skipped = 0;
 		const failed: BatchAddLevelFailure[] = [];
 		let added = 0;
 
-		for (const levelId of levelIds) {
-			if (seenLevelIds.has(levelId)) {
+		for (const [inputIndex, levelInput] of levelInputs.entries()) {
+			if (seenLevelIds.has(levelInput.levelId)) {
 				skipped += 1;
 				continue;
 			}
 
-			seenLevelIds.add(levelId);
-			queuedLevelIds.push(levelId);
+			seenLevelIds.add(levelInput.levelId);
+			queuedLevelInputs.push({
+				...levelInput,
+				inputIndex
+			});
 		}
 
 		try {
-			for (const levelId of queuedLevelIds) {
-				const result = await requestAddLevel(listId, levelId);
+				const addedInputs: Array<BatchAddLevelInput & { inputIndex: number }> = [];
+
+			for (const levelInput of queuedLevelInputs) {
+				const result = await requestAddLevel(listId, levelInput.levelId);
 				if (!result.ok) {
 					failed.push({
-						levelId,
+						levelId: levelInput.levelId,
 						message: result.error
 					});
 					continue;
 				}
 
 				list = result.payload;
+				addedInputs.push(levelInput);
 				added += 1;
+			}
+
+			for (const levelInput of addedInputs) {
+				const patch: { rating?: number; minProgress?: number } = {};
+
+				if (Number.isInteger(levelInput.rating)) {
+					patch.rating = levelInput.rating;
+				}
+
+				if (Number.isInteger(levelInput.minProgress)) {
+					patch.minProgress = levelInput.minProgress;
+				}
+
+				if (!Object.keys(patch).length) {
+					continue;
+				}
+
+				const result = await requestUpdateLevel(listId, levelInput.levelId, patch);
+				if (!result.ok) {
+					failed.push({
+						levelId: levelInput.levelId,
+						message: result.error
+					});
+					continue;
+				}
+
+				list = result.payload;
+			}
+
+			if (list.mode === 'top') {
+				const levelsWithTop = addedInputs.filter((levelInput) => Number.isInteger(levelInput.top));
+				if (levelsWithTop.length) {
+					const reorderedLevelIds = buildReorderedLevelIds(
+						list.items.map((item) => item.levelId),
+						levelsWithTop
+					);
+					const result = await requestReorderLevels(listId, reorderedLevelIds);
+
+					if (!result.ok) {
+						for (const levelInput of levelsWithTop) {
+							failed.push({
+								levelId: levelInput.levelId,
+								message: result.error
+							});
+						}
+					} else {
+						list = result.payload;
+					}
+				}
 			}
 
 			return {
