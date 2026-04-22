@@ -14,6 +14,7 @@
 		rating?: number;
 		top?: number;
 		minProgress?: number;
+		videoId?: string;
 	};
 
 	type BatchAddLevelsResult = {
@@ -38,7 +39,7 @@
 		failed: []
 	});
 	export let removeLevel: (levelId: number) => void | Promise<void> = async () => {};
-	export let updateLevelItem: (levelId: number, patch: { rating?: number; minProgress?: number | null }) => void | Promise<void> = async () => {};
+	export let updateLevelItem: (levelId: number, patch: { rating?: number; minProgress?: number | null; videoID?: string | null }) => void | Promise<void> = async () => {};
 	export let reorderLevels: (levelIds: number[]) => void | Promise<void> = async () => {};
 
 	let displayedItems: any[] = [];
@@ -51,14 +52,16 @@
 	let editingRatingValue = '';
 	let editingMinProgressItemId: number | null = null;
 	let editingMinProgressValue: string | number | undefined = '';
+	let editingVideoIdItemId: number | null = null;
+	let editingVideoIdValue = '';
 	let csvFileInput: HTMLInputElement | null = null;
 	let csvAddSummary: (BatchAddLevelsResult & { invalidRows: number }) | null = null;
 	let addToolsOpen = false;
-	const csvExampleColumns = ['levelId', 'top', 'rating', 'minProgress'];
+	const csvExampleColumns = ['levelId', 'top', 'rating', 'minProgress', 'videoId'];
 	const csvExampleRows = [
-		['128', '3', '5', '47'],
-		['13519', '9', '10', '100'],
-		['65742217', '1', '7', '22']
+		['128', '3', '5', '47', 'dQw4w9WgXcQ'],
+		['13519', '9', '10', '100', 'M7lc1UVf-VE'],
+		['65742217', '1', '7', '22', 'rYEDA3JcQqw']
 	];
 
 	$: displayedItems = list?.items ? [...list.items] : [];
@@ -92,6 +95,36 @@
 		return item.minProgress == null ? value : `${value} *`;
 	}
 
+	function getEffectiveVideoId(item: any) {
+		return item.videoID ?? item.level?.videoID ?? null;
+	}
+
+	function getVideoIdLabel(item: any) {
+		const videoId = getEffectiveVideoId(item);
+
+		if (!videoId) {
+			return $_('custom_lists.detail.levels.video_id_label');
+		}
+
+		const suffix = item.videoID == null ? '' : ' *';
+		return `${$_('custom_lists.detail.levels.video_id_label')}: ${videoId}${suffix}`;
+	}
+
+	function normalizeVideoIdValue(value: string) {
+		const trimmed = value.trim();
+		const patterns = [
+			/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/,
+			/^([a-zA-Z0-9_-]{11})$/
+		];
+
+		for (const pattern of patterns) {
+			const match = trimmed.match(pattern);
+			if (match) return match[1];
+		}
+
+		return null;
+	}
+
 	function startRatingEdit(item: any) {
 		if (!canEditLevels) return;
 		editingRatingItemId = item.id;
@@ -104,9 +137,20 @@
 		editingMinProgressValue = item.minProgress == null ? '' : String(item.minProgress);
 	}
 
+	function startVideoIdEdit(item: any) {
+		if (!canEditLevels) return;
+		editingVideoIdItemId = item.id;
+		editingVideoIdValue = item.videoID ?? '';
+	}
+
 	function cancelMinProgressEdit() {
 		editingMinProgressItemId = null;
 		editingMinProgressValue = '';
+	}
+
+	function cancelVideoIdEdit() {
+		editingVideoIdItemId = null;
+		editingVideoIdValue = '';
 	}
 
 	function handleMinProgressBlur(event: FocusEvent) {
@@ -116,6 +160,15 @@
 		}
 
 		cancelMinProgressEdit();
+	}
+
+	function handleVideoIdBlur(event: FocusEvent) {
+		const nextTarget = event.relatedTarget;
+		if (nextTarget instanceof HTMLElement && nextTarget.dataset.videoIdAction) {
+			return;
+		}
+
+		cancelVideoIdEdit();
 	}
 
 	async function saveRatingEdit(levelId: number) {
@@ -144,6 +197,25 @@
 			return;
 		}
 		await updateLevelItem(levelId, { minProgress });
+	}
+
+	async function saveVideoIdEdit(levelId: number) {
+		const rawValue = editingVideoIdValue.trim();
+		editingVideoIdItemId = null;
+
+		if (!rawValue.length) {
+			await updateLevelItem(levelId, { videoID: null });
+			return;
+		}
+
+		const videoID = normalizeVideoIdValue(rawValue);
+
+		if (!videoID) {
+			toast.error($_('custom_lists.toast.video_id_invalid'));
+			return;
+		}
+
+		await updateLevelItem(levelId, { videoID });
 	}
 
 	function onDragStart(event: DragEvent, index: number) {
@@ -265,7 +337,7 @@
 	}
 
 	function getCsvColumnIndexes(cells: string[]) {
-		const indexes: { levelId?: number; top?: number; rating?: number; minProgress?: number } = {};
+		const indexes: { levelId?: number; top?: number; rating?: number; minProgress?: number; videoId?: number } = {};
 
 		cells.forEach((cell, index) => {
 			const normalizedCell = normalizeColumnName(cell);
@@ -285,9 +357,13 @@
 			if (indexes.minProgress === undefined && ['minprogress', 'minimumprogress', 'basetime'].includes(normalizedCell)) {
 				indexes.minProgress = index;
 			}
+
+			if (indexes.videoId === undefined && ['videoid', 'video', 'youtubeid', 'youtubevideoid'].includes(normalizedCell)) {
+				indexes.videoId = index;
+			}
 		});
 
-		return indexes.levelId === undefined ? null : indexes as { levelId: number; top?: number; rating?: number; minProgress?: number };
+		return indexes.levelId === undefined ? null : indexes as { levelId: number; top?: number; rating?: number; minProgress?: number; videoId?: number };
 	}
 
 	function parsePositiveIntegerCell(value: string | undefined) {
@@ -311,6 +387,15 @@
 		}
 
 		return Number.parseInt(normalizedValue, 10);
+	}
+
+	function parseOptionalVideoIdCell(value: string | undefined) {
+		const normalizedValue = value?.trim();
+		if (!normalizedValue?.length) {
+			return undefined;
+		}
+
+		return normalizeVideoIdValue(normalizedValue);
 	}
 
 	function parseSingleLineIds(input: string) {
@@ -372,11 +457,15 @@
 			const minProgressCell = headerIndexes
 				? (headerIndexes.minProgress === undefined ? undefined : cells[headerIndexes.minProgress])
 				: (list?.mode === 'top' ? cells[3] : cells[2]);
+			const videoIdCell = headerIndexes
+				? (headerIndexes.videoId === undefined ? undefined : cells[headerIndexes.videoId])
+				: (list?.mode === 'top' ? cells[4] : cells[3]);
 
 			const levelId = parsePositiveIntegerCell(levelIdCell);
 			const rating = parseOptionalIntegerCell(ratingCell);
 			const top = parseOptionalIntegerCell(topCell);
 			const minProgress = parseOptionalIntegerCell(minProgressCell);
+			const videoId = parseOptionalVideoIdCell(videoIdCell);
 
 			if (levelId === null) {
 				invalidRows += 1;
@@ -405,6 +494,11 @@
 				continue;
 			}
 
+			if (videoId === null) {
+				invalidRows += 1;
+				continue;
+			}
+
 			const levelInput: BatchAddLevelInput = { levelId };
 
 			if (Number.isInteger(rating)) {
@@ -417,6 +511,10 @@
 
 			if (Number.isInteger(minProgress)) {
 				levelInput.minProgress = minProgress;
+			}
+
+			if (typeof videoId === 'string' && videoId.length) {
+				levelInput.videoId = videoId;
 			}
 
 			levelInputs.push(levelInput);
@@ -781,6 +879,59 @@
 										{getMinProgressLabel(item)}
 									</button>
 								{/if}
+
+									{#if canEditLevels && editingVideoIdItemId === item.id}
+										<input
+											class="inlineInput videoIdInput"
+											type="text"
+											placeholder={item.videoID == null && item.level?.videoID ? item.level.videoID : undefined}
+											bind:value={editingVideoIdValue}
+											on:blur={handleVideoIdBlur}
+											on:keydown={(event) => {
+												if (event.key === 'Enter') {
+													event.preventDefault();
+													saveVideoIdEdit(item.levelId);
+												}
+												if (event.key === 'Escape') {
+													event.preventDefault();
+													cancelVideoIdEdit();
+												}
+											}}
+										/>
+										<div class="inlineEditActions">
+											<button
+												type="button"
+												class="inlineEditBtn inlineEditBtnPrimary"
+												data-video-id-action="save"
+												on:mousedown|preventDefault
+												on:click={() => saveVideoIdEdit(item.levelId)}
+												disabled={savingLevelItemId === item.levelId}
+											>
+												<Save class="mr-1.5 h-3.5 w-3.5" />
+												{$_('custom_lists.detail.levels.save_button')}
+											</button>
+											<button
+												type="button"
+												class="inlineEditBtn inlineEditBtnSecondary"
+												data-video-id-action="cancel"
+												on:mousedown|preventDefault
+												on:click={cancelVideoIdEdit}
+												disabled={savingLevelItemId === item.levelId}
+											>
+												{$_('custom_lists.detail.levels.cancel_button')}
+											</button>
+										</div>
+									{:else}
+										<button
+											class="chipBtn"
+											class:editable={canEditLevels}
+											type="button"
+											on:click={canEditLevels ? () => startVideoIdEdit(item) : undefined}
+											title={canEditLevels ? $_('custom_lists.detail.levels.video_id_edit_hint') : undefined}
+										>
+											{getVideoIdLabel(item)}
+										</button>
+									{/if}
 
 								<Badge variant="outline">{$_('custom_lists.detail.levels.id_badge', { values: { id: item.levelId } })}</Badge>
 
@@ -1156,6 +1307,11 @@
 
 	.minProgressInput {
 		width: 120px;
+	}
+
+	.videoIdInput {
+		width: 170px;
+		text-align: left;
 	}
 
 	.inlineEditActions {

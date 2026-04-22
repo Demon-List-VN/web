@@ -54,6 +54,7 @@
 		minProgress: number | null;
 		rating: number;
 		position: number | null;
+		videoID: string | null;
 		level: any | null;
 	};
 
@@ -990,6 +991,7 @@
 									{@const itemCardType = getItemCardType(item)}
 									<LevelCard
 										{...toLevelCardProps(item.level, itemCardType, {
+											videoID: item.videoID ?? item.level.videoID ?? null,
 											rating:
 												list.mode === 'rating'
 													? (item.rating ?? item.level.rating)

@@ -46,6 +46,7 @@
 		minProgress: number | null;
 		rating: number;
 		position: number | null;
+		videoID: string | null;
 		level: {
 			id: number;
 			name: string | null;
@@ -53,6 +54,7 @@
 			difficulty: string | null;
 			isPlatformer: boolean;
 			minProgress: number | null;
+			videoID?: string | null;
 		} | null;
 	};
 
@@ -140,6 +142,7 @@
 		rating?: number;
 		top?: number;
 		minProgress?: number;
+		videoId?: string;
 	};
 
 	type BatchAddLevelsResult = {
@@ -833,7 +836,7 @@
 		};
 	}
 
-	async function requestUpdateLevel(listId: number, levelId: number, patch: { rating?: number; minProgress?: number | null }) {
+	async function requestUpdateLevel(listId: number, levelId: number, patch: { rating?: number; minProgress?: number | null; videoID?: string | null }) {
 		const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${listId}/levels/${levelId}`, {
 			method: 'PATCH',
 			headers: {
@@ -964,7 +967,7 @@
 			}
 
 			for (const levelInput of addedInputs) {
-				const patch: { rating?: number; minProgress?: number } = {};
+				const patch: { rating?: number; minProgress?: number; videoID?: string | null } = {};
 
 				if (Number.isInteger(levelInput.rating)) {
 					patch.rating = levelInput.rating;
@@ -972,6 +975,10 @@
 
 				if (Number.isInteger(levelInput.minProgress)) {
 					patch.minProgress = levelInput.minProgress;
+				}
+
+				if (typeof levelInput.videoId === 'string' && levelInput.videoId.length) {
+					patch.videoID = levelInput.videoId;
 				}
 
 				if (!Object.keys(patch).length) {
@@ -1041,7 +1048,7 @@
 		}
 	}
 
-	async function updateLevelItem(levelId: number, patch: { rating?: number; minProgress?: number | null }) {
+	async function updateLevelItem(levelId: number, patch: { rating?: number; minProgress?: number | null; videoID?: string | null }) {
 		if (!list || !canEditLevels) return;
 		savingLevelItemId = levelId;
 		try {
