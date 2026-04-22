@@ -937,9 +937,7 @@
 			</p>
 		</div>
 
-		<div class="adSection">
-			<Ads dataAdFormat="auto" />
-		</div>
+		<Ads dataAdFormat="auto" />
 
 		<Tabs.Root value={activeTab}>
 			<div class="tabsList">
@@ -1008,11 +1006,6 @@
 										</div>
 									</div>
 								{/if}
-								{#if shouldShowLevelsAd(i, listItems.length)}
-									<div class="levelsAd">
-										<Ads dataAdFormat="auto" />
-									</div>
-								{/if}
 							{/each}
 						</div>
 						{#if hasMoreLevels(list)}
@@ -1046,10 +1039,6 @@
 							</p>
 						</div>
 						<Badge variant="outline">{leaderboardCount}</Badge>
-					</div>
-
-					<div class="adSection">
-						<Ads dataAdFormat="auto" />
 					</div>
 
 					{#if leaderboardLoading}
@@ -1385,10 +1374,6 @@
 									{$_('custom_lists.actions.post_about')}
 								</Button>
 							{/if}
-						</div>
-
-						<div class="adSection">
-							<Ads dataAdFormat="auto" />
 						</div>
 
 						{#if loadingRelatedPosts}

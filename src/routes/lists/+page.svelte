@@ -375,7 +375,7 @@
 			</Button>
 		{/if}
 	</div>
-
+	<Ads dataAdFormat="auto" />
 	<!-- Quick-add banner -->
 	{#if quickLevelId && $user.loggedIn}
 		<div class="quickBanner">
@@ -390,10 +390,6 @@
 			</div>
 		</div>
 	{/if}
-
-	<div class="adSection">
-		<Ads dataAdFormat="auto" />
-	</div>
 
 	<Tabs.Root bind:value={activeTab}>
 		<div class="tabsList">
@@ -517,11 +513,6 @@
 									</div>
 								{/if}
 							</button>
-							{#if shouldShowGridAd(index, lists.length)}
-								<div class="listGridAd">
-									<Ads dataAdFormat="auto" />
-								</div>
-							{/if}
 						{/each}
 					</div>
 
@@ -672,11 +663,6 @@
 									</div>
 								{/if}
 							</button>
-							{#if shouldShowGridAd(index, lists.length)}
-								<div class="listGridAd">
-									<Ads dataAdFormat="auto" />
-								</div>
-							{/if}
 						{/each}
 					</div>
 
@@ -841,11 +827,6 @@
 										</Button>
 									</div>
 								</button>
-								{#if shouldShowGridAd(index, ownLists.length)}
-									<div class="listGridAd">
-										<Ads dataAdFormat="auto" />
-									</div>
-								{/if}
 							{/each}
 						</div>
 					{/if}
@@ -953,11 +934,6 @@
 										</div>
 									{/if}
 								</button>
-								{#if shouldShowGridAd(index, starredLists.length)}
-									<div class="listGridAd">
-										<Ads dataAdFormat="auto" />
-									</div>
-								{/if}
 							{/each}
 						</div>
 					{/if}
@@ -1012,10 +988,6 @@
 		align-items: flex-start;
 		gap: 12px;
 		color: hsl(var(--primary));
-	}
-
-	.adSection {
-		width: 100%;
 	}
 
 	.quickTitle {
