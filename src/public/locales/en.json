@@ -1830,6 +1830,8 @@
         "description_label": "Description",
         "community_label": "Community posts",
         "community_hint": "Allow community posts to be attached to this list.",
+        "level_submission_label": "Level submissions",
+        "level_submission_hint": "Allow signed-in users to submit levels into this list's review queue.",
         "type_label": "List type",
         "type_hint": "Platformer lists only accept platformer levels and display base time instead of percentage minimums.",
         "visibility_label": "Visibility",
@@ -1985,6 +1987,8 @@
       "type_hint": "Choose Platformer if this list should only contain platformer levels.",
       "community_label": "Community posts",
       "community_hint": "Allow community posts to be attached to this list. Enabled by default.",
+      "level_submission_label": "Level submissions",
+      "level_submission_hint": "Allow signed-in users to submit levels into this list's review queue.",
       "mode_rating_hint": "Levels are rated from 0 upward and shown from highest to lowest rated.",
       "mode_top_hint": "Arrange levels in a custom order by dragging."
     },

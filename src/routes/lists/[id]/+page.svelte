@@ -79,6 +79,7 @@
 		isBanned: boolean;
 		isPlatformer: boolean;
 		isOfficial?: boolean;
+		levelSubmissionEnabled?: boolean;
 		logoUrl?: string | null;
 		topEnabled?: boolean;
 		visibility: 'private' | 'unlisted' | 'public';
@@ -850,7 +851,7 @@
 			{$_('custom_lists.back')}
 		</Button>
 		<div class="toolbarActions">
-			{#if list && !list.isOfficial}
+			{#if list && list.levelSubmissionEnabled}
 				<Button variant="outline" size="sm" on:click={() => goto(`/lists/${$page.params.id}/submit`)}>
 					{#if $locale == 'vi'}
 						Nộp level

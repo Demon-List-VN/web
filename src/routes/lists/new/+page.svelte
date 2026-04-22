@@ -31,6 +31,7 @@
 		mode: 'rating' as 'rating' | 'top',
 		isPlatformer: false,
 		communityEnabled: true,
+		levelSubmissionEnabled: false,
 		weightFormula: '1'
 	};
 
@@ -77,6 +78,7 @@
 					mode: form.mode,
 					isPlatformer: form.isPlatformer,
 					communityEnabled: form.communityEnabled,
+					levelSubmissionEnabled: form.levelSubmissionEnabled,
 					weightFormula: form.weightFormula
 				})
 			});
@@ -207,6 +209,19 @@
 						<div class="switchControl">
 							<span class="switchLabel">{form.communityEnabled ? $_('general.yes') : $_('general.no')}</span>
 							<Switch id="list-community-enabled" bind:checked={form.communityEnabled} />
+						</div>
+					</div>
+				</div>
+
+				<div class="field">
+					<div class="switchRow">
+						<div>
+							<label for="list-level-submission-enabled">{$_('custom_lists.new.level_submission_label')}</label>
+							<p class="hint">{$_('custom_lists.new.level_submission_hint')}</p>
+						</div>
+						<div class="switchControl">
+							<span class="switchLabel">{form.levelSubmissionEnabled ? $_('general.yes') : $_('general.no')}</span>
+							<Switch id="list-level-submission-enabled" bind:checked={form.levelSubmissionEnabled} />
 						</div>
 					</div>
 				</div>

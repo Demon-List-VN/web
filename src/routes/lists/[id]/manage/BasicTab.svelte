@@ -65,6 +65,18 @@
 				</div>
 			</div>
 			<div class="field">
+				<div class="switchRow">
+					<div>
+						<label for="list-level-submission-enabled">{$_('custom_lists.detail.edit.level_submission_label')}</label>
+						<p class="hint">{$_('custom_lists.detail.edit.level_submission_hint')}</p>
+					</div>
+					<div class="switchControl">
+						<span class="switchLabel">{editForm.levelSubmissionEnabled ? $_('general.yes') : $_('general.no')}</span>
+						<Switch id="list-level-submission-enabled" bind:checked={editForm.levelSubmissionEnabled} />
+					</div>
+				</div>
+			</div>
+			<div class="field">
 				<span class="fieldLabel">{$_('custom_lists.detail.edit.visibility_label')}</span>
 				<div class="optionRow">
 					{#each visibilityOptions as visibility}

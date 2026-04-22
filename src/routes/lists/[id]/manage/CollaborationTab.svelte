@@ -78,6 +78,7 @@
 		if (field === 'communityEnabled') return $_('custom_lists.detail.edit.community_label');
 		if (field === 'faviconUrl') return $_('custom_lists.detail.edit.favicon_url_label');
 		if (field === 'isPlatformer') return $_('custom_lists.detail.edit.type_label');
+		if (field === 'levelSubmissionEnabled') return $_('custom_lists.detail.edit.level_submission_label');
 		if (field === 'logoUrl') return $_('custom_lists.detail.edit.logo_url_label');
 		if (field === 'mode') return $_('custom_lists.detail.edit.mode_label');
 		if (field === 'rankBadges') return $_('custom_lists.detail.edit.rank_badges_label');
@@ -112,7 +113,7 @@
 		}
 
 		if (
-			(field === 'communityEnabled' || field === 'topEnabled' || field === 'adminsCanManageHelpers')
+			(field === 'communityEnabled' || field === 'topEnabled' || field === 'levelSubmissionEnabled' || field === 'adminsCanManageHelpers')
 			&& typeof value === 'boolean'
 		) {
 			return value ? $_('general.yes') : $_('general.no');

@@ -6,7 +6,7 @@
 	import { locale, _ } from 'svelte-i18n';
 	import { toast } from 'svelte-sonner';
 	import { fly } from 'svelte/transition';
-	import { ArrowLeft } from 'lucide-svelte';
+	import { ArrowLeft, ListPlus } from 'lucide-svelte';
 
 	import SubmitStepper from '$lib/components/submit/SubmitStepper.svelte';
 	import StepRules from '$lib/components/submit/StepRules.svelte';
@@ -405,6 +405,22 @@
 					? 'Bạn cần đăng nhập để nộp record.'
 					: 'You need to sign in to submit a record.'}
 			</p>
+			<div class="level-submit-callout">
+				<div class="callout-icon">
+					<ListPlus size={18} />
+				</div>
+				<div class="callout-copy">
+					<h2>{$locale == 'vi' ? 'Bạn muốn nộp level?' : 'Submitting a level?'}</h2>
+					<p>
+						{$locale == 'vi'
+							? 'Trang này dùng để nộp record hoàn thành. Để gửi level vào một danh sách, hãy chọn danh sách đang mở nhận level.'
+							: 'This page is for completion records. To submit a level to a list, choose a list that is accepting level submissions.'}
+					</p>
+				</div>
+				<Button variant="outline" size="sm" href="/lists">
+					{$locale == 'vi' ? 'Xem danh sách' : 'Browse lists'}
+				</Button>
+			</div>
 		</div>
 	{:else}
 		<div class="submit-container">
@@ -412,6 +428,23 @@
 				<ArrowLeft size={16} />
 				<span>{$locale == 'vi' ? 'Trang chủ' : 'Home'}</span>
 			</a>
+
+			<div class="level-submit-callout">
+				<div class="callout-icon">
+					<ListPlus size={18} />
+				</div>
+				<div class="callout-copy">
+					<h2>{$locale == 'vi' ? 'Bạn muốn nộp level?' : 'Submitting a level?'}</h2>
+					<p>
+						{$locale == 'vi'
+							? 'Trang này dùng để nộp record hoàn thành. Để gửi level vào một danh sách, hãy chọn danh sách đang mở nhận level.'
+							: 'This page is for completion records. To submit a level to a list, choose a list that is accepting level submissions.'}
+					</p>
+				</div>
+				<Button variant="outline" size="sm" href="/lists">
+					{$locale == 'vi' ? 'Xem danh sách' : 'Browse lists'}
+				</Button>
+			</div>
 
 			<div class="submit-card">
 				{#if !submitted}
@@ -572,6 +605,46 @@
 		}
 	}
 
+	.level-submit-callout {
+		border: 1px solid hsl(var(--border));
+		border-radius: 12px;
+		padding: 14px;
+		background: hsl(var(--card, var(--background)));
+		display: grid;
+		grid-template-columns: auto 1fr auto;
+		align-items: center;
+		gap: 12px;
+		width: 100%;
+		max-width: 672px;
+	}
+
+	.callout-icon {
+		width: 34px;
+		height: 34px;
+		border-radius: 8px;
+		background: hsl(var(--primary) / 0.12);
+		color: hsl(var(--primary));
+		display: grid;
+		place-items: center;
+	}
+
+	.callout-copy {
+		min-width: 0;
+
+		h2 {
+			margin: 0;
+			font-size: 0.95rem;
+			font-weight: 600;
+		}
+
+		p {
+			margin: 2px 0 0;
+			font-size: 0.82rem;
+			color: hsl(var(--muted-foreground));
+			line-height: 1.45;
+		}
+	}
+
 	.step-wrapper {
 		position: relative;
 		min-height: 200px;
@@ -596,6 +669,15 @@
 	}
 
 	@media (max-width: 480px) {
+		.level-submit-callout {
+			grid-template-columns: auto 1fr;
+		}
+
+		.level-submit-callout :global(a) {
+			grid-column: 1 / -1;
+			width: 100%;
+		}
+
 		.step-footer :global(.footer-btn) {
 			flex: 1;
 		}

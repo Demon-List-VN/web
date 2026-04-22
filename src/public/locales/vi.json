@@ -1829,6 +1829,8 @@
         "description_label": "Mô tả",
         "community_label": "Bài viết cộng đồng",
         "community_hint": "Cho phép gắn bài viết cộng đồng vào danh sách này.",
+        "level_submission_label": "Nộp level",
+        "level_submission_hint": "Cho phép người dùng đã đăng nhập gửi level vào hàng đợi duyệt của danh sách này.",
         "type_label": "Loại danh sách",
         "type_hint": "Danh sách platformer chỉ nhận level platformer và hiển thị base time thay vì phần trăm tối thiểu.",
         "visibility_label": "Chế độ hiển thị",
@@ -1984,6 +1986,8 @@
       "type_hint": "Chọn Platformer nếu danh sách này chỉ nên chứa level platformer.",
       "community_label": "Bài viết cộng đồng",
       "community_hint": "Cho phép gắn bài viết cộng đồng vào danh sách này. Mặc định là bật.",
+      "level_submission_label": "Nộp level",
+      "level_submission_hint": "Cho phép người dùng đã đăng nhập gửi level vào hàng đợi duyệt của danh sách này.",
       "mode_rating_hint": "Mỗi level được chấm điểm từ 0 trở lên, hiển thị từ cao đến thấp.",
       "mode_top_hint": "Sắp xếp level theo thứ tự tuỳ chỉnh bằng cách kéo thả."
     },

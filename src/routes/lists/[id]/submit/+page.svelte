@@ -284,16 +284,16 @@
 				</p>
 			{/if}
 		</div>
-	{:else if list.isOfficial}
+	{:else if !list.levelSubmissionEnabled}
 		<div class="state-card">
 			<div class="state-icon-wrap warning">
 				<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
 			</div>
-			<h2>{$locale == 'vi' ? 'Không áp dụng cho danh sách chính thức' : 'Not available for official lists'}</h2>
+			<h2>{$locale == 'vi' ? 'Danh sách chưa mở nộp level' : 'Level submissions are closed'}</h2>
 			<p class="state-hint">
 				{$locale == 'vi'
-					? 'Luồng nộp level này chỉ dành cho custom list.'
-					: 'This submission flow is only available for custom lists.'}
+					? 'Danh sách này hiện không nhận level do người dùng gửi.'
+					: 'This list is not currently accepting user-submitted levels.'}
 			</p>
 			<Button href={`/lists/${list.id}`} size="sm">
 				{$locale == 'vi' ? 'Quay lại danh sách' : 'Back to list'}

@@ -158,6 +158,7 @@
 		isBanned: boolean;
 		isPlatformer: boolean;
 		isOfficial?: boolean;
+		levelSubmissionEnabled?: boolean;
 		logoUrl?: string | null;
 		topEnabled?: boolean;
 		itemSort?: 'mode_default' | 'created_at';
@@ -341,6 +342,7 @@
 		bannerUrl: '',
 		borderColor: '',
 		communityEnabled: true,
+		levelSubmissionEnabled: false,
 		faviconUrl: '',
 		isPlatformer: false,
 		logoUrl: '',
@@ -390,6 +392,7 @@
 		editForm.bannerUrl = list.bannerUrl || '';
 		editForm.borderColor = list.borderColor || '';
 		editForm.communityEnabled = list.communityEnabled;
+		editForm.levelSubmissionEnabled = list.levelSubmissionEnabled ?? false;
 		editForm.faviconUrl = list.faviconUrl || '';
 		editForm.isPlatformer = list.isPlatformer;
 		editForm.logoUrl = list.logoUrl || '';
@@ -426,6 +429,7 @@
 			bannerUrl: currentList.bannerUrl || '',
 			borderColor: currentList.borderColor || '',
 			communityEnabled: currentList.communityEnabled,
+			levelSubmissionEnabled: currentList.levelSubmissionEnabled ?? false,
 			faviconUrl: currentList.faviconUrl || '',
 			isPlatformer: currentList.isPlatformer,
 			logoUrl: currentList.logoUrl || '',
@@ -447,6 +451,7 @@
 			bannerUrl: currentForm.bannerUrl,
 			borderColor: currentForm.borderColor,
 			communityEnabled: currentForm.communityEnabled,
+			levelSubmissionEnabled: currentForm.levelSubmissionEnabled,
 			faviconUrl: currentForm.faviconUrl,
 			isPlatformer: currentForm.isPlatformer,
 			logoUrl: currentForm.logoUrl,
@@ -1271,6 +1276,7 @@
 					bannerUrl: editForm.bannerUrl,
 					borderColor: editForm.borderColor,
 					communityEnabled: editForm.communityEnabled,
+					levelSubmissionEnabled: editForm.levelSubmissionEnabled,
 					faviconUrl: editForm.faviconUrl,
 					isPlatformer: editForm.isPlatformer,
 					logoUrl: editForm.logoUrl,
