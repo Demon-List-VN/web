@@ -2,7 +2,13 @@ import type { PageLoad } from './$types';
 
 export const load: PageLoad = async ({ params, fetch }) => {
 	try {
-		const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${params.id}`);
+		const query = new URLSearchParams({
+			submitGate: '1',
+			cacheBust: String(Date.now())
+		});
+		const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${params.id}?${query.toString()}`, {
+			cache: 'no-store'
+		});
 
 		if (!res.ok) {
 			const payload = await res.json().catch(() => null);
