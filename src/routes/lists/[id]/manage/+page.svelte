@@ -482,7 +482,7 @@
 
 		return reorderedLevelIds.map((levelId, index) => ({
 			...itemsByLevelId.get(levelId)!,
-			position: index
+			position: index + 1
 		}));
 	}
 
@@ -1371,7 +1371,7 @@
 	}
 
 	function hasBatchLevelPatch(levelInput: BatchAddLevelInput) {
-		return Number.isInteger(levelInput.rating)
+		return Number.isFinite(levelInput.rating)
 			|| Number.isInteger(levelInput.minProgress)
 			|| (typeof levelInput.videoId === 'string' && levelInput.videoId.length > 0)
 			|| (typeof levelInput.createdAt === 'string' && levelInput.createdAt.length > 0);
@@ -1384,7 +1384,7 @@
 	function buildBatchUpdateLevelPatch(levelInput: BatchAddLevelInput) {
 		const patch: { rating?: number; minProgress?: number; videoID?: string | null; createdAt?: string } = {};
 
-		if (Number.isInteger(levelInput.rating)) {
+		if (Number.isFinite(levelInput.rating)) {
 			patch.rating = levelInput.rating;
 		}
 
@@ -1887,7 +1887,7 @@
 
 				const nextPatch: Partial<LevelItemPatch> = {};
 
-				if (Number.isInteger(levelInput.rating)) {
+				if (Number.isFinite(levelInput.rating)) {
 					nextPatch.rating = levelInput.rating;
 				}
 
@@ -2004,7 +2004,7 @@
 			return itemIndex + 1;
 		}
 
-		return currentList.isOfficial ? Number(item.position) : Number(item.position) + 1;
+		return Number(item.position);
 	}
 
 	function getLevelAuditState(currentList: CustomList, item: CustomListItem): PendingLevelAuditState {

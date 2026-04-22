@@ -206,7 +206,7 @@
 			return index + 1;
 		}
 
-		return list?.isOfficial ? Number(item.position) : Number(item.position) + 1;
+		return Number(item.position);
 	}
 
 	function hasDraftValue(patch: LevelItemPatch | undefined, key: keyof LevelItemPatch) {
@@ -421,9 +421,9 @@
 	}
 
 	async function saveRatingEdit(levelId: number) {
-		const rating = Number.parseInt(editingRatingValue, 10);
+		const rating = Number.parseFloat(editingRatingValue);
 		editingRatingItemId = null;
-		if (!Number.isInteger(rating) || rating < 0) {
+		if (!Number.isFinite(rating) || rating < 0) {
 			toast.error($_('custom_lists.toast.rating_invalid'));
 			return;
 		}
@@ -476,8 +476,8 @@
 		const videoIdValue = bulkVideoIdValue.trim();
 
 		if (list?.mode === 'rating' && ratingValue.length) {
-			const rating = Number.parseInt(ratingValue, 10);
-			if (!Number.isInteger(rating) || rating < 0) {
+			const rating = Number.parseFloat(ratingValue);
+			if (!Number.isFinite(rating) || rating < 0) {
 				toast.error($_('custom_lists.toast.rating_invalid'));
 				return;
 			}
@@ -686,6 +686,20 @@
 		return Number.parseInt(normalizedValue, 10);
 	}
 
+	function parseOptionalFloatCell(value: string | undefined) {
+		const normalizedValue = value?.trim();
+		if (!normalizedValue?.length) {
+			return undefined;
+		}
+
+		const parsed = Number(normalizedValue);
+		if (!Number.isFinite(parsed)) {
+			return Number.NaN;
+		}
+
+		return parsed;
+	}
+
 	function parseOptionalVideoIdCell(value: string | undefined) {
 		const normalizedValue = value?.trim();
 		if (!normalizedValue?.length) {
@@ -777,7 +791,7 @@
 
 			const levelId = parsePositiveIntegerCell(levelIdCell);
 			const createdAt = parseOptionalCreatedAtCell(createdAtCell);
-			const rating = parseOptionalIntegerCell(ratingCell);
+			const rating = parseOptionalFloatCell(ratingCell);
 			const top = parseOptionalIntegerCell(topCell);
 			const minProgress = parseOptionalIntegerCell(minProgressCell);
 			const videoId = parseOptionalVideoIdCell(videoIdCell);
@@ -787,7 +801,7 @@
 				continue;
 			}
 
-			if (rating !== undefined && (!Number.isInteger(rating) || rating < 0)) {
+			if (rating !== undefined && (!Number.isFinite(rating) || rating < 0)) {
 				invalidRows += 1;
 				continue;
 			}
@@ -825,7 +839,7 @@
 				levelInput.createdAt = createdAt;
 			}
 
-			if (Number.isInteger(rating)) {
+			if (Number.isFinite(rating)) {
 				levelInput.rating = rating;
 			}
 
@@ -1171,7 +1185,7 @@
 							{#if list?.mode === 'rating'}
 								<div class="bulkEditField">
 									<label for="bulk-rating">{$_('custom_lists.detail.levels.rating_label')}</label>
-									<Input id="bulk-rating" type="number" min="1" max="10" bind:value={bulkRatingValue} />
+									<Input id="bulk-rating" type="number" min="0" step="any" bind:value={bulkRatingValue} />
 								</div>
 							{/if}
 
@@ -1286,8 +1300,8 @@
 										<input
 											class="inlineInput ratingInput"
 											type="number"
-											min="1"
-											max="10"
+											min="0"
+											step="any"
 											bind:value={editingRatingValue}
 											disabled={savingLevelDrafts}
 											on:blur={() => saveRatingEdit(item.levelId)}
