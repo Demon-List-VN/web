@@ -70,17 +70,86 @@
 	}
 
 	function humanizeAuditField(field: string) {
+		if (field === 'title') return $_('custom_lists.detail.edit.title_label');
+		if (field === 'description') return $_('custom_lists.detail.edit.description_label');
 		if (field === 'backgroundColor') return $_('custom_lists.detail.edit.background_color_label');
 		if (field === 'bannerUrl') return $_('custom_lists.detail.edit.banner_url_label');
 		if (field === 'borderColor') return $_('custom_lists.detail.edit.border_color_label');
 		if (field === 'communityEnabled') return $_('custom_lists.detail.edit.community_label');
+		if (field === 'faviconUrl') return $_('custom_lists.detail.edit.favicon_url_label');
 		if (field === 'isPlatformer') return $_('custom_lists.detail.edit.type_label');
 		if (field === 'logoUrl') return $_('custom_lists.detail.edit.logo_url_label');
+		if (field === 'mode') return $_('custom_lists.detail.edit.mode_label');
 		if (field === 'rankBadges') return $_('custom_lists.detail.edit.rank_badges_label');
+		if (field === 'slug') return $_('custom_lists.detail.edit.slug_label');
+		if (field === 'tags') return $_('custom_lists.detail.edit.tags_label');
 		if (field === 'topEnabled') return $_('custom_lists.detail.edit.top_enabled_label');
+		if (field === 'visibility') return $_('custom_lists.detail.edit.visibility_label');
 		if (field === 'weightFormula') return $_('custom_lists.formula.label');
 		if (field === 'adminsCanManageHelpers') return $_('custom_lists.manage.collaboration.admin_helper_toggle_label');
 		return field;
+	}
+
+	function formatAuditFieldValue(field: string, value: unknown) {
+		if (value == null || value === '') {
+			return '-';
+		}
+
+		if (field === 'visibility' && typeof value === 'string') {
+			if (value === 'public') return $_('custom_lists.visibility.public');
+			if (value === 'unlisted') return $_('custom_lists.visibility.unlisted');
+			return $_('custom_lists.visibility.private');
+		}
+
+		if (field === 'mode' && typeof value === 'string') {
+			return value === 'rating'
+				? $_('custom_lists.detail.edit.mode_rating')
+				: $_('custom_lists.detail.edit.mode_top');
+		}
+
+		if (field === 'isPlatformer' && typeof value === 'boolean') {
+			return value ? $_('custom_lists.type.platformer') : $_('custom_lists.type.classic');
+		}
+
+		if (
+			(field === 'communityEnabled' || field === 'topEnabled' || field === 'adminsCanManageHelpers')
+			&& typeof value === 'boolean'
+		) {
+			return value ? $_('general.yes') : $_('general.no');
+		}
+
+		if (field === 'tags' && Array.isArray(value)) {
+			return value.length ? value.join(', ') : '-';
+		}
+
+		if (typeof value === 'object') {
+			return JSON.stringify(value);
+		}
+
+		return String(value);
+	}
+
+	function getAuditChangeSummary(metadata: Record<string, any>) {
+		if (!metadata.changes || typeof metadata.changes !== 'object') {
+			return '';
+		}
+
+		return Object.entries(metadata.changes)
+			.map(([field, change]) => {
+				const previousValue = getAuditChangeValue(change, 'old');
+				const nextValue = getAuditChangeValue(change, 'new');
+
+				return `${humanizeAuditField(field)}: ${formatAuditFieldValue(field, previousValue)} -> ${formatAuditFieldValue(field, nextValue)}`;
+			})
+			.join('; ');
+	}
+
+	function getAuditChangeValue(change: unknown, key: 'old' | 'new') {
+		if (!change || typeof change !== 'object') {
+			return null;
+		}
+
+		return (change as any)[key] ?? null;
 	}
 
 	function getAuditActionLabel(action: string) {
@@ -107,13 +176,14 @@
 		const fields = Array.isArray(metadata.fields)
 			? metadata.fields.map((field: string) => humanizeAuditField(String(field))).join(', ')
 			: '';
+		const changes = getAuditChangeSummary(metadata) || fields || '-';
 
 		if (entry.action === 'list_created') {
 			return $_('custom_lists.manage.audit_detail.list_created', { values: { actor } });
 		}
 
 		if (entry.action === 'list_updated') {
-			return $_('custom_lists.manage.audit_detail.list_updated', { values: { actor, fields: fields || '-' } });
+			return $_('custom_lists.manage.audit_detail.list_updated', { values: { actor, changes } });
 		}
 
 		if (entry.action === 'level_added' || entry.action === 'level_removed') {

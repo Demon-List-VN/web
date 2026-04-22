@@ -7,6 +7,7 @@
 
 	export let editForm: any;
 	export let list: any = null;
+	export let updateItemSort: (itemSort: 'mode_default' | 'created_at') => void | Promise<void> = async () => {};
 
 	const visibilityOptions: Array<'private' | 'unlisted' | 'public'> = ['private', 'unlisted', 'public'];
 
@@ -109,7 +110,7 @@
 							type="button"
 							class="optionBtn"
 							class:selected={editForm.itemSort === itemSort}
-							on:click={() => (editForm.itemSort = itemSort === 'created_at' ? 'created_at' : 'mode_default')}
+							on:click={() => void updateItemSort(itemSort === 'created_at' ? 'created_at' : 'mode_default')}
 						>
 							{itemSort === 'created_at'
 								? $_('custom_lists.detail.edit.item_sort_created_at')

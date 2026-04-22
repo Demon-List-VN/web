@@ -1841,7 +1841,7 @@
         "item_sort_label": "Kiểu sắp xếp",
         "item_sort_mode_default": "Theo mặc định của mode",
         "item_sort_created_at": "Theo thời gian tạo",
-        "item_sort_hint": "Chọn cách sắp xếp level trên trang danh sách. Mặc định theo mode sẽ dùng top tăng dần trong mode Top và rating giảm dần trong mode Điểm. Theo thời gian tạo sẽ dùng thời gian tạo của từng mục, bao gồm cả thời gian nhập từ CSV.",
+        "item_sort_hint": "Chọn cách sắp xếp level trong trang quản lý. Thiết lập này chỉ đổi truy vấn hiện tại và không ảnh hưởng thứ tự trên trang danh sách công khai. Mặc định theo mode sẽ dùng top tăng dần trong mode Top và rating giảm dần trong mode Điểm. Theo thời gian tạo sẽ dùng thời gian tạo của từng mục, bao gồm cả thời gian nhập từ CSV.",
         "appearance_heading": "Giao diện",
         "appearance_hint": "Tùy chỉnh banner, màu sắc, logo thanh điều hướng, favicon và cách hiển thị level card cho danh sách này.",
         "background_color_label": "Màu nền",
@@ -2045,7 +2045,7 @@
       },
       "audit_detail": {
         "list_created": "{actor} đã tạo danh sách.",
-        "list_updated": "{actor} đã cập nhật: {fields}.",
+        "list_updated": "{actor} đã cập nhật thiết lập: {changes}.",
         "level_changed": "{actor} đã thay đổi level #{levelId}.",
         "level_updated": "{actor} đã cập nhật level #{levelId}: {fields}.",
         "levels_reordered": "{actor} đã sắp xếp lại danh sách level.",
@@ -2055,7 +2055,10 @@
         "collaboration_settings_updated": "{actor} đã đặt quyền quản trị viên thêm trợ lý thành {enabled}.",
         "ban_state_updated": "{actor} đã thực hiện: {state}.",
         "leaderboard_refreshed": "{actor} đã làm mới bảng xếp hạng ({totalPlayers} người chơi, {totalRecords} bản ghi)."
-      }
+      },
+      "unsaved_settings_title": "Có thiết lập chưa lưu",
+      "unsaved_settings_hint": "Bạn đang có thay đổi chưa được lưu. Hãy lưu trước khi rời khỏi trang để thiết lập của danh sách không bị lệch.",
+      "unsaved_settings_close_warning": "Bạn đang có thiết lập danh sách chưa lưu. Nếu rời khỏi trang này, các thay đổi đó sẽ bị mất."
     },
     "formula": {
       "label": "Công thức điểm bản ghi",

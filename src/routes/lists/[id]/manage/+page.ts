@@ -1,8 +1,15 @@
 import type { PageLoad } from './$types';
 
-export const load: PageLoad = async ({ params, fetch }) => {
+export const load: PageLoad = async ({ params, fetch, url }) => {
 	try {
-		const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${params.id}`);
+		const query = new URLSearchParams();
+		if (url.searchParams.get('itemSort') === 'created_at') {
+			query.set('itemSort', 'created_at');
+		}
+
+		const res = await fetch(
+			`${import.meta.env.VITE_API_URL}/lists/${params.id}${query.size ? `?${query.toString()}` : ''}`
+		);
 
 		if (!res.ok) {
 			const payload = await res.json().catch(() => null);

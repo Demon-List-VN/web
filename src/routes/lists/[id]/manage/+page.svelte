@@ -155,6 +155,12 @@
 		aborted: boolean;
 	};
 
+	type BatchAddExistingLevelsResponse = {
+		added: number;
+		missingLevelIds: number[];
+		list: CustomList;
+	};
+
 	type BatchAddProgressPhase = 'adding' | 'updating' | 'reordering';
 
 	type BatchAddProgress = {
@@ -199,6 +205,7 @@
 	let refreshingLeaderboard = false;
 	let savingBanState = false;
 	let savingCollaboration = false;
+	let hasUnsavedSettings = false;
 	let initialSyncDone = false;
 	let uploadingAsset: 'banner' | 'favicon' | 'logo' | null = null;
 	let batchAddProgress: BatchAddProgress | null = null;
@@ -207,6 +214,7 @@
 	const CUSTOM_LIST_CDN_BASE_URL = 'https://cdn.gdvn.net';
 	const CSV_IMPORT_RATE_LIMIT_RETRY_MS = 1000;
 	const CSV_IMPORT_RATE_LIMIT_TIMEOUT_MS = 15000;
+	const DEFAULT_ITEM_SORT: 'mode_default' | 'created_at' = 'mode_default';
 
 	class BatchAddImportAbortedError extends Error {
 		constructor() {
@@ -236,6 +244,20 @@
 
 	let activeTab: ManageTab = getInitialManageTab();
 	let initialManageTabSettled = false;
+
+	function getRequestedItemSort() {
+		return $page.url.searchParams.get('itemSort') === 'created_at' ? 'created_at' : DEFAULT_ITEM_SORT;
+	}
+
+	function buildListRequestUrl(itemSort: 'mode_default' | 'created_at' = getRequestedItemSort()) {
+		const query = new URLSearchParams();
+
+		if (itemSort === 'created_at') {
+			query.set('itemSort', itemSort);
+		}
+
+		return `${import.meta.env.VITE_API_URL}/lists/${$page.params.id}${query.size ? `?${query.toString()}` : ''}`;
+	}
 
 	function getInitialManageTab(): ManageTab {
 		const requestedTab = $page.url.searchParams.get('tab');
@@ -280,11 +302,74 @@
 		editForm.weightFormula = list.weightFormula || '1';
 	}
 
+	function getRankBadgeSnapshot(rankBadges: CustomListRankBadgeDraft[] | CustomListRankBadge[] | null | undefined) {
+		return normalizeCustomListRankBadges(rankBadges).map((rankBadge) => ({
+			name: rankBadge.name,
+			shorthand: rankBadge.shorthand,
+			color: rankBadge.color,
+			minRating: rankBadge.minRating,
+			minTop: rankBadge.minTop
+		}));
+	}
+
+	function getSavedSettingsSnapshot(currentList: CustomList | null) {
+		if (!currentList) {
+			return null;
+		}
+
+		return {
+			title: currentList.title,
+			description: currentList.description,
+			backgroundColor: currentList.backgroundColor || '',
+			bannerUrl: currentList.bannerUrl || '',
+			borderColor: currentList.borderColor || '',
+			communityEnabled: currentList.communityEnabled,
+			faviconUrl: currentList.faviconUrl || '',
+			isPlatformer: currentList.isPlatformer,
+			logoUrl: currentList.logoUrl || '',
+			topEnabled: currentList.topEnabled ?? true,
+			visibility: currentList.visibility,
+			tags: currentList.tags,
+			mode: currentList.mode,
+			rankBadges: getRankBadgeSnapshot(currentList.rankBadges),
+			weightFormula: currentList.weightFormula || '1'
+		};
+	}
+
+	function getEditableSettingsSnapshot() {
+		return {
+			title: editForm.title,
+			description: editForm.description,
+			backgroundColor: editForm.backgroundColor,
+			bannerUrl: editForm.bannerUrl,
+			borderColor: editForm.borderColor,
+			communityEnabled: editForm.communityEnabled,
+			faviconUrl: editForm.faviconUrl,
+			isPlatformer: editForm.isPlatformer,
+			logoUrl: editForm.logoUrl,
+			topEnabled: editForm.topEnabled,
+			visibility: editForm.visibility,
+			tags: parseTags(editForm.tags),
+			mode: editForm.mode,
+			rankBadges: getRankBadgeSnapshot(editForm.rankBadges),
+			weightFormula: editForm.weightFormula
+		};
+	}
+
+	function getSettingsSnapshotKey(value: unknown) {
+		return JSON.stringify(value);
+	}
+
 	// Sync form when list changes from SSR data
 	$: if (list && !initialSyncDone) {
 		initialSyncDone = true;
 		syncForm();
 	}
+	$: hasUnsavedSettings = Boolean(
+		list
+		&& canEditSettings
+		&& getSettingsSnapshotKey(getEditableSettingsSnapshot()) !== getSettingsSnapshotKey(getSavedSettingsSnapshot(list))
+	);
 
 	// Re-fetch with auth once user is available so managers and owners can recover private lists.
 	$: if ($user.checked && $user.loggedIn) {
@@ -298,12 +383,14 @@
 
 	onMount(() => {
 		const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-			if (!addingLevel) {
+			if (!addingLevel && !hasUnsavedSettings) {
 				return;
 			}
 
 			event.preventDefault();
-			event.returnValue = $_('custom_lists.detail.add_level.csv_close_warning');
+			event.returnValue = addingLevel
+				? $_('custom_lists.detail.add_level.csv_close_warning')
+				: $_('custom_lists.manage.unsaved_settings_close_warning');
 			return event.returnValue;
 		};
 
@@ -315,8 +402,8 @@
 	});
 
 	let authFetchKey = '';
-	async function refetchWithAuth(force: boolean = false) {
-		const key = `${$page.params.id}:${$user.data?.uid}`;
+	async function refetchWithAuth(force: boolean = false, itemSort: 'mode_default' | 'created_at' = getRequestedItemSort()) {
+		const key = `${$page.params.id}:${$user.data?.uid}:${itemSort}`;
 		if (!force && key === authFetchKey) return;
 		authFetchKey = key;
 		const recoveringPrivateList = requiresAuthRecovery;
@@ -326,7 +413,7 @@
 		}
 
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${$page.params.id}`, {
+			const res = await fetch(buildListRequestUrl(itemSort), {
 				headers: { Authorization: `Bearer ${await $user.token()}` }
 			});
 			const payload = await res.json().catch(() => null);
@@ -350,6 +437,31 @@
 				requiresAuthRecovery = false;
 			}
 		}
+	}
+
+	async function updateItemSort(nextItemSort: 'mode_default' | 'created_at') {
+		if (!list) return;
+		if (editForm.itemSort === nextItemSort && (list.itemSort || DEFAULT_ITEM_SORT) === nextItemSort) {
+			return;
+		}
+
+		editForm.itemSort = nextItemSort;
+
+		const nextSearchParams = new URLSearchParams($page.url.searchParams);
+
+		if (nextItemSort === DEFAULT_ITEM_SORT) {
+			nextSearchParams.delete('itemSort');
+		} else {
+			nextSearchParams.set('itemSort', nextItemSort);
+		}
+
+		const nextSearch = nextSearchParams.toString();
+		await goto(`${$page.url.pathname}${nextSearch ? `?${nextSearch}` : ''}`, {
+			keepFocus: true,
+			noScroll: true,
+			replaceState: true
+		});
+		await refetchWithAuth(true, nextItemSort);
 	}
 
 	function parseTags(tags: string) {
@@ -776,6 +888,11 @@
 			return;
 		}
 
+		const currentItemSort = editForm.itemSort;
+		const formulaChanged = Boolean(
+			list && getEditableSettingsSnapshot().weightFormula !== getSavedSettingsSnapshot(list)?.weightFormula
+		);
+
 		savingMetadata = true;
 		const savingToast = toast.loading($_('custom_lists.toast.saving_list'));
 		try {
@@ -796,7 +913,6 @@
 					isPlatformer: editForm.isPlatformer,
 					logoUrl: editForm.logoUrl,
 					topEnabled: editForm.topEnabled,
-					itemSort: editForm.itemSort,
 					visibility: editForm.visibility,
 					tags: parseTags(editForm.tags),
 					mode: editForm.mode,
@@ -812,13 +928,22 @@
 			});
 			const payload = await res.json();
 			if (!res.ok) throw new Error(payload.error || $_('custom_lists.toast.failed_update'));
-			list = payload;
+			list = {
+				...payload,
+				itemSort: currentItemSort
+			};
 			syncForm();
 			toast.dismiss(savingToast);
 			toast.success($_('custom_lists.toast.list_updated'));
-			await refreshLeaderboardPrecalc({
-				reloadList: true
-			});
+
+			if (formulaChanged) {
+				await refreshLeaderboardPrecalc({
+					reloadList: true,
+					itemSort: currentItemSort
+				});
+			} else if (currentItemSort === 'created_at') {
+				await refetchWithAuth(true, currentItemSort);
+			}
 		} catch (error) {
 			toast.dismiss(savingToast);
 			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_update'));
@@ -827,7 +952,7 @@
 		}
 	}
 
-	async function refreshLeaderboardPrecalc(options: { reloadList?: boolean } = {}) {
+	async function refreshLeaderboardPrecalc(options: { reloadList?: boolean; itemSort?: 'mode_default' | 'created_at' } = {}) {
 		if (!list || !canEditSettings || refreshingLeaderboard) return;
 
 		refreshingLeaderboard = true;
@@ -855,7 +980,7 @@
 			}
 
 			if (options.reloadList !== false) {
-				await refetchWithAuth(true);
+				await refetchWithAuth(true, options.itemSort ?? editForm.itemSort);
 			}
 
 			toast.dismiss(refreshToast);
@@ -1099,6 +1224,32 @@
 		};
 	}
 
+	async function requestBatchAddExistingLevels(listId: number, levelInputs: Array<Pick<BatchAddLevelInput, 'levelId' | 'createdAt'>>, signal?: AbortSignal) {
+		const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${listId}/levels/batch`, {
+			method: 'POST',
+			signal,
+			headers: {
+				Authorization: `Bearer ${await $user.token()}`,
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({ levelInputs })
+		});
+		const payload = await res.json().catch(() => null);
+
+		if (!res.ok) {
+			return {
+				ok: false as const,
+				status: res.status,
+				error: payload?.error || $_('custom_lists.toast.failed_add_level')
+			};
+		}
+
+		return {
+			ok: true as const,
+			payload: payload as BatchAddExistingLevelsResponse
+		};
+	}
+
 	async function requestUpdateLevel(listId: number, levelId: number, patch: { rating?: number; minProgress?: number | null; videoID?: string | null; createdAt?: string }, signal?: AbortSignal) {
 		const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${listId}/levels/${levelId}`, {
 			method: 'PATCH',
@@ -1265,8 +1416,57 @@
 		try {
 			const postAddPatchInputs: Array<BatchAddLevelInput & { inputIndex: number }> = [];
 			const reorderCandidates = [...reorderInputs];
+			let missingAddLevelInputs = addLevelInputs;
 
-			for (const levelInput of addLevelInputs) {
+			if (addLevelInputs.length) {
+				const batchResult = await requestBatchAddExistingLevels(
+					listId,
+					addLevelInputs.map((levelInput) => ({
+						levelId: levelInput.levelId,
+						...(levelInput.createdAt ? { createdAt: levelInput.createdAt } : {})
+					})),
+					importSignal
+				);
+
+				if (!batchResult.ok) {
+					throw new Error(batchResult.error);
+				}
+
+				list = batchResult.payload.list;
+				added += batchResult.payload.added;
+
+				const missingLevelIds = new Set(batchResult.payload.missingLevelIds);
+				const fastPathInputs = addLevelInputs.filter((levelInput) => !missingLevelIds.has(levelInput.levelId));
+
+				for (const levelInput of fastPathInputs) {
+					if (hasBatchLevelPatch(levelInput)) {
+						postAddPatchInputs.push(levelInput);
+					}
+
+					if (list.mode === 'top' && hasBatchLevelTopOverride(levelInput)) {
+						reorderCandidates.push(levelInput);
+					}
+				}
+
+				if (fastPathInputs.length) {
+					updateBatchAddProgress({
+						completed: Math.min((batchAddProgress?.completed ?? 0) + fastPathInputs.length, totalSteps),
+						phase: 'adding',
+						currentLevelId: null,
+						added,
+						updated,
+						failed: failed.length,
+						skipped,
+						retrying: false,
+						retryElapsedMs: 0,
+						aborted: false
+					});
+				}
+
+				missingAddLevelInputs = addLevelInputs.filter((levelInput) => missingLevelIds.has(levelInput.levelId));
+			}
+
+			for (const levelInput of missingAddLevelInputs) {
 				throwIfBatchAddAborted(importSignal);
 
 				const result = await withRateLimitRetry(
@@ -1677,6 +1877,18 @@
 			{/if}
 		</div>
 
+		{#if canEditSettings && hasUnsavedSettings}
+			<div class="toolCard unsavedSettingsNotice">
+				<div class="moderationCopy">
+					<h2 class="toolHeading">{$_('custom_lists.manage.unsaved_settings_title')}</h2>
+					<p class="hint">{$_('custom_lists.manage.unsaved_settings_hint')}</p>
+				</div>
+				<div class="moderationIcon">
+					<AlertTriangle class="h-5 w-5" />
+				</div>
+			</div>
+		{/if}
+
 		{#if list.isBanned}
 			<div class="toolCard moderationNotice">
 				<div class="moderationCopy">
@@ -1719,6 +1931,7 @@
 					<BasicTab
 						bind:editForm
 						{list}
+						{updateItemSort}
 					/>
 				</Tabs.Content>
 
@@ -1778,7 +1991,7 @@
 			{#if canEditSettings && activeTab !== 'levels' && activeTab !== 'danger' && activeTab !== 'collaboration'}
 				<div class="toolCard actionCard">
 					<div class="formActions">
-						<Button on:click={saveMetadata} disabled={savingMetadata}>
+						<Button on:click={saveMetadata} disabled={savingMetadata || !hasUnsavedSettings}>
 							<Save class="mr-2 h-4 w-4" />
 							{$_('custom_lists.detail.edit.save')}
 						</Button>
@@ -1943,6 +2156,18 @@
 		justify-content: space-between;
 		background: hsl(var(--destructive) / 0.08);
 		border-color: hsl(var(--destructive) / 0.35);
+	}
+
+	.unsavedSettingsNotice {
+		flex-direction: row;
+		align-items: flex-start;
+		justify-content: space-between;
+		background: hsl(var(--primary) / 0.08);
+		border-color: hsl(var(--primary) / 0.3);
+	}
+
+	.unsavedSettingsNotice .moderationIcon {
+		color: hsl(var(--primary));
 	}
 
 	.moderationCopy {

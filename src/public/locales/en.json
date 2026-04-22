@@ -1842,7 +1842,7 @@
         "item_sort_label": "Item sort",
         "item_sort_mode_default": "By mode default",
         "item_sort_created_at": "By created at",
-        "item_sort_hint": "Choose how levels are ordered on the list page. Mode default uses top ascending in Top mode and rating descending in Rating mode. Created at uses each item's creation time, including imported CSV timestamps.",
+        "item_sort_hint": "Choose how levels are ordered in the manage view. This only changes the current list query and does not affect the public list page order. Mode default uses top ascending in Top mode and rating descending in Rating mode. Created at uses each item's creation time, including imported CSV timestamps.",
         "appearance_heading": "Appearance",
         "appearance_hint": "Customize banner, colors, navbar branding, favicon, and level card styling for this list.",
         "background_color_label": "Background color",
@@ -2046,7 +2046,7 @@
       },
       "audit_detail": {
         "list_created": "{actor} created the list.",
-        "list_updated": "{actor} updated: {fields}.",
+        "list_updated": "{actor} updated settings: {changes}.",
         "level_changed": "{actor} changed level #{levelId}.",
         "level_updated": "{actor} updated level #{levelId}: {fields}.",
         "levels_reordered": "{actor} reordered the level list.",
@@ -2056,7 +2056,10 @@
         "collaboration_settings_updated": "{actor} set admin helper access to {enabled}.",
         "ban_state_updated": "{actor} performed: {state}.",
         "leaderboard_refreshed": "{actor} refreshed the leaderboard ({totalPlayers} players, {totalRecords} records)."
-      }
+      },
+      "unsaved_settings_title": "Unsaved settings",
+      "unsaved_settings_hint": "You have changes that have not been saved yet. Save them before leaving this page so the list settings stay in sync.",
+      "unsaved_settings_close_warning": "You have unsaved list settings. If you leave this page, those changes will be lost."
     },
     "formula": {
       "label": "Record point formula",
