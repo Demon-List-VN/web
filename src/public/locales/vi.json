@@ -1984,7 +1984,7 @@
       "type_hint": "Chọn Platformer nếu danh sách này chỉ nên chứa level platformer.",
       "community_label": "Bài viết cộng đồng",
       "community_hint": "Cho phép gắn bài viết cộng đồng vào danh sách này. Mặc định là bật.",
-      "mode_rating_hint": "Mỗi level được chấm điểm từ 1–10, hiển thị từ cao đến thấp.",
+      "mode_rating_hint": "Mỗi level được chấm điểm từ 0 trở lên, hiển thị từ cao đến thấp.",
       "mode_top_hint": "Sắp xếp level theo thứ tự tuỳ chỉnh bằng cách kéo thả."
     },
     "manage": {
@@ -2074,6 +2074,17 @@
       "unsaved_settings_close_warning": "Bạn đang có thiết lập danh sách chưa lưu. Nếu rời khỏi trang này, các thay đổi đó sẽ bị mất.",
       "unsaved_level_edits_title": "Các thay đổi chưa được lưu",
       "unsaved_level_edits_hint": "Các chỉnh sửa level của bạn hiện vẫn chỉ nằm cục bộ. Hãy lưu để áp dụng chúng vào danh sách này.",
+      "unsaved_level_edits_view_changes": "Xem thay đổi",
+      "unsaved_level_edits_dialog_title": "Các thay đổi level đang chờ",
+      "unsaved_level_edits_dialog_description": "Xem lại chính xác các thay đổi level trước khi lưu. Phần payload bên dưới đã được cấu trúc để khớp với một bản ghi audit log trong tương lai.",
+      "unsaved_level_edits_dialog_action_updated": "Cập nhật",
+      "unsaved_level_edits_dialog_action_removed": "Xóa",
+      "unsaved_level_edits_dialog_removed_summary": "Level này sẽ bị xóa khỏi vị trí {position} khi bạn lưu.",
+      "unsaved_level_edits_dialog_audit_action_label": "Hành động audit",
+      "unsaved_level_edits_dialog_payload_label": "Xem payload audit",
+      "unsaved_level_edits_dialog_empty": "Hiện không có thay đổi level nào đang chờ.",
+      "unsaved_level_edits_dialog_updated_count": "{count} cập nhật",
+      "unsaved_level_edits_dialog_removed_count": "{count} mục xóa",
       "unsaved_level_edits_close_warning": "Bạn đang có chỉnh sửa level chưa lưu. Nếu rời khỏi trang này, các thay đổi đó sẽ bị mất."
     },
     "formula": {
@@ -2158,7 +2169,7 @@
       "starred": "Đã gắn sao danh sách",
       "unstarred": "Đã bỏ sao danh sách",
 	      "failed_star": "Không thể cập nhật trạng thái gắn sao",
-      "rating_invalid": "Điểm đánh giá phải từ 1 đến 10",
+      "rating_invalid": "Điểm đánh giá phải là số nguyên lớn hơn hoặc bằng 0",
       "min_progress_invalid": "Nhập mốc tối thiểu hợp lệ",
       "invalid_image": "Vui lòng chọn tệp hình ảnh hợp lệ",
       "image_uploaded_save": "Đã tải ảnh lên. Hãy lưu thay đổi để áp dụng.",

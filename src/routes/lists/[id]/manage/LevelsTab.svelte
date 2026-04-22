@@ -74,6 +74,7 @@
 	export let stageMultipleLevelDeletions: (levelIds: number[]) => void | Promise<void> = async () => {};
 	export let reorderLevels: (levelIds: number[]) => void | Promise<void> = async () => {};
 
+	let levelsSectionElement: HTMLDivElement | null = null;
 	let displayedItems: any[] = [];
 	let levelIdInput = '';
 	let csvInput = '';
@@ -102,13 +103,20 @@
 	];
 
 	$: displayedItems = list?.items
-		? list.items.filter((item: any) => !isLevelMarkedForDeletion(item.levelId)).map((item: any) => applyDraftToItem(item))
+		? list.items
+			.filter((item: any) => !levelDeletionDraftIds.includes(item.levelId))
+			.map((item: any) => applyDraftToItem(item, levelDrafts))
 		: [];
 	$: canDragReorder = canEditLevels && list?.mode === 'top' && list?.itemSort !== 'created_at' && !savingReorder && !levelDeletionDraftIds.length;
 	$: quickLevelId = getQuickLevelId();
 	$: csvProgressPercent = batchAddProgress?.total
 		? Math.min((batchAddProgress.completed / batchAddProgress.total) * 100, 100)
 		: 0;
+	$: hasBulkEditValues = Boolean(
+		(list?.mode === 'rating' && bulkRatingValue.trim().length > 0)
+		|| bulkMinProgressValue.trim().length > 0
+		|| bulkVideoIdValue.trim().length > 0
+	);
 	$: {
 		const availableLevelIds = new Set(displayedItems.map((item) => item.levelId));
 		const nextSelectedLevelIds = selectedLevelIds.filter((levelId) => availableLevelIds.has(levelId));
@@ -202,8 +210,8 @@
 		return patch ? Object.prototype.hasOwnProperty.call(patch, key) : false;
 	}
 
-	function applyDraftToItem(item: any) {
-		const patch = levelDrafts[item.levelId];
+	function applyDraftToItem(item: any, drafts: Record<number, LevelItemPatch> = levelDrafts) {
+		const patch = drafts[item.levelId];
 		if (!patch) return item;
 
 		return {
@@ -218,12 +226,15 @@
 		return Boolean(levelDrafts[levelId]);
 	}
 
-	function isLevelMarkedForDeletion(levelId: number) {
-		return levelDeletionDraftIds.includes(levelId);
-	}
+	export function scrollToPendingChanges() {
+		const target = levelsSectionElement?.querySelector<HTMLElement>('[data-pending-change="true"]')
+			?? levelsSectionElement?.querySelector<HTMLElement>('[data-pending-removals="true"]')
+			?? levelsSectionElement;
 
-	function isLevelSelected(levelId: number) {
-		return selectedLevelIds.includes(levelId);
+		target?.scrollIntoView({
+			behavior: 'smooth',
+			block: 'start'
+		});
 	}
 
 	async function handleLevelSelectionClick(event: MouseEvent, index: number) {
@@ -337,7 +348,7 @@
 	async function saveRatingEdit(levelId: number) {
 		const rating = Number.parseInt(editingRatingValue, 10);
 		editingRatingItemId = null;
-		if (!Number.isInteger(rating) || rating < 1 || rating > 10) {
+		if (!Number.isInteger(rating) || rating < 0) {
 			toast.error($_('custom_lists.toast.rating_invalid'));
 			return;
 		}
@@ -381,52 +392,48 @@
 		await stageLevelDraft(levelId, { videoID });
 	}
 
-	async function applyBulkRating() {
+	async function applyBulkEdits() {
 		if (!selectedLevelIds.length) return;
 
-		const rating = Number.parseInt(bulkRatingValue, 10);
-		if (!Number.isInteger(rating) || rating < 1 || rating > 10) {
-			toast.error($_('custom_lists.toast.rating_invalid'));
-			return;
+		const nextDraft: LevelItemPatch = {};
+		const ratingValue = bulkRatingValue.trim();
+		const minProgressValue = bulkMinProgressValue.trim();
+		const videoIdValue = bulkVideoIdValue.trim();
+
+		if (list?.mode === 'rating' && ratingValue.length) {
+			const rating = Number.parseInt(ratingValue, 10);
+			if (!Number.isInteger(rating) || rating < 0) {
+				toast.error($_('custom_lists.toast.rating_invalid'));
+				return;
+			}
+
+			nextDraft.rating = rating;
 		}
 
-		await stageMultipleLevelDrafts(selectedLevelIds, { rating });
-	}
+		if (minProgressValue.length) {
+			const minProgress = Number.parseInt(minProgressValue, 10);
+			if (!Number.isInteger(minProgress) || minProgress < 0 || (!list?.isPlatformer && minProgress > 100)) {
+				toast.error($_('custom_lists.toast.min_progress_invalid'));
+				return;
+			}
 
-	async function applyBulkMinProgress() {
-		if (!list || !selectedLevelIds.length) return;
-
-		const rawValue = bulkMinProgressValue.trim();
-		if (!rawValue.length) {
-			await stageMultipleLevelDrafts(selectedLevelIds, { minProgress: null });
-			return;
+			nextDraft.minProgress = minProgress;
 		}
 
-		const minProgress = Number.parseInt(rawValue, 10);
-		if (!Number.isInteger(minProgress) || minProgress < 0 || (!list.isPlatformer && minProgress > 100)) {
-			toast.error($_('custom_lists.toast.min_progress_invalid'));
-			return;
+		if (videoIdValue.length) {
+			const videoID = normalizeVideoIdValue(videoIdValue);
+			if (!videoID) {
+				toast.error($_('custom_lists.toast.video_id_invalid'));
+				return;
+			}
+
+			nextDraft.videoID = videoID;
 		}
 
-		await stageMultipleLevelDrafts(selectedLevelIds, { minProgress });
-	}
+		if (!Object.keys(nextDraft).length) return;
 
-	async function applyBulkVideoId() {
-		if (!selectedLevelIds.length) return;
-
-		const rawValue = bulkVideoIdValue.trim();
-		if (!rawValue.length) {
-			await stageMultipleLevelDrafts(selectedLevelIds, { videoID: null });
-			return;
-		}
-
-		const videoID = normalizeVideoIdValue(rawValue);
-		if (!videoID) {
-			toast.error($_('custom_lists.toast.video_id_invalid'));
-			return;
-		}
-
-		await stageMultipleLevelDrafts(selectedLevelIds, { videoID });
+		await stageMultipleLevelDrafts(selectedLevelIds, nextDraft);
+		clearLevelSelection();
 	}
 
 	function onDragStart(event: DragEvent, index: number) {
@@ -705,7 +712,7 @@
 				continue;
 			}
 
-			if (rating !== undefined && (!Number.isInteger(rating) || rating < 1 || rating > 10)) {
+			if (rating !== undefined && (!Number.isInteger(rating) || rating < 0)) {
 				invalidRows += 1;
 				continue;
 			}
@@ -1033,7 +1040,7 @@
 		</Collapsible.Root>
 	{/if}
 
-	<div class="levelsSection">
+	<div class="levelsSection" bind:this={levelsSectionElement}>
 		<div class="sectionHeader">
 			<h2>{$_('custom_lists.detail.levels.heading')}</h2>
 			<div class="sectionMeta">
@@ -1053,7 +1060,11 @@
 		</div>
 
 		{#if canEditLevels && displayedItems.length > 0}
-			<div class="selectionPanel" class:isSticky={selectedLevelIds.length > 0}>
+			<div
+				class="selectionPanel"
+				class:isSticky={selectedLevelIds.length > 0}
+				data-pending-removals={levelDeletionDraftIds.length > 0 ? 'true' : undefined}
+			>
 				<div class="selectionToolbar">
 					<div class="selectionSummary">
 						<Badge variant={selectedLevelIds.length ? 'secondary' : 'outline'}>
@@ -1064,7 +1075,6 @@
 								{$_('custom_lists.detail.levels.pending_remove_count', { values: { count: levelDeletionDraftIds.length } })}
 							</Badge>
 						{/if}
-						<p class="selectionHint">{$_('custom_lists.detail.levels.selection_hint')}</p>
 					</div>
 					<div class="selectionActions">
 						<Button type="button" variant="destructive" size="sm" on:click={deleteSelectedLevels} disabled={!selectedLevelIds.length || savingLevelDrafts}>
@@ -1082,52 +1092,35 @@
 
 				{#if selectedLevelIds.length > 0}
 					<div class="toolCard bulkEditCard">
-						<div class="bulkEditHeader">
-							<h3 class="toolHeading">{$_('custom_lists.detail.levels.bulk_edit_title')}</h3>
-							<Badge variant="secondary">
-								{$_('custom_lists.detail.levels.selected_count', { values: { count: selectedLevelIds.length } })}
-							</Badge>
-						</div>
-						<p class="hint">{$_('custom_lists.detail.levels.bulk_edit_hint')}</p>
-						<div class="bulkEditGrid">
+						<form class="bulkEditForm" on:submit|preventDefault={applyBulkEdits}>
 							{#if list?.mode === 'rating'}
 								<div class="bulkEditField">
 									<label for="bulk-rating">{$_('custom_lists.detail.levels.rating_label')}</label>
-									<div class="bulkEditControl">
-										<Input id="bulk-rating" type="number" min="1" max="10" bind:value={bulkRatingValue} />
-										<Button type="button" size="sm" on:click={applyBulkRating} disabled={savingLevelDrafts}>
-											{$_('custom_lists.detail.levels.apply_to_selected')}
-										</Button>
-									</div>
+									<Input id="bulk-rating" type="number" min="1" max="10" bind:value={bulkRatingValue} />
 								</div>
 							{/if}
 
 							<div class="bulkEditField">
 								<label for="bulk-min-progress">{$_('custom_lists.detail.levels.min_progress_label')}</label>
-								<div class="bulkEditControl">
-									<Input
-										id="bulk-min-progress"
-										type="number"
-										min="0"
-										max={list?.isPlatformer ? undefined : '100'}
-										bind:value={bulkMinProgressValue}
-									/>
-									<Button type="button" size="sm" on:click={applyBulkMinProgress} disabled={savingLevelDrafts}>
-										{$_('custom_lists.detail.levels.apply_to_selected')}
-									</Button>
-								</div>
+								<Input
+									id="bulk-min-progress"
+									type="number"
+									min="0"
+									max={list?.isPlatformer ? undefined : '100'}
+									bind:value={bulkMinProgressValue}
+								/>
 							</div>
 
 							<div class="bulkEditField">
 								<label for="bulk-video-id">{$_('custom_lists.detail.levels.video_id_label')}</label>
-								<div class="bulkEditControl">
-									<Input id="bulk-video-id" type="text" bind:value={bulkVideoIdValue} />
-									<Button type="button" size="sm" on:click={applyBulkVideoId} disabled={savingLevelDrafts}>
-										{$_('custom_lists.detail.levels.apply_to_selected')}
-									</Button>
-								</div>
+								<Input id="bulk-video-id" type="text" bind:value={bulkVideoIdValue} />
 							</div>
-						</div>
+							<div class="bulkEditApplyButton">
+								<Button type="button" size="sm" disabled={savingLevelDrafts || !hasBulkEditValues} on:click={applyBulkEdits}>
+									{$_('custom_lists.detail.levels.apply_to_selected')}
+								</Button>
+							</div>
+						</form>
 					</div>
 				{/if}
 			</div>
@@ -1152,7 +1145,8 @@
 						class:isDraggable={canDragReorder}
 						class:dragOver={canDragReorder && dragOverIndex === index}
 						class:dragging={canDragReorder && draggedIndex === index}
-						class:selected={isLevelSelected(item.levelId)}
+						class:selected={selectedLevelIds.includes(item.levelId)}
+						data-pending-change={hasPendingDraft(item.levelId) ? 'true' : undefined}
 						role="listitem"
 						draggable={canDragReorder}
 						on:dragstart={(event) => {
@@ -1685,7 +1679,7 @@
 		position: sticky;
 		top: 48px;
 		z-index: 40;
-		padding: 12px 0;
+		padding: 8px 0;
 		background: hsl(var(--background) / 0.96);
 		backdrop-filter: blur(12px);
 		border-bottom: 1px solid hsl(var(--border) / 0.7);
@@ -1694,14 +1688,8 @@
 	.selectionSummary {
 		display: flex;
 		align-items: center;
-		gap: 10px;
+		gap: 8px;
 		flex-wrap: wrap;
-	}
-
-	.selectionHint {
-		margin: 0;
-		font-size: 0.82rem;
-		color: hsl(var(--muted-foreground));
 	}
 
 	.selectionActions {
@@ -1714,36 +1702,32 @@
 	.bulkEditCard {
 		background: hsl(var(--primary) / 0.06);
 		border-color: hsl(var(--primary) / 0.22);
+		padding: 14px 16px;
 	}
 
-	.bulkEditHeader {
+	.bulkEditForm {
 		display: flex;
-		align-items: center;
-		justify-content: space-between;
+		align-items: flex-end;
 		gap: 12px;
 		flex-wrap: wrap;
-	}
-
-	.bulkEditGrid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-		gap: 14px;
 	}
 
 	.bulkEditField {
 		display: flex;
 		flex-direction: column;
-		gap: 8px;
+		gap: 6px;
+		flex: 1 1 170px;
+		min-width: 170px;
 	}
 
-	.bulkEditControl {
+	.bulkEditField :global(input) {
+		width: 100%;
+	}
+
+	.bulkEditApplyButton {
+		align-self: flex-end;
+		flex-shrink: 0;
 		display: flex;
-		align-items: center;
-		gap: 10px;
-	}
-
-	.bulkEditControl :global(input) {
-		flex: 1;
 	}
 
 	.levelList {
@@ -1975,11 +1959,6 @@
 			align-items: flex-start;
 		}
 
-		.bulkEditControl {
-			flex-direction: column;
-			align-items: stretch;
-		}
-
 		.levelActions {
 			width: 100%;
 		}
@@ -1989,9 +1968,26 @@
 			align-items: flex-start;
 		}
 
-		.selectionToolbar,
-		.bulkEditHeader {
+		.selectionToolbar {
 			align-items: flex-start;
+		}
+
+		.bulkEditForm {
+			align-items: stretch;
+		}
+
+		.bulkEditField {
+			min-width: 0;
+			flex-basis: 100%;
+		}
+
+		.bulkEditApplyButton {
+			align-self: stretch;
+			width: 100%;
+		}
+
+		.bulkEditApplyButton :global(button) {
+			width: 100%;
 		}
 	}
 

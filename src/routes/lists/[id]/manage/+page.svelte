@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import AppearanceTab from './AppearanceTab.svelte';
 	import BasicTab from './BasicTab.svelte';
@@ -183,6 +184,28 @@
 		videoID?: string | null;
 	};
 
+	type PendingLevelAuditChange = {
+		old: unknown;
+		new: unknown;
+	};
+
+	type PendingLevelAuditState = {
+		rating: number;
+		minProgress: number | null;
+		videoID: string | null;
+		position: number;
+	};
+
+	type PendingLevelAuditEntry = {
+		action: 'level_removed' | 'level_updated';
+		levelId: number;
+		levelItemId: number;
+		levelName: string;
+		creator: string | null;
+		fields: Array<keyof LevelItemPatch>;
+		metadata: Record<string, any>;
+	};
+
 	type ManageTab = 'basic' | 'appearance' | 'formula' | 'rank' | 'danger' | 'levels' | 'collaboration';
 
 	const defaultPermissions: CustomListPermissionFlags = {
@@ -219,11 +242,13 @@
 	let batchAddAbortController: AbortController | null = null;
 	let levelDrafts: Record<number, LevelItemPatch> = {};
 	let levelDeletionDraftIds: number[] = [];
+	let showPendingLevelChangesDialog = false;
 
 	const CUSTOM_LIST_CDN_BASE_URL = 'https://cdn.gdvn.net';
 	const CSV_IMPORT_RATE_LIMIT_RETRY_MS = 1000;
 	const CSV_IMPORT_RATE_LIMIT_TIMEOUT_MS = 15000;
 	const DEFAULT_ITEM_SORT: 'mode_default' | 'created_at' = 'mode_default';
+	const LEVEL_AUDIT_MUTABLE_FIELDS: Array<keyof LevelItemPatch> = ['rating', 'minProgress', 'videoID'];
 
 	class BatchAddImportAbortedError extends Error {
 		constructor() {
@@ -1024,6 +1049,14 @@
 		void refreshLeaderboardPrecalc();
 	}
 
+	function viewPendingLevelChanges() {
+		if (!pendingLevelAuditEntries.length) {
+			return;
+		}
+
+		showPendingLevelChangesDialog = true;
+	}
+
 	async function deleteList(confirmationName: string) {
 		if (!list || !canDelete) return;
 		if (confirmationName.trim() !== list.title) {
@@ -1706,6 +1739,178 @@
 		return list?.items.find((item) => item.levelId === levelId) ?? null;
 	}
 
+	function getLevelItemPosition(currentList: CustomList, item: CustomListItem) {
+		const itemIndex = currentList.items.findIndex((candidate) => candidate.levelId === item.levelId);
+
+		if (item.position == null) {
+			return itemIndex + 1;
+		}
+
+		return currentList.isOfficial ? Number(item.position) : Number(item.position) + 1;
+	}
+
+	function getLevelAuditState(currentList: CustomList, item: CustomListItem): PendingLevelAuditState {
+		return {
+			rating: item.rating ?? 5,
+			minProgress: item.minProgress ?? null,
+			videoID: item.videoID ?? null,
+			position: getLevelItemPosition(currentList, item)
+		};
+	}
+
+	function getPendingLevelAuditDisplayName(item: CustomListItem | null, levelId: number) {
+		const name = item?.level?.name?.trim();
+		return name?.length ? name : `Level #${levelId}`;
+	}
+
+	function formatPendingLevelAuditTime(ms: number) {
+		const minutes = Math.floor(ms / 60000);
+		const seconds = Math.floor((ms % 60000) / 1000);
+		const milliseconds = ms % 1000;
+		return `${minutes}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
+	}
+
+	function getPendingLevelAuditFieldLabel(field: keyof LevelItemPatch | 'position') {
+		if (field === 'rating') return $_('custom_lists.detail.levels.rating_label');
+		if (field === 'minProgress') return $_('custom_lists.detail.levels.min_progress_label');
+		if (field === 'videoID') return $_('custom_lists.detail.levels.video_id_label');
+		if (field === 'position') return $_('custom_lists.formula.position_label');
+		return field;
+	}
+
+	function formatPendingLevelAuditValue(field: keyof PendingLevelAuditState, value: unknown) {
+		if (value == null || value === '') {
+			return '-';
+		}
+
+		if (field === 'minProgress' && typeof value === 'number') {
+			return list?.isPlatformer ? `${formatPendingLevelAuditTime(value)} Base` : `${value}% Min`;
+		}
+
+		if (field === 'position' && typeof value === 'number') {
+			return `#${value}`;
+		}
+
+		return String(value);
+	}
+
+	function buildPendingLevelAuditEntries(
+		currentList: CustomList | null,
+		drafts: Record<number, LevelItemPatch>,
+		deletionDraftIds: number[]
+	): PendingLevelAuditEntry[] {
+		if (!currentList) {
+			return [];
+		}
+
+		const entries: PendingLevelAuditEntry[] = [];
+		const deletionDraftSet = new Set(deletionDraftIds);
+
+		for (const levelId of deletionDraftIds) {
+			const item = currentList.items.find((candidate) => candidate.levelId === levelId);
+			if (!item) {
+				continue;
+			}
+
+			const previousState = getLevelAuditState(currentList, item);
+
+			entries.push({
+				action: 'level_removed',
+				levelId,
+				levelItemId: item.id,
+				levelName: getPendingLevelAuditDisplayName(item, levelId),
+				creator: item.level?.creator ?? null,
+				fields: [],
+				metadata: {
+					levelId,
+					levelItemId: item.id,
+					levelName: item.level?.name ?? null,
+					creator: item.level?.creator ?? null,
+					position: previousState.position,
+					previousState
+				}
+			});
+		}
+
+		for (const item of currentList.items) {
+			if (deletionDraftSet.has(item.levelId)) {
+				continue;
+			}
+
+			const patch = drafts[item.levelId];
+			if (!patch) {
+				continue;
+			}
+
+			const previousState = getLevelAuditState(currentList, item);
+			const nextState: PendingLevelAuditState = {
+				...previousState,
+				...(patch.rating !== undefined ? { rating: patch.rating } : {}),
+				...(Object.prototype.hasOwnProperty.call(patch, 'minProgress') ? { minProgress: patch.minProgress ?? null } : {}),
+				...(Object.prototype.hasOwnProperty.call(patch, 'videoID') ? { videoID: patch.videoID ?? null } : {})
+			};
+			const fields = LEVEL_AUDIT_MUTABLE_FIELDS.filter((field) => Object.prototype.hasOwnProperty.call(patch, field));
+
+			if (!fields.length) {
+				continue;
+			}
+
+			const changes = Object.fromEntries(
+				fields.map((field) => [field, { old: previousState[field], new: nextState[field] } satisfies PendingLevelAuditChange])
+			);
+
+			entries.push({
+				action: 'level_updated',
+				levelId: item.levelId,
+				levelItemId: item.id,
+				levelName: getPendingLevelAuditDisplayName(item, item.levelId),
+				creator: item.level?.creator ?? null,
+				fields,
+				metadata: {
+					levelId: item.levelId,
+					levelItemId: item.id,
+					levelName: item.level?.name ?? null,
+					creator: item.level?.creator ?? null,
+					fields,
+					changes,
+					previousState,
+					nextState
+				}
+			});
+		}
+
+		return entries;
+	}
+
+	function getPendingLevelAuditEntryActionLabel(entry: PendingLevelAuditEntry) {
+		return entry.action === 'level_removed'
+			? $_('custom_lists.manage.unsaved_level_edits_dialog_action_removed')
+			: $_('custom_lists.manage.unsaved_level_edits_dialog_action_updated');
+	}
+
+	function getPendingLevelAuditEntryDetail(entry: PendingLevelAuditEntry) {
+		if (entry.action === 'level_removed') {
+			return $_('custom_lists.manage.unsaved_level_edits_dialog_removed_summary', {
+				values: {
+					position: formatPendingLevelAuditValue('position', entry.metadata.position)
+				}
+			});
+		}
+
+		return entry.fields
+			.map((field) => `${getPendingLevelAuditFieldLabel(field)}: ${formatPendingLevelAuditValue(field, entry.metadata.changes?.[field]?.old)} -> ${formatPendingLevelAuditValue(field, entry.metadata.changes?.[field]?.new)}`)
+			.join('; ');
+	}
+
+	function getPendingLevelRemovalPreviewRows(entry: PendingLevelAuditEntry) {
+		return [
+			{ field: 'position' as const, value: entry.metadata.previousState?.position },
+			{ field: 'rating' as const, value: entry.metadata.previousState?.rating },
+			{ field: 'minProgress' as const, value: entry.metadata.previousState?.minProgress },
+			{ field: 'videoID' as const, value: entry.metadata.previousState?.videoID }
+		];
+	}
+
 	function getNormalizedLevelPatch(
 		levelId: number,
 		patch: Partial<LevelItemPatch>,
@@ -1807,6 +2012,7 @@
 	function discardLevelDrafts() {
 		levelDrafts = {};
 		levelDeletionDraftIds = [];
+		showPendingLevelChangesDialog = false;
 	}
 
 	async function saveLevelDrafts() {
@@ -1953,6 +2159,12 @@
 	$: canViewMembers = Boolean(list && permissions.canViewMembers);
 	$: canViewAudit = Boolean(list && permissions.canViewAudit);
 	$: canShowCollaboration = Boolean(list && (canViewMembers || canViewAudit || canManageMembers || canConfigureCollaboration || canTransferOwnership));
+	$: pendingLevelAuditEntries = buildPendingLevelAuditEntries(list, levelDrafts, levelDeletionDraftIds);
+	$: pendingLevelAuditUpdatedCount = pendingLevelAuditEntries.filter((entry) => entry.action === 'level_updated').length;
+	$: pendingLevelAuditRemovedCount = pendingLevelAuditEntries.filter((entry) => entry.action === 'level_removed').length;
+	$: if (showPendingLevelChangesDialog && !pendingLevelAuditEntries.length) {
+		showPendingLevelChangesDialog = false;
+	}
 	$: if (list && $user.checked && !initialManageTabSettled) {
 		initialManageTabSettled = true;
 		const requestedTab = getInitialManageTab();
@@ -2223,13 +2435,106 @@
 			</Tabs.Content>
 		</Tabs.Root>
 
+		<Dialog.Root bind:open={showPendingLevelChangesDialog}>
+			<Dialog.Content class="max-w-[860px]">
+				<div class="pendingChangesDialog">
+				<Dialog.Header>
+					<Dialog.Title>{$_('custom_lists.manage.unsaved_level_edits_dialog_title')}</Dialog.Title>
+					<Dialog.Description>{$_('custom_lists.manage.unsaved_level_edits_dialog_description')}</Dialog.Description>
+				</Dialog.Header>
+
+				<div class="pendingChangesSummary">
+					<Badge variant="secondary">
+						{$_('custom_lists.manage.unsaved_level_edits_dialog_updated_count', {
+							values: { count: pendingLevelAuditUpdatedCount }
+						})}
+					</Badge>
+					<Badge variant="destructive">
+						{$_('custom_lists.manage.unsaved_level_edits_dialog_removed_count', {
+							values: { count: pendingLevelAuditRemovedCount }
+						})}
+					</Badge>
+				</div>
+
+				{#if pendingLevelAuditEntries.length}
+					<div class="pendingChangesList">
+						{#each pendingLevelAuditEntries as entry}
+							<section class="pendingChangeEntry">
+								<div class="pendingChangeHeader">
+									<div class="pendingChangeHeading">
+										<div class="pendingChangeTitleRow">
+											<Badge variant={entry.action === 'level_removed' ? 'destructive' : 'secondary'}>
+												{getPendingLevelAuditEntryActionLabel(entry)}
+											</Badge>
+											<h3>{entry.levelName}</h3>
+											<Badge variant="outline">#{entry.levelId}</Badge>
+										</div>
+										{#if entry.creator}
+											<p class="hint">{$_('custom_lists.detail.levels.by')} {entry.creator}</p>
+										{/if}
+										<p class="pendingChangeDetail">{getPendingLevelAuditEntryDetail(entry)}</p>
+									</div>
+									<div class="pendingChangeAuditAction">
+										<span class="pendingChangeMetaLabel">{$_('custom_lists.manage.unsaved_level_edits_dialog_audit_action_label')}</span>
+										<code>{entry.action}</code>
+									</div>
+								</div>
+
+								{#if entry.action === 'level_updated'}
+									<div class="pendingChangeFieldList">
+										{#each entry.fields as field}
+											<div class="pendingChangeFieldRow">
+												<div class="pendingChangeFieldLabel">{getPendingLevelAuditFieldLabel(field)}</div>
+												<div class="pendingChangeFieldValues">
+													<span class="pendingChangeFieldValue pendingChangeFieldValueOld">{formatPendingLevelAuditValue(field, entry.metadata.changes?.[field]?.old)}</span>
+													<span class="pendingChangeFieldArrow" aria-hidden="true">→</span>
+													<span class="pendingChangeFieldValue pendingChangeFieldValueNew">{formatPendingLevelAuditValue(field, entry.metadata.changes?.[field]?.new)}</span>
+												</div>
+											</div>
+										{/each}
+									</div>
+								{:else}
+									<div class="pendingChangeFieldList">
+										{#each getPendingLevelRemovalPreviewRows(entry) as row}
+											<div class="pendingChangeFieldRow">
+												<div class="pendingChangeFieldLabel">{getPendingLevelAuditFieldLabel(row.field)}</div>
+												<div class="pendingChangeFieldValues pendingChangeFieldValuesSingle">
+													<span class="pendingChangeFieldValue">{formatPendingLevelAuditValue(row.field, row.value)}</span>
+												</div>
+											</div>
+										{/each}
+									</div>
+								{/if}
+
+								<details class="pendingChangePayload">
+									<summary>{$_('custom_lists.manage.unsaved_level_edits_dialog_payload_label')}</summary>
+									<pre>{JSON.stringify(entry.metadata, null, 2)}</pre>
+								</details>
+							</section>
+						{/each}
+					</div>
+				{:else}
+					<p class="hint">{$_('custom_lists.manage.unsaved_level_edits_dialog_empty')}</p>
+				{/if}
+
+				<Dialog.Footer>
+					<Button variant="outline" on:click={() => (showPendingLevelChangesDialog = false)}>
+						{$_('general.close')}
+					</Button>
+				</Dialog.Footer>
+				</div>
+			</Dialog.Content>
+		</Dialog.Root>
+
 		{#if canEditLevels && hasUnsavedLevelEdits}
 			<div class="toolCard unsavedLevelNotice" role="status" aria-live="polite">
 				<div class="moderationCopy">
 					<h2 class="toolHeading">{$_('custom_lists.manage.unsaved_level_edits_title')}</h2>
-					<p class="hint">{$_('custom_lists.manage.unsaved_level_edits_hint')}</p>
 				</div>
 				<div class="unsavedLevelActions">
+					<Button variant="outline" on:click={viewPendingLevelChanges} disabled={savingLevelDrafts}>
+						{$_('custom_lists.manage.unsaved_level_edits_view_changes')}
+					</Button>
 					<Button variant="outline" on:click={discardLevelDrafts} disabled={savingLevelDrafts}>
 						{$_('custom_lists.detail.levels.cancel_button')}
 					</Button>
@@ -2413,6 +2718,8 @@
 		display: flex;
 		align-items: center;
 		gap: 12px;
+		flex-wrap: wrap;
+		justify-content: flex-end;
 		flex-shrink: 0;
 	}
 
@@ -2444,6 +2751,167 @@
 		padding-block: 18px;
 	}
 
+	.pendingChangesDialog {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+	}
+
+	.pendingChangesSummary {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 10px;
+	}
+
+	.pendingChangesList {
+		display: flex;
+		flex-direction: column;
+		gap: 14px;
+		max-height: min(65vh, 760px);
+		overflow-y: auto;
+		padding-right: 4px;
+	}
+
+	.pendingChangeEntry {
+		border: 1px solid hsl(var(--border));
+		border-radius: 12px;
+		padding: 16px;
+		background: hsl(var(--muted) / 0.08);
+		display: flex;
+		flex-direction: column;
+		gap: 14px;
+	}
+
+	.pendingChangeHeader {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		gap: 16px;
+		flex-wrap: wrap;
+	}
+
+	.pendingChangeHeading {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		min-width: 0;
+	}
+
+	.pendingChangeTitleRow {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex-wrap: wrap;
+	}
+
+	.pendingChangeTitleRow h3 {
+		margin: 0;
+		font-size: 1rem;
+		font-weight: 600;
+	}
+
+	.pendingChangeDetail {
+		margin: 0;
+		font-size: 0.88rem;
+		color: hsl(var(--muted-foreground));
+	}
+
+	.pendingChangeAuditAction {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 6px;
+	}
+
+	.pendingChangeAuditAction code {
+		padding: 4px 8px;
+		border-radius: 999px;
+		background: hsl(var(--muted));
+		border: 1px solid hsl(var(--border));
+		font-size: 0.78rem;
+	}
+
+	.pendingChangeMetaLabel {
+		font-size: 0.75rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		color: hsl(var(--muted-foreground));
+	}
+
+	.pendingChangeFieldList {
+		display: grid;
+		gap: 10px;
+	}
+
+	.pendingChangeFieldRow {
+		display: grid;
+		grid-template-columns: minmax(140px, 200px) minmax(0, 1fr);
+		gap: 12px;
+		align-items: center;
+	}
+
+	.pendingChangeFieldLabel {
+		font-size: 0.85rem;
+		font-weight: 600;
+	}
+
+	.pendingChangeFieldValues {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		flex-wrap: wrap;
+	}
+
+	.pendingChangeFieldValuesSingle {
+		gap: 0;
+	}
+
+	.pendingChangeFieldValue {
+		padding: 6px 10px;
+		border-radius: 8px;
+		background: hsl(var(--background));
+		border: 1px solid hsl(var(--border));
+		font-size: 0.84rem;
+	}
+
+	.pendingChangeFieldValueOld {
+		color: hsl(var(--muted-foreground));
+	}
+
+	.pendingChangeFieldValueNew {
+		border-color: hsl(var(--primary) / 0.35);
+		background: hsl(var(--primary) / 0.08);
+	}
+
+	.pendingChangeFieldArrow {
+		color: hsl(var(--muted-foreground));
+		font-weight: 700;
+	}
+
+	.pendingChangePayload {
+		border-top: 1px solid hsl(var(--border));
+		padding-top: 12px;
+	}
+
+	.pendingChangePayload summary {
+		cursor: pointer;
+		font-size: 0.84rem;
+		font-weight: 600;
+		color: hsl(var(--muted-foreground));
+	}
+
+	.pendingChangePayload pre {
+		margin: 10px 0 0;
+		padding: 12px;
+		border-radius: 10px;
+		background: hsl(var(--background));
+		border: 1px solid hsl(var(--border));
+		font-size: 0.78rem;
+		line-height: 1.5;
+		overflow-x: auto;
+	}
+
 	/* Empty State */
 	.emptyState {
 		border: 1px dashed hsl(var(--border));
@@ -2469,6 +2937,14 @@
 	@media (max-width: 760px) {
 		.heroTop {
 			flex-direction: column;
+		}
+
+		.pendingChangeFieldRow {
+			grid-template-columns: 1fr;
+		}
+
+		.pendingChangeAuditAction {
+			align-items: flex-start;
 		}
 	}
 
