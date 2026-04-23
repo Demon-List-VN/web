@@ -31,7 +31,7 @@
 		const res = [
 			{
 				title: 'Wiki',
-				link: `/wiki/${locale}`
+				link: '/wiki'
 			}
 		];
 
