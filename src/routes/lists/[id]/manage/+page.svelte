@@ -12,6 +12,7 @@
 	import RankTab from './RankTab.svelte';
 	import SubmissionsTab from './SubmissionsTab.svelte';
 	import imageCompression from 'browser-image-compression';
+	import { browser } from '$app/environment';
 	import { onDestroy, onMount } from 'svelte';
 	import {
 		clearCustomListBranding,
@@ -130,6 +131,8 @@
 		canTransferOwnership: boolean;
 		canViewMembers: boolean;
 		canViewAudit: boolean;
+		canViewPendingInvitations: boolean;
+		canRespondToInvitation: boolean;
 	};
 
 	type CustomListMember = {
@@ -139,6 +142,17 @@
 		created_at: string;
 		updated_at: string;
 		playerData?: any | null;
+	};
+
+	type CustomListInvitation = {
+		id: number;
+		uid: string;
+		role: 'admin' | 'helper';
+		invitedBy: string;
+		created_at: string;
+		updated_at: string;
+		playerData?: any | null;
+		invitedByData?: any | null;
 	};
 
 	type CustomListAuditLogEntry = {
@@ -179,6 +193,8 @@
 		currentUserRole?: CustomListResolvedRole;
 		permissions?: CustomListPermissionFlags;
 		members?: CustomListMember[];
+		pendingInvitations?: CustomListInvitation[];
+		pendingInvitation?: CustomListInvitation | null;
 		auditLog?: CustomListAuditLogEntry[];
 		rankBadges?: CustomListRankBadge[];
 		weightFormula?: string;
@@ -340,7 +356,9 @@
 		canConfigureCollaboration: false,
 		canTransferOwnership: false,
 		canViewMembers: false,
-		canViewAudit: false
+		canViewAudit: false,
+		canViewPendingInvitations: false,
+		canRespondToInvitation: false
 	};
 
 	// SSR data - hydrate into reactive local state
@@ -348,6 +366,8 @@
 	let loadingError = data?.error ?? '';
 	let requiresAuthRecovery = Boolean(data?.requiresAuthRecovery);
 	let authRecoveryLoading = requiresAuthRecovery;
+	let hasResolvedManageAccess = false;
+	let redirectingUnauthorizedManage = false;
 
 	let addingLevel = false;
 	let savingLevelItemId: number | null = null;
@@ -416,6 +436,7 @@
 
 	let activeTab: ManageTab = getInitialManageTab();
 	let initialManageTabSettled = false;
+	let collaborationTabProps: any = {};
 
 	function buildListRequestUrl() {
 		return `${import.meta.env.VITE_API_URL}/lists/${$page.params.id}`;
@@ -424,6 +445,10 @@
 
 	function getInitialManageTab(): ManageTab {
 		const requestedTab = $page.url.searchParams.get('tab');
+
+		if (requestedTab === 'pending-invitations') {
+			return 'collaboration';
+		}
 
 		if (
 			requestedTab === 'basic'
@@ -442,6 +467,13 @@
 		}
 
 		return 'basic';
+	}
+
+	function getInitialCollaborationSection() {
+		return $page.url.searchParams.get('tab') === 'pending-invitations'
+			|| $page.url.searchParams.get('collaborationTab') === 'pending'
+			? 'pending'
+			: 'members';
 	}
 
 	function syncForm() {
@@ -791,6 +823,9 @@
 		authRecoveryLoading = false;
 		requiresAuthRecovery = false;
 	}
+	$: if ($user.checked && !$user.loggedIn) {
+		hasResolvedManageAccess = true;
+	}
 
 	onMount(() => {
 		const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -832,6 +867,7 @@
 				list = payload as CustomList;
 				loadingError = '';
 				syncForm();
+				hasResolvedManageAccess = true;
 				return;
 			}
 
@@ -1006,12 +1042,12 @@
 				})
 			});
 			const payload = await res.json();
-			if (!res.ok) throw new Error(payload.error || $_('custom_lists.toast.failed_add_collaborator'));
+			if (!res.ok) throw new Error(payload.error || $_('custom_lists.toast.failed_invite_collaborator'));
 			list = payload;
 			syncForm();
-			toast.success($_('custom_lists.toast.collaborator_added'));
+			toast.success($_('custom_lists.toast.invitation_sent'));
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_add_collaborator'));
+			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_invite_collaborator'));
 		} finally {
 			savingCollaboration = false;
 		}
@@ -1089,6 +1125,30 @@
 			toast.success($_('custom_lists.toast.ownership_transferred'));
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_transfer_ownership'));
+		} finally {
+			savingCollaboration = false;
+		}
+	}
+
+	async function revokePendingInvitation(invitation: CustomListInvitation) {
+		if (!list || !canManageMembers) return;
+
+		savingCollaboration = true;
+
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/invitations/${invitation.uid}`, {
+				method: 'DELETE',
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`
+				}
+			});
+			const payload = await res.json().catch(() => null);
+			if (!res.ok) throw new Error(payload?.error || $_('custom_lists.toast.failed_revoke_invitation'));
+			list = payload;
+			syncForm();
+			toast.success($_('custom_lists.toast.invitation_revoked'));
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_revoke_invitation'));
 		} finally {
 			savingCollaboration = false;
 		}
@@ -2926,8 +2986,58 @@
 	$: canTransferOwnership = Boolean(list && permissions.canTransferOwnership);
 	$: canViewMembers = Boolean(list && permissions.canViewMembers);
 	$: canViewAudit = Boolean(list && permissions.canViewAudit);
+	$: canViewPendingInvitations = Boolean(list && permissions.canViewPendingInvitations);
+	$: canRespondToInvitation = Boolean(list && permissions.canRespondToInvitation);
 	$: canReviewSubmissions = Boolean(list && permissions.canReviewSubmissions);
-	$: canShowCollaboration = Boolean(list && (canViewMembers || canViewAudit || canManageMembers || canConfigureCollaboration || canTransferOwnership));
+	$: if (
+		browser
+		&& list
+		&& $user.checked
+		&& hasResolvedManageAccess
+		&& !redirectingUnauthorizedManage
+		&& list.currentUserRole === 'viewer'
+	) {
+		redirectingUnauthorizedManage = true;
+		void goto(
+			canRespondToInvitation
+				? `/lists/${$page.params.id}/collaborator-invitation`
+				: `/lists/${$page.params.id}`,
+			{ replaceState: true }
+		);
+	}
+	$: canShowCollaboration = Boolean(
+		list
+		&& (
+			canViewMembers
+			|| canViewAudit
+			|| canManageMembers
+			|| canConfigureCollaboration
+			|| canTransferOwnership
+			|| canViewPendingInvitations
+		)
+	);
+	$: collaborationTabProps = {
+		list,
+		savingCollaboration,
+		canConfigureCollaboration,
+		canViewMembers,
+		canManageMembers,
+		canTransferOwnership,
+		canViewAudit,
+		canViewPendingInvitations,
+		pendingInvitationCount: list?.pendingInvitations?.length ?? 0,
+		updateCollaborationSettings,
+		searchPlayersForCollaboration,
+		addCollaborator,
+		updateCollaboratorRole,
+		transferOwnership,
+		removeCollaborator,
+		revokePendingInvitation,
+		preferredSection: getInitialCollaborationSection(),
+		getRoleLabel,
+		formatDate,
+		formatDateTime
+	};
 	$: pendingLevelAuditEntries = buildPendingLevelAuditEntries(list, pendingLevelAdditions, levelDrafts, levelDeletionDraftIds);
 	$: pendingSettingsAuditEntry = buildPendingSettingsAuditEntry(list, editForm);
 	$: pendingManageAuditEntries = buildPendingManageAuditEntries(pendingSettingsAuditEntry, pendingLevelAuditEntries);
@@ -3280,42 +3390,25 @@
 				<Tabs.Content value="rank">
 					<RankTab bind:editForm />
 				</Tabs.Content>
+			{/if}
 
-				{#if canShowCollaboration}
-					<Tabs.Content value="collaboration">
-						<CollaborationTab
-							{list}
-							{savingCollaboration}
-							{canConfigureCollaboration}
-							{canViewMembers}
-							{canManageMembers}
-							{canTransferOwnership}
-							{canViewAudit}
-							{updateCollaborationSettings}
-							{searchPlayersForCollaboration}
-							{addCollaborator}
-							{updateCollaboratorRole}
-							{transferOwnership}
-							{removeCollaborator}
-							{getRoleLabel}
-							{formatDate}
-							{formatDateTime}
-						/>
-					</Tabs.Content>
-				{/if}
+			{#if canShowCollaboration}
+				<Tabs.Content value="collaboration">
+					<CollaborationTab {...collaborationTabProps} />
+				</Tabs.Content>
+			{/if}
 
-				{#if canBan || canDelete}
-					<Tabs.Content value="danger">
-						<DangerTab
-							{list}
-							{canBan}
-							{canDelete}
-							{savingBanState}
-							{setBanState}
-							{deleteList}
-						/>
-					</Tabs.Content>
-				{/if}
+			{#if canBan || canDelete}
+				<Tabs.Content value="danger">
+					<DangerTab
+						{list}
+						{canBan}
+						{canDelete}
+						{savingBanState}
+						{setBanState}
+						{deleteList}
+					/>
+				</Tabs.Content>
 			{/if}
 
 			<Tabs.Content value="levels">

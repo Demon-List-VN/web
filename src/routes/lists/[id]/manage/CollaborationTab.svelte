@@ -5,7 +5,9 @@
 	import { Switch } from '$lib/components/ui/switch';
 	import * as Avatar from '$lib/components/ui/avatar';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import * as Tabs from '$lib/components/ui/tabs';
 	import PlayerLink from '$lib/components/playerLink.svelte';
+	import PendingInvitationsTab from './PendingInvitationsTab.svelte';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import { ArrowUpDown, Crown, Plus, Save, Search, Trash2, UserPlus, X } from 'lucide-svelte';
 	import { _ } from 'svelte-i18n';
@@ -19,6 +21,8 @@
 	export let canManageMembers = false;
 	export let canTransferOwnership = false;
 	export let canViewAudit = false;
+	export let canViewPendingInvitations = false;
+	export let pendingInvitationCount = 0;
 
 	export let updateCollaborationSettings: (adminsCanManageHelpers: boolean) => void | Promise<void> = async () => {};
 	export let searchPlayersForCollaboration: (query: string) => any[] | Promise<any[]> = async () => [];
@@ -26,11 +30,16 @@
 	export let updateCollaboratorRole: (member: any, role: CollaboratorRole) => void | Promise<void> = async () => {};
 	export let transferOwnership: (player: any) => void | Promise<void> = async () => {};
 	export let removeCollaborator: (member: any) => void | Promise<void> = async () => {};
+	export let revokePendingInvitation: (invitation: any) => void | Promise<void> = async () => {};
+	export let preferredSection: 'members' | 'pending' = 'members';
 	export let getRoleLabel: (role: CollaboratorRole | string) => string = () => '';
 	export let formatDate: (value: string) => string = () => '';
 	export let formatDateTime: (value: string) => string = () => '';
 
 	let adminsCanManageHelpers = false;
+	let activeSection: 'members' | 'pending' = 'members';
+	let preferredSectionSettled = false;
+	let syncedCollaborationSettingsKey = '';
 
 	// Local filter for the existing staff list
 	let memberFilter = '';
@@ -47,11 +56,22 @@
 	let auditDetailEntry: any = null;
 	let showAuditDetailDialog = false;
 
-	$: if (list) {
-		adminsCanManageHelpers = Boolean(list.adminsCanManageHelpers);
+	$: {
+		const nextSyncedKey = list ? `${list.id}:${Boolean(list.adminsCanManageHelpers)}` : '';
+		if (nextSyncedKey !== syncedCollaborationSettingsKey) {
+			syncedCollaborationSettingsKey = nextSyncedKey;
+			adminsCanManageHelpers = Boolean(list?.adminsCanManageHelpers);
+		}
 	}
 
 	$: filteredMembers = filterMembers(list?.members ?? [], memberFilter);
+	$: if (!preferredSectionSettled) {
+		activeSection = preferredSection === 'pending' && canViewPendingInvitations ? 'pending' : 'members';
+		preferredSectionSettled = true;
+	}
+	$: if (!canViewPendingInvitations && activeSection === 'pending') {
+		activeSection = 'members';
+	}
 
 	$: addDialogExistingMember = addSelectedPlayer?.uid ? getMemberByUid(addSelectedPlayer.uid) : null;
 
@@ -88,6 +108,10 @@
 
 	async function saveCollaborationSettings() {
 		await updateCollaborationSettings(adminsCanManageHelpers);
+	}
+
+	function toggleAdminsCanManageHelpers() {
+		adminsCanManageHelpers = !adminsCanManageHelpers;
 	}
 
 	function openAddDialog() {
@@ -258,6 +282,11 @@
 		if (action === 'level_updated') return $_('custom_lists.manage.audit.level_updated');
 		if (action === 'levels_reordered') return $_('custom_lists.manage.audit.levels_reordered');
 		if (action === 'member_added') return $_('custom_lists.manage.audit.member_added');
+		if (action === 'member_invited') return $_('custom_lists.manage.audit.member_invited');
+		if (action === 'member_invitation_updated') return $_('custom_lists.manage.audit.member_invitation_updated');
+		if (action === 'member_invitation_accepted') return $_('custom_lists.manage.audit.member_invitation_accepted');
+		if (action === 'member_invitation_rejected') return $_('custom_lists.manage.audit.member_invitation_rejected');
+		if (action === 'member_invitation_revoked') return $_('custom_lists.manage.audit.member_invitation_revoked');
 		if (action === 'member_removed') return $_('custom_lists.manage.audit.member_removed');
 		if (action === 'member_role_updated') return $_('custom_lists.manage.audit.member_role_updated');
 		if (action === 'ownership_transferred') return $_('custom_lists.manage.audit.ownership_transferred');
@@ -309,6 +338,55 @@
 
 		if (entry.action === 'member_added' || entry.action === 'member_removed') {
 			return $_('custom_lists.manage.audit_detail.member_changed', {
+				values: {
+					actor,
+					target,
+					role: getRoleLabel(String(metadata.role || 'helper') as CollaboratorRole)
+				}
+			});
+		}
+
+		if (entry.action === 'member_invited') {
+			return $_('custom_lists.manage.audit_detail.member_invited', {
+				values: {
+					actor,
+					target,
+					role: getRoleLabel(String(metadata.role || 'helper') as CollaboratorRole)
+				}
+			});
+		}
+
+		if (entry.action === 'member_invitation_updated') {
+			return $_('custom_lists.manage.audit_detail.member_invitation_updated', {
+				values: {
+					actor,
+					target,
+					fromRole: getRoleLabel(String(metadata.fromRole || 'helper') as CollaboratorRole),
+					toRole: getRoleLabel(String(metadata.toRole || 'helper') as CollaboratorRole)
+				}
+			});
+		}
+
+		if (entry.action === 'member_invitation_accepted') {
+			return $_('custom_lists.manage.audit_detail.member_invitation_accepted', {
+				values: {
+					actor,
+					role: getRoleLabel(String(metadata.role || 'helper') as CollaboratorRole)
+				}
+			});
+		}
+
+		if (entry.action === 'member_invitation_rejected') {
+			return $_('custom_lists.manage.audit_detail.member_invitation_rejected', {
+				values: {
+					actor,
+					role: getRoleLabel(String(metadata.role || 'helper') as CollaboratorRole)
+				}
+			});
+		}
+
+		if (entry.action === 'member_invitation_revoked') {
+			return $_('custom_lists.manage.audit_detail.member_invitation_revoked', {
 				values: {
 					actor,
 					target,
@@ -377,8 +455,16 @@
 			</header>
 			<div class="switchRow">
 				<div class="switchCopy">
-					<label for="admins-can-manage-helpers">{$_('custom_lists.manage.collaboration.admin_helper_toggle_label')}</label>
-					<p class="hint">{$_('custom_lists.manage.collaboration.admin_helper_toggle_hint')}</p>
+					<button
+						type="button"
+						class="switchCopyButton"
+						on:click={toggleAdminsCanManageHelpers}
+						aria-controls="admins-can-manage-helpers"
+						aria-pressed={adminsCanManageHelpers}
+					>
+						<span class="switchCopyTitle">{$_('custom_lists.manage.collaboration.admin_helper_toggle_label')}</span>
+						<span class="hint">{$_('custom_lists.manage.collaboration.admin_helper_toggle_hint')}</span>
+					</button>
 				</div>
 				<div class="switchControl">
 					<span class="switchLabel">{adminsCanManageHelpers ? $_('general.yes') : $_('general.no')}</span>
@@ -394,149 +480,187 @@
 		</section>
 	{/if}
 
-	{#if canViewMembers || canManageMembers || canTransferOwnership}
-		<section class="card">
-			<header class="cardHead cardHeadSplit">
-				<div class="cardHeadCopy">
-					<h2 class="cardTitle">{$_('custom_lists.manage.collaboration.members_title')}</h2>
-					<p class="hint">{$_('custom_lists.manage.collaboration.search_hint')}</p>
+	{#if canViewMembers || canManageMembers || canTransferOwnership || canViewPendingInvitations}
+		<div class="memberTabs">
+			<Tabs.Root bind:value={activeSection}>
+			{#if canViewPendingInvitations}
+				<div class="memberTabsRail">
+					<Tabs.List class="memberTabsList">
+						<Tabs.Trigger value="members" class="memberTabsTrigger">
+							<span>{$_('custom_lists.manage.collaboration.members_title')}</span>
+						</Tabs.Trigger>
+						<Tabs.Trigger value="pending" class="memberTabsTrigger">
+							<span>{$_('custom_lists.manage.collaboration.pending_title')}</span>
+							{#if pendingInvitationCount}
+								<span class="memberTabCount">{pendingInvitationCount}</span>
+							{/if}
+						</Tabs.Trigger>
+					</Tabs.List>
 				</div>
-				{#if canManageMembers}
-					<Button on:click={openAddDialog} disabled={savingCollaboration}>
-						<UserPlus class="mr-2 h-4 w-4" />
-						{$_('custom_lists.manage.collaboration.add_button')}
-					</Button>
-				{/if}
-			</header>
-
-			{#if canViewMembers}
-				<div class="filterRow">
-					<div class="filterInput">
-						<Search class="filterIcon h-4 w-4" aria-hidden="true" />
-						<Input
-							bind:value={memberFilter}
-							placeholder={$_('custom_lists.manage.collaboration.search_placeholder')}
-						/>
-						{#if memberFilter}
-							<button
-								type="button"
-								class="filterClear"
-								on:click={() => (memberFilter = '')}
-								aria-label={$_('general.close')}
-							>
-								<X class="h-3.5 w-3.5" />
-							</button>
-						{/if}
-					</div>
-				</div>
-
-				<ul class="memberList">
-					<li class="memberRow ownerRow">
-						<div class="memberMain">
-							<Avatar.Root class="h-10 w-10 flex-shrink-0">
-								<Avatar.Image
-									class="h-full w-full rounded-full object-cover"
-									src={getAvatarSrc(list.ownerData)}
-									alt={getPlayerName(list.ownerData, list.owner)}
-								/>
-								<Avatar.Fallback class="inline-flex h-full w-full items-center justify-center rounded-full text-[0.95rem] font-bold">
-									{getAvatarFallback(list.ownerData ?? { uid: list.owner })}
-								</Avatar.Fallback>
-							</Avatar.Root>
-							<div class="memberCopy">
-								<div class="memberNameRow">
-									{#if list.ownerData}
-										<PlayerLink player={list.ownerData} />
-									{:else}
-										<span class="memberFallbackName">{list.owner}</span>
-									{/if}
-									<Badge variant="secondary" class="roleBadge">
-										<Crown class="mr-1 h-3 w-3" />
-										{$_('custom_lists.manage.roles.owner')}
-									</Badge>
-								</div>
-								<span class="memberMeta">{$_('custom_lists.manage.collaboration.owner_hint')}</span>
-							</div>
-						</div>
-					</li>
-
-					{#if filteredMembers.length}
-						{#each filteredMembers as member (member.uid)}
-							<li class="memberRow">
-								<div class="memberMain">
-									<Avatar.Root class="h-10 w-10 flex-shrink-0">
-										<Avatar.Image
-											class="h-full w-full rounded-full object-cover"
-											src={getAvatarSrc(member.playerData)}
-											alt={getPlayerName(member.playerData, member.uid)}
-										/>
-										<Avatar.Fallback class="inline-flex h-full w-full items-center justify-center rounded-full text-[0.95rem] font-bold">
-											{getAvatarFallback(member.playerData ?? { uid: member.uid })}
-										</Avatar.Fallback>
-									</Avatar.Root>
-									<div class="memberCopy">
-										<div class="memberNameRow">
-											{#if member.playerData}
-												<PlayerLink player={member.playerData} />
-											{:else}
-												<span class="memberFallbackName">{member.uid}</span>
-											{/if}
-											<Badge variant={member.role === 'admin' ? 'default' : 'outline'} class="roleBadge">
-												{getRoleLabel(member.role)}
-											</Badge>
-										</div>
-										<span class="memberMeta">
-											{$_('custom_lists.manage.collaboration.member_since', { values: { date: formatDate(member.created_at) } })}
-										</span>
-									</div>
-								</div>
-								<div class="memberActions">
-									{#if canConfigureCollaboration}
-										<Button
-											variant="outline"
-											size="sm"
-											on:click={() => updateCollaboratorRole(member, member.role === 'admin' ? 'helper' : 'admin')}
-											disabled={savingCollaboration}
-										>
-											<ArrowUpDown class="mr-1.5 h-3.5 w-3.5" />
-											{member.role === 'admin'
-												? $_('custom_lists.manage.collaboration.demote_button')
-												: $_('custom_lists.manage.collaboration.promote_button')}
-										</Button>
-									{/if}
-									{#if canTransferOwnership}
-										<Button
-											variant="outline"
-											size="sm"
-											on:click={() => transferOwnership(member.playerData ?? { uid: member.uid, name: member.uid })}
-											disabled={savingCollaboration}
-										>
-											<Crown class="mr-1.5 h-3.5 w-3.5" />
-											{$_('custom_lists.manage.collaboration.transfer_button')}
-										</Button>
-									{/if}
-									{#if canManageMembers && (canConfigureCollaboration || member.role === 'helper')}
-										<Button
-											variant="destructive"
-											size="sm"
-											on:click={() => removeCollaborator(member)}
-											disabled={savingCollaboration}
-										>
-											<Trash2 class="mr-1.5 h-3.5 w-3.5" />
-											{$_('custom_lists.manage.collaboration.remove_button')}
-										</Button>
-									{/if}
-								</div>
-							</li>
-						{/each}
-					{:else if memberFilter.trim().length}
-						<li class="emptyRow">{$_('custom_lists.manage.collaboration.members_empty')}</li>
-					{:else}
-						<li class="emptyRow">{$_('custom_lists.manage.collaboration.members_empty')}</li>
-					{/if}
-				</ul>
 			{/if}
-		</section>
+
+			<Tabs.Content value="members">
+				{#if canViewMembers || canManageMembers || canTransferOwnership}
+					<section class="card">
+						<header class="cardHead cardHeadSplit">
+							<div class="cardHeadCopy">
+								<h2 class="cardTitle">{$_('custom_lists.manage.collaboration.members_title')}</h2>
+								<p class="hint">{$_('custom_lists.manage.collaboration.search_hint')}</p>
+							</div>
+							{#if canManageMembers}
+								<Button on:click={openAddDialog} disabled={savingCollaboration}>
+									<UserPlus class="mr-2 h-4 w-4" />
+									{$_('custom_lists.manage.collaboration.add_button')}
+								</Button>
+							{/if}
+						</header>
+
+						{#if canViewMembers}
+							<div class="filterRow">
+								<div class="filterInput">
+									<Search class="filterIcon h-4 w-4" aria-hidden="true" />
+									<Input
+										bind:value={memberFilter}
+										placeholder={$_('custom_lists.manage.collaboration.search_placeholder')}
+									/>
+									{#if memberFilter}
+										<button
+											type="button"
+											class="filterClear"
+											on:click={() => (memberFilter = '')}
+											aria-label={$_('general.close')}
+										>
+											<X class="h-3.5 w-3.5" />
+										</button>
+									{/if}
+								</div>
+							</div>
+
+							<ul class="memberList">
+								<li class="memberRow ownerRow">
+									<div class="memberMain">
+										<Avatar.Root class="h-10 w-10 flex-shrink-0">
+											<Avatar.Image
+												class="h-full w-full rounded-full object-cover"
+												src={getAvatarSrc(list.ownerData)}
+												alt={getPlayerName(list.ownerData, list.owner)}
+											/>
+											<Avatar.Fallback class="inline-flex h-full w-full items-center justify-center rounded-full text-[0.95rem] font-bold">
+												{getAvatarFallback(list.ownerData ?? { uid: list.owner })}
+											</Avatar.Fallback>
+										</Avatar.Root>
+										<div class="memberCopy">
+											<div class="memberNameRow">
+												{#if list.ownerData}
+													<PlayerLink player={list.ownerData} />
+												{:else}
+													<span class="memberFallbackName">{list.owner}</span>
+												{/if}
+												<Badge variant="secondary" class="roleBadge">
+													<Crown class="mr-1 h-3 w-3" />
+													{$_('custom_lists.manage.roles.owner')}
+												</Badge>
+											</div>
+											<span class="memberMeta">{$_('custom_lists.manage.collaboration.owner_hint')}</span>
+										</div>
+									</div>
+								</li>
+
+								{#if filteredMembers.length}
+									{#each filteredMembers as member (member.uid)}
+										<li class="memberRow">
+											<div class="memberMain">
+												<Avatar.Root class="h-10 w-10 flex-shrink-0">
+													<Avatar.Image
+														class="h-full w-full rounded-full object-cover"
+														src={getAvatarSrc(member.playerData)}
+														alt={getPlayerName(member.playerData, member.uid)}
+													/>
+													<Avatar.Fallback class="inline-flex h-full w-full items-center justify-center rounded-full text-[0.95rem] font-bold">
+														{getAvatarFallback(member.playerData ?? { uid: member.uid })}
+													</Avatar.Fallback>
+												</Avatar.Root>
+												<div class="memberCopy">
+													<div class="memberNameRow">
+														{#if member.playerData}
+															<PlayerLink player={member.playerData} />
+														{:else}
+															<span class="memberFallbackName">{member.uid}</span>
+														{/if}
+														<Badge variant={member.role === 'admin' ? 'default' : 'outline'} class="roleBadge">
+															{getRoleLabel(member.role)}
+														</Badge>
+													</div>
+													<span class="memberMeta">
+														{$_('custom_lists.manage.collaboration.member_since', { values: { date: formatDate(member.created_at) } })}
+													</span>
+												</div>
+											</div>
+											<div class="memberActions">
+												{#if canConfigureCollaboration}
+													<Button
+														variant="outline"
+														size="sm"
+														on:click={() => updateCollaboratorRole(member, member.role === 'admin' ? 'helper' : 'admin')}
+														disabled={savingCollaboration}
+													>
+														<ArrowUpDown class="mr-1.5 h-3.5 w-3.5" />
+														{member.role === 'admin'
+															? $_('custom_lists.manage.collaboration.demote_button')
+															: $_('custom_lists.manage.collaboration.promote_button')}
+													</Button>
+												{/if}
+												{#if canTransferOwnership}
+													<Button
+														variant="outline"
+														size="sm"
+														on:click={() => transferOwnership(member.playerData ?? { uid: member.uid, name: member.uid })}
+														disabled={savingCollaboration}
+													>
+														<Crown class="mr-1.5 h-3.5 w-3.5" />
+														{$_('custom_lists.manage.collaboration.transfer_button')}
+													</Button>
+												{/if}
+												{#if canManageMembers && (canConfigureCollaboration || member.role === 'helper')}
+													<Button
+														variant="destructive"
+														size="sm"
+														on:click={() => removeCollaborator(member)}
+														disabled={savingCollaboration}
+													>
+														<Trash2 class="mr-1.5 h-3.5 w-3.5" />
+														{$_('custom_lists.manage.collaboration.remove_button')}
+													</Button>
+												{/if}
+											</div>
+										</li>
+									{/each}
+								{:else if memberFilter.trim().length}
+									<li class="emptyRow">{$_('custom_lists.manage.collaboration.members_empty')}</li>
+								{:else}
+									<li class="emptyRow">{$_('custom_lists.manage.collaboration.members_empty')}</li>
+								{/if}
+							</ul>
+						{/if}
+					</section>
+				{/if}
+			</Tabs.Content>
+
+			{#if canViewPendingInvitations}
+				<Tabs.Content value="pending">
+					<PendingInvitationsTab
+						{list}
+						{savingCollaboration}
+						{canManageMembers}
+						{canViewPendingInvitations}
+						{revokePendingInvitation}
+						{getRoleLabel}
+						{formatDateTime}
+					/>
+				</Tabs.Content>
+			{/if}
+			</Tabs.Root>
+		</div>
 	{/if}
 
 	{#if canViewAudit}
@@ -825,6 +949,24 @@
 		min-width: 0;
 	}
 
+	.switchCopyButton {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 4px;
+		padding: 0;
+		border: none;
+		background: transparent;
+		color: inherit;
+		text-align: left;
+		cursor: pointer;
+	}
+
+	.switchCopyTitle {
+		font-size: 0.9rem;
+		font-weight: 500;
+	}
+
 	.switchControl {
 		display: flex;
 		align-items: center;
@@ -834,6 +976,46 @@
 	.switchLabel {
 		font-size: 0.9rem;
 		font-weight: 500;
+	}
+
+	.memberTabs {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+	}
+
+	.memberTabsRail {
+		display: flex;
+		justify-content: flex-start;
+	}
+
+	:global(.memberTabsList) {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 4px;
+		border-radius: 999px;
+		background: hsl(var(--muted) / 0.42);
+	}
+
+	:global(.memberTabsTrigger) {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.memberTabCount {
+		display: inline-flex;
+		min-width: 20px;
+		height: 20px;
+		align-items: center;
+		justify-content: center;
+		padding: 0 6px;
+		border-radius: 999px;
+		background: hsl(var(--primary));
+		color: hsl(var(--primary-foreground));
+		font-size: 0.72rem;
+		font-weight: 600;
 	}
 
 	.formActions {
