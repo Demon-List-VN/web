@@ -39,6 +39,7 @@
 		Settings,
 		Palette,
 		Calculator,
+		Filter,
 		Award,
 		ListOrdered,
 		Inbox,
@@ -181,6 +182,10 @@
 		auditLog?: CustomListAuditLogEntry[];
 		rankBadges?: CustomListRankBadge[];
 		weightFormula?: string;
+		recordFilterPlatform?: 'any' | 'pc' | 'mobile';
+		recordFilterMinRefreshRate?: number | null;
+		recordFilterMaxRefreshRate?: number | null;
+		recordFilterManualAcceptanceOnly?: boolean;
 		items: CustomListItem[];
 		ownerData?: any;
 	};
@@ -296,6 +301,10 @@
 			minTop: number | null;
 		}>;
 		weightFormula: string;
+		recordFilterPlatform: 'any' | 'pc' | 'mobile';
+		recordFilterMinRefreshRate: number | null;
+		recordFilterMaxRefreshRate: number | null;
+		recordFilterManualAcceptanceOnly: boolean;
 	};
 
 	type PendingManageAuditField = keyof PendingLevelAuditState | keyof PendingSettingsAuditState;
@@ -319,7 +328,7 @@
 		metadata: Record<string, any>;
 	};
 
-	type ManageTab = 'basic' | 'appearance' | 'formula' | 'rank' | 'danger' | 'levels' | 'submissions' | 'collaboration';
+	type ManageTab = 'basic' | 'appearance' | 'formula' | 'record-filter' | 'rank' | 'danger' | 'levels' | 'submissions' | 'collaboration';
 
 	const defaultPermissions: CustomListPermissionFlags = {
 		canEditSettings: false,
@@ -372,6 +381,7 @@
 	const CSV_IMPORT_RATE_LIMIT_TIMEOUT_MS = 15000;
 	const DEFAULT_ITEM_SORT: 'mode_default' | 'created_at' = 'mode_default';
 	const LEVEL_AUDIT_MUTABLE_FIELDS: Array<keyof LevelItemPatch> = ['rating', 'minProgress', 'videoID', 'createdAt'];
+	const RECORD_FILTER_PLATFORM_OPTIONS: Array<'any' | 'pc' | 'mobile'> = ['any', 'pc', 'mobile'];
 
 	class BatchAddImportAbortedError extends Error {
 		constructor() {
@@ -397,7 +407,11 @@
 		tags: '',
 		mode: 'rating' as 'rating' | 'top',
 		rankBadges: [] as CustomListRankBadgeDraft[],
-		weightFormula: '1'
+		weightFormula: '1',
+		recordFilterPlatform: 'any' as 'any' | 'pc' | 'mobile',
+		recordFilterMinRefreshRate: null as number | null,
+		recordFilterMaxRefreshRate: null as number | null,
+		recordFilterManualAcceptanceOnly: true
 	};
 
 	let activeTab: ManageTab = getInitialManageTab();
@@ -415,6 +429,7 @@
 			requestedTab === 'basic'
 			|| requestedTab === 'appearance'
 			|| requestedTab === 'formula'
+			|| requestedTab === 'record-filter'
 			|| requestedTab === 'rank'
 			|| requestedTab === 'collaboration'
 			|| requestedTab === 'danger'
@@ -450,6 +465,10 @@
 			...rankBadge
 		}));
 		editForm.weightFormula = list.weightFormula || '1';
+		editForm.recordFilterPlatform = list.recordFilterPlatform || 'any';
+		editForm.recordFilterMinRefreshRate = list.recordFilterMinRefreshRate ?? null;
+		editForm.recordFilterMaxRefreshRate = list.recordFilterMaxRefreshRate ?? null;
+		editForm.recordFilterManualAcceptanceOnly = list.recordFilterManualAcceptanceOnly ?? true;
 	}
 
 	function getRankBadgeSnapshot(rankBadges: CustomListRankBadgeDraft[] | CustomListRankBadge[] | null | undefined) {
@@ -484,7 +503,11 @@
 			tags: currentList.tags,
 			mode: currentList.mode,
 			rankBadges: getRankBadgeSnapshot(currentList.rankBadges),
-			weightFormula: currentList.weightFormula || '1'
+			weightFormula: currentList.weightFormula || '1',
+			recordFilterPlatform: currentList.recordFilterPlatform || 'any',
+			recordFilterMinRefreshRate: currentList.recordFilterMinRefreshRate ?? null,
+			recordFilterMaxRefreshRate: currentList.recordFilterMaxRefreshRate ?? null,
+			recordFilterManualAcceptanceOnly: currentList.recordFilterManualAcceptanceOnly ?? true
 		};
 	}
 
@@ -506,7 +529,11 @@
 			tags: parseTags(currentForm.tags),
 			mode: currentForm.mode,
 			rankBadges: getRankBadgeSnapshot(currentForm.rankBadges),
-			weightFormula: currentForm.weightFormula
+			weightFormula: currentForm.weightFormula,
+			recordFilterPlatform: currentForm.recordFilterPlatform,
+			recordFilterMinRefreshRate: currentForm.recordFilterMinRefreshRate,
+			recordFilterMaxRefreshRate: currentForm.recordFilterMaxRefreshRate,
+			recordFilterManualAcceptanceOnly: currentForm.recordFilterManualAcceptanceOnly
 		};
 	}
 
@@ -1150,6 +1177,44 @@
 		return list?.tags ?? [];
 	}
 
+	function setRecordFilterPlatform(platform: 'any' | 'pc' | 'mobile') {
+		editForm = {
+			...editForm,
+			recordFilterPlatform: platform
+		};
+	}
+
+	function setRecordFilterManualAcceptanceOnly(value: boolean) {
+		editForm = {
+			...editForm,
+			recordFilterManualAcceptanceOnly: value
+		};
+	}
+
+	function updateRecordFilterRefreshRate(
+		field: 'recordFilterMinRefreshRate' | 'recordFilterMaxRefreshRate',
+		event: Event
+	) {
+		const target = event.currentTarget;
+
+		if (!(target instanceof HTMLInputElement)) {
+			return;
+		}
+
+		const nextValue = target.value.trim();
+
+		editForm = {
+			...editForm,
+			[field]: nextValue.length ? Number.parseInt(nextValue, 10) : null
+		};
+	}
+
+	function formatRecordFilterPlatformOption(platform: 'any' | 'pc' | 'mobile') {
+		if (platform === 'pc') return $_('custom_lists.manage.record_filter.platform_pc');
+		if (platform === 'mobile') return $_('custom_lists.manage.record_filter.platform_mobile');
+		return $_('custom_lists.manage.record_filter.platform_any');
+	}
+
 	function getImageExtension(file: File) {
 		const normalizedType = file.type.toLowerCase();
 		if (normalizedType === 'image/x-icon' || normalizedType === 'image/vnd.microsoft.icon') return 'ico';
@@ -1317,7 +1382,11 @@
 				minRating: rankBadge.minRating,
 				minTop: rankBadge.minTop
 			})),
-			weightFormula: editForm.weightFormula
+			weightFormula: editForm.weightFormula,
+			recordFilterPlatform: editForm.recordFilterPlatform,
+			recordFilterMinRefreshRate: editForm.recordFilterMinRefreshRate,
+			recordFilterMaxRefreshRate: editForm.recordFilterMaxRefreshRate,
+			recordFilterManualAcceptanceOnly: editForm.recordFilterManualAcceptanceOnly
 		};
 	}
 
@@ -2131,6 +2200,10 @@
 		if (field === 'logoUrl') return $_('custom_lists.detail.edit.logo_url_label');
 		if (field === 'mode') return $_('custom_lists.detail.edit.mode_label');
 		if (field === 'rankBadges') return $_('custom_lists.detail.edit.rank_badges_label');
+		if (field === 'recordFilterPlatform') return $_('custom_lists.manage.record_filter.platform_label');
+		if (field === 'recordFilterMinRefreshRate') return $_('custom_lists.manage.record_filter.min_refresh_rate_label');
+		if (field === 'recordFilterMaxRefreshRate') return $_('custom_lists.manage.record_filter.max_refresh_rate_label');
+		if (field === 'recordFilterManualAcceptanceOnly') return $_('custom_lists.manage.record_filter.acceptance_label');
 		if (field === 'tags') return $_('custom_lists.detail.edit.tags_label');
 		if (field === 'topEnabled') return $_('custom_lists.detail.edit.top_enabled_label');
 		if (field === 'visibility') return $_('custom_lists.detail.edit.visibility_label');
@@ -2170,6 +2243,16 @@
 				: $_('custom_lists.detail.edit.item_sort_mode_default');
 		}
 
+		if (field === 'recordFilterPlatform' && typeof value === 'string') {
+			if (value === 'pc') return $_('custom_lists.manage.record_filter.platform_pc');
+			if (value === 'mobile') return $_('custom_lists.manage.record_filter.platform_mobile');
+			return $_('custom_lists.manage.record_filter.platform_any');
+		}
+
+		if ((field === 'recordFilterMinRefreshRate' || field === 'recordFilterMaxRefreshRate') && typeof value === 'number') {
+			return `${value} FPS`;
+		}
+
 		if (field === 'isPlatformer' && typeof value === 'boolean') {
 			return value ? $_('custom_lists.type.platformer') : $_('custom_lists.type.classic');
 		}
@@ -2179,6 +2262,12 @@
 			&& typeof value === 'boolean'
 		) {
 			return value ? $_('general.yes') : $_('general.no');
+		}
+
+		if (field === 'recordFilterManualAcceptanceOnly' && typeof value === 'boolean') {
+			return value
+				? $_('custom_lists.manage.record_filter.acceptance_manual_only')
+				: $_('custom_lists.manage.record_filter.acceptance_manual_or_auto');
 		}
 
 		if (field === 'tags' && Array.isArray(value)) {
@@ -2604,10 +2693,18 @@
 		const currentHasUnsavedSettings = hasUnsavedSettings;
 		const currentHasUnsavedLevelEdits = hasUnsavedLevelEdits;
 		const settingsPayload = currentHasUnsavedSettings ? buildSettingsMutationPayload() : undefined;
-		const formulaChanged = Boolean(
+		const savedSettingsSnapshot = list ? getSavedSettingsSnapshot(list) : null;
+		const editableSettingsSnapshot = getEditableSettingsSnapshot(editForm);
+		const leaderboardConfigChanged = Boolean(
 			currentHasUnsavedSettings
-			&& list
-			&& getEditableSettingsSnapshot(editForm).weightFormula !== getSavedSettingsSnapshot(list)?.weightFormula
+			&& savedSettingsSnapshot
+			&& (
+				editableSettingsSnapshot.weightFormula !== savedSettingsSnapshot.weightFormula
+				|| editableSettingsSnapshot.recordFilterPlatform !== savedSettingsSnapshot.recordFilterPlatform
+				|| editableSettingsSnapshot.recordFilterMinRefreshRate !== savedSettingsSnapshot.recordFilterMinRefreshRate
+				|| editableSettingsSnapshot.recordFilterMaxRefreshRate !== savedSettingsSnapshot.recordFilterMaxRefreshRate
+				|| editableSettingsSnapshot.recordFilterManualAcceptanceOnly !== savedSettingsSnapshot.recordFilterManualAcceptanceOnly
+			)
 		);
 		let nextList = list;
 		const totalPendingLevelChanges = currentPendingLevelAdditions.length + currentDeletionDraftIds.length + Object.keys(currentDrafts).length + Object.keys(currentPendingOrderDrafts).length;
@@ -2710,7 +2807,7 @@
 				})
 				: $_('custom_lists.toast.list_updated'));
 
-			if (formulaChanged) {
+			if (leaderboardConfigChanged) {
 				await refreshLeaderboardPrecalc({ reloadList: true });
 			}
 		} catch (error) {
@@ -3045,6 +3142,10 @@
 							<Calculator class="h-4 w-4" />
 							<span>{$_('custom_lists.manage.tabs.formula')}</span>
 						</Tabs.Trigger>
+						<Tabs.Trigger value="record-filter" class="manageTab">
+							<Filter class="h-4 w-4" />
+							<span>{$_('custom_lists.manage.tabs.record_filter')}</span>
+						</Tabs.Trigger>
 						<Tabs.Trigger value="rank" class="manageTab">
 							<Award class="h-4 w-4" />
 							<span>{$_('custom_lists.manage.tabs.rank')}</span>
@@ -3099,6 +3200,81 @@
 
 				<Tabs.Content value="formula">
 					<FormulaTab bind:editForm />
+				</Tabs.Content>
+
+				<Tabs.Content value="record-filter">
+					<div class="recordFilterTabContent">
+						<div class="toolCard">
+							<h2 class="toolHeading">{$_('custom_lists.manage.record_filter.heading')}</h2>
+							<div class="recordFilterFormGrid">
+								<div class="recordFilterField">
+									<span class="recordFilterFieldLabel">{$_('custom_lists.manage.record_filter.platform_label')}</span>
+									<div class="recordFilterOptionRow">
+										{#each RECORD_FILTER_PLATFORM_OPTIONS as platform}
+											<button
+												type="button"
+												class="recordFilterOptionBtn"
+												class:selected={editForm.recordFilterPlatform === platform}
+												on:click={() => setRecordFilterPlatform(platform)}
+											>
+												{formatRecordFilterPlatformOption(platform)}
+											</button>
+										{/each}
+									</div>
+									<p class="hint">{$_('custom_lists.manage.record_filter.platform_hint')}</p>
+								</div>
+
+								<div class="recordFilterField">
+									<span class="recordFilterFieldLabel">{$_('custom_lists.manage.record_filter.acceptance_label')}</span>
+									<div class="recordFilterOptionRow">
+										<button
+											type="button"
+											class="recordFilterOptionBtn"
+											class:selected={editForm.recordFilterManualAcceptanceOnly}
+											on:click={() => setRecordFilterManualAcceptanceOnly(true)}
+										>
+											{$_('custom_lists.manage.record_filter.acceptance_manual_only')}
+										</button>
+										<button
+											type="button"
+											class="recordFilterOptionBtn"
+											class:selected={!editForm.recordFilterManualAcceptanceOnly}
+											on:click={() => setRecordFilterManualAcceptanceOnly(false)}
+										>
+											{$_('custom_lists.manage.record_filter.acceptance_manual_or_auto')}
+										</button>
+									</div>
+									<p class="hint">{$_('custom_lists.manage.record_filter.acceptance_hint')}</p>
+								</div>
+
+								<div class="recordFilterFieldGroup">
+									<div class="recordFilterField">
+										<label for="list-record-filter-min-refresh-rate">{$_('custom_lists.manage.record_filter.min_refresh_rate_label')}</label>
+										<input
+											id="list-record-filter-min-refresh-rate"
+											type="number"
+											inputmode="numeric"
+											min="1"
+											value={editForm.recordFilterMinRefreshRate ?? ''}
+											on:input={(event) => updateRecordFilterRefreshRate('recordFilterMinRefreshRate', event)}
+										/>
+									</div>
+									<div class="recordFilterField">
+										<label for="list-record-filter-max-refresh-rate">{$_('custom_lists.manage.record_filter.max_refresh_rate_label')}</label>
+										<input
+											id="list-record-filter-max-refresh-rate"
+											type="number"
+											inputmode="numeric"
+											min="1"
+											value={editForm.recordFilterMaxRefreshRate ?? ''}
+											on:input={(event) => updateRecordFilterRefreshRate('recordFilterMaxRefreshRate', event)}
+										/>
+									</div>
+								</div>
+								<p class="hint">{$_('custom_lists.manage.record_filter.refresh_rate_hint')}</p>
+							</div>
+						</div>
+					</div>
 				</Tabs.Content>
 
 				<Tabs.Content value="rank">
@@ -3647,6 +3823,71 @@
 		font-weight: 600;
 	}
 
+	.recordFilterTabContent {
+		margin-top: 16px;
+	}
+
+	.recordFilterFormGrid {
+		display: grid;
+		gap: 14px;
+	}
+
+	.recordFilterFieldGroup {
+		display: grid;
+		gap: 14px;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.recordFilterField {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.recordFilterFieldLabel,
+	.recordFilterField label {
+		font-size: 0.9rem;
+		font-weight: 500;
+	}
+
+	.recordFilterField input {
+		width: 100%;
+		border-radius: 10px;
+		border: 1px solid hsl(var(--border));
+		background: hsl(var(--background));
+		padding: 9px 12px;
+		color: hsl(var(--foreground));
+	}
+
+	.recordFilterOptionRow {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	.recordFilterOptionBtn {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		border: 1px solid hsl(var(--border));
+		background: transparent;
+		color: hsl(var(--foreground));
+		padding: 7px 14px;
+		border-radius: 999px;
+		cursor: pointer;
+		font-size: 0.85rem;
+		transition: background 0.15s ease, border-color 0.15s ease;
+	}
+
+	.recordFilterOptionBtn:hover {
+		background: hsl(var(--muted) / 0.5);
+	}
+
+	.recordFilterOptionBtn.selected {
+		background: hsl(var(--primary) / 0.12);
+		border-color: hsl(var(--primary));
+	}
+
 	.hint {
 		font-size: 0.82rem;
 		color: hsl(var(--muted-foreground));
@@ -3992,6 +4233,10 @@
 
 		.toolCard {
 			padding: 16px;
+		}
+
+		.recordFilterFieldGroup {
+			grid-template-columns: 1fr;
 		}
 
 		.tabRail :global(.manageTab) {

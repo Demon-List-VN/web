@@ -1992,15 +1992,32 @@
       "mode_top_hint": "Sắp xếp level theo thứ tự tuỳ chỉnh bằng cách kéo thả."
     },
     "manage": {
+      "title": "Quản lý",
       "tabs": {
         "basic": "Thông tin cơ bản",
         "appearance": "Giao diện",
         "formula": "Công thức",
+        "record_filter": "Bộ lọc record",
         "rank": "Hạng",
         "danger": "Nguy hiểm",
         "levels": "Levels",
         "collaboration": "Cộng tác",
         "submissions": "Nộp level"
+      },
+      "record_filter": {
+        "heading": "Bộ lọc record cho bảng xếp hạng",
+        "platform_label": "Nền tảng",
+        "platform_hint": "Chọn nền tảng thiết bị nào sẽ được tính vào bảng xếp hạng của danh sách này.",
+        "platform_any": "Mọi nền tảng",
+        "platform_pc": "Chỉ PC",
+        "platform_mobile": "Chỉ Mobile",
+        "acceptance_label": "Chế độ chấp nhận",
+        "acceptance_hint": "Chế độ chỉ chấp nhận thủ công sẽ giữ nguyên hành vi hiện tại. Chuyển sang thủ công hoặc tự động khi muốn record được tự động chấp nhận cũng được tính.",
+        "acceptance_manual_only": "Chỉ thủ công",
+        "acceptance_manual_or_auto": "Thủ công hoặc tự động",
+        "min_refresh_rate_label": "FPS tối thiểu",
+        "max_refresh_rate_label": "FPS tối đa",
+        "refresh_rate_hint": "Để trống một trong hai ô nếu không muốn lọc ở phía đó của khoảng FPS."
       },
       "roles": {
         "owner": "Chủ sở hữu",
