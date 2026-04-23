@@ -7,7 +7,7 @@
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import { isActive } from '$lib/client/isSupporterActive';
-	import { Plus, Save, Trash2 } from 'lucide-svelte';
+	import { ArrowUpDown, Crown, Plus, Save, Search, Trash2, UserPlus, X } from 'lucide-svelte';
 	import { _ } from 'svelte-i18n';
 
 	type CollaboratorRole = 'admin' | 'helper';
@@ -31,13 +31,119 @@
 	export let formatDateTime: (value: string) => string = () => '';
 
 	let adminsCanManageHelpers = false;
-	let memberSearchLoading = false;
-	let memberSearchQuery = '';
-	let memberSearchResults: any[] = [];
-	let selectedMember: any | null = null;
-	let collaboratorRole: CollaboratorRole = 'helper';
+
+	// Local filter for the existing staff list
+	let memberFilter = '';
+
+	// Add-collaborator dialog state
+	let showAddDialog = false;
+	let addSearchQuery = '';
+	let addSearchLoading = false;
+	let addSearchResults: any[] = [];
+	let addSelectedPlayer: any | null = null;
+	let addSelectedRole: CollaboratorRole = 'helper';
+
+	// Audit detail dialog state
 	let auditDetailEntry: any = null;
 	let showAuditDetailDialog = false;
+
+	$: if (list) {
+		adminsCanManageHelpers = Boolean(list.adminsCanManageHelpers);
+	}
+
+	$: filteredMembers = filterMembers(list?.members ?? [], memberFilter);
+
+	$: addDialogExistingMember = addSelectedPlayer?.uid ? getMemberByUid(addSelectedPlayer.uid) : null;
+
+	function filterMembers(members: any[], query: string) {
+		const q = query.trim().toLowerCase();
+		if (!q) return members;
+		return members.filter((member: any) => {
+			const name = (member.playerData?.name || '').toLowerCase();
+			const uid = (member.uid || '').toLowerCase();
+			return name.includes(q) || uid.includes(q);
+		});
+	}
+
+	function getMemberByUid(uid: string | null | undefined) {
+		if (!uid || !list?.members) return null;
+		return list.members.find((member: any) => member.uid === uid) ?? null;
+	}
+
+	function getPlayerName(player: any, fallbackUid?: string | null) {
+		return player?.name || fallbackUid || $_('custom_lists.manage.collaboration.unknown_player');
+	}
+
+	function getAvatarSrc(player: any) {
+		if (!player?.uid) return '';
+		const extension = isActive(player.supporterUntil) && player.isAvatarGif ? '.gif' : '.jpg';
+		const version = player.avatarVersion ?? 0;
+		return `https://cdn.gdvn.net/avatars/${player.uid}${extension}?version=${version}`;
+	}
+
+	function getAvatarFallback(player: any) {
+		const label = getPlayerName(player, player?.uid).trim();
+		return label ? label[0].toUpperCase() : '?';
+	}
+
+	async function saveCollaborationSettings() {
+		await updateCollaborationSettings(adminsCanManageHelpers);
+	}
+
+	function openAddDialog() {
+		addSearchQuery = '';
+		addSearchResults = [];
+		addSelectedPlayer = null;
+		addSelectedRole = 'helper';
+		showAddDialog = true;
+	}
+
+	async function runAddDialogSearch() {
+		const query = addSearchQuery.trim();
+		if (!query.length) {
+			addSearchResults = [];
+			return;
+		}
+		addSearchLoading = true;
+		try {
+			const results = await searchPlayersForCollaboration(query);
+			addSearchResults = (Array.isArray(results) ? results : []).filter(
+				(player: any) => player?.uid && player.uid !== list?.owner
+			);
+		} finally {
+			addSearchLoading = false;
+		}
+	}
+
+	function selectAddDialogPlayer(player: any) {
+		addSelectedPlayer = player;
+		const existing = getMemberByUid(player?.uid);
+		addSelectedRole = existing?.role === 'admin' ? 'admin' : 'helper';
+	}
+
+	function clearAddDialogSelection() {
+		addSelectedPlayer = null;
+		addSelectedRole = 'helper';
+	}
+
+	async function confirmAddDialog() {
+		if (!addSelectedPlayer) return;
+		const role = canConfigureCollaboration ? addSelectedRole : 'helper';
+		if (addDialogExistingMember) {
+			if (addDialogExistingMember.role !== role) {
+				await updateCollaboratorRole(addDialogExistingMember, role);
+			}
+		} else {
+			await addCollaborator(addSelectedPlayer, role);
+		}
+		showAddDialog = false;
+	}
+
+	async function transferFromAddDialog() {
+		if (!addSelectedPlayer) return;
+		await transferOwnership(addSelectedPlayer);
+		showAddDialog = false;
+	}
 
 	function openAuditDetail(entry: any) {
 		auditDetailEntry = entry;
@@ -58,39 +164,6 @@
 	function auditEntryHasChangeDetails(entry: any) {
 		const metadata = entry?.metadata && typeof entry.metadata === 'object' ? entry.metadata : {};
 		return Boolean(metadata.changes && typeof metadata.changes === 'object' && Object.keys(metadata.changes).length);
-	}
-
-	$: if (list) {
-		adminsCanManageHelpers = Boolean(list.adminsCanManageHelpers);
-	}
-
-	$: selectedExistingMember = selectedMember?.uid ? getMemberByUid(selectedMember.uid) : null;
-
-	function getPlayerName(player: any, fallbackUid?: string | null) {
-		return player?.name || fallbackUid || $_('custom_lists.manage.collaboration.unknown_player');
-	}
-
-	function getMemberByUid(uid: string | null | undefined) {
-		if (!uid || !list?.members) {
-			return null;
-		}
-
-		return list.members.find((member: any) => member.uid === uid) ?? null;
-	}
-
-	function getAvatarSrc(player: any) {
-		if (!player?.uid) {
-			return '';
-		}
-
-		const extension = isActive(player.supporterUntil) && player.isAvatarGif ? '.gif' : '.jpg';
-		const version = player.avatarVersion ?? 0;
-		return `https://cdn.gdvn.net/avatars/${player.uid}${extension}?version=${version}`;
-	}
-
-	function getAvatarFallback(player: any) {
-		const label = getPlayerName(player, player?.uid).trim();
-		return label ? label[0].toUpperCase() : '?';
 	}
 
 	function humanizeAuditField(field: string) {
@@ -294,73 +367,22 @@
 
 		return actor;
 	}
-
-	async function saveCollaborationSettings() {
-		await updateCollaborationSettings(adminsCanManageHelpers);
-	}
-
-	async function runPlayerSearch() {
-		const query = memberSearchQuery.trim();
-
-		if (!query.length) {
-			memberSearchResults = [];
-			return;
-		}
-
-		memberSearchLoading = true;
-
-		try {
-			const results = await searchPlayersForCollaboration(query);
-			memberSearchResults = (Array.isArray(results) ? results : []).filter((player: any) => player?.uid !== list?.owner);
-		} finally {
-			memberSearchLoading = false;
-		}
-	}
-
-	function selectCollaborationMember(player: any) {
-		selectedMember = player;
-		memberSearchQuery = getPlayerName(player, player?.uid);
-		memberSearchResults = [];
-		const existingMember = getMemberByUid(player?.uid);
-		if (existingMember?.role === 'admin' || existingMember?.role === 'helper') {
-			collaboratorRole = existingMember.role;
-		} else {
-			collaboratorRole = 'helper';
-		}
-	}
-
-	function clearSelectedMember() {
-		selectedMember = null;
-		memberSearchQuery = '';
-		memberSearchResults = [];
-		collaboratorRole = 'helper';
-	}
-
-	async function addSelectedCollaborator() {
-		if (!selectedMember) return;
-		await addCollaborator(selectedMember, canConfigureCollaboration ? collaboratorRole : 'helper');
-	}
-
-	async function transferSelectedOwnership() {
-		if (!selectedMember) return;
-		await transferOwnership(selectedMember);
-	}
 </script>
 
 <div class="tabContent">
 	{#if canConfigureCollaboration}
-		<div class="toolCard">
-			<h2 class="toolHeading">{$_('custom_lists.manage.collaboration.settings_title')}</h2>
-			<div class="field">
-				<div class="switchRow">
-					<div>
-						<label for="admins-can-manage-helpers">{$_('custom_lists.manage.collaboration.admin_helper_toggle_label')}</label>
-						<p class="hint">{$_('custom_lists.manage.collaboration.admin_helper_toggle_hint')}</p>
-					</div>
-					<div class="switchControl">
-						<span class="switchLabel">{adminsCanManageHelpers ? $_('general.yes') : $_('general.no')}</span>
-						<Switch id="admins-can-manage-helpers" bind:checked={adminsCanManageHelpers} />
-					</div>
+		<section class="card">
+			<header class="cardHead">
+				<h2 class="cardTitle">{$_('custom_lists.manage.collaboration.settings_title')}</h2>
+			</header>
+			<div class="switchRow">
+				<div class="switchCopy">
+					<label for="admins-can-manage-helpers">{$_('custom_lists.manage.collaboration.admin_helper_toggle_label')}</label>
+					<p class="hint">{$_('custom_lists.manage.collaboration.admin_helper_toggle_hint')}</p>
+				</div>
+				<div class="switchControl">
+					<span class="switchLabel">{adminsCanManageHelpers ? $_('general.yes') : $_('general.no')}</span>
+					<Switch id="admins-can-manage-helpers" bind:checked={adminsCanManageHelpers} />
 				</div>
 			</div>
 			<div class="formActions">
@@ -369,146 +391,104 @@
 					{$_('custom_lists.detail.edit.save')}
 				</Button>
 			</div>
-		</div>
+		</section>
 	{/if}
 
 	{#if canViewMembers || canManageMembers || canTransferOwnership}
-		<div class="toolCard">
-			<h2 class="toolHeading">{$_('custom_lists.manage.collaboration.members_title')}</h2>
-			<div class="field">
-				<label for="collaboration-player-search">{$_('custom_lists.manage.collaboration.search_label')}</label>
-				<div class="searchRow">
-					<Input
-						id="collaboration-player-search"
-						bind:value={memberSearchQuery}
-						placeholder={$_('custom_lists.manage.collaboration.search_placeholder')}
-						on:keydown={(event) => event.key === 'Enter' && runPlayerSearch()}
-					/>
-					<Button variant="outline" on:click={runPlayerSearch} disabled={memberSearchLoading}>
-						{memberSearchLoading ? `${$_('general.loading')}...` : $_('custom_lists.manage.collaboration.search_button')}
+		<section class="card">
+			<header class="cardHead cardHeadSplit">
+				<div class="cardHeadCopy">
+					<h2 class="cardTitle">{$_('custom_lists.manage.collaboration.members_title')}</h2>
+					<p class="hint">{$_('custom_lists.manage.collaboration.search_hint')}</p>
+				</div>
+				{#if canManageMembers}
+					<Button on:click={openAddDialog} disabled={savingCollaboration}>
+						<UserPlus class="mr-2 h-4 w-4" />
+						{$_('custom_lists.manage.collaboration.add_button')}
 					</Button>
-				</div>
-				<p class="hint">{$_('custom_lists.manage.collaboration.search_hint')}</p>
-			</div>
-
-			{#if memberSearchResults.length}
-				<div class="searchResults">
-					{#each memberSearchResults as player}
-						<button type="button" class="searchResult" on:click={() => selectCollaborationMember(player)}>
-							<div class="searchResultMain">
-								<Avatar.Root class="h-10 w-10 flex-shrink-0">
-									<Avatar.Image
-										class="h-full w-full rounded-full object-cover"
-										src={getAvatarSrc(player)}
-										alt={getPlayerName(player, player?.uid)}
-									/>
-									<Avatar.Fallback class="inline-flex h-full w-full items-center justify-center rounded-full text-[0.95rem] font-bold">
-										{getAvatarFallback(player)}
-									</Avatar.Fallback>
-								</Avatar.Root>
-								<div class="searchResultCopy">
-									<span class="searchResultName">{getPlayerName(player, player?.uid)}</span>
-									<span class="searchResultMeta">{player.uid}</span>
-								</div>
-							</div>
-						</button>
-					{/each}
-				</div>
-			{/if}
-
-			{#if selectedMember}
-				<div class="selectedMemberCard">
-					<div class="selectedMemberInfo">
-						<div class="memberNameRow">
-							<PlayerLink player={selectedMember} showAvatar />
-							{#if selectedExistingMember}
-								<Badge variant="outline">{getRoleLabel(selectedExistingMember.role)}</Badge>
-							{/if}
-						</div>
-						<span class="searchResultMeta">{selectedMember.uid}</span>
-					</div>
-					{#if canConfigureCollaboration}
-						<div class="optionRow">
-							<button
-								type="button"
-								class="optionBtn"
-								class:selected={collaboratorRole === 'helper'}
-								on:click={() => (collaboratorRole = 'helper')}
-							>
-								{$_('custom_lists.manage.roles.helper')}
-							</button>
-							<button
-								type="button"
-								class="optionBtn"
-								class:selected={collaboratorRole === 'admin'}
-								on:click={() => (collaboratorRole = 'admin')}
-							>
-								{$_('custom_lists.manage.roles.admin')}
-							</button>
-						</div>
-					{/if}
-					{#if selectedExistingMember}
-						<p class="hint">
-							{$_('custom_lists.manage.collaboration.selected_member_existing', {
-								values: {
-									role: getRoleLabel(selectedExistingMember.role || 'helper')
-								}
-							})}
-						</p>
-					{/if}
-					<div class="formActions">
-						{#if canManageMembers && !selectedExistingMember}
-							<Button on:click={addSelectedCollaborator} disabled={savingCollaboration}>
-								<Plus class="mr-2 h-4 w-4" />
-								{$_('custom_lists.manage.collaboration.add_button')}
-							</Button>
-						{:else if canConfigureCollaboration && selectedExistingMember && selectedExistingMember.role !== collaboratorRole}
-							<Button on:click={() => updateCollaboratorRole(selectedExistingMember, collaboratorRole)} disabled={savingCollaboration}>
-								<Save class="mr-2 h-4 w-4" />
-								{$_('custom_lists.manage.collaboration.update_role_button')}
-							</Button>
-						{/if}
-						{#if canTransferOwnership}
-							<Button variant="outline" on:click={transferSelectedOwnership} disabled={savingCollaboration}>
-								{$_('custom_lists.manage.collaboration.transfer_button')}
-							</Button>
-						{/if}
-						<Button variant="ghost" on:click={clearSelectedMember} disabled={savingCollaboration}>
-							{$_('general.reset')}
-						</Button>
-					</div>
-				</div>
-			{/if}
+				{/if}
+			</header>
 
 			{#if canViewMembers}
-				<div class="memberList">
-					<div class="memberRow">
-						<div class="memberInfo">
-							<div class="memberNameRow">
-								{#if list.ownerData}
-									<PlayerLink player={list.ownerData} showAvatar />
-								{:else}
-									<span class="memberFallbackName">{list.owner}</span>
-								{/if}
-								<Badge variant="secondary">{$_('custom_lists.manage.roles.owner')}</Badge>
-							</div>
-							<p class="hint">{$_('custom_lists.manage.collaboration.owner_hint')}</p>
-						</div>
+				<div class="filterRow">
+					<div class="filterInput">
+						<Search class="filterIcon h-4 w-4" aria-hidden="true" />
+						<Input
+							bind:value={memberFilter}
+							placeholder={$_('custom_lists.manage.collaboration.search_placeholder')}
+						/>
+						{#if memberFilter}
+							<button
+								type="button"
+								class="filterClear"
+								on:click={() => (memberFilter = '')}
+								aria-label={$_('general.close')}
+							>
+								<X class="h-3.5 w-3.5" />
+							</button>
+						{/if}
 					</div>
+				</div>
 
-					{#if list.members?.length}
-						{#each list.members as member}
-							<div class="memberRow">
-								<div class="memberInfo">
-									<div class="memberNameRow">
-										{#if member.playerData}
-											<PlayerLink player={member.playerData} showAvatar />
-										{:else}
-											<span class="memberFallbackName">{member.uid}</span>
-										{/if}
-										<Badge variant="outline">{getRoleLabel(member.role)}</Badge>
+				<ul class="memberList">
+					<li class="memberRow ownerRow">
+						<div class="memberMain">
+							<Avatar.Root class="h-10 w-10 flex-shrink-0">
+								<Avatar.Image
+									class="h-full w-full rounded-full object-cover"
+									src={getAvatarSrc(list.ownerData)}
+									alt={getPlayerName(list.ownerData, list.owner)}
+								/>
+								<Avatar.Fallback class="inline-flex h-full w-full items-center justify-center rounded-full text-[0.95rem] font-bold">
+									{getAvatarFallback(list.ownerData ?? { uid: list.owner })}
+								</Avatar.Fallback>
+							</Avatar.Root>
+							<div class="memberCopy">
+								<div class="memberNameRow">
+									{#if list.ownerData}
+										<PlayerLink player={list.ownerData} />
+									{:else}
+										<span class="memberFallbackName">{list.owner}</span>
+									{/if}
+									<Badge variant="secondary" class="roleBadge">
+										<Crown class="mr-1 h-3 w-3" />
+										{$_('custom_lists.manage.roles.owner')}
+									</Badge>
+								</div>
+								<span class="memberMeta">{$_('custom_lists.manage.collaboration.owner_hint')}</span>
+							</div>
+						</div>
+					</li>
+
+					{#if filteredMembers.length}
+						{#each filteredMembers as member (member.uid)}
+							<li class="memberRow">
+								<div class="memberMain">
+									<Avatar.Root class="h-10 w-10 flex-shrink-0">
+										<Avatar.Image
+											class="h-full w-full rounded-full object-cover"
+											src={getAvatarSrc(member.playerData)}
+											alt={getPlayerName(member.playerData, member.uid)}
+										/>
+										<Avatar.Fallback class="inline-flex h-full w-full items-center justify-center rounded-full text-[0.95rem] font-bold">
+											{getAvatarFallback(member.playerData ?? { uid: member.uid })}
+										</Avatar.Fallback>
+									</Avatar.Root>
+									<div class="memberCopy">
+										<div class="memberNameRow">
+											{#if member.playerData}
+												<PlayerLink player={member.playerData} />
+											{:else}
+												<span class="memberFallbackName">{member.uid}</span>
+											{/if}
+											<Badge variant={member.role === 'admin' ? 'default' : 'outline'} class="roleBadge">
+												{getRoleLabel(member.role)}
+											</Badge>
+										</div>
+										<span class="memberMeta">
+											{$_('custom_lists.manage.collaboration.member_since', { values: { date: formatDate(member.created_at) } })}
+										</span>
 									</div>
-									<p class="hint">{$_('custom_lists.manage.collaboration.member_since', { values: { date: formatDate(member.created_at) } })}</p>
 								</div>
 								<div class="memberActions">
 									{#if canConfigureCollaboration}
@@ -518,9 +498,21 @@
 											on:click={() => updateCollaboratorRole(member, member.role === 'admin' ? 'helper' : 'admin')}
 											disabled={savingCollaboration}
 										>
+											<ArrowUpDown class="mr-1.5 h-3.5 w-3.5" />
 											{member.role === 'admin'
 												? $_('custom_lists.manage.collaboration.demote_button')
 												: $_('custom_lists.manage.collaboration.promote_button')}
+										</Button>
+									{/if}
+									{#if canTransferOwnership}
+										<Button
+											variant="outline"
+											size="sm"
+											on:click={() => transferOwnership(member.playerData ?? { uid: member.uid, name: member.uid })}
+											disabled={savingCollaboration}
+										>
+											<Crown class="mr-1.5 h-3.5 w-3.5" />
+											{$_('custom_lists.manage.collaboration.transfer_button')}
 										</Button>
 									{/if}
 									{#if canManageMembers && (canConfigureCollaboration || member.role === 'helper')}
@@ -535,28 +527,28 @@
 										</Button>
 									{/if}
 								</div>
-							</div>
+							</li>
 						{/each}
+					{:else if memberFilter.trim().length}
+						<li class="emptyRow">{$_('custom_lists.manage.collaboration.members_empty')}</li>
 					{:else}
-						<p class="hint">{$_('custom_lists.manage.collaboration.members_empty')}</p>
+						<li class="emptyRow">{$_('custom_lists.manage.collaboration.members_empty')}</li>
 					{/if}
-				</div>
+				</ul>
 			{/if}
-		</div>
+		</section>
 	{/if}
 
 	{#if canViewAudit}
-		<div class="toolCard">
-			<h2 class="toolHeading">{$_('custom_lists.manage.collaboration.audit_title')}</h2>
-			<p class="hint">{$_('custom_lists.manage.collaboration.audit_hint')}</p>
+		<section class="card">
+			<header class="cardHead">
+				<h2 class="cardTitle">{$_('custom_lists.manage.collaboration.audit_title')}</h2>
+				<p class="hint">{$_('custom_lists.manage.collaboration.audit_hint')}</p>
+			</header>
 			{#if list.auditLog?.length}
 				<div class="auditList">
 					{#each list.auditLog as entry}
-						<button
-							type="button"
-							class="auditRow auditRowButton"
-							on:click={() => openAuditDetail(entry)}
-						>
+						<button type="button" class="auditRow" on:click={() => openAuditDetail(entry)}>
 							<div class="auditRowHeader">
 								<strong>{getAuditActionLabel(entry.action)}</strong>
 								<span class="auditTimestamp">{formatDateTime(entry.created_at)}</span>
@@ -568,9 +560,134 @@
 			{:else}
 				<p class="hint">{$_('custom_lists.manage.collaboration.audit_empty')}</p>
 			{/if}
-		</div>
+		</section>
 	{/if}
 </div>
+
+<!-- Add collaborator dialog -->
+<Dialog.Root bind:open={showAddDialog}>
+	<Dialog.Content class="max-w-[560px]">
+		<Dialog.Header>
+			<Dialog.Title>{$_('custom_lists.manage.collaboration.add_button')}</Dialog.Title>
+		</Dialog.Header>
+
+		<div class="addDialog">
+			<div class="field">
+				<label for="add-collab-search">{$_('custom_lists.manage.collaboration.search_label')}</label>
+				<div class="searchRow">
+					<Input
+						id="add-collab-search"
+						bind:value={addSearchQuery}
+						placeholder={$_('custom_lists.manage.collaboration.search_placeholder')}
+						on:keydown={(event) => event.key === 'Enter' && runAddDialogSearch()}
+					/>
+					<Button variant="outline" on:click={runAddDialogSearch} disabled={addSearchLoading}>
+						{addSearchLoading ? `${$_('general.loading')}...` : $_('custom_lists.manage.collaboration.search_button')}
+					</Button>
+				</div>
+			</div>
+
+			{#if addSearchResults.length && !addSelectedPlayer}
+				<div class="dialogSearchResults">
+					{#each addSearchResults as player (player.uid)}
+						<button type="button" class="dialogSearchResult" on:click={() => selectAddDialogPlayer(player)}>
+							<Avatar.Root class="h-10 w-10 flex-shrink-0">
+								<Avatar.Image
+									class="h-full w-full rounded-full object-cover"
+									src={getAvatarSrc(player)}
+									alt={getPlayerName(player, player?.uid)}
+								/>
+								<Avatar.Fallback class="inline-flex h-full w-full items-center justify-center rounded-full text-[0.95rem] font-bold">
+									{getAvatarFallback(player)}
+								</Avatar.Fallback>
+							</Avatar.Root>
+							<div class="dialogSearchResultCopy">
+								<span class="dialogSearchResultName">{getPlayerName(player, player?.uid)}</span>
+								<span class="dialogSearchResultMeta">{player.uid}</span>
+							</div>
+						</button>
+					{/each}
+				</div>
+			{/if}
+
+			{#if addSelectedPlayer}
+				<div class="selectedCard">
+					<div class="selectedHead">
+						<Avatar.Root class="h-12 w-12 flex-shrink-0">
+							<Avatar.Image
+								class="h-full w-full rounded-full object-cover"
+								src={getAvatarSrc(addSelectedPlayer)}
+								alt={getPlayerName(addSelectedPlayer, addSelectedPlayer?.uid)}
+							/>
+							<Avatar.Fallback class="inline-flex h-full w-full items-center justify-center rounded-full text-[0.95rem] font-bold">
+								{getAvatarFallback(addSelectedPlayer)}
+							</Avatar.Fallback>
+						</Avatar.Root>
+						<div class="dialogSearchResultCopy">
+							<span class="dialogSearchResultName">{getPlayerName(addSelectedPlayer, addSelectedPlayer?.uid)}</span>
+							<span class="dialogSearchResultMeta">{addSelectedPlayer.uid}</span>
+						</div>
+						<Button variant="ghost" size="sm" on:click={clearAddDialogSelection} disabled={savingCollaboration}>
+							<X class="h-4 w-4" />
+						</Button>
+					</div>
+
+					{#if addDialogExistingMember}
+						<p class="hint">
+							{$_('custom_lists.manage.collaboration.selected_member_existing', {
+								values: { role: getRoleLabel(addDialogExistingMember.role || 'helper') }
+							})}
+						</p>
+					{/if}
+
+					{#if canConfigureCollaboration}
+						<div class="optionRow">
+							<button
+								type="button"
+								class="optionBtn"
+								class:selected={addSelectedRole === 'helper'}
+								on:click={() => (addSelectedRole = 'helper')}
+							>
+								{$_('custom_lists.manage.roles.helper')}
+							</button>
+							<button
+								type="button"
+								class="optionBtn"
+								class:selected={addSelectedRole === 'admin'}
+								on:click={() => (addSelectedRole = 'admin')}
+							>
+								{$_('custom_lists.manage.roles.admin')}
+							</button>
+						</div>
+					{/if}
+				</div>
+			{/if}
+		</div>
+
+		<Dialog.Footer>
+			{#if addSelectedPlayer && canTransferOwnership}
+				<Button variant="outline" on:click={transferFromAddDialog} disabled={savingCollaboration}>
+					<Crown class="mr-2 h-4 w-4" />
+					{$_('custom_lists.manage.collaboration.transfer_button')}
+				</Button>
+			{/if}
+			<Button variant="ghost" on:click={() => (showAddDialog = false)} disabled={savingCollaboration}>
+				{$_('general.close')}
+			</Button>
+			{#if addSelectedPlayer}
+				<Button on:click={confirmAddDialog} disabled={savingCollaboration}>
+					{#if addDialogExistingMember}
+						<Save class="mr-2 h-4 w-4" />
+						{$_('custom_lists.manage.collaboration.update_role_button')}
+					{:else}
+						<Plus class="mr-2 h-4 w-4" />
+						{$_('custom_lists.manage.collaboration.add_button')}
+					{/if}
+				</Button>
+			{/if}
+		</Dialog.Footer>
+	</Dialog.Content>
+</Dialog.Root>
 
 <Dialog.Root bind:open={showAuditDetailDialog}>
 	<Dialog.Content class="max-w-[860px]">
@@ -635,20 +752,52 @@
 		margin-top: 16px;
 	}
 
-	.toolCard {
+	.card {
 		background: hsl(var(--card));
 		border: 1px solid hsl(var(--border));
-		border-radius: 12px;
+		border-radius: 14px;
 		padding: 22px;
 		display: flex;
 		flex-direction: column;
 		gap: 16px;
 	}
 
-	.toolHeading {
+	.cardHead {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.cardHeadSplit {
+		flex-direction: row;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 12px;
+		flex-wrap: wrap;
+	}
+
+	.cardHeadCopy {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		min-width: 0;
+	}
+
+	.cardTitle {
 		margin: 0;
 		font-size: 1.1rem;
 		font-weight: 600;
+	}
+
+	.hint {
+		font-size: 0.8rem;
+		color: hsl(var(--muted-foreground));
+		margin: 0;
+	}
+
+	label {
+		font-size: 0.9rem;
+		font-weight: 500;
 	}
 
 	.field {
@@ -657,15 +806,240 @@
 		gap: 6px;
 	}
 
-	label {
+	.switchRow {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 16px;
+		flex-wrap: wrap;
+		padding: 14px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 10px;
+		background: hsl(var(--muted) / 0.12);
+	}
+
+	.switchCopy {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		min-width: 0;
+	}
+
+	.switchControl {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+	}
+
+	.switchLabel {
 		font-size: 0.9rem;
 		font-weight: 500;
 	}
 
-	.hint {
+	.formActions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 10px;
+	}
+
+	.filterRow {
+		display: flex;
+	}
+
+	.filterInput {
+		position: relative;
+		flex: 1;
+		min-width: 0;
+	}
+
+	.filterInput :global(input) {
+		padding-left: 36px;
+		padding-right: 36px;
+	}
+
+	:global(.filterIcon) {
+		position: absolute;
+		left: 12px;
+		top: 50%;
+		transform: translateY(-50%);
+		color: hsl(var(--muted-foreground));
+		pointer-events: none;
+	}
+
+	.filterClear {
+		position: absolute;
+		right: 8px;
+		top: 50%;
+		transform: translateY(-50%);
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 22px;
+		height: 22px;
+		border-radius: 999px;
+		background: transparent;
+		border: none;
+		color: hsl(var(--muted-foreground));
+		cursor: pointer;
+	}
+
+	.filterClear:hover {
+		background: hsl(var(--muted) / 0.5);
+		color: hsl(var(--foreground));
+	}
+
+	.memberList {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.memberRow {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		padding: 12px 14px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 12px;
+		background: hsl(var(--muted) / 0.1);
+	}
+
+	.ownerRow {
+		background: hsl(var(--primary) / 0.06);
+		border-color: hsl(var(--primary) / 0.35);
+	}
+
+	.memberMain {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		min-width: 0;
+		flex: 1;
+	}
+
+	.memberCopy {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		min-width: 0;
+	}
+
+	.memberNameRow {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex-wrap: wrap;
+	}
+
+	.memberFallbackName {
+		font-weight: 600;
+	}
+
+	.memberMeta {
 		font-size: 0.8rem;
 		color: hsl(var(--muted-foreground));
-		margin: 0;
+	}
+
+	.memberActions {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex-wrap: wrap;
+		justify-content: flex-end;
+	}
+
+	.emptyRow {
+		padding: 18px;
+		border: 1px dashed hsl(var(--border));
+		border-radius: 12px;
+		text-align: center;
+		font-size: 0.85rem;
+		color: hsl(var(--muted-foreground));
+		list-style: none;
+	}
+
+	.addDialog {
+		display: flex;
+		flex-direction: column;
+		gap: 14px;
+		max-height: 60vh;
+		overflow-y: auto;
+	}
+
+	.searchRow {
+		display: flex;
+		gap: 8px;
+		flex-wrap: wrap;
+	}
+
+	.searchRow :global(input) {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.dialogSearchResults {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		max-height: 280px;
+		overflow-y: auto;
+		padding-right: 4px;
+	}
+
+	.dialogSearchResult {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 10px 12px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 10px;
+		background: hsl(var(--muted) / 0.1);
+		cursor: pointer;
+		text-align: left;
+		color: inherit;
+		font: inherit;
+	}
+
+	.dialogSearchResult:hover {
+		border-color: hsl(var(--primary));
+		background: hsl(var(--primary) / 0.08);
+	}
+
+	.dialogSearchResultCopy {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		min-width: 0;
+		flex: 1;
+	}
+
+	.dialogSearchResultName {
+		font-weight: 600;
+	}
+
+	.dialogSearchResultMeta {
+		font-size: 0.8rem;
+		color: hsl(var(--muted-foreground));
+	}
+
+	.selectedCard {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		padding: 14px;
+		border: 1px solid hsl(var(--primary) / 0.4);
+		border-radius: 12px;
+		background: hsl(var(--primary) / 0.06);
+	}
+
+	.selectedHead {
+		display: flex;
+		align-items: center;
+		gap: 12px;
 	}
 
 	.optionRow {
@@ -697,110 +1071,32 @@
 		border-color: hsl(var(--primary));
 	}
 
-	.switchRow {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-		flex-wrap: wrap;
-	}
-
-	.switchControl {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-	}
-
-	.switchLabel {
-		font-size: 0.9rem;
-		font-weight: 500;
-	}
-
-	.formActions {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 10px;
-		margin-top: 4px;
-	}
-
-	.searchRow {
-		display: flex;
-		gap: 10px;
-		flex-wrap: wrap;
-	}
-
-	.searchResults,
-	.memberList,
 	.auditList {
 		display: flex;
 		flex-direction: column;
-		gap: 10px;
+		gap: 8px;
 	}
 
-	.searchResult,
-	.memberRow,
-	.auditRow,
-	.selectedMemberCard {
+	.auditRow {
 		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-		padding: 14px;
+		flex-direction: column;
+		gap: 4px;
+		padding: 12px 14px;
 		border: 1px solid hsl(var(--border));
 		border-radius: 10px;
-		background: hsl(var(--muted) / 0.12);
-	}
-
-	.searchResult {
+		background: hsl(var(--muted) / 0.1);
 		cursor: pointer;
 		text-align: left;
+		width: 100%;
+		color: inherit;
+		font: inherit;
 	}
 
-	.searchResult:hover {
+	.auditRow:hover {
 		border-color: hsl(var(--primary));
 		background: hsl(var(--primary) / 0.08);
 	}
 
-	.searchResultMain {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-		min-width: 0;
-	}
-
-	.searchResultCopy {
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-		min-width: 0;
-	}
-
-	.searchResultName,
-	.memberFallbackName {
-		font-weight: 600;
-	}
-
-	.searchResultMeta,
-	.auditTimestamp {
-		font-size: 0.8rem;
-		color: hsl(var(--muted-foreground));
-	}
-
-	.selectedMemberCard,
-	.memberRow,
-	.auditRow {
-		align-items: flex-start;
-	}
-
-	.selectedMemberInfo,
-	.memberInfo {
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-		min-width: 0;
-	}
-
-	.memberNameRow,
 	.auditRowHeader {
 		display: flex;
 		align-items: center;
@@ -808,23 +1104,17 @@
 		flex-wrap: wrap;
 	}
 
-	.memberActions {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		flex-wrap: wrap;
-		justify-content: flex-end;
+	.auditTimestamp {
+		font-size: 0.8rem;
+		color: hsl(var(--muted-foreground));
 	}
 
 	@media (max-width: 760px) {
-		.toolCard {
+		.card {
 			padding: 16px;
 		}
 
-		.searchResult,
-		.selectedMemberCard,
-		.memberRow,
-		.auditRow {
+		.memberRow {
 			flex-direction: column;
 			align-items: stretch;
 		}
@@ -832,20 +1122,6 @@
 		.memberActions {
 			justify-content: flex-start;
 		}
-	}
-
-	.auditRowButton {
-		cursor: pointer;
-		text-align: left;
-		width: 100%;
-		flex-direction: column;
-		color: inherit;
-		font: inherit;
-	}
-
-	.auditRowButton:hover {
-		border-color: hsl(var(--primary));
-		background: hsl(var(--primary) / 0.08);
 	}
 
 	.auditDetailDialog {
