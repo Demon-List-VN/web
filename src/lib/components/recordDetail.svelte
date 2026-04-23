@@ -23,6 +23,10 @@
 	export let levelID: number;
 	export let open: boolean;
 	export let selectedTab: string = 'detail';
+	// Optional specific row id. When provided, fetch this exact record row.
+	// Used by the reviewer flow so the pending replacement row is loaded
+	// instead of the now-preferred accepted row.
+	export let recordId: number | null = null;
 
 	let record: any = null;
 	let chart: any = null;
@@ -105,7 +109,11 @@
 		};
 
 		tmp.data = await (
-			await fetch(`${import.meta.env.VITE_API_URL}/records/${uid}/${levelID}`)
+			await fetch(
+				recordId != null
+					? `${import.meta.env.VITE_API_URL}/records/${uid}/${levelID}?id=${recordId}`
+					: `${import.meta.env.VITE_API_URL}/records/${uid}/${levelID}`
+			)
 		).json();
 
 		try {
@@ -192,6 +200,7 @@
 		const data = {
 			userid: record.data.userid,
 			levelid: record.data.levelid,
+			id: record.data.id,
 			needMod: verdict == 'option-two',
 			isChecked: verdict == 'option-one',
 			reviewerComment: cmt
@@ -250,7 +259,7 @@
 
 		toast.promise(
 			fetch(
-				`${import.meta.env.VITE_API_URL}/records/${record.data.userid}/${record.data.levelid}`,
+				`${import.meta.env.VITE_API_URL}/records/${record.data.userid}/${record.data.levelid}${record.data.id ? `?id=${record.data.id}` : ''}`,
 				{
 					method: 'DELETE',
 					headers: {
@@ -356,7 +365,7 @@
 		window.location.href = res.checkoutUrl;
 	}
 
-	$: (open, fetchData());
+	$: (open, recordId, fetchData());
 	$: if (!open) resetSkipAhead();
 	$: if (open && $user.loggedIn) fetchQueueBoostInventory();
 </script>

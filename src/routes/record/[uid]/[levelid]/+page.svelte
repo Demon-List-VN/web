@@ -162,6 +162,7 @@
 		const body = {
 			userid: record.data.userid,
 			levelid: record.data.levelid,
+			id: record.data.id,
 			needMod: verdict === 'option-two',
 			isChecked: verdict === 'option-one',
 			reviewerComment: cmt
@@ -197,7 +198,7 @@
 	async function deleteRecord() {
 		if (!confirm('Delete this record?')) return;
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/records/${record.data.userid}/${record.data.levelid}`, {
+			fetch(`${import.meta.env.VITE_API_URL}/records/${record.data.userid}/${record.data.levelid}${record.data.id ? `?id=${record.data.id}` : ''}`, {
 				method: 'DELETE',
 				headers: { Authorization: 'Bearer ' + (await $user.token())! }
 			}),
@@ -273,9 +274,14 @@
 		const API = import.meta.env.VITE_API_URL;
 		const uid = (data as any).uid;
 		const levelid = (data as any).levelid;
+		const recordIdParam = (data as any).recordId;
+
+		const recordUrl = recordIdParam
+			? `${API}/records/${uid}/${levelid}?id=${recordIdParam}`
+			: `${API}/records/${uid}/${levelid}`;
 
 		const [recordRes, deathCountRes] = await Promise.all([
-			fetch(`${API}/records/${uid}/${levelid}`),
+			fetch(recordUrl),
 			fetch(`${API}/deathCount/${uid}/${levelid}`)
 		]);
 

@@ -67,6 +67,19 @@
 
 			<div class="rule-card">
 				<div class="rule-icon">
+					<Trophy size={20} />
+				</div>
+				<div class="rule-text">
+					<h3>{t('Record tốt hơn', 'Better record')}</h3>
+					<p>{t(
+						'Nếu bạn đã có record ở level này, bạn chỉ có thể gửi record tốt hơn. Thứ tự ưu tiên: (1) progress cao hơn, (2) refresh rate thấp hơn, (3) mobile được coi là tốt hơn PC. Record cũ được giữ cho tới khi record mới được duyệt; nếu bị từ chối, record cũ vẫn còn nguyên.',
+						'If you already have a record on this level, you can only submit a better one. Priority: (1) higher progress, (2) lower refresh rate, (3) mobile is considered better than PC. Your old record is kept until the new one is accepted; if rejected, your old record is preserved.'
+					)}</p>
+				</div>
+			</div>
+
+			<div class="rule-card">
+				<div class="rule-icon">
 					<Film size={20} />
 				</div>
 				<div class="rule-text">

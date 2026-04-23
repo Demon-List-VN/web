@@ -20,6 +20,7 @@
 	export let data: PageData;
 	let alertOpened = false;
 	let lvID: number;
+	let recID: number | null = null;
 
 	function getTimeString(ms: number) {
 		const minutes = Math.floor(ms / 60000);
@@ -34,7 +35,7 @@
 		const token = await $user.token();
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/records/${uid}/${lvID}`, {
+			fetch(`${import.meta.env.VITE_API_URL}/records/${uid}/${lvID}${recID ? `?id=${recID}` : ''}`, {
 				method: 'DELETE',
 				headers: {
 					Authorization: 'Bearer ' + token
@@ -44,7 +45,7 @@
 				loading: $_('toast.submission_cancel.loading'),
 				success: () => {
 					data.records = data.records.filter((x) => {
-						return x.levelid != lvID;
+						return recID ? x.id != recID : x.levelid != lvID;
 					});
 
 					return $_('toast.submission_cancel.success');
@@ -228,6 +229,7 @@
 											on:click={(e) => {
 												e.stopPropagation();
 												lvID = record.levelid;
+												recID = typeof record.id === 'number' ? record.id : null;
 												alertOpened = true;
 											}}
 										>

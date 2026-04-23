@@ -8,6 +8,7 @@
 
 	let isOpen = false;
 	let userID: any, levelID: any;
+	let recordID: number | null = null;
 	let limitLeft: number | null = null;
 	let dailyLimit = 3;
 
@@ -57,6 +58,7 @@
 				.then((res) => {
 					userID = res.userid;
 					levelID = res.levelid;
+					recordID = typeof res.id === 'number' ? res.id : null;
 					dailyLimit = Number(res.limit || dailyLimit);
 					if (typeof res.limitLeft === 'number') {
 						limitLeft = res.limitLeft;
