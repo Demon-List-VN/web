@@ -25,6 +25,22 @@
 		);
 	}
 
+	async function calculateContestRating() {
+		toast.promise(
+			fetch(`${import.meta.env.VITE_API_URL}/refresh/contest-rating`, {
+				method: 'PATCH',
+				headers: {
+					Authorization: 'Bearer ' + (await $user.token())
+				}
+			}),
+			{
+				success: 'Calculated contest rating!',
+				loading: 'Calculating contest rating...',
+				error: 'Failed to calculate contest rating.'
+			}
+		);
+	}
+
 	$: visibleCategories = $user.data?.isAdmin
 		? categories
 		: categories.filter((c) => c.title === 'Store & Revenue');
@@ -64,6 +80,7 @@
 			title: 'Events',
 			icon: '🎉',
 			items: [
+				{ name: 'Calculate Contest Rating', action: calculateContestRating, type: 'button' },
 				{ name: 'Event Manager', href: '/admin/event' },
 				{ name: 'Event Proofs', href: '/admin/eventProofs' }
 			]

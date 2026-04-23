@@ -296,6 +296,26 @@
 		);
 	}
 
+	async function revertCalculation() {
+		toast.promise(
+			fetch(`${import.meta.env.VITE_API_URL}/events/${event.id}/revert-calc`, {
+				method: 'PATCH',
+				headers: {
+					Authorization: 'Bearer ' + (await $user.token())
+				}
+			}),
+			{
+				success: () => {
+					window.location.reload();
+
+					return 'Reverted!';
+				},
+				loading: 'Reverting...',
+				error: 'Failed to revert calculation'
+			}
+		);
+	}
+
 	async function getLevelDeathCount(levelID: number) {
 		const res = await (
 			await fetch(`${import.meta.env.VITE_API_URL}/levels/${levelID}/deathCount`)
@@ -364,6 +384,9 @@
 		>
 			Switch to {revealMode ? 'Normal' : 'Reveal'} Mode
 		</Button>
+		<Button variant="outline" disabled={!event.isCalculated} on:click={revertCalculation}
+			>Revert calculation</Button
+		>
 		<Button variant="outline" disabled={event.isCalculated} on:click={calculate}
 			>Calculate rating</Button
 		>
