@@ -6,7 +6,16 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { locale } from 'svelte-i18n';
-	import { Clock3, ExternalLink, MessageSquareText, CheckCircle2, XCircle } from 'lucide-svelte';
+	import {
+		Clock3,
+		ExternalLink,
+		MessageSquareText,
+		CheckCircle2,
+		XCircle,
+		User,
+		Youtube,
+		Play
+	} from 'lucide-svelte';
 
 	export let list: any = null;
 	export let submissions: any[] = [];
@@ -150,63 +159,100 @@
 				<div class="queueList">
 					{#each submissions as submission}
 						<article class="queueItem">
-							<div class="queueItemTop">
-								<div class="queueItemHeading">
-									<Badge variant="secondary">
+							{#if submission.videoID}
+								<a
+									class="thumb"
+									href={`https://youtu.be/${submission.videoID}`}
+									target="_blank"
+									rel="noreferrer"
+									aria-label="Open video"
+								>
+									<img
+										src={`https://img.youtube.com/vi/${submission.videoID}/mqdefault.jpg`}
+										alt=""
+										loading="lazy"
+									/>
+									<span class="thumbOverlay">
+										<Play size={22} />
+									</span>
+								</a>
+							{:else}
+								<div class="thumb thumbEmpty" aria-hidden="true">
+									<Youtube size={28} />
+								</div>
+							{/if}
+
+							<div class="queueItemMain">
+								<div class="queueItemTop">
+									<div class="queueItemHeading">
+										<h3>{getLevelName(submission)}</h3>
+										<Badge variant="outline">#{submission.levelId}</Badge>
+									</div>
+									<Badge variant="secondary" class="statusBadge">
+										<Clock3 size={12} class="mr-1" />
 										{ $locale == 'vi' ? 'Chờ duyệt' : 'Pending' }
 									</Badge>
-									<h3>{getLevelName(submission)}</h3>
-									<Badge variant="outline">#{submission.levelId}</Badge>
 								</div>
-								<p class="queueItemMeta">
-									{ $locale == 'vi' ? 'bởi' : 'by' } {getLevelCreator(submission)}
-								</p>
-								<p class="queueItemMeta">
-									<Clock3 class="inline-icon" />
-									{formatDate(submission.created_at)}
-								</p>
-							</div>
 
-							<div class="queueItemBody">
-								<div class="metaRow">
-									<span class="metaLabel">{ $locale == 'vi' ? 'Người gửi' : 'Submitted by' }</span>
-									{#if getSubmitterHref(submission)}
-										<a class="metaValue linkLike" href={getSubmitterHref(submission)}>
-											{getSubmitterName(submission)}
-											<ExternalLink size={12} class="inline-icon" />
+								<p class="creatorLine">
+									{ $locale == 'vi' ? 'bởi' : 'by' } <strong>{getLevelCreator(submission)}</strong>
+								</p>
+
+								<div class="metaChips">
+									<span class="chip">
+										<User size={12} />
+										{#if getSubmitterHref(submission)}
+											<a class="chipLink" href={getSubmitterHref(submission)}>
+												{getSubmitterName(submission)}
+											</a>
+										{:else}
+											<span>{getSubmitterName(submission)}</span>
+										{/if}
+									</span>
+									<span class="chip">
+										<Clock3 size={12} />
+										{formatDate(submission.created_at)}
+									</span>
+									{#if submission.videoID}
+										<a
+											class="chip chipLink"
+											href={`https://youtu.be/${submission.videoID}`}
+											target="_blank"
+											rel="noreferrer"
+										>
+											<Youtube size={12} />
+											{submission.videoID}
+											<ExternalLink size={10} />
 										</a>
-									{:else}
-										<span class="metaValue">{getSubmitterName(submission)}</span>
 									{/if}
 								</div>
 
 								{#if submission.submissionComment}
 									<div class="commentBlock">
-										<MessageSquareText size={14} class="inline-icon" />
+										<MessageSquareText size={14} class="commentIcon" />
 										<p>{submission.submissionComment}</p>
 									</div>
 								{/if}
 
-								{#if submission.videoID}
-									<div class="videoRow">
-										<span class="metaLabel">Video</span>
-										<a href={`https://youtu.be/${submission.videoID}`} target="_blank" rel="noreferrer" class="metaValue linkLike">
-											{submission.videoID}
-											<ExternalLink size={12} class="inline-icon" />
-										</a>
-									</div>
-								{/if}
-							</div>
-
-							<div class="queueItemActions">
-								<Button variant="outline" on:click={() => rejectActiveSubmission(submission)} disabled={savingSubmissionId === submission.id || submittingReview}>
-									<XCircle class="mr-2 h-4 w-4" />
-									{ $locale == 'vi' ? 'Từ chối' : 'Reject' }
-								</Button>
-								<Button on:click={() => openReviewDialog(submission)} disabled={savingSubmissionId === submission.id || submittingReview}>
-									<CheckCircle2 class="mr-2 h-4 w-4" />
-									{ $locale == 'vi' ? 'Duyệt' : 'Review' }
-								</Button>
+								<div class="queueItemActions">
+									<Button
+										variant="outline"
+										size="sm"
+										on:click={() => rejectActiveSubmission(submission)}
+										disabled={savingSubmissionId === submission.id || submittingReview}
+									>
+										<XCircle class="mr-2 h-4 w-4" />
+										{ $locale == 'vi' ? 'Từ chối' : 'Reject' }
+									</Button>
+									<Button
+										size="sm"
+										on:click={() => openReviewDialog(submission)}
+										disabled={savingSubmissionId === submission.id || submittingReview}
+									>
+										<CheckCircle2 class="mr-2 h-4 w-4" />
+										{ $locale == 'vi' ? 'Duyệt' : 'Review' }
+									</Button>
+								</div>
 							</div>
 						</article>
 					{/each}
@@ -298,8 +344,83 @@
 	}
 
 	.queueHeader,
-	.queueItemTop,
 	.summaryHeadingRow {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 12px;
+	}
+
+	.queueList {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.queueItem {
+		display: grid;
+		grid-template-columns: 180px 1fr;
+		gap: 16px;
+		padding: 14px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 14px;
+		background: hsl(var(--card));
+		transition: border-color 0.2s ease, box-shadow 0.2s ease;
+	}
+
+	.queueItem:hover {
+		border-color: hsl(var(--primary) / 0.4);
+		box-shadow: 0 4px 18px -10px hsl(var(--primary) / 0.35);
+	}
+
+	.thumb {
+		position: relative;
+		display: block;
+		aspect-ratio: 16 / 9;
+		border-radius: 10px;
+		overflow: hidden;
+		background: hsl(var(--muted));
+		text-decoration: none;
+	}
+
+	.thumb img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		display: block;
+	}
+
+	.thumbOverlay {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: hsl(0 0% 0% / 0.35);
+		color: #fff;
+		opacity: 0;
+		transition: opacity 0.2s ease;
+	}
+
+	.thumb:hover .thumbOverlay {
+		opacity: 1;
+	}
+
+	.thumbEmpty {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: hsl(var(--muted-foreground));
+	}
+
+	.queueItemMain {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		min-width: 0;
+	}
+
+	.queueItemTop {
 		display: flex;
 		align-items: flex-start;
 		justify-content: space-between;
@@ -311,63 +432,96 @@
 		align-items: center;
 		gap: 8px;
 		flex-wrap: wrap;
+		min-width: 0;
 	}
 
-	.queueList {
-		display: flex;
-		flex-direction: column;
-		gap: 12px;
+	.queueItemHeading h3 {
+		font-size: 16px;
+		font-weight: 600;
+		margin: 0;
+		line-height: 1.3;
+		word-break: break-word;
 	}
 
-	.queueItem {
-		padding: 16px;
-		border: 1px solid hsl(var(--border));
-		border-radius: 14px;
-		background: hsl(var(--muted) / 0.08);
-		display: flex;
-		flex-direction: column;
-		gap: 14px;
-	}
-
-	.queueItemBody {
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-	}
-
-	.queueItemMeta,
-	.metaLabel {
-		font-size: 12px;
-		color: hsl(var(--muted-foreground));
-	}
-
-	.metaRow,
-	.videoRow,
-	.commentBlock {
-		display: flex;
-		align-items: flex-start;
-		gap: 8px;
-		flex-wrap: wrap;
-	}
-
-	.metaValue,
-	.linkLike {
+	.creatorLine {
 		font-size: 13px;
-		color: hsl(var(--foreground));
+		color: hsl(var(--muted-foreground));
+		margin: 0;
 	}
 
-	.linkLike {
+	.creatorLine strong {
+		color: hsl(var(--foreground));
+		font-weight: 500;
+	}
+
+	.metaChips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+
+	.chip {
 		display: inline-flex;
 		align-items: center;
 		gap: 4px;
-		text-decoration: underline;
+		padding: 3px 8px;
+		border-radius: 999px;
+		background: hsl(var(--muted) / 0.6);
+		font-size: 11.5px;
+		color: hsl(var(--muted-foreground));
+		line-height: 1.4;
+	}
+
+	.chipLink {
+		text-decoration: none;
+		color: hsl(var(--foreground));
+		transition: background 0.2s ease;
+	}
+
+	.chipLink:hover {
+		background: hsl(var(--muted));
+	}
+
+	.commentBlock {
+		display: flex;
+		gap: 8px;
+		padding: 10px 12px;
+		border-radius: 10px;
+		background: hsl(var(--muted) / 0.35);
+		border-left: 3px solid hsl(var(--primary) / 0.5);
+	}
+
+	.commentBlock p {
+		font-size: 13px;
+		line-height: 1.5;
+		color: hsl(var(--foreground));
+		margin: 0;
+		white-space: pre-wrap;
+		word-break: break-word;
+	}
+
+	:global(.commentIcon) {
+		flex-shrink: 0;
+		margin-top: 2px;
+		color: hsl(var(--muted-foreground));
 	}
 
 	.queueItemActions {
 		display: flex;
 		justify-content: flex-end;
-		gap: 10px;
+		gap: 8px;
 		flex-wrap: wrap;
+		margin-top: 4px;
+	}
+
+	@media (max-width: 640px) {
+		.queueItem {
+			grid-template-columns: 1fr;
+		}
+
+		.thumb {
+			max-width: 240px;
+		}
 	}
 
 	.dialogBody {

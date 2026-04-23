@@ -2,7 +2,6 @@
 	import { page } from '$app/stores';
 	import { user } from '$lib/client';
 	import { Button } from '$lib/components/ui/button/index.js';
-	import { Badge } from '$lib/components/ui/badge/index.js';
 	import SubmitStepper from '$lib/components/submit/SubmitStepper.svelte';
 	import StepLevelId from '$lib/components/submit/StepLevelId.svelte';
 	import StepConfirmLevel from '$lib/components/submit/StepConfirmLevel.svelte';
@@ -16,9 +15,9 @@
 
 	export let data: any;
 
-	let list = data?.list ?? null;
-	let loadingError = data?.error ?? '';
-	let requiresAuthRecovery = Boolean(data?.requiresAuthRecovery);
+	const list = data?.list ?? null;
+	const loadingError = data?.error ?? '';
+	const requiresAuthRecovery = Boolean(data?.requiresAuthRecovery);
 	let step = 0;
 	let direction = 1;
 	let levelid = NaN;
@@ -100,20 +99,9 @@
 
 	async function next() {
 		if (step === 0) {
-			if (!levelid || !Number.isInteger(levelid)) {
-				toast.error(t('Vui lòng nhập Level ID hợp lệ', 'Please enter a valid Level ID'));
-				return;
-			}
-
-			const loaded = await loadLevel();
-
-			if (!loaded) {
-				toast.error(t('Level ID không hợp lệ', 'Invalid level ID'));
-				return;
-			}
-
 			direction = 1;
 			step = 1;
+			void loadLevel();
 			return;
 		}
 

@@ -16,8 +16,18 @@
 
 <div class="step-content">
 	{#if !apiLevel}
-		<div class="loading-container">
-			<Loading inverted={true} />
+		<div class="fallback-card" in:fade={{ duration: 200 }}>
+			<div class="loading-container">
+				<Loading inverted={true} />
+			</div>
+			<p class="fallback-title">
+				{$locale == 'vi' ? 'Không tải được thông tin level để xem trước' : 'Unable to load level preview'}
+			</p>
+			<p class="fallback-copy">
+				{$locale == 'vi'
+					? 'Bạn vẫn có thể tiếp tục gửi level. Hệ thống sẽ kiểm tra Level ID khi bạn gửi biểu mẫu.'
+					: 'You can still continue with the submission. The backend will validate the level ID when you submit the form.'}
+			</p>
 		</div>
 	{:else}
 		<div class="level-card" in:fade={{ duration: 200 }}>
@@ -103,6 +113,26 @@
 		display: flex;
 		justify-content: center;
 		padding: 32px 0;
+	}
+
+	.fallback-card {
+		border: 1px solid hsl(var(--border));
+		border-radius: 14px;
+		padding: 16px 18px 18px;
+		background: hsl(var(--muted) / 0.08);
+	}
+
+	.fallback-title {
+		font-size: 15px;
+		font-weight: 600;
+		color: hsl(var(--foreground));
+	}
+
+	.fallback-copy {
+		margin-top: 6px;
+		font-size: 13px;
+		line-height: 1.6;
+		color: hsl(var(--muted-foreground));
 	}
 
 	.level-card {
