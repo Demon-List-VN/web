@@ -264,6 +264,43 @@
 		position: number;
 	};
 
+	type PendingSettingsAuditState = {
+		title: string;
+		description: string;
+		backgroundColor: string;
+		bannerUrl: string;
+		borderColor: string;
+		communityEnabled: boolean;
+		levelSubmissionEnabled: boolean;
+		faviconUrl: string;
+		isPlatformer: boolean;
+		logoUrl: string;
+		topEnabled: boolean;
+		itemSort: 'mode_default' | 'created_at';
+		visibility: 'private' | 'unlisted' | 'public';
+		tags: string[];
+		mode: 'rating' | 'top';
+		rankBadges: Array<{
+			name: string;
+			shorthand: string;
+			color: string;
+			minRating: number | null;
+			minTop: number | null;
+		}>;
+		weightFormula: string;
+	};
+
+	type PendingManageAuditField = keyof PendingLevelAuditState | keyof PendingSettingsAuditState;
+
+	type PendingManageAuditEntry = {
+		action: 'list_updated' | 'level_added' | 'level_removed' | 'level_updated';
+		label: string;
+		identifier?: number | null;
+		creator?: string | null;
+		fields: PendingManageAuditField[];
+		metadata: Record<string, any>;
+	};
+
 	type PendingLevelAuditEntry = {
 		action: 'level_added' | 'level_removed' | 'level_updated';
 		levelId: number;
@@ -295,7 +332,6 @@
 	let requiresAuthRecovery = Boolean(data?.requiresAuthRecovery);
 	let authRecoveryLoading = requiresAuthRecovery;
 
-	let savingMetadata = false;
 	let addingLevel = false;
 	let savingLevelItemId: number | null = null;
 	let savingLevelDrafts = false;
@@ -305,6 +341,7 @@
 	let savingCollaboration = false;
 	let hasUnsavedSettings = false;
 	let hasUnsavedLevelEdits = false;
+	let hasUnsavedManageChanges = false;
 	let initialSyncDone = false;
 	let uploadingAsset: 'banner' | 'favicon' | 'logo' | null = null;
 	let batchAddProgress: BatchAddProgress | null = null;
@@ -686,6 +723,7 @@
 		canEditLevels
 		&& (Object.keys(levelDrafts).length || levelDeletionDraftIds.length || pendingLevelAdditions.length || Object.keys(pendingLevelOrderDrafts).length)
 	);
+	$: hasUnsavedManageChanges = hasUnsavedSettings || hasUnsavedLevelEdits;
 	$: if (list) {
 		const availableLevelIds = new Set(getCombinedLevelItems(list).map((item) => item.levelId));
 		const nextLevelDrafts = Object.fromEntries(
@@ -721,16 +759,14 @@
 
 	onMount(() => {
 		const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-			if (!addingLevel && !hasUnsavedSettings && !hasUnsavedLevelEdits) {
+			if (!addingLevel && !hasUnsavedManageChanges) {
 				return;
 			}
 
 			event.preventDefault();
 			event.returnValue = addingLevel
 				? $_('custom_lists.detail.add_level.csv_close_warning')
-				: hasUnsavedLevelEdits
-					? $_('custom_lists.manage.unsaved_level_edits_close_warning')
-					: $_('custom_lists.manage.unsaved_settings_close_warning');
+				: $_('custom_lists.manage.unsaved_manage_changes_close_warning');
 			return event.returnValue;
 		};
 
@@ -1249,68 +1285,32 @@
 	}
 
 	// Mutations
-	async function saveMetadata() {
-		if (!list || !canEditSettings) return;
-		if (!editForm.title.trim()) {
-			toast.error($_('custom_lists.toast.title_required'));
-			return;
-		}
-
-		const formulaChanged = Boolean(
-			list && getEditableSettingsSnapshot(editForm).weightFormula !== getSavedSettingsSnapshot(list)?.weightFormula
-		);
-
-		savingMetadata = true;
-		const savingToast = toast.loading($_('custom_lists.toast.saving_list'));
-		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}`, {
-				method: 'PATCH',
-				headers: {
-					Authorization: `Bearer ${await $user.token()}`,
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({
-					title: editForm.title,
-					description: editForm.description,
-					backgroundColor: editForm.backgroundColor,
-					bannerUrl: editForm.bannerUrl,
-					borderColor: editForm.borderColor,
-					communityEnabled: editForm.communityEnabled,
-					levelSubmissionEnabled: editForm.levelSubmissionEnabled,
-					faviconUrl: editForm.faviconUrl,
-					isPlatformer: editForm.isPlatformer,
-					logoUrl: editForm.logoUrl,
-					topEnabled: editForm.topEnabled,
-					itemSort: editForm.itemSort,
-					visibility: editForm.visibility,
-					tags: parseTags(editForm.tags),
-					mode: editForm.mode,
-					rankBadges: editForm.rankBadges.map((rankBadge) => ({
-						name: rankBadge.name,
-						shorthand: rankBadge.shorthand,
-						color: rankBadge.color,
-						minRating: rankBadge.minRating,
-						minTop: rankBadge.minTop
-					})),
-					weightFormula: editForm.weightFormula
-				})
-			});
-			const payload = await res.json();
-			if (!res.ok) throw new Error(payload.error || $_('custom_lists.toast.failed_update'));
-			list = payload;
-			syncForm();
-			toast.dismiss(savingToast);
-			toast.success($_('custom_lists.toast.list_updated'));
-
-			if (formulaChanged) {
-				await refreshLeaderboardPrecalc({ reloadList: true });
-			}
-		} catch (error) {
-			toast.dismiss(savingToast);
-			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_update'));
-		} finally {
-			savingMetadata = false;
-		}
+	function buildSettingsMutationPayload() {
+		return {
+			title: editForm.title,
+			description: editForm.description,
+			backgroundColor: editForm.backgroundColor,
+			bannerUrl: editForm.bannerUrl,
+			borderColor: editForm.borderColor,
+			communityEnabled: editForm.communityEnabled,
+			levelSubmissionEnabled: editForm.levelSubmissionEnabled,
+			faviconUrl: editForm.faviconUrl,
+			isPlatformer: editForm.isPlatformer,
+			logoUrl: editForm.logoUrl,
+			topEnabled: editForm.topEnabled,
+			itemSort: editForm.itemSort,
+			visibility: editForm.visibility,
+			tags: parseTags(editForm.tags),
+			mode: editForm.mode,
+			rankBadges: editForm.rankBadges.map((rankBadge) => ({
+				name: rankBadge.name,
+				shorthand: rankBadge.shorthand,
+				color: rankBadge.color,
+				minRating: rankBadge.minRating,
+				minTop: rankBadge.minTop
+			})),
+			weightFormula: editForm.weightFormula
+		};
 	}
 
 	async function refreshLeaderboardPrecalc(options: { reloadList?: boolean } = {}) {
@@ -1359,7 +1359,7 @@
 	}
 
 	function viewPendingLevelChanges() {
-		if (!pendingLevelAuditEntries.length) {
+		if (!pendingManageAuditEntries.length) {
 			return;
 		}
 
@@ -2082,15 +2082,56 @@
 		return `${minutes}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
 	}
 
-	function getPendingLevelAuditFieldLabel(field: keyof LevelItemPatch | 'position') {
+	function normalizePendingManageAuditValue(value: unknown): unknown {
+		if (value == null) {
+			return null;
+		}
+
+		if (Array.isArray(value)) {
+			return value.map((entry) => normalizePendingManageAuditValue(entry));
+		}
+
+		if (typeof value === 'object') {
+			return Object.fromEntries(
+				Object.entries(value as Record<string, unknown>)
+					.sort(([left], [right]) => left.localeCompare(right))
+					.map(([key, entryValue]) => [key, normalizePendingManageAuditValue(entryValue)])
+			);
+		}
+
+		return value;
+	}
+
+	function arePendingManageAuditValuesEqual(left: unknown, right: unknown) {
+		return JSON.stringify(normalizePendingManageAuditValue(left)) === JSON.stringify(normalizePendingManageAuditValue(right));
+	}
+
+	function getPendingManageAuditFieldLabel(field: PendingManageAuditField) {
 		if (field === 'rating') return $_('custom_lists.detail.levels.rating_label');
 		if (field === 'minProgress') return $_('custom_lists.detail.levels.min_progress_label');
 		if (field === 'videoID') return $_('custom_lists.detail.levels.video_id_label');
 		if (field === 'position') return $_('custom_lists.formula.position_label');
+		if (field === 'title') return $_('custom_lists.detail.edit.title_label');
+		if (field === 'description') return $_('custom_lists.detail.edit.description_label');
+		if (field === 'backgroundColor') return $_('custom_lists.detail.edit.background_color_label');
+		if (field === 'bannerUrl') return $_('custom_lists.detail.edit.banner_url_label');
+		if (field === 'borderColor') return $_('custom_lists.detail.edit.border_color_label');
+		if (field === 'communityEnabled') return $_('custom_lists.detail.edit.community_label');
+		if (field === 'faviconUrl') return $_('custom_lists.detail.edit.favicon_url_label');
+		if (field === 'isPlatformer') return $_('custom_lists.detail.edit.type_label');
+		if (field === 'levelSubmissionEnabled') return $_('custom_lists.detail.edit.level_submission_label');
+		if (field === 'logoUrl') return $_('custom_lists.detail.edit.logo_url_label');
+		if (field === 'mode') return $_('custom_lists.detail.edit.mode_label');
+		if (field === 'rankBadges') return $_('custom_lists.detail.edit.rank_badges_label');
+		if (field === 'tags') return $_('custom_lists.detail.edit.tags_label');
+		if (field === 'topEnabled') return $_('custom_lists.detail.edit.top_enabled_label');
+		if (field === 'visibility') return $_('custom_lists.detail.edit.visibility_label');
+		if (field === 'weightFormula') return $_('custom_lists.formula.label');
+		if (field === 'itemSort') return $_('custom_lists.detail.edit.item_sort_label');
 		return field;
 	}
 
-	function formatPendingLevelAuditValue(field: keyof PendingLevelAuditState, value: unknown) {
+	function formatPendingManageAuditValue(field: PendingManageAuditField, value: unknown) {
 		if (value == null || value === '') {
 			return '-';
 		}
@@ -2101,6 +2142,43 @@
 
 		if (field === 'position' && typeof value === 'number') {
 			return `#${value}`;
+		}
+
+		if (field === 'visibility' && typeof value === 'string') {
+			if (value === 'public') return $_('custom_lists.visibility.public');
+			if (value === 'unlisted') return $_('custom_lists.visibility.unlisted');
+			return $_('custom_lists.visibility.private');
+		}
+
+		if (field === 'mode' && typeof value === 'string') {
+			return value === 'rating'
+				? $_('custom_lists.detail.edit.mode_rating')
+				: $_('custom_lists.detail.edit.mode_top');
+		}
+
+		if (field === 'itemSort' && typeof value === 'string') {
+			return value === 'created_at'
+				? $_('custom_lists.detail.edit.item_sort_created_at')
+				: $_('custom_lists.detail.edit.item_sort_mode_default');
+		}
+
+		if (field === 'isPlatformer' && typeof value === 'boolean') {
+			return value ? $_('custom_lists.type.platformer') : $_('custom_lists.type.classic');
+		}
+
+		if (
+			(field === 'communityEnabled' || field === 'topEnabled' || field === 'levelSubmissionEnabled')
+			&& typeof value === 'boolean'
+		) {
+			return value ? $_('general.yes') : $_('general.no');
+		}
+
+		if (field === 'tags' && Array.isArray(value)) {
+			return value.length ? value.join(', ') : '-';
+		}
+
+		if (typeof value === 'object') {
+			return JSON.stringify(value);
 		}
 
 		return String(value);
@@ -2232,7 +2310,71 @@
 		return entries;
 	}
 
-	function getPendingLevelAuditEntryActionLabel(entry: PendingLevelAuditEntry) {
+	function buildPendingSettingsAuditEntry(
+		currentList: CustomList | null,
+		currentForm: typeof editForm
+	): PendingManageAuditEntry | null {
+		if (!currentList) {
+			return null;
+		}
+
+		const previousState = getSavedSettingsSnapshot(currentList);
+
+		if (!previousState) {
+			return null;
+		}
+
+		const nextState: PendingSettingsAuditState = getEditableSettingsSnapshot(currentForm);
+		const fields = (Object.keys(nextState) as Array<keyof PendingSettingsAuditState>)
+			.filter((field) => !arePendingManageAuditValuesEqual(previousState[field], nextState[field]));
+
+		if (!fields.length) {
+			return null;
+		}
+
+		const changes = Object.fromEntries(
+			fields.map((field) => [field, {
+				old: normalizePendingManageAuditValue(previousState[field]),
+				new: normalizePendingManageAuditValue(nextState[field])
+			} satisfies PendingLevelAuditChange])
+		);
+
+		return {
+			action: 'list_updated',
+			label: nextState.title.trim().length ? nextState.title : currentList.title,
+			fields,
+			metadata: {
+				listId: currentList.id,
+				fields,
+				changes,
+				previousState: normalizePendingManageAuditValue(previousState),
+				nextState: normalizePendingManageAuditValue(nextState)
+			}
+		};
+	}
+
+	function buildPendingManageAuditEntries(
+		settingsEntry: PendingManageAuditEntry | null,
+		levelEntries: PendingLevelAuditEntry[]
+	): PendingManageAuditEntry[] {
+		return [
+			...(settingsEntry ? [settingsEntry] : []),
+			...levelEntries.map((entry) => ({
+				action: entry.action,
+				label: entry.levelName,
+				identifier: entry.levelId,
+				creator: entry.creator,
+				fields: entry.fields,
+				metadata: entry.metadata
+			}))
+		];
+	}
+
+	function getPendingLevelAuditEntryActionLabel(entry: PendingManageAuditEntry) {
+		if (entry.action === 'list_updated') {
+			return $_('custom_lists.manage.audit.list_updated');
+		}
+
 		if (entry.action === 'level_added') {
 			return $_('custom_lists.manage.unsaved_level_edits_dialog_action_added');
 		}
@@ -2242,14 +2384,20 @@
 			: $_('custom_lists.manage.unsaved_level_edits_dialog_action_updated');
 	}
 
-	function getPendingLevelAuditEntryDetail(entry: PendingLevelAuditEntry) {
+	function getPendingLevelAuditEntryDetail(entry: PendingManageAuditEntry) {
+		if (entry.action === 'list_updated') {
+			return entry.fields
+				.map((field) => `${getPendingManageAuditFieldLabel(field)}: ${formatPendingManageAuditValue(field, entry.metadata.changes?.[field]?.old)} -> ${formatPendingManageAuditValue(field, entry.metadata.changes?.[field]?.new)}`)
+				.join('; ');
+		}
+
 		if (entry.action === 'level_added') {
 			const position = entry.metadata.nextState?.position;
 
 			if (list?.mode === 'top' && typeof position === 'number') {
 				return $_('custom_lists.manage.unsaved_level_edits_dialog_added_summary_with_position', {
 					values: {
-						position: formatPendingLevelAuditValue('position', position)
+						position: formatPendingManageAuditValue('position', position)
 					}
 				});
 			}
@@ -2260,17 +2408,17 @@
 		if (entry.action === 'level_removed') {
 			return $_('custom_lists.manage.unsaved_level_edits_dialog_removed_summary', {
 				values: {
-					position: formatPendingLevelAuditValue('position', entry.metadata.position)
+					position: formatPendingManageAuditValue('position', entry.metadata.position)
 				}
 			});
 		}
 
 		return entry.fields
-			.map((field) => `${getPendingLevelAuditFieldLabel(field)}: ${formatPendingLevelAuditValue(field, entry.metadata.changes?.[field]?.old)} -> ${formatPendingLevelAuditValue(field, entry.metadata.changes?.[field]?.new)}`)
+			.map((field) => `${getPendingManageAuditFieldLabel(field)}: ${formatPendingManageAuditValue(field, entry.metadata.changes?.[field]?.old)} -> ${formatPendingManageAuditValue(field, entry.metadata.changes?.[field]?.new)}`)
 			.join('; ');
 	}
 
-	function getPendingLevelRemovalPreviewRows(entry: PendingLevelAuditEntry) {
+	function getPendingLevelRemovalPreviewRows(entry: PendingManageAuditEntry) {
 		return [
 			{ field: 'position' as const, value: entry.metadata.previousState?.position },
 			{ field: 'rating' as const, value: entry.metadata.previousState?.rating },
@@ -2280,7 +2428,7 @@
 		];
 	}
 
-	function getPendingLevelAdditionPreviewRows(entry: PendingLevelAuditEntry) {
+	function getPendingLevelAdditionPreviewRows(entry: PendingManageAuditEntry) {
 		return [
 			{ field: 'position' as const, value: entry.metadata.nextState?.position },
 			{ field: 'rating' as const, value: entry.metadata.nextState?.rating },
@@ -2425,26 +2573,43 @@
 		showPendingLevelChangesDialog = false;
 	}
 
-	async function saveLevelDrafts() {
-		if (
-			!list
-			|| !canEditLevels
-			|| (!Object.keys(levelDrafts).length && !levelDeletionDraftIds.length && !pendingLevelAdditions.length && !Object.keys(pendingLevelOrderDrafts).length)
-			|| savingLevelDrafts
-		) return;
+	function discardStagedManageChanges() {
+		if (hasUnsavedSettings) {
+			syncForm();
+		}
 
-		savingLevelDrafts = true;
+		discardLevelDrafts();
+	}
+
+	async function saveStagedManageChanges() {
+		if (!list || !hasUnsavedManageChanges || savingLevelDrafts) return;
+		if (hasUnsavedSettings && (!canEditSettings || !editForm.title.trim())) {
+			toast.error($_('custom_lists.toast.title_required'));
+			return;
+		}
+		if (hasUnsavedLevelEdits && !canEditLevels) return;
+
 		const currentDrafts = { ...levelDrafts };
 		const currentDeletionDraftIds = [...levelDeletionDraftIds];
 		const currentPendingLevelAdditions = [...pendingLevelAdditions];
 		const currentPendingOrderDrafts = { ...pendingLevelOrderDrafts };
+		const currentHasUnsavedSettings = hasUnsavedSettings;
+		const currentHasUnsavedLevelEdits = hasUnsavedLevelEdits;
+		const settingsPayload = currentHasUnsavedSettings ? buildSettingsMutationPayload() : undefined;
+		const formulaChanged = Boolean(
+			currentHasUnsavedSettings
+			&& list
+			&& getEditableSettingsSnapshot(editForm).weightFormula !== getSavedSettingsSnapshot(list)?.weightFormula
+		);
 		let nextList = list;
-		const totalPendingChanges = currentPendingLevelAdditions.length + currentDeletionDraftIds.length + Object.keys(currentDrafts).length + Object.keys(currentPendingOrderDrafts).length;
+		const totalPendingLevelChanges = currentPendingLevelAdditions.length + currentDeletionDraftIds.length + Object.keys(currentDrafts).length + Object.keys(currentPendingOrderDrafts).length;
 
-		if (!totalPendingChanges) {
-			savingLevelDrafts = false;
+		if (!currentHasUnsavedSettings && !totalPendingLevelChanges) {
 			return;
 		}
+
+		savingLevelDrafts = true;
+		const savingToast = toast.loading($_('custom_lists.toast.saving_list'));
 
 		try {
 			const createInputs = currentPendingLevelAdditions.map((pendingItem) => {
@@ -2489,6 +2654,25 @@
 				}))
 			};
 
+			const reorderEntries = getPendingLevelOrderEntries(currentPendingOrderDrafts).filter((entry) => {
+				return !currentDeletionDraftIds.includes(entry.levelId);
+			});
+
+			if (settingsPayload) {
+				(batchPayload as Record<string, unknown>).settings = settingsPayload;
+			}
+
+			const savingTopMode = (settingsPayload?.mode ?? list.mode) === 'top';
+
+			if (reorderEntries.length && savingTopMode) {
+				(batchPayload as Record<string, unknown>).reorderLevelIds = getDisplayedLevelItems(
+					list,
+					currentDrafts,
+					currentDeletionDraftIds,
+					currentPendingOrderDrafts
+				).map((item) => item.levelId);
+			}
+
 			savingLevelItemId = null;
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/levels/batch`, {
 				method: 'PATCH',
@@ -2505,58 +2689,24 @@
 			}
 
 			nextList = normalizeMutationListPayload(payload);
-
-			const reorderEntries = getPendingLevelOrderEntries(currentPendingOrderDrafts).filter((entry) => {
-				return !currentDeletionDraftIds.includes(entry.levelId);
-			});
-
-			if (reorderEntries.length) {
-				savingLevelItemId = null;
-				const reorderedLevelIds = buildReorderedLevelIds(
-					nextList.items.map((item) => item.levelId),
-					reorderEntries
-				);
-				const result = await requestReorderLevels(list.id, reorderedLevelIds);
-
-				if (!result.ok) {
-						throw new Error(result.error || $_('custom_lists.toast.failed_reorder'));
-				} else {
-					nextList = normalizeMutationListPayload(result.payload);
-				}
-			}
-
 			list = nextList;
+			syncForm();
 			pendingLevelAdditions = [];
 			levelDrafts = {};
 			levelDeletionDraftIds = [];
 			pendingLevelOrderDrafts = {};
+			toast.dismiss(savingToast);
+			toast.success(currentHasUnsavedLevelEdits && !currentHasUnsavedSettings
+				? $_('custom_lists.toast.levels_updated', {
+					values: { count: totalPendingLevelChanges }
+				})
+				: $_('custom_lists.toast.list_updated'));
 
-			if (reorderEntries.length) {
-				try {
-					savingLevelItemId = null;
-					const reorderedLevelIds = buildReorderedLevelIds(
-						nextList.items.map((item) => item.levelId),
-						reorderEntries
-					);
-					const result = await requestReorderLevels(list.id, reorderedLevelIds);
-
-					if (!result.ok) {
-						throw new Error(result.error || $_('custom_lists.toast.failed_reorder'));
-					}
-
-					nextList = normalizeMutationListPayload(result.payload);
-					list = nextList;
-				} catch (error) {
-					pendingLevelOrderDrafts = currentPendingOrderDrafts;
-					toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_reorder'));
-					return;
-				}
+			if (formulaChanged) {
+				await refreshLeaderboardPrecalc({ reloadList: true });
 			}
-
-			toast.success($_('custom_lists.toast.levels_updated', {
-				values: { count: totalPendingChanges }
-			}));
 		} catch (error) {
+			toast.dismiss(savingToast);
 			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_update_level'));
 			pendingLevelAdditions = currentPendingLevelAdditions;
 			levelDrafts = currentDrafts;
@@ -2674,6 +2824,9 @@
 	$: canReviewSubmissions = Boolean(list && permissions.canReviewSubmissions);
 	$: canShowCollaboration = Boolean(list && (canViewMembers || canViewAudit || canManageMembers || canConfigureCollaboration || canTransferOwnership));
 	$: pendingLevelAuditEntries = buildPendingLevelAuditEntries(list, pendingLevelAdditions, levelDrafts, levelDeletionDraftIds);
+	$: pendingSettingsAuditEntry = buildPendingSettingsAuditEntry(list, editForm);
+	$: pendingManageAuditEntries = buildPendingManageAuditEntries(pendingSettingsAuditEntry, pendingLevelAuditEntries);
+	$: pendingSettingsAuditFieldCount = pendingSettingsAuditEntry?.fields.length ?? 0;
 	$: pendingLevelAuditAddedCount = pendingLevelAuditEntries.filter((entry) => entry.action === 'level_added').length;
 	$: pendingLevelAuditUpdatedCount = pendingLevelAuditEntries.filter((entry) => entry.action === 'level_updated').length;
 	$: pendingLevelAuditRemovedCount = pendingLevelAuditEntries.filter((entry) => entry.action === 'level_removed').length;
@@ -2689,7 +2842,7 @@
 		pendingSubmissionsRequestKey = '';
 		pendingSubmissionsLoading = false;
 	}
-	$: if (showPendingLevelChangesDialog && !pendingLevelAuditEntries.length) {
+	$: if (showPendingLevelChangesDialog && !pendingManageAuditEntries.length) {
 		showPendingLevelChangesDialog = false;
 	}
 	$: levelsTabList = getLevelsTabList(list);
@@ -2814,18 +2967,6 @@
 			{/if}
 		</div>
 
-		{#if canEditSettings && hasUnsavedSettings}
-			<div class="toolCard unsavedSettingsNotice">
-				<div class="moderationCopy">
-					<h2 class="toolHeading">{$_('custom_lists.manage.unsaved_settings_title')}</h2>
-					<p class="hint">{$_('custom_lists.manage.unsaved_settings_hint')}</p>
-				</div>
-				<div class="moderationIcon">
-					<AlertTriangle class="h-5 w-5" />
-				</div>
-			</div>
-		{/if}
-
 		{#if list.isBanned}
 			<div class="toolCard moderationNotice">
 				<div class="moderationCopy">
@@ -2931,10 +3072,6 @@
 			{#if canEditSettings && activeTab !== 'levels' && activeTab !== 'danger' && activeTab !== 'collaboration'}
 				<div class="toolCard actionCard">
 					<div class="formActions">
-						<Button on:click={saveMetadata} disabled={savingMetadata || !hasUnsavedSettings}>
-							<Save class="mr-2 h-4 w-4" />
-							{$_('custom_lists.detail.edit.save')}
-						</Button>
 						<Button variant="outline" on:click={handleRefreshLeaderboardClick} disabled={refreshingLeaderboard}>
 							<RefreshCw class="mr-2 h-4 w-4" />
 							{refreshingLeaderboard ? `${$_('general.loading')}...` : 'Refresh leaderboard'}
@@ -2986,31 +3123,39 @@
 			<Dialog.Content class="max-w-[860px]">
 				<div class="pendingChangesDialog">
 				<Dialog.Header>
-					<Dialog.Title>{$_('custom_lists.manage.unsaved_level_edits_dialog_title')}</Dialog.Title>
-					<Dialog.Description>{$_('custom_lists.manage.unsaved_level_edits_dialog_description')}</Dialog.Description>
+					<Dialog.Title>{$_('custom_lists.manage.unsaved_manage_changes_title')}</Dialog.Title>
 				</Dialog.Header>
 
 				<div class="pendingChangesSummary">
-					<Badge variant="secondary">
-						{$_('custom_lists.manage.unsaved_level_edits_dialog_added_count', {
-							values: { count: pendingLevelAuditAddedCount }
-						})}
-					</Badge>
-					<Badge variant="secondary">
-						{$_('custom_lists.manage.unsaved_level_edits_dialog_updated_count', {
-							values: { count: pendingLevelAuditUpdatedCount }
-						})}
-					</Badge>
-					<Badge variant="destructive">
-						{$_('custom_lists.manage.unsaved_level_edits_dialog_removed_count', {
-							values: { count: pendingLevelAuditRemovedCount }
-						})}
-					</Badge>
+					{#if pendingSettingsAuditFieldCount}
+						<Badge variant="secondary">{$_('custom_lists.manage.audit.list_updated')}</Badge>
+					{/if}
+					{#if pendingLevelAuditAddedCount}
+						<Badge variant="secondary">
+							{$_('custom_lists.manage.unsaved_level_edits_dialog_added_count', {
+								values: { count: pendingLevelAuditAddedCount }
+							})}
+						</Badge>
+					{/if}
+					{#if pendingLevelAuditUpdatedCount}
+						<Badge variant="secondary">
+							{$_('custom_lists.manage.unsaved_level_edits_dialog_updated_count', {
+								values: { count: pendingLevelAuditUpdatedCount }
+							})}
+						</Badge>
+					{/if}
+					{#if pendingLevelAuditRemovedCount}
+						<Badge variant="destructive">
+							{$_('custom_lists.manage.unsaved_level_edits_dialog_removed_count', {
+								values: { count: pendingLevelAuditRemovedCount }
+							})}
+						</Badge>
+					{/if}
 				</div>
 
-				{#if pendingLevelAuditEntries.length}
+				{#if pendingManageAuditEntries.length}
 					<div class="pendingChangesList">
-						{#each pendingLevelAuditEntries as entry}
+						{#each pendingManageAuditEntries as entry}
 							<section class="pendingChangeEntry">
 								<div class="pendingChangeHeader">
 									<div class="pendingChangeHeading">
@@ -3018,8 +3163,10 @@
 											<Badge variant={entry.action === 'level_removed' ? 'destructive' : 'secondary'}>
 												{getPendingLevelAuditEntryActionLabel(entry)}
 											</Badge>
-											<h3>{entry.levelName}</h3>
-											<Badge variant="outline">#{entry.levelId}</Badge>
+											<h3>{entry.label}</h3>
+											{#if entry.identifier != null}
+												<Badge variant="outline">#{entry.identifier}</Badge>
+											{/if}
 										</div>
 										{#if entry.creator}
 											<p class="hint">{$_('custom_lists.detail.levels.by')} {entry.creator}</p>
@@ -3032,15 +3179,15 @@
 									</div>
 								</div>
 
-								{#if entry.action === 'level_updated'}
+								{#if entry.action === 'level_updated' || entry.action === 'list_updated'}
 									<div class="pendingChangeFieldList">
 										{#each entry.fields as field}
 											<div class="pendingChangeFieldRow">
-												<div class="pendingChangeFieldLabel">{getPendingLevelAuditFieldLabel(field)}</div>
+												<div class="pendingChangeFieldLabel">{getPendingManageAuditFieldLabel(field)}</div>
 												<div class="pendingChangeFieldValues">
-													<span class="pendingChangeFieldValue pendingChangeFieldValueOld">{formatPendingLevelAuditValue(field, entry.metadata.changes?.[field]?.old)}</span>
+													<span class="pendingChangeFieldValue pendingChangeFieldValueOld">{formatPendingManageAuditValue(field, entry.metadata.changes?.[field]?.old)}</span>
 													<span class="pendingChangeFieldArrow" aria-hidden="true">→</span>
-													<span class="pendingChangeFieldValue pendingChangeFieldValueNew">{formatPendingLevelAuditValue(field, entry.metadata.changes?.[field]?.new)}</span>
+													<span class="pendingChangeFieldValue pendingChangeFieldValueNew">{formatPendingManageAuditValue(field, entry.metadata.changes?.[field]?.new)}</span>
 												</div>
 											</div>
 										{/each}
@@ -3049,9 +3196,9 @@
 									<div class="pendingChangeFieldList">
 										{#each getPendingLevelAdditionPreviewRows(entry) as row}
 											<div class="pendingChangeFieldRow">
-												<div class="pendingChangeFieldLabel">{getPendingLevelAuditFieldLabel(row.field)}</div>
+												<div class="pendingChangeFieldLabel">{getPendingManageAuditFieldLabel(row.field)}</div>
 												<div class="pendingChangeFieldValues pendingChangeFieldValuesSingle">
-													<span class="pendingChangeFieldValue pendingChangeFieldValueNew">{formatPendingLevelAuditValue(row.field, row.value)}</span>
+													<span class="pendingChangeFieldValue pendingChangeFieldValueNew">{formatPendingManageAuditValue(row.field, row.value)}</span>
 												</div>
 											</div>
 										{/each}
@@ -3060,9 +3207,9 @@
 									<div class="pendingChangeFieldList">
 										{#each getPendingLevelRemovalPreviewRows(entry) as row}
 											<div class="pendingChangeFieldRow">
-												<div class="pendingChangeFieldLabel">{getPendingLevelAuditFieldLabel(row.field)}</div>
+												<div class="pendingChangeFieldLabel">{getPendingManageAuditFieldLabel(row.field)}</div>
 												<div class="pendingChangeFieldValues pendingChangeFieldValuesSingle">
-													<span class="pendingChangeFieldValue">{formatPendingLevelAuditValue(row.field, row.value)}</span>
+													<span class="pendingChangeFieldValue">{formatPendingManageAuditValue(row.field, row.value)}</span>
 												</div>
 											</div>
 										{/each}
@@ -3089,19 +3236,21 @@
 			</Dialog.Content>
 		</Dialog.Root>
 
-		{#if canEditLevels && hasUnsavedLevelEdits}
+		{#if hasUnsavedManageChanges}
 			<div class="toolCard unsavedLevelNotice" role="status" aria-live="polite">
 				<div class="moderationCopy">
-					<h2 class="toolHeading">{$_('custom_lists.manage.unsaved_level_edits_title')}</h2>
+					<h2 class="toolHeading">{$_('custom_lists.manage.unsaved_manage_changes_title')}</h2>
 				</div>
 				<div class="unsavedLevelActions">
-					<Button variant="outline" on:click={viewPendingLevelChanges} disabled={savingLevelDrafts}>
-						{$_('custom_lists.manage.unsaved_level_edits_view_changes')}
-					</Button>
-					<Button variant="outline" on:click={discardLevelDrafts} disabled={savingLevelDrafts}>
+					{#if pendingManageAuditEntries.length}
+						<Button variant="outline" on:click={viewPendingLevelChanges} disabled={savingLevelDrafts || !pendingManageAuditEntries.length}>
+							{$_('custom_lists.manage.unsaved_level_edits_view_changes')}
+						</Button>
+					{/if}
+					<Button variant="outline" on:click={discardStagedManageChanges} disabled={savingLevelDrafts}>
 						{$_('custom_lists.detail.levels.cancel_button')}
 					</Button>
-					<Button on:click={saveLevelDrafts} disabled={savingLevelDrafts}>
+					<Button on:click={saveStagedManageChanges} disabled={savingLevelDrafts}>
 						<Save class="mr-2 h-4 w-4" />
 						{savingLevelDrafts ? `${$_('general.loading')}...` : $_('custom_lists.detail.edit.save')}
 					</Button>
@@ -3242,18 +3391,6 @@
 		justify-content: space-between;
 		background: hsl(var(--destructive) / 0.08);
 		border-color: hsl(var(--destructive) / 0.35);
-	}
-
-	.unsavedSettingsNotice {
-		flex-direction: row;
-		align-items: flex-start;
-		justify-content: space-between;
-		background: hsl(var(--primary) / 0.08);
-		border-color: hsl(var(--primary) / 0.3);
-	}
-
-	.unsavedSettingsNotice .moderationIcon {
-		color: hsl(var(--primary));
 	}
 
 	.unsavedLevelNotice {
