@@ -4,6 +4,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Switch } from '$lib/components/ui/switch';
 	import * as Avatar from '$lib/components/ui/avatar';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import { Plus, Save, Trash2 } from 'lucide-svelte';
@@ -35,6 +36,29 @@
 	let memberSearchResults: any[] = [];
 	let selectedMember: any | null = null;
 	let collaboratorRole: CollaboratorRole = 'helper';
+	let auditDetailEntry: any = null;
+	let showAuditDetailDialog = false;
+
+	function openAuditDetail(entry: any) {
+		auditDetailEntry = entry;
+		showAuditDetailDialog = true;
+	}
+
+	function getAuditChangeFields(entry: any): string[] {
+		const metadata = entry?.metadata && typeof entry.metadata === 'object' ? entry.metadata : {};
+		if (metadata.changes && typeof metadata.changes === 'object') {
+			return Object.keys(metadata.changes);
+		}
+		if (Array.isArray(metadata.fields)) {
+			return metadata.fields.map((field: unknown) => String(field));
+		}
+		return [];
+	}
+
+	function auditEntryHasChangeDetails(entry: any) {
+		const metadata = entry?.metadata && typeof entry.metadata === 'object' ? entry.metadata : {};
+		return Boolean(metadata.changes && typeof metadata.changes === 'object' && Object.keys(metadata.changes).length);
+	}
 
 	$: if (list) {
 		adminsCanManageHelpers = Boolean(list.adminsCanManageHelpers);
@@ -528,13 +552,17 @@
 			{#if list.auditLog?.length}
 				<div class="auditList">
 					{#each list.auditLog as entry}
-						<div class="auditRow">
+						<button
+							type="button"
+							class="auditRow auditRowButton"
+							on:click={() => openAuditDetail(entry)}
+						>
 							<div class="auditRowHeader">
 								<strong>{getAuditActionLabel(entry.action)}</strong>
 								<span class="auditTimestamp">{formatDateTime(entry.created_at)}</span>
 							</div>
 							<p class="hint">{getAuditEntryDetail(entry)}</p>
-						</div>
+						</button>
 					{/each}
 				</div>
 			{:else}
@@ -543,6 +571,61 @@
 		</div>
 	{/if}
 </div>
+
+<Dialog.Root bind:open={showAuditDetailDialog}>
+	<Dialog.Content class="max-w-[860px]">
+		{#if auditDetailEntry}
+			<div class="auditDetailDialog">
+				<Dialog.Header>
+					<Dialog.Title>{getAuditActionLabel(auditDetailEntry.action)}</Dialog.Title>
+				</Dialog.Header>
+
+				<div class="auditDetailMeta">
+					<div class="auditDetailMetaRow">
+						<span class="auditDetailMetaLabel">{$_('custom_lists.manage.audit_detail.actor_label')}</span>
+						<span>{getPlayerName(auditDetailEntry.actorData, auditDetailEntry.actorUid)}</span>
+					</div>
+					<div class="auditDetailMetaRow">
+						<span class="auditDetailMetaLabel">{$_('custom_lists.manage.audit_detail.time_label')}</span>
+						<span>{formatDateTime(auditDetailEntry.created_at)}</span>
+					</div>
+					<div class="auditDetailMetaRow">
+						<span class="auditDetailMetaLabel">{$_('custom_lists.manage.audit_detail.action_label')}</span>
+						<code>{auditDetailEntry.action}</code>
+					</div>
+				</div>
+
+				<p class="hint">{getAuditEntryDetail(auditDetailEntry)}</p>
+
+				{#if auditEntryHasChangeDetails(auditDetailEntry)}
+					<div class="auditDetailFieldList">
+						{#each getAuditChangeFields(auditDetailEntry) as field}
+							<div class="auditDetailFieldRow">
+								<div class="auditDetailFieldLabel">{humanizeAuditField(field)}</div>
+								<div class="auditDetailFieldValues">
+									<span class="auditDetailFieldValue auditDetailFieldValueOld">{formatAuditFieldValue(field, auditDetailEntry.metadata?.changes?.[field]?.old ?? null)}</span>
+									<span class="auditDetailFieldArrow" aria-hidden="true">→</span>
+									<span class="auditDetailFieldValue auditDetailFieldValueNew">{formatAuditFieldValue(field, auditDetailEntry.metadata?.changes?.[field]?.new ?? null)}</span>
+								</div>
+							</div>
+						{/each}
+					</div>
+				{/if}
+
+				<details class="auditDetailPayload">
+					<summary>{$_('custom_lists.manage.unsaved_level_edits_dialog_payload_label')}</summary>
+					<pre>{JSON.stringify(auditDetailEntry.metadata ?? {}, null, 2)}</pre>
+				</details>
+
+				<Dialog.Footer>
+					<Button variant="outline" on:click={() => (showAuditDetailDialog = false)}>
+						{$_('general.close')}
+					</Button>
+				</Dialog.Footer>
+			</div>
+		{/if}
+	</Dialog.Content>
+</Dialog.Root>
 
 <style lang="scss">
 	.tabContent {
@@ -748,6 +831,122 @@
 
 		.memberActions {
 			justify-content: flex-start;
+		}
+	}
+
+	.auditRowButton {
+		cursor: pointer;
+		text-align: left;
+		width: 100%;
+		flex-direction: column;
+		color: inherit;
+		font: inherit;
+	}
+
+	.auditRowButton:hover {
+		border-color: hsl(var(--primary));
+		background: hsl(var(--primary) / 0.08);
+	}
+
+	.auditDetailDialog {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		max-height: 70vh;
+		overflow-y: auto;
+	}
+
+	.auditDetailMeta {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		padding: 12px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		background: hsl(var(--muted) / 0.2);
+	}
+
+	.auditDetailMetaRow {
+		display: flex;
+		gap: 8px;
+		flex-wrap: wrap;
+		font-size: 0.9rem;
+	}
+
+	.auditDetailMetaLabel {
+		font-weight: 600;
+		color: hsl(var(--muted-foreground));
+		min-width: 80px;
+	}
+
+	.auditDetailFieldList {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.auditDetailFieldRow {
+		display: grid;
+		grid-template-columns: minmax(120px, 180px) 1fr;
+		gap: 12px;
+		padding: 10px 12px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		background: hsl(var(--muted) / 0.12);
+	}
+
+	.auditDetailFieldLabel {
+		font-weight: 600;
+		color: hsl(var(--muted-foreground));
+		word-break: break-word;
+	}
+
+	.auditDetailFieldValues {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex-wrap: wrap;
+		min-width: 0;
+	}
+
+	.auditDetailFieldValue {
+		word-break: break-word;
+		font-family: var(--font-mono, monospace);
+		font-size: 0.85rem;
+	}
+
+	.auditDetailFieldValueOld {
+		color: hsl(var(--destructive));
+		text-decoration: line-through;
+		opacity: 0.85;
+	}
+
+	.auditDetailFieldValueNew {
+		color: hsl(var(--primary));
+	}
+
+	.auditDetailFieldArrow {
+		color: hsl(var(--muted-foreground));
+	}
+
+	.auditDetailPayload pre {
+		max-height: 300px;
+		overflow: auto;
+		background: hsl(var(--muted) / 0.3);
+		padding: 10px;
+		border-radius: 6px;
+		font-size: 0.8rem;
+	}
+
+	.auditDetailPayload summary {
+		cursor: pointer;
+		font-size: 0.85rem;
+		color: hsl(var(--muted-foreground));
+	}
+
+	@media (max-width: 760px) {
+		.auditDetailFieldRow {
+			grid-template-columns: 1fr;
 		}
 	}
 </style>

@@ -2063,6 +2063,9 @@
         "leaderboard_refreshed": "Leaderboard refreshed"
       },
       "audit_detail": {
+        "actor_label": "Actor",
+        "time_label": "Time",
+        "action_label": "Action",
         "list_created": "{actor} created the list.",
         "list_updated": "{actor} updated settings: {changes}.",
         "level_changed": "{actor} changed level #{levelId}.",

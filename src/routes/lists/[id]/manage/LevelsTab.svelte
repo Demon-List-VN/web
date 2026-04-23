@@ -1278,7 +1278,7 @@
 								</div>
 							{/if}
 
-							<div class="rankBadge">#{getListItemTop(item, index)}</div>
+							<div class="rankBadge">#{index + 1}</div>
 
 							<div class="levelBody">
 								{#if item.level}

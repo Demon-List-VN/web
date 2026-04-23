@@ -2062,6 +2062,9 @@
         "leaderboard_refreshed": "Đã làm mới bảng xếp hạng"
       },
       "audit_detail": {
+        "actor_label": "Người thực hiện",
+        "time_label": "Thời gian",
+        "action_label": "Hành động",
         "list_created": "{actor} đã tạo danh sách.",
         "list_updated": "{actor} đã cập nhật thiết lập: {changes}.",
         "level_changed": "{actor} đã thay đổi level #{levelId}.",

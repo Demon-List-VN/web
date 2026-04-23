@@ -2845,7 +2845,13 @@
 	$: if (showPendingLevelChangesDialog && !pendingManageAuditEntries.length) {
 		showPendingLevelChangesDialog = false;
 	}
-	$: levelsTabList = getLevelsTabList(list);
+	$: levelsTabList = (() => {
+		void pendingLevelAdditions;
+		void levelDrafts;
+		void levelDeletionDraftIds;
+		void pendingLevelOrderDrafts;
+		return getLevelsTabList(list);
+	})();
 	$: if (list && $user.checked && !initialManageTabSettled) {
 		initialManageTabSettled = true;
 		const requestedTab = getInitialManageTab();
