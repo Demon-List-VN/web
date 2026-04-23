@@ -35,7 +35,15 @@
 		Clock,
 		Save,
 		RefreshCw,
-		AlertTriangle
+		AlertTriangle,
+		Settings,
+		Palette,
+		Calculator,
+		Award,
+		ListOrdered,
+		Inbox,
+		Users,
+		ShieldAlert
 	} from 'lucide-svelte';
 	import { _ } from 'svelte-i18n';
 
@@ -2894,19 +2902,27 @@
 </svelte:head>
 
 <div class="page">
-	<!-- Navigation -->
-	<div class="navRow">
-		<Button variant="ghost" size="sm" on:click={() => goto('/lists')}>
-			<ArrowLeft class="mr-2 h-4 w-4" />
-			{$_('custom_lists.back')}
-		</Button>
-		{#if list}
-			<Button variant="outline" size="sm" on:click={() => goto(`/lists/${$page.params.id}`)}>
-				<Eye class="mr-2 h-4 w-4" />
-				{$_('custom_lists.actions.view')}
+	<!-- Top Bar -->
+	<header class="topBar">
+		<div class="topBarLeft">
+			<Button variant="ghost" size="sm" on:click={() => goto('/lists')}>
+				<ArrowLeft class="mr-2 h-4 w-4" />
+				{$_('custom_lists.back')}
 			</Button>
+			{#if list}
+				<span class="topBarDivider" aria-hidden="true"></span>
+				<span class="topBarLabel">{$_('custom_lists.manage.title') || 'Manage'}</span>
+			{/if}
+		</div>
+		{#if list}
+			<div class="topBarRight">
+				<Button variant="outline" size="sm" on:click={() => goto(`/lists/${$page.params.id}`)}>
+					<Eye class="mr-2 h-4 w-4" />
+					{$_('custom_lists.actions.view')}
+				</Button>
+			</div>
 		{/if}
-	</div>
+	</header>
 
 	{#if authRecoveryLoading && !list}
 		<div class="emptyState">
@@ -2922,59 +2938,84 @@
 		</div>
 	{:else if list}
 		<!-- Hero Summary -->
-		<div class="hero" class:heroHasBanner={Boolean(getManageHeroBannerUrl())} style={heroStyle}>
+		<section class="hero" class:heroHasBanner={Boolean(getManageHeroBannerUrl())} style={heroStyle}>
 			{#if getManageHeroBannerUrl()}
 				<div class="heroBanner" style={heroBannerStyle}>
 					<img src={getManageHeroBannerUrl()} alt="" loading="lazy" decoding="async" />
 				</div>
 			{/if}
-			<div class="heroTop">
-				<div class="heroInfo">
-					<h1>{getManagePreviewTitle()}</h1>
-					<p class="heroDesc">{getManagePreviewDescription()}</p>
+			<div class="heroBody">
+				<div class="heroHeader">
+					<div class="heroTitleGroup">
+						<div class="heroChips">
+							<span class="chip">
+								<svelte:component this={getVisibilityIcon(editForm.visibility)} class="h-3.5 w-3.5" />
+								{formatVisibility(editForm.visibility)}
+							</span>
+							<span class="chip">
+								<Layers class="h-3.5 w-3.5" />
+								{formatListType(editForm.isPlatformer)}
+							</span>
+							<span class="chip">
+								{editForm.mode === 'top' ? '🔢' : '⭐'}
+								{editForm.mode === 'rating' ? $_('custom_lists.detail.edit.mode_rating') : $_('custom_lists.detail.edit.mode_top')}
+							</span>
+							<span class="chip chipAccent">
+								{$_('custom_lists.detail.levels_badge', { values: { count: list.items.length } })}
+							</span>
+							{#if list.currentUserRole && list.currentUserRole !== 'viewer'}
+								<span class="chip chipRole">{getRoleLabel(list.currentUserRole)}</span>
+							{/if}
+						</div>
+						<h1>{getManagePreviewTitle()}</h1>
+						{#if getManagePreviewDescription()}
+							<p class="heroDesc">{getManagePreviewDescription()}</p>
+						{/if}
+					</div>
+					{#if canEditSettings}
+						<div class="heroActions">
+							<Button
+								variant="outline"
+								size="sm"
+								on:click={handleRefreshLeaderboardClick}
+								disabled={refreshingLeaderboard}
+								title="Refresh leaderboard"
+							>
+								<RefreshCw class="mr-2 h-4 w-4 {refreshingLeaderboard ? 'animate-spin' : ''}" />
+								{refreshingLeaderboard ? `${$_('general.loading')}...` : 'Refresh leaderboard'}
+							</Button>
+						</div>
+					{/if}
 				</div>
-				<div class="heroChips">
-					<span class="chip">
-						<svelte:component this={getVisibilityIcon(editForm.visibility)} class="h-3.5 w-3.5" />
-						{formatVisibility(editForm.visibility)}
+
+				{#if getManagePreviewTags().length}
+					<div class="tagRow">
+						{#each getManagePreviewTags() as tag}
+							<Badge variant="outline">{tag}</Badge>
+						{/each}
+					</div>
+				{/if}
+
+				<div class="heroMeta">
+					<span class="metaItem">
+						<Clock class="h-3.5 w-3.5" />
+						{$_('custom_lists.detail.updated', { values: { date: formatDate(list.updated_at) } })}
 					</span>
-					<span class="chip">
-						<Layers class="h-3.5 w-3.5" />
-						{formatListType(editForm.isPlatformer)}
-					</span>
-					<span class="chip">
-						{editForm.mode === 'top' ? '🔢' : '⭐'}
-						{editForm.mode === 'rating' ? $_('custom_lists.detail.edit.mode_rating') : $_('custom_lists.detail.edit.mode_top')}
-					</span>
-					<span class="chip">
-						{$_('custom_lists.detail.levels_badge', { values: { count: list.items.length } })}
-					</span>
-					{#if list.currentUserRole && list.currentUserRole !== 'viewer'}
-						<span class="chip">{getRoleLabel(list.currentUserRole)}</span>
+					{#if list.lastRefreshedAt}
+						<span class="metaItem">
+							<RefreshCw class="h-3.5 w-3.5" />
+							Leaderboard refreshed {formatDateTime(list.lastRefreshedAt)}
+						</span>
 					{/if}
 				</div>
 			</div>
-			{#if getManagePreviewTags().length}
-				<div class="tagRow">
-					{#each getManagePreviewTags() as tag}
-						<Badge variant="outline">{tag}</Badge>
-					{/each}
-				</div>
-			{/if}
-			<p class="updatedAt">
-				<Clock class="h-3.5 w-3.5" />
-				{$_('custom_lists.detail.updated', { values: { date: formatDate(list.updated_at) } })}
-			</p>
-			{#if list.lastRefreshedAt}
-				<p class="updatedAt">
-					<RefreshCw class="h-3.5 w-3.5" />
-					Leaderboard refreshed {formatDateTime(list.lastRefreshedAt)}
-				</p>
-			{/if}
-		</div>
+		</section>
 
 		{#if list.isBanned}
 			<div class="toolCard moderationNotice">
+				<div class="moderationIcon">
+					<AlertTriangle class="h-5 w-5" />
+				</div>
 				<div class="moderationCopy">
 					<h2 class="toolHeading">{$_('custom_lists.manage.banned_title')}</h2>
 					<p class="hint">
@@ -2985,30 +3026,55 @@
 								: $_('custom_lists.manage.banned_owner_hint')}
 					</p>
 				</div>
-				<div class="moderationIcon">
-					<AlertTriangle class="h-5 w-5" />
-				</div>
 			</div>
 		{/if}
 
 		<Tabs.Root bind:value={activeTab}>
-			<div class="tabsList">
-				<Tabs.List class="flex h-fit w-fit flex-wrap">
+			<div class="tabRail">
+				<Tabs.List class="tabBar">
 					{#if canEditSettings}
-						<Tabs.Trigger value="basic">{$_('custom_lists.manage.tabs.basic')}</Tabs.Trigger>
-						<Tabs.Trigger value="appearance">{$_('custom_lists.manage.tabs.appearance')}</Tabs.Trigger>
-						<Tabs.Trigger value="formula">{$_('custom_lists.manage.tabs.formula')}</Tabs.Trigger>
-						<Tabs.Trigger value="rank">{$_('custom_lists.manage.tabs.rank')}</Tabs.Trigger>
+						<Tabs.Trigger value="basic" class="manageTab">
+							<Settings class="h-4 w-4" />
+							<span>{$_('custom_lists.manage.tabs.basic')}</span>
+						</Tabs.Trigger>
+						<Tabs.Trigger value="appearance" class="manageTab">
+							<Palette class="h-4 w-4" />
+							<span>{$_('custom_lists.manage.tabs.appearance')}</span>
+						</Tabs.Trigger>
+						<Tabs.Trigger value="formula" class="manageTab">
+							<Calculator class="h-4 w-4" />
+							<span>{$_('custom_lists.manage.tabs.formula')}</span>
+						</Tabs.Trigger>
+						<Tabs.Trigger value="rank" class="manageTab">
+							<Award class="h-4 w-4" />
+							<span>{$_('custom_lists.manage.tabs.rank')}</span>
+						</Tabs.Trigger>
 					{/if}
-					<Tabs.Trigger value="levels">{$_('custom_lists.manage.tabs.levels')}</Tabs.Trigger>
+					<Tabs.Trigger value="levels" class="manageTab">
+						<ListOrdered class="h-4 w-4" />
+						<span>{$_('custom_lists.manage.tabs.levels')}</span>
+					</Tabs.Trigger>
 					{#if canReviewSubmissions}
-						<Tabs.Trigger value="submissions">{$_('custom_lists.manage.tabs.submissions')}</Tabs.Trigger>
+						<Tabs.Trigger value="submissions" class="manageTab">
+							<Inbox class="h-4 w-4" />
+							<span>{$_('custom_lists.manage.tabs.submissions')}</span>
+							{#if pendingSubmissions?.length}
+								<span class="tabCount">{pendingSubmissions.length}</span>
+							{/if}
+						</Tabs.Trigger>
 					{/if}
 					{#if canShowCollaboration}
-						<Tabs.Trigger value="collaboration">{$_('custom_lists.manage.tabs.collaboration')}</Tabs.Trigger>
+						<Tabs.Trigger value="collaboration" class="manageTab">
+							<Users class="h-4 w-4" />
+							<span>{$_('custom_lists.manage.tabs.collaboration')}</span>
+						</Tabs.Trigger>
 					{/if}
 					{#if canBan || canDelete}
-						<Tabs.Trigger value="danger" class="dangerTabTrigger">{$_('custom_lists.manage.tabs.danger')}</Tabs.Trigger>
+						<span class="tabSpacer" aria-hidden="true"></span>
+						<Tabs.Trigger value="danger" class="manageTab dangerTabTrigger">
+							<ShieldAlert class="h-4 w-4" />
+							<span>{$_('custom_lists.manage.tabs.danger')}</span>
+						</Tabs.Trigger>
 					{/if}
 				</Tabs.List>
 			</div>
@@ -3074,17 +3140,6 @@
 						/>
 					</Tabs.Content>
 				{/if}
-
-			{#if canEditSettings && activeTab !== 'levels' && activeTab !== 'danger' && activeTab !== 'collaboration'}
-				<div class="toolCard actionCard">
-					<div class="formActions">
-						<Button variant="outline" on:click={handleRefreshLeaderboardClick} disabled={refreshingLeaderboard}>
-							<RefreshCw class="mr-2 h-4 w-4" />
-							{refreshingLeaderboard ? `${$_('general.loading')}...` : 'Refresh leaderboard'}
-						</Button>
-					</div>
-				</div>
-			{/if}
 			{/if}
 
 			<Tabs.Content value="levels">
@@ -3243,23 +3298,54 @@
 		</Dialog.Root>
 
 		{#if hasUnsavedManageChanges}
-			<div class="toolCard unsavedLevelNotice" role="status" aria-live="polite">
-				<div class="moderationCopy">
-					<h2 class="toolHeading">{$_('custom_lists.manage.unsaved_manage_changes_title')}</h2>
-				</div>
-				<div class="unsavedLevelActions">
-					{#if pendingManageAuditEntries.length}
-						<Button variant="outline" on:click={viewPendingLevelChanges} disabled={savingLevelDrafts || !pendingManageAuditEntries.length}>
-							{$_('custom_lists.manage.unsaved_level_edits_view_changes')}
+			<div class="unsavedBar" role="status" aria-live="polite">
+				<div class="unsavedBarInner">
+					<div class="unsavedBarInfo">
+						<div class="unsavedBarDot" aria-hidden="true"></div>
+						<div class="unsavedBarText">
+							<h2 class="unsavedBarTitle">{$_('custom_lists.manage.unsaved_manage_changes_title')}</h2>
+							<div class="unsavedBarBadges">
+								{#if pendingSettingsAuditFieldCount}
+									<Badge variant="secondary">{$_('custom_lists.manage.audit.list_updated')}</Badge>
+								{/if}
+								{#if pendingLevelAuditAddedCount}
+									<Badge variant="secondary">
+										{$_('custom_lists.manage.unsaved_level_edits_dialog_added_count', {
+											values: { count: pendingLevelAuditAddedCount }
+										})}
+									</Badge>
+								{/if}
+								{#if pendingLevelAuditUpdatedCount}
+									<Badge variant="secondary">
+										{$_('custom_lists.manage.unsaved_level_edits_dialog_updated_count', {
+											values: { count: pendingLevelAuditUpdatedCount }
+										})}
+									</Badge>
+								{/if}
+								{#if pendingLevelAuditRemovedCount}
+									<Badge variant="destructive">
+										{$_('custom_lists.manage.unsaved_level_edits_dialog_removed_count', {
+											values: { count: pendingLevelAuditRemovedCount }
+										})}
+									</Badge>
+								{/if}
+							</div>
+						</div>
+					</div>
+					<div class="unsavedBarActions">
+						{#if pendingManageAuditEntries.length}
+							<Button variant="ghost" size="sm" on:click={viewPendingLevelChanges} disabled={savingLevelDrafts || !pendingManageAuditEntries.length}>
+								{$_('custom_lists.manage.unsaved_level_edits_view_changes')}
+							</Button>
+						{/if}
+						<Button variant="outline" size="sm" on:click={discardStagedManageChanges} disabled={savingLevelDrafts}>
+							{$_('custom_lists.detail.levels.cancel_button')}
 						</Button>
-					{/if}
-					<Button variant="outline" on:click={discardStagedManageChanges} disabled={savingLevelDrafts}>
-						{$_('custom_lists.detail.levels.cancel_button')}
-					</Button>
-					<Button on:click={saveStagedManageChanges} disabled={savingLevelDrafts}>
-						<Save class="mr-2 h-4 w-4" />
-						{savingLevelDrafts ? `${$_('general.loading')}...` : $_('custom_lists.detail.edit.save')}
-					</Button>
+						<Button size="sm" on:click={saveStagedManageChanges} disabled={savingLevelDrafts}>
+							<Save class="mr-2 h-4 w-4" />
+							{savingLevelDrafts ? `${$_('general.loading')}...` : $_('custom_lists.detail.edit.save')}
+						</Button>
+					</div>
 				</div>
 			</div>
 		{/if}
@@ -3268,40 +3354,63 @@
 
 <style lang="scss">
 	.page {
-		max-width: 1100px;
+		max-width: 1120px;
 		margin: 0 auto;
-		padding: 24px 16px 140px;
+		padding: 16px 16px 160px;
 		display: flex;
 		flex-direction: column;
 		gap: 20px;
 		background-repeat: no-repeat;
 	}
 
-	/* Nav */
-	.navRow {
+	/* Top Bar */
+	.topBar {
+		position: sticky;
+		top: 0;
+		z-index: 20;
 		display: flex;
-		flex-wrap: wrap;
-		gap: 10px;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		padding: 10px 0;
+		margin: -16px -16px 0;
+		padding-inline: 16px;
+		background: hsl(var(--background) / 0.85);
+		backdrop-filter: blur(10px);
+		-webkit-backdrop-filter: blur(10px);
+		border-bottom: 1px solid hsl(var(--border) / 0.6);
+	}
+
+	.topBarLeft,
+	.topBarRight {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		min-width: 0;
+	}
+
+	.topBarDivider {
+		width: 1px;
+		height: 18px;
+		background: hsl(var(--border));
+	}
+
+	.topBarLabel {
+		font-size: 0.85rem;
+		font-weight: 600;
+		color: hsl(var(--muted-foreground));
 	}
 
 	/* Hero */
 	.hero {
 		background: hsl(var(--card));
 		border: 1px solid hsl(var(--border));
-		border-radius: 12px;
-		padding: 24px;
-		display: flex;
-		flex-direction: column;
-		gap: 14px;
+		border-radius: 16px;
+		overflow: hidden;
 		color: var(--custom-surface-foreground, inherit);
 	}
 
-	.heroHasBanner {
-		overflow: hidden;
-	}
-
 	.heroBanner {
-		margin: -24px -24px 0;
 		min-height: 140px;
 		border-bottom: 1px solid hsl(var(--border));
 		background: hsl(var(--muted) / 0.18);
@@ -3310,46 +3419,83 @@
 	.heroBanner img {
 		display: block;
 		width: 100%;
-		height: 180px;
+		height: 200px;
 		object-fit: cover;
 	}
 
-	.heroTop {
+	.heroBody {
+		padding: 24px;
+		display: flex;
+		flex-direction: column;
+		gap: 14px;
+	}
+
+	.heroHeader {
 		display: flex;
 		justify-content: space-between;
 		align-items: flex-start;
-		gap: 16px;
+		gap: 20px;
 		flex-wrap: wrap;
 	}
 
-	.heroInfo h1 {
+	.heroTitleGroup {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		min-width: 0;
+		flex: 1 1 360px;
+	}
+
+	.heroTitleGroup h1 {
 		margin: 0;
-		font-size: 1.4rem;
+		font-size: 1.6rem;
 		font-weight: 700;
+		line-height: 1.25;
+		letter-spacing: -0.01em;
 	}
 
 	.heroDesc {
-		margin: 4px 0 0;
+		margin: 0;
 		color: var(--custom-surface-muted, hsl(var(--muted-foreground)));
-		font-size: 0.9rem;
+		font-size: 0.92rem;
+		line-height: 1.5;
+	}
+
+	.heroActions {
+		display: flex;
+		gap: 8px;
+		flex-wrap: wrap;
+		flex-shrink: 0;
 	}
 
 	.heroChips {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 8px;
+		gap: 6px;
 	}
 
 	.chip {
 		display: inline-flex;
 		align-items: center;
 		gap: 5px;
-		font-size: 0.8rem;
+		font-size: 0.75rem;
+		font-weight: 500;
 		color: var(--custom-surface-muted, hsl(var(--muted-foreground)));
-		background: var(--custom-surface-chip-background, hsl(var(--muted) / 0.4));
-		padding: 4px 10px;
+		background: var(--custom-surface-chip-background, hsl(var(--muted) / 0.5));
+		padding: 3px 10px;
 		border-radius: 999px;
 		white-space: nowrap;
+	}
+
+	.chipAccent {
+		color: hsl(var(--primary));
+		background: hsl(var(--primary) / 0.1);
+	}
+
+	.chipRole {
+		color: hsl(var(--foreground));
+		background: hsl(var(--foreground) / 0.08);
+		font-weight: 600;
 	}
 
 	.tagRow {
@@ -3358,105 +3504,246 @@
 		gap: 6px;
 	}
 
-	.updatedAt {
+	.heroMeta {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 14px;
+		padding-top: 10px;
+		border-top: 1px dashed hsl(var(--border) / 0.7);
+	}
+
+	.metaItem {
 		display: inline-flex;
 		align-items: center;
-		gap: 5px;
-		margin: 0;
-		font-size: 0.8rem;
+		gap: 6px;
+		font-size: 0.78rem;
 		color: var(--custom-surface-muted, hsl(var(--muted-foreground)));
 	}
 
-	.tabsList {
+	/* Tabs */
+	.tabRail {
+		position: sticky;
+		top: 52px;
+		z-index: 10;
+		margin: 0 -16px;
+		padding: 8px 16px;
+		background: hsl(var(--background) / 0.85);
+		backdrop-filter: blur(10px);
+		-webkit-backdrop-filter: blur(10px);
+		border-bottom: 1px solid hsl(var(--border) / 0.6);
+		overflow-x: auto;
+		scrollbar-width: thin;
+	}
+
+	.tabRail :global(.tabBar) {
 		display: flex;
+		align-items: center;
+		gap: 4px;
+		width: 100%;
+		min-width: fit-content;
+		background: transparent;
+		padding: 4px;
+		height: auto;
+	}
+
+	.tabRail :global(.manageTab) {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 8px 14px;
+		border-radius: 8px;
+		font-size: 0.88rem;
+		font-weight: 500;
+		color: hsl(var(--muted-foreground));
+		background: transparent;
+		border: 1px solid transparent;
+		white-space: nowrap;
+		transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
+	}
+
+	.tabRail :global(.manageTab:hover) {
+		color: hsl(var(--foreground));
+		background: hsl(var(--muted) / 0.5);
+	}
+
+	.tabRail :global(.manageTab[data-state='active']) {
+		color: hsl(var(--foreground));
+		background: hsl(var(--card));
+		border-color: hsl(var(--border));
+		box-shadow: 0 1px 2px hsl(var(--foreground) / 0.06);
+	}
+
+	.tabCount {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 20px;
+		height: 20px;
+		padding: 0 6px;
+		border-radius: 999px;
+		background: hsl(var(--primary));
+		color: hsl(var(--primary-foreground));
+		font-size: 0.7rem;
+		font-weight: 700;
+		line-height: 1;
+	}
+
+	.tabSpacer {
+		flex: 1;
+		min-width: 16px;
 	}
 
 	:global(.dangerTabTrigger) {
-		margin-left: 16px;
-		color: hsl(var(--destructive) / 0.75);
+		color: hsl(var(--destructive) / 0.8) !important;
 	}
 
-	:global(.dangerTabTrigger[data-state='active']),
-	:global(.dangerTabTrigger:hover) {
-		color: hsl(var(--destructive));
+	:global(.dangerTabTrigger:hover),
+	:global(.dangerTabTrigger[data-state='active']) {
+		color: hsl(var(--destructive)) !important;
+		border-color: hsl(var(--destructive) / 0.3) !important;
 	}
 
+	/* Cards */
 	.toolCard {
 		background: hsl(var(--card));
 		border: 1px solid hsl(var(--border));
 		border-radius: 12px;
-		padding: 22px;
+		padding: 20px;
 		display: flex;
 		flex-direction: column;
-		gap: 16px;
+		gap: 14px;
 	}
 
 	.moderationNotice {
 		flex-direction: row;
 		align-items: flex-start;
-		justify-content: space-between;
+		gap: 14px;
 		background: hsl(var(--destructive) / 0.08);
 		border-color: hsl(var(--destructive) / 0.35);
 	}
 
-	.unsavedLevelNotice {
-		position: fixed;
-		left: 50%;
-		bottom: 20px;
-		transform: translateX(-50%);
-		z-index: 40;
-		width: min(680px, calc(100vw - 24px));
-		flex-direction: row;
+	.moderationIcon {
+		display: flex;
 		align-items: center;
-		justify-content: space-between;
-		gap: 16px;
-		background: hsl(var(--card));
-		box-shadow: 0 20px 40px hsl(var(--foreground) / 0.16);
+		justify-content: center;
+		width: 36px;
+		height: 36px;
+		border-radius: 10px;
+		background: hsl(var(--destructive) / 0.15);
+		color: hsl(var(--destructive));
+		flex-shrink: 0;
 	}
 
 	.moderationCopy {
 		display: flex;
 		flex-direction: column;
-		gap: 6px;
-	}
-
-	.unsavedLevelActions {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-		flex-wrap: wrap;
-		justify-content: flex-end;
-		flex-shrink: 0;
-	}
-
-	.moderationIcon {
-		color: hsl(var(--destructive));
-		flex-shrink: 0;
+		gap: 4px;
+		min-width: 0;
 	}
 
 	.toolHeading {
 		margin: 0;
-		font-size: 1.1rem;
+		font-size: 1rem;
 		font-weight: 600;
 	}
 
 	.hint {
-		font-size: 0.8rem;
+		font-size: 0.82rem;
 		color: hsl(var(--muted-foreground));
 		margin: 0;
 	}
 
-	.formActions {
+	/* Unsaved changes floating bar */
+	.unsavedBar {
+		position: fixed;
+		left: 50%;
+		bottom: 20px;
+		transform: translateX(-50%);
+		z-index: 40;
+		width: min(860px, calc(100vw - 24px));
+		padding: 0;
+		animation: unsavedBarSlideUp 220ms ease-out;
+	}
+
+	@keyframes unsavedBarSlideUp {
+		from {
+			transform: translate(-50%, 20px);
+			opacity: 0;
+		}
+		to {
+			transform: translate(-50%, 0);
+			opacity: 1;
+		}
+	}
+
+	.unsavedBarInner {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 16px;
+		padding: 12px 16px;
+		background: hsl(var(--card));
+		border: 1px solid hsl(var(--border));
+		border-radius: 14px;
+		box-shadow:
+			0 20px 40px hsl(var(--foreground) / 0.16),
+			0 0 0 1px hsl(var(--primary) / 0.15);
+	}
+
+	.unsavedBarInfo {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		min-width: 0;
+		flex: 1;
+	}
+
+	.unsavedBarDot {
+		flex-shrink: 0;
+		width: 10px;
+		height: 10px;
+		border-radius: 999px;
+		background: hsl(var(--primary));
+		box-shadow: 0 0 0 4px hsl(var(--primary) / 0.2);
+		animation: unsavedBarPulse 2s ease-in-out infinite;
+	}
+
+	@keyframes unsavedBarPulse {
+		0%, 100% {
+			box-shadow: 0 0 0 4px hsl(var(--primary) / 0.2);
+		}
+		50% {
+			box-shadow: 0 0 0 7px hsl(var(--primary) / 0.08);
+		}
+	}
+
+	.unsavedBarText {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		min-width: 0;
+	}
+
+	.unsavedBarTitle {
+		margin: 0;
+		font-size: 0.92rem;
+		font-weight: 600;
+	}
+
+	.unsavedBarBadges {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 10px;
-		margin-top: 4px;
+		gap: 4px;
 	}
 
-	.actionCard {
-		padding-block: 18px;
+	.unsavedBarActions {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		flex-shrink: 0;
 	}
 
+	/* Pending changes dialog */
 	.pendingChangesDialog {
 		display: flex;
 		flex-direction: column;
@@ -3622,7 +3909,7 @@
 	.emptyState {
 		border: 1px dashed hsl(var(--border));
 		border-radius: 12px;
-		padding: 40px 24px;
+		padding: 48px 24px;
 		text-align: center;
 		background: hsl(var(--muted) / 0.12);
 	}
@@ -3641,8 +3928,32 @@
 
 	/* Responsive */
 	@media (max-width: 760px) {
-		.heroTop {
+		.page {
+			padding: 8px 12px 180px;
+			gap: 16px;
+		}
+
+		.topBar {
+			margin: -8px -12px 0;
+			padding-inline: 12px;
+		}
+
+		.heroHeader {
 			flex-direction: column;
+		}
+
+		.heroActions {
+			width: 100%;
+		}
+
+		.heroTitleGroup h1 {
+			font-size: 1.3rem;
+		}
+
+		.tabRail {
+			top: 52px;
+			margin: 0 -12px;
+			padding: 6px 12px;
 		}
 
 		.pendingChangeFieldRow {
@@ -3652,39 +3963,40 @@
 		.pendingChangeAuditAction {
 			align-items: flex-start;
 		}
+
+		.unsavedBar {
+			bottom: 12px;
+			width: calc(100vw - 16px);
+		}
+
+		.unsavedBarInner {
+			flex-direction: column;
+			align-items: stretch;
+			gap: 10px;
+		}
+
+		.unsavedBarActions {
+			justify-content: flex-end;
+			flex-wrap: wrap;
+		}
 	}
 
 	@media (max-width: 480px) {
-		.hero {
+		.heroBody {
 			padding: 18px 16px;
-		}
-
-		.heroBanner {
-			margin: -18px -16px 0;
 		}
 
 		.heroBanner img {
 			height: 140px;
 		}
 
-		.heroInfo h1 {
-			font-size: 1.2rem;
-		}
-
 		.toolCard {
 			padding: 16px;
 		}
 
-		.unsavedLevelNotice {
-			bottom: 12px;
-			width: calc(100vw - 20px);
-			align-items: stretch;
-		}
-
-		.unsavedLevelActions {
-			width: 100%;
-			justify-content: stretch;
-			flex-direction: column;
+		.tabRail :global(.manageTab) {
+			padding: 7px 10px;
+			font-size: 0.82rem;
 		}
 	}
 </style>
