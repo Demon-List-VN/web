@@ -243,14 +243,6 @@
 		error?: string;
 	};
 
-	type BatchCrawlLevelsResponse = {
-		forced: boolean;
-		results: BatchCrawlLevelResult[];
-		crawled: number;
-		skipped: number;
-		notFound: number;
-	};
-
 	type BatchAddExistingLevelsResponse = {
 		added: number;
 		missingLevelIds: number[];
@@ -1755,15 +1747,15 @@
 		};
 	}
 
-	async function requestBatchCrawlLevels(levelIds: number[], signal?: AbortSignal) {
-		const query = new URLSearchParams({ ids: levelIds.join(',') });
-		const res = await fetch(`${import.meta.env.VITE_API_URL}/levels/crawl?${query.toString()}`, {
+	async function requestBatchGetExistingLevels(levelIds: number[], signal?: AbortSignal) {
+		const res = await fetch(`${import.meta.env.VITE_API_URL}/levels/batch`, {
 			method: 'POST',
 			signal,
 			headers: {
 				Authorization: `Bearer ${await $user.token()}`,
 				'Content-Type': 'application/json'
-			}
+			},
+			body: JSON.stringify({ batch: levelIds })
 		});
 		const payload = await res.json().catch(() => null);
 
@@ -1777,7 +1769,7 @@
 
 		return {
 			ok: true as const,
-			payload: payload as BatchCrawlLevelsResponse
+			payload: (Array.isArray(payload) ? payload : []) as PreparedCustomListLevel[]
 		};
 	}
 
@@ -1984,17 +1976,50 @@
 			const crawledLevelsById = new Map<number, BatchCrawlLevelResult>();
 
 			if (newLevelInputs.length) {
-				const crawlResult = await requestBatchCrawlLevels(
-					newLevelInputs.map((levelInput) => levelInput.levelId),
-					importSignal
-				);
+				const newLevelIds = newLevelInputs.map((levelInput) => levelInput.levelId);
+				// Step 1: fetch all already-existing levels from the `levels` table in a single request.
+				// This avoids the Cloudflare Worker subrequest limit that the previous server-side
+				// batch crawl used to hit when importing large CSVs.
+				const existingResult = await requestBatchGetExistingLevels(newLevelIds, importSignal);
 
-				if (!crawlResult.ok) {
-					throw new Error(crawlResult.error);
+				if (!existingResult.ok) {
+					throw new Error(existingResult.error);
 				}
 
-				for (const result of crawlResult.payload.results) {
-					crawledLevelsById.set(result.id, result);
+				const existingById = new Map<number, PreparedCustomListLevel>();
+
+				for (const level of existingResult.payload) {
+					existingById.set(level.id, level);
+					crawledLevelsById.set(level.id, {
+						id: level.id,
+						status: 'skipped',
+						level
+					});
+				}
+
+				// Step 2: for every level that doesn't exist yet, send one FE request per level so
+				// each crawl runs in its own Worker invocation (and its own subrequest budget).
+				const missingLevelIds = newLevelIds.filter((id) => !existingById.has(id));
+
+				for (const levelId of missingLevelIds) {
+					throwIfBatchAddAborted(importSignal);
+
+					const crawlResult = await requestCrawlLevel(levelId, importSignal);
+
+					if (!crawlResult.ok) {
+						crawledLevelsById.set(levelId, {
+							id: levelId,
+							status: 'not_found',
+							error: crawlResult.error
+						});
+						continue;
+					}
+
+					crawledLevelsById.set(levelId, {
+						id: levelId,
+						status: crawlResult.payload.crawlStatus ?? 'crawled',
+						level: crawlResult.payload
+					});
 				}
 			}
 
