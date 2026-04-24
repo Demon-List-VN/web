@@ -871,6 +871,7 @@
 				loadingError = 'Failed to load list';
 			}
 		} finally {
+			hasResolvedManageAccess = true;
 			if (recoveringPrivateList) {
 				authRecoveryLoading = false;
 				requiresAuthRecovery = false;
@@ -3092,19 +3093,17 @@
 		void pendingLevelOrderDrafts;
 		return getLevelsTabList(list);
 	})();
-	$: if (list && $user.checked && !initialManageTabSettled) {
+	$: if (list && hasResolvedManageAccess && !initialManageTabSettled) {
 		initialManageTabSettled = true;
 		const requestedTab = getInitialManageTab();
 		activeTab = isTabAllowed(requestedTab)
 			? requestedTab
 			: canEditSettings
 				? 'basic'
-				: canShowCollaboration
-					? 'collaboration'
 					: 'levels';
 	}
-	$: if (list && $user.checked && !isTabAllowed(activeTab)) {
-		activeTab = canEditSettings ? 'basic' : canShowCollaboration ? 'collaboration' : 'levels';
+	$: if (list && hasResolvedManageAccess && !isTabAllowed(activeTab)) {
+		activeTab = canEditSettings ? 'basic' : 'levels';
 	}
 
 	// Reactive hero preview colors — update live from editForm without saving
