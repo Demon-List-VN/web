@@ -19,6 +19,8 @@
 	import { locale, _ } from 'svelte-i18n';
 	import { Input } from '$lib/components/ui/input';
 	import { browser } from '$app/environment';
+	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 
 	let token = '';
 	let open1 = false;
@@ -278,7 +280,16 @@
 							on:click={() => {
 								const currentLang = $locale;
 								const newLang = currentLang === 'en' ? 'vi' : 'en';
+								document.cookie = `locale=${newLang}; Path=/; Max-Age=31536000; SameSite=Lax`;
+								try {
+									localStorage.setItem('locale', newLang);
+								} catch {}
 								locale.set(newLang);
+
+								const currentPath = $page.url.pathname;
+								const stripped = currentPath.replace(/^\/(en|vi)(?=\/|$)/, '') || '/';
+								const target = `/${newLang}${stripped === '/' ? '' : stripped}${$page.url.search}`;
+								goto(target, { invalidateAll: true });
 							}}
 						>
 							{$locale === 'vi' ? 'Tiếng Việt' : 'English'}

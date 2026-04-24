@@ -232,8 +232,7 @@
   }
 
 	onMount(() => {
-		const savedLocale = localStorage.getItem('locale');
-		const initialLocale = resolveLocale(savedLocale ?? data.initialLocale);
+		const initialLocale = resolveLocale(data.initialLocale);
 		const unsubscribeLocale = locale.subscribe((value) => {
 			if (value) {
 				persistLocale(resolveLocale(value));
