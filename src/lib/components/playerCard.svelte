@@ -140,7 +140,7 @@
 </script>
 
 <div
-	class="relative z-0 rounded-md border-[1px] p-[15px]"
+	class="relative z-0 rounded-md border-[1px] p-[12px]"
 	style={isActive(player.supporterUntil)
 		? `background-color: ${player.bgColor}; border-color: ${player.borderColor}; ${player.bgColor ? 'color: white' : ''}`
 		: ''}
@@ -150,7 +150,7 @@
 			on:error={() => {
 				isBannerFailedToLoad = true;
 			}}
-			class="bgGradient absolute top-[50px] z-[-1] ml-[-15px] h-[80px] w-full rounded object-cover"
+			class="bgGradient absolute top-[42px] z-[-1] ml-[-12px] h-[72px] w-[calc(100%+24px)] rounded object-cover"
 			src={`https://cdn.gdvn.net/banners/${player.uid}${player.isBannerGif ? '.gif' : '.jpg'}`}
 			alt=""
 		/>
@@ -169,12 +169,12 @@
 		{#if player.clan && isActive(player.clans.boostedUntil)}
 			<a
 				href={`/clan/${player.clan}`}
-				class={badgeVariants({ variant: 'secondary' })}
+				class={`headerBadge ${badgeVariants({ variant: 'secondary' })}`}
 				style={`background-color: ${player.clans.tagBgColor}; color: ${player.clans.tagTextColor};`}
 				>{player.clans.tag}</a
 			>
 		{/if}
-		<h4 class="font-semibold">
+		<h4 class="playerName font-semibold">
 			<span class={isActive(player.supporterUntil) ? 'supporter-name' : ''}>
 				{#if player.clan && !isActive(player.clans.boostedUntil)}
 					<a href={`/clan/${player.clan}`}>[{player.clans.tag}]</a>
@@ -277,42 +277,59 @@
 	}
 
 	.leftCol {
-		width: 50px;
+		width: 44px;
 		display: flex;
 		justify-content: center;
 	}
 
 	.hoverName {
 		display: flex;
-		gap: 10px;
+		gap: 8px;
 		align-items: center;
-		padding-bottom: 10px;
+		padding-bottom: 8px;
+	}
+
+	.playerName {
+		margin: 0;
+		line-height: 1.1;
+	}
+
+	.headerBadge {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		line-height: 1;
 	}
 
 	.content {
-		padding-top: 10px;
+		padding-top: 8px;
 		display: grid;
-		gap: 10px;
+		gap: 8px;
 	}
 
 	.rankWrapper {
 		display: flex;
-		gap: 5px;
+		align-items: center;
+		gap: 6px;
+		flex-wrap: wrap;
 
 		.rank {
 			background-color: var(--textColor);
 			color: var(--textColorInverted);
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
 			padding-inline: 6px;
-			height: fit-content;
+			min-height: 20px;
 			border-radius: 5px;
 			font-weight: 600;
+			line-height: 1;
 		}
 	}
 
 	.rating {
 		.title {
-			padding: 2px;
-			padding-inline: 5px;
+			padding: 2px 5px;
 			border-radius: 5px;
 			font-weight: bold;
 			font-size: 12px;
@@ -321,9 +338,9 @@
 		}
 
 		display: flex;
-		gap: 10px;
+		gap: 8px;
 		align-items: center;
-		font-size: 13px;
+		font-size: 12px;
 	}
 
 	.lastRefreshed {
