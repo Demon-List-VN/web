@@ -140,7 +140,7 @@
 </script>
 
 <div
-	class="relative z-0 rounded-md border-[1px] p-[12px]"
+	class="relative z-0 overflow-hidden rounded-md border-[1px] p-[12px]"
 	style={isActive(player.supporterUntil)
 		? `background-color: ${player.bgColor}; border-color: ${player.borderColor}; ${player.bgColor ? 'color: white' : ''}`
 		: ''}
@@ -277,7 +277,7 @@
 	}
 
 	.leftCol {
-		width: 44px;
+		width: 38px;
 		display: flex;
 		justify-content: center;
 	}
@@ -302,15 +302,15 @@
 	}
 
 	.content {
-		padding-top: 8px;
+		padding-top: 6px;
 		display: grid;
-		gap: 8px;
+		gap: 4px;
 	}
 
 	.rankWrapper {
 		display: flex;
 		align-items: center;
-		gap: 6px;
+		gap: 4px;
 		flex-wrap: wrap;
 
 		.rank {
@@ -319,28 +319,31 @@
 			display: inline-flex;
 			align-items: center;
 			justify-content: center;
-			padding-inline: 6px;
-			min-height: 20px;
-			border-radius: 5px;
+			padding-inline: 5px;
+			min-height: 16px;
+			border-radius: 4px;
 			font-weight: 600;
 			line-height: 1;
+			font-size: 11px;
 		}
 	}
 
 	.rating {
 		.title {
-			padding: 2px 5px;
-			border-radius: 5px;
+			padding: 1px 5px;
+			border-radius: 4px;
 			font-weight: bold;
 			font-size: 12px;
+			line-height: 1.2;
 			user-select: none;
 			width: fit-content;
 		}
 
 		display: flex;
-		gap: 8px;
+		gap: 6px;
 		align-items: center;
 		font-size: 12px;
+		line-height: 1.2;
 	}
 
 	.lastRefreshed {
