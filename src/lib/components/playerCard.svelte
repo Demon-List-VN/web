@@ -6,8 +6,10 @@
 	import { getExpLevel } from '$lib/client/getExpLevel';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import type { PlayerRankedListSummary } from '$lib/types/playerRankedList';
-	import { resolvePlayerRankedListSelection } from '$lib/types/playerRankedList';
-	import { normalizePlayerCardStatLines, PLAYER_CARD_DEFAULT_STAT_LINES } from '$lib/utils/playerCardStatLines';
+	import {
+		normalizePlayerCardStatLines,
+		resolvePlayerCardStatLineIds
+	} from '$lib/utils/playerCardStatLines';
 	import { normalizeCustomListRankBadges, resolveCustomListRankBadge } from '$lib/utils/customListRank';
 	import { _ } from 'svelte-i18n';
 
@@ -33,18 +35,11 @@
 	$: exp = player.exp + player.extraExp;
 	$: expLevel = getExpLevel(exp);
 	$: summaries = listSummaries ?? remoteSummaries;
-	$: configuredStatLines = normalizePlayerCardStatLines(player?.overviewData?.playerCardStatLines);
-	$: resolvedStatLines = configuredStatLines.map((identifier, index) => {
-		return resolvePlayerCardStatLine(identifier)
-			|| resolvePlayerCardStatLine(PLAYER_CARD_DEFAULT_STAT_LINES[index])
-			|| {
-				label: '-',
-				value: '-',
-				rank: null,
-				valueStyle: '',
-				tooltip: null
-			};
-	});
+	$: configuredStatLineIds = normalizePlayerCardStatLines(player?.playerCardStatLines);
+	$: effectiveStatLineIds = resolvePlayerCardStatLineIds(configuredStatLineIds, summaries);
+	$: resolvedStatLines = effectiveStatLineIds
+		.map((id) => resolvePlayerCardStatLine(id))
+		.filter((line): line is NonNullable<typeof line> => line !== null);
 	$: if (active && listSummaries === null && player?.uid && !hasLoadedRemote && !isLoadingLists && !listLoadFailed) {
 		void loadPlayerRankedLists(player.uid);
 	}
@@ -76,66 +71,25 @@
 		return typeof value === 'number' && Number.isFinite(value) ? `#${value}` : null;
 	}
 
-	function resolvePlayerCardStatLine(identifier: string) {
-		const summary = resolvePlayerRankedListSelection(summaries, identifier);
+	function resolvePlayerCardStatLine(listId: number) {
+		const summary = summaries.find((entry) => entry.id === listId);
 
-		if (summary && (summary.identifier === identifier || summary.slug === identifier || String(summary.id) === identifier)) {
-			const badge = resolveCustomListRankBadge(
-				summary,
-				normalizeCustomListRankBadges(summary.rankBadges)
-			);
-
-			return {
-				label: summary.title,
-				value: formatScore(summary.score),
-				rank: formatRank(summary.rank),
-				valueStyle: badge ? `background: ${badge.color}; color: white;` : '',
-				tooltip: badge?.name || null
-			};
+		if (!summary) {
+			return null;
 		}
 
-		switch (identifier) {
-			case 'dl': {
-				const title = getTitle('dl', player);
-				return {
-					label: $_('player_card.rating'),
-					value: formatScore(player.rating),
-					rank: formatRank(player.overallRank),
-					valueStyle: title?.color ? `background-color: ${title.color}` : '',
-					tooltip: title?.fullTitle || null
-				};
-			}
-			case 'pl': {
-				const title = getTitle('pl', player);
-				return {
-					label: $_('player_card.plat_rating'),
-					value: formatScore(player.plRating),
-					rank: formatRank(player.plrank),
-					valueStyle: title?.color ? `background-color: ${title.color}` : '',
-					tooltip: title?.fullTitle || null
-				};
-			}
-			case 'fl':
-				return {
-					label: $_('player_card.featured'),
-					value: formatScore(player.totalFLpt),
-					rank: formatRank(player.flrank),
-					valueStyle: '',
-					tooltip: null
-				};
-			case 'cl': {
-				const title = getTitle('cl', player);
-				return {
-					label: $_('player_card.challenge_rating'),
-					value: formatScore(player.clRating),
-					rank: formatRank(player.clrank),
-					valueStyle: title?.color ? `background-color: ${title.color}` : '',
-					tooltip: title?.fullTitle || null
-				};
-			}
-			default:
-				return null;
-		}
+		const badge = resolveCustomListRankBadge(
+			summary,
+			normalizeCustomListRankBadges(summary.rankBadges)
+		);
+
+		return {
+			label: summary.title,
+			value: formatScore(summary.score),
+			rank: formatRank(summary.rank),
+			valueStyle: badge ? `background: ${badge.color}; color: white;` : '',
+			tooltip: badge?.name || null
+		};
 	}
 </script>
 

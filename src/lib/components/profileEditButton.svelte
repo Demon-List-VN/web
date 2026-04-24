@@ -1,5 +1,4 @@
 <script lang="ts">
-	import supabase from '$lib/client/supabase';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Select from '$lib/components/ui/select';
 	import { Button, buttonVariants } from '$lib/components/ui/button/index.js';
@@ -44,17 +43,8 @@
 	let isLoadingPlayerCardStatLines = false;
 
 	$: (open, reset());
-	$: legacyPlayerCardStatLineLabels = {
-		dl: $_('player_card.rating'),
-		pl: $_('player_card.plat_rating'),
-		fl: $_('player_card.featured'),
-		cl: $_('player_card.challenge_rating')
-	};
-	$: playerCardStatLineOptions = buildPlayerCardStatLineOptions(
-		playerCardListSummaries,
-		legacyPlayerCardStatLineLabels
-	);
-	$: playerCardStatLineIdentifiers = normalizePlayerCardStatLines(player?.overviewData?.playerCardStatLines);
+	$: playerCardStatLineOptions = buildPlayerCardStatLineOptions(playerCardListSummaries);
+	$: playerCardStatLineIds = normalizePlayerCardStatLines(player?.playerCardStatLines);
 	$: if (open && player?.uid && playerCardStatLinesLoadedForUid !== player.uid && !isLoadingPlayerCardStatLines) {
 		void loadPlayerCardStatLines(player.uid);
 	}
@@ -97,23 +87,71 @@
 		}
 	}
 
-	function updatePlayerCardStatLine(index: number, value: string | undefined) {
-		const nextStatLines = normalizePlayerCardStatLines(player?.overviewData?.playerCardStatLines);
-		nextStatLines[index] = value || nextStatLines[index];
+	function updatePlayerCardStatLine(index: number, value: number | undefined) {
+		const current = normalizePlayerCardStatLines(player?.playerCardStatLines);
+		const next = [...current];
+
+		while (next.length <= index) {
+			next.push(0);
+		}
+
+		if (typeof value === 'number') {
+			next[index] = value;
+		}
+
+		const deduped: number[] = [];
+		const seen = new Set<number>();
+
+		for (const id of next) {
+			if (typeof id !== 'number' || !Number.isFinite(id) || id === 0 || seen.has(id)) {
+				continue;
+			}
+
+			deduped.push(id);
+			seen.add(id);
+		}
+
 		player = {
 			...player,
-			overviewData: {
-				...(player.overviewData || {}),
-				playerCardStatLines: nextStatLines
-			}
+			playerCardStatLines: deduped
 		};
 	}
 
 	function getPlayerCardStatLineSelection(index: number) {
-		const identifier = playerCardStatLineIdentifiers[index];
-		return playerCardStatLineOptions.find((option) => option.value === identifier)
-			|| playerCardStatLineOptions[index]
-			|| undefined;
+		const id = playerCardStatLineIds[index];
+
+		if (typeof id !== 'number') {
+			return undefined;
+		}
+
+		return playerCardStatLineOptions.find((option) => option.value === id) || undefined;
+	}
+
+	async function savePlayerCardStatLines() {
+		const token = await $user.token();
+		const promise = fetch(`${import.meta.env.VITE_API_URL}/players`, {
+			method: 'PUT',
+			headers: {
+				Authorization: 'Bearer ' + token,
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({
+				...data,
+				playerCardStatLines: playerCardStatLineIds
+			})
+		});
+		toast.promise(promise, {
+			loading: $_('toast.player_edit.save.loading'),
+			success: $_('toast.player_edit.save.success'),
+			error: $_('toast.player_edit.save.error')
+		});
+
+		try {
+			await promise;
+			data = { ...data, playerCardStatLines: playerCardStatLineIds };
+		} catch {
+			// handled by toast
+		}
 	}
 
 	async function getAvatar(e: any) {
@@ -402,29 +440,40 @@
 						<p class="text-sm font-semibold">{$_('profile_edit.player_card_stat_lines')}</p>
 						<p class="text-xs text-muted-foreground">{$_('profile_edit.player_card_stat_lines_description')}</p>
 					</div>
-					{#each playerCardStatLineIdentifiers as _identifier, index}
+					{#each Array(PLAYER_CARD_STAT_LINE_COUNT) as _slot, index}
 						<div class="grid grid-cols-4 items-center gap-4">
 							<Label class="text-right">
 								{$_('profile_edit.player_card_stat_line', { values: { index: index + 1 } })}
 							</Label>
-							<Select.Root
-								selected={getPlayerCardStatLineSelection(index)}
-								onSelectedChange={(option) => updatePlayerCardStatLine(index, option?.value)}
-							>
-								<Select.Trigger class="col-span-3">
-									<Select.Value placeholder={$_('general.select')} />
-								</Select.Trigger>
-								<Select.Content>
-									{#each playerCardStatLineOptions as option}
-										<Select.Item value={option.value}>{option.label}</Select.Item>
-									{/each}
-								</Select.Content>
-							</Select.Root>
+							{#key `${playerCardStatLineOptions.length}:${playerCardStatLineIds[index] ?? ''}`}
+								<Select.Root
+									selected={getPlayerCardStatLineSelection(index)}
+									onSelectedChange={(option) => updatePlayerCardStatLine(index, option?.value)}
+								>
+									<Select.Trigger class="col-span-3">
+										<Select.Value placeholder={$_('general.select')} />
+									</Select.Trigger>
+									<Select.Content>
+										{#each playerCardStatLineOptions as option}
+											<Select.Item value={option.value}>{option.label}</Select.Item>
+										{/each}
+									</Select.Content>
+								</Select.Root>
+							{/key}
 						</div>
 					{/each}
 					{#if isLoadingPlayerCardStatLines}
 						<p class="text-xs text-muted-foreground">{$_('general.loading')}...</p>
 					{/if}
+					<div class="flex justify-end">
+						<Button
+							variant="outline"
+							on:click={savePlayerCardStatLines}
+							disabled={isLoadingPlayerCardStatLines}
+						>
+							{$_('profile_edit.save_stat_lines')}
+						</Button>
+					</div>
 				</div>
 			</div>
 			<Dialog.Footer>
