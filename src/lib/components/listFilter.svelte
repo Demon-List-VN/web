@@ -7,11 +7,8 @@
 	import { Switch } from '$lib/components/ui/switch';
 	import { Badge } from '$lib/components/ui/badge';
 	import { createEventDispatcher, onMount } from 'svelte';
-	import { Pin, ChevronDown, ChevronUp, Lock, Filter, Funnel, X } from 'lucide-svelte';
+	import { Pin, ChevronDown, Filter, Funnel, X } from 'lucide-svelte';
 	import { browser } from '$app/environment';
-	import { user } from '$lib/client';
-	import { isActive } from '$lib/client/isSupporterActive';
-	import { toast } from 'svelte-sonner';
 	import { _ } from 'svelte-i18n';
 
 	export let listType: 'dl' | 'pl' | 'fl' | 'cl' = 'dl';
@@ -65,11 +62,6 @@
 	}
 
 	function toggleCollapse() {
-		if (isCollapsed && (!$user.loggedIn || !isActive($user.data?.supporterUntil))) {
-			toast.error($_('list_filter.supporter_only'));
-			return;
-		}
-
 		isCollapsed = !isCollapsed;
 	}
 
@@ -132,24 +124,11 @@
 					</button>
 					<button
 						class="iconButton collapseButton"
-						class:locked={isCollapsed && (!$user.loggedIn || !isActive($user.data?.supporterUntil))}
 						class:expanded={!isCollapsed}
 						on:click={toggleCollapse}
-						title={isCollapsed
-							? !$user.loggedIn || !isActive($user.data?.supporterUntil)
-								? $_('list_filter.supporter_exclusive')
-								: $_('list_filter.expand')
-							: $_('list_filter.collapse')}
+						title={isCollapsed ? $_('list_filter.expand') : $_('list_filter.collapse')}
 					>
-						{#if isCollapsed}
-							{#if !$user.loggedIn || !isActive($user.data?.supporterUntil)}
-								<Lock size={18} />
-							{:else}
-								<ChevronDown size={18} />
-							{/if}
-						{:else}
-							<ChevronUp size={18} />
-						{/if}
+						<ChevronDown size={18} />
 					</button>
 				</div>
 			</div>
@@ -281,9 +260,7 @@
 <style lang="scss">
 	.filterWrapper {
 		margin-bottom: 20px;
-		max-width: 1010px;
 		width: 100%;
-		margin-inline: auto;
 		transition: all 0.3s ease;
 	}
 
@@ -338,16 +315,6 @@
 	.iconButton.active {
 		color: var(--primary);
 		background: var(--accent);
-	}
-
-	.iconButton.locked {
-		color: var(--muted-foreground);
-		opacity: 0.6;
-	}
-
-	.iconButton.locked:hover {
-		color: var(--destructive);
-		opacity: 1;
 	}
 
 	.pinIcon {

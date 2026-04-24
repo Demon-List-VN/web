@@ -3,6 +3,7 @@
 	import LevelCard from '$lib/components/levelCard.svelte';
 	import CommunityPostCard from '$lib/components/communityPostCard.svelte';
 	import { toLevelCardProps } from '$lib/components/levelCardProps';
+	import ListFilter from '$lib/components/listFilter.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import * as Dialog from '$lib/components/ui/dialog';
@@ -37,9 +38,11 @@
 		Info,
 		MoreHorizontal,
 		Star,
-		MessageSquare
+		MessageSquare,
+		ChevronUp
 	} from 'lucide-svelte';
-	import { onDestroy } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
+	import { fly } from 'svelte/transition';
 	import { locale, _ } from 'svelte-i18n';
 
 	export let data: any;
@@ -162,6 +165,32 @@
 	let listLevelsLoading = false;
 	let listLevelsError = '';
 	let listLevelsFetchKey = '';
+	let reachedEnd = false;
+	let showScrollToTop = false;
+
+	type LevelFilters = {
+		topStart: string | null;
+		topEnd: string | null;
+		ratingMin: string | null;
+		ratingMax: string | null;
+		nameSearch: string;
+		creatorSearch: string;
+		sortBy: string | null;
+		ascending: boolean;
+		tagIds: string | null;
+	};
+
+	let filters: LevelFilters = {
+		topStart: null,
+		topEnd: null,
+		ratingMin: null,
+		ratingMax: null,
+		nameSearch: '',
+		creatorSearch: '',
+		sortBy: null,
+		ascending: true,
+		tagIds: null
+	};
 
 	function formatVisibility(visibility: string) {
 		if (visibility === 'public') return $_('custom_lists.visibility.public');
@@ -413,10 +442,36 @@
 	}
 
 	function buildListItemsQuery(start: number, end: number) {
-		return new URLSearchParams({
+		const params = new URLSearchParams({
 			start: String(start),
 			end: String(end)
-		}).toString();
+		});
+
+		if (filters.topStart) params.set('topMin', filters.topStart);
+		if (filters.topEnd) params.set('topMax', filters.topEnd);
+		if (filters.ratingMin) params.set('ratingMin', filters.ratingMin);
+		if (filters.ratingMax) params.set('ratingMax', filters.ratingMax);
+		if (filters.nameSearch) params.set('nameSearch', filters.nameSearch);
+		if (filters.creatorSearch) params.set('creatorSearch', filters.creatorSearch);
+		if (filters.tagIds) params.set('tagIds', filters.tagIds);
+
+		if (hasActiveFilters()) {
+			params.set('ascending', String(filters.ascending));
+		}
+
+		return params.toString();
+	}
+
+	function hasActiveFilters() {
+		return Boolean(
+			filters.topStart ||
+				filters.topEnd ||
+				filters.ratingMin ||
+				filters.ratingMax ||
+				filters.nameSearch ||
+				filters.creatorSearch ||
+				filters.tagIds
+		);
 	}
 
 	function getListDetailUrl(start: number, end: number) {
@@ -436,7 +491,16 @@
 	}
 
 	function hasMoreLevels(currentList: CustomList | null) {
-		return Boolean(currentList && getLoadedLevelCount(currentList) < currentList.levelCount);
+		if (!currentList || reachedEnd) {
+			return false;
+		}
+
+		if (hasActiveFilters()) {
+			// With filters, only stop once we've hit a short page
+			return true;
+		}
+
+		return getLoadedLevelCount(currentList) < currentList.levelCount;
 	}
 
 	function mergeListItems(existingItems: CustomListItem[], incomingItems: CustomListItem[]) {
@@ -562,11 +626,16 @@
 				return;
 			}
 
+			const incoming = payload.items ?? [];
+			if (incoming.length < LEVELS_PAGE_SIZE) {
+				reachedEnd = true;
+			}
+
 			list = list
 				? {
 						...list,
 						...payload,
-						items: mergeListItems(list.items, payload.items ?? [])
+						items: mergeListItems(list.items, incoming)
 					}
 				: payload;
 			loadingError = '';
@@ -588,6 +657,78 @@
 		listLevelsError = '';
 		loadMoreLevels();
 	}
+
+	async function handleFilterChange(event: CustomEvent) {
+		filters = {
+			topStart: event.detail.topStart ?? null,
+			topEnd: event.detail.topEnd ?? null,
+			ratingMin: event.detail.ratingMin ?? null,
+			ratingMax: event.detail.ratingMax ?? null,
+			nameSearch: event.detail.nameSearch ?? '',
+			creatorSearch: event.detail.creatorSearch ?? '',
+			sortBy: event.detail.sortBy ?? null,
+			ascending: event.detail.ascending ?? true,
+			tagIds: event.detail.tagIds ?? null
+		};
+
+		if (!list) {
+			return;
+		}
+
+		reachedEnd = false;
+		listLevelsError = '';
+		const fetchKey = `${$page.params.id}:filter:${Date.now()}`;
+		listLevelsFetchKey = fetchKey;
+		listLevelsLoading = true;
+
+		const headers = $user.loggedIn
+			? { Authorization: `Bearer ${await $user.token()}` }
+			: undefined;
+
+		try {
+			const payload = await fetchListDetail(0, LEVELS_PAGE_SIZE - 1, headers);
+
+			if (fetchKey !== listLevelsFetchKey) {
+				return;
+			}
+
+			const incoming = payload.items ?? [];
+			if (incoming.length < LEVELS_PAGE_SIZE) {
+				reachedEnd = true;
+			}
+
+			list = list
+				? { ...list, ...payload, items: incoming }
+				: payload;
+		} catch (error) {
+			if (fetchKey !== listLevelsFetchKey) {
+				return;
+			}
+
+			listLevelsError = error instanceof Error ? error.message : 'Failed to load list';
+		} finally {
+			if (fetchKey === listLevelsFetchKey) {
+				listLevelsLoading = false;
+			}
+		}
+	}
+
+	function scrollToTop() {
+		if (browser) {
+			window.scrollTo({ top: 0, behavior: 'smooth' });
+		}
+	}
+
+	function handleScroll() {
+		if (browser) {
+			showScrollToTop = window.pageYOffset > 300;
+		}
+	}
+
+	onMount(() => {
+		if (!browser) return;
+		window.addEventListener('scroll', handleScroll);
+	});
 
 	async function toggleStar() {
 		if (!list || starLoading) return;
@@ -829,6 +970,9 @@
 	onDestroy(() => {
 		clearCustomListBranding();
 		destroyLevelsObserver();
+		if (browser) {
+			window.removeEventListener('scroll', handleScroll);
+		}
 	});
 </script>
 
@@ -992,6 +1136,8 @@
 						<h2>{$_('custom_lists.detail.levels.heading')}</h2>
 						<Badge variant="outline">{list.levelCount}</Badge>
 					</div>
+
+					<ListFilter listType="cl" on:filter={handleFilterChange} />
 
 					{#if listItems.length === 0}
 						<div class="emptyState slim">
@@ -1427,6 +1573,17 @@
 	{/if}
 </div>
 
+{#if showScrollToTop}
+	<button
+		class="scrollToTop"
+		on:click={scrollToTop}
+		title={$_('list_filter.scroll_to_top') || 'Scroll to top'}
+		transition:fly={{ y: 20, duration: 300 }}
+	>
+		<ChevronUp size={24} />
+	</button>
+{/if}
+
 <style lang="scss">
 	.page {
 		max-width: 1100px;
@@ -1843,5 +2000,35 @@
 			flex-direction: column;
 			align-items: flex-start;
 		}
+	}
+
+	.scrollToTop {
+		position: fixed;
+		bottom: 24px;
+		right: 24px;
+		width: 48px;
+		height: 48px;
+		border-radius: 50%;
+		background: hsl(var(--primary));
+		color: hsl(var(--primary-foreground));
+		border: none;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+		transition: all 0.3s ease;
+		z-index: 999;
+		opacity: 0.9;
+	}
+
+	.scrollToTop:hover {
+		transform: translateY(-4px);
+		box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
+		opacity: 1;
+	}
+
+	.scrollToTop:active {
+		transform: translateY(-2px);
 	}
 </style>

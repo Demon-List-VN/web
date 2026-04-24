@@ -3156,7 +3156,19 @@
 		{/if}
 	</header>
 
-	{#if authRecoveryLoading && !list}
+	{#if !$user.checked || (!hasResolvedManageAccess && !loadingError)}
+		<div class="emptyState">
+			<AlertTriangle class="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+			<h3>{$_('custom_lists.detail.loading')}</h3>
+			<p>{$_('custom_lists.detail.loading')}</p>
+		</div>
+	{:else if authRecoveryLoading && !list}
+		<div class="emptyState">
+			<AlertTriangle class="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+			<h3>{$_('custom_lists.detail.loading')}</h3>
+			<p>{$_('custom_lists.detail.loading')}</p>
+		</div>
+	{:else if redirectingUnauthorizedManage}
 		<div class="emptyState">
 			<AlertTriangle class="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
 			<h3>{$_('custom_lists.detail.loading')}</h3>

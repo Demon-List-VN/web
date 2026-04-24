@@ -12,14 +12,14 @@
 	export let deleteList: (confirmationName: string) => void | Promise<void> = async () => {};
 
 	let dangerConfirmName = '';
+	let lastSeenListId: number | null = null;
 
-	$: if (list) {
+	$: if (list && list.id !== lastSeenListId) {
+		lastSeenListId = list.id;
 		dangerConfirmName = '';
 	}
 
-	function hasDangerConfirmation() {
-		return Boolean(list && dangerConfirmName.trim() === list.title);
-	}
+	$: hasDangerConfirmation = Boolean(list && dangerConfirmName.trim() === list.title);
 </script>
 
 <div class="tabContent">
@@ -36,14 +36,14 @@
 				<Button
 					variant={list?.isBanned ? 'outline' : 'destructive'}
 					on:click={() => list && setBanState(!list.isBanned, dangerConfirmName)}
-					disabled={savingBanState || !hasDangerConfirmation()}
+					disabled={savingBanState || !hasDangerConfirmation}
 				>
 					<AlertTriangle class="mr-2 h-4 w-4" />
 					{list?.isBanned ? $_('custom_lists.manage.unban') : $_('custom_lists.manage.ban')}
 				</Button>
 			{/if}
 			{#if canDelete}
-				<Button variant="destructive" on:click={() => deleteList(dangerConfirmName)} disabled={!hasDangerConfirmation()}>
+				<Button variant="destructive" on:click={() => deleteList(dangerConfirmName)} disabled={!hasDangerConfirmation}>
 					<Trash2 class="mr-2 h-4 w-4" />
 					{$_('custom_lists.detail.edit.delete')}
 				</Button>

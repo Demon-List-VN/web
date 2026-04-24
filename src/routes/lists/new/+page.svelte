@@ -1,8 +1,6 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
-	import WeightFormulaPreview from '$lib/components/custom-lists/WeightFormulaPreview.svelte';
 	import { Input } from '$lib/components/ui/input';
-	import { Switch } from '$lib/components/ui/switch';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
@@ -16,23 +14,34 @@
 		Lock,
 		Star,
 		ListOrdered,
-		Layers
+		Layers,
+		Clock,
+		Gamepad2,
+		Footprints
 	} from 'lucide-svelte';
 	import { _ } from 'svelte-i18n';
 
-	const visibilityOptions: Array<'private' | 'unlisted' | 'public'> = ['private', 'unlisted', 'public'];
-	const modeOptions: Array<'rating' | 'top'> = ['rating', 'top'];
+	type Visibility = 'public' | 'unlisted' | 'private';
+	type Mode = 'rating' | 'top';
+	type ItemSort = 'mode_default' | 'created_at';
+	type ListType = 'classic' | 'platformer';
 
-	let form = {
+	let form: {
+		title: string;
+		description: string;
+		visibility: Visibility | null;
+		mode: Mode | null;
+		itemSort: ItemSort | null;
+		listType: ListType | null;
+		tagsInput: string;
+	} = {
 		title: '',
 		description: '',
-		visibility: 'private' as 'private' | 'unlisted' | 'public',
-		tags: '',
-		mode: 'rating' as 'rating' | 'top',
-		isPlatformer: false,
-		communityEnabled: true,
-		levelSubmissionEnabled: false,
-		weightFormula: '1'
+		visibility: null,
+		mode: null,
+		itemSort: null,
+		listType: null,
+		tagsInput: ''
 	};
 
 	let creating = false;
@@ -45,14 +54,11 @@
 
 	$: quickLevelId = getQuickLevelId();
 
-	function parseTags(tags: string) {
-		return tags.split(',').map((tag) => tag.trim()).filter(Boolean);
-	}
-
-	function getVisibilityIcon(v: string) {
-		if (v === 'public') return Globe2;
-		if (v === 'unlisted') return EyeOff;
-		return Lock;
+	function parseTags(value: string) {
+		return value
+			.split(',')
+			.map((t) => t.trim())
+			.filter((t) => t.length > 0);
 	}
 
 	async function createList() {
@@ -61,26 +67,50 @@
 			return;
 		}
 
+		if (!form.visibility) {
+			toast.error('Please choose a visibility');
+			return;
+		}
+
+		if (!form.mode) {
+			toast.error('Please choose a mode');
+			return;
+		}
+
+		if (!form.itemSort) {
+			toast.error('Please choose a sort type');
+			return;
+		}
+
+		if (!form.listType) {
+			toast.error('Please choose a list type');
+			return;
+		}
+
 		creating = true;
 
 		try {
+			const body: Record<string, unknown> = {
+				title: form.title,
+				description: form.description,
+				visibility: form.visibility,
+				mode: form.mode,
+				itemSort: form.itemSort,
+				isPlatformer: form.listType === 'platformer'
+			};
+
+			const tags = parseTags(form.tagsInput);
+			if (tags.length > 0) {
+				body.tags = tags;
+			}
+
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists`, {
 				method: 'POST',
 				headers: {
 					Authorization: `Bearer ${await $user.token()}`,
 					'Content-Type': 'application/json'
 				},
-				body: JSON.stringify({
-					title: form.title,
-					description: form.description,
-					visibility: form.visibility,
-					tags: parseTags(form.tags),
-					mode: form.mode,
-					isPlatformer: form.isPlatformer,
-					communityEnabled: form.communityEnabled,
-					levelSubmissionEnabled: form.levelSubmissionEnabled,
-					weightFormula: form.weightFormula
-				})
+				body: JSON.stringify(body)
 			});
 
 			const payload = await res.json();
@@ -144,108 +174,110 @@
 				</div>
 
 				<div class="field">
-					<span class="fieldLabel">{$_('custom_lists.new.visibility_label')}</span>
+					<span class="fieldLabel">Visibility <span class="required">*</span></span>
 					<div class="optionRow">
-						{#each visibilityOptions as v}
-							<button
-								type="button"
-								class="optionBtn"
-								class:selected={form.visibility === v}
-								on:click={() => (form.visibility = v)}
-							>
-								<svelte:component this={getVisibilityIcon(v)} class="h-3.5 w-3.5" />
-								{#if v === 'public'}{$_('custom_lists.visibility.public')}{:else if v === 'unlisted'}{$_('custom_lists.visibility.unlisted')}{:else}{$_('custom_lists.visibility.private')}{/if}
-							</button>
-						{/each}
+						<button
+							type="button"
+							class="optionBtn"
+							class:selected={form.visibility === 'public'}
+							on:click={() => (form.visibility = 'public')}
+						>
+							<Globe2 size={16} /> Public
+						</button>
+						<button
+							type="button"
+							class="optionBtn"
+							class:selected={form.visibility === 'unlisted'}
+							on:click={() => (form.visibility = 'unlisted')}
+						>
+							<EyeOff size={16} /> Unlisted
+						</button>
+						<button
+							type="button"
+							class="optionBtn"
+							class:selected={form.visibility === 'private'}
+							on:click={() => (form.visibility = 'private')}
+						>
+							<Lock size={16} /> Private
+						</button>
 					</div>
-					<p class="hint">
-						{#if form.visibility === 'public'}
-							{$_('custom_lists.new.visibility_public_hint')}
-						{:else if form.visibility === 'unlisted'}
-							{$_('custom_lists.new.visibility_unlisted_hint')}
-						{:else}
-							{$_('custom_lists.new.visibility_private_hint')}
-						{/if}
-					</p>
 				</div>
 
 				<div class="field">
-					<span class="fieldLabel">{$_('custom_lists.new.mode_label')}</span>
+					<span class="fieldLabel">Mode <span class="required">*</span></span>
 					<div class="optionRow">
-						{#each modeOptions as m}
-							<button
-								type="button"
-								class="optionBtn"
-								class:selected={form.mode === m}
-								on:click={() => (form.mode = m)}
-							>
-								{#if m === 'rating'}<Star class="h-3.5 w-3.5" />{:else}<ListOrdered class="h-3.5 w-3.5" />{/if}
-								{m === 'rating' ? $_('custom_lists.detail.edit.mode_rating') : $_('custom_lists.detail.edit.mode_top')}
-							</button>
-						{/each}
-					</div>
-					<p class="hint">{form.mode === 'rating' ? $_('custom_lists.new.mode_rating_hint') : $_('custom_lists.new.mode_top_hint')}</p>
-				</div>
-
-				<div class="field">
-					<div class="switchRow">
-						<div>
-							<label for="list-platformer">{$_('custom_lists.new.type_label')}</label>
-							<p class="hint">{$_('custom_lists.new.type_hint')}</p>
-						</div>
-						<div class="switchControl">
-							<span class="switchLabel">{form.isPlatformer ? $_('custom_lists.type.platformer') : $_('custom_lists.type.classic')}</span>
-							<Switch id="list-platformer" bind:checked={form.isPlatformer} />
-						</div>
+						<button
+							type="button"
+							class="optionBtn"
+							class:selected={form.mode === 'rating'}
+							on:click={() => (form.mode = 'rating')}
+						>
+							<Star size={16} /> Rating
+						</button>
+						<button
+							type="button"
+							class="optionBtn"
+							class:selected={form.mode === 'top'}
+							on:click={() => (form.mode = 'top')}
+						>
+							<ListOrdered size={16} /> Top
+						</button>
 					</div>
 				</div>
 
 				<div class="field">
-					<div class="switchRow">
-						<div>
-							<label for="list-community-enabled">{$_('custom_lists.new.community_label')}</label>
-							<p class="hint">{$_('custom_lists.new.community_hint')}</p>
-						</div>
-						<div class="switchControl">
-							<span class="switchLabel">{form.communityEnabled ? $_('general.yes') : $_('general.no')}</span>
-							<Switch id="list-community-enabled" bind:checked={form.communityEnabled} />
-						</div>
+					<span class="fieldLabel">Sort <span class="required">*</span></span>
+					<div class="optionRow">
+						<button
+							type="button"
+							class="optionBtn"
+							class:selected={form.itemSort === 'mode_default'}
+							on:click={() => (form.itemSort = 'mode_default')}
+						>
+							<Layers size={16} /> Mode default
+						</button>
+						<button
+							type="button"
+							class="optionBtn"
+							class:selected={form.itemSort === 'created_at'}
+							on:click={() => (form.itemSort = 'created_at')}
+						>
+							<Clock size={16} /> Date added
+						</button>
 					</div>
 				</div>
 
 				<div class="field">
-					<div class="switchRow">
-						<div>
-							<label for="list-level-submission-enabled">{$_('custom_lists.new.level_submission_label')}</label>
-							<p class="hint">{$_('custom_lists.new.level_submission_hint')}</p>
-						</div>
-						<div class="switchControl">
-							<span class="switchLabel">{form.levelSubmissionEnabled ? $_('general.yes') : $_('general.no')}</span>
-							<Switch id="list-level-submission-enabled" bind:checked={form.levelSubmissionEnabled} />
-						</div>
+					<span class="fieldLabel">List type <span class="required">*</span></span>
+					<div class="optionRow">
+						<button
+							type="button"
+							class="optionBtn"
+							class:selected={form.listType === 'classic'}
+							on:click={() => (form.listType = 'classic')}
+						>
+							<Gamepad2 size={16} /> Classic
+						</button>
+						<button
+							type="button"
+							class="optionBtn"
+							class:selected={form.listType === 'platformer'}
+							on:click={() => (form.listType = 'platformer')}
+						>
+							<Footprints size={16} /> Platformer
+						</button>
 					</div>
 				</div>
 
 				<div class="field">
-					<label for="list-tags">{$_('custom_lists.new.tags_label')}</label>
+					<label for="list-tags">Tags</label>
 					<Input
 						id="list-tags"
-						bind:value={form.tags}
-						placeholder={$_('custom_lists.new.tags_placeholder')}
+						bind:value={form.tagsInput}
+						maxlength={300}
+						placeholder="Comma-separated, e.g. speedrun, memory, duo"
 					/>
-					<p class="hint">{$_('custom_lists.new.tags_hint')}</p>
-				</div>
-
-				<div class="field">
-					<label for="list-weight-formula">{$_('custom_lists.formula.label')}</label>
-					<Textarea
-						id="list-weight-formula"
-						bind:value={form.weightFormula}
-						placeholder={$_('custom_lists.formula.placeholder')}
-						rows={5}
-					/>
-					<p class="hint">{$_('custom_lists.formula.hint')}</p>
-					<WeightFormulaPreview formula={form.weightFormula} isPlatformer={form.isPlatformer} mode={form.mode} />
+					<p class="hint">Up to 10 tags, 30 characters each.</p>
 				</div>
 			</div>
 
@@ -306,7 +338,12 @@
 		gap: 6px;
 	}
 
-	label, .fieldLabel {
+	label {
+		font-size: 0.9rem;
+		font-weight: 500;
+	}
+
+	.fieldLabel {
 		font-size: 0.9rem;
 		font-weight: 500;
 	}
@@ -342,25 +379,6 @@
 	.optionBtn.selected {
 		background: hsl(var(--primary) / 0.12);
 		border-color: hsl(var(--primary));
-	}
-
-	.switchRow {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-		flex-wrap: wrap;
-	}
-
-	.switchControl {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-	}
-
-	.switchLabel {
-		font-size: 0.9rem;
-		font-weight: 500;
 	}
 
 	.hint {
