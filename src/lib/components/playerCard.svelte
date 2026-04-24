@@ -1,17 +1,142 @@
 <script lang="ts">
-	import * as Popover from '$lib/components/ui/popover/index.js';
 	import * as Avatar from '$lib/components/ui/avatar';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { getTitle } from '$lib/client';
 	import { badgeVariants } from '$lib/components/ui/badge';
 	import { getExpLevel } from '$lib/client/getExpLevel';
 	import { isActive } from '$lib/client/isSupporterActive';
+	import type { PlayerRankedListSummary } from '$lib/types/playerRankedList';
+	import { resolvePlayerRankedListSelection } from '$lib/types/playerRankedList';
+	import { normalizePlayerCardStatLines, PLAYER_CARD_DEFAULT_STAT_LINES } from '$lib/utils/playerCardStatLines';
+	import { normalizeCustomListRankBadges, resolveCustomListRankBadge } from '$lib/utils/customListRank';
 	import { _ } from 'svelte-i18n';
 
 	export let player: any;
+	export let listSummaries: PlayerRankedListSummary[] | null = null;
+	export let active = true;
 
-	const exp = player.exp + player.extraExp;
 	let isBannerFailedToLoad = false;
+	let remoteSummaries: PlayerRankedListSummary[] = [];
+	let isLoadingLists = false;
+	let hasLoadedRemote = false;
+	let listLoadFailed = false;
+	let lastPlayerUid = '';
+
+	$: if (player?.uid !== lastPlayerUid) {
+		lastPlayerUid = player?.uid || '';
+		remoteSummaries = [];
+		isLoadingLists = false;
+		hasLoadedRemote = false;
+		listLoadFailed = false;
+	}
+
+	$: exp = player.exp + player.extraExp;
+	$: expLevel = getExpLevel(exp);
+	$: summaries = listSummaries ?? remoteSummaries;
+	$: configuredStatLines = normalizePlayerCardStatLines(player?.overviewData?.playerCardStatLines);
+	$: resolvedStatLines = configuredStatLines.map((identifier, index) => {
+		return resolvePlayerCardStatLine(identifier)
+			|| resolvePlayerCardStatLine(PLAYER_CARD_DEFAULT_STAT_LINES[index])
+			|| {
+				label: '-',
+				value: '-',
+				rank: null,
+				valueStyle: '',
+				tooltip: null
+			};
+	});
+	$: if (active && listSummaries === null && player?.uid && !hasLoadedRemote && !isLoadingLists && !listLoadFailed) {
+		void loadPlayerRankedLists(player.uid);
+	}
+
+	async function loadPlayerRankedLists(uid: string) {
+		isLoadingLists = true;
+
+		try {
+			const response = await fetch(`${import.meta.env.VITE_API_URL}/players/${uid}/lists`);
+			remoteSummaries = await response.json();
+			hasLoadedRemote = true;
+		} catch {
+			listLoadFailed = true;
+		} finally {
+			isLoadingLists = false;
+		}
+	}
+
+	function formatScore(value: number | null | undefined) {
+		if (typeof value !== 'number' || !Number.isFinite(value)) {
+			return '-';
+		}
+
+		const rounded = Math.round(value * 10) / 10;
+		return Number.isInteger(rounded) ? String(rounded) : String(rounded);
+	}
+
+	function formatRank(value: number | null | undefined) {
+		return typeof value === 'number' && Number.isFinite(value) ? `#${value}` : null;
+	}
+
+	function resolvePlayerCardStatLine(identifier: string) {
+		const summary = resolvePlayerRankedListSelection(summaries, identifier);
+
+		if (summary && (summary.identifier === identifier || summary.slug === identifier || String(summary.id) === identifier)) {
+			const badge = resolveCustomListRankBadge(
+				summary,
+				normalizeCustomListRankBadges(summary.rankBadges)
+			);
+
+			return {
+				label: summary.title,
+				value: formatScore(summary.score),
+				rank: formatRank(summary.rank),
+				valueStyle: badge ? `background: ${badge.color}; color: white;` : '',
+				tooltip: badge?.name || null
+			};
+		}
+
+		switch (identifier) {
+			case 'dl': {
+				const title = getTitle('dl', player);
+				return {
+					label: $_('player_card.rating'),
+					value: formatScore(player.rating),
+					rank: formatRank(player.overallRank),
+					valueStyle: title?.color ? `background-color: ${title.color}` : '',
+					tooltip: title?.fullTitle || null
+				};
+			}
+			case 'pl': {
+				const title = getTitle('pl', player);
+				return {
+					label: $_('player_card.plat_rating'),
+					value: formatScore(player.plRating),
+					rank: formatRank(player.plrank),
+					valueStyle: title?.color ? `background-color: ${title.color}` : '',
+					tooltip: title?.fullTitle || null
+				};
+			}
+			case 'fl':
+				return {
+					label: $_('player_card.featured'),
+					value: formatScore(player.totalFLpt),
+					rank: formatRank(player.flrank),
+					valueStyle: '',
+					tooltip: null
+				};
+			case 'cl': {
+				const title = getTitle('cl', player);
+				return {
+					label: $_('player_card.challenge_rating'),
+					value: formatScore(player.clRating),
+					rank: formatRank(player.clrank),
+					valueStyle: title?.color ? `background-color: ${title.color}` : '',
+					tooltip: title?.fullTitle || null
+				};
+			}
+			default:
+				return null;
+		}
+	}
 </script>
 
 <div
@@ -62,89 +187,46 @@
 		<div class="rating">
 			<div class="flex justify-center">
 				<div class="leftCol">
-					<b>Lv.{getExpLevel(exp).level}</b>
+					<b>Lv.{expLevel.level}</b>
 				</div>
 			</div>
 			<div class="progressBar">
-				<div class="progress" style={`width: ${getExpLevel(exp).progress}%`}>
-					<b>{getExpLevel(exp).progress}%</b>
+				<div class="progress" style={`width: ${expLevel.progress}%`}>
+					<b>{expLevel.progress}%</b>
 				</div>
 			</div>
 		</div>
-		<div class="rating">
-			<Tooltip.Root>
-				<Tooltip.Trigger>
+		{#each resolvedStatLines as statLine}
+			<div class="rating">
+				{#if statLine.tooltip}
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							<div class="leftCol">
+								<div class="title text-white" style={statLine.valueStyle}>
+									{statLine.value}
+								</div>
+							</div>
+						</Tooltip.Trigger>
+						<Tooltip.Content>{statLine.tooltip}</Tooltip.Content>
+					</Tooltip.Root>
+				{:else}
 					<div class="leftCol">
-						<div
-							class="title text-white"
-							style={`background-color: ${getTitle('dl', player)?.color}`}
-						>
-							{player.rating}
+						<div class="title" style={statLine.valueStyle}>
+							{statLine.value}
 						</div>
 					</div>
-				</Tooltip.Trigger>
-				<Tooltip.Content>{getTitle('dl', player)?.fullTitle}</Tooltip.Content>
-			</Tooltip.Root>
-			<div class="rankWrapper">
-				{$_('player_card.rating')}
-				<div class="rank">
-					#{player.overallRank}
-				</div>
-			</div>
-		</div>
-		<div class="rating">
-			<Tooltip.Root>
-				<Tooltip.Trigger>
-					<div class="leftCol">
-						<div
-							class="title text-white"
-							style={`background-color: ${getTitle('pl', player)?.color}`}
-						>
-							{player.plRating}
+				{/if}
+				<div class="rankWrapper">
+					{statLine.label}
+					{#if statLine.rank}
+						<div class="rank">
+							{statLine.rank}
 						</div>
-					</div>
-				</Tooltip.Trigger>
-				<Tooltip.Content>{getTitle('pl', player)?.fullTitle}</Tooltip.Content>
-			</Tooltip.Root>
-			<div class="rankWrapper">
-				{$_('player_card.plat_rating')}
-				<div class="rank">
-					#{player.plrank}
+					{/if}
 				</div>
 			</div>
-		</div>
-		<div class="rating">
-			<div class="leftCol">
-				<div class="title">{player.totalFLpt}</div>
-			</div>
-			<div class="rankWrapper">
-				{$_('player_card.featured')}
-				<div class="rank">
-					#{player.flrank}
-				</div>
-			</div>
-		</div>
-		<div class="rating">
-			<Tooltip.Root>
-				<Tooltip.Trigger>
-					<div class="leftCol">
-						<div
-							class="title text-white"
-							style={`background-color: ${getTitle('cl', player)?.color}`}
-						>
-							{player.clRating}
-						</div>
-					</div>
-				</Tooltip.Trigger>
-				<Tooltip.Content>{getTitle('cl', player)?.fullTitle}</Tooltip.Content>
-			</Tooltip.Root>
-			<div class="rankWrapper">
-				{$_('player_card.challenge_rating')}
-				<div class="rank">
-					#{player.clrank}
-				</div>
-			</div>
-		</div>
+		{/each}
+
 		<div class="rating">
 			<Tooltip.Root>
 				<Tooltip.Trigger>
@@ -209,6 +291,8 @@
 
 	.content {
 		padding-top: 10px;
+		display: grid;
+		gap: 10px;
 	}
 
 	.rankWrapper {
@@ -240,6 +324,11 @@
 		gap: 10px;
 		align-items: center;
 		font-size: 13px;
+	}
+
+	.lastRefreshed {
+		font-size: 12px;
+		opacity: 0.7;
 	}
 
 	.rank {

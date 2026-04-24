@@ -2,7 +2,6 @@
 	import BaseCard from './BaseCard.svelte';
 	import * as Card from '$lib/components/ui/card';
 	import { _ } from 'svelte-i18n';
-	import { isActive } from '$lib/client/isSupporterActive';
 	import type { CardConfig } from './types';
 	import { getBorderStyle } from './getBorderStyle';
 
@@ -12,10 +11,13 @@
 	export let draggedCard: string | null;
 	export let isCustomizing: boolean = false;
 
-	$: dlRecords = data.records.dl || [];
-	$: flRecords = data.records.fl || [];
-	$: plRecords = data.records.pl || [];
-	$: allRecords = [...dlRecords, ...flRecords, ...plRecords];
+	$: selectedList = data.selectedList;
+	$: recordsResponse = data.selectedListRecords;
+	$: totalRecords = recordsResponse?.total ?? recordsResponse?.data?.length ?? 0;
+	$: totalLevels = recordsResponse?.list?.items?.length ?? null;
+	$: coverage = totalLevels && totalLevels > 0
+		? Math.round((totalRecords / totalLevels) * 100)
+		: null;
 </script>
 
 <BaseCard bind:draggedCard bind:cardConfigs bind:config bind:isCustomizing>
@@ -24,19 +26,19 @@
 			<Card.Title class="text-lg">{$_('player.overview.total_records')}</Card.Title>
 		</Card.Header>
 		<Card.Content>
-			<div class="stat-value">{allRecords.length}</div>
+			<div class="stat-value">{totalRecords}</div>
 			<div class="stat-breakdown">
 				<div class="stat-item">
-					<span class="stat-label">Classic</span>
-					<span class="stat-number">{dlRecords.length}</span>
+					<span class="stat-label">List</span>
+					<span class="stat-number stat-text">{selectedList?.title || '-'}</span>
 				</div>
 				<div class="stat-item">
-					<span class="stat-label">Featured</span>
-					<span class="stat-number">{flRecords.length}</span>
+					<span class="stat-label">Levels</span>
+					<span class="stat-number">{totalLevels ?? '-'}</span>
 				</div>
 				<div class="stat-item">
-					<span class="stat-label">Platformer</span>
-					<span class="stat-number">{plRecords.length}</span>
+					<span class="stat-label">Coverage</span>
+					<span class="stat-number">{coverage != null ? `${coverage}%` : '-'}</span>
 				</div>
 			</div>
 		</Card.Content>
@@ -74,6 +76,14 @@
 	.stat-number {
 		font-weight: 600;
 		font-size: 1.1rem;
+		text-align: right;
+	}
+
+	.stat-text {
+		max-width: 65%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	@media screen and (max-width: 768px) {

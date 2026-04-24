@@ -47,6 +47,22 @@
 
 	$: visibleCards = cardConfigs.filter((c) => c.visible).sort((a, b) => a.order - b.order);
 
+	function isCardLayoutEntry(value: unknown): value is { visible: boolean; size: CardSize; order: number } {
+		return Boolean(
+			value
+				&& typeof value === 'object'
+				&& 'visible' in value
+				&& 'size' in value
+				&& 'order' in value
+		);
+	}
+
+	function getOverviewMetadata(overviewData: Record<string, any> | null | undefined) {
+		return Object.fromEntries(
+			Object.entries(overviewData || {}).filter(([, value]) => !isCardLayoutEntry(value))
+		);
+	}
+
 	function toggleCardVisibility(cardId: string) {
 		cardConfigs = cardConfigs.map((c) => (c.id === cardId ? { ...c, visible: !c.visible } : c));
 	}
@@ -105,7 +121,7 @@
 		cardConfigs = [...defaultCards];
 
 		const currentOverviewData = data.player.overviewData || {};
-		const positions: Record<string, any> = {};
+		const positions: Record<string, any> = getOverviewMetadata(currentOverviewData);
 		
 		cardConfigs.forEach((card) => {
 			positions[card.id] = {
@@ -149,7 +165,7 @@
 
 	function handleSavePositions() {
 		const currentOverviewData = data.player.overviewData || {};
-		const positions: Record<string, any> = {};
+		const positions: Record<string, any> = getOverviewMetadata(currentOverviewData);
 		
 		cardConfigs.forEach((card) => {
 			positions[card.id] = {
@@ -167,13 +183,17 @@
 	onMount(async () => {
 		if (data.player.overviewData) {
 			const overviewData = data.player.overviewData;
+			const cardEntries = Object.entries(overviewData).filter(([, value]) => isCardLayoutEntry(value)) as Array<
+				[string, { visible: boolean; size: CardSize; order: number }]
+			>;
 
-			cardConfigs = Object.keys(overviewData).map((id) => ({
-				id,
-				visible: overviewData[id].visible,
-				size: overviewData[id].size,
-				order: overviewData[id].order
-			}));
+			cardConfigs = cardEntries
+				.map(([id, value]) => ({
+					id,
+					visible: value.visible,
+					size: value.size,
+					order: value.order
+				}));
 
 			const existingIds = new Set(cardConfigs.map((c) => c.id));
 			const missingConfigs = defaultCards.filter((card) => !existingIds.has(card.id));

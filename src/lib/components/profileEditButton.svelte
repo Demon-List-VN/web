@@ -14,6 +14,12 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import { upload } from '$lib/client/storage';
+	import type { PlayerRankedListSummary } from '$lib/types/playerRankedList';
+	import {
+		buildPlayerCardStatLineOptions,
+		normalizePlayerCardStatLines,
+		PLAYER_CARD_STAT_LINE_COUNT
+	} from '$lib/utils/playerCardStatLines';
 	import { _ } from 'svelte-i18n';
 
 	export let data: any;
@@ -33,11 +39,38 @@
 		label: player.city,
 		value: player.city
 	};
+	let playerCardListSummaries: PlayerRankedListSummary[] = [];
+	let playerCardStatLinesLoadedForUid: string | null = null;
+	let isLoadingPlayerCardStatLines = false;
 
 	$: (open, reset());
+	$: legacyPlayerCardStatLineLabels = {
+		dl: $_('player_card.rating'),
+		pl: $_('player_card.plat_rating'),
+		fl: $_('player_card.featured'),
+		cl: $_('player_card.challenge_rating')
+	};
+	$: playerCardStatLineOptions = buildPlayerCardStatLineOptions(
+		playerCardListSummaries,
+		legacyPlayerCardStatLineLabels
+	);
+	$: playerCardStatLineIdentifiers = normalizePlayerCardStatLines(player?.overviewData?.playerCardStatLines);
+	$: if (open && player?.uid && playerCardStatLinesLoadedForUid !== player.uid && !isLoadingPlayerCardStatLines) {
+		void loadPlayerCardStatLines(player.uid);
+	}
 
 	function reset() {
 		player = structuredClone(data);
+		provinceItem = {
+			disabled: false,
+			label: player.province,
+			value: player.province
+		};
+		cityItem = {
+			disabled: false,
+			label: player.city,
+			value: player.city
+		};
 	}
 
 	$: renameCooldownActive =
@@ -49,6 +82,39 @@
 		: $_('profile_edit.rename_cooldown', {
 				values: { date: new Date(player.renameCooldown).toLocaleDateString() }
 		  });
+
+	async function loadPlayerCardStatLines(uid: string) {
+		isLoadingPlayerCardStatLines = true;
+
+		try {
+			const response = await fetch(`${import.meta.env.VITE_API_URL}/players/${uid}/lists`);
+			playerCardListSummaries = await response.json();
+			playerCardStatLinesLoadedForUid = uid;
+		} catch {
+			playerCardListSummaries = [];
+		} finally {
+			isLoadingPlayerCardStatLines = false;
+		}
+	}
+
+	function updatePlayerCardStatLine(index: number, value: string | undefined) {
+		const nextStatLines = normalizePlayerCardStatLines(player?.overviewData?.playerCardStatLines);
+		nextStatLines[index] = value || nextStatLines[index];
+		player = {
+			...player,
+			overviewData: {
+				...(player.overviewData || {}),
+				playerCardStatLines: nextStatLines
+			}
+		};
+	}
+
+	function getPlayerCardStatLineSelection(index: number) {
+		const identifier = playerCardStatLineIdentifiers[index];
+		return playerCardStatLineOptions.find((option) => option.value === identifier)
+			|| playerCardStatLineOptions[index]
+			|| undefined;
+	}
 
 	async function getAvatar(e: any) {
 		if (player.isBanned) {
@@ -330,6 +396,35 @@
 				<div class="grid grid-cols-4 items-center gap-4">
 					<Label for="airplane-mode" class="text-right">{$_('profile_edit.hide_profile')}</Label>
 					<Switch id="airplane-mode" class="col-span-3" bind:checked={player.isHidden} />
+				</div>
+				<div class="grid gap-3 rounded-md border p-4">
+					<div class="space-y-1">
+						<p class="text-sm font-semibold">{$_('profile_edit.player_card_stat_lines')}</p>
+						<p class="text-xs text-muted-foreground">{$_('profile_edit.player_card_stat_lines_description')}</p>
+					</div>
+					{#each playerCardStatLineIdentifiers as _identifier, index}
+						<div class="grid grid-cols-4 items-center gap-4">
+							<Label class="text-right">
+								{$_('profile_edit.player_card_stat_line', { values: { index: index + 1 } })}
+							</Label>
+							<Select.Root
+								selected={getPlayerCardStatLineSelection(index)}
+								onSelectedChange={(option) => updatePlayerCardStatLine(index, option?.value)}
+							>
+								<Select.Trigger class="col-span-3">
+									<Select.Value placeholder={$_('general.select')} />
+								</Select.Trigger>
+								<Select.Content>
+									{#each playerCardStatLineOptions as option}
+										<Select.Item value={option.value}>{option.label}</Select.Item>
+									{/each}
+								</Select.Content>
+							</Select.Root>
+						</div>
+					{/each}
+					{#if isLoadingPlayerCardStatLines}
+						<p class="text-xs text-muted-foreground">{$_('general.loading')}...</p>
+					{/if}
 				</div>
 			</div>
 			<Dialog.Footer>

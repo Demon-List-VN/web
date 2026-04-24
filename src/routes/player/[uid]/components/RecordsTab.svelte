@@ -1,30 +1,18 @@
 <script lang="ts">
-	import { Label } from '$lib/components/ui/label';
-	import { Switch } from '$lib/components/ui/switch';
 	import * as Table from '$lib/components/ui/table';
-	import * as Select from '$lib/components/ui/select';
-	import { Button } from '$lib/components/ui/button';
 	import RecordDetail from '$lib/components/recordDetail.svelte';
-	import { page } from '$app/stores';
 	import { _ } from 'svelte-i18n';
+	import { getPlayerRankedListScoreLabel } from '$lib/types/playerRankedList';
 
 	export let data: any;
 
-	let list: 'dl' | 'pl' | 'cl' | 'fl' = 'dl';
 	let recordDetailOpened = false;
 	let selectedRecord: any = null;
 
-	const filter = {
-		sortBy: 'pt',
-		ascending: false
-	};
-
-	const listOptions: { value: 'dl' | 'pl' | 'cl' | 'fl'; label: string }[] = [
-		{ value: 'dl', label: 'Classic' },
-		{ value: 'pl', label: 'Platformer' },
-		{ value: 'cl', label: 'Challenge' },
-		{ value: 'fl', label: 'Featured' }
-	];
+	$: selectedList = data.selectedList;
+	$: recordsResponse = data.selectedListRecords;
+	$: records = recordsResponse?.data || [];
+	$: isPlatformer = Boolean(selectedList?.isPlatformer);
 
 	function getTimeString(ms: number) {
 		const minutes = Math.floor(ms / 60000);
@@ -33,14 +21,13 @@
 		return `${minutes}:${seconds.toString().padStart(2, '0')}.${milliseconds}`;
 	}
 
-	async function applyFilter() {
-		const records: any[] = await (
-			await fetch(
-				`${import.meta.env.VITE_API_URL}/players/${$page.params.uid}/records?sortBy=${filter.sortBy}&ascending=${filter.ascending}&end=500`
-			)
-		).json();
-		data.records = records;
-		data = data;
+	function formatPoint(value: number | null | undefined) {
+		if (typeof value !== 'number' || !Number.isFinite(value)) {
+			return '0';
+		}
+
+		const rounded = Math.round(value * 10) / 10;
+		return Number.isInteger(rounded) ? String(rounded) : String(rounded);
 	}
 </script>
 
@@ -52,59 +39,35 @@
 	/>
 {/if}
 
-<!-- List Type Selector -->
-<div class="mb-4 flex flex-wrap justify-center gap-2">
-	{#each listOptions as option}
-		<Button
-			variant={list === option.value ? 'default' : 'outline'}
-			size="sm"
-			on:click={() => (list = option.value)}
-		>
-			{option.label}
-		</Button>
-	{/each}
-</div>
 
-<!-- Filter -->
-<div class="filter">
-	<div class="filterItem">
-		<Label>{$_('general.sort_by')}</Label>
-		<Select.Root
-			selected={{ label: $_('player.filter.point'), value: 'pt' }}
-			onSelectedChange={(e) => {
-				// @ts-expect-error
-				filter.sortBy = e.value;
-			}}
-		>
-			<Select.Trigger class="w-[180px]">
-				<Select.Value placeholder={$_('player.filter.sort_by')} />
-			</Select.Trigger>
-			<Select.Content>
-				<Select.Item value="pt">{$_('player.filter.point')}</Select.Item>
-				<Select.Item value="timestamp">{$_('player.filter.date_submitted')}</Select.Item>
-			</Select.Content>
-		</Select.Root>
+{#if !selectedList}
+	<div class="emptyState">No official or verified list ranking yet.</div>
+{:else}
+	<div class="summaryCard">
+		<div>
+			<p class="summaryEyebrow">{selectedList.title}</p>
+			<h3 class="summaryTitle">
+				{recordsResponse?.total ?? 0} accepted records
+			</h3>
+			<p class="summaryMeta">
+				{getPlayerRankedListScoreLabel(selectedList)} {formatPoint(selectedList.score)} · Top #{selectedList.rank}
+			</p>
+		</div>
+		{#if recordsResponse?.lastRefreshedAt}
+			<p class="summaryMeta">Last refreshed {new Date(recordsResponse.lastRefreshedAt).toLocaleString('vi-VN')}</p>
+		{/if}
 	</div>
-	<div class="filterItem">
-		<Label>{$_('general.ascending')}</Label>
-		<Switch bind:checked={filter.ascending} />
-	</div>
-	<div class="filterItem">
-		<Button variant="outline" on:click={applyFilter}>{$_('general.apply')}</Button>
-	</div>
-</div>
 
-<!-- Records Table -->
-{#if data.records[list]}
+	{#if records.length}
 	<Table.Root>
-		<Table.Caption>{$_('player.table.total_record')}: {data.records[list].length}</Table.Caption>
+		<Table.Caption>{$_('player.table.total_record')}: {recordsResponse?.total ?? records.length}</Table.Caption>
 		<Table.Header>
 			<Table.Row>
 				<Table.Head>{$_('player.table.level')}</Table.Head>
 				<Table.Head class="w-[100px] text-center">{$_('player.table.submitted_on')}</Table.Head>
 				<Table.Head class="w-[100px] text-center">{$_('player.table.device')}</Table.Head>
 				<Table.Head class="w-[80px] text-center">{$_('player.table.point')}</Table.Head>
-				{#if list == 'pl'}
+				{#if isPlatformer}
 					<Table.Head class="w-[80px] text-center">{$_('player.table.time')}</Table.Head>
 				{:else}
 					<Table.Head class="w-[80px] text-center">{$_('player.table.progress')}</Table.Head>
@@ -112,7 +75,7 @@
 			</Table.Row>
 		</Table.Header>
 		<Table.Body>
-			{#each data.records[list] as record}
+			{#each records as record}
 				<Table.Row
 					on:click={(e) => {
 						// @ts-expect-error
@@ -123,22 +86,28 @@
 				>
 					<Table.Cell class="font-medium">
 						<div class="relative flex">
-							<img
-								class="levelBG absolute ml-[-18px] mt-[-16px] box-border h-[53.5px] w-[350px] max-w-full object-cover"
-								src={`https://img.youtube.com/vi/${record.levels.videoID}/0.jpg`}
-								alt="bg"
-							/>
+							{#if record.level?.videoID}
+								<img
+									class="levelBG absolute ml-[-18px] mt-[-16px] box-border h-[53.5px] w-[350px] max-w-full object-cover"
+									src={`https://img.youtube.com/vi/${record.level.videoID}/0.jpg`}
+									alt="bg"
+								/>
+							{/if}
 							<a
 								class="levelName z-10"
-								href={`/level/${record.levels.id}`}
+								href={`/level/${record.level?.id}`}
 								data-sveltekit-preload-data="tap"
 							>
-								{record.levels.name}
+								{record.level?.name}
 							</a>
 						</div>
 					</Table.Cell>
 					<Table.Cell class="text-center">
-						{new Date(record.timestamp).toLocaleString('vi-VN')}
+						{#if record.timestamp}
+							{new Date(record.timestamp).toLocaleString('vi-VN')}
+						{:else}
+							-
+						{/if}
 					</Table.Cell>
 					<Table.Cell class="text-center">
 						{record.mobile ? 'Mobile' : 'PC'}
@@ -147,9 +116,9 @@
 						{/if}
 					</Table.Cell>
 					<Table.Cell class="text-center">
-						{Math.round(record[list + 'Pt'] * 10) / 10}
+						{formatPoint(record.point)}
 					</Table.Cell>
-					{#if list == 'pl'}
+					{#if isPlatformer}
 						<Table.Cell class="text-center">{getTimeString(record.progress)}</Table.Cell>
 					{:else}
 						<Table.Cell class="text-center">{record.progress}%</Table.Cell>
@@ -158,6 +127,9 @@
 			{/each}
 		</Table.Body>
 	</Table.Root>
+	{:else}
+		<div class="emptyState">No accepted records on this list yet.</div>
+	{/if}
 {/if}
 
 <style lang="scss">
@@ -183,31 +155,44 @@
 		text-shadow: 0px 1px 2px var(--textColorInverted);
 	}
 
-	.filter {
-		display: flex;
-		gap: 30px;
-		margin-bottom: 10px;
-		justify-content: center;
+	.summaryCard,
+	.emptyState {
 		border-radius: var(--radius);
 		border: 1px solid var(--border1);
-		padding-top: 10px;
-		padding-bottom: 10px;
-		width: fit-content;
-		padding-inline: 20px;
-		margin-inline: auto;
+		background: hsl(var(--muted) / 0.4);
+		padding: 16px;
+		margin-bottom: 16px;
+	}
 
-		.filterItem {
-			display: flex;
-			gap: 10px;
-			align-items: center;
-		}
+	.summaryCard {
+		display: flex;
+		justify-content: space-between;
+		gap: 16px;
+		flex-wrap: wrap;
+	}
+
+	.summaryEyebrow {
+		font-size: 12px;
+		text-transform: uppercase;
+		letter-spacing: 0.12em;
+		color: var(--textColorDimmed);
+		margin-bottom: 6px;
+	}
+
+	.summaryTitle {
+		font-size: 20px;
+		font-weight: 700;
+		margin-bottom: 4px;
+	}
+
+	.summaryMeta,
+	.emptyState {
+		color: var(--textColorDimmed);
 	}
 
 	@media screen and (max-width: 1200px) {
-		.filter {
+		.summaryCard {
 			flex-direction: column;
-			margin-bottom: 20px;
-			gap: 15px;
 		}
 	}
 </style>

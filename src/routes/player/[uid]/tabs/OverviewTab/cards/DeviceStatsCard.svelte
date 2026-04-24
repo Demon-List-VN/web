@@ -2,7 +2,6 @@
 	import BaseCard from './BaseCard.svelte';
 	import * as Card from '$lib/components/ui/card';
 	import { _ } from 'svelte-i18n';
-	import { isActive } from '$lib/client/isSupporterActive';
 	import type { CardConfig } from './types';
 	import { getBorderStyle } from './getBorderStyle';
 
@@ -12,17 +11,25 @@
 	export let draggedCard: string | null;
 	export let isCustomizing: boolean = false;
 
-	$: dlRecords = data.records.dl || [];
-	$: flRecords = data.records.fl || [];
-	$: plRecords = data.records.pl || [];
-	$: allRecords = [...dlRecords, ...flRecords, ...plRecords];
-	$: mobileRecords = allRecords.filter((r) => r.mobile).length;
-	$: pcRecords = allRecords.filter((r) => !r.mobile).length;
+	type DeviceRecord = {
+		mobile?: boolean | null;
+		refreshRate?: number | null;
+	};
+
+	$: selectedList = data.selectedList;
+	$: allRecords = (data.selectedListRecords?.data || []) as DeviceRecord[];
+	$: mobileRecords = allRecords.filter((record: DeviceRecord) => Boolean(record.mobile)).length;
+	$: pcRecords = allRecords.filter((record: DeviceRecord) => !record.mobile).length;
+	$: refreshRateRecords = allRecords.filter(
+		(record: DeviceRecord) => typeof record.refreshRate === 'number' && record.refreshRate > 0
+	);
 	$: avgRefreshRate =
-		allRecords.filter((r) => r.refreshRate).length > 0
+		refreshRateRecords.length > 0
 			? Math.round(
-					allRecords.filter((r) => r.refreshRate).reduce((acc, r) => acc + r.refreshRate, 0) /
-						allRecords.filter((r) => r.refreshRate).length
+					refreshRateRecords.reduce(
+						(acc: number, record: DeviceRecord) => acc + Number(record.refreshRate || 0),
+						0
+					) / refreshRateRecords.length
 				)
 			: 0;
 </script>
@@ -33,6 +40,9 @@
 			<Card.Title class="text-lg">{$_('player.overview.device_stats')}</Card.Title>
 		</Card.Header>
 		<Card.Content>
+			{#if selectedList}
+				<p class="card-context">{selectedList.title}</p>
+			{/if}
 			<div class="device-stats">
 				<div class="device-item">
 					<div class="device-icon">💻</div>
@@ -65,6 +75,12 @@
 </BaseCard>
 
 <style lang="scss">
+	.card-context {
+		font-size: 0.8rem;
+		opacity: 0.7;
+		margin-bottom: 10px;
+	}
+
 	.device-stats {
 		display: flex;
 		justify-content: space-around;

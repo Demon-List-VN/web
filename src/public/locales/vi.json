@@ -310,6 +310,9 @@
     "province": "Tỉnh",
     "city": "Xã/Phường",
     "hide_profile": "Ẩn hồ sơ",
+    "player_card_stat_lines": "Dòng chỉ số trên thẻ người chơi",
+    "player_card_stat_lines_description": "Chọn các chỉ số xếp hạng sẽ xuất hiện trên thẻ người chơi của bạn.",
+    "player_card_stat_line": "Dòng chỉ số {index}",
     "save": "Lưu thay đổi"
   },
   "record_detail": {

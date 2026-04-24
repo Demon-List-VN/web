@@ -4,7 +4,6 @@
 	import LevelCard from '$lib/components/levelCard.svelte';
 	import { toLevelCardProps } from '$lib/components/levelCardProps';
 	import { _ } from 'svelte-i18n';
-	import { isActive } from '$lib/client/isSupporterActive';
 	import type { CardConfig } from './types';
 	import { getBorderStyle } from './getBorderStyle';
 
@@ -14,8 +13,30 @@
 	export let draggedCard: string | null;
 	export let isCustomizing: boolean = false;
 
-	$: dlRecords = data.records.dl || [];
-	$: hardestLevel = dlRecords.length > 0 ? dlRecords[0] : null;
+	function resolveLevelCardType(list: any) {
+		if (list?.slug === 'fl' || list?.slug === 'pl' || list?.slug === 'dl' || list?.slug === 'cl') {
+			return list.slug;
+		}
+
+		return list?.isPlatformer ? 'pl' : 'dl';
+	}
+
+	$: selectedList = data.selectedList;
+	$: records = data.selectedListRecords?.data || [];
+	$: hardestLevel = records.length > 0 ? records[0] : null;
+	$: levelCardType = resolveLevelCardType(selectedList);
+	$: hardestLevelProps = hardestLevel
+		? toLevelCardProps(hardestLevel.level || {}, levelCardType, {
+				rating: hardestLevel.point,
+				top: hardestLevel.no,
+				minProgress: hardestLevel.formulaScope?.minProgress ?? hardestLevel.level?.minProgress ?? null,
+				record: {
+					isChecked: true,
+					progress: hardestLevel.progress
+				},
+				isPlatformer: Boolean(selectedList?.isPlatformer)
+			})
+		: null;
 </script>
 
 <BaseCard bind:draggedCard bind:cardConfigs bind:config bind:isCustomizing>
@@ -24,8 +45,8 @@
 			<Card.Title class="text-lg">{$_('player.overview.hardest_demon')}</Card.Title>
 		</Card.Header>
 		<Card.Content>
-			{#if hardestLevel}
-				<LevelCard {...toLevelCardProps(hardestLevel.levels, 'dl')} type="dl" />
+			{#if hardestLevel && hardestLevelProps}
+				<LevelCard {...hardestLevelProps} type={levelCardType} />
 			{:else}
 				<div class="no-records">{$_('player.overview.no_data')}</div>
 			{/if}

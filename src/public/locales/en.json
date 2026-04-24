@@ -311,6 +311,9 @@
     "province": "Province",
     "city": "Ward",
     "hide_profile": "Hide profile",
+    "player_card_stat_lines": "Player card stat lines",
+    "player_card_stat_lines_description": "Choose which ranked stats appear on your player card.",
+    "player_card_stat_line": "Stat line {index}",
     "save": "Save changes"
   },
   "record_detail": {

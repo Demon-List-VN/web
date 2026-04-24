@@ -142,7 +142,7 @@
 			{/if}
 		</Popover.Trigger>
 		<Popover.Content class="w-80 p-0 border-transparent">
-			<PlayerCard {player} />
+			<PlayerCard {player} active={isPopoverOpen} />
 		</Popover.Content>
 	</Popover.Root>
 </div>

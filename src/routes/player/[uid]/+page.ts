@@ -1,7 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import { getPlayerData } from './getPlayerData.js';
 import { isActive } from '$lib/client/isSupporterActive.js';
-import { error } from '@sveltejs/kit';
 
 export async function load({ params, url, fetch }) {
 	const { uid } = params;
@@ -11,5 +10,5 @@ export async function load({ params, url, fetch }) {
 		throw redirect(307, `/@${player.name}`);
 	}
 	
-	return await getPlayerData(player, fetch);
+	return await getPlayerData(player, fetch, url);
 }
