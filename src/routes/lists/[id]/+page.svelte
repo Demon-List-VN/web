@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import LevelCard from '$lib/components/levelCard.svelte';
+	import AcceptanceBadge from '$lib/components/AcceptanceBadge.svelte';
 	import CommunityPostCard from '$lib/components/communityPostCard.svelte';
 	import { toLevelCardProps } from '$lib/components/levelCardProps';
 	import ListFilter from '$lib/components/listFilter.svelte';
@@ -105,6 +106,8 @@
 		levelId: number;
 		progress: number;
 		timestamp: number | null;
+		acceptedManually: boolean;
+		acceptedAuto: boolean;
 		point: number;
 		no: number;
 		formulaScope: {
@@ -1667,6 +1670,7 @@
 												>{$_('custom_lists.detail.records.position_label')}</Table.Head
 											>
 											<Table.Head>{$_('custom_lists.detail.records.level_label')}</Table.Head>
+											<Table.Head class="w-[70px] text-center">{$_('acceptance.short_label')}</Table.Head>
 											<Table.Head class="w-[110px] text-right"
 												>{$_('custom_lists.detail.records.progress_label')}</Table.Head
 											>
@@ -1689,6 +1693,13 @@
 													{#if entry.level?.creator}
 														<div class="recordLevelMeta">{entry.level.creator}</div>
 													{/if}
+												</Table.Cell>
+												<Table.Cell class="text-center">
+													<AcceptanceBadge
+														acceptedManually={entry.acceptedManually}
+														acceptedAuto={entry.acceptedAuto}
+														compact
+													/>
 												</Table.Cell>
 												<Table.Cell class="text-right"
 													>{formatRecordProgress(entry.progress)}</Table.Cell

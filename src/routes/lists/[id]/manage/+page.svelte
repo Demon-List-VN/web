@@ -119,6 +119,7 @@
 	};
 
 	type CustomListResolvedRole = 'viewer' | 'owner' | 'admin' | 'helper' | 'moderator';
+	type RecordFilterAcceptanceStatus = 'manual' | 'auto' | 'any';
 
 	type CustomListPermissionFlags = {
 		canEditSettings: boolean;
@@ -203,6 +204,7 @@
 		recordFilterMinRefreshRate?: number | null;
 		recordFilterMaxRefreshRate?: number | null;
 		recordFilterManualAcceptanceOnly?: boolean;
+		recordFilterAcceptanceStatus?: RecordFilterAcceptanceStatus | null;
 		items: CustomListItem[];
 		ownerData?: any;
 	};
@@ -314,7 +316,7 @@
 		recordFilterPlatform: 'any' | 'pc' | 'mobile';
 		recordFilterMinRefreshRate: number | null;
 		recordFilterMaxRefreshRate: number | null;
-		recordFilterManualAcceptanceOnly: boolean;
+		recordFilterAcceptanceStatus: RecordFilterAcceptanceStatus;
 	};
 
 	type PendingManageAuditField = keyof PendingLevelAuditState | keyof PendingSettingsAuditState;
@@ -396,6 +398,7 @@
 	const DEFAULT_ITEM_SORT: 'mode_default' | 'created_at' = 'mode_default';
 	const LEVEL_AUDIT_MUTABLE_FIELDS: Array<keyof LevelItemPatch> = ['rating', 'minProgress', 'videoID', 'createdAt'];
 	const RECORD_FILTER_PLATFORM_OPTIONS: Array<'any' | 'pc' | 'mobile'> = ['any', 'pc', 'mobile'];
+	const RECORD_FILTER_ACCEPTANCE_OPTIONS: RecordFilterAcceptanceStatus[] = ['manual', 'auto', 'any'];
 
 	class BatchAddImportAbortedError extends Error {
 		constructor() {
@@ -426,6 +429,7 @@
 		recordFilterPlatform: 'any' as 'any' | 'pc' | 'mobile',
 		recordFilterMinRefreshRate: null as number | null,
 		recordFilterMaxRefreshRate: null as number | null,
+		recordFilterAcceptanceStatus: 'manual' as RecordFilterAcceptanceStatus,
 		recordFilterManualAcceptanceOnly: true
 	};
 
@@ -437,6 +441,22 @@
 		return `${import.meta.env.VITE_API_URL}/lists/${$page.params.id}`;
 	}
 
+	function getRecordFilterAcceptanceStatus(source: {
+		recordFilterAcceptanceStatus?: string | null;
+		recordFilterManualAcceptanceOnly?: boolean | null;
+	}): RecordFilterAcceptanceStatus {
+		const status = source.recordFilterAcceptanceStatus;
+
+		if (RECORD_FILTER_ACCEPTANCE_OPTIONS.includes(status as RecordFilterAcceptanceStatus)) {
+			return status as RecordFilterAcceptanceStatus;
+		}
+
+		return (source.recordFilterManualAcceptanceOnly ?? true) ? 'manual' : 'any';
+	}
+
+	function getManualAcceptanceOnlyForStatus(status: RecordFilterAcceptanceStatus) {
+		return status === 'manual';
+	}
 
 	function getInitialManageTab(): ManageTab {
 		const requestedTab = $page.url.searchParams.get('tab');
@@ -496,7 +516,8 @@
 		editForm.recordFilterPlatform = list.recordFilterPlatform || 'any';
 		editForm.recordFilterMinRefreshRate = list.recordFilterMinRefreshRate ?? null;
 		editForm.recordFilterMaxRefreshRate = list.recordFilterMaxRefreshRate ?? null;
-		editForm.recordFilterManualAcceptanceOnly = list.recordFilterManualAcceptanceOnly ?? true;
+		editForm.recordFilterAcceptanceStatus = getRecordFilterAcceptanceStatus(list);
+		editForm.recordFilterManualAcceptanceOnly = getManualAcceptanceOnlyForStatus(editForm.recordFilterAcceptanceStatus);
 	}
 
 	function getRankBadgeSnapshot(rankBadges: CustomListRankBadgeDraft[] | CustomListRankBadge[] | null | undefined) {
@@ -536,7 +557,7 @@
 			recordFilterPlatform: currentList.recordFilterPlatform || 'any',
 			recordFilterMinRefreshRate: currentList.recordFilterMinRefreshRate ?? null,
 			recordFilterMaxRefreshRate: currentList.recordFilterMaxRefreshRate ?? null,
-			recordFilterManualAcceptanceOnly: currentList.recordFilterManualAcceptanceOnly ?? true
+			recordFilterAcceptanceStatus: getRecordFilterAcceptanceStatus(currentList)
 		};
 	}
 
@@ -563,7 +584,7 @@
 			recordFilterPlatform: currentForm.recordFilterPlatform,
 			recordFilterMinRefreshRate: currentForm.recordFilterMinRefreshRate,
 			recordFilterMaxRefreshRate: currentForm.recordFilterMaxRefreshRate,
-			recordFilterManualAcceptanceOnly: currentForm.recordFilterManualAcceptanceOnly
+			recordFilterAcceptanceStatus: currentForm.recordFilterAcceptanceStatus
 		};
 	}
 
@@ -1243,10 +1264,11 @@
 		};
 	}
 
-	function setRecordFilterManualAcceptanceOnly(value: boolean) {
+	function setRecordFilterAcceptanceStatus(status: RecordFilterAcceptanceStatus) {
 		editForm = {
 			...editForm,
-			recordFilterManualAcceptanceOnly: value
+			recordFilterAcceptanceStatus: status,
+			recordFilterManualAcceptanceOnly: getManualAcceptanceOnlyForStatus(status)
 		};
 	}
 
@@ -1272,6 +1294,12 @@
 		if (platform === 'pc') return $_('custom_lists.manage.record_filter.platform_pc');
 		if (platform === 'mobile') return $_('custom_lists.manage.record_filter.platform_mobile');
 		return $_('custom_lists.manage.record_filter.platform_any');
+	}
+
+	function formatRecordFilterAcceptanceOption(status: RecordFilterAcceptanceStatus) {
+		if (status === 'auto') return $_('custom_lists.manage.record_filter.acceptance_auto_only');
+		if (status === 'any') return $_('custom_lists.manage.record_filter.acceptance_any');
+		return $_('custom_lists.manage.record_filter.acceptance_manual_only');
 	}
 
 	function getImageExtension(file: File) {
@@ -1446,6 +1474,7 @@
 			recordFilterPlatform: editForm.recordFilterPlatform,
 			recordFilterMinRefreshRate: editForm.recordFilterMinRefreshRate,
 			recordFilterMaxRefreshRate: editForm.recordFilterMaxRefreshRate,
+			recordFilterAcceptanceStatus: editForm.recordFilterAcceptanceStatus,
 			recordFilterManualAcceptanceOnly: editForm.recordFilterManualAcceptanceOnly
 		};
 	}
@@ -2297,7 +2326,7 @@
 		if (field === 'recordFilterPlatform') return $_('custom_lists.manage.record_filter.platform_label');
 		if (field === 'recordFilterMinRefreshRate') return $_('custom_lists.manage.record_filter.min_refresh_rate_label');
 		if (field === 'recordFilterMaxRefreshRate') return $_('custom_lists.manage.record_filter.max_refresh_rate_label');
-		if (field === 'recordFilterManualAcceptanceOnly') return $_('custom_lists.manage.record_filter.acceptance_label');
+		if (field === 'recordFilterAcceptanceStatus') return $_('custom_lists.manage.record_filter.acceptance_label');
 		if (field === 'tags') return $_('custom_lists.detail.edit.tags_label');
 		if (field === 'topEnabled') return $_('custom_lists.detail.edit.top_enabled_label');
 		if (field === 'visibility') return $_('custom_lists.detail.edit.visibility_label');
@@ -2343,6 +2372,10 @@
 			return $_('custom_lists.manage.record_filter.platform_any');
 		}
 
+		if (field === 'recordFilterAcceptanceStatus' && typeof value === 'string') {
+			return formatRecordFilterAcceptanceOption(value as RecordFilterAcceptanceStatus);
+		}
+
 		if ((field === 'recordFilterMinRefreshRate' || field === 'recordFilterMaxRefreshRate') && typeof value === 'number') {
 			return `${value} FPS`;
 		}
@@ -2356,12 +2389,6 @@
 			&& typeof value === 'boolean'
 		) {
 			return value ? $_('general.yes') : $_('general.no');
-		}
-
-		if (field === 'recordFilterManualAcceptanceOnly' && typeof value === 'boolean') {
-			return value
-				? $_('custom_lists.manage.record_filter.acceptance_manual_only')
-				: $_('custom_lists.manage.record_filter.acceptance_manual_or_auto');
 		}
 
 		if (field === 'tags' && Array.isArray(value)) {
@@ -2797,7 +2824,7 @@
 				|| editableSettingsSnapshot.recordFilterPlatform !== savedSettingsSnapshot.recordFilterPlatform
 				|| editableSettingsSnapshot.recordFilterMinRefreshRate !== savedSettingsSnapshot.recordFilterMinRefreshRate
 				|| editableSettingsSnapshot.recordFilterMaxRefreshRate !== savedSettingsSnapshot.recordFilterMaxRefreshRate
-				|| editableSettingsSnapshot.recordFilterManualAcceptanceOnly !== savedSettingsSnapshot.recordFilterManualAcceptanceOnly
+				|| editableSettingsSnapshot.recordFilterAcceptanceStatus !== savedSettingsSnapshot.recordFilterAcceptanceStatus
 				|| editableSettingsSnapshot.leaderboardEnabled !== savedSettingsSnapshot.leaderboardEnabled
 			)
 		);
@@ -3382,22 +3409,16 @@
 								<div class="recordFilterField">
 									<span class="recordFilterFieldLabel">{$_('custom_lists.manage.record_filter.acceptance_label')}</span>
 									<div class="recordFilterOptionRow">
-										<button
-											type="button"
-											class="recordFilterOptionBtn"
-											class:selected={editForm.recordFilterManualAcceptanceOnly}
-											on:click={() => setRecordFilterManualAcceptanceOnly(true)}
-										>
-											{$_('custom_lists.manage.record_filter.acceptance_manual_only')}
-										</button>
-										<button
-											type="button"
-											class="recordFilterOptionBtn"
-											class:selected={!editForm.recordFilterManualAcceptanceOnly}
-											on:click={() => setRecordFilterManualAcceptanceOnly(false)}
-										>
-											{$_('custom_lists.manage.record_filter.acceptance_manual_or_auto')}
-										</button>
+										{#each RECORD_FILTER_ACCEPTANCE_OPTIONS as acceptanceStatus}
+											<button
+												type="button"
+												class="recordFilterOptionBtn"
+												class:selected={editForm.recordFilterAcceptanceStatus === acceptanceStatus}
+												on:click={() => setRecordFilterAcceptanceStatus(acceptanceStatus)}
+											>
+												{formatRecordFilterAcceptanceOption(acceptanceStatus)}
+											</button>
+										{/each}
 									</div>
 									<p class="hint">{$_('custom_lists.manage.record_filter.acceptance_hint')}</p>
 								</div>

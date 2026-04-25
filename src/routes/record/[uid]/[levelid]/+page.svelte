@@ -11,6 +11,7 @@
 	import { get } from 'svelte/store';
 	import Chart from 'chart.js/auto';
 	import Loading from '$lib/components/animation/loading.svelte';
+	import AcceptanceBadge from '$lib/components/AcceptanceBadge.svelte';
 	import PlayerHoverCard from '$lib/components/playerLink.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
@@ -524,6 +525,15 @@
 										<span>{$_('record_detail.reviewed_by')}</span>
 									</div>
 									<div class="card-rows">
+										<div class="info-row">
+											<span class="row-label">{$_('acceptance.label')}</span>
+											<span class="row-value">
+												<AcceptanceBadge
+													acceptedManually={record.data.acceptedManually}
+													acceptedAuto={record.data.acceptedAuto}
+												/>
+											</span>
+										</div>
 										<div class="info-row">
 											<span class="row-label">{$_('record_detail.reviewed_by')}</span>
 											<span class="row-value">

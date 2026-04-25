@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as Table from '$lib/components/ui/table';
 	import * as Select from '$lib/components/ui/select';
+	import AcceptanceBadge from '$lib/components/AcceptanceBadge.svelte';
 	import RecordDetail from '$lib/components/recordDetail.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
@@ -263,6 +264,7 @@
 			<Table.Row>
 				<Table.Head>{$_('player.table.level')}</Table.Head>
 				<Table.Head class="w-[100px] text-center">{$_('player.table.submitted_on')}</Table.Head>
+				<Table.Head class="w-[70px] text-center">{$_('acceptance.short_label')}</Table.Head>
 				<Table.Head class="w-[100px] text-center">{$_('player.table.device')}</Table.Head>
 				<Table.Head class="w-[80px] text-center">{$_('player.table.point')}</Table.Head>
 				<Table.Head class="w-[80px] text-center">{resultColumnLabel}</Table.Head>
@@ -298,6 +300,13 @@
 					</Table.Cell>
 					<Table.Cell class="text-center">
 						{getSubmittedAt(record)}
+					</Table.Cell>
+					<Table.Cell class="text-center">
+						<AcceptanceBadge
+							acceptedManually={record.acceptedManually}
+							acceptedAuto={record.acceptedAuto}
+							compact
+						/>
 					</Table.Cell>
 					<Table.Cell class="text-center">
 						{record.mobile ? 'Mobile' : 'PC'}

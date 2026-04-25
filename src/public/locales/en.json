@@ -25,6 +25,13 @@
     "previous": "Previous",
     "loading": "Loading"
   },
+  "acceptance": {
+    "label": "Acceptance",
+    "short_label": "Accept",
+    "manual": "Manually accepted",
+    "auto": "Auto accepted",
+    "pending": "Pending acceptance"
+  },
   "time_unit": {
     "second": "second",
     "minute": "minute",
@@ -2057,9 +2064,11 @@
         "platform_pc": "PC only",
         "platform_mobile": "Mobile only",
         "acceptance_label": "Acceptance mode",
-        "acceptance_hint": "Manual-only matches the current behavior. Switch to manual or auto when auto-accepted records should count too.",
+        "acceptance_hint": "Choose which accepted records count toward this list leaderboard.",
         "acceptance_manual_only": "Manual only",
         "acceptance_manual_or_auto": "Manual or auto",
+        "acceptance_auto_only": "Auto only",
+        "acceptance_any": "Manual or auto",
         "min_refresh_rate_label": "Min FPS",
         "max_refresh_rate_label": "Max FPS",
         "refresh_rate_hint": "Leave either field blank to avoid filtering on that side of the FPS range."

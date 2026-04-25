@@ -25,6 +25,13 @@
     "previous": "Trước",
     "loading": "Đang tải"
   },
+  "acceptance": {
+    "label": "Trạng thái duyệt",
+    "short_label": "Duyệt",
+    "manual": "Duyệt thủ công",
+    "auto": "Duyệt tự động",
+    "pending": "Chờ duyệt"
+  },
   "time_unit": {
     "second": "giây",
     "minute": "phút",
@@ -2056,9 +2063,11 @@
         "platform_pc": "Chỉ PC",
         "platform_mobile": "Chỉ Mobile",
         "acceptance_label": "Chế độ chấp nhận",
-        "acceptance_hint": "Chế độ chỉ chấp nhận thủ công sẽ giữ nguyên hành vi hiện tại. Chuyển sang thủ công hoặc tự động khi muốn record được tự động chấp nhận cũng được tính.",
+        "acceptance_hint": "Chọn record đã duyệt nào sẽ được tính vào bảng xếp hạng của danh sách này.",
         "acceptance_manual_only": "Chỉ thủ công",
         "acceptance_manual_or_auto": "Thủ công hoặc tự động",
+        "acceptance_auto_only": "Chỉ tự động",
+        "acceptance_any": "Thủ công hoặc tự động",
         "min_refresh_rate_label": "FPS tối thiểu",
         "max_refresh_rate_label": "FPS tối đa",
         "refresh_rate_hint": "Để trống một trong hai ô nếu không muốn lọc ở phía đó của khoảng FPS."
