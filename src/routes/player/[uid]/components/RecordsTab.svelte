@@ -1,27 +1,67 @@
 <script lang="ts">
 	import * as Table from '$lib/components/ui/table';
+	import * as Select from '$lib/components/ui/select';
 	import RecordDetail from '$lib/components/recordDetail.svelte';
+	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Switch } from '$lib/components/ui/switch';
 	import { _ } from 'svelte-i18n';
 	import type { PlayerListRecordEntry } from '$lib/types/playerRankedList';
 
+	type SelectOption = {
+		value: string;
+		label: string;
+	};
+
+	type PlatformFilterValue = 'all' | 'pc' | 'mobile';
+
+	const allListsValue = '';
+
 	export let data: any;
 
 	let recordDetailOpened = false;
 	let selectedRecord: PlayerListRecordEntry | null = null;
+	let draftLevelId = '';
+	let draftListIdentifier = allListsValue;
+	let draftPlatform: PlatformFilterValue = 'all';
+	let draftShowAcceptedManually = true;
+	let draftShowAcceptedAuto = true;
 	let showAcceptedManually = true;
 	let showAcceptedAuto = true;
+	let appliedLevelId = '';
+	let appliedListIdentifier = '';
+	let appliedPlatform: PlatformFilterValue = 'all';
 
+	$: allListsOption = {
+		value: allListsValue,
+		label: $_('player.filter.all_lists')
+	};
+	$: platformOptions = [
+		{ value: 'all', label: $_('player.filter.all_platforms') },
+		{ value: 'pc', label: $_('player.filter.platform_pc') },
+		{ value: 'mobile', label: $_('player.filter.platform_mobile') }
+	] satisfies Array<SelectOption & { value: PlatformFilterValue }>;
 	$: recordsResponse = data.allListRecords ?? data.selectedListRecords;
 	$: records = recordsResponse?.data || [];
+	$: listOptions = getListOptions(records, data.selectedList);
+	$: selectedListOption =
+		listOptions.find((option) => option.value === draftListIdentifier) ?? allListsOption;
+	$: selectedPlatformOption =
+		platformOptions.find((option) => option.value === draftPlatform) ?? platformOptions[0];
 	$: acceptedRecords = records.filter((record: PlayerListRecordEntry) => isAcceptedRecord(record));
-	$: filteredRecords = acceptedRecords.filter((record: PlayerListRecordEntry) => matchesAcceptanceFilter(record));
+	$: filteredRecords = acceptedRecords.filter(
+		(record: PlayerListRecordEntry) =>
+			matchesAcceptanceFilter(record, showAcceptedManually, showAcceptedAuto) &&
+			matchesLevelIdFilter(record, appliedLevelId) &&
+			matchesListFilter(record, appliedListIdentifier, data.selectedList?.identifier ?? '') &&
+			matchesPlatformFilter(record, appliedPlatform)
+	);
 	$: acceptedRecordTotal = acceptedRecords.length;
 	$: hasPlatformerRecords = filteredRecords.some((record: PlayerListRecordEntry) => isPlatformerRecord(record));
 	$: hasClassicRecords = filteredRecords.some((record: PlayerListRecordEntry) => !isPlatformerRecord(record));
 	$: resultColumnLabel = hasPlatformerRecords && hasClassicRecords
-		? 'Result'
+		? $_('player.table.result')
 		: hasPlatformerRecords
 			? $_('player.table.time')
 			: $_('player.table.progress');
@@ -38,23 +78,97 @@
 			return '0';
 		}
 
-		const rounded = Math.round(value * 10) / 10;
-		return Number.isInteger(rounded) ? String(rounded) : String(rounded);
+		return String(Math.round(value));
 	}
 
 	function isAcceptedRecord(record: PlayerListRecordEntry) {
 		return Boolean(record?.acceptedManually) || Boolean(record?.acceptedAuto);
 	}
 
-	function matchesAcceptanceFilter(record: PlayerListRecordEntry) {
+	function getListOptions(records: PlayerListRecordEntry[], selectedList: any): SelectOption[] {
+		const optionsByValue = new Map<string, SelectOption>();
+
+		for (const record of records) {
+			const value = record.rankedList?.identifier ?? selectedList?.identifier;
+			const label = record.rankedList?.title ?? selectedList?.title;
+
+			if (!value || !label || optionsByValue.has(value)) {
+				continue;
+			}
+
+			optionsByValue.set(value, { value, label });
+		}
+
+		return Array.from(optionsByValue.values()).sort((left, right) => left.label.localeCompare(right.label));
+	}
+
+	function matchesAcceptanceFilter(
+		record: PlayerListRecordEntry,
+		acceptedManuallyEnabled: boolean,
+		acceptedAutoEnabled: boolean
+	) {
 		const acceptedManually = Boolean(record?.acceptedManually);
 		const acceptedAuto = Boolean(record?.acceptedAuto);
 
-		return (showAcceptedManually && acceptedManually) || (showAcceptedAuto && acceptedAuto);
+		return (acceptedManuallyEnabled && acceptedManually) || (acceptedAutoEnabled && acceptedAuto);
+	}
+
+	function matchesLevelIdFilter(record: PlayerListRecordEntry, levelIdFilter: string) {
+		if (!levelIdFilter) {
+			return true;
+		}
+
+		return String(record.level?.id ?? record.levelId ?? '') === levelIdFilter;
+	}
+
+	function matchesListFilter(
+		record: PlayerListRecordEntry,
+		listIdentifierFilter: string,
+		selectedListIdentifier: string
+	) {
+		if (!listIdentifierFilter) {
+			return true;
+		}
+
+		return (record.rankedList?.identifier ?? selectedListIdentifier) === listIdentifierFilter;
+	}
+
+	function matchesPlatformFilter(record: PlayerListRecordEntry, platformFilter: PlatformFilterValue) {
+		if (platformFilter === 'all') {
+			return true;
+		}
+
+		const isMobile = Boolean(record.mobile);
+		return platformFilter === 'mobile' ? isMobile : !isMobile;
 	}
 
 	function isPlatformerRecord(record: PlayerListRecordEntry) {
 		return Boolean(record.level?.isPlatformer ?? record.rankedList?.isPlatformer);
+	}
+
+	function applyFilters() {
+		appliedLevelId = draftLevelId.trim();
+		appliedListIdentifier = draftListIdentifier;
+		appliedPlatform = draftPlatform;
+		showAcceptedManually = draftShowAcceptedManually;
+		showAcceptedAuto = draftShowAcceptedAuto;
+	}
+
+	function handleListSelection(option: { value?: string } | undefined) {
+		draftListIdentifier = option?.value ?? allListsValue;
+	}
+
+	function handlePlatformSelection(option: { value?: string } | undefined) {
+		draftPlatform = (option?.value as PlatformFilterValue) ?? 'all';
+	}
+
+	function handleFilterKeydown(event: KeyboardEvent) {
+		if (event.key !== 'Enter') {
+			return;
+		}
+
+		event.preventDefault();
+		applyFilters();
 	}
 
 	function getSubmittedAt(record: PlayerListRecordEntry) {
@@ -82,14 +196,61 @@
 {#if acceptedRecordTotal}
 	<div class="filterBar">
 		<div class="filterGroup">
-			<div class="filterItem">
-				<Label for="accepted-manually-filter">Accepted manually</Label>
-				<Switch id="accepted-manually-filter" bind:checked={showAcceptedManually} />
+			<div class="filterField">
+				<Label for="record-level-id-filter">{$_('player.filter.level_id')}</Label>
+				<Input
+					id="record-level-id-filter"
+					bind:value={draftLevelId}
+					placeholder={$_('player.filter.level_id_placeholder')}
+					inputmode="numeric"
+					class="w-full min-w-[180px]"
+					on:keydown={handleFilterKeydown}
+				/>
 			</div>
-			<div class="filterItem">
-				<Label for="accepted-auto-filter">Accepted automatically</Label>
-				<Switch id="accepted-auto-filter" bind:checked={showAcceptedAuto} />
+			<div class="filterField">
+				<Label for="record-list-filter">{$_('player.filter.list')}</Label>
+				<Select.Root selected={selectedListOption} onSelectedChange={handleListSelection}>
+					<Select.Trigger id="record-list-filter" class="w-full min-w-[220px]">
+						<Select.Value placeholder={$_('player.filter.all_lists')} />
+					</Select.Trigger>
+					<Select.Content>
+						<Select.Item value="" label={$_('player.filter.all_lists')}>
+							{$_('player.filter.all_lists')}
+						</Select.Item>
+						{#each listOptions as listOption}
+							<Select.Item value={listOption.value} label={listOption.label}>
+								{listOption.label}
+							</Select.Item>
+						{/each}
+					</Select.Content>
+				</Select.Root>
 			</div>
+			<div class="filterField">
+				<Label for="record-platform-filter">{$_('player.filter.platform')}</Label>
+				<Select.Root selected={selectedPlatformOption} onSelectedChange={handlePlatformSelection}>
+					<Select.Trigger id="record-platform-filter" class="w-full min-w-[180px]">
+						<Select.Value placeholder={$_('player.filter.all_platforms')} />
+					</Select.Trigger>
+					<Select.Content>
+						{#each platformOptions as platformOption}
+							<Select.Item value={platformOption.value} label={platformOption.label}>
+								{platformOption.label}
+							</Select.Item>
+						{/each}
+					</Select.Content>
+				</Select.Root>
+			</div>
+			<div class="filterToggle">
+				<Label for="accepted-manually-filter">{$_('player.filter.accepted_manually')}</Label>
+				<Switch id="accepted-manually-filter" bind:checked={draftShowAcceptedManually} />
+			</div>
+			<div class="filterToggle">
+				<Label for="accepted-auto-filter">{$_('player.filter.accepted_automatically')}</Label>
+				<Switch id="accepted-auto-filter" bind:checked={draftShowAcceptedAuto} />
+			</div>
+		</div>
+		<div class="filterActions">
+			<Button type="button" on:click={applyFilters}>{$_('player.filter.apply')}</Button>
 		</div>
 	</div>
 
@@ -159,14 +320,14 @@
 	{:else}
 		<div class="emptyState">
 			{#if acceptedRecordTotal}
-				No accepted records match the current filters.
+				{$_('player.filter.no_matches')}
 			{:else}
-				No accepted ranked-list records yet.
+				{$_('player.filter.no_records')}
 			{/if}
 		</div>
 	{/if}
 	{:else}
-	<div class="emptyState">No accepted ranked-list records yet.</div>
+	<div class="emptyState">{$_('player.filter.no_records')}</div>
 {/if}
 
 <style lang="scss">
@@ -207,7 +368,15 @@
 		gap: 12px;
 	}
 
-	.filterItem {
+	.filterField {
+		display: flex;
+		flex: 1 1 180px;
+		flex-direction: column;
+		gap: 8px;
+		min-width: 180px;
+	}
+
+	.filterToggle {
 		display: flex;
 		align-items: center;
 		gap: 8px;
@@ -215,6 +384,12 @@
 		border: 1px solid var(--border1);
 		padding: 8px 12px;
 		background: hsl(var(--background) / 0.6);
+	}
+
+	.filterActions {
+		display: flex;
+		justify-content: flex-end;
+		margin-top: 16px;
 	}
 
 	.emptyState {
@@ -225,6 +400,14 @@
 		.filterGroup {
 			align-items: flex-start;
 			justify-content: flex-start;
+		}
+
+		.filterActions {
+			justify-content: stretch;
+		}
+
+		.filterActions :global(button) {
+			width: 100%;
 		}
 	}
 </style>

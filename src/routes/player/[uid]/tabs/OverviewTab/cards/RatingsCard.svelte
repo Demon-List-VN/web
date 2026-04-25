@@ -40,8 +40,7 @@
 			return '0';
 		}
 
-		const rounded = Math.round(value * 10) / 10;
-		return Number.isInteger(rounded) ? String(rounded) : String(rounded);
+		return String(Math.round(value));
 	}
 
 	async function handleListChange(option: { value?: string } | undefined) {

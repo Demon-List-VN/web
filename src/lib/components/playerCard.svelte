@@ -3,10 +3,12 @@
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { getTitle } from '$lib/client';
 	import { badgeVariants } from '$lib/components/ui/badge';
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { getExpLevel } from '$lib/client/getExpLevel';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import type { PlayerRankedListSummary } from '$lib/types/playerRankedList';
 	import {
+		PLAYER_CARD_STAT_LINE_COUNT,
 		normalizePlayerCardStatLines,
 		resolvePlayerCardStatLineIds
 	} from '$lib/utils/playerCardStatLines';
@@ -40,6 +42,9 @@
 	$: resolvedStatLines = effectiveStatLineIds
 		.map((id) => resolvePlayerCardStatLine(id))
 		.filter((line): line is NonNullable<typeof line> => line !== null);
+	$: showStatLineSkeleton = active && listSummaries === null && !hasLoadedRemote && !listLoadFailed;
+	$: statLineSkeletonCount = configuredStatLineIds.length || PLAYER_CARD_STAT_LINE_COUNT;
+	$: statLineSkeletons = Array.from({ length: statLineSkeletonCount }, (_, index) => index);
 	$: if (active && listSummaries === null && player?.uid && !hasLoadedRemote && !isLoadingLists && !listLoadFailed) {
 		void loadPlayerRankedLists(player.uid);
 	}
@@ -63,8 +68,7 @@
 			return '-';
 		}
 
-		const rounded = Math.round(value * 10) / 10;
-		return Number.isInteger(rounded) ? String(rounded) : String(rounded);
+		return String(Math.round(value));
 	}
 
 	function formatRank(value: number | null | undefined) {
@@ -150,36 +154,50 @@
 				</div>
 			</div>
 		</div>
-		{#each resolvedStatLines as statLine}
-			<div class="rating">
-				{#if statLine.tooltip}
-					<Tooltip.Root>
-						<Tooltip.Trigger>
+			{#if showStatLineSkeleton}
+				{#each statLineSkeletons as skeletonIndex (skeletonIndex)}
+					<div class="rating">
+						<div class="leftCol">
+							<Skeleton class="h-[18px] w-[38px] rounded-[4px]" />
+						</div>
+						<div class="rankWrapper">
+							<Skeleton class="h-[14px] w-24" />
+							<Skeleton class="h-[14px] w-10 rounded-[4px]" />
+						</div>
+					</div>
+				{/each}
+			{:else}
+				{#each resolvedStatLines as statLine}
+					<div class="rating">
+						{#if statLine.tooltip}
+							<Tooltip.Root>
+								<Tooltip.Trigger>
+									<div class="leftCol">
+										<div class="title text-white" style={statLine.valueStyle}>
+											{statLine.value}
+										</div>
+									</div>
+								</Tooltip.Trigger>
+								<Tooltip.Content>{statLine.tooltip}</Tooltip.Content>
+							</Tooltip.Root>
+						{:else}
 							<div class="leftCol">
-								<div class="title text-white" style={statLine.valueStyle}>
+								<div class="title" style={statLine.valueStyle}>
 									{statLine.value}
 								</div>
 							</div>
-						</Tooltip.Trigger>
-						<Tooltip.Content>{statLine.tooltip}</Tooltip.Content>
-					</Tooltip.Root>
-				{:else}
-					<div class="leftCol">
-						<div class="title" style={statLine.valueStyle}>
-							{statLine.value}
+						{/if}
+						<div class="rankWrapper">
+							{statLine.label}
+							{#if statLine.rank}
+								<div class="rank">
+									{statLine.rank}
+								</div>
+							{/if}
 						</div>
 					</div>
-				{/if}
-				<div class="rankWrapper">
-					{statLine.label}
-					{#if statLine.rank}
-						<div class="rank">
-							{statLine.rank}
-						</div>
-					{/if}
-				</div>
-			</div>
-		{/each}
+				{/each}
+			{/if}
 
 		<div class="rating">
 			<Tooltip.Root>

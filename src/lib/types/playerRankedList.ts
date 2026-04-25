@@ -26,6 +26,8 @@ export type PlayerListRecordEntry = {
 	timestamp: number | null;
 	acceptedManually: boolean;
 	acceptedAuto: boolean;
+	mobile?: boolean | null;
+	refreshRate?: number | null;
 	rankedList?: Pick<PlayerRankedListSummary, 'id' | 'identifier' | 'title' | 'isPlatformer'> | null;
 	level: any;
 	player: any;
