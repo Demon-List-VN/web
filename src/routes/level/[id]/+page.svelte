@@ -1,5 +1,6 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card';
+	import AcceptanceBadge from '$lib/components/AcceptanceBadge.svelte';
 	import CommunityPostCard from '$lib/components/communityPostCard.svelte';
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import { fade } from 'svelte/transition';
@@ -178,6 +179,26 @@
 		return `${list.item?.rating}pt`;
 	}
 
+	function getRecordAcceptancePriority(record: any) {
+		if (record?.acceptedManually) {
+			return 2;
+		}
+
+		return record?.acceptedAuto ? 1 : 0;
+	}
+
+	function sortRecordsByAcceptance(records: any[]) {
+		return records
+			.map((record, index) => ({ record, index }))
+			.sort((left, right) => {
+				const acceptanceDiff =
+					getRecordAcceptancePriority(right.record) - getRecordAcceptancePriority(left.record);
+
+				return acceptanceDiff || left.index - right.index;
+			})
+			.map(({ record }) => record);
+	}
+
 	function getListHref(list: StarredListEntry) {
 		return `/lists/${list.slug || list.id}`;
 	}
@@ -332,6 +353,7 @@
 
 	$: hasLocalLevel = 'level' in data;
 	$: starredLists = mergeLevelLists(data?.level, (data?.starredLists ?? []) as StarredListEntry[]);
+	$: sortedRecords = sortRecordsByAcceptance(records);
 	$: ($page.params.id, fetchData());
 
 	onMount(() => {
@@ -590,9 +612,9 @@
 				</Tabs.Trigger>
 			</Tabs.List>
 			<Tabs.Content value="records" class="mt-4">
-				{#if records && records.length > 0}
+				{#if sortedRecords && sortedRecords.length > 0}
 					<div class="records-list">
-						{#each records as record, index}
+						{#each sortedRecords as record, index}
 							<!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
 							<div
 								class="record-row"
@@ -628,6 +650,13 @@
 									<span class="record-date">
 										{new Date(record.timestamp).toLocaleDateString('vi-VN')}
 									</span>
+								</div>
+
+								<div class="record-acceptance">
+									<AcceptanceBadge
+										acceptedManually={record.acceptedManually}
+										acceptedAuto={record.acceptedAuto}
+									/>
 								</div>
 
 								<span class="record-progress" class:progress-top1={index === 0}>
@@ -758,6 +787,13 @@
 		font-size: 0.75rem;
 	}
 
+	.record-acceptance {
+		display: flex;
+		justify-content: center;
+		min-width: 130px;
+		flex-shrink: 0;
+	}
+
 	.record-progress {
 		font-size: 0.875rem;
 		font-weight: 600;
@@ -812,6 +848,21 @@
 
 	@media (max-width: 600px) {
 		.record-meta {
+			display: none;
+		}
+
+		.record-acceptance {
+			min-width: auto;
+		}
+
+		.record-acceptance :global(.acceptanceBadge) {
+			justify-content: center;
+			width: 26px;
+			height: 26px;
+			padding: 0;
+		}
+
+		.record-acceptance :global(.acceptanceBadge span) {
 			display: none;
 		}
 
