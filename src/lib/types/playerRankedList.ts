@@ -21,8 +21,12 @@ export type PlayerListRecordEntry = {
 	levelId: number;
 	point: number;
 	no: number;
+	createdAt?: string | null;
 	progress: number;
 	timestamp: number | null;
+	acceptedManually: boolean;
+	acceptedAuto: boolean;
+	rankedList?: Pick<PlayerRankedListSummary, 'id' | 'identifier' | 'title' | 'isPlatformer'> | null;
 	level: any;
 	player: any;
 	formulaScope: any;

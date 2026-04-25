@@ -1,18 +1,30 @@
 <script lang="ts">
 	import * as Table from '$lib/components/ui/table';
 	import RecordDetail from '$lib/components/recordDetail.svelte';
+	import { Label } from '$lib/components/ui/label';
+	import { Switch } from '$lib/components/ui/switch';
 	import { _ } from 'svelte-i18n';
-	import { getPlayerRankedListScoreLabel } from '$lib/types/playerRankedList';
+	import type { PlayerListRecordEntry } from '$lib/types/playerRankedList';
 
 	export let data: any;
 
 	let recordDetailOpened = false;
-	let selectedRecord: any = null;
+	let selectedRecord: PlayerListRecordEntry | null = null;
+	let showAcceptedManually = true;
+	let showAcceptedAuto = true;
 
-	$: selectedList = data.selectedList;
-	$: recordsResponse = data.selectedListRecords;
+	$: recordsResponse = data.allListRecords ?? data.selectedListRecords;
 	$: records = recordsResponse?.data || [];
-	$: isPlatformer = Boolean(selectedList?.isPlatformer);
+	$: acceptedRecords = records.filter((record: PlayerListRecordEntry) => isAcceptedRecord(record));
+	$: filteredRecords = acceptedRecords.filter((record: PlayerListRecordEntry) => matchesAcceptanceFilter(record));
+	$: acceptedRecordTotal = acceptedRecords.length;
+	$: hasPlatformerRecords = filteredRecords.some((record: PlayerListRecordEntry) => isPlatformerRecord(record));
+	$: hasClassicRecords = filteredRecords.some((record: PlayerListRecordEntry) => !isPlatformerRecord(record));
+	$: resultColumnLabel = hasPlatformerRecords && hasClassicRecords
+		? 'Result'
+		: hasPlatformerRecords
+			? $_('player.table.time')
+			: $_('player.table.progress');
 
 	function getTimeString(ms: number) {
 		const minutes = Math.floor(ms / 60000);
@@ -29,53 +41,74 @@
 		const rounded = Math.round(value * 10) / 10;
 		return Number.isInteger(rounded) ? String(rounded) : String(rounded);
 	}
+
+	function isAcceptedRecord(record: PlayerListRecordEntry) {
+		return Boolean(record?.acceptedManually) || Boolean(record?.acceptedAuto);
+	}
+
+	function matchesAcceptanceFilter(record: PlayerListRecordEntry) {
+		const acceptedManually = Boolean(record?.acceptedManually);
+		const acceptedAuto = Boolean(record?.acceptedAuto);
+
+		return (showAcceptedManually && acceptedManually) || (showAcceptedAuto && acceptedAuto);
+	}
+
+	function isPlatformerRecord(record: PlayerListRecordEntry) {
+		return Boolean(record.level?.isPlatformer ?? record.rankedList?.isPlatformer);
+	}
+
+	function getSubmittedAt(record: PlayerListRecordEntry) {
+		if (record.createdAt) {
+			return new Date(record.createdAt).toLocaleString('vi-VN');
+		}
+
+		if (record.timestamp) {
+			return new Date(record.timestamp).toLocaleString('vi-VN');
+		}
+
+		return '-';
+	}
 </script>
 
 {#if selectedRecord}
 	<RecordDetail
 		bind:open={recordDetailOpened}
-		bind:uid={selectedRecord.userid}
-		bind:levelID={selectedRecord.levelid}
+		bind:uid={selectedRecord.uid}
+		bind:levelID={selectedRecord.levelId}
 	/>
 {/if}
 
 
-{#if !selectedList}
-	<div class="emptyState">No official or verified list ranking yet.</div>
-{:else}
-	<div class="summaryCard">
-		<div>
-			<p class="summaryEyebrow">{selectedList.title}</p>
-			<h3 class="summaryTitle">
-				{recordsResponse?.total ?? 0} accepted records
-			</h3>
-			<p class="summaryMeta">
-				{getPlayerRankedListScoreLabel(selectedList)} {formatPoint(selectedList.score)} · Top #{selectedList.rank}
-			</p>
+{#if acceptedRecordTotal}
+	<div class="filterBar">
+		<div class="filterGroup">
+			<div class="filterItem">
+				<Label for="accepted-manually-filter">Accepted manually</Label>
+				<Switch id="accepted-manually-filter" bind:checked={showAcceptedManually} />
+			</div>
+			<div class="filterItem">
+				<Label for="accepted-auto-filter">Accepted automatically</Label>
+				<Switch id="accepted-auto-filter" bind:checked={showAcceptedAuto} />
+			</div>
 		</div>
-		{#if recordsResponse?.lastRefreshedAt}
-			<p class="summaryMeta">Last refreshed {new Date(recordsResponse.lastRefreshedAt).toLocaleString('vi-VN')}</p>
-		{/if}
 	</div>
 
-	{#if records.length}
+	{#if filteredRecords.length}
 	<Table.Root>
-		<Table.Caption>{$_('player.table.total_record')}: {recordsResponse?.total ?? records.length}</Table.Caption>
+		<Table.Caption>
+			{$_('player.table.total_record')}: {filteredRecords.length} / {acceptedRecordTotal}
+		</Table.Caption>
 		<Table.Header>
 			<Table.Row>
 				<Table.Head>{$_('player.table.level')}</Table.Head>
 				<Table.Head class="w-[100px] text-center">{$_('player.table.submitted_on')}</Table.Head>
 				<Table.Head class="w-[100px] text-center">{$_('player.table.device')}</Table.Head>
 				<Table.Head class="w-[80px] text-center">{$_('player.table.point')}</Table.Head>
-				{#if isPlatformer}
-					<Table.Head class="w-[80px] text-center">{$_('player.table.time')}</Table.Head>
-				{:else}
-					<Table.Head class="w-[80px] text-center">{$_('player.table.progress')}</Table.Head>
-				{/if}
+				<Table.Head class="w-[80px] text-center">{resultColumnLabel}</Table.Head>
 			</Table.Row>
 		</Table.Header>
 		<Table.Body>
-			{#each records as record}
+			{#each filteredRecords as record}
 				<Table.Row
 					on:click={(e) => {
 						// @ts-expect-error
@@ -103,11 +136,7 @@
 						</div>
 					</Table.Cell>
 					<Table.Cell class="text-center">
-						{#if record.timestamp}
-							{new Date(record.timestamp).toLocaleString('vi-VN')}
-						{:else}
-							-
-						{/if}
+						{getSubmittedAt(record)}
 					</Table.Cell>
 					<Table.Cell class="text-center">
 						{record.mobile ? 'Mobile' : 'PC'}
@@ -118,7 +147,7 @@
 					<Table.Cell class="text-center">
 						{formatPoint(record.point)}
 					</Table.Cell>
-					{#if isPlatformer}
+					{#if isPlatformerRecord(record)}
 						<Table.Cell class="text-center">{getTimeString(record.progress)}</Table.Cell>
 					{:else}
 						<Table.Cell class="text-center">{record.progress}%</Table.Cell>
@@ -128,8 +157,16 @@
 		</Table.Body>
 	</Table.Root>
 	{:else}
-		<div class="emptyState">No accepted records on this list yet.</div>
+		<div class="emptyState">
+			{#if acceptedRecordTotal}
+				No accepted records match the current filters.
+			{:else}
+				No accepted ranked-list records yet.
+			{/if}
+		</div>
 	{/if}
+	{:else}
+	<div class="emptyState">No accepted ranked-list records yet.</div>
 {/if}
 
 <style lang="scss">
@@ -155,7 +192,7 @@
 		text-shadow: 0px 1px 2px var(--textColorInverted);
 	}
 
-	.summaryCard,
+	.filterBar,
 	.emptyState {
 		border-radius: var(--radius);
 		border: 1px solid var(--border1);
@@ -164,35 +201,30 @@
 		margin-bottom: 16px;
 	}
 
-	.summaryCard {
+	.filterGroup {
 		display: flex;
-		justify-content: space-between;
-		gap: 16px;
 		flex-wrap: wrap;
+		gap: 12px;
 	}
 
-	.summaryEyebrow {
-		font-size: 12px;
-		text-transform: uppercase;
-		letter-spacing: 0.12em;
-		color: var(--textColorDimmed);
-		margin-bottom: 6px;
+	.filterItem {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		border-radius: var(--radius);
+		border: 1px solid var(--border1);
+		padding: 8px 12px;
+		background: hsl(var(--background) / 0.6);
 	}
 
-	.summaryTitle {
-		font-size: 20px;
-		font-weight: 700;
-		margin-bottom: 4px;
-	}
-
-	.summaryMeta,
 	.emptyState {
 		color: var(--textColorDimmed);
 	}
 
 	@media screen and (max-width: 1200px) {
-		.summaryCard {
-			flex-direction: column;
+		.filterGroup {
+			align-items: flex-start;
+			justify-content: flex-start;
 		}
 	}
 </style>
