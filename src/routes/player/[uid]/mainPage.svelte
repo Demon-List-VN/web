@@ -43,8 +43,6 @@
 
 <ProfileHero bind:data />
 
-<StatsBar {data} />
-
 {#if !isActive(data.player.supporterUntil)}
 	<div class="mx-auto max-w-[1200px] px-4 py-4">
 		<Ads dataAdFormat="auto" />
