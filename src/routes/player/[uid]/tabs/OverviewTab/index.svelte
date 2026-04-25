@@ -24,7 +24,7 @@
 	$: isOwner = $user.loggedIn && $user.data?.uid === data.player.uid;
 	$: canCustomize = isOwner && isActive(data.player.supporterUntil);
 
-	let selectedRecord: { uid: string; levelID: number } | null = null;
+	let selectedRecord: { uid: string; levelID: number; recordId: number | null } | null = null;
 	let recordDetailOpen = false;
 
 	let isCustomizing = false;
@@ -122,7 +122,7 @@
 
 		const currentOverviewData = data.player.overviewData || {};
 		const positions: Record<string, any> = getOverviewMetadata(currentOverviewData);
-		
+
 		cardConfigs.forEach((card) => {
 			positions[card.id] = {
 				...(currentOverviewData[card.id] || {}), // Preserve existing properties like imageUrl
@@ -135,8 +135,8 @@
 		await saveCardPositions(positions);
 	}
 
-	function openRecordDetail(uid: string, levelID: number) {
-		selectedRecord = { uid, levelID };
+	function openRecordDetail(uid: string, levelID: number, recordId: number | null = null) {
+		selectedRecord = { uid, levelID, recordId };
 		recordDetailOpen = true;
 	}
 
@@ -166,7 +166,7 @@
 	function handleSavePositions() {
 		const currentOverviewData = data.player.overviewData || {};
 		const positions: Record<string, any> = getOverviewMetadata(currentOverviewData);
-		
+
 		cardConfigs.forEach((card) => {
 			positions[card.id] = {
 				...(currentOverviewData[card.id] || {}),
@@ -175,7 +175,7 @@
 				size: card.size
 			};
 		});
-		
+
 		saveCardPositions(positions);
 		isCustomizing = false;
 	}
@@ -213,6 +213,7 @@
 	<RecordDetail
 		uid={selectedRecord.uid}
 		levelID={selectedRecord.levelID}
+		recordId={selectedRecord.recordId}
 		bind:open={recordDetailOpen}
 	/>
 {/if}

@@ -54,15 +54,15 @@
 		}
 
 		&.manual {
-			background: rgba(234, 179, 8, 0.14);
-			border-color: rgba(234, 179, 8, 0.42);
-			color: #facc15;
+			background: rgba(34, 197, 94, 0.14);
+			border-color: rgba(34, 197, 94, 0.42);
+			color: #4ade80;
 		}
 
 		&.auto {
-			background: rgba(59, 130, 246, 0.14);
-			border-color: rgba(59, 130, 246, 0.38);
-			color: #93c5fd;
+			background: rgba(234, 179, 8, 0.14);
+			border-color: rgba(234, 179, 8, 0.42);
+			color: #facc15;
 		}
 
 		&.pending {

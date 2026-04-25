@@ -43,9 +43,10 @@
 		{ value: 'pc', label: $_('player.filter.platform_pc') },
 		{ value: 'mobile', label: $_('player.filter.platform_mobile') }
 	] satisfies Array<SelectOption & { value: PlatformFilterValue }>;
-	$: recordsResponse = data.allListRecords ?? data.selectedListRecords;
+	$: recordsResponse = data.playerRecords ?? data.allListRecords ?? data.selectedListRecords;
 	$: records = recordsResponse?.data || [];
-	$: listOptions = getListOptions(records, data.selectedList);
+	$: selectedListFallback = data.playerRecords ? null : data.selectedList;
+	$: listOptions = getListOptions(records, selectedListFallback);
 	$: selectedListOption =
 		listOptions.find((option) => option.value === draftListIdentifier) ?? allListsOption;
 	$: selectedPlatformOption =
@@ -55,17 +56,22 @@
 		(record: PlayerListRecordEntry) =>
 			matchesAcceptanceFilter(record, showAcceptedManually, showAcceptedAuto) &&
 			matchesLevelIdFilter(record, appliedLevelId) &&
-			matchesListFilter(record, appliedListIdentifier, data.selectedList?.identifier ?? '') &&
+			matchesListFilter(record, appliedListIdentifier, selectedListFallback?.identifier ?? '') &&
 			matchesPlatformFilter(record, appliedPlatform)
 	);
 	$: acceptedRecordTotal = acceptedRecords.length;
-	$: hasPlatformerRecords = filteredRecords.some((record: PlayerListRecordEntry) => isPlatformerRecord(record));
-	$: hasClassicRecords = filteredRecords.some((record: PlayerListRecordEntry) => !isPlatformerRecord(record));
-	$: resultColumnLabel = hasPlatformerRecords && hasClassicRecords
-		? $_('player.table.result')
-		: hasPlatformerRecords
-			? $_('player.table.time')
-			: $_('player.table.progress');
+	$: hasPlatformerRecords = filteredRecords.some((record: PlayerListRecordEntry) =>
+		isPlatformerRecord(record)
+	);
+	$: hasClassicRecords = filteredRecords.some(
+		(record: PlayerListRecordEntry) => !isPlatformerRecord(record)
+	);
+	$: resultColumnLabel =
+		hasPlatformerRecords && hasClassicRecords
+			? $_('player.table.result')
+			: hasPlatformerRecords
+				? $_('player.table.time')
+				: $_('player.table.progress');
 
 	function getTimeString(ms: number) {
 		const minutes = Math.floor(ms / 60000);
@@ -100,7 +106,9 @@
 			optionsByValue.set(value, { value, label });
 		}
 
-		return Array.from(optionsByValue.values()).sort((left, right) => left.label.localeCompare(right.label));
+		return Array.from(optionsByValue.values()).sort((left, right) =>
+			left.label.localeCompare(right.label)
+		);
 	}
 
 	function matchesAcceptanceFilter(
@@ -134,7 +142,10 @@
 		return (record.rankedList?.identifier ?? selectedListIdentifier) === listIdentifierFilter;
 	}
 
-	function matchesPlatformFilter(record: PlayerListRecordEntry, platformFilter: PlatformFilterValue) {
+	function matchesPlatformFilter(
+		record: PlayerListRecordEntry,
+		platformFilter: PlatformFilterValue
+	) {
 		if (platformFilter === 'all') {
 			return true;
 		}
@@ -188,11 +199,11 @@
 {#if selectedRecord}
 	<RecordDetail
 		bind:open={recordDetailOpened}
-		bind:uid={selectedRecord.uid}
-		bind:levelID={selectedRecord.levelId}
+		uid={selectedRecord.uid}
+		levelID={selectedRecord.levelId}
+		recordId={selectedRecord.id ?? null}
 	/>
 {/if}
-
 
 {#if acceptedRecordTotal}
 	<div class="filterBar">
@@ -256,76 +267,76 @@
 	</div>
 
 	{#if filteredRecords.length}
-	<Table.Root>
-		<Table.Caption>
-			{$_('player.table.total_record')}: {filteredRecords.length} / {acceptedRecordTotal}
-		</Table.Caption>
-		<Table.Header>
-			<Table.Row>
-				<Table.Head>{$_('player.table.level')}</Table.Head>
-				<Table.Head class="w-[100px] text-center">{$_('player.table.submitted_on')}</Table.Head>
-				<Table.Head class="w-[70px] text-center">{$_('acceptance.short_label')}</Table.Head>
-				<Table.Head class="w-[100px] text-center">{$_('player.table.device')}</Table.Head>
-				<Table.Head class="w-[80px] text-center">{$_('player.table.point')}</Table.Head>
-				<Table.Head class="w-[80px] text-center">{resultColumnLabel}</Table.Head>
-			</Table.Row>
-		</Table.Header>
-		<Table.Body>
-			{#each filteredRecords as record}
-				<Table.Row
-					on:click={(e) => {
-						// @ts-expect-error
-						if (e.target.nodeName == 'A') return;
-						selectedRecord = record;
-						recordDetailOpened = true;
-					}}
-				>
-					<Table.Cell class="font-medium">
-						<div class="relative flex">
-							{#if record.level?.videoID}
-								<img
-									class="levelBG absolute ml-[-18px] mt-[-16px] box-border h-[53.5px] w-[350px] max-w-full object-cover"
-									src={`https://img.youtube.com/vi/${record.level.videoID}/0.jpg`}
-									alt="bg"
-								/>
-							{/if}
-							<a
-								class="levelName z-10"
-								href={`/level/${record.level?.id}`}
-								data-sveltekit-preload-data="tap"
-							>
-								{record.level?.name}
-							</a>
-						</div>
-					</Table.Cell>
-					<Table.Cell class="text-center">
-						{getSubmittedAt(record)}
-					</Table.Cell>
-					<Table.Cell class="text-center">
-						<AcceptanceBadge
-							acceptedManually={record.acceptedManually}
-							acceptedAuto={record.acceptedAuto}
-							compact
-						/>
-					</Table.Cell>
-					<Table.Cell class="text-center">
-						{record.mobile ? 'Mobile' : 'PC'}
-						{#if record.refreshRate}
-							<br />({record.refreshRate}fps)
-						{/if}
-					</Table.Cell>
-					<Table.Cell class="text-center">
-						{formatPoint(record.point)}
-					</Table.Cell>
-					{#if isPlatformerRecord(record)}
-						<Table.Cell class="text-center">{getTimeString(record.progress)}</Table.Cell>
-					{:else}
-						<Table.Cell class="text-center">{record.progress}%</Table.Cell>
-					{/if}
+		<Table.Root>
+			<Table.Caption>
+				{$_('player.table.total_record')}: {filteredRecords.length} / {acceptedRecordTotal}
+			</Table.Caption>
+			<Table.Header>
+				<Table.Row>
+					<Table.Head>{$_('player.table.level')}</Table.Head>
+					<Table.Head class="w-[100px] text-center">{$_('player.table.submitted_on')}</Table.Head>
+					<Table.Head class="w-[70px] text-center">{$_('acceptance.short_label')}</Table.Head>
+					<Table.Head class="w-[100px] text-center">{$_('player.table.device')}</Table.Head>
+					<Table.Head class="w-[80px] text-center">{$_('player.table.point')}</Table.Head>
+					<Table.Head class="w-[80px] text-center">{resultColumnLabel}</Table.Head>
 				</Table.Row>
-			{/each}
-		</Table.Body>
-	</Table.Root>
+			</Table.Header>
+			<Table.Body>
+				{#each filteredRecords as record}
+					<Table.Row
+						on:click={(e) => {
+							// @ts-expect-error
+							if (e.target.nodeName == 'A') return;
+							selectedRecord = record;
+							recordDetailOpened = true;
+						}}
+					>
+						<Table.Cell class="font-medium">
+							<div class="relative flex">
+								{#if record.level?.videoID}
+									<img
+										class="levelBG absolute ml-[-18px] mt-[-16px] box-border h-[53.5px] w-[350px] max-w-full object-cover"
+										src={`https://img.youtube.com/vi/${record.level.videoID}/0.jpg`}
+										alt="bg"
+									/>
+								{/if}
+								<a
+									class="levelName z-10"
+									href={`/level/${record.level?.id}`}
+									data-sveltekit-preload-data="tap"
+								>
+									{record.level?.name}
+								</a>
+							</div>
+						</Table.Cell>
+						<Table.Cell class="text-center">
+							{getSubmittedAt(record)}
+						</Table.Cell>
+						<Table.Cell class="text-center">
+							<AcceptanceBadge
+								acceptedManually={record.acceptedManually}
+								acceptedAuto={record.acceptedAuto}
+								compact
+							/>
+						</Table.Cell>
+						<Table.Cell class="text-center">
+							{record.mobile ? 'Mobile' : 'PC'}
+							{#if record.refreshRate}
+								<br />({record.refreshRate}fps)
+							{/if}
+						</Table.Cell>
+						<Table.Cell class="text-center">
+							{formatPoint(record.point)}
+						</Table.Cell>
+						{#if isPlatformerRecord(record)}
+							<Table.Cell class="text-center">{getTimeString(record.progress)}</Table.Cell>
+						{:else}
+							<Table.Cell class="text-center">{record.progress}%</Table.Cell>
+						{/if}
+					</Table.Row>
+				{/each}
+			</Table.Body>
+		</Table.Root>
 	{:else}
 		<div class="emptyState">
 			{#if acceptedRecordTotal}
@@ -335,7 +346,7 @@
 			{/if}
 		</div>
 	{/if}
-	{:else}
+{:else}
 	<div class="emptyState">{$_('player.filter.no_records')}</div>
 {/if}
 

@@ -17,6 +17,7 @@ export type PlayerRankedListSummary = {
 };
 
 export type PlayerListRecordEntry = {
+	id: number | null;
 	uid: string;
 	levelId: number;
 	point: number;

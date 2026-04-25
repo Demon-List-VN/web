@@ -83,13 +83,7 @@
 				}
 			);
 			const data = await res.json();
-			// Flatten all records from dl/fl/pl/cl arrays
-			records = [
-				...(data.dl ?? []),
-				...(data.fl ?? []),
-				...(data.pl ?? []),
-				...(data.cl ?? [])
-			].filter((r: any) => r.levelid);
+			records = (Array.isArray(data) ? data : []).filter((r: any) => r.levelid);
 			// Deduplicate by `levelid`
 			const seen = new Set();
 			records = records.filter((r: any) => {

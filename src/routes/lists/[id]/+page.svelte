@@ -102,6 +102,7 @@
 	};
 
 	type CustomListRecordPoint = {
+		id: number | null;
 		uid: string;
 		levelId: number;
 		progress: number;
@@ -1468,6 +1469,9 @@
 															<Table.Head
 																>{$_('custom_lists.detail.records.level_label')}</Table.Head
 															>
+															<Table.Head class="w-[70px] text-center"
+																>{$_('acceptance.short_label')}</Table.Head
+															>
 															<Table.Head class="w-[110px] text-right"
 																>{$_('custom_lists.detail.records.progress_label')}</Table.Head
 															>
@@ -1490,6 +1494,13 @@
 																	{#if entry.level?.creator}
 																		<div class="recordLevelMeta">{entry.level.creator}</div>
 																	{/if}
+																</Table.Cell>
+																<Table.Cell class="text-center">
+																	<AcceptanceBadge
+																		acceptedManually={entry.acceptedManually}
+																		acceptedAuto={entry.acceptedAuto}
+																		compact
+																	/>
 																</Table.Cell>
 																<Table.Cell class="text-right"
 																	>{formatRecordProgress(entry.progress)}</Table.Cell
@@ -1719,36 +1730,36 @@
 																	{$_('custom_lists.detail.records.variable_values_label')}
 																</div>
 																<div class="recordPointPopoverGrid">
-																	<div>
-																		<span>{$_('custom_lists.formula.position_label')}</span>
-																		<span>{formatFormulaScopeValue('position', entry.formulaScope.position)}</span>
-																	</div>
-																	<div>
-																		<span>{$_('custom_lists.formula.level_count_label')}</span>
-																		<span>{formatFormulaScopeValue('levelCount', entry.formulaScope.levelCount)}</span>
-																	</div>
+																		<div>
+																			<span>{$_('custom_lists.formula.position_label')}</span>
+																			<span>{formatFormulaScopeValue('position', entry.formulaScope.position)}</span>
+																		</div>
+																		<div>
+																			<span>{$_('custom_lists.formula.level_count_label')}</span>
+																			<span>{formatFormulaScopeValue('levelCount', entry.formulaScope.levelCount)}</span>
+																		</div>
 																	{#if list.mode === 'top'}
-																		<div>
-																			<span>{$_('custom_lists.formula.top_label')}</span>
-																			<span>{formatFormulaScopeValue('top', entry.formulaScope.top)}</span>
-																		</div>
+																			<div>
+																				<span>{$_('custom_lists.formula.top_label')}</span>
+																				<span>{formatFormulaScopeValue('top', entry.formulaScope.top)}</span>
+																			</div>
 																	{:else}
-																		<div>
-																			<span>{$_('custom_lists.formula.rating_label')}</span>
-																			<span>{formatFormulaScopeValue('rating', entry.formulaScope.rating)}</span>
-																		</div>
+																			<div>
+																				<span>{$_('custom_lists.formula.rating_label')}</span>
+																				<span>{formatFormulaScopeValue('rating', entry.formulaScope.rating)}</span>
+																			</div>
 																	{/if}
-																	<div>
-																		<span>{list.isPlatformer ? $_('custom_lists.formula.time_label') : $_('custom_lists.formula.progress_label')}</span>
-																		<span>{formatFormulaScopeValue('progress', entry.formulaScope.progress)}</span>
-																	</div>
+																		<div>
+																			<span>{list.isPlatformer ? $_('custom_lists.formula.time_label') : $_('custom_lists.formula.progress_label')}</span>
+																			<span>{formatFormulaScopeValue('progress', entry.formulaScope.progress)}</span>
+																		</div>
 																	<div>
 																		<span>
 																			{list.isPlatformer
 																				? $_('custom_lists.formula.base_time_label')
 																				: $_('custom_lists.formula.min_progress_label')}
 																		</span>
-																		<span>{formatFormulaScopeValue('minProgress', entry.formulaScope.minProgress)}</span>
+																			<span>{formatFormulaScopeValue('minProgress', entry.formulaScope.minProgress)}</span>
 																	</div>
 																</div>
 															</Popover.Content>

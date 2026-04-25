@@ -1,4 +1,8 @@
-import type { PlayerListRecordsResponse, PlayerRankedListSummary } from '$lib/types/playerRankedList';
+import type {
+	PlayerListRecordEntry,
+	PlayerListRecordsResponse,
+	PlayerRankedListSummary
+} from '$lib/types/playerRankedList';
 import { resolvePlayerRankedListSelection } from '$lib/types/playerRankedList';
 
 function normalizePlayerListRecordsResponse(
@@ -22,6 +26,62 @@ function normalizePlayerListRecordsResponse(
 	};
 }
 
+function getRecordPoint(record: any) {
+	return Math.max(record.dlPt ?? 0, record.flPt ?? 0, record.plPt ?? 0, record.clPt ?? 0);
+}
+
+function getRecordListIdentifier(record: any) {
+	if (record.dlPt != null) return 'dl';
+	if (record.flPt != null) return 'fl';
+	if (record.plPt != null) return 'pl';
+	if (record.clPt != null) return 'cl';
+
+	return null;
+}
+
+function normalizePlayerRecords(
+	value: unknown,
+	listSummaries: PlayerRankedListSummary[],
+	uid: string
+): PlayerListRecordEntry[] {
+	if (!Array.isArray(value)) {
+		return [];
+	}
+
+	return value.map((record: any) => {
+		const listIdentifier = getRecordListIdentifier(record);
+		const rankedList = listIdentifier
+			? listSummaries.find((list) => list.identifier === listIdentifier) ?? null
+			: null;
+
+		return {
+			id: Number.isFinite(Number(record.id)) ? Number(record.id) : null,
+			uid: record.userid ?? record.uid ?? uid,
+			levelId: Number(record.levelid ?? record.levelId ?? record.levels?.id ?? record.level?.id ?? 0),
+			point: getRecordPoint(record),
+			no: Number(record.no ?? 0),
+			createdAt: record.createdAt ?? null,
+			progress: Number(record.progress ?? 0),
+			timestamp: Number.isFinite(Number(record.timestamp)) ? Number(record.timestamp) : null,
+			acceptedManually: Boolean(record.acceptedManually),
+			acceptedAuto: Boolean(record.acceptedAuto),
+			mobile: record.mobile ?? null,
+			refreshRate: record.refreshRate ?? null,
+			rankedList: rankedList
+				? {
+						id: rankedList.id,
+						identifier: rankedList.identifier,
+						title: rankedList.title,
+						isPlatformer: rankedList.isPlatformer
+					}
+				: null,
+			level: record.levels ?? record.level ?? null,
+			player: record.players ?? record.player ?? null,
+			formulaScope: record.formulaScope ?? null
+		};
+	});
+}
+
 export async function getPlayerData(player: any, fetch: any, url: URL) {
 	const emptyRecordsResponse: PlayerListRecordsResponse = {
 		list: null,
@@ -30,14 +90,25 @@ export async function getPlayerData(player: any, fetch: any, url: URL) {
 		lastRefreshedAt: null
 	};
 
-	const [listSummaries, events] = await Promise.all([
+	const [listSummaries, events, rawPlayerRecords] = await Promise.all([
 		(
 			await fetch(`${import.meta.env.VITE_API_URL}/players/${player.uid}/lists`)
 		).json() as Promise<PlayerRankedListSummary[]>,
 		(
 			await fetch(`${import.meta.env.VITE_API_URL}/players/${player.uid}/events`)
-		).json() as Promise<any[]>
+		).json() as Promise<any[]>,
+		fetch(`${import.meta.env.VITE_API_URL}/players/${player.uid}/records`)
+			.then((response: Response) => (response.ok ? response.json() : []))
+			.catch(() => [])
 	]);
+
+	const playerRecordData = normalizePlayerRecords(rawPlayerRecords, listSummaries, player.uid);
+	const playerRecords: PlayerListRecordsResponse = {
+		list: null,
+		data: playerRecordData,
+		total: playerRecordData.length,
+		lastRefreshedAt: null
+	};
 
 	const selectedList = resolvePlayerRankedListSelection(listSummaries, url.searchParams.get('list'));
 	const listRecordResponses = await Promise.all(
@@ -115,6 +186,7 @@ export async function getPlayerData(player: any, fetch: any, url: URL) {
 		player,
 		listSummaries,
 		selectedList,
+		playerRecords,
 		selectedListRecords,
 		allListRecords,
 		events

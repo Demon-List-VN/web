@@ -10,7 +10,7 @@
 	export let config: CardConfig;
 	export let draggedCard: string | null;
 	export let isCustomizing: boolean = false;
-	export let onRecordClick: (uid: string, levelID: number) => void;
+	export let onRecordClick: (uid: string, levelID: number, recordId?: number | null) => void;
 
 	$: selectedList = data.selectedList;
 	$: records = data.selectedListRecords?.data || [];
@@ -34,7 +34,7 @@
 					{#each recentRecords as record}
 						<button
 							class="recent-item"
-							on:click={() => onRecordClick(record.uid, record.levelId)}
+							on:click={() => onRecordClick(record.uid, record.levelId, record.id ?? null)}
 						>
 							<span class="recent-level-name">
 								{record.level?.name}

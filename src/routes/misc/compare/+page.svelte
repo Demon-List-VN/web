@@ -33,13 +33,7 @@
 
 			const data = await playerRes.json();
 			const recordsData = await recordsRes.json();
-
-			// Combine all records from dl, fl, and pl arrays
-			const allRecords = [
-				...(recordsData.dl || []),
-				...(recordsData.fl || []),
-				...(recordsData.pl || [])
-			];
+			const allRecords = Array.isArray(recordsData) ? recordsData : [];
 
 			if (playerSlot === 1) {
 				player1 = data;
