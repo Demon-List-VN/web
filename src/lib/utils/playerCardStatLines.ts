@@ -1,11 +1,35 @@
 import type { PlayerRankedListSummary } from '$lib/types/playerRankedList';
 
 export const PLAYER_CARD_STAT_LINE_COUNT = 4;
+export const PLAYER_CARD_SHOW_ELO_STAT_KEY = 'showEloStat';
 
 export type PlayerCardStatLineOption = {
 	value: number;
 	label: string;
 };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+export function shouldShowPlayerCardEloStat(overviewData: unknown): boolean {
+	return isRecord(overviewData) && overviewData[PLAYER_CARD_SHOW_ELO_STAT_KEY] === true;
+}
+
+export function setPlayerCardEloStatVisibility(
+	overviewData: unknown,
+	showEloStat: boolean
+): Record<string, unknown> {
+	const nextOverviewData = isRecord(overviewData) ? { ...overviewData } : {};
+
+	if (showEloStat) {
+		nextOverviewData[PLAYER_CARD_SHOW_ELO_STAT_KEY] = true;
+	} else {
+		delete nextOverviewData[PLAYER_CARD_SHOW_ELO_STAT_KEY];
+	}
+
+	return nextOverviewData;
+}
 
 export function normalizePlayerCardStatLines(value: unknown): number[] {
 	if (!Array.isArray(value)) {
@@ -43,13 +67,7 @@ export function resolvePlayerCardStatLineIds(
 	listSummaries: PlayerRankedListSummary[]
 ): number[] {
 	const summaryIds = new Set(listSummaries.map((summary) => summary.id));
-	const filtered = configured.filter((id) => summaryIds.has(id));
-
-	if (filtered.length) {
-		return filtered;
-	}
-
-	return listSummaries.slice(0, PLAYER_CARD_STAT_LINE_COUNT).map((summary) => summary.id);
+	return configured.filter((id) => summaryIds.has(id));
 }
 
 export function buildPlayerCardStatLineOptions(

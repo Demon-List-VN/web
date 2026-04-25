@@ -8,11 +8,14 @@
 	import { isActive } from '$lib/client/isSupporterActive';
 	import type { PlayerRankedListSummary } from '$lib/types/playerRankedList';
 	import {
-		PLAYER_CARD_STAT_LINE_COUNT,
 		normalizePlayerCardStatLines,
-		resolvePlayerCardStatLineIds
+		resolvePlayerCardStatLineIds,
+		shouldShowPlayerCardEloStat
 	} from '$lib/utils/playerCardStatLines';
-	import { normalizeCustomListRankBadges, resolveCustomListRankBadge } from '$lib/utils/customListRank';
+	import {
+		normalizeCustomListRankBadges,
+		resolveCustomListRankBadge
+	} from '$lib/utils/customListRank';
 	import { _ } from 'svelte-i18n';
 
 	export let player: any;
@@ -38,14 +41,29 @@
 	$: expLevel = getExpLevel(exp);
 	$: summaries = listSummaries ?? remoteSummaries;
 	$: configuredStatLineIds = normalizePlayerCardStatLines(player?.playerCardStatLines);
+	$: showEloStat = shouldShowPlayerCardEloStat(player?.overviewData);
+	$: hasConfiguredStatLines = configuredStatLineIds.length > 0;
 	$: effectiveStatLineIds = resolvePlayerCardStatLineIds(configuredStatLineIds, summaries);
 	$: resolvedStatLines = effectiveStatLineIds
 		.map((id) => resolvePlayerCardStatLine(id))
 		.filter((line): line is NonNullable<typeof line> => line !== null);
-	$: showStatLineSkeleton = active && listSummaries === null && !hasLoadedRemote && !listLoadFailed;
-	$: statLineSkeletonCount = configuredStatLineIds.length || PLAYER_CARD_STAT_LINE_COUNT;
+	$: showStatLineSkeleton =
+		active &&
+		hasConfiguredStatLines &&
+		listSummaries === null &&
+		!hasLoadedRemote &&
+		!listLoadFailed;
+	$: statLineSkeletonCount = configuredStatLineIds.length;
 	$: statLineSkeletons = Array.from({ length: statLineSkeletonCount }, (_, index) => index);
-	$: if (active && listSummaries === null && player?.uid && !hasLoadedRemote && !isLoadingLists && !listLoadFailed) {
+	$: if (
+		active &&
+		hasConfiguredStatLines &&
+		listSummaries === null &&
+		player?.uid &&
+		!hasLoadedRemote &&
+		!isLoadingLists &&
+		!listLoadFailed
+	) {
 		void loadPlayerRankedLists(player.uid);
 	}
 
@@ -154,68 +172,70 @@
 				</div>
 			</div>
 		</div>
-			{#if showStatLineSkeleton}
-				{#each statLineSkeletons as skeletonIndex (skeletonIndex)}
-					<div class="rating">
-						<div class="leftCol">
-							<Skeleton class="h-[18px] w-[38px] rounded-[4px]" />
-						</div>
-						<div class="rankWrapper">
-							<Skeleton class="h-[14px] w-24" />
-							<Skeleton class="h-[14px] w-10 rounded-[4px]" />
-						</div>
+		{#if showStatLineSkeleton}
+			{#each statLineSkeletons as skeletonIndex (skeletonIndex)}
+				<div class="rating">
+					<div class="leftCol">
+						<Skeleton class="h-[18px] w-[38px] rounded-[4px]" />
 					</div>
-				{/each}
-			{:else}
-				{#each resolvedStatLines as statLine}
-					<div class="rating">
-						{#if statLine.tooltip}
-							<Tooltip.Root>
-								<Tooltip.Trigger>
-									<div class="leftCol">
-										<div class="title text-white" style={statLine.valueStyle}>
-											{statLine.value}
-										</div>
+					<div class="rankWrapper">
+						<Skeleton class="h-[14px] w-24" />
+						<Skeleton class="h-[14px] w-10 rounded-[4px]" />
+					</div>
+				</div>
+			{/each}
+		{:else}
+			{#each resolvedStatLines as statLine}
+				<div class="rating">
+					{#if statLine.tooltip}
+						<Tooltip.Root>
+							<Tooltip.Trigger>
+								<div class="leftCol">
+									<div class="title text-white" style={statLine.valueStyle}>
+										{statLine.value}
 									</div>
-								</Tooltip.Trigger>
-								<Tooltip.Content>{statLine.tooltip}</Tooltip.Content>
-							</Tooltip.Root>
-						{:else}
-							<div class="leftCol">
-								<div class="title" style={statLine.valueStyle}>
-									{statLine.value}
 								</div>
+							</Tooltip.Trigger>
+							<Tooltip.Content>{statLine.tooltip}</Tooltip.Content>
+						</Tooltip.Root>
+					{:else}
+						<div class="leftCol">
+							<div class="title" style={statLine.valueStyle}>
+								{statLine.value}
+							</div>
+						</div>
+					{/if}
+					<div class="rankWrapper">
+						{statLine.label}
+						{#if statLine.rank}
+							<div class="rank">
+								{statLine.rank}
 							</div>
 						{/if}
-						<div class="rankWrapper">
-							{statLine.label}
-							{#if statLine.rank}
-								<div class="rank">
-									{statLine.rank}
-								</div>
-							{/if}
-						</div>
 					</div>
-				{/each}
-			{/if}
+				</div>
+			{/each}
+		{/if}
 
-		<div class="rating">
-			<Tooltip.Root>
-				<Tooltip.Trigger>
-					<div class="leftCol">
-						<div class="title" style={`background-color: ${getTitle('elo', player)?.color}`}>
-							{#if player.matchCount < 5}
-								<span class="opacity-50">{`${player.elo}?`}</span>
-							{:else}
-								{player.elo}
-							{/if}
+		{#if showEloStat}
+			<div class="rating">
+				<Tooltip.Root>
+					<Tooltip.Trigger>
+						<div class="leftCol">
+							<div class="title" style={`background-color: ${getTitle('elo', player)?.color}`}>
+								{#if player.matchCount < 5}
+									<span class="opacity-50">{`${player.elo}?`}</span>
+								{:else}
+									{player.elo}
+								{/if}
+							</div>
 						</div>
-					</div>
-				</Tooltip.Trigger>
-				<Tooltip.Content>{getTitle('elo', player)?.fullTitle}</Tooltip.Content>
-			</Tooltip.Root>
-			<div class="rankWrapper">{$_('player_card.contest')}</div>
-		</div>
+					</Tooltip.Trigger>
+					<Tooltip.Content>{getTitle('elo', player)?.fullTitle}</Tooltip.Content>
+				</Tooltip.Root>
+				<div class="rankWrapper">{$_('player_card.contest')}</div>
+			</div>
+		{/if}
 	</div>
 </div>
 
@@ -342,8 +362,12 @@
 	}
 
 	@keyframes shimmer {
-		0% { background-position: 0% 50%; }
-		100% { background-position: 200% 50%; }
+		0% {
+			background-position: 0% 50%;
+		}
+		100% {
+			background-position: 200% 50%;
+		}
 	}
 
 	@media (prefers-reduced-motion: reduce) {

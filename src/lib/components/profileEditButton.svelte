@@ -17,7 +17,9 @@
 	import type { PlayerRankedListSummary } from '$lib/types/playerRankedList';
 	import {
 		normalizePlayerCardStatLines,
-		PLAYER_CARD_STAT_LINE_COUNT
+		PLAYER_CARD_STAT_LINE_COUNT,
+		setPlayerCardEloStatVisibility,
+		shouldShowPlayerCardEloStat
 	} from '$lib/utils/playerCardStatLines';
 	import { _ } from 'svelte-i18n';
 
@@ -41,6 +43,7 @@
 	let playerCardListSummaries: PlayerRankedListSummary[] = [];
 	let playerCardStatLinesLoadedForUid: string | null = null;
 	let isLoadingPlayerCardStatLines = false;
+	let playerCardShowEloStat = false;
 
 	$: (open, reset());
 	$: listSearchUrl = `${import.meta.env.VITE_API_URL}/lists`;
@@ -57,6 +60,7 @@
 
 	function reset() {
 		player = structuredClone(data);
+		playerCardShowEloStat = shouldShowPlayerCardEloStat(player?.overviewData);
 		provinceItem = {
 			disabled: false,
 			label: player.province,
@@ -136,6 +140,10 @@
 
 	async function savePlayerCardStatLines() {
 		const token = await $user.token();
+		const overviewData = setPlayerCardEloStatVisibility(
+			player?.overviewData ?? data?.overviewData,
+			playerCardShowEloStat
+		);
 		const promise = fetch(`${import.meta.env.VITE_API_URL}/players`, {
 			method: 'PUT',
 			headers: {
@@ -144,6 +152,7 @@
 			},
 			body: JSON.stringify({
 				...data,
+				overviewData,
 				playerCardStatLines: playerCardStatLineIds
 			})
 		});
@@ -155,7 +164,8 @@
 
 		try {
 			await promise;
-			data = { ...data, playerCardStatLines: playerCardStatLineIds };
+			data = { ...data, overviewData, playerCardStatLines: playerCardStatLineIds };
+			player = { ...player, overviewData, playerCardStatLines: playerCardStatLineIds };
 		} catch {
 			// handled by toast
 		}
@@ -290,6 +300,11 @@
 			return;
 		}
 
+		const playerToSave = {
+			...player,
+			overviewData: setPlayerCardEloStatVisibility(player?.overviewData, playerCardShowEloStat)
+		};
+
 		const token = await $user.token();
 		const promise = fetch(`${import.meta.env.VITE_API_URL}/players`, {
 			method: 'PUT',
@@ -297,7 +312,7 @@
 				Authorization: 'Bearer ' + token,
 				'Content-Type': 'application/json'
 			},
-			body: JSON.stringify(player)
+			body: JSON.stringify(playerToSave)
 		});
 		toast.promise(promise, {
 			loading: $_('toast.player_edit.save.loading'),
@@ -305,7 +320,8 @@
 			error: $_('toast.player_edit.save.error')
 		});
 
-		data = player;
+		data = playerToSave;
+		player = playerToSave;
 		open = false;
 	}
 
@@ -444,6 +460,16 @@
 						<p class="text-xs text-muted-foreground">
 							{$_('profile_edit.player_card_stat_lines_description')}
 						</p>
+					</div>
+					<div class="grid grid-cols-4 items-center gap-4">
+						<Label for="show-player-card-elo" class="text-right">
+							{$_('profile_edit.show_elo_stat')}
+						</Label>
+						<Switch
+							id="show-player-card-elo"
+							class="col-span-3"
+							bind:checked={playerCardShowEloStat}
+						/>
 					</div>
 					{#each Array(PLAYER_CARD_STAT_LINE_COUNT) as _slot, index}
 						<div class="grid grid-cols-4 items-center gap-4">

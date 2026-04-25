@@ -324,6 +324,7 @@
 		"hide_profile": "Hide profile",
 		"player_card_stat_lines": "Player card stat lines",
 		"player_card_stat_lines_description": "Choose which ranked stats appear on your player card.",
+		"show_elo_stat": "Show Elo stat",
 		"player_card_stat_line": "Stat line {index}",
 		"save_stat_lines": "Save stat lines",
 		"save": "Save changes"
