@@ -20,9 +20,9 @@
 		Crown,
 		Monitor,
 		Smartphone,
-		ExternalLink,
 		ListPlus,
 	} from 'lucide-svelte';
+	import { InfoCircled } from 'svelte-radix';
 
 	export let data: any;
 	let levelAPI: any = null;
@@ -197,6 +197,11 @@
 				return acceptanceDiff || left.index - right.index;
 			})
 			.map(({ record }) => record);
+	}
+
+	function getRecordDetailHref(record: any) {
+		const recordQuery = record?.id ? `?id=${record.id}` : '';
+		return `/record/${record.userid}/${record.levelid}${recordQuery}`;
 	}
 
 	function getListHref(list: StarredListEntry) {
@@ -619,7 +624,7 @@
 							<div
 								class="record-row"
 								class:top1={index === 0}
-								on:click={() => goto(`/record/${record.userid}/${record.levelid}`)}
+								on:click={() => goto(getRecordDetailHref(record))}
 							>
 								<span class="record-rank" class:rank-top1={index === 0}>
 									{#if index === 0}
@@ -667,11 +672,11 @@
 
 								<button
 									class="record-detail-btn"
-									on:click|stopPropagation={() => goto(`/record/${record.userid}/${record.levelid}`)}
+									on:click|stopPropagation={() => goto(getRecordDetailHref(record))}
 									title="View detail"
+									aria-label="View detail"
 								>
-									<ExternalLink size={13} />
-									Detail
+									<InfoCircled class="h-4 w-4" />
 								</button>
 							</div>
 						{/each}
@@ -726,10 +731,6 @@
 		&:hover {
 			background: hsl(var(--muted) / 0.5);
 			border-color: hsl(var(--border));
-
-			.record-detail-btn {
-				opacity: 1;
-			}
 		}
 
 		&.top1 {
@@ -809,27 +810,23 @@
 	.record-detail-btn {
 		display: flex;
 		align-items: center;
-		gap: 4px;
-		padding: 4px 10px;
+		justify-content: center;
+		width: 32px;
+		height: 32px;
+		padding: 0;
 		border-radius: 6px;
-		font-size: 0.75rem;
-		font-weight: 600;
 		border: 1px solid hsl(var(--border));
 		background: hsl(var(--background));
 		color: hsl(var(--foreground));
 		cursor: pointer;
-		opacity: 0;
-		transition: opacity 0.15s, background 0.15s;
+		transition: background 0.15s, border-color 0.15s, color 0.15s;
 		flex-shrink: 0;
-		white-space: nowrap;
 
 		&:hover {
 			background: hsl(var(--muted));
+			border-color: hsl(var(--primary) / 0.35);
+			color: hsl(var(--primary));
 		}
-	}
-
-	.record-row:hover .record-detail-btn {
-		opacity: 1;
 	}
 
 	.records-count {
@@ -866,15 +863,6 @@
 			display: none;
 		}
 
-		.record-detail-btn {
-			opacity: 1;
-		}
-	}
-
-	@media (hover: none) {
-		.record-detail-btn {
-			opacity: 1;
-		}
 	}
 
 	.chartWrapper {

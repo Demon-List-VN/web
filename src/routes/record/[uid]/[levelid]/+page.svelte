@@ -37,10 +37,31 @@
 		Activity,
 		User,
 		Info,
+		ListOrdered,
 		SkipForward
 	} from 'lucide-svelte';
 
 	export let data: PageData;
+
+	type RecordPublicListStat = {
+		list: {
+			id: number;
+			slug?: string | null;
+			title: string;
+			mode: 'rating' | 'top';
+			isPlatformer: boolean;
+			isOfficial?: boolean;
+			isVerified?: boolean;
+			topEnabled?: boolean;
+		};
+		point: number;
+		no: number;
+		item?: {
+			position?: number | null;
+			rating?: number | null;
+			minProgress?: number | null;
+		} | null;
+	};
 
 	let record: any = null;
 	let deathCount: any = null;
@@ -128,9 +149,58 @@
 			? getTimeString(record.data.progress)
 			: `${record.data.progress}%`
 		: '';
+	$: publicListStats = Array.isArray(record?.data?.publicListStats)
+		? (record.data.publicListStats as RecordPublicListStat[])
+		: [];
+
+	function t(vi: string, en: string) {
+		return $locale == 'vi' ? vi : en;
+	}
 
 	function formatPrice(x: number) {
 		return x.toLocaleString('vi-VN');
+	}
+
+	function formatPoint(point: number | null | undefined) {
+		const value = Number(point);
+
+		if (!Number.isFinite(value)) {
+			return '--';
+		}
+
+		const rounded = Math.round(value * 1000) / 1000;
+
+		if (Number.isInteger(rounded)) {
+			return String(rounded);
+		}
+
+		return rounded
+			.toFixed(3)
+			.replace(/\.0+$|0+$/g, '')
+			.replace(/\.$/, '');
+	}
+
+	function getPublicListHref(stat: RecordPublicListStat) {
+		return `/lists/${stat.list.slug || stat.list.id}`;
+	}
+
+	function getPublicListMeta(stat: RecordPublicListStat) {
+		const listType = stat.list.isPlatformer ? 'Platformer' : 'Classic';
+		const mode = stat.list.mode === 'top' ? 'Top' : 'Rating';
+
+		return `${listType} · ${mode}`;
+	}
+
+	function getPublicListItemValue(stat: RecordPublicListStat) {
+		if (stat.item?.position != null && (stat.list.topEnabled || stat.list.mode === 'top')) {
+			return `#${stat.item.position}`;
+		}
+
+		if (stat.item?.rating != null) {
+			return `${formatPoint(stat.item.rating)}pt`;
+		}
+
+		return '';
 	}
 
 	async function copyShareLink() {
@@ -561,6 +631,48 @@
 										{/if}
 									</div>
 								</div>
+
+								{#if publicListStats.length > 0}
+									<div class="glass-card wide">
+										<div class="card-header">
+											<ListOrdered size={15} class="card-icon" />
+											<span>{t('Thống kê list công khai', 'Public list stats')}</span>
+										</div>
+										<div class="public-list-stat-grid">
+											{#each publicListStats as stat}
+												<a class="public-list-stat-card" href={getPublicListHref(stat)}>
+													<div class="public-list-copy">
+														<div class="public-list-title-row">
+															<span class="public-list-title">{stat.list.title}</span>
+															{#if stat.list.isOfficial}
+																<span class="public-list-chip">Official</span>
+															{:else if stat.list.isVerified}
+																<span class="public-list-chip">Verified</span>
+															{/if}
+														</div>
+														<span class="public-list-meta">{getPublicListMeta(stat)}</span>
+													</div>
+													<div class="public-list-values">
+														<span class="public-list-pill">
+															<strong>#{stat.no}</strong>
+															<span>{t('Bản ghi', 'Record')}</span>
+														</span>
+														<span class="public-list-pill primary">
+															<strong>{formatPoint(stat.point)}</strong>
+															<span>pt</span>
+														</span>
+														{#if getPublicListItemValue(stat)}
+															<span class="public-list-pill">
+																<strong>{getPublicListItemValue(stat)}</strong>
+																<span>{t('Level', 'Level')}</span>
+															</span>
+														{/if}
+													</div>
+												</a>
+											{/each}
+										</div>
+									</div>
+								{/if}
 
 								<!-- Comment card -->
 								{#if record.data.comment}
@@ -1181,6 +1293,105 @@
 		font-size: 0.925rem;
 		line-height: 1.6;
 		color: rgba(255,255,255,0.75);
+	}
+
+	.public-list-stat-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+		gap: 10px;
+	}
+
+	.public-list-stat-card {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 14px;
+		padding: 12px;
+		border: 1px solid rgba(255,255,255,0.08);
+		border-radius: 8px;
+		background: rgba(255,255,255,0.03);
+		color: inherit;
+		text-decoration: none;
+		transition: background 0.15s, border-color 0.15s;
+
+		&:hover {
+			background: rgba(255,255,255,0.06);
+			border-color: rgba(255,255,255,0.16);
+		}
+	}
+
+	.public-list-copy {
+		min-width: 0;
+	}
+
+	.public-list-title-row {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		min-width: 0;
+	}
+
+	.public-list-title {
+		font-size: 0.9rem;
+		font-weight: 700;
+		color: rgba(255,255,255,0.86);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.public-list-chip {
+		padding: 1px 6px;
+		border-radius: 9999px;
+		background: rgba(167,139,250,0.18);
+		border: 1px solid rgba(167,139,250,0.24);
+		color: #c4b5fd;
+		font-size: 0.65rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		flex-shrink: 0;
+	}
+
+	.public-list-meta {
+		display: block;
+		margin-top: 4px;
+		font-size: 0.75rem;
+		color: rgba(255,255,255,0.46);
+	}
+
+	.public-list-values {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 8px;
+		flex-wrap: wrap;
+		flex-shrink: 0;
+	}
+
+	.public-list-pill {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 1px;
+		min-width: 48px;
+
+		strong {
+			font-size: 0.9rem;
+			line-height: 1.1;
+			color: rgba(255,255,255,0.9);
+		}
+
+		span {
+			font-size: 0.65rem;
+			font-weight: 700;
+			text-transform: uppercase;
+			letter-spacing: 0.04em;
+			color: rgba(255,255,255,0.4);
+		}
+
+		&.primary strong {
+			color: #c4b5fd;
+		}
 	}
 
 	.edit-inline-btn {

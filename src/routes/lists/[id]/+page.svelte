@@ -462,6 +462,15 @@
 		return formatPoint(value);
 	}
 
+	function getRecordDetailUrl(entry: CustomListRecordPoint) {
+		const recordQuery = entry.id ? `?id=${entry.id}` : '';
+		return `/record/${entry.uid}/${entry.levelId}${recordQuery}`;
+	}
+
+	function openRecordDetail(entry: CustomListRecordPoint) {
+		goto(getRecordDetailUrl(entry));
+	}
+
 	function buildListItemsQuery(start: number, end: number) {
 		const params = new URLSearchParams({
 			start: String(start),
@@ -1479,6 +1488,9 @@
 															<Table.Head class="w-[150px] text-right"
 																>{$_('custom_lists.detail.records.point_label')}</Table.Head
 															>
+															<Table.Head class="w-[90px] text-right">
+																<span class="sr-only">{$_('record_detail.tabs.detail')}</span>
+															</Table.Head>
 														</Table.Row>
 													</Table.Header>
 													<Table.Body>
@@ -1594,6 +1606,18 @@
 																			</Popover.Content>
 																		</Popover.Root>
 																	</div>
+																</Table.Cell>
+																<Table.Cell class="text-right">
+																	<Button
+																		variant="ghost"
+																		size="sm"
+																		on:click={() => openRecordDetail(entry)}
+																		title={$_('record_detail.tabs.detail')}
+																		aria-label={$_('record_detail.tabs.detail')}
+																	>
+																		<InfoCircled class="mr-2 h-4 w-4" />
+																		{$_('record_detail.tabs.detail')}
+																	</Button>
 																</Table.Cell>
 															</Table.Row>
 														{/each}
