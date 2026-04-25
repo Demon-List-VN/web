@@ -1,10 +1,11 @@
 <script lang="ts">
 	import BigTitle from '$lib/components/bigTitle.svelte';
 	import Staff from '$lib/components/Staff.svelte';
+	import { _ } from 'svelte-i18n';
 </script>
 
 <svelte:head>
-	<title>About - Geometry Dash Việt Nam</title>
+	<title>{$_('head.titles.about')} - {$_('head.site_name')}</title>
 </svelte:head>
 
 <BigTitle value="About" description="Geometry Dash Việt Nam maintainers and developers" />

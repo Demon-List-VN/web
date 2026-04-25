@@ -46,7 +46,7 @@
 </script>
 
 <svelte:head>
-	<title>{$_('battlepass.title')} - Geometry Dash Việt Nam</title>
+	<title>{$_('battlepass.title')} - {$_('head.site_name')}</title>
 </svelte:head>
 
 {#if !data.season}

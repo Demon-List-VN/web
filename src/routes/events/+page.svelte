@@ -68,7 +68,7 @@
 </script>
 
 <svelte:head>
-	<title>Sự kiện - Geometry Dash Việt Nam</title>
+	<title>{$_('head.titles.events')} - {$_('head.site_name')}</title>
 </svelte:head>
 
 <div class="mx-auto mt-[20px] w-full max-w-[1500px] px-1">

@@ -379,21 +379,21 @@
 
 <svelte:head>
 	{#if 'gdbrowser' in data}
-		<title>{data.gdbrowser.name} by {data.gdbrowser.author} - Geometry Dash Việt Nam</title>
+		<title>{data.gdbrowser.name} {$_('head.labels.by')} {data.gdbrowser.author} - {$_('head.site_name')}</title>
 		<meta
 			property="og:title"
-			content={`${data.gdbrowser.name} by {data.gdbrowser.author} - Geometry Dash Việt Nam`}
+			content={`${data.gdbrowser.name} ${$_('head.labels.by')} ${data.gdbrowser.author} - ${$_('head.site_name')}`}
 		/>
 		<meta property="og:description" content={data.gdbrowser.description} />
 	{:else}
-		<title>{data.level.name} by {data.level.creator} - Geometry Dash Việt Nam</title>
+		<title>{data.level.name} {$_('head.labels.by')} {data.level.creator} - {$_('head.site_name')}</title>
 		<meta
 			property="og:title"
-			content={`${data.level.name} by ${data.level.creator} - Geometry Dash Việt Nam`}
+			content={`${data.level.name} ${$_('head.labels.by')} ${data.level.creator} - ${$_('head.site_name')}`}
 		/>
 		<meta
 			property="og:description"
-			content={`${data.level.isPlatformer ? 'Điểm Platformer' : 'Điểm Classic'}: ${data.level.rating} #${data.level.dlTop}\n Điểm Featured List: ${data.level.flPt} #${data.level.flTop}`}
+			content={`${data.level.isPlatformer ? $_('head.labels.platformer_rating') : $_('head.labels.classic_rating')}: ${data.level.rating} #${data.level.dlTop}\n${$_('head.labels.featured_list_points')}: ${data.level.flPt} #${data.level.flTop}`}
 		/>
 	{/if}
 	<meta

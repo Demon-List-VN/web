@@ -13,6 +13,7 @@
 	import { ChevronUp } from 'lucide-svelte';
 	import { fly, slide } from 'svelte/transition';
 	import { isActive } from '$lib/client/isSupporterActive';
+	import { _ } from 'svelte-i18n';
 
 	export let data: PageData;
 
@@ -119,16 +120,16 @@
 
 	function getTitle() {
 		if ($page.params.list == 'dl') {
-			return 'Classic List';
+			return $_('head.list_names.dl');
 		} else if ($page.params.list == 'pl') {
-			return 'Platformer List';
+			return $_('head.list_names.pl');
 		} else if ($page.params.list == 'cl') {
-			return 'Challenge List';
+			return $_('head.list_names.cl');
 		} else if ($page.params.list == 'fl') {
-			return 'Featured List';
+			return $_('head.list_names.fl');
 		}
 
-		return 'None';
+		return $_('head.list_names.fallback');
 	}
 
 	function scrollToTop() {
@@ -189,7 +190,7 @@
 </script>
 
 <svelte:head>
-	<title>{getTitle()} - Geometry Dash Việt Nam</title>
+	<title>{getTitle()} - {$_('head.site_name')}</title>
 </svelte:head>
 
 <div class="levelsWrapper">

@@ -15,13 +15,13 @@
 </script>
 
 <svelte:head>
-	<title>{data.player.name} - Geometry Dash Việt Nam</title>
-	<meta property="og:title" content={`${data.player.name} - Geometry Dash Việt Nam`} />
+	<title>{data.player.name} - {$_('head.site_name')}</title>
+	<meta property="og:title" content={`${data.player.name} - ${$_('head.site_name')}`} />
 	<meta
 		property="og:description"
 		content={data.selectedList
-			? `${data.selectedList.title}: ${Math.round(data.selectedList.score * 10) / 10} #${data.selectedList.rank}\nRecords: ${data.selectedList.completedCount}\nĐiểm cuộc thi: ${data.player.elo}`
-			: `Điểm Classic: ${data.player.rating} #${data.player.overallRank}\nTổng điểm Featured List: ${data.player.totalFLpt} #${data.player.flrank}\nĐiểm cuộc thi: ${data.player.elo}`}
+			? `${data.selectedList.title}: ${Math.round(data.selectedList.score * 10) / 10} #${data.selectedList.rank}\n${$_('head.labels.records')}: ${data.selectedList.completedCount}\n${$_('head.labels.contest_rating')}: ${data.player.elo}`
+			: `${$_('head.labels.classic_rating')}: ${data.player.rating} #${data.player.overallRank}\n${$_('head.labels.featured_list_points')}: ${data.player.totalFLpt} #${data.player.flrank}\n${$_('head.labels.contest_rating')}: ${data.player.elo}`}
 	/>
 	<meta
 		property="og:image"

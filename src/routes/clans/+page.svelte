@@ -284,7 +284,7 @@
 </script>
 
 <svelte:head>
-	<title>{$_('clans.title')} - Geometry Dash Việt Nam</title>
+	<title>{$_('clans.title')} - {$_('head.site_name')}</title>
 </svelte:head>
 
 <div class="pageContainer">

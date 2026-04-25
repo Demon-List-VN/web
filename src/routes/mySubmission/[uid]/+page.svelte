@@ -92,7 +92,7 @@
 </script>
 
 <svelte:head>
-	<title>Bản nộp của tôi - Geometry Dash Việt Nam</title>
+	<title>{$_('head.titles.my_submissions')} - {$_('head.site_name')}</title>
 </svelte:head>
 
 <Ads />

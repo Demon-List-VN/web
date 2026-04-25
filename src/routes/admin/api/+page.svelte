@@ -8,6 +8,7 @@
 	import * as Tabs from '$lib/components/ui/tabs';
 	import { user } from '$lib/client';
 	import { toast } from 'svelte-sonner';
+	import { _ } from 'svelte-i18n';
 
 	// Death Count simulator
 	let deathCountData = {
@@ -279,7 +280,7 @@ async function copyEventSubmitAsCurl() {
 </script>
 
 <svelte:head>
-	<title>API Tester - Admin</title>
+	<title>{$_('head.titles.api_tester')} - {$_('head.titles.admin')}</title>
 </svelte:head>
 
 <Title value="API Tester" />

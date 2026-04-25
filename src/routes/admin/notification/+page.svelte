@@ -8,6 +8,7 @@
 	import * as Alert from '$lib/components/ui/alert';
 	import { user } from '$lib/client';
 	import { toast } from 'svelte-sonner';
+	import { _ } from 'svelte-i18n';
 
 	let notification = {
 		to: '',
@@ -84,7 +85,7 @@
 </script>
 
 <svelte:head>
-	<title>Send Notification - Admin</title>
+	<title>{$_('head.titles.send_notification')} - {$_('head.titles.admin')}</title>
 </svelte:head>
 
 <Title value="Send Notification" />

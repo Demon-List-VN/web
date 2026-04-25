@@ -71,10 +71,10 @@
 </script>
 
 <svelte:head>
-	<title>Discord - Geometry Dash Việt Nam</title>
+	<title>{$_('discord_bot.page_title')} - {$_('head.site_name')}</title>
 	<meta
 		name="description"
-		content="Tham gia cộng đồng Geometry Dash Việt Nam trên Discord hoặc thêm bot vào server của bạn!"
+		content={$_('head.descriptions.discord')}
 	/>
 </svelte:head>
 

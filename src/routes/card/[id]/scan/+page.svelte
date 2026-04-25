@@ -139,7 +139,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.name} - Geometry Dash Việt Nam</title>
+	<title>{data.name} - {$_('head.site_name')}</title>
 </svelte:head>
 
 {#if showConfetti && data.owner}

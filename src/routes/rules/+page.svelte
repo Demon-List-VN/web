@@ -2,7 +2,7 @@
 	import Ads from '$lib/components/ads.svelte';
 	import BigTitle from '$lib/components/bigTitle.svelte';
 	import Markdown from '$lib/components/markdown.svelte';
-	import { locale } from 'svelte-i18n';
+	import { _, locale } from 'svelte-i18n';
 	import type { PageData } from './$types';
 
 	export let data: PageData;
@@ -13,7 +13,7 @@
 </script>
 
 <svelte:head>
-	<title>Luật - Geometry Dash Việt Nam</title>
+	<title>{$_('head.titles.rules')} - {$_('head.site_name')}</title>
 </svelte:head>
 {#if $locale == 'vi'}
 	<BigTitle value="Luật" description="Đọc luật" />

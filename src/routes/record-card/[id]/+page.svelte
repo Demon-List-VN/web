@@ -7,6 +7,7 @@
 	import CardPreview from '../../vending/CardPreview.svelte';
 	import CardBack from '../../vending/CardBack.svelte';
 	import { ExternalLink, Calendar, Trophy, Video, Copy, Check, RotateCw } from 'lucide-svelte';
+	import { _ } from 'svelte-i18n';
 
 	export let data: PageData;
 
@@ -102,9 +103,9 @@
 
 <svelte:head>
 	{#if !data.notFound && level}
-		<title>Thẻ Bản Ghi: {level.name} - Geometry Dash Việt Nam</title>
+		<title>{$_('head.titles.record_card')}: {level.name} - {$_('head.site_name')}</title>
 	{:else}
-		<title>Thẻ Bản Ghi - Geometry Dash Việt Nam</title>
+		<title>{$_('head.titles.record_card')} - {$_('head.site_name')}</title>
 	{/if}
 </svelte:head>
 

@@ -21,7 +21,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.title} - Geometry Dash Việt Nam</title>
+	<title>{data.title} - {$_('head.site_name')}</title>
 </svelte:head>
 
 {#if tab == 'detail'}

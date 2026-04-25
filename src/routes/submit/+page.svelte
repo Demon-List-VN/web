@@ -393,7 +393,7 @@
 </script>
 
 <svelte:head>
-	<title>{$_('submit.button')} | DLVN</title>
+	<title>{$_('submit.button')} | {$_('head.site_short_name')}</title>
 </svelte:head>
 
 <div class="submit-page">

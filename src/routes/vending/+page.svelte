@@ -9,6 +9,7 @@
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { CreditCard, ChevronRight, ChevronLeft, Upload, X } from 'lucide-svelte';
 	import { upload } from '$lib/client/storage';
+	import { _ } from 'svelte-i18n';
 
 	// --- State ---
 	let step = 1;
@@ -207,7 +208,7 @@
 </script>
 
 <svelte:head>
-	<title>Máy Tạo Thẻ Bản Ghi - Geometry Dash Việt Nam</title>
+	<title>{$_('head.titles.vending')} - {$_('head.site_name')}</title>
 </svelte:head>
 
 <div class="vending-wrap">

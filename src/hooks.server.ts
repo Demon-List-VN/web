@@ -34,15 +34,6 @@ export const handle: Handle = async ({ event, resolve }) => {
 	const match = pathname.match(LOCALE_PREFIX_RE);
 
 	if (match) {
-		const urlLang = match[1];
-		const rest = match[2] || '/';
-
-		// If user has an explicit cookie preference that disagrees with the URL
-		// prefix, redirect to the preferred language.
-		if (cookieLocale && cookieLocale !== urlLang) {
-			throw redirect(307, buildLocalizedUrl(cookieLocale, rest, url.search));
-		}
-
 		return resolve(event);
 	}
 

@@ -18,8 +18,8 @@
 </script>
 
 <svelte:head>
-	<title>Ủng hộ - Geometry Dash Việt Nam</title>
-	<meta property="og:title" content="Ủng hộ - Geometry Dash Việt Nam" />
+	<title>{$_('head.titles.supporter')} - {$_('head.site_name')}</title>
+	<meta property="og:title" content={`${$_('head.titles.supporter')} - ${$_('head.site_name')}`} />
 	<meta property="og:type" content="website" />
 </svelte:head>
 

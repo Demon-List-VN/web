@@ -14,6 +14,7 @@
 	import Trash2 from 'lucide-svelte/icons/trash-2';
 	import Edit from 'lucide-svelte/icons/pencil';
 	import { MAP_PACK_DIFFICULTY_OPTIONS } from '$lib/battlepass/constants';
+	import { _ } from 'svelte-i18n';
 
 	// State
 	let generalMapPacks: any[] = [];
@@ -180,7 +181,7 @@
 </script>
 
 <svelte:head>
-	<title>Map Pack Manager - Admin</title>
+	<title>{$_('head.titles.map_pack_manager')} - {$_('head.titles.admin')}</title>
 </svelte:head>
 
 <Title value="Map Pack Manager" />

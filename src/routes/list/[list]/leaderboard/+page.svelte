@@ -23,16 +23,16 @@
 
 	function getListTitle() {
 		if ($page.params.list == 'dl') {
-			return 'Classic List';
+			return $_('head.list_names.dl');
 		} else if ($page.params.list == 'pl') {
-			return 'Platformer List';
+			return $_('head.list_names.pl');
 		} else if ($page.params.list == 'cl') {
-			return 'Challenge List';
+			return $_('head.list_names.cl');
 		} else if ($page.params.list == 'fl') {
-			return 'Featured List';
+			return $_('head.list_names.fl');
 		}
 
-		return 'None';
+		return $_('head.list_names.fallback');
 	}
 
 	$: ($page.url, update());
@@ -43,7 +43,7 @@
 </script>
 
 <svelte:head>
-	<title>Bảng xếp hạng - {getListTitle()} - Geometry Dash Việt Nam</title>
+	<title>{$_('head.titles.leaderboard')} - {getListTitle()} - {$_('head.site_name')}</title>
 </svelte:head>
 
 <Ads dataAdFormat="rectangle" />

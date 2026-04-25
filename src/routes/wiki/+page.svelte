@@ -70,10 +70,10 @@
 </script>
 
 <svelte:head>
-	<title>Wiki - Geometry Dash Việt Nam</title>
+	<title>{$_('head.titles.wiki')} - {$_('head.site_name')}</title>
 	<meta
 		name="description"
-		content="Khám phá Wiki của Geometry Dash Việt Nam - hướng dẫn, luật lệ, tin tức và cập nhật"
+		content={$_('head.descriptions.wiki')}
 	/>
 </svelte:head>
 

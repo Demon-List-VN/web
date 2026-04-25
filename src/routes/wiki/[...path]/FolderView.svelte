@@ -35,8 +35,8 @@
 </script>
 
 <svelte:head>
-	<title>{folderTitle} - Wiki - Geometry Dash Việt Nam</title>
-	<meta property="og:title" content={`${folderTitle} - Wiki - Geometry Dash Việt Nam`} />
+	<title>{folderTitle} - {$_('head.titles.wiki')} - {$_('head.site_name')}</title>
+	<meta property="og:title" content={`${folderTitle} - ${$_('head.titles.wiki')} - ${$_('head.site_name')}`} />
 </svelte:head>
 
 <Ads  />

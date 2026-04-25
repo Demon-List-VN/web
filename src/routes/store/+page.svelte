@@ -14,7 +14,7 @@
 </script>
 
 <svelte:head>
-	<title>Cửa hàng - Geometry Dash Việt Nam</title>
+	<title>{$_('head.titles.store')} - {$_('head.site_name')}</title>
 </svelte:head>
 
 <div

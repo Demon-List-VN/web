@@ -62,7 +62,7 @@
 </script>
 
 <svelte:head>
-	<title>Giỏ hàng - Geometry Dash Việt Nam</title>
+	<title>{$_('head.titles.cart')} - {$_('head.site_name')}</title>
 </svelte:head>
 
 <div

@@ -39,8 +39,8 @@
 </script>
 
 <svelte:head>
-	<title>{metadata.title} - Wiki - Geometry Dash Việt Nam</title>
-	<meta property="og:title" content={`${metadata.title} - Wiki - Geometry Dash Việt Nam`} />
+	<title>{metadata.title} - {$_('head.titles.wiki')} - {$_('head.site_name')}</title>
+	<meta property="og:title" content={`${metadata.title} - ${$_('head.titles.wiki')} - ${$_('head.site_name')}`} />
 	<meta property="og:description" content={metadata.description} />
 	{#if metadata.image}
 		<meta property="og:image" content={metadata.image} />

@@ -398,10 +398,10 @@
 </script>
 
 <svelte:head>
-	<title>Danh sách - Geometry Dash Việt Nam</title>
+	<title>{$_('head.titles.lists')} - {$_('head.site_name')}</title>
 	<meta
 		name="description"
-		content="Xem các danh sách công khai và quản lý bộ sưu tập level của bạn."
+		content={$_('head.descriptions.lists')}
 	/>
 </svelte:head>
 

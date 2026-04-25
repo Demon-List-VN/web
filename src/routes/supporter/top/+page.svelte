@@ -15,7 +15,7 @@
 </script>
 
 <svelte:head>
-	<title>{$_('supporter.top_supporters.page_title')} - Geometry Dash Việt Nam</title>
+	<title>{$_('supporter.top_supporters.page_title')} - {$_('head.site_name')}</title>
 </svelte:head>
 
 <div>

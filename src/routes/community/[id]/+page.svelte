@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { locale } from 'svelte-i18n';
+	import { _ } from 'svelte-i18n';
 	import PostDetail from '$lib/components/community/PostDetail.svelte';
 
 	export let data: any;
@@ -20,9 +20,9 @@
 </script>
 
 <svelte:head>
-	<title>{headPost?.title || 'Cộng đồng'} - Bài viết cộng đồng - Geometry Dash Việt Nam</title>
+	<title>{headPost?.title || $_('head.titles.community')} - {$_('head.titles.community_post')} - {$_('head.site_name')}</title>
 	{#if headPost}
-		<meta property="og:title" content="{headPost.title} - Geometry Dash Việt Nam" />
+		<meta property="og:title" content={`${headPost.title} - ${$_('head.site_name')}`} />
 		<meta property="og:type" content="article" />
 		<meta
 			property="og:url"
@@ -37,7 +37,7 @@
 		{:else if headYtId}
 			<meta property="og:image" content="https://img.youtube.com/vi/{headYtId}/maxresdefault.jpg" />
 		{/if}
-		<meta property="og:site_name" content="Geometry Dash Việt Nam" />
+		<meta property="og:site_name" content={$_('head.site_name')} />
 		<meta property="article:published_time" content={headPost.createdAt} />
 		{#if headPost.updatedAt}
 			<meta property="article:modified_time" content={headPost.updatedAt} />
@@ -49,7 +49,7 @@
 			name="twitter:card"
 			content={headPost.imageUrl || headYtId ? 'summary_large_image' : 'summary'}
 		/>
-		<meta name="twitter:title" content="{headPost.title} - Geometry Dash Việt Nam" />
+		<meta name="twitter:title" content={`${headPost.title} - ${$_('head.site_name')}`} />
 		{#if headPost.content}
 			<meta name="twitter:description" content={headPost.content.slice(0, 160)} />
 		{/if}

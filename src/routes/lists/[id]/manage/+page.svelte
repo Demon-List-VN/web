@@ -3505,8 +3505,8 @@
 <svelte:head>
 	<title
 		>{list
-			? `Quản lý danh sách - ${list.title} - Geometry Dash Việt Nam`
-			: 'Danh sách - Geometry Dash Việt Nam'}</title
+			? `${$_('head.titles.manage_list')} - ${list.title} - ${$_('head.site_name')}`
+			: `${$_('head.titles.lists')} - ${$_('head.site_name')}`}</title
 	>
 </svelte:head>
 

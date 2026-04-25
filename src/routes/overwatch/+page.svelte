@@ -5,6 +5,7 @@
 	import { user } from '$lib/client';
 	import { toast } from 'svelte-sonner';
 	import { onMount } from 'svelte';
+	import { _ } from 'svelte-i18n';
 
 	type RetrieveType = 'official' | 'nonOfficial';
 
@@ -129,7 +130,7 @@
 </script>
 
 <svelte:head>
-	<title>Overwatch - Geometry Dash Việt Nam</title>
+	<title>{$_('head.titles.overwatch')} - {$_('head.site_name')}</title>
 </svelte:head>
 
 <RecordDetail bind:open={isOpen} uid={userID} {levelID} recordId={recordID} />

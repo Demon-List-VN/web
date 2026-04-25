@@ -358,8 +358,8 @@
 </script>
 
 <svelte:head>
-	<title>Hội {data.name} - Geometry Dash Việt Nam</title>
-	<meta property="og:title" content={`Hội ${data.name} - Geometry Dash Việt Nam`} />
+	<title>{$_('head.labels.clan')} {data.name} - {$_('head.site_name')}</title>
+	<meta property="og:title" content={`${$_('head.labels.clan')} ${data.name} - ${$_('head.site_name')}`} />
 	<meta
 		property="og:image"
 		content={`https://cdn.gdvn.net/clan-photos/${$page.params.id}.jpg?version=${data.imageVersion}`}

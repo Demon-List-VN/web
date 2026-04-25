@@ -134,7 +134,7 @@
 </script>
 
 <svelte:head>
-	<title>Danh sách mới - Geometry Dash Việt Nam</title>
+	<title>{$_('head.titles.new_list')} - {$_('head.site_name')}</title>
 </svelte:head>
 
 <div class="page">

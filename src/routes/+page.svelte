@@ -18,11 +18,11 @@
 
 	export let data: any;
 
-	const homepageTitle = 'Geometry Dash Việt Nam';
-	const homepageDescription =
-		'Website dành cho cộng đồng Geometry Dash Việt Nam';
 	const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://gdvn.net').replace(/\/$/, '');
 	const homepageUrl = siteUrl || 'https://gdvn.net';
+
+	$: homepageTitle = $_('head.site_name');
+	$: homepageDescription = $_('head.descriptions.homepage');
 
 	let showOnboardingModal = false;
 
@@ -72,7 +72,7 @@
 	<meta property="og:type" content="website" />
 	<meta property="og:url" content={homepageUrl} />
 	<meta property="og:description" content={homepageDescription} />
-	<meta property="og:site_name" content="Geometry Dash Việt Nam" />
+	<meta property="og:site_name" content={$_('head.site_name')} />
 	<meta name="twitter:card" content="summary" />
 	<meta name="twitter:title" content={homepageTitle} />
 	<meta name="twitter:description" content={homepageDescription} />

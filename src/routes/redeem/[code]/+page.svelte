@@ -80,10 +80,10 @@
 </script>
 
 <svelte:head>
-	<title>Nhận quà - Geometry Dash Việt Nam</title>
+	<title>{$_('head.titles.redeem')} - {$_('head.site_name')}</title>
 	<meta
 		property="og:title"
-		content={`Nhận quà - Geometry Dash Việt Nam`}
+		content={`${$_('head.titles.redeem')} - ${$_('head.site_name')}`}
 	/>
 </svelte:head>
 

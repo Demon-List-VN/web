@@ -7,7 +7,7 @@
 	import StepConfirmLevel from '$lib/components/submit/StepConfirmLevel.svelte';
 	import StepLevelDetails from '$lib/components/submit/StepLevelDetails.svelte';
 	import { extractYouTubeVideoId, isValidYouTubeLink } from '$lib/components/submit/submitState';
-	import { locale } from 'svelte-i18n';
+	import { _, locale } from 'svelte-i18n';
 	import { toast } from 'svelte-sonner';
 	import { fly } from 'svelte/transition';
 	import { ArrowLeft, Layers, ListOrdered, Star } from 'lucide-svelte';
@@ -238,7 +238,7 @@
 
 <svelte:head>
 	<title>
-		{list ? `${list.title} | ${$locale == 'vi' ? 'Nộp level' : 'Submit level'}` : 'Submit level'}
+		{list ? `${list.title} | ${$_('head.titles.submit_level')}` : $_('head.titles.submit_level')}
 	</title>
 </svelte:head>
 

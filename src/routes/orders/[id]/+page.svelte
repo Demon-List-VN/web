@@ -275,7 +275,7 @@
 </div>
 
 <svelte:head>
-	<title>Chi tiết đơn hàng - Geometry Dash Việt Nam</title>
+	<title>{$_('head.titles.order_details')} - {$_('head.site_name')}</title>
 </svelte:head>
 
 <Title value={$_('order_detail.title')} />

@@ -72,7 +72,7 @@
 </script>
 
 <svelte:head>
-	<title>Dashboard - Geometry Dash Việt Nam</title>
+	<title>{$_('head.titles.dashboard')} - {$_('head.site_name')}</title>
 </svelte:head>
 
 <Dashboard {events} />

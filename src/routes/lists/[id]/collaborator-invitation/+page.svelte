@@ -155,7 +155,7 @@
 </script>
 
 <svelte:head>
-	<title>{$_('custom_lists.collaborator_invitation.title')} - Geometry Dash Việt Nam</title>
+	<title>{$_('custom_lists.collaborator_invitation.title')} - {$_('head.site_name')}</title>
 </svelte:head>
 
 <div class="page">

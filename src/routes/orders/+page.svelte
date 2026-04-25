@@ -127,7 +127,7 @@
 </script>
 
 <svelte:head>
-	<title>Đơn hàng - Geometry Dash Việt Nam</title>
+	<title>{$_('head.titles.orders')} - {$_('head.site_name')}</title>
 </svelte:head>
 
 {#if $user.loggedIn}

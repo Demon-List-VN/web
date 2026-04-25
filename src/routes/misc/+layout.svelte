@@ -8,7 +8,7 @@
 </script>
 
 <svelte:head>
-	<title>Misc - Geometry Dash Việt Nam</title>
+	<title>{$_('head.titles.misc')} - {$_('head.site_name')}</title>
 </svelte:head>
 
 {#if $user.loggedIn && isActive($user.data.supporterUntil)}

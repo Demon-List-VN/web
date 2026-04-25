@@ -431,7 +431,7 @@
 
 <svelte:head>
 	{#if record?.data}
-		<title>{record.data.players.name} – {record.data.levels.name} · GDVN</title>
+		<title>{record.data.players.name} – {record.data.levels.name} · {$_('head.site_short_name')}</title>
 	{/if}
 </svelte:head>
 

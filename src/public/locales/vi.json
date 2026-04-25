@@ -29,6 +29,64 @@
 		"search_placeholder": "Tìm danh sách...",
 		"no_results": "Không tìm thấy danh sách"
 	},
+	"head": {
+		"site_name": "Geometry Dash Việt Nam",
+		"site_short_name": "GDVN",
+		"labels": {
+			"by": "bởi",
+			"classic_rating": "Điểm Classic",
+			"platformer_rating": "Điểm Platformer",
+			"featured_list_points": "Điểm Featured List",
+			"contest_rating": "Điểm cuộc thi",
+			"records": "Bản ghi",
+			"clan": "Hội"
+		},
+		"titles": {
+			"about": "Giới thiệu",
+			"admin": "Quản trị",
+			"api_tester": "Trình kiểm thử API",
+			"cart": "Giỏ hàng",
+			"community": "Cộng đồng",
+			"community_post": "Bài viết cộng đồng",
+			"dashboard": "Dashboard",
+			"events": "Sự kiện",
+			"leaderboard": "Bảng xếp hạng",
+			"lists": "Danh sách",
+			"manage_list": "Quản lý danh sách",
+			"map_pack_manager": "Quản lý Map Pack",
+			"misc": "Khác",
+			"my_submissions": "Bản nộp của tôi",
+			"new_list": "Danh sách mới",
+			"order_details": "Chi tiết đơn hàng",
+			"orders": "Đơn hàng",
+			"overwatch": "Overwatch",
+			"players": "Người chơi",
+			"record_card": "Thẻ Bản Ghi",
+			"redeem": "Nhận quà",
+			"rules": "Luật",
+			"send_notification": "Gửi thông báo",
+			"store": "Cửa hàng",
+			"submit_level": "Nộp level",
+			"success": "Thành công!",
+			"supporter": "Ủng hộ",
+			"vending": "Máy Tạo Thẻ Bản Ghi",
+			"wiki": "Wiki"
+		},
+		"list_names": {
+			"dl": "Classic List",
+			"pl": "Platformer List",
+			"cl": "Challenge List",
+			"fl": "Featured List",
+			"fallback": "Danh sách"
+		},
+		"descriptions": {
+			"homepage": "Website dành cho cộng đồng Geometry Dash Việt Nam",
+			"discord": "Tham gia cộng đồng Geometry Dash Việt Nam trên Discord hoặc thêm bot vào server của bạn!",
+			"community": "Chia sẻ, thảo luận và kết nối với cộng đồng Geometry Dash Việt Nam",
+			"lists": "Xem các danh sách công khai và quản lý bộ sưu tập level của bạn.",
+			"wiki": "Khám phá Wiki của Geometry Dash Việt Nam - hướng dẫn, luật lệ, tin tức và cập nhật"
+		}
+	},
 	"acceptance": {
 		"label": "Trạng thái duyệt",
 		"short_label": "Duyệt",

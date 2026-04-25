@@ -29,6 +29,64 @@
 		"search_placeholder": "Search lists...",
 		"no_results": "No lists found"
 	},
+	"head": {
+		"site_name": "Geometry Dash Việt Nam",
+		"site_short_name": "GDVN",
+		"labels": {
+			"by": "by",
+			"classic_rating": "Classic Rating",
+			"platformer_rating": "Platformer Rating",
+			"featured_list_points": "Featured List Points",
+			"contest_rating": "Contest Rating",
+			"records": "Records",
+			"clan": "Clan"
+		},
+		"titles": {
+			"about": "About",
+			"admin": "Admin",
+			"api_tester": "API Tester",
+			"cart": "Cart",
+			"community": "Community",
+			"community_post": "Community Post",
+			"dashboard": "Dashboard",
+			"events": "Events",
+			"leaderboard": "Leaderboard",
+			"lists": "Lists",
+			"manage_list": "Manage List",
+			"map_pack_manager": "Map Pack Manager",
+			"misc": "Misc",
+			"my_submissions": "My Submissions",
+			"new_list": "New List",
+			"order_details": "Order Details",
+			"orders": "Orders",
+			"overwatch": "Overwatch",
+			"players": "Players",
+			"record_card": "Record Card",
+			"redeem": "Claim Gift",
+			"rules": "Rules",
+			"send_notification": "Send Notification",
+			"store": "Store",
+			"submit_level": "Submit level",
+			"success": "Success!",
+			"supporter": "Support Us",
+			"vending": "Record Card Maker",
+			"wiki": "Wiki"
+		},
+		"list_names": {
+			"dl": "Classic List",
+			"pl": "Platformer List",
+			"cl": "Challenge List",
+			"fl": "Featured List",
+			"fallback": "List"
+		},
+		"descriptions": {
+			"homepage": "A website for the Geometry Dash Việt Nam community",
+			"discord": "Join the Geometry Dash Việt Nam community on Discord or add the bot to your server!",
+			"community": "Share, discuss, and connect with the Geometry Dash Việt Nam community",
+			"lists": "Browse public lists and manage your level collections.",
+			"wiki": "Explore the Geometry Dash Việt Nam Wiki with guides, rules, news, and updates"
+		}
+	},
 	"acceptance": {
 		"label": "Acceptance",
 		"short_label": "Accept",

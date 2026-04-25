@@ -1229,8 +1229,8 @@
 <svelte:head>
 	<title
 		>{list
-			? `${list.title} - Danh sách - Geometry Dash Việt Nam`
-			: 'Danh sách - Geometry Dash Việt Nam'}</title
+			? `${list.title} - ${$_('head.titles.lists')} - ${$_('head.site_name')}`
+			: `${$_('head.titles.lists')} - ${$_('head.site_name')}`}</title
 	>
 	{#if list?.description}
 		<meta name="description" content={list.description} />

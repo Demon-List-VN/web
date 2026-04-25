@@ -1,12 +1,13 @@
 <script>
 	import { page } from '$app/stores';
 	import { Confetti } from 'svelte-confetti';
+	import { _ } from 'svelte-i18n';
 
 	const id = $page.url.searchParams.get('id');
 </script>
 
 <svelte:head>
-	<title>Success!</title>
+	<title>{$_('head.titles.success')}</title>
 </svelte:head>
 <div
 	style="
