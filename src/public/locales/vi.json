@@ -1748,8 +1748,11 @@
       "new_list": "Tạo danh sách",
       "tabs": {
         "browse": "Khám phá",
-        "custom": "Tùy chỉnh",
+        "custom": "Cộng đồng",
+        "community": "Cộng đồng",
         "official": "Chính thức",
+        "verified": "Đã xác minh",
+        "mirror": "Mirror",
         "mine": "Danh sách của tôi",
         "starred": "Đã gắn sao"
       },
@@ -1776,6 +1779,24 @@
         "empty_title": "Không tìm thấy danh sách chính thức",
         "empty_search_hint": "Hãy thử từ khóa khác.",
         "empty_browse_hint": "Danh sách chính thức sẽ xuất hiện ở đây khi sẵn sàng."
+      },
+      "verified": {
+        "heading": "Danh sách đã xác minh",
+        "hint": "Các danh sách đã xác minh đã được đội ngũ GDVN duyệt.",
+        "search_placeholder": "Tìm kiếm danh sách đã xác minh theo tên hoặc mô tả",
+        "search_button": "Tìm kiếm",
+        "empty_title": "Không tìm thấy danh sách đã xác minh",
+        "empty_search_hint": "Hãy thử từ khóa khác.",
+        "empty_browse_hint": "Danh sách đã xác minh sẽ xuất hiện ở đây khi sẵn sàng."
+      },
+      "mirror": {
+        "heading": "Danh sách mirror",
+        "hint": "Danh sách mirror lưu lại các bộ sưu tập được sao chép từ nguồn khác.",
+        "search_placeholder": "Tìm kiếm danh sách mirror theo tên hoặc mô tả",
+        "search_button": "Tìm kiếm",
+        "empty_title": "Không tìm thấy danh sách mirror",
+        "empty_search_hint": "Hãy thử từ khóa khác.",
+        "empty_browse_hint": "Danh sách mirror sẽ xuất hiện ở đây khi sẵn sàng."
       },
       "own": {
         "loading": "Đang tải danh sách của bạn...",

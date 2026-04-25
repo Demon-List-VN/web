@@ -1749,8 +1749,11 @@
       "new_list": "New list",
       "tabs": {
         "browse": "Browse",
-        "custom": "Custom",
+        "custom": "Community",
+        "community": "Community",
         "official": "Official",
+        "verified": "Verified",
+        "mirror": "Mirror",
         "mine": "My lists",
         "starred": "Starred"
       },
@@ -1777,6 +1780,24 @@
         "empty_title": "No official lists found",
         "empty_search_hint": "Try a different search term.",
         "empty_browse_hint": "Official lists will appear here once they are available."
+      },
+      "verified": {
+        "heading": "Verified lists",
+        "hint": "Verified lists have been reviewed by the GDVN team.",
+        "search_placeholder": "Search verified lists by title or description",
+        "search_button": "Search",
+        "empty_title": "No verified lists found",
+        "empty_search_hint": "Try a different search term.",
+        "empty_browse_hint": "Verified lists will appear here once they are available."
+      },
+      "mirror": {
+        "heading": "Mirror lists",
+        "hint": "Mirror lists preserve collections mirrored from other sources.",
+        "search_placeholder": "Search mirror lists by title or description",
+        "search_button": "Search",
+        "empty_title": "No mirror lists found",
+        "empty_search_hint": "Try a different search term.",
+        "empty_browse_hint": "Mirror lists will appear here once they are available."
       },
       "own": {
         "loading": "Loading your lists...",

@@ -27,10 +27,17 @@
 
 	export let data: any;
 
-	type PublicListTab = 'custom' | 'official';
+	const PUBLIC_TABS = ['official', 'verified', 'mirror', 'custom'] as const;
+	type PublicListTab = (typeof PUBLIC_TABS)[number];
+	type PublicListSection = 'official' | 'verified' | 'mirror' | 'browse';
 	type ListTab = PublicListTab | 'mine' | 'starred';
 	type CustomListResolvedRole = 'viewer' | 'owner' | 'admin' | 'helper' | 'moderator';
-	const GRID_AD_FREQUENCY = 4;
+	const PUBLIC_TAB_SECTIONS: Record<PublicListTab, PublicListSection> = {
+		official: 'official',
+		verified: 'verified',
+		mirror: 'mirror',
+		custom: 'browse'
+	};
 
 	type ListSummary = {
 		id: number;
@@ -42,6 +49,8 @@
 		borderColor?: string | null;
 		isPlatformer: boolean;
 		isOfficial?: boolean;
+		isMirror?: boolean;
+		isVerified?: boolean;
 		logoUrl?: string | null;
 		visibility: 'private' | 'unlisted' | 'public';
 		tags: string[];
@@ -61,7 +70,7 @@
 	$: currentPage = data?.page ?? 1;
 	$: pageSize = data?.pageSize ?? 12;
 	$: searchQuery = data?.search ?? '';
-	$: publicTab = (data?.tab === 'official' ? 'official' : 'custom') as PublicListTab;
+	$: publicTab = (isPublicListTab(data?.tab) ? data.tab : 'official') as PublicListTab;
 	$: totalPages = Math.max(1, Math.ceil(total / pageSize));
 	let activeTab: ListTab = publicTab;
 
@@ -75,6 +84,18 @@
 
 	// Search input
 	let searchInput = searchQuery;
+
+	function isPublicListTab(value: unknown): value is PublicListTab {
+		return typeof value === 'string' && (PUBLIC_TABS as readonly string[]).includes(value);
+	}
+
+	function getPublicTabSection(tab: PublicListTab) {
+		return PUBLIC_TAB_SECTIONS[tab];
+	}
+
+	function getPublicTabMessage(tab: PublicListTab, key: string) {
+		return $_(`custom_lists.index.${getPublicTabSection(tab)}.${key}`);
+	}
 
 	function getQuickLevelId() {
 		const raw = $page.url.searchParams.get('levelId');
@@ -118,14 +139,6 @@
 
 	function getListHref(list: ListSummary) {
 		return `/lists/${list.slug || list.id}`;
-	}
-
-	function shouldShowGridAd(index: number, totalItems: number) {
-		return (
-			totalItems > GRID_AD_FREQUENCY &&
-			(index + 1) % GRID_AD_FREQUENCY === 0 &&
-			index < totalItems - 1
-		);
 	}
 
 	function isHexColor(value: string | null | undefined) {
@@ -204,8 +217,8 @@
 		const nextPage = options.page ?? 1;
 		const nextSearch = (options.search ?? '').trim();
 
-		if (tab === 'custom') {
-			params.set('tab', 'custom');
+		if (tab !== 'official') {
+			params.set('tab', tab);
 		}
 
 		if (nextPage > 1) {
@@ -424,8 +437,14 @@
 				<Tabs.Trigger value="official" on:click={() => selectTab('official')}
 					>{$_('custom_lists.index.tabs.official')}</Tabs.Trigger
 				>
+				<Tabs.Trigger value="verified" on:click={() => selectTab('verified')}
+					>{$_('custom_lists.index.tabs.verified')}</Tabs.Trigger
+				>
+				<Tabs.Trigger value="mirror" on:click={() => selectTab('mirror')}
+					>{$_('custom_lists.index.tabs.mirror')}</Tabs.Trigger
+				>
 				<Tabs.Trigger value="custom" on:click={() => selectTab('custom')}
-					>{$_('custom_lists.index.tabs.custom')}</Tabs.Trigger
+					>{$_('custom_lists.index.tabs.community')}</Tabs.Trigger
 				>
 				<Tabs.Trigger value="mine" on:click={() => selectTab('mine')}
 					>{$_('custom_lists.index.tabs.mine')}</Tabs.Trigger
@@ -435,6 +454,185 @@
 				>
 			</Tabs.List>
 		</div>
+
+		{#if publicTab === 'verified' || publicTab === 'mirror'}
+			<Tabs.Content value={publicTab}>
+				<section class="section">
+					<div class="sectionHeader">
+						<div class="sectionTitleRow">
+							<h2>{getPublicTabMessage(publicTab, 'heading')}</h2>
+							<Badge variant="outline">{total}</Badge>
+						</div>
+						<p class="sectionHint">{getPublicTabMessage(publicTab, 'hint')}</p>
+					</div>
+
+					<div class="searchRow">
+						<div class="searchInputWrap">
+							<span class="searchIcon"><Search class="h-4 w-4" /></span>
+							<Input
+								bind:value={searchInput}
+								placeholder={getPublicTabMessage(publicTab, 'search_placeholder')}
+								on:keydown={handleSearchKeydown}
+							/>
+						</div>
+						<Button variant="outline" on:click={handleSearch}
+							>{getPublicTabMessage(publicTab, 'search_button')}</Button
+						>
+					</div>
+
+					{#if lists.length === 0}
+						<div class="emptyState">
+							<h3>{getPublicTabMessage(publicTab, 'empty_title')}</h3>
+							<p>
+								{searchQuery
+									? getPublicTabMessage(publicTab, 'empty_search_hint')
+									: getPublicTabMessage(publicTab, 'empty_browse_hint')}
+							</p>
+						</div>
+					{:else}
+						<div class="listGrid">
+							{#each lists as list}
+								{@const bannerUrl = getListAssetUrl(list.bannerUrl)}
+								{@const logoUrl = getListAssetUrl(list.logoUrl)}
+								<button
+									class="listCard"
+									style={getListCardStyle(list)}
+									on:click={() => goto(getListHref(list))}
+								>
+									{#if bannerUrl || logoUrl}
+										<div class="cardMedia" style={getListCardBannerStyle(list)}>
+											{#if bannerUrl}
+												<img
+													class="cardBanner"
+													src={bannerUrl}
+													alt=""
+													loading="lazy"
+													decoding="async"
+												/>
+											{/if}
+											<div class="cardMediaShade"></div>
+											{#if logoUrl}
+												<div class="cardLogoWrap">
+													<img
+														class="cardLogo"
+														src={logoUrl}
+														alt={`${list.title} logo`}
+														loading="lazy"
+														decoding="async"
+													/>
+												</div>
+											{/if}
+										</div>
+									{/if}
+									<div class="cardTop">
+										<h3 class="cardTitle">{list.title}</h3>
+										<p class="cardDesc">
+											{list.description || $_('custom_lists.detail.no_description')}
+										</p>
+									</div>
+
+									<div class="cardMeta">
+										<div class="metaBadges">
+											<span class="metaItem">
+												<svelte:component
+													this={getVisibilityIcon(list.visibility)}
+													class="h-3.5 w-3.5"
+												/>
+												{formatVisibility(list.visibility)}
+											</span>
+											<span class="metaItem">
+												<Layers class="h-3.5 w-3.5" />
+												{formatListType(list.isPlatformer)}
+											</span>
+											{#if list.isOfficial}
+												<span class="metaItem">
+													<Star class="h-3.5 w-3.5" />
+													Official
+												</span>
+											{/if}
+											<span class="metaItem">
+												{$_('custom_lists.detail.levels_badge', {
+													values: { count: list.levelCount }
+												})}
+											</span>
+											<span class="metaItem">
+												<Star class="h-3.5 w-3.5" />
+												{$_('custom_lists.detail.star_count', {
+													values: { count: list.starCount ?? 0 }
+												})}
+											</span>
+										</div>
+										<div class="cardFooter">
+											<span class="metaDate">
+												<Clock class="h-3.5 w-3.5" />
+												{formatDate(list.updated_at)}
+											</span>
+											{#if list.ownerData}
+												<span class="ownerInfo">
+													{$_('custom_lists.index.browse.by')}
+													<PlayerLink player={list.ownerData} />
+												</span>
+											{/if}
+										</div>
+									</div>
+
+									{#if list.tags?.length}
+										<div class="cardTags">
+											{#each list.tags.slice(0, 4) as tag}
+												<Badge variant="outline" class="cardTag">{tag}</Badge>
+											{/each}
+											{#if list.tags.length > 4}
+												<Badge variant="outline" class="cardTag">+{list.tags.length - 4}</Badge>
+											{/if}
+										</div>
+									{/if}
+								</button>
+							{/each}
+						</div>
+
+						{#if totalPages > 1}
+							<nav class="pagination" aria-label="Pagination">
+								<Button
+									variant="outline"
+									size="sm"
+									disabled={currentPage <= 1}
+									on:click={() => goToPage(currentPage - 1)}
+								>
+									<ChevronLeft class="h-4 w-4" />
+									<span class="paginationLabel">Prev</span>
+								</Button>
+
+								<div class="pageNumbers">
+									{#each paginationPages as p}
+										{#if p === '...'}
+											<span class="pageEllipsis">…</span>
+										{:else}
+											<button
+												class="pageBtn"
+												class:active={p === currentPage}
+												on:click={() => goToPage(p)}
+											>
+												{p}
+											</button>
+										{/if}
+									{/each}
+								</div>
+
+								<Button
+									variant="outline"
+									size="sm"
+									disabled={currentPage >= totalPages}
+									on:click={() => goToPage(currentPage + 1)}
+								>
+									<span class="paginationLabel">Next</span>
+									<ChevronRight class="h-4 w-4" />
+								</Button>
+							</nav>
+						{/if}
+					{/if}
+				</section>
+			</Tabs.Content>
+		{/if}
 
 		<Tabs.Content value="official">
 			<section class="section">
@@ -471,7 +669,7 @@
 					</div>
 				{:else}
 					<div class="listGrid">
-						{#each lists as list, index}
+						{#each lists as list}
 							{@const bannerUrl = getListAssetUrl(list.bannerUrl)}
 							{@const logoUrl = getListAssetUrl(list.logoUrl)}
 							<button
@@ -648,7 +846,7 @@
 					</div>
 				{:else}
 					<div class="listGrid">
-						{#each lists as list, index}
+						{#each lists as list}
 							{@const bannerUrl = getListAssetUrl(list.bannerUrl)}
 							{@const logoUrl = getListAssetUrl(list.logoUrl)}
 							<button
@@ -826,7 +1024,7 @@
 						</div>
 					{:else}
 						<div class="listGrid">
-							{#each ownLists as list, index}
+							{#each ownLists as list}
 								{@const bannerUrl = getListAssetUrl(list.bannerUrl)}
 								{@const logoUrl = getListAssetUrl(list.logoUrl)}
 								<button
@@ -973,7 +1171,7 @@
 						</div>
 					{:else}
 						<div class="listGrid">
-							{#each starredLists as list, index}
+							{#each starredLists as list}
 								{@const bannerUrl = getListAssetUrl(list.bannerUrl)}
 								{@const logoUrl = getListAssetUrl(list.logoUrl)}
 								<button

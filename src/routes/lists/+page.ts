@@ -1,9 +1,13 @@
 import type { PageLoad } from './$types';
 
 const PAGE_SIZE = 12;
+const PUBLIC_TABS = ['official', 'verified', 'mirror', 'custom'] as const;
 
-function getPublicTab(url: URL): 'custom' | 'official' {
-	return url.searchParams.get('tab') === 'custom' ? 'custom' : 'official';
+type PublicListTab = (typeof PUBLIC_TABS)[number];
+
+function getPublicTab(url: URL): PublicListTab {
+	const tab = url.searchParams.get('tab');
+	return PUBLIC_TABS.includes(tab as PublicListTab) ? (tab as PublicListTab) : 'official';
 }
 
 export const load: PageLoad = async ({ url, fetch }) => {
