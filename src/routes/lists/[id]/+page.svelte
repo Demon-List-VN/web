@@ -45,6 +45,7 @@
 	import { onDestroy, onMount } from 'svelte';
 	import { fly } from 'svelte/transition';
 	import { locale, _ } from 'svelte-i18n';
+	import { InfoCircled } from 'svelte-radix';
 
 	export let data: any;
 
@@ -1367,7 +1368,7 @@
 													aria-pressed={selectedLeaderboardPlayerUid === player.uid}
 													on:click={() => selectLeaderboardPlayer(player)}
 												>
-													<MoreHorizontal class="h-4 w-4" />
+													<InfoCircled class="h-4 w-4" />
 												</Button>
 											</Table.Cell>
 										</Table.Row>

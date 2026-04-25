@@ -6,15 +6,43 @@
 	import { toast } from 'svelte-sonner';
 	import { onMount } from 'svelte';
 
+	type RetrieveType = 'official' | 'nonOfficial';
+
 	let isOpen = false;
 	let userID: any, levelID: any;
 	let recordID: number | null = null;
-	let limitLeft: number | null = null;
-	let dailyLimit = 3;
+	let officialLimitLeft: number | null = null;
+	let officialDailyLimit = 3;
+	let nonOfficialLimitLeft: number | null = null;
+	let nonOfficialDailyLimit = 5;
+
+	function applyLimitData(data: any) {
+		if (data?.limits?.official) {
+			officialDailyLimit = Number(data.limits.official.limit || officialDailyLimit);
+			officialLimitLeft = Number(data.limits.official.limitLeft || 0);
+		}
+
+		if (data?.limits?.nonOfficial) {
+			nonOfficialDailyLimit = Number(data.limits.nonOfficial.limit || nonOfficialDailyLimit);
+			nonOfficialLimitLeft = Number(data.limits.nonOfficial.limitLeft || 0);
+		}
+
+		if (!data?.limits && typeof data?.limitLeft === 'number') {
+			officialDailyLimit = Number(data.limit || officialDailyLimit);
+			officialLimitLeft = Number(data.limitLeft || 0);
+		}
+	}
+
+	function isLimitReached(type: RetrieveType) {
+		const limitLeft = type === 'official' ? officialLimitLeft : nonOfficialLimitLeft;
+
+		return limitLeft !== null && limitLeft <= 0;
+	}
 
 	async function fetchLimit() {
 		if (!$user.loggedIn) {
-			limitLeft = null;
+			officialLimitLeft = null;
+			nonOfficialLimitLeft = null;
 			return;
 		}
 
@@ -31,51 +59,57 @@
 			}
 
 			const data = await res.json();
-			dailyLimit = Number(data.limit || 3);
-			limitLeft = Number(data.limitLeft || 0);
-		} catch (error) {
+			applyLimitData(data);
+		} catch {
 			// Ignore silently
 		}
 	}
 
-	async function retrieve() {
+	async function retrieve(type: RetrieveType) {
+		const label = type === 'official' ? 'official list' : 'non official list';
+
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/records/retrieve`, {
+			fetch(`${import.meta.env.VITE_API_URL}/records/retrieve?type=${type}`, {
 				headers: {
 					Authorization: `Bearer ${await $user.token()}`,
 					'Content-Type': 'application/json'
 				}
 			})
-				.then((res) => {
-					if (res.status == 429) {
-						return res.json().then((data) => {
-							throw data;
-						});
+				.then(async (res) => {
+					const data = await res.json().catch(() => ({}));
+
+					if (!res.ok) {
+						throw data;
 					}
 
-					return res.json();
+					return data;
 				})
 				.then((res) => {
 					userID = res.userid;
 					levelID = res.levelid;
 					recordID = typeof res.id === 'number' ? res.id : null;
-					dailyLimit = Number(res.limit || dailyLimit);
-					if (typeof res.limitLeft === 'number') {
-						limitLeft = res.limitLeft;
-					}
+					applyLimitData(res);
 					isOpen = true;
 				}),
 			{
-				loading: 'Retrieving record...',
-				success: 'Retrieved record!',
+				loading: `Retrieving ${label} record...`,
+				success: `Retrieved ${label} record!`,
 				error: (err) => {
+					applyLimitData(err);
+
 					if (err && typeof err === 'object' && 'limitLeft' in err) {
-						limitLeft = Number((err as any).limitLeft || 0);
-						dailyLimit = Number((err as any).limit || dailyLimit);
+						if (type === 'official') {
+							officialLimitLeft = Number((err as any).limitLeft || 0);
+							officialDailyLimit = Number((err as any).limit || officialDailyLimit);
+						} else {
+							nonOfficialLimitLeft = Number((err as any).limitLeft || 0);
+							nonOfficialDailyLimit = Number((err as any).limit || nonOfficialDailyLimit);
+						}
+
 						return 'Daily limit reached. Please try again tomorrow.';
 					}
 
-					return 'Failed to retrieve';
+					return `Failed to retrieve ${label} record`;
 				}
 			}
 		);
@@ -98,7 +132,7 @@
 	<title>Overwatch - Geometry Dash Việt Nam</title>
 </svelte:head>
 
-<RecordDetail bind:open={isOpen} uid={userID} {levelID} />
+<RecordDetail bind:open={isOpen} uid={userID} {levelID} recordId={recordID} />
 
 {#if $user.loggedIn && ($user.data.isAdmin || $user.data.isTrusted)}
 	<Title value="Overwatch" />
@@ -106,15 +140,16 @@
 		<h2>Overview</h2>
 		<ul>
 			<li>
-				Overwatch allows the Geometry Dash Việt Nam and Geometry Dash Việt Nam community to regulate itself by
-				providing method for qualified and experienced members of community to review submitted
-				records.
+				Overwatch allows the Geometry Dash Việt Nam and Geometry Dash Việt Nam community to regulate
+				itself by providing method for qualified and experienced members of community to review
+				submitted records.
 			</li>
 		</ul>
 		<h2>Instruction</h2>
 		<ul>
 			<li>
-				Step 1: Click on the <b>Retrieve Record</b> button. A record detail window will appear.
+				Step 1: Click on the <b>Retrieve from official list</b> or
+				<b>Retrieve from non official list</b> button. A record detail window will appear.
 			</li>
 			<li>
 				Step 2: After reviewed the record, go to <b>Review</b> tab and provide appropriate verdict for
@@ -124,10 +159,7 @@
 		</ul>
 		<h2>Note</h2>
 		<ul>
-			<li>
-				You can review up to 3 records per day.
-			</li>
-			<li>You can only review records which level's rating lower than your rating plus 500.</li>
+			<li>You can review up to 3 official list records and 5 non official list records per day.</li>
 			<li>After retrieving a record, you must provide a verdict before reviewing other records.</li>
 			<li>You cannot review your own record.</li>
 			<li>
@@ -135,11 +167,25 @@
 				Overwatch.
 			</li>
 		</ul>
-		{#if limitLeft !== null}
-			<p class="limitText">Daily limit left: {limitLeft}/{dailyLimit}</p>
+		{#if officialLimitLeft !== null || nonOfficialLimitLeft !== null}
+			<div class="limitGrid">
+				<p class="limitText">
+					Official list daily limit left: {officialLimitLeft ?? '-'}/{officialDailyLimit}
+				</p>
+				<p class="limitText">
+					Non official list daily limit left: {nonOfficialLimitLeft ?? '-'}/{nonOfficialDailyLimit}
+				</p>
+			</div>
 		{/if}
 		<br />
-		<Button on:click={retrieve} disabled={limitLeft !== null && limitLeft <= 0}>Retrieve record</Button>
+		<div class="buttonRow">
+			<Button on:click={() => retrieve('official')} disabled={isLimitReached('official')}
+				>Retrieve from official list</Button
+			>
+			<Button on:click={() => retrieve('nonOfficial')} disabled={isLimitReached('nonOfficial')}
+				>Retrieve from non official list</Button
+			>
+		</div>
 	</div>
 {/if}
 
@@ -167,9 +213,21 @@
 			display: list-item;
 		}
 
-		.limitText {
+		.limitGrid {
+			display: grid;
+			gap: 4px;
 			margin-top: 12px;
+		}
+
+		.limitText {
+			margin: 0;
 			font-weight: 600;
+		}
+
+		.buttonRow {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 12px;
 		}
 	}
 
