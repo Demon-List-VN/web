@@ -199,6 +199,7 @@
 		pendingInvitation?: CustomListInvitation | null;
 		auditLog?: CustomListAuditLogEntry[];
 		rankBadges?: CustomListRankBadge[];
+		recordScoreFormula?: string;
 		weightFormula?: string;
 		recordFilterPlatform?: 'any' | 'pc' | 'mobile';
 		recordFilterMinRefreshRate?: number | null;
@@ -312,6 +313,7 @@
 			minRating: number | null;
 			minTop: number | null;
 		}>;
+		recordScoreFormula: string;
 		weightFormula: string;
 		recordFilterPlatform: 'any' | 'pc' | 'mobile';
 		recordFilterMinRefreshRate: number | null;
@@ -425,6 +427,7 @@
 		tags: '',
 		mode: 'rating' as 'rating' | 'top',
 		rankBadges: [] as CustomListRankBadgeDraft[],
+		recordScoreFormula: '1',
 		weightFormula: '1',
 		recordFilterPlatform: 'any' as 'any' | 'pc' | 'mobile',
 		recordFilterMinRefreshRate: null as number | null,
@@ -512,6 +515,7 @@
 		editForm.rankBadges = normalizeCustomListRankBadges(list.rankBadges).map((rankBadge) => ({
 			...rankBadge
 		}));
+		editForm.recordScoreFormula = list.recordScoreFormula || '1';
 		editForm.weightFormula = list.weightFormula || '1';
 		editForm.recordFilterPlatform = list.recordFilterPlatform || 'any';
 		editForm.recordFilterMinRefreshRate = list.recordFilterMinRefreshRate ?? null;
@@ -553,6 +557,7 @@
 			tags: currentList.tags,
 			mode: currentList.mode,
 			rankBadges: getRankBadgeSnapshot(currentList.rankBadges),
+			recordScoreFormula: currentList.recordScoreFormula || '1',
 			weightFormula: currentList.weightFormula || '1',
 			recordFilterPlatform: currentList.recordFilterPlatform || 'any',
 			recordFilterMinRefreshRate: currentList.recordFilterMinRefreshRate ?? null,
@@ -580,6 +585,7 @@
 			tags: parseTags(currentForm.tags),
 			mode: currentForm.mode,
 			rankBadges: getRankBadgeSnapshot(currentForm.rankBadges),
+			recordScoreFormula: currentForm.recordScoreFormula,
 			weightFormula: currentForm.weightFormula,
 			recordFilterPlatform: currentForm.recordFilterPlatform,
 			recordFilterMinRefreshRate: currentForm.recordFilterMinRefreshRate,
@@ -602,7 +608,8 @@
 		const editableSettingsSnapshot = getEditableSettingsSnapshot(editForm);
 
 		return (
-			editableSettingsSnapshot.weightFormula !== savedSettingsSnapshot.weightFormula
+			editableSettingsSnapshot.recordScoreFormula !== savedSettingsSnapshot.recordScoreFormula
+			|| editableSettingsSnapshot.weightFormula !== savedSettingsSnapshot.weightFormula
 			|| editableSettingsSnapshot.recordFilterPlatform !== savedSettingsSnapshot.recordFilterPlatform
 			|| editableSettingsSnapshot.recordFilterMinRefreshRate !== savedSettingsSnapshot.recordFilterMinRefreshRate
 			|| editableSettingsSnapshot.recordFilterMaxRefreshRate !== savedSettingsSnapshot.recordFilterMaxRefreshRate
@@ -1489,6 +1496,7 @@
 				minRating: rankBadge.minRating,
 				minTop: rankBadge.minTop
 			})),
+			recordScoreFormula: editForm.recordScoreFormula,
 			weightFormula: editForm.weightFormula,
 			recordFilterPlatform: editForm.recordFilterPlatform,
 			recordFilterMinRefreshRate: editForm.recordFilterMinRefreshRate,
@@ -2361,7 +2369,8 @@
 		if (field === 'tags') return $_('custom_lists.detail.edit.tags_label');
 		if (field === 'topEnabled') return $_('custom_lists.detail.edit.top_enabled_label');
 		if (field === 'visibility') return $_('custom_lists.detail.edit.visibility_label');
-		if (field === 'weightFormula') return $_('custom_lists.formula.label');
+		if (field === 'recordScoreFormula') return $_('custom_lists.formula.record_score_label');
+		if (field === 'weightFormula') return $_('custom_lists.formula.weight_label');
 		if (field === 'itemSort') return $_('custom_lists.detail.edit.item_sort_label');
 		return field;
 	}

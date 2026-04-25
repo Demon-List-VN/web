@@ -207,7 +207,8 @@
 		if (field === 'tags') return $_('custom_lists.detail.edit.tags_label');
 		if (field === 'topEnabled') return $_('custom_lists.detail.edit.top_enabled_label');
 		if (field === 'visibility') return $_('custom_lists.detail.edit.visibility_label');
-		if (field === 'weightFormula') return $_('custom_lists.formula.label');
+		if (field === 'recordScoreFormula') return $_('custom_lists.formula.record_score_label');
+		if (field === 'weightFormula') return $_('custom_lists.formula.weight_label');
 		if (field === 'adminsCanManageHelpers') return $_('custom_lists.manage.collaboration.admin_helper_toggle_label');
 		return field;
 	}

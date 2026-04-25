@@ -1,6 +1,7 @@
 import { all, create } from 'mathjs';
 
 export type PreviewCustomListWeightFormulaScope = {
+	score?: unknown;
 	position?: unknown;
 	levelCount?: unknown;
 	top?: unknown;
@@ -12,6 +13,7 @@ export type PreviewCustomListWeightFormulaScope = {
 };
 
 type NormalizedPreviewCustomListWeightFormulaScope = {
+	score: number;
 	position: number;
 	levelCount: number;
 	top: number;
@@ -27,11 +29,17 @@ type WeightFormulaNode = {
 	mathjs?: unknown;
 	traverse: (callback: (child: WeightFormulaNode) => void) => void;
 	compile: () => {
-		evaluate: (scope: NormalizedPreviewCustomListWeightFormulaScope) => unknown;
+		evaluate: (scope: Record<string, number>) => unknown;
 	};
 };
 
+type PreviewCustomListFormulaOptions = {
+	formulaName?: 'weightFormula' | 'recordScoreFormula';
+	validationScope?: Record<string, number>;
+};
+
 const WEIGHT_FORMULA_VALIDATION_SCOPE: NormalizedPreviewCustomListWeightFormulaScope = {
+	score: 1,
 	position: 1,
 	levelCount: 1,
 	top: 1,
@@ -71,7 +79,7 @@ weightFormulaMath.import(
 		WEIGHT_FORMULA_DISABLED_FUNCTIONS.map((functionName) => [
 			functionName,
 			() => {
-				throw new WeightFormulaPreviewError(`weightFormula function "${functionName}" is disabled`);
+				throw new WeightFormulaPreviewError(`Formula function "${functionName}" is disabled`);
 			}
 		])
 	),
@@ -90,47 +98,47 @@ function getWeightFormulaNodeType(node: { type?: unknown; mathjs?: unknown } | n
 	return null;
 }
 
-function assertWeightFormulaNodeIsSafe(node: WeightFormulaNode) {
+function assertWeightFormulaNodeIsSafe(node: WeightFormulaNode, formulaName: string) {
 	node.traverse((child) => {
 		if (getWeightFormulaNodeType(child) === 'FunctionAssignmentNode') {
-			throw new WeightFormulaPreviewError('weightFormula custom functions are disabled');
+			throw new WeightFormulaPreviewError(`${formulaName} custom functions are disabled`);
 		}
 	});
 }
 
-function validateWeightFormulaExpression(value: string) {
+function validateWeightFormulaExpression(value: string, formulaName: string) {
 	try {
 		const node = parseWeightFormulaNode(value);
-		assertWeightFormulaNodeIsSafe(node);
+		assertWeightFormulaNodeIsSafe(node, formulaName);
 		return node;
 	} catch (error) {
 		if (error instanceof WeightFormulaPreviewError) {
 			throw error;
 		}
 
-		throw new WeightFormulaPreviewError('weightFormula must be a valid math expression');
+		throw new WeightFormulaPreviewError(`${formulaName} must be a valid math expression`);
 	}
 }
 
-function normalizeWeightFormulaResult(result: unknown): number {
+function normalizeWeightFormulaResult(result: unknown, formulaName: string): number {
 	if (result && typeof result === 'object' && Array.isArray((result as { entries?: unknown[] }).entries)) {
 		const entries = (result as { entries: unknown[] }).entries;
 
 		for (let index = entries.length - 1; index >= 0; index -= 1) {
 			if (entries[index] !== undefined) {
-				return normalizeWeightFormulaResult(entries[index]);
+				return normalizeWeightFormulaResult(entries[index], formulaName);
 			}
 		}
 	}
 
 	if (typeof result === 'boolean' || typeof result === 'string' || Array.isArray(result) || result == null) {
-		throw new WeightFormulaPreviewError('weightFormula must evaluate to a finite number');
+		throw new WeightFormulaPreviewError(`${formulaName} must evaluate to a finite number`);
 	}
 
 	const normalized = typeof result === 'number' ? result : Number(result);
 
 	if (!Number.isFinite(normalized)) {
-		throw new WeightFormulaPreviewError('weightFormula must evaluate to a finite number');
+		throw new WeightFormulaPreviewError(`${formulaName} must evaluate to a finite number`);
 	}
 
 	return normalized;
@@ -138,17 +146,18 @@ function normalizeWeightFormulaResult(result: unknown): number {
 
 function evaluateCompiledWeightFormula(
 	compiledNode: ReturnType<WeightFormulaNode['compile']>,
-	scope: NormalizedPreviewCustomListWeightFormulaScope
+	scope: Record<string, number>,
+	formulaName: string
 ) {
 	try {
-		return normalizeWeightFormulaResult(compiledNode.evaluate({ ...scope }));
+		return normalizeWeightFormulaResult(compiledNode.evaluate({ ...scope }), formulaName);
 	} catch (error) {
 		if (error instanceof WeightFormulaPreviewError) {
 			throw error;
 		}
 
 		throw new WeightFormulaPreviewError(
-			error instanceof Error ? error.message : 'weightFormula must evaluate to a finite number'
+			error instanceof Error ? error.message : `${formulaName} must evaluate to a finite number`
 		);
 	}
 }
@@ -178,6 +187,7 @@ function normalizePreviewScope(scope: PreviewCustomListWeightFormulaScope) {
 	});
 
 	return {
+		score: sanitizePreviewNumber(scope.score ?? 1, 'score'),
 		position: sanitizePreviewNumber(scope.position, 'position', { integer: true, min: 1 }),
 		levelCount: sanitizePreviewNumber(scope.levelCount, 'levelCount', { integer: true, min: 1 }),
 		top: sanitizePreviewNumber(scope.top, 'top', { integer: true, min: 1 }),
@@ -189,34 +199,44 @@ function normalizePreviewScope(scope: PreviewCustomListWeightFormulaScope) {
 	};
 }
 
-function sanitizeWeightFormula(value: unknown) {
+function sanitizeWeightFormula(value: unknown, options: PreviewCustomListFormulaOptions = {}) {
+	const formulaName = options.formulaName || 'weightFormula';
+
 	if (typeof value !== 'string') {
-		throw new WeightFormulaPreviewError('weightFormula must be a string');
+		throw new WeightFormulaPreviewError(`${formulaName} must be a string`);
 	}
 
 	const weightFormula = value.trim();
 
 	if (!weightFormula.length) {
-		throw new WeightFormulaPreviewError('weightFormula is required');
+		throw new WeightFormulaPreviewError(`${formulaName} is required`);
 	}
 
 	if (weightFormula.length > 500) {
-		throw new WeightFormulaPreviewError('weightFormula must be at most 500 characters');
+		throw new WeightFormulaPreviewError(`${formulaName} must be at most 500 characters`);
 	}
 
-	const node = validateWeightFormulaExpression(weightFormula);
+	const node = validateWeightFormulaExpression(weightFormula, formulaName);
 	const compiledNode = node.compile();
 
-	evaluateCompiledWeightFormula(compiledNode, WEIGHT_FORMULA_VALIDATION_SCOPE);
+	evaluateCompiledWeightFormula(
+		compiledNode,
+		options.validationScope || WEIGHT_FORMULA_VALIDATION_SCOPE,
+		formulaName
+	);
 
 	return {
 		formula: weightFormula,
-		compiledNode
+		compiledNode,
+		formulaName
 	};
 }
 
-export function createPreviewCustomListWeightFormula(formula: unknown) {
-	const normalizedFormula = sanitizeWeightFormula(formula);
+export function createPreviewCustomListWeightFormula(
+	formula: unknown,
+	options: PreviewCustomListFormulaOptions = {}
+) {
+	const normalizedFormula = sanitizeWeightFormula(formula, options);
 
 	return {
 		formula: normalizedFormula.formula,
@@ -226,7 +246,11 @@ export function createPreviewCustomListWeightFormula(formula: unknown) {
 			return {
 				formula: normalizedFormula.formula,
 				input: normalizedScope,
-				output: evaluateCompiledWeightFormula(normalizedFormula.compiledNode, normalizedScope)
+				output: evaluateCompiledWeightFormula(
+					normalizedFormula.compiledNode,
+					normalizedScope,
+					normalizedFormula.formulaName
+				)
 			};
 		}
 	};
@@ -234,7 +258,8 @@ export function createPreviewCustomListWeightFormula(formula: unknown) {
 
 export function previewCustomListWeightFormula(
 	formula: unknown,
-	scope: PreviewCustomListWeightFormulaScope
+	scope: PreviewCustomListWeightFormulaScope,
+	options: PreviewCustomListFormulaOptions = {}
 ) {
-	return createPreviewCustomListWeightFormula(formula).evaluate(scope);
+	return createPreviewCustomListWeightFormula(formula, options).evaluate(scope);
 }

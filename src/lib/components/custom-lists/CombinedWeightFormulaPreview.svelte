@@ -4,13 +4,12 @@
 	import { createPreviewCustomListWeightFormula } from '$lib/utils/customListWeightFormula';
 	import { _ } from 'svelte-i18n';
 
-	export let formula = '1';
+	export let recordScoreFormula = '1';
+	export let weightFormula = '1';
 	export let isPlatformer = false;
 	export let mode: 'rating' | 'top' = 'rating';
-	export let formulaType: 'recordScore' | 'weight' = 'weight';
 
 	type PreviewInput = {
-		score: string;
 		position: string;
 		levelCount: string;
 		top: string;
@@ -23,6 +22,11 @@
 		token: string;
 		label: string;
 		inputKey: keyof PreviewInput;
+	};
+
+	type FormulaVariableInfo = {
+		token: string;
+		label: string;
 	};
 
 	type GraphPoint = {
@@ -43,6 +47,30 @@
 
 	type FormulaPreviewEvaluator = ReturnType<typeof createPreviewCustomListWeightFormula>;
 
+	type FormulaPreviewEvaluators = {
+		recordScore: FormulaPreviewEvaluator;
+		weight: FormulaPreviewEvaluator;
+	};
+
+	type FormulaPreviewResult = {
+		recordScore: number;
+		weight: number;
+	};
+
+	type FormulaOutputKey = keyof FormulaPreviewResult;
+
+	type FormulaResultCard = {
+		key: FormulaOutputKey;
+		label: string;
+		description: string;
+		value: number | null;
+	};
+
+	type FormulaOutputOption = {
+		key: FormulaOutputKey;
+		label: string;
+	};
+
 	const RECORD_SCORE_FORMULA_VALIDATION_SCOPE = {
 		levelCount: 1,
 		top: 1,
@@ -53,8 +81,9 @@
 		progress: 0
 	};
 
+	const DEFAULT_GRAPH_SAMPLE_COUNT = 100;
+
 	let previewInput: PreviewInput = {
-		score: '1',
 		position: '1',
 		levelCount: '25',
 		top: '1',
@@ -62,15 +91,20 @@
 		baseTime: getDefaultMinProgress(isPlatformer),
 		time: getDefaultProgress(isPlatformer)
 	};
-	let previewRecordPoint: number | null = null;
+	let previewResult: FormulaPreviewResult | null = null;
+	let formulaResultCards: FormulaResultCard[] = [];
+	let formulaOutputOptions: FormulaOutputOption[] = [];
 	let previewError = '';
 	let previewLoading = false;
 	let previewSignature = '';
 	let previewRequestId = 0;
 	let previousPlatformer = isPlatformer;
-	let previousFormulaType = formulaType;
 	let formulaVariables: FormulaVariable[] = [];
-	let graphXAxis = getDefaultGraphXAxis(isPlatformer, formulaType);
+	let recordFormulaVariables: FormulaVariable[] = [];
+	let weightFormulaVariables: FormulaVariableInfo[] = [];
+	let graphXAxis = getDefaultGraphXAxis(isPlatformer);
+	let graphOutputKey: FormulaOutputKey = 'weight';
+	let graphOutputSignature: FormulaOutputKey = graphOutputKey;
 	let graphPoints: GraphPoint[] = [];
 	let graphCurrentPoint: GraphPoint | null = null;
 	let graphError = '';
@@ -89,10 +123,8 @@
 	let graphRangeSignature = '0|100';
 	let hasPreviewed = false;
 
-	const DEFAULT_GRAPH_SAMPLE_COUNT = 100;
-
-	function getDefaultGraphXAxis(platformer: boolean, type: 'recordScore' | 'weight') {
-		return type === 'weight' ? 'position' : platformer ? 'time' : 'progress';
+	function getDefaultGraphXAxis(platformer: boolean) {
+		return platformer ? 'time' : 'progress';
 	}
 
 	function getDefaultMinProgress(platformer: boolean) {
@@ -128,10 +160,9 @@
 		return formatOutput(value);
 	}
 
-	function getPreviewPayload(input: PreviewInput) {
+	function getPreviewPayload(input: PreviewInput, scoreOverride?: number) {
 		return {
-			formula,
-			score: input.score,
+			score: String(scoreOverride ?? 1),
 			position: input.position,
 			levelCount: input.levelCount,
 			top: input.top,
@@ -143,39 +174,97 @@
 		};
 	}
 
-	function getFormulaPreviewOptions() {
-		return formulaType === 'recordScore'
-			? {
-					formulaName: 'recordScoreFormula' as const,
-					validationScope: RECORD_SCORE_FORMULA_VALIDATION_SCOPE
-				}
-			: { formulaName: 'weightFormula' as const };
+	function createFormulaPreviewEvaluators(): FormulaPreviewEvaluators {
+		return {
+			recordScore: createPreviewCustomListWeightFormula(recordScoreFormula, {
+				formulaName: 'recordScoreFormula',
+				validationScope: RECORD_SCORE_FORMULA_VALIDATION_SCOPE
+			}),
+			weight: createPreviewCustomListWeightFormula(weightFormula, {
+				formulaName: 'weightFormula'
+			})
+		};
 	}
 
-	function getFormulaOutputLabel() {
-		return formulaType === 'recordScore'
-			? $_('custom_lists.formula.record_score_output_label')
-			: $_('custom_lists.formula.weight_output_label');
+	function assertFiniteFormulaOutput(value: number) {
+		if (!Number.isFinite(value)) {
+			throw new Error($_('custom_lists.formula.preview_error'));
+		}
+
+		return value;
 	}
 
-	function getPreviewTitle() {
-		return formulaType === 'recordScore'
-			? $_('custom_lists.formula.record_score_preview_title')
-			: $_('custom_lists.formula.weight_preview_title');
+	async function fetchFormulaPreviewResult(
+		input: PreviewInput,
+		evaluators: FormulaPreviewEvaluators
+	): Promise<FormulaPreviewResult> {
+		const recordScore = assertFiniteFormulaOutput(
+			Number(evaluators.recordScore.evaluate(getPreviewPayload(input)).output)
+		);
+		const weight = assertFiniteFormulaOutput(
+			Number(evaluators.weight.evaluate(getPreviewPayload(input, recordScore)).output)
+		);
+
+		return {
+			recordScore,
+			weight
+		};
 	}
 
-	function getPreviewHint() {
-		return formulaType === 'recordScore'
-			? $_('custom_lists.formula.record_score_preview_hint')
-			: $_('custom_lists.formula.weight_preview_hint');
+	function getFormulaOutputValue(result: FormulaPreviewResult, key: FormulaOutputKey) {
+		return result[key];
 	}
 
-	function getFormulaVariables(type: 'recordScore' | 'weight') {
-		const recordInputVariables = [
-			{ token: 'levelCount', label: $_('custom_lists.formula.level_count_label'), inputKey: 'levelCount' as const },
+	function getFormulaOutputLabel(key: FormulaOutputKey) {
+		switch (key) {
+			case 'recordScore':
+				return `score(x) - ${$_('custom_lists.formula.record_score_output_label')}`;
+			case 'weight':
+			default:
+				return `weighted(x) - ${$_('custom_lists.formula.weight_output_label')}`;
+		}
+	}
+
+	function getFormulaOutputOptions(): FormulaOutputOption[] {
+		return [
+			{ key: 'recordScore', label: getFormulaOutputLabel('recordScore') },
+			{ key: 'weight', label: getFormulaOutputLabel('weight') }
+		];
+	}
+
+	function getFormulaResultCards(result: FormulaPreviewResult | null): FormulaResultCard[] {
+		return [
+			{
+				key: 'recordScore',
+				label: 'score(x)',
+				description: $_('custom_lists.formula.record_score_output_label'),
+				value: result?.recordScore ?? null
+			},
+			{
+				key: 'weight',
+				label: 'weighted(x)',
+				description: $_('custom_lists.formula.weight_output_label'),
+				value: result?.weight ?? null
+			}
+		];
+	}
+
+	function getRecordFormulaVariables() {
+		return [
+			{
+				token: 'levelCount',
+				label: $_('custom_lists.formula.level_count_label'),
+				inputKey: 'levelCount' as const
+			},
 			...(mode === 'top'
 				? [{ token: 'top', label: $_('custom_lists.formula.top_label'), inputKey: 'top' as const }]
-				: [{ token: 'rating', label: $_('custom_lists.formula.rating_label'), inputKey: 'rating' as const }]),
+				: [
+						{
+							token: 'rating',
+							label: $_('custom_lists.formula.rating_label'),
+							inputKey: 'rating' as const
+						}
+					]),
 			{
 				token: isPlatformer ? 'time' : 'progress',
 				inputKey: 'time' as const,
@@ -191,15 +280,24 @@
 					: $_('custom_lists.formula.min_progress_label')
 			}
 		];
+	}
 
-		if (type === 'recordScore') {
-			return recordInputVariables;
-		}
-
+	function getWeightFormulaVariables(): FormulaVariableInfo[] {
 		return [
-			{ token: 'score', label: $_('custom_lists.formula.score_label'), inputKey: 'score' as const },
-			{ token: 'position', label: $_('custom_lists.formula.position_label'), inputKey: 'position' as const },
-			...recordInputVariables
+			{ token: 'score', label: 'score(x)' },
+			{ token: 'position', label: $_('custom_lists.formula.position_label') },
+			...recordFormulaVariables.map(({ token, label }) => ({ token, label }))
+		];
+	}
+
+	function getFormulaVariables() {
+		return [
+			{
+				token: 'position',
+				label: $_('custom_lists.formula.position_label'),
+				inputKey: 'position' as const
+			},
+			...recordFormulaVariables
 		];
 	}
 
@@ -215,18 +313,10 @@
 		updatePreviewInput(key, target?.value ?? '');
 	}
 
-	async function fetchFormulaOutput(input: PreviewInput, evaluator: FormulaPreviewEvaluator) {
-		const output = Number(evaluator.evaluate(getPreviewPayload(input)).output);
-
-		if (!Number.isFinite(output)) {
-			throw new Error($_('custom_lists.formula.preview_error'));
-		}
-
-		return output;
-	}
-
 	function dedupeSortedValues(values: number[]) {
-		return [...new Set(values.map((value) => Math.max(0, Math.round(value))))].sort((left, right) => left - right);
+		return [...new Set(values.map((value) => Math.max(0, Math.round(value))))].sort(
+			(left, right) => left - right
+		);
 	}
 
 	function getDefaultGraphRange(variable: FormulaVariable | undefined) {
@@ -237,15 +327,13 @@
 			};
 		}
 
-		const currentValue = parseNumericInput(previewInput[variable.inputKey], getGraphAxisMin(variable.token));
+		const currentValue = parseNumericInput(
+			previewInput[variable.inputKey],
+			getGraphAxisMin(variable.token)
+		);
 		const levelCount = Math.max(1, parseNumericInput(previewInput.levelCount, 25));
 
 		switch (variable.token) {
-			case 'score':
-				return {
-					min: '0',
-					max: String(Math.max(10, Math.round(currentValue * 1.5)))
-				};
 			case 'position':
 			case 'top':
 				return {
@@ -345,17 +433,25 @@
 	async function buildGraphPoints(
 		baseInput: PreviewInput,
 		selectedVariable: FormulaVariable,
-		evaluator: FormulaPreviewEvaluator
+		evaluators: FormulaPreviewEvaluators,
+		outputKey: FormulaOutputKey
 	) {
 		const graphSampleValues = getGraphSampleValues(selectedVariable);
 		const settled = await Promise.allSettled(
-			graphSampleValues.map(async (sampleValue) => ({
-				x: sampleValue,
-				y: await fetchFormulaOutput({
-					...baseInput,
-					[selectedVariable.inputKey]: String(sampleValue)
-				}, evaluator)
-			}))
+			graphSampleValues.map(async (sampleValue) => {
+				const result = await fetchFormulaPreviewResult(
+					{
+						...baseInput,
+						[selectedVariable.inputKey]: String(sampleValue)
+					},
+					evaluators
+				);
+
+				return {
+					x: sampleValue,
+					y: getFormulaOutputValue(result, outputKey)
+				};
+			})
 		);
 
 		const points = settled
@@ -492,11 +588,12 @@
 				throw new Error($_('custom_lists.formula.preview_error'));
 			}
 
-			const evaluator = createPreviewCustomListWeightFormula(formula, getFormulaPreviewOptions());
+			const evaluators = createFormulaPreviewEvaluators();
 			const baseInput = { ...previewInput };
+			const outputKey = graphOutputKey;
 			const [currentResult, graphResult] = await Promise.allSettled([
-				fetchFormulaOutput(baseInput, evaluator),
-				buildGraphPoints(baseInput, selectedVariable, evaluator)
+				fetchFormulaPreviewResult(baseInput, evaluators),
+				buildGraphPoints(baseInput, selectedVariable, evaluators, outputKey)
 			]);
 
 			if (requestId !== previewRequestId) {
@@ -504,14 +601,14 @@
 			}
 
 			if (currentResult.status === 'fulfilled') {
-				previewRecordPoint = currentResult.value;
+				previewResult = currentResult.value;
 				previewError = '';
 				graphCurrentPoint = {
 					x: parseNumericInput(baseInput[selectedVariable.inputKey], 0),
-					y: currentResult.value
+					y: getFormulaOutputValue(currentResult.value, outputKey)
 				};
 			} else {
-				previewRecordPoint = null;
+				previewResult = null;
 				previewError =
 					currentResult.reason instanceof Error
 						? currentResult.reason.message
@@ -534,10 +631,11 @@
 				return;
 			}
 
-			previewRecordPoint = null;
+			previewResult = null;
 			graphPoints = [];
 			graphCurrentPoint = null;
-			previewError = error instanceof Error ? error.message : $_('custom_lists.formula.preview_error');
+			previewError =
+				error instanceof Error ? error.message : $_('custom_lists.formula.preview_error');
 			graphError = previewError;
 		} finally {
 			if (requestId === previewRequestId) {
@@ -546,23 +644,29 @@
 		}
 	}
 
-	$: if (isPlatformer !== previousPlatformer || formulaType !== previousFormulaType) {
+	$: if (isPlatformer !== previousPlatformer) {
 		previousPlatformer = isPlatformer;
-		previousFormulaType = formulaType;
 		previewInput = {
 			...previewInput,
 			baseTime: getDefaultMinProgress(isPlatformer),
 			time: getDefaultProgress(isPlatformer)
 		};
-		graphXAxis = getDefaultGraphXAxis(isPlatformer, formulaType);
+		graphXAxis = getDefaultGraphXAxis(isPlatformer);
 	}
 
-	$: formulaVariables = getFormulaVariables(formulaType);
+	$: recordFormulaVariables = getRecordFormulaVariables();
+	$: weightFormulaVariables = getWeightFormulaVariables();
+	$: formulaVariables = getFormulaVariables();
+	$: formulaOutputOptions = getFormulaOutputOptions();
+	$: formulaResultCards = getFormulaResultCards(previewResult);
 
-	$: if (formulaVariables.length && !formulaVariables.some((variable) => variable.token === graphXAxis)) {
+	$: if (
+		formulaVariables.length &&
+		!formulaVariables.some((variable) => variable.token === graphXAxis)
+	) {
 		graphXAxis =
-			formulaVariables.find((variable) => variable.token === getDefaultGraphXAxis(isPlatformer, formulaType))?.token ||
-			formulaVariables[0].token;
+			formulaVariables.find((variable) => variable.token === getDefaultGraphXAxis(isPlatformer))
+				?.token || formulaVariables[0].token;
 	}
 
 	$: if (graphXAxis !== graphSelectionSignature) {
@@ -576,10 +680,25 @@
 		graphError = '';
 	}
 
+	$: if (graphOutputKey !== graphOutputSignature) {
+		graphOutputSignature = graphOutputKey;
+		graphPoints = [];
+		graphCurrentPoint = null;
+		graphError = '';
+
+		if (hasPreviewed) {
+			void runPreview();
+		}
+	}
+
 	$: {
 		const selectedVariable = formulaVariables.find((variable) => variable.token === graphXAxis);
 		const normalizedRange = normalizeGraphRange(selectedVariable);
-		const nextRangeSignature = [graphXAxis, normalizedRange.minLabel, normalizedRange.maxLabel].join('|');
+		const nextRangeSignature = [
+			graphXAxis,
+			normalizedRange.minLabel,
+			normalizedRange.maxLabel
+		].join('|');
 
 		if (nextRangeSignature !== graphRangeSignature) {
 			graphRangeSignature = nextRangeSignature;
@@ -597,10 +716,9 @@
 
 	$: {
 		const nextSignature = [
-			formula,
-			formulaType,
+			recordScoreFormula,
+			weightFormula,
 			mode,
-			previewInput.score,
 			previewInput.position,
 			previewInput.levelCount,
 			previewInput.top,
@@ -614,7 +732,7 @@
 			previewSignature = nextSignature;
 			previewRequestId += 1;
 			previewLoading = false;
-			previewRecordPoint = null;
+			previewResult = null;
 			previewError = '';
 			graphPoints = [];
 			graphCurrentPoint = null;
@@ -627,12 +745,10 @@
 
 	$: graphOutputLabel = showCumulativeSum
 		? $_('custom_lists.formula.cumulative_output_label')
-		: getFormulaOutputLabel();
+		: getFormulaOutputLabel(graphOutputKey);
 
-	$: ({
-		points: graphDisplayPoints,
-		currentPoint: graphDisplayCurrentPoint
-	} = buildDisplayGraphData(graphPoints, graphCurrentPoint, showCumulativeSum));
+	$: ({ points: graphDisplayPoints, currentPoint: graphDisplayCurrentPoint } =
+		buildDisplayGraphData(graphPoints, graphCurrentPoint, showCumulativeSum));
 
 	$: ({
 		bars: graphBars,
@@ -645,23 +761,47 @@
 <div class="formulaPreviewCard">
 	<div class="formulaPreviewHeader">
 		<div>
-			<h3>{getPreviewTitle()}</h3>
-			<p>{getPreviewHint()}</p>
+			<h3>{$_('custom_lists.formula.combined_preview_title')}</h3>
+			<p>{$_('custom_lists.formula.combined_preview_hint')}</p>
 		</div>
-		<Button type="button" variant="outline" size="sm" on:click={runPreview} disabled={previewLoading}>
+		<Button
+			type="button"
+			variant="outline"
+			size="sm"
+			on:click={runPreview}
+			disabled={previewLoading}
+		>
 			{previewLoading ? `${$_('general.loading')}...` : $_('custom_lists.formula.preview_button')}
 		</Button>
 	</div>
 
 	<div class="formulaPreviewVariables">
-		<span class="formulaPreviewVariablesLabel">{$_('custom_lists.formula.available_variables_label')}</span>
-		<div class="formulaPreviewVariableList">
-			{#each formulaVariables as variable}
-				<div class="formulaPreviewVariable">
-					<code class="formulaPreviewVariableToken">{variable.token}</code>
-					<span class="formulaPreviewVariableName">{variable.label}</span>
+		<span class="formulaPreviewVariablesLabel"
+			>{$_('custom_lists.formula.available_variables_label')}</span
+		>
+		<div class="formulaPreviewVariableGroups">
+			<div class="formulaPreviewVariableGroup">
+				<span class="formulaPreviewVariableGroupLabel">score(x)</span>
+				<div class="formulaPreviewVariableList">
+					{#each recordFormulaVariables as variable}
+						<div class="formulaPreviewVariable">
+							<code class="formulaPreviewVariableToken">{variable.token}</code>
+							<span class="formulaPreviewVariableName">{variable.label}</span>
+						</div>
+					{/each}
 				</div>
-			{/each}
+			</div>
+			<div class="formulaPreviewVariableGroup">
+				<span class="formulaPreviewVariableGroupLabel">weighted(x)</span>
+				<div class="formulaPreviewVariableList">
+					{#each weightFormulaVariables as variable}
+						<div class="formulaPreviewVariable">
+							<code class="formulaPreviewVariableToken">{variable.token}</code>
+							<span class="formulaPreviewVariableName">{variable.label}</span>
+						</div>
+					{/each}
+				</div>
+			</div>
 		</div>
 		{#if isPlatformer}
 			<p class="formulaPreviewNote">{$_('custom_lists.formula.platformer_time_note')}</p>
@@ -671,9 +811,9 @@
 	<div class="formulaPreviewGrid">
 		{#each formulaVariables as variable}
 			<div class="field">
-				<label for={`formula-preview-${formulaType}-${variable.token}`}>{variable.label}</label>
+				<label for={`formula-preview-combined-${variable.token}`}>{variable.label}</label>
 				<Input
-					id={`formula-preview-${formulaType}-${variable.token}`}
+					id={`formula-preview-combined-${variable.token}`}
 					type="number"
 					min={getGraphAxisMin(variable.token)}
 					value={previewInput[variable.inputKey]}
@@ -683,16 +823,26 @@
 		{/each}
 	</div>
 
-	<div class="formulaPreviewResult" class:formulaPreviewResultError={Boolean(previewError)}>
-		<span class="formulaPreviewResultLabel">{getFormulaOutputLabel()}</span>
+	<div class="formulaPreviewResults" class:formulaPreviewResultError={Boolean(previewError)}>
 		{#if previewError}
-			<span class="formulaPreviewResultValue">{previewError}</span>
-		{:else if previewRecordPoint != null}
-			<span class="formulaPreviewResultValue">{formatOutput(previewRecordPoint)}</span>
+			<div class="formulaPreviewResultMessage">{previewError}</div>
 		{:else}
-			<span class="formulaPreviewResultValue formulaPreviewResultPlaceholder">
-				{$_('custom_lists.formula.preview_pending')}
-			</span>
+			{#each formulaResultCards as card (card.key)}
+				<div class="formulaPreviewResultCard">
+					<div>
+						<span class="formulaPreviewResultFunction">{card.label}</span>
+						<span class="formulaPreviewResultDescription">{card.description}</span>
+					</div>
+					<span
+						class="formulaPreviewResultValue"
+						class:formulaPreviewResultPlaceholder={card.value == null}
+					>
+						{card.value == null
+							? $_('custom_lists.formula.preview_pending')
+							: formatOutput(card.value)}
+					</span>
+				</div>
+			{/each}
 		{/if}
 	</div>
 
@@ -703,35 +853,51 @@
 				<p>{$_('custom_lists.formula.graph_hint')}</p>
 			</div>
 			<div class="formulaPreviewGraphControls">
+				<div class="field formulaPreviewGraphOutputField">
+					<label for="formula-preview-combined-output"
+						>{$_('custom_lists.formula.graph_output_label')}</label
+					>
+					<select id="formula-preview-combined-output" bind:value={graphOutputKey}>
+						{#each formulaOutputOptions as output}
+							<option value={output.key}>{output.label}</option>
+						{/each}
+					</select>
+				</div>
 				<div class="field formulaPreviewGraphAxisField">
-					<label for={`formula-preview-${formulaType}-x-axis`}>{$_('custom_lists.formula.x_axis_label')}</label>
-					<select id={`formula-preview-${formulaType}-x-axis`} bind:value={graphXAxis}>
+					<label for="formula-preview-combined-x-axis"
+						>{$_('custom_lists.formula.x_axis_label')}</label
+					>
+					<select id="formula-preview-combined-x-axis" bind:value={graphXAxis}>
 						{#each formulaVariables as variable}
 							<option value={variable.token}>{variable.label}</option>
 						{/each}
 					</select>
 				</div>
 				<div class="field formulaPreviewGraphRangeField">
-					<label for={`formula-preview-${formulaType}-graph-range-min`}>{$_('custom_lists.formula.range_start_label')}</label>
+					<label for="formula-preview-combined-graph-range-min"
+						>{$_('custom_lists.formula.range_start_label')}</label
+					>
 					<Input
-						id={`formula-preview-${formulaType}-graph-range-min`}
+						id="formula-preview-combined-graph-range-min"
 						type="number"
 						min={getGraphAxisMin(graphXAxis)}
 						bind:value={graphRangeMin}
 					/>
 				</div>
 				<div class="field formulaPreviewGraphRangeField">
-					<label for={`formula-preview-${formulaType}-graph-range-max`}>{$_('custom_lists.formula.range_end_label')}</label>
+					<label for="formula-preview-combined-graph-range-max"
+						>{$_('custom_lists.formula.range_end_label')}</label
+					>
 					<Input
-						id={`formula-preview-${formulaType}-graph-range-max`}
+						id="formula-preview-combined-graph-range-max"
 						type="number"
 						min={getGraphAxisMin(graphXAxis)}
 						bind:value={graphRangeMax}
 					/>
 				</div>
-				<label class="formulaPreviewGraphToggle" for={`formula-preview-${formulaType}-cumulative-sum`}>
+				<label class="formulaPreviewGraphToggle" for="formula-preview-combined-cumulative-sum">
 					<input
-						id={`formula-preview-${formulaType}-cumulative-sum`}
+						id="formula-preview-combined-cumulative-sum"
 						type="checkbox"
 						bind:checked={showCumulativeSum}
 					/>
@@ -747,8 +913,16 @@
 		{:else if graphBars.length > 0}
 			<div class="formulaPreviewBarChart">
 				<div class="formulaPreviewBarChartSummary">
-					<span>{graphAxisLabel}: {graphDisplayCurrentPoint ? formatAxisValue(graphXAxis, graphDisplayCurrentPoint.x) : '-'}</span>
-					<span>{graphOutputLabel}: {graphDisplayCurrentPoint ? formatOutput(graphDisplayCurrentPoint.y) : '-'}</span>
+					<span
+						>{graphAxisLabel}: {graphDisplayCurrentPoint
+							? formatAxisValue(graphXAxis, graphDisplayCurrentPoint.x)
+							: '-'}</span
+					>
+					<span
+						>{graphOutputLabel}: {graphDisplayCurrentPoint
+							? formatOutput(graphDisplayCurrentPoint.y)
+							: '-'}</span
+					>
 				</div>
 				<div class="formulaPreviewBarChartLayout">
 					<div class="formulaPreviewBarChartScale" aria-hidden="true">
@@ -855,6 +1029,24 @@
 		font-weight: 600;
 	}
 
+	.formulaPreviewVariableGroups {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+		gap: 12px;
+	}
+
+	.formulaPreviewVariableGroup {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		min-width: 0;
+	}
+
+	.formulaPreviewVariableGroupLabel {
+		font-size: 0.78rem;
+		font-weight: 700;
+	}
+
 	.formulaPreviewNote {
 		margin: 0;
 		font-size: 0.78rem;
@@ -863,7 +1055,7 @@
 
 	.formulaPreviewVariableList {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+		grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 		gap: 10px;
 	}
 
@@ -899,7 +1091,14 @@
 		font-weight: 500;
 	}
 
-	.formulaPreviewResult {
+	.formulaPreviewResults {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+		gap: 10px;
+	}
+
+	.formulaPreviewResultCard,
+	.formulaPreviewResultMessage {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
@@ -910,18 +1109,34 @@
 		border: 1px solid hsl(var(--border));
 	}
 
-	.formulaPreviewResultError {
+	.formulaPreviewResultMessage {
+		grid-column: 1 / -1;
+		justify-content: flex-start;
+		color: hsl(var(--destructive));
+		font-size: 0.86rem;
+		font-weight: 600;
+	}
+
+	.formulaPreviewResultError .formulaPreviewResultCard,
+	.formulaPreviewResultError .formulaPreviewResultMessage {
 		border-color: hsl(var(--destructive) / 0.45);
 	}
 
-	.formulaPreviewResultLabel {
-		font-size: 0.85rem;
-		font-weight: 600;
+	.formulaPreviewResultFunction,
+	.formulaPreviewResultValue {
+		display: block;
+		font-size: 0.9rem;
+		font-weight: 700;
+	}
+
+	.formulaPreviewResultDescription {
+		display: block;
+		margin-top: 2px;
+		font-size: 0.76rem;
+		color: hsl(var(--muted-foreground));
 	}
 
 	.formulaPreviewResultValue {
-		font-size: 0.9rem;
-		font-weight: 600;
 		text-align: right;
 	}
 
@@ -938,6 +1153,10 @@
 		border-radius: 8px;
 		background: hsl(var(--background));
 		border: 1px solid hsl(var(--border));
+	}
+
+	.formulaPreviewGraphCard.formulaPreviewResultError {
+		border-color: hsl(var(--destructive) / 0.45);
 	}
 
 	.formulaPreviewGraphHeader {
@@ -960,6 +1179,7 @@
 		color: hsl(var(--muted-foreground));
 	}
 
+	.formulaPreviewGraphOutputField,
 	.formulaPreviewGraphAxisField {
 		min-width: 180px;
 	}
@@ -975,6 +1195,7 @@
 		flex-wrap: wrap;
 	}
 
+	.formulaPreviewGraphOutputField select,
 	.formulaPreviewGraphAxisField select {
 		height: 2.5rem;
 		padding: 0 0.75rem;
@@ -1185,6 +1406,19 @@
 		text-overflow: ellipsis;
 	}
 
+	.formulaPreviewGraphEmptyState {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-height: 180px;
+		padding: 16px;
+		border-radius: 8px;
+		border: 1px dashed hsl(var(--border));
+		color: hsl(var(--muted-foreground));
+		text-align: center;
+		font-size: 0.85rem;
+	}
+
 	@media (max-width: 720px) {
 		.formulaPreviewBarChartLayout {
 			gap: 8px;
@@ -1197,18 +1431,5 @@
 		.formulaPreviewBarChartColumns {
 			gap: 1px;
 		}
-	}
-
-	.formulaPreviewGraphEmptyState {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		min-height: 180px;
-		padding: 16px;
-		border-radius: 8px;
-		border: 1px dashed hsl(var(--border));
-		color: hsl(var(--muted-foreground));
-		text-align: center;
-		font-size: 0.85rem;
 	}
 </style>

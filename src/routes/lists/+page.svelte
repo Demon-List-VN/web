@@ -62,6 +62,7 @@
 		ownerData?: any;
 		currentUserRole?: CustomListResolvedRole;
 		weightFormula?: string;
+		recordScoreFormula?: string;
 	};
 
 	// SSR data

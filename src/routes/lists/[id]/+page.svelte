@@ -99,6 +99,7 @@
 		permissions?: CustomListPermissionFlags;
 		rankBadges?: CustomListRankBadge[];
 		weightFormula?: string;
+		recordScoreFormula?: string;
 		items: CustomListItem[];
 	};
 
