@@ -2052,6 +2052,8 @@
 		},
 		"manage": {
 			"title": "Quản lý",
+			"pointercrate_crawl_button": "Crawl Pointercrate",
+			"pointercrate_crawl_hint": "Đồng bộ vị trí, mốc tối thiểu và video từ Pointercrate.",
 			"tabs": {
 				"basic": "Thông tin cơ bản",
 				"appearance": "Giao diện",
@@ -2153,7 +2155,8 @@
 				"ownership_transferred": "Đã chuyển quyền sở hữu",
 				"collaboration_settings_updated": "Đã cập nhật thiết lập cộng tác",
 				"ban_state_updated": "Đã cập nhật trạng thái cấm",
-				"leaderboard_refreshed": "Đã làm mới bảng xếp hạng"
+				"leaderboard_refreshed": "Đã làm mới bảng xếp hạng",
+				"pointercrate_mirror_crawled": "Đã crawl mirror Pointercrate"
 			},
 			"audit_detail": {
 				"actor_label": "Người thực hiện",
@@ -2174,7 +2177,8 @@
 				"ownership_transferred": "{actor} đã chuyển quyền sở hữu cho {target}.",
 				"collaboration_settings_updated": "{actor} đã đặt quyền quản trị viên thêm trợ lý thành {enabled}.",
 				"ban_state_updated": "{actor} đã thực hiện: {state}.",
-				"leaderboard_refreshed": "{actor} đã làm mới bảng xếp hạng ({totalPlayers} người chơi, {totalRecords} bản ghi)."
+				"leaderboard_refreshed": "{actor} đã làm mới bảng xếp hạng ({totalPlayers} người chơi, {totalRecords} bản ghi).",
+				"pointercrate_mirror_crawled": "{actor} đã đồng bộ Pointercrate ({processed} đã kiểm tra, {inserted} thêm, {updated} cập nhật, {removed} xóa, {failed} lỗi)."
 			},
 			"unsaved_settings_title": "Có thiết lập chưa lưu",
 			"unsaved_settings_hint": "Bạn đang có thay đổi chưa được lưu. Hãy lưu trước khi rời khỏi trang để thiết lập của danh sách không bị lệch.",
@@ -2270,8 +2274,10 @@
 			"level_id_invalid": "Nhập ID level hợp lệ",
 			"saving_list": "Đang lưu danh sách...",
 			"refreshing_leaderboard": "Đang làm mới bảng xếp hạng...",
+			"crawling_pointercrate": "Đang crawl mirror Pointercrate...",
 			"list_updated": "Đã cập nhật danh sách",
 			"leaderboard_refreshed": "Đã làm mới bảng xếp hạng",
+			"pointercrate_crawled": "Đã đồng bộ Pointercrate. Đã thêm {added}. Đã cập nhật {updated}. Bỏ qua {skipped}. Đã xóa {removed}. Lỗi {failed}.",
 			"leaderboard_refreshed_players": "Đã làm mới bảng xếp hạng ({total} người chơi được xếp hạng)",
 			"leaderboard_refreshed_records": "Đã làm mới bảng xếp hạng ({total} người chơi được xếp hạng, {totalRecords} bản ghi)",
 			"list_deleted": "Đã xoá danh sách",
@@ -2285,6 +2291,9 @@
 			"failed_load": "Không thể tải danh sách",
 			"failed_update": "Không thể cập nhật danh sách",
 			"failed_refresh_leaderboard": "Không thể làm mới bảng xếp hạng",
+			"failed_pointercrate_crawl": "Không thể crawl mirror Pointercrate",
+			"save_before_pointercrate_crawl": "Hãy lưu hoặc hủy các thay đổi đang chờ trước khi crawl Pointercrate.",
+			"pointercrate_crawl_page_limit": "Đã dừng crawl Pointercrate vì vượt quá số trang cho phép.",
 			"failed_delete": "Không thể xoá danh sách",
 			"failed_create": "Không thể tạo danh sách",
 			"failed_add_level": "Không thể thêm level",

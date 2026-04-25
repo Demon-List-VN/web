@@ -14,10 +14,11 @@
 	import * as Popover from '$lib/components/ui/popover';
 	import Ads from '$lib/components/ads.svelte';
 	import PlayerLink from '$lib/components/playerLink.svelte';
+	import { clearCustomListBranding, setCustomListBranding } from '$lib/client/customListBranding';
 	import {
-		clearCustomListBranding,
-		setCustomListBranding
-	} from '$lib/client/customListBranding';
+		crawlPointercrateMirrorList as runPointercrateMirrorCrawler,
+		isPointercrateMirrorList
+	} from '$lib/client/pointercrateMirrorCrawler';
 	import {
 		normalizeCustomListRankBadges,
 		resolveCustomListRankBadge,
@@ -40,6 +41,7 @@
 		MoreHorizontal,
 		Star,
 		MessageSquare,
+		RefreshCw,
 		ChevronUp
 	} from 'lucide-svelte';
 	import { onDestroy, onMount } from 'svelte';
@@ -83,6 +85,7 @@
 		leaderboardEnabled?: boolean;
 		faviconUrl?: string | null;
 		isBanned: boolean;
+		isMirror?: boolean;
 		isPlatformer: boolean;
 		isOfficial?: boolean;
 		levelSubmissionEnabled?: boolean;
@@ -180,6 +183,7 @@
 	let listLevelsFetchKey = '';
 	let reachedEnd = false;
 	let showScrollToTop = false;
+	let crawlingPointercrateMirror = false;
 
 	type LevelFilters = {
 		topStart: string | null;
@@ -715,9 +719,7 @@
 		listLevelsFetchKey = fetchKey;
 		listLevelsLoading = true;
 
-		const headers = $user.loggedIn
-			? { Authorization: `Bearer ${await $user.token()}` }
-			: undefined;
+		const headers = $user.loggedIn ? { Authorization: `Bearer ${await $user.token()}` } : undefined;
 
 		try {
 			const payload = await fetchListDetail(0, LEVELS_PAGE_SIZE - 1, headers);
@@ -731,9 +733,7 @@
 				reachedEnd = true;
 			}
 
-			list = list
-				? { ...list, ...payload, items: incoming }
-				: payload;
+			list = list ? { ...list, ...payload, items: incoming } : payload;
 		} catch (error) {
 			if (fetchKey !== listLevelsFetchKey) {
 				return;
@@ -803,6 +803,58 @@
 			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_star'));
 		} finally {
 			starLoading = false;
+		}
+	}
+
+	async function crawlPointercrateMirrorList() {
+		if (!list || !canCrawlPointercrateMirror || crawlingPointercrateMirror) return;
+
+		crawlingPointercrateMirror = true;
+		const crawlToast = toast.loading($_('custom_lists.toast.crawling_pointercrate'));
+
+		try {
+			const result = await runPointercrateMirrorCrawler<CustomList>({
+				apiUrl: import.meta.env.VITE_API_URL,
+				listId: list.id,
+				getToken: () => $user.token(),
+				failedMessage: $_('custom_lists.toast.failed_pointercrate_crawl'),
+				pageLimitMessage: $_('custom_lists.toast.pointercrate_crawl_page_limit')
+			});
+
+			try {
+				const refreshedList = await fetchListDetail(0, LEVELS_PAGE_SIZE - 1, {
+					Authorization: `Bearer ${await $user.token()}`
+				});
+				const incomingItems = refreshedList.items ?? [];
+
+				list = { ...refreshedList, items: incomingItems };
+				reachedEnd = incomingItems.length < LEVELS_PAGE_SIZE;
+			} catch {
+				list = { ...result.list, items: result.list.items ?? [] };
+				reachedEnd = false;
+			}
+
+			listLevelsError = '';
+			listLevelsFetchKey = '';
+			toast.dismiss(crawlToast);
+			toast.success(
+				$_('custom_lists.toast.pointercrate_crawled', {
+					values: {
+						added: result.inserted,
+						updated: result.updated,
+						skipped: result.unchanged,
+						removed: result.removed,
+						failed: result.failed
+					}
+				})
+			);
+		} catch (error) {
+			toast.dismiss(crawlToast);
+			toast.error(
+				error instanceof Error ? error.message : $_('custom_lists.toast.failed_pointercrate_crawl')
+			);
+		} finally {
+			crawlingPointercrateMirror = false;
 		}
 	}
 
@@ -976,6 +1028,9 @@
 	$: listItems = list?.items ?? [];
 	$: listCardType = list?.isPlatformer ? 'pl' : 'dl';
 	$: canStarList = Boolean(list && list.id > 0 && list.visibility !== 'private');
+	$: canCrawlPointercrateMirror = Boolean(
+		isPointercrateMirrorList(list) && list?.permissions?.canEditLevels
+	);
 	$: canShowCommunity = Boolean(list && list.visibility !== 'private' && list.communityEnabled);
 	$: canShowLeaderboard = Boolean(list && list.leaderboardEnabled !== false);
 	$: canShowMyRecord = Boolean(canShowLeaderboard && $user.loggedIn && $user.data?.uid);
@@ -1065,9 +1120,7 @@
 		}
 	}
 	$: setCustomListBranding(
-		list
-			? { faviconUrl: list.faviconUrl, logoUrl: list.logoUrl, title: list.title }
-			: null
+		list ? { faviconUrl: list.faviconUrl, logoUrl: list.logoUrl, title: list.title } : null
 	);
 
 	onDestroy(() => {
@@ -1099,7 +1152,11 @@
 		</Button>
 		<div class="toolbarActions">
 			{#if list && list.levelSubmissionEnabled}
-				<Button variant="outline" size="sm" on:click={() => goto(`/lists/${$page.params.id}/submit`)}>
+				<Button
+					variant="outline"
+					size="sm"
+					on:click={() => goto(`/lists/${$page.params.id}/submit`)}
+				>
 					{#if $locale == 'vi'}
 						Nộp level
 					{:else}
@@ -1143,22 +1200,41 @@
 						<p class="heroDesc muted">{$_('custom_lists.detail.no_description')}</p>
 					{/if}
 				</div>
-				{#if canStarList}
-					<Button
-						variant="ghost"
-						size="icon"
-						class={list.starred ? 'heroStarButton heroStarButtonStarred' : 'heroStarButton'}
-						on:click={toggleStar}
-						disabled={starLoading}
-						aria-label={list.starred
-							? $_('custom_lists.actions.unstar')
-							: $_('custom_lists.actions.star')}
-						title={list.starred
-							? $_('custom_lists.actions.unstar')
-							: $_('custom_lists.actions.star')}
-					>
-						<Star class={`h-5 w-5 ${list.starred ? 'starFilled' : ''}`} />
-					</Button>
+				{#if canCrawlPointercrateMirror || canStarList}
+					<div class="heroActions">
+						{#if canCrawlPointercrateMirror}
+							<Button
+								variant="outline"
+								size="sm"
+								class="heroCrawlButton"
+								on:click={crawlPointercrateMirrorList}
+								disabled={crawlingPointercrateMirror}
+								title={$_('custom_lists.manage.pointercrate_crawl_hint')}
+							>
+								<RefreshCw class={`mr-2 h-4 w-4 ${crawlingPointercrateMirror ? 'spinning' : ''}`} />
+								{crawlingPointercrateMirror
+									? $_('custom_lists.manage.pointercrate_crawl_running')
+									: $_('custom_lists.manage.pointercrate_crawl_button')}
+							</Button>
+						{/if}
+						{#if canStarList}
+							<Button
+								variant="ghost"
+								size="icon"
+								class={list.starred ? 'heroStarButton heroStarButtonStarred' : 'heroStarButton'}
+								on:click={toggleStar}
+								disabled={starLoading}
+								aria-label={list.starred
+									? $_('custom_lists.actions.unstar')
+									: $_('custom_lists.actions.star')}
+								title={list.starred
+									? $_('custom_lists.actions.unstar')
+									: $_('custom_lists.actions.star')}
+							>
+								<Star class={`h-5 w-5 ${list.starred ? 'starFilled' : ''}`} />
+							</Button>
+						{/if}
+					</div>
 				{/if}
 			</div>
 
@@ -1270,7 +1346,7 @@
 												list.mode === 'rating'
 													? (item.rating ?? item.level.rating)
 													: item.level.rating,
-												top: getListItemTop(item, i),
+											top: getListItemTop(item, i),
 											minProgress: item.minProgress ?? item.level.minProgress ?? null
 										})}
 										backgroundColor={list.backgroundColor ?? null}
@@ -1418,7 +1494,9 @@
 									{/if}
 								{/each}
 								<Pagination.Item>
-									<Pagination.NextButton on:click={() => setLeaderboardPage(leaderboardCurrentPage + 1)} />
+									<Pagination.NextButton
+										on:click={() => setLeaderboardPage(leaderboardCurrentPage + 1)}
+									/>
 								</Pagination.Item>
 							</Pagination.Content>
 						</Pagination.Root>
@@ -1636,7 +1714,8 @@
 												<Pagination.Content>
 													<Pagination.Item>
 														<Pagination.PrevButton
-															on:click={() => setRecordPointsPage(Math.max(1, recordPointsCurrentPage - 1))}
+															on:click={() =>
+																setRecordPointsPage(Math.max(1, recordPointsCurrentPage - 1))}
 														/>
 													</Pagination.Item>
 													{#each recordPointsPages as p (p.key)}
@@ -1707,7 +1786,9 @@
 												>{$_('custom_lists.detail.records.position_label')}</Table.Head
 											>
 											<Table.Head>{$_('custom_lists.detail.records.level_label')}</Table.Head>
-											<Table.Head class="w-[70px] text-center">{$_('acceptance.short_label')}</Table.Head>
+											<Table.Head class="w-[70px] text-center"
+												>{$_('acceptance.short_label')}</Table.Head
+											>
 											<Table.Head class="w-[110px] text-right"
 												>{$_('custom_lists.detail.records.progress_label')}</Table.Head
 											>
@@ -1756,36 +1837,70 @@
 																	{$_('custom_lists.detail.records.variable_values_label')}
 																</div>
 																<div class="recordPointPopoverGrid">
-																		<div>
-																			<span>{$_('custom_lists.formula.position_label')}</span>
-																			<span>{formatFormulaScopeValue('position', entry.formulaScope.position)}</span>
-																		</div>
-																		<div>
-																			<span>{$_('custom_lists.formula.level_count_label')}</span>
-																			<span>{formatFormulaScopeValue('levelCount', entry.formulaScope.levelCount)}</span>
-																		</div>
+																	<div>
+																		<span>{$_('custom_lists.formula.position_label')}</span>
+																		<span
+																			>{formatFormulaScopeValue(
+																				'position',
+																				entry.formulaScope.position
+																			)}</span
+																		>
+																	</div>
+																	<div>
+																		<span>{$_('custom_lists.formula.level_count_label')}</span>
+																		<span
+																			>{formatFormulaScopeValue(
+																				'levelCount',
+																				entry.formulaScope.levelCount
+																			)}</span
+																		>
+																	</div>
 																	{#if list.mode === 'top'}
-																			<div>
-																				<span>{$_('custom_lists.formula.top_label')}</span>
-																				<span>{formatFormulaScopeValue('top', entry.formulaScope.top)}</span>
-																			</div>
-																	{:else}
-																			<div>
-																				<span>{$_('custom_lists.formula.rating_label')}</span>
-																				<span>{formatFormulaScopeValue('rating', entry.formulaScope.rating)}</span>
-																			</div>
-																	{/if}
 																		<div>
-																			<span>{list.isPlatformer ? $_('custom_lists.formula.time_label') : $_('custom_lists.formula.progress_label')}</span>
-																			<span>{formatFormulaScopeValue('progress', entry.formulaScope.progress)}</span>
+																			<span>{$_('custom_lists.formula.top_label')}</span>
+																			<span
+																				>{formatFormulaScopeValue(
+																					'top',
+																					entry.formulaScope.top
+																				)}</span
+																			>
 																		</div>
+																	{:else}
+																		<div>
+																			<span>{$_('custom_lists.formula.rating_label')}</span>
+																			<span
+																				>{formatFormulaScopeValue(
+																					'rating',
+																					entry.formulaScope.rating
+																				)}</span
+																			>
+																		</div>
+																	{/if}
+																	<div>
+																		<span
+																			>{list.isPlatformer
+																				? $_('custom_lists.formula.time_label')
+																				: $_('custom_lists.formula.progress_label')}</span
+																		>
+																		<span
+																			>{formatFormulaScopeValue(
+																				'progress',
+																				entry.formulaScope.progress
+																			)}</span
+																		>
+																	</div>
 																	<div>
 																		<span>
 																			{list.isPlatformer
 																				? $_('custom_lists.formula.base_time_label')
 																				: $_('custom_lists.formula.min_progress_label')}
 																		</span>
-																			<span>{formatFormulaScopeValue('minProgress', entry.formulaScope.minProgress)}</span>
+																		<span
+																			>{formatFormulaScopeValue(
+																				'minProgress',
+																				entry.formulaScope.minProgress
+																			)}</span
+																		>
 																	</div>
 																</div>
 															</Popover.Content>
@@ -1808,7 +1923,8 @@
 								<Pagination.Content>
 									<Pagination.Item>
 										<Pagination.PrevButton
-											on:click={() => setMyRecordPointsPage(Math.max(1, myRecordPointsCurrentPage - 1))}
+											on:click={() =>
+												setMyRecordPointsPage(Math.max(1, myRecordPointsCurrentPage - 1))}
 										/>
 									</Pagination.Item>
 									{#each myRecordPointsPages as p (p.key)}
@@ -1956,16 +2072,29 @@
 		gap: 16px;
 	}
 
+	.heroActions {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 8px;
+		flex-shrink: 0;
+		flex-wrap: wrap;
+	}
+
 	.heroTop h1 {
 		margin: 0;
 		font-size: 1.5rem;
 		font-weight: 700;
-		letter-spacing: -0.01em;
+		letter-spacing: 0;
+	}
+
+	:global(.heroCrawlButton) {
+		white-space: nowrap;
 	}
 
 	:global(.heroStarButton) {
 		flex-shrink: 0;
-		margin: -4px -6px 0 0;
+		margin: 0;
 		color: hsl(var(--muted-foreground));
 	}
 
@@ -2015,6 +2144,16 @@
 
 	:global(.starFilled) {
 		fill: currentColor;
+	}
+
+	:global(.spinning) {
+		animation: pointercrate-spin 1s linear infinite;
+	}
+
+	@keyframes pointercrate-spin {
+		to {
+			transform: rotate(360deg);
+		}
 	}
 
 	.tabsList {
@@ -2280,6 +2419,15 @@
 	@media (max-width: 480px) {
 		.hero {
 			padding: 18px 16px;
+		}
+
+		.heroTop {
+			flex-direction: column;
+		}
+
+		.heroActions {
+			width: 100%;
+			justify-content: flex-start;
 		}
 
 		.heroBanner {

@@ -14,10 +14,11 @@
 	import imageCompression from 'browser-image-compression';
 	import { browser } from '$app/environment';
 	import { onDestroy, onMount } from 'svelte';
+	import { clearCustomListBranding, setCustomListBranding } from '$lib/client/customListBranding';
 	import {
-		clearCustomListBranding,
-		setCustomListBranding
-	} from '$lib/client/customListBranding';
+		crawlPointercrateMirrorList as runPointercrateMirrorCrawler,
+		isPointercrateMirrorList
+	} from '$lib/client/pointercrateMirrorCrawler';
 	import {
 		normalizeCustomListRankBadges,
 		type CustomListRankBadge
@@ -186,6 +187,7 @@
 		levelSubmissionEnabled?: boolean;
 		logoUrl?: string | null;
 		topEnabled?: boolean;
+		isMirror?: boolean;
 		itemSort?: 'mode_default' | 'created_at';
 		visibility: 'private' | 'unlisted' | 'public';
 		mode: 'rating' | 'top';
@@ -342,7 +344,16 @@
 		metadata: Record<string, any>;
 	};
 
-	type ManageTab = 'basic' | 'appearance' | 'formula' | 'record-filter' | 'rank' | 'danger' | 'levels' | 'submissions' | 'collaboration';
+	type ManageTab =
+		| 'basic'
+		| 'appearance'
+		| 'formula'
+		| 'record-filter'
+		| 'rank'
+		| 'danger'
+		| 'levels'
+		| 'submissions'
+		| 'collaboration';
 
 	const defaultPermissions: CustomListPermissionFlags = {
 		canEditSettings: false,
@@ -372,6 +383,7 @@
 	let savingLevelDrafts = false;
 	let savingReorder = false;
 	let refreshingLeaderboard = false;
+	let crawlingPointercrateMirror = false;
 	let savingBanState = false;
 	let savingCollaboration = false;
 	let hasUnsavedSettings = false;
@@ -398,9 +410,18 @@
 	const CSV_IMPORT_RATE_LIMIT_RETRY_MS = 1000;
 	const CSV_IMPORT_RATE_LIMIT_TIMEOUT_MS = 15000;
 	const DEFAULT_ITEM_SORT: 'mode_default' | 'created_at' = 'mode_default';
-	const LEVEL_AUDIT_MUTABLE_FIELDS: Array<keyof LevelItemPatch> = ['rating', 'minProgress', 'videoID', 'createdAt'];
+	const LEVEL_AUDIT_MUTABLE_FIELDS: Array<keyof LevelItemPatch> = [
+		'rating',
+		'minProgress',
+		'videoID',
+		'createdAt'
+	];
 	const RECORD_FILTER_PLATFORM_OPTIONS: Array<'any' | 'pc' | 'mobile'> = ['any', 'pc', 'mobile'];
-	const RECORD_FILTER_ACCEPTANCE_OPTIONS: RecordFilterAcceptanceStatus[] = ['manual', 'auto', 'any'];
+	const RECORD_FILTER_ACCEPTANCE_OPTIONS: RecordFilterAcceptanceStatus[] = [
+		'manual',
+		'auto',
+		'any'
+	];
 
 	class BatchAddImportAbortedError extends Error {
 		constructor() {
@@ -469,13 +490,13 @@
 		}
 
 		if (
-			requestedTab === 'basic'
-			|| requestedTab === 'appearance'
-			|| requestedTab === 'formula'
-			|| requestedTab === 'record-filter'
-			|| requestedTab === 'rank'
-			|| requestedTab === 'collaboration'
-			|| requestedTab === 'danger'
+			requestedTab === 'basic' ||
+			requestedTab === 'appearance' ||
+			requestedTab === 'formula' ||
+			requestedTab === 'record-filter' ||
+			requestedTab === 'rank' ||
+			requestedTab === 'collaboration' ||
+			requestedTab === 'danger'
 		) {
 			return requestedTab;
 		}
@@ -488,8 +509,8 @@
 	}
 
 	function getInitialCollaborationSection() {
-		return $page.url.searchParams.get('tab') === 'pending-invitations'
-			|| $page.url.searchParams.get('collaborationTab') === 'pending'
+		return $page.url.searchParams.get('tab') === 'pending-invitations' ||
+			$page.url.searchParams.get('collaborationTab') === 'pending'
 			? 'pending'
 			: 'members';
 	}
@@ -521,10 +542,14 @@
 		editForm.recordFilterMinRefreshRate = list.recordFilterMinRefreshRate ?? null;
 		editForm.recordFilterMaxRefreshRate = list.recordFilterMaxRefreshRate ?? null;
 		editForm.recordFilterAcceptanceStatus = getRecordFilterAcceptanceStatus(list);
-		editForm.recordFilterManualAcceptanceOnly = getManualAcceptanceOnlyForStatus(editForm.recordFilterAcceptanceStatus);
+		editForm.recordFilterManualAcceptanceOnly = getManualAcceptanceOnlyForStatus(
+			editForm.recordFilterAcceptanceStatus
+		);
 	}
 
-	function getRankBadgeSnapshot(rankBadges: CustomListRankBadgeDraft[] | CustomListRankBadge[] | null | undefined) {
+	function getRankBadgeSnapshot(
+		rankBadges: CustomListRankBadgeDraft[] | CustomListRankBadge[] | null | undefined
+	) {
 		return normalizeCustomListRankBadges(rankBadges).map((rankBadge) => ({
 			name: rankBadge.name,
 			shorthand: rankBadge.shorthand,
@@ -608,13 +633,17 @@
 		const editableSettingsSnapshot = getEditableSettingsSnapshot(editForm);
 
 		return (
-			editableSettingsSnapshot.recordScoreFormula !== savedSettingsSnapshot.recordScoreFormula
-			|| editableSettingsSnapshot.weightFormula !== savedSettingsSnapshot.weightFormula
-			|| editableSettingsSnapshot.recordFilterPlatform !== savedSettingsSnapshot.recordFilterPlatform
-			|| editableSettingsSnapshot.recordFilterMinRefreshRate !== savedSettingsSnapshot.recordFilterMinRefreshRate
-			|| editableSettingsSnapshot.recordFilterMaxRefreshRate !== savedSettingsSnapshot.recordFilterMaxRefreshRate
-			|| editableSettingsSnapshot.recordFilterAcceptanceStatus !== savedSettingsSnapshot.recordFilterAcceptanceStatus
-			|| editableSettingsSnapshot.leaderboardEnabled !== savedSettingsSnapshot.leaderboardEnabled
+			editableSettingsSnapshot.recordScoreFormula !== savedSettingsSnapshot.recordScoreFormula ||
+			editableSettingsSnapshot.weightFormula !== savedSettingsSnapshot.weightFormula ||
+			editableSettingsSnapshot.recordFilterPlatform !==
+				savedSettingsSnapshot.recordFilterPlatform ||
+			editableSettingsSnapshot.recordFilterMinRefreshRate !==
+				savedSettingsSnapshot.recordFilterMinRefreshRate ||
+			editableSettingsSnapshot.recordFilterMaxRefreshRate !==
+				savedSettingsSnapshot.recordFilterMaxRefreshRate ||
+			editableSettingsSnapshot.recordFilterAcceptanceStatus !==
+				savedSettingsSnapshot.recordFilterAcceptanceStatus ||
+			editableSettingsSnapshot.leaderboardEnabled !== savedSettingsSnapshot.leaderboardEnabled
 		);
 	}
 
@@ -634,28 +663,44 @@
 			...(patch.rating !== undefined ? { rating: patch.rating } : {}),
 			...(hasDraftValue(patch, 'minProgress') ? { minProgress: patch.minProgress ?? null } : {}),
 			...(hasDraftValue(patch, 'videoID') ? { videoID: patch.videoID ?? null } : {}),
-			...(hasDraftValue(patch, 'createdAt') ? { created_at: patch.createdAt ?? item.created_at } : {}),
+			...(hasDraftValue(patch, 'createdAt')
+				? { created_at: patch.createdAt ?? item.created_at }
+				: {})
 		};
 	}
 
-	function getPendingLevelOrderEntries(orderDrafts: Record<number, PendingLevelOrderDraft> = pendingLevelOrderDrafts) {
+	function getPendingLevelOrderEntries(
+		orderDrafts: Record<number, PendingLevelOrderDraft> = pendingLevelOrderDrafts
+	) {
 		return Object.entries(orderDrafts)
 			.map(([levelId, draft]) => ({
 				levelId: Number(levelId),
 				top: draft.top,
 				inputIndex: draft.inputIndex
 			}))
-			.filter((entry) => Number.isInteger(entry.levelId) && entry.levelId > 0 && Number.isInteger(entry.top) && entry.top > 0);
+			.filter(
+				(entry) =>
+					Number.isInteger(entry.levelId) &&
+					entry.levelId > 0 &&
+					Number.isInteger(entry.top) &&
+					entry.top > 0
+			);
 	}
 
-	function applyPendingOrderDrafts(items: CustomListItem[], currentList: CustomList | null, orderDrafts: Record<number, PendingLevelOrderDraft>) {
+	function applyPendingOrderDrafts(
+		items: CustomListItem[],
+		currentList: CustomList | null,
+		orderDrafts: Record<number, PendingLevelOrderDraft>
+	) {
 		if (!currentList || currentList.mode !== 'top' || currentList.itemSort === 'created_at') {
 			return sortLevelItemsForDisplay(items, currentList);
 		}
 
 		const orderedItems = sortLevelItemsForDisplay(items, currentList);
 		const itemsByLevelId = new Map(orderedItems.map((item) => [item.levelId, item]));
-		const topOverrides = getPendingLevelOrderEntries(orderDrafts).filter((entry) => itemsByLevelId.has(entry.levelId));
+		const topOverrides = getPendingLevelOrderEntries(orderDrafts).filter((entry) =>
+			itemsByLevelId.has(entry.levelId)
+		);
 		const baseLevelIds = orderedItems.map((item) => item.levelId);
 		const reorderedLevelIds = topOverrides.length
 			? buildReorderedLevelIds(baseLevelIds, topOverrides)
@@ -672,7 +717,8 @@
 
 		return [...items].sort((left, right) => {
 			if (itemSort === 'created_at') {
-				const createdAtDifference = new Date(left.created_at).getTime() - new Date(right.created_at).getTime();
+				const createdAtDifference =
+					new Date(left.created_at).getTime() - new Date(right.created_at).getTime();
 
 				if (createdAtDifference !== 0) {
 					return createdAtDifference;
@@ -686,7 +732,8 @@
 				const rightPosition = right.position;
 
 				if (leftPosition == null && rightPosition == null) {
-					const createdAtDifference = new Date(left.created_at).getTime() - new Date(right.created_at).getTime();
+					const createdAtDifference =
+						new Date(left.created_at).getTime() - new Date(right.created_at).getTime();
 
 					if (createdAtDifference !== 0) {
 						return createdAtDifference;
@@ -710,7 +757,8 @@
 				}
 			}
 
-			const createdAtDifference = new Date(left.created_at).getTime() - new Date(right.created_at).getTime();
+			const createdAtDifference =
+				new Date(left.created_at).getTime() - new Date(right.created_at).getTime();
 
 			if (createdAtDifference !== 0) {
 				return createdAtDifference;
@@ -721,10 +769,7 @@
 	}
 
 	function getCombinedLevelItems(currentList: CustomList | null = list) {
-		return [
-			...(currentList?.items ?? []),
-			...pendingLevelAdditions
-		];
+		return [...(currentList?.items ?? []), ...pendingLevelAdditions];
 	}
 
 	function getLevelsTabList(currentList: CustomList | null = list) {
@@ -762,10 +807,13 @@
 		};
 	}
 
-	function buildPendingLevelAddition(level: PreparedCustomListLevel & { crawlStatus?: 'crawled' | 'skipped' }, options: {
-		createdAt?: string;
-		crawlStatus?: 'crawled' | 'skipped';
-	} = {}): PendingLevelAddition {
+	function buildPendingLevelAddition(
+		level: PreparedCustomListLevel & { crawlStatus?: 'crawled' | 'skipped' },
+		options: {
+			createdAt?: string;
+			crawlStatus?: 'crawled' | 'skipped';
+		} = {}
+	): PendingLevelAddition {
 		return {
 			id: nextPendingLevelItemId--,
 			levelId: level.id,
@@ -795,8 +843,10 @@
 		}
 
 		const { [levelId]: _removedDraft, ...remainingDrafts } = pendingLevelOrderDrafts;
-		const currentPosition = getDisplayedLevelItems(list, levelDrafts, levelDeletionDraftIds, remainingDrafts)
-			.findIndex((item) => item.levelId === levelId) + 1;
+		const currentPosition =
+			getDisplayedLevelItems(list, levelDrafts, levelDeletionDraftIds, remainingDrafts).findIndex(
+				(item) => item.levelId === levelId
+			) + 1;
 
 		if (currentPosition === top) {
 			pendingLevelOrderDrafts = remainingDrafts;
@@ -827,13 +877,17 @@
 		syncForm();
 	}
 	$: hasUnsavedSettings = Boolean(
-		list
-		&& canEditSettings
-		&& getSettingsSnapshotKey(getEditableSettingsSnapshot(editForm)) !== getSettingsSnapshotKey(getSavedSettingsSnapshot(list))
+		list &&
+			canEditSettings &&
+			getSettingsSnapshotKey(getEditableSettingsSnapshot(editForm)) !==
+				getSettingsSnapshotKey(getSavedSettingsSnapshot(list))
 	);
 	$: hasUnsavedLevelEdits = Boolean(
-		canEditLevels
-		&& (Object.keys(levelDrafts).length || levelDeletionDraftIds.length || pendingLevelAdditions.length || Object.keys(pendingLevelOrderDrafts).length)
+		canEditLevels &&
+			(Object.keys(levelDrafts).length ||
+				levelDeletionDraftIds.length ||
+				pendingLevelAdditions.length ||
+				Object.keys(pendingLevelOrderDrafts).length)
 	);
 	$: hasUnsavedManageChanges = hasUnsavedSettings || hasUnsavedLevelEdits;
 	$: if (list) {
@@ -842,15 +896,22 @@
 			Object.entries(levelDrafts).filter(([levelId]) => availableLevelIds.has(Number(levelId)))
 		) as Record<number, LevelItemPatch>;
 		const nextPendingLevelOrderDrafts = Object.fromEntries(
-			Object.entries(pendingLevelOrderDrafts).filter(([levelId]) => availableLevelIds.has(Number(levelId)))
+			Object.entries(pendingLevelOrderDrafts).filter(([levelId]) =>
+				availableLevelIds.has(Number(levelId))
+			)
 		) as Record<number, PendingLevelOrderDraft>;
-		const nextLevelDeletionDraftIds = levelDeletionDraftIds.filter((levelId) => availableLevelIds.has(levelId));
+		const nextLevelDeletionDraftIds = levelDeletionDraftIds.filter((levelId) =>
+			availableLevelIds.has(levelId)
+		);
 
 		if (Object.keys(nextLevelDrafts).length !== Object.keys(levelDrafts).length) {
 			levelDrafts = nextLevelDrafts;
 		}
 
-		if (Object.keys(nextPendingLevelOrderDrafts).length !== Object.keys(pendingLevelOrderDrafts).length) {
+		if (
+			Object.keys(nextPendingLevelOrderDrafts).length !==
+			Object.keys(pendingLevelOrderDrafts).length
+		) {
 			pendingLevelOrderDrafts = nextPendingLevelOrderDrafts;
 		}
 
@@ -972,7 +1033,8 @@
 			pendingSubmissions = Array.isArray(payload) ? payload : [];
 		} catch (error) {
 			pendingSubmissions = [];
-			pendingSubmissionsError = error instanceof Error ? error.message : $_('custom_lists.toast.failed_update_level');
+			pendingSubmissionsError =
+				error instanceof Error ? error.message : $_('custom_lists.toast.failed_update_level');
 		} finally {
 			pendingSubmissionsLoading = false;
 			pendingSubmissionsFetchAbortController = null;
@@ -985,7 +1047,10 @@
 	}
 
 	function parseTags(tags: string) {
-		return tags.split(',').map((tag) => tag.trim()).filter(Boolean);
+		return tags
+			.split(',')
+			.map((tag) => tag.trim())
+			.filter(Boolean);
 	}
 
 	function formatVisibility(visibility: string) {
@@ -1030,7 +1095,9 @@
 		}
 
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/players/search?q=${encodeURIComponent(query.trim())}`);
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/community/players/search?q=${encodeURIComponent(query.trim())}`
+			);
 			const payload = await res.json().catch(() => []);
 
 			if (!res.ok) {
@@ -1039,7 +1106,9 @@
 
 			return Array.isArray(payload) ? payload : [];
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_player_search'));
+			toast.error(
+				error instanceof Error ? error.message : $_('custom_lists.toast.failed_player_search')
+			);
 			return [];
 		}
 	}
@@ -1059,12 +1128,17 @@
 				body: JSON.stringify({ adminsCanManageHelpers })
 			});
 			const payload = await res.json();
-			if (!res.ok) throw new Error(payload.error || $_('custom_lists.toast.failed_collaboration_update'));
+			if (!res.ok)
+				throw new Error(payload.error || $_('custom_lists.toast.failed_collaboration_update'));
 			list = payload;
 			syncForm();
 			toast.success($_('custom_lists.toast.collaboration_updated'));
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_collaboration_update'));
+			toast.error(
+				error instanceof Error
+					? error.message
+					: $_('custom_lists.toast.failed_collaboration_update')
+			);
 		} finally {
 			savingCollaboration = false;
 		}
@@ -1088,12 +1162,15 @@
 				})
 			});
 			const payload = await res.json();
-			if (!res.ok) throw new Error(payload.error || $_('custom_lists.toast.failed_invite_collaborator'));
+			if (!res.ok)
+				throw new Error(payload.error || $_('custom_lists.toast.failed_invite_collaborator'));
 			list = payload;
 			syncForm();
 			toast.success($_('custom_lists.toast.invitation_sent'));
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_invite_collaborator'));
+			toast.error(
+				error instanceof Error ? error.message : $_('custom_lists.toast.failed_invite_collaborator')
+			);
 		} finally {
 			savingCollaboration = false;
 		}
@@ -1105,21 +1182,27 @@
 		savingCollaboration = true;
 
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/members/${member.uid}`, {
-				method: 'PATCH',
-				headers: {
-					Authorization: `Bearer ${await $user.token()}`,
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({ role })
-			});
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/lists/${list.id}/members/${member.uid}`,
+				{
+					method: 'PATCH',
+					headers: {
+						Authorization: `Bearer ${await $user.token()}`,
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({ role })
+				}
+			);
 			const payload = await res.json();
-			if (!res.ok) throw new Error(payload.error || $_('custom_lists.toast.failed_update_collaborator'));
+			if (!res.ok)
+				throw new Error(payload.error || $_('custom_lists.toast.failed_update_collaborator'));
 			list = payload;
 			syncForm();
 			toast.success($_('custom_lists.toast.collaborator_role_updated'));
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_update_collaborator'));
+			toast.error(
+				error instanceof Error ? error.message : $_('custom_lists.toast.failed_update_collaborator')
+			);
 		} finally {
 			savingCollaboration = false;
 		}
@@ -1132,19 +1215,25 @@
 		savingCollaboration = true;
 
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/members/${member.uid}`, {
-				method: 'DELETE',
-				headers: {
-					Authorization: `Bearer ${await $user.token()}`
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/lists/${list.id}/members/${member.uid}`,
+				{
+					method: 'DELETE',
+					headers: {
+						Authorization: `Bearer ${await $user.token()}`
+					}
 				}
-			});
+			);
 			const payload = await res.json();
-			if (!res.ok) throw new Error(payload.error || $_('custom_lists.toast.failed_remove_collaborator'));
+			if (!res.ok)
+				throw new Error(payload.error || $_('custom_lists.toast.failed_remove_collaborator'));
 			list = payload;
 			syncForm();
 			toast.success($_('custom_lists.toast.collaborator_removed'));
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_remove_collaborator'));
+			toast.error(
+				error instanceof Error ? error.message : $_('custom_lists.toast.failed_remove_collaborator')
+			);
 		} finally {
 			savingCollaboration = false;
 		}
@@ -1165,12 +1254,15 @@
 				body: JSON.stringify({ uid: selectedMember.uid })
 			});
 			const payload = await res.json();
-			if (!res.ok) throw new Error(payload.error || $_('custom_lists.toast.failed_transfer_ownership'));
+			if (!res.ok)
+				throw new Error(payload.error || $_('custom_lists.toast.failed_transfer_ownership'));
 			list = payload;
 			syncForm();
 			toast.success($_('custom_lists.toast.ownership_transferred'));
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_transfer_ownership'));
+			toast.error(
+				error instanceof Error ? error.message : $_('custom_lists.toast.failed_transfer_ownership')
+			);
 		} finally {
 			savingCollaboration = false;
 		}
@@ -1182,19 +1274,25 @@
 		savingCollaboration = true;
 
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/invitations/${invitation.uid}`, {
-				method: 'DELETE',
-				headers: {
-					Authorization: `Bearer ${await $user.token()}`
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/lists/${list.id}/invitations/${invitation.uid}`,
+				{
+					method: 'DELETE',
+					headers: {
+						Authorization: `Bearer ${await $user.token()}`
+					}
 				}
-			});
+			);
 			const payload = await res.json().catch(() => null);
-			if (!res.ok) throw new Error(payload?.error || $_('custom_lists.toast.failed_revoke_invitation'));
+			if (!res.ok)
+				throw new Error(payload?.error || $_('custom_lists.toast.failed_revoke_invitation'));
 			list = payload;
 			syncForm();
 			toast.success($_('custom_lists.toast.invitation_revoked'));
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_revoke_invitation'));
+			toast.error(
+				error instanceof Error ? error.message : $_('custom_lists.toast.failed_revoke_invitation')
+			);
 		} finally {
 			savingCollaboration = false;
 		}
@@ -1330,7 +1428,8 @@
 
 	function getImageExtension(file: File) {
 		const normalizedType = file.type.toLowerCase();
-		if (normalizedType === 'image/x-icon' || normalizedType === 'image/vnd.microsoft.icon') return 'ico';
+		if (normalizedType === 'image/x-icon' || normalizedType === 'image/vnd.microsoft.icon')
+			return 'ico';
 		if (normalizedType === 'image/png') return 'png';
 		if (normalizedType === 'image/webp') return 'webp';
 		if (normalizedType === 'image/gif') return 'gif';
@@ -1375,7 +1474,7 @@
 			maxSizeMB: asset === 'banner' ? 4.5 : asset === 'favicon' ? 0.2 : 0.35,
 			maxWidthOrHeight: asset === 'banner' ? 1920 : asset === 'favicon' ? 128 : 512,
 			useWebWorker: true
-			});
+		});
 	}
 
 	async function uploadCustomListAsset(asset: 'banner' | 'favicon' | 'logo', selectedFile: File) {
@@ -1435,7 +1534,9 @@
 			toast.success($_('custom_lists.toast.image_uploaded_save'));
 			return uploadedUrl;
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_upload_image'));
+			toast.error(
+				error instanceof Error ? error.message : $_('custom_lists.toast.failed_upload_image')
+			);
 			return null;
 		} finally {
 			uploadingAsset = null;
@@ -1448,9 +1549,12 @@
 		return Lock;
 	}
 
-	function getLeaderboardRefreshToastMessage(payload: { total?: number; totalRecords?: number } | null) {
+	function getLeaderboardRefreshToastMessage(
+		payload: { total?: number; totalRecords?: number } | null
+	) {
 		const refreshedTotal = typeof payload?.total === 'number' ? payload.total : null;
-		const refreshedRecordTotal = typeof payload?.totalRecords === 'number' ? payload.totalRecords : null;
+		const refreshedRecordTotal =
+			typeof payload?.totalRecords === 'number' ? payload.totalRecords : null;
 
 		if (refreshedTotal == null) {
 			return $_('custom_lists.toast.leaderboard_refreshed');
@@ -1513,12 +1617,15 @@
 		const refreshToast = toast.loading($_('custom_lists.toast.refreshing_leaderboard'));
 
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/leaderboard/refresh`, {
-				method: 'POST',
-				headers: {
-					Authorization: `Bearer ${await $user.token()}`
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/lists/${list.id}/leaderboard/refresh`,
+				{
+					method: 'POST',
+					headers: {
+						Authorization: `Bearer ${await $user.token()}`
+					}
 				}
-			});
+			);
 
 			const payload = await res.json().catch(() => null);
 
@@ -1541,7 +1648,9 @@
 			toast.success(getLeaderboardRefreshToastMessage(payload));
 		} catch (error) {
 			toast.dismiss(refreshToast);
-			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_refresh_leaderboard'));
+			toast.error(
+				error instanceof Error ? error.message : $_('custom_lists.toast.failed_refresh_leaderboard')
+			);
 		} finally {
 			refreshingLeaderboard = false;
 		}
@@ -1561,6 +1670,49 @@
 		}
 
 		void refreshLeaderboardPrecalc();
+	}
+
+	async function crawlPointercrateMirrorList() {
+		if (!list || !isPointercrateMirrorList(list) || !canEditLevels || crawlingPointercrateMirror) return;
+
+		if (hasUnsavedManageChanges) {
+			toast.error($_('custom_lists.toast.save_before_pointercrate_crawl'));
+			return;
+		}
+
+		crawlingPointercrateMirror = true;
+		const crawlToast = toast.loading($_('custom_lists.toast.crawling_pointercrate'));
+
+		try {
+			const result = await runPointercrateMirrorCrawler<CustomList>({
+				apiUrl: import.meta.env.VITE_API_URL,
+				listId: list.id,
+				getToken: () => $user.token(),
+				failedMessage: $_('custom_lists.toast.failed_pointercrate_crawl'),
+				pageLimitMessage: $_('custom_lists.toast.pointercrate_crawl_page_limit')
+			});
+			list = normalizeMutationListPayload(result.list);
+			syncForm();
+			toast.dismiss(crawlToast);
+			toast.success(
+				$_('custom_lists.toast.pointercrate_crawled', {
+					values: {
+						added: result.inserted,
+						updated: result.updated,
+						skipped: result.unchanged,
+						removed: result.removed,
+						failed: result.failed
+					}
+				})
+			);
+		} catch (error) {
+			toast.dismiss(crawlToast);
+			toast.error(
+				error instanceof Error ? error.message : $_('custom_lists.toast.failed_pointercrate_crawl')
+			);
+		} finally {
+			crawlingPointercrateMirror = false;
+		}
 	}
 
 	function viewPendingLevelChanges() {
@@ -1595,9 +1747,11 @@
 	}
 
 	function isBatchAddAbortError(error: unknown) {
-		return error instanceof BatchAddImportAbortedError
-			|| (error instanceof DOMException && error.name === 'AbortError')
-			|| (error instanceof Error && error.name === 'AbortError');
+		return (
+			error instanceof BatchAddImportAbortedError ||
+			(error instanceof DOMException && error.name === 'AbortError') ||
+			(error instanceof Error && error.name === 'AbortError')
+		);
 	}
 
 	function throwIfBatchAddAborted(signal?: AbortSignal) {
@@ -1629,10 +1783,12 @@
 	}
 
 	function hasBatchLevelPatch(levelInput: BatchAddLevelInput) {
-		return Number.isFinite(levelInput.rating)
-			|| Number.isInteger(levelInput.minProgress)
-			|| (typeof levelInput.videoId === 'string' && levelInput.videoId.length > 0)
-			|| (typeof levelInput.createdAt === 'string' && levelInput.createdAt.length > 0);
+		return (
+			Number.isFinite(levelInput.rating) ||
+			Number.isInteger(levelInput.minProgress) ||
+			(typeof levelInput.videoId === 'string' && levelInput.videoId.length > 0) ||
+			(typeof levelInput.createdAt === 'string' && levelInput.createdAt.length > 0)
+		);
 	}
 
 	function hasBatchLevelTopOverride(levelInput: BatchAddLevelInput) {
@@ -1640,7 +1796,12 @@
 	}
 
 	function buildBatchUpdateLevelPatch(levelInput: BatchAddLevelInput) {
-		const patch: { rating?: number; minProgress?: number; videoID?: string | null; createdAt?: string } = {};
+		const patch: {
+			rating?: number;
+			minProgress?: number;
+			videoID?: string | null;
+			createdAt?: string;
+		} = {};
 
 		if (Number.isFinite(levelInput.rating)) {
 			patch.rating = levelInput.rating;
@@ -1769,7 +1930,12 @@
 		}
 	}
 
-	async function requestAddLevel(listId: number, levelId: number, createdAt?: string, signal?: AbortSignal) {
+	async function requestAddLevel(
+		listId: number,
+		levelId: number,
+		createdAt?: string,
+		signal?: AbortSignal
+	) {
 		const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${listId}/levels`, {
 			method: 'POST',
 			signal,
@@ -1849,7 +2015,11 @@
 		};
 	}
 
-	async function requestBatchAddExistingLevels(listId: number, levelInputs: Array<Pick<BatchAddLevelInput, 'levelId' | 'createdAt'>>, signal?: AbortSignal) {
+	async function requestBatchAddExistingLevels(
+		listId: number,
+		levelInputs: Array<Pick<BatchAddLevelInput, 'levelId' | 'createdAt'>>,
+		signal?: AbortSignal
+	) {
 		const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${listId}/levels/batch`, {
 			method: 'POST',
 			signal,
@@ -1875,7 +2045,17 @@
 		};
 	}
 
-	async function requestUpdateLevel(listId: number, levelId: number, patch: { rating?: number; minProgress?: number | null; videoID?: string | null; createdAt?: string }, signal?: AbortSignal) {
+	async function requestUpdateLevel(
+		listId: number,
+		levelId: number,
+		patch: {
+			rating?: number;
+			minProgress?: number | null;
+			videoID?: string | null;
+			createdAt?: string;
+		},
+		signal?: AbortSignal
+	) {
 		const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${listId}/levels/${levelId}`, {
 			method: 'PATCH',
 			signal,
@@ -1951,10 +2131,15 @@
 		};
 	}
 
-	function buildReorderedLevelIds(currentLevelIds: number[], levelsWithTop: Array<BatchAddLevelInput & { inputIndex: number }>) {
+	function buildReorderedLevelIds(
+		currentLevelIds: number[],
+		levelsWithTop: Array<BatchAddLevelInput & { inputIndex: number }>
+	) {
 		const orderedOverrides = levelsWithTop
-			.filter((entry): entry is BatchAddLevelInput & { top: number; inputIndex: number } => Number.isInteger(entry.top))
-			.sort((left, right) => (left.top - right.top) || (left.inputIndex - right.inputIndex));
+			.filter((entry): entry is BatchAddLevelInput & { top: number; inputIndex: number } =>
+				Number.isInteger(entry.top)
+			)
+			.sort((left, right) => left.top - right.top || left.inputIndex - right.inputIndex);
 
 		const overrideIds = new Set(orderedOverrides.map((entry) => entry.levelId));
 		const reorderedLevelIds = currentLevelIds.filter((levelId) => !overrideIds.has(levelId));
@@ -1989,7 +2174,9 @@
 			toast.success($_('custom_lists.toast.level_staged'));
 			return true;
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_add_level'));
+			toast.error(
+				error instanceof Error ? error.message : $_('custom_lists.toast.failed_add_level')
+			);
 			return false;
 		} finally {
 			addingLevel = false;
@@ -2044,7 +2231,10 @@
 			};
 		}
 
-		const newLevelInputs = actionableLevelInputs.filter((levelInput) => !existingLevelIds.has(levelInput.levelId) && !pendingLevelIds.has(levelInput.levelId));
+		const newLevelInputs = actionableLevelInputs.filter(
+			(levelInput) =>
+				!existingLevelIds.has(levelInput.levelId) && !pendingLevelIds.has(levelInput.levelId)
+		);
 		const totalSteps = actionableLevelInputs.length;
 		batchAddProgress = createBatchAddProgress(totalSteps, skipped);
 
@@ -2154,18 +2344,24 @@
 					stagedAddition = true;
 				}
 
-				if (pendingLevelIds.has(levelInput.levelId) && typeof levelInput.createdAt === 'string' && levelInput.createdAt.length) {
+				if (
+					pendingLevelIds.has(levelInput.levelId) &&
+					typeof levelInput.createdAt === 'string' &&
+					levelInput.createdAt.length
+				) {
 					const previousPendingSignature = JSON.stringify(
 						pendingLevelAdditions.find((item) => item.levelId === levelInput.levelId) ?? null
 					);
 
-					pendingLevelAdditions = pendingLevelAdditions.map((item) => item.levelId === levelInput.levelId
-						? {
-							...item,
-							created_at: levelInput.createdAt!,
-							stagedCreatedAt: levelInput.createdAt!
-						}
-						: item);
+					pendingLevelAdditions = pendingLevelAdditions.map((item) =>
+						item.levelId === levelInput.levelId
+							? {
+									...item,
+									created_at: levelInput.createdAt!,
+									stagedCreatedAt: levelInput.createdAt!
+								}
+							: item
+					);
 
 					const nextPendingSignature = JSON.stringify(
 						pendingLevelAdditions.find((item) => item.levelId === levelInput.levelId) ?? null
@@ -2190,7 +2386,11 @@
 					nextPatch.videoID = levelInput.videoId;
 				}
 
-				if (hasSavedListItem && typeof levelInput.createdAt === 'string' && levelInput.createdAt.length) {
+				if (
+					hasSavedListItem &&
+					typeof levelInput.createdAt === 'string' &&
+					levelInput.createdAt.length
+				) {
 					nextPatch.createdAt = levelInput.createdAt;
 				}
 
@@ -2206,9 +2406,13 @@
 
 				if (list.mode === 'top' && Number.isInteger(levelInput.top)) {
 					const nextTop = levelInput.top as number;
-					const previousOrderDraftSignature = JSON.stringify(pendingLevelOrderDrafts[levelInput.levelId] ?? null);
+					const previousOrderDraftSignature = JSON.stringify(
+						pendingLevelOrderDrafts[levelInput.levelId] ?? null
+					);
 					stageLevelOrderDraft(levelInput.levelId, nextTop, levelInput.inputIndex);
-					const nextOrderDraftSignature = JSON.stringify(pendingLevelOrderDrafts[levelInput.levelId] ?? null);
+					const nextOrderDraftSignature = JSON.stringify(
+						pendingLevelOrderDrafts[levelInput.levelId] ?? null
+					);
 
 					if (previousOrderDraftSignature !== nextOrderDraftSignature) {
 						stagedChange = true;
@@ -2289,7 +2493,9 @@
 	}
 
 	function getLevelItemPosition(currentList: CustomList, item: CustomListItem) {
-		const itemIndex = currentList.items.findIndex((candidate) => candidate.levelId === item.levelId);
+		const itemIndex = currentList.items.findIndex(
+			(candidate) => candidate.levelId === item.levelId
+		);
 
 		if (item.position == null) {
 			return itemIndex + 1;
@@ -2298,7 +2504,10 @@
 		return Number(item.position);
 	}
 
-	function getLevelAuditState(currentList: CustomList, item: CustomListItem): PendingLevelAuditState {
+	function getLevelAuditState(
+		currentList: CustomList,
+		item: CustomListItem
+	): PendingLevelAuditState {
 		return {
 			rating: item.rating ?? 5,
 			minProgress: item.minProgress ?? null,
@@ -2341,7 +2550,10 @@
 	}
 
 	function arePendingManageAuditValuesEqual(left: unknown, right: unknown) {
-		return JSON.stringify(normalizePendingManageAuditValue(left)) === JSON.stringify(normalizePendingManageAuditValue(right));
+		return (
+			JSON.stringify(normalizePendingManageAuditValue(left)) ===
+			JSON.stringify(normalizePendingManageAuditValue(right))
+		);
 	}
 
 	function getPendingManageAuditFieldLabel(field: PendingManageAuditField) {
@@ -2355,17 +2567,23 @@
 		if (field === 'bannerUrl') return $_('custom_lists.detail.edit.banner_url_label');
 		if (field === 'borderColor') return $_('custom_lists.detail.edit.border_color_label');
 		if (field === 'communityEnabled') return $_('custom_lists.detail.edit.community_label');
-		if (field === 'leaderboardEnabled') return $_('custom_lists.detail.edit.leaderboard_enabled_label');
+		if (field === 'leaderboardEnabled')
+			return $_('custom_lists.detail.edit.leaderboard_enabled_label');
 		if (field === 'faviconUrl') return $_('custom_lists.detail.edit.favicon_url_label');
 		if (field === 'isPlatformer') return $_('custom_lists.detail.edit.type_label');
-		if (field === 'levelSubmissionEnabled') return $_('custom_lists.detail.edit.level_submission_label');
+		if (field === 'levelSubmissionEnabled')
+			return $_('custom_lists.detail.edit.level_submission_label');
 		if (field === 'logoUrl') return $_('custom_lists.detail.edit.logo_url_label');
 		if (field === 'mode') return $_('custom_lists.detail.edit.mode_label');
 		if (field === 'rankBadges') return $_('custom_lists.detail.edit.rank_badges_label');
-		if (field === 'recordFilterPlatform') return $_('custom_lists.manage.record_filter.platform_label');
-		if (field === 'recordFilterMinRefreshRate') return $_('custom_lists.manage.record_filter.min_refresh_rate_label');
-		if (field === 'recordFilterMaxRefreshRate') return $_('custom_lists.manage.record_filter.max_refresh_rate_label');
-		if (field === 'recordFilterAcceptanceStatus') return $_('custom_lists.manage.record_filter.acceptance_label');
+		if (field === 'recordFilterPlatform')
+			return $_('custom_lists.manage.record_filter.platform_label');
+		if (field === 'recordFilterMinRefreshRate')
+			return $_('custom_lists.manage.record_filter.min_refresh_rate_label');
+		if (field === 'recordFilterMaxRefreshRate')
+			return $_('custom_lists.manage.record_filter.max_refresh_rate_label');
+		if (field === 'recordFilterAcceptanceStatus')
+			return $_('custom_lists.manage.record_filter.acceptance_label');
 		if (field === 'tags') return $_('custom_lists.detail.edit.tags_label');
 		if (field === 'topEnabled') return $_('custom_lists.detail.edit.top_enabled_label');
 		if (field === 'visibility') return $_('custom_lists.detail.edit.visibility_label');
@@ -2416,7 +2634,10 @@
 			return formatRecordFilterAcceptanceOption(value as RecordFilterAcceptanceStatus);
 		}
 
-		if ((field === 'recordFilterMinRefreshRate' || field === 'recordFilterMaxRefreshRate') && typeof value === 'number') {
+		if (
+			(field === 'recordFilterMinRefreshRate' || field === 'recordFilterMaxRefreshRate') &&
+			typeof value === 'number'
+		) {
 			return `${value} FPS`;
 		}
 
@@ -2425,8 +2646,11 @@
 		}
 
 		if (
-			(field === 'communityEnabled' || field === 'leaderboardEnabled' || field === 'topEnabled' || field === 'levelSubmissionEnabled')
-			&& typeof value === 'boolean'
+			(field === 'communityEnabled' ||
+				field === 'leaderboardEnabled' ||
+				field === 'topEnabled' ||
+				field === 'levelSubmissionEnabled') &&
+			typeof value === 'boolean'
 		) {
 			return value ? $_('general.yes') : $_('general.no');
 		}
@@ -2463,9 +2687,15 @@
 			const draft = drafts[item.levelId];
 			const nextState: PendingLevelAuditState = {
 				rating: draft?.rating ?? item.rating ?? 5,
-				minProgress: hasDraftValue(draft, 'minProgress') ? draft?.minProgress ?? null : item.minProgress ?? null,
-				videoID: hasDraftValue(draft, 'videoID') ? draft?.videoID ?? null : item.videoID ?? null,
-				createdAt: hasDraftValue(draft, 'createdAt') ? draft?.createdAt ?? null : item.stagedCreatedAt ?? item.created_at ?? null,
+				minProgress: hasDraftValue(draft, 'minProgress')
+					? (draft?.minProgress ?? null)
+					: (item.minProgress ?? null),
+				videoID: hasDraftValue(draft, 'videoID')
+					? (draft?.videoID ?? null)
+					: (item.videoID ?? null),
+				createdAt: hasDraftValue(draft, 'createdAt')
+					? (draft?.createdAt ?? null)
+					: (item.stagedCreatedAt ?? item.created_at ?? null),
 				position: displayedPositionByLevelId.get(item.levelId) ?? displayedItems.length + 1
 			};
 
@@ -2527,13 +2757,21 @@
 			const nextState: PendingLevelAuditState = {
 				...previousState,
 				...(patch?.rating !== undefined ? { rating: patch.rating } : {}),
-				...(Object.prototype.hasOwnProperty.call(patch ?? {}, 'minProgress') ? { minProgress: patch?.minProgress ?? null } : {}),
-				...(Object.prototype.hasOwnProperty.call(patch ?? {}, 'videoID') ? { videoID: patch?.videoID ?? null } : {}),
-				...(Object.prototype.hasOwnProperty.call(patch ?? {}, 'createdAt') ? { createdAt: patch?.createdAt ?? null } : {}),
+				...(Object.prototype.hasOwnProperty.call(patch ?? {}, 'minProgress')
+					? { minProgress: patch?.minProgress ?? null }
+					: {}),
+				...(Object.prototype.hasOwnProperty.call(patch ?? {}, 'videoID')
+					? { videoID: patch?.videoID ?? null }
+					: {}),
+				...(Object.prototype.hasOwnProperty.call(patch ?? {}, 'createdAt')
+					? { createdAt: patch?.createdAt ?? null }
+					: {}),
 				...(orderDraft ? { position: orderDraft.top } : {})
 			};
 			const fields = [
-				...LEVEL_AUDIT_MUTABLE_FIELDS.filter((field) => Object.prototype.hasOwnProperty.call(patch ?? {}, field)),
+				...LEVEL_AUDIT_MUTABLE_FIELDS.filter((field) =>
+					Object.prototype.hasOwnProperty.call(patch ?? {}, field)
+				),
 				...(orderDraft && previousState.position !== orderDraft.top ? ['position' as const] : [])
 			];
 
@@ -2542,7 +2780,10 @@
 			}
 
 			const changes = Object.fromEntries(
-				fields.map((field) => [field, { old: previousState[field], new: nextState[field] } satisfies PendingLevelAuditChange])
+				fields.map((field) => [
+					field,
+					{ old: previousState[field], new: nextState[field] } satisfies PendingLevelAuditChange
+				])
 			);
 
 			entries.push({
@@ -2583,18 +2824,22 @@
 		}
 
 		const nextState: PendingSettingsAuditState = getEditableSettingsSnapshot(currentForm);
-		const fields = (Object.keys(nextState) as Array<keyof PendingSettingsAuditState>)
-			.filter((field) => !arePendingManageAuditValuesEqual(previousState[field], nextState[field]));
+		const fields = (Object.keys(nextState) as Array<keyof PendingSettingsAuditState>).filter(
+			(field) => !arePendingManageAuditValuesEqual(previousState[field], nextState[field])
+		);
 
 		if (!fields.length) {
 			return null;
 		}
 
 		const changes = Object.fromEntries(
-			fields.map((field) => [field, {
-				old: normalizePendingManageAuditValue(previousState[field]),
-				new: normalizePendingManageAuditValue(nextState[field])
-			} satisfies PendingLevelAuditChange])
+			fields.map((field) => [
+				field,
+				{
+					old: normalizePendingManageAuditValue(previousState[field]),
+					new: normalizePendingManageAuditValue(nextState[field])
+				} satisfies PendingLevelAuditChange
+			])
 		);
 
 		return {
@@ -2645,7 +2890,10 @@
 	function getPendingLevelAuditEntryDetail(entry: PendingManageAuditEntry) {
 		if (entry.action === 'list_updated') {
 			return entry.fields
-				.map((field) => `${getPendingManageAuditFieldLabel(field)}: ${formatPendingManageAuditValue(field, entry.metadata.changes?.[field]?.old)} -> ${formatPendingManageAuditValue(field, entry.metadata.changes?.[field]?.new)}`)
+				.map(
+					(field) =>
+						`${getPendingManageAuditFieldLabel(field)}: ${formatPendingManageAuditValue(field, entry.metadata.changes?.[field]?.old)} -> ${formatPendingManageAuditValue(field, entry.metadata.changes?.[field]?.new)}`
+				)
 				.join('; ');
 		}
 
@@ -2672,7 +2920,10 @@
 		}
 
 		return entry.fields
-			.map((field) => `${getPendingManageAuditFieldLabel(field)}: ${formatPendingManageAuditValue(field, entry.metadata.changes?.[field]?.old)} -> ${formatPendingManageAuditValue(field, entry.metadata.changes?.[field]?.new)}`)
+			.map(
+				(field) =>
+					`${getPendingManageAuditFieldLabel(field)}: ${formatPendingManageAuditValue(field, entry.metadata.changes?.[field]?.old)} -> ${formatPendingManageAuditValue(field, entry.metadata.changes?.[field]?.new)}`
+			)
 			.join('; ');
 	}
 
@@ -2711,11 +2962,13 @@
 		const normalizedPatch: LevelItemPatch = {};
 		const nextRating = mergedPatch.rating ?? item.rating ?? 5;
 		const hasMinProgress = Object.prototype.hasOwnProperty.call(mergedPatch, 'minProgress');
-		const nextMinProgress = hasMinProgress ? mergedPatch.minProgress ?? null : item.minProgress;
+		const nextMinProgress = hasMinProgress ? (mergedPatch.minProgress ?? null) : item.minProgress;
 		const hasVideoId = Object.prototype.hasOwnProperty.call(mergedPatch, 'videoID');
-		const nextVideoId = hasVideoId ? mergedPatch.videoID ?? null : item.videoID;
+		const nextVideoId = hasVideoId ? (mergedPatch.videoID ?? null) : item.videoID;
 		const hasCreatedAt = Object.prototype.hasOwnProperty.call(mergedPatch, 'createdAt');
-		const nextCreatedAt = hasCreatedAt ? mergedPatch.createdAt ?? item.created_at : item.created_at;
+		const nextCreatedAt = hasCreatedAt
+			? (mergedPatch.createdAt ?? item.created_at)
+			: item.created_at;
 
 		if (nextRating !== (item.rating ?? 5)) {
 			normalizedPatch.rating = nextRating;
@@ -2729,7 +2982,10 @@
 			normalizedPatch.videoID = nextVideoId ?? null;
 		}
 
-		if ((nextCreatedAt ?? null) !== (item.created_at ?? null) && typeof nextCreatedAt === 'string') {
+		if (
+			(nextCreatedAt ?? null) !== (item.created_at ?? null) &&
+			typeof nextCreatedAt === 'string'
+		) {
 			normalizedPatch.createdAt = nextCreatedAt;
 		}
 
@@ -2801,7 +3057,9 @@
 		const nextDeletionDraftIds = new Set(levelDeletionDraftIds);
 		const nextDrafts = { ...levelDrafts };
 		const nextOrderDrafts = { ...pendingLevelOrderDrafts };
-		const nextPendingLevelAdditions = pendingLevelAdditions.filter((item) => !levelIds.includes(item.levelId));
+		const nextPendingLevelAdditions = pendingLevelAdditions.filter(
+			(item) => !levelIds.includes(item.levelId)
+		);
 
 		for (const levelId of levelIds) {
 			if (pendingLevelIds.has(levelId)) {
@@ -2854,9 +3112,14 @@
 		const currentHasUnsavedSettings = hasUnsavedSettings;
 		const currentHasUnsavedLevelEdits = hasUnsavedLevelEdits;
 		const settingsPayload = currentHasUnsavedSettings ? buildSettingsMutationPayload() : undefined;
-		const leaderboardConfigChanged = currentHasUnsavedSettings && hasLeaderboardConfigDraftChanged();
+		const leaderboardConfigChanged =
+			currentHasUnsavedSettings && hasLeaderboardConfigDraftChanged();
 		let nextList = list;
-		const totalPendingLevelChanges = currentPendingLevelAdditions.length + currentDeletionDraftIds.length + Object.keys(currentDrafts).length + Object.keys(currentPendingOrderDrafts).length;
+		const totalPendingLevelChanges =
+			currentPendingLevelAdditions.length +
+			currentDeletionDraftIds.length +
+			Object.keys(currentDrafts).length +
+			Object.keys(currentPendingOrderDrafts).length;
 
 		if (!currentHasUnsavedSettings && !totalPendingLevelChanges) {
 			return;
@@ -2874,11 +3137,11 @@
 					createdAt: pendingItem.stagedCreatedAt ?? pendingItem.created_at ?? undefined,
 					rating: draft?.rating ?? pendingItem.rating ?? 5,
 					minProgress: Object.prototype.hasOwnProperty.call(draft ?? {}, 'minProgress')
-						? draft?.minProgress ?? null
-						: pendingItem.minProgress ?? null,
+						? (draft?.minProgress ?? null)
+						: (pendingItem.minProgress ?? null),
 					videoID: Object.prototype.hasOwnProperty.call(draft ?? {}, 'videoID')
-						? draft?.videoID ?? null
-						: pendingItem.videoID ?? null
+						? (draft?.videoID ?? null)
+						: (pendingItem.videoID ?? null)
 				};
 
 				if (orderDraft) {
@@ -2890,7 +3153,12 @@
 
 			const updateInputs = Object.entries(currentDrafts)
 				.filter(([levelId]) => !currentDeletionDraftIds.includes(Number(levelId)))
-				.filter(([levelId]) => !currentPendingLevelAdditions.some((pendingItem) => pendingItem.levelId === Number(levelId)))
+				.filter(
+					([levelId]) =>
+						!currentPendingLevelAdditions.some(
+							(pendingItem) => pendingItem.levelId === Number(levelId)
+						)
+				)
 				.map(([levelId, patch]) => ({
 					levelId: Number(levelId),
 					...patch
@@ -2908,9 +3176,11 @@
 				}))
 			};
 
-			const reorderEntries = getPendingLevelOrderEntries(currentPendingOrderDrafts).filter((entry) => {
-				return !currentDeletionDraftIds.includes(entry.levelId);
-			});
+			const reorderEntries = getPendingLevelOrderEntries(currentPendingOrderDrafts).filter(
+				(entry) => {
+					return !currentDeletionDraftIds.includes(entry.levelId);
+				}
+			);
 
 			if (settingsPayload) {
 				(batchPayload as Record<string, unknown>).settings = settingsPayload;
@@ -2950,18 +3220,22 @@
 			levelDeletionDraftIds = [];
 			pendingLevelOrderDrafts = {};
 			toast.dismiss(savingToast);
-			toast.success(currentHasUnsavedLevelEdits && !currentHasUnsavedSettings
-				? $_('custom_lists.toast.levels_updated', {
-					values: { count: totalPendingLevelChanges }
-				})
-				: $_('custom_lists.toast.list_updated'));
+			toast.success(
+				currentHasUnsavedLevelEdits && !currentHasUnsavedSettings
+					? $_('custom_lists.toast.levels_updated', {
+							values: { count: totalPendingLevelChanges }
+						})
+					: $_('custom_lists.toast.list_updated')
+			);
 
 			if (leaderboardConfigChanged) {
 				await refreshLeaderboardPrecalc({ reloadList: true });
 			}
 		} catch (error) {
 			toast.dismiss(savingToast);
-			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_update_level'));
+			toast.error(
+				error instanceof Error ? error.message : $_('custom_lists.toast.failed_update_level')
+			);
 			pendingLevelAdditions = currentPendingLevelAdditions;
 			levelDrafts = currentDrafts;
 			levelDeletionDraftIds = currentDeletionDraftIds;
@@ -2994,7 +3268,9 @@
 			if (!res.ok) throw new Error(payload.error || $_('custom_lists.toast.failed_ban'));
 			list = payload;
 			syncForm();
-			toast.success($_(nextIsBanned ? 'custom_lists.toast.list_banned' : 'custom_lists.toast.list_unbanned'));
+			toast.success(
+				$_(nextIsBanned ? 'custom_lists.toast.list_banned' : 'custom_lists.toast.list_unbanned')
+			);
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_ban'));
 		} finally {
@@ -3025,25 +3301,31 @@
 		}
 	}
 
-	async function reviewPendingSubmission(submission: CustomListSubmission, payload: {
-		accept: boolean;
-		rating?: number | null;
-		minProgress?: number | null;
-		position?: number | null;
-	}) {
+	async function reviewPendingSubmission(
+		submission: CustomListSubmission,
+		payload: {
+			accept: boolean;
+			rating?: number | null;
+			minProgress?: number | null;
+			position?: number | null;
+		}
+	) {
 		if (!list || !canReviewSubmissions) return;
 
 		savingSubmissionId = submission.id;
 
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/submissions/${submission.levelId}`, {
-				method: 'PATCH',
-				headers: {
-					Authorization: `Bearer ${await $user.token()}`,
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify(payload)
-			});
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/lists/${list.id}/submissions/${submission.levelId}`,
+				{
+					method: 'PATCH',
+					headers: {
+						Authorization: `Bearer ${await $user.token()}`,
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify(payload)
+				}
+			);
 			const responsePayload = await res.json().catch(() => null);
 
 			if (!res.ok) {
@@ -3055,7 +3337,9 @@
 			await loadPendingSubmissions(true);
 			toast.success(payload.accept ? 'Submission approved' : 'Submission rejected');
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_update_level'));
+			toast.error(
+				error instanceof Error ? error.message : $_('custom_lists.toast.failed_update_level')
+			);
 		} finally {
 			savingSubmissionId = null;
 		}
@@ -3078,13 +3362,14 @@
 	$: canViewPendingInvitations = Boolean(list && permissions.canViewPendingInvitations);
 	$: canRespondToInvitation = Boolean(list && permissions.canRespondToInvitation);
 	$: canReviewSubmissions = Boolean(list && permissions.canReviewSubmissions);
+	$: canCrawlPointercrateMirror = Boolean(isPointercrateMirrorList(list) && canEditLevels);
 	$: if (
-		browser
-		&& list
-		&& $user.checked
-		&& hasResolvedManageAccess
-		&& !redirectingUnauthorizedManage
-		&& list.currentUserRole === 'viewer'
+		browser &&
+		list &&
+		$user.checked &&
+		hasResolvedManageAccess &&
+		!redirectingUnauthorizedManage &&
+		list.currentUserRole === 'viewer'
 	) {
 		redirectingUnauthorizedManage = true;
 		void goto(
@@ -3095,15 +3380,13 @@
 		);
 	}
 	$: canShowCollaboration = Boolean(
-		list
-		&& (
-			canViewMembers
-			|| canViewAudit
-			|| canManageMembers
-			|| canConfigureCollaboration
-			|| canTransferOwnership
-			|| canViewPendingInvitations
-		)
+		list &&
+			(canViewMembers ||
+				canViewAudit ||
+				canManageMembers ||
+				canConfigureCollaboration ||
+				canTransferOwnership ||
+				canViewPendingInvitations)
 	);
 	$: collaborationTabProps = {
 		list,
@@ -3127,13 +3410,27 @@
 		formatDate,
 		formatDateTime
 	};
-	$: pendingLevelAuditEntries = buildPendingLevelAuditEntries(list, pendingLevelAdditions, levelDrafts, levelDeletionDraftIds);
+	$: pendingLevelAuditEntries = buildPendingLevelAuditEntries(
+		list,
+		pendingLevelAdditions,
+		levelDrafts,
+		levelDeletionDraftIds
+	);
 	$: pendingSettingsAuditEntry = buildPendingSettingsAuditEntry(list, editForm);
-	$: pendingManageAuditEntries = buildPendingManageAuditEntries(pendingSettingsAuditEntry, pendingLevelAuditEntries);
+	$: pendingManageAuditEntries = buildPendingManageAuditEntries(
+		pendingSettingsAuditEntry,
+		pendingLevelAuditEntries
+	);
 	$: pendingSettingsAuditFieldCount = pendingSettingsAuditEntry?.fields.length ?? 0;
-	$: pendingLevelAuditAddedCount = pendingLevelAuditEntries.filter((entry) => entry.action === 'level_added').length;
-	$: pendingLevelAuditUpdatedCount = pendingLevelAuditEntries.filter((entry) => entry.action === 'level_updated').length;
-	$: pendingLevelAuditRemovedCount = pendingLevelAuditEntries.filter((entry) => entry.action === 'level_removed').length;
+	$: pendingLevelAuditAddedCount = pendingLevelAuditEntries.filter(
+		(entry) => entry.action === 'level_added'
+	).length;
+	$: pendingLevelAuditUpdatedCount = pendingLevelAuditEntries.filter(
+		(entry) => entry.action === 'level_updated'
+	).length;
+	$: pendingLevelAuditRemovedCount = pendingLevelAuditEntries.filter(
+		(entry) => entry.action === 'level_removed'
+	).length;
 	$: if (list && $user.checked && canReviewSubmissions) {
 		const requestKey = `${list.id}:${$user.data?.uid || ''}`;
 
@@ -3159,11 +3456,7 @@
 	$: if (list && hasResolvedManageAccess && !initialManageTabSettled) {
 		initialManageTabSettled = true;
 		const requestedTab = getInitialManageTab();
-		activeTab = isTabAllowed(requestedTab)
-			? requestedTab
-			: canEditSettings
-				? 'basic'
-					: 'levels';
+		activeTab = isTabAllowed(requestedTab) ? requestedTab : canEditSettings ? 'basic' : 'levels';
 	}
 	$: if (list && hasResolvedManageAccess && !isTabAllowed(activeTab)) {
 		activeTab = canEditSettings ? 'basic' : 'levels';
@@ -3171,18 +3464,26 @@
 
 	// Reactive hero preview colors — update live from editForm without saving
 	$: _heroPreviewBg = initialSyncDone
-		? (isHexColor(editForm.backgroundColor) ? editForm.backgroundColor.trim() : null)
-		: (isHexColor(list?.backgroundColor) ? list!.backgroundColor!.trim() : null);
-	$: _heroPreviewBorder = initialSyncDone
-		? (isHexColor(editForm.borderColor) ? editForm.borderColor.trim() : null)
-		: (isHexColor(list?.borderColor) ? list!.borderColor!.trim() : null);
-	$: setCustomListBranding(
-		list
-			? { faviconUrl: list.faviconUrl, logoUrl: list.logoUrl, title: list.title }
+		? isHexColor(editForm.backgroundColor)
+			? editForm.backgroundColor.trim()
 			: null
+		: isHexColor(list?.backgroundColor)
+			? list!.backgroundColor!.trim()
+			: null;
+	$: _heroPreviewBorder = initialSyncDone
+		? isHexColor(editForm.borderColor)
+			? editForm.borderColor.trim()
+			: null
+		: isHexColor(list?.borderColor)
+			? list!.borderColor!.trim()
+			: null;
+	$: setCustomListBranding(
+		list ? { faviconUrl: list.faviconUrl, logoUrl: list.logoUrl, title: list.title } : null
 	);
 	$: heroStyle = getThemedSurfaceStyle(_heroPreviewBg, _heroPreviewBorder);
-	$: heroBannerStyle = _heroPreviewBorder ? `border-bottom-color: ${_heroPreviewBorder};` : undefined;
+	$: heroBannerStyle = _heroPreviewBorder
+		? `border-bottom-color: ${_heroPreviewBorder};`
+		: undefined;
 
 	onDestroy(() => {
 		batchAddAbortController?.abort();
@@ -3192,7 +3493,11 @@
 </script>
 
 <svelte:head>
-	<title>{list ? `Quản lý danh sách - ${list.title} - Geometry Dash Việt Nam` : 'Danh sách - Geometry Dash Việt Nam'}</title>
+	<title
+		>{list
+			? `Quản lý danh sách - ${list.title} - Geometry Dash Việt Nam`
+			: 'Danh sách - Geometry Dash Việt Nam'}</title
+	>
 </svelte:head>
 
 <div class="page">
@@ -3220,25 +3525,25 @@
 
 	{#if !$user.checked || (!hasResolvedManageAccess && !loadingError)}
 		<div class="emptyState">
-			<AlertTriangle class="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+			<AlertTriangle class="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
 			<h3>{$_('custom_lists.detail.loading')}</h3>
 			<p>{$_('custom_lists.detail.loading')}</p>
 		</div>
 	{:else if authRecoveryLoading && !list}
 		<div class="emptyState">
-			<AlertTriangle class="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+			<AlertTriangle class="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
 			<h3>{$_('custom_lists.detail.loading')}</h3>
 			<p>{$_('custom_lists.detail.loading')}</p>
 		</div>
 	{:else if redirectingUnauthorizedManage}
 		<div class="emptyState">
-			<AlertTriangle class="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+			<AlertTriangle class="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
 			<h3>{$_('custom_lists.detail.loading')}</h3>
 			<p>{$_('custom_lists.detail.loading')}</p>
 		</div>
 	{:else if loadingError}
 		<div class="emptyState">
-			<AlertTriangle class="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+			<AlertTriangle class="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
 			<h3>{$_('custom_lists.detail.error_title')}</h3>
 			<p>{loadingError}</p>
 		</div>
@@ -3255,7 +3560,10 @@
 					<div class="heroTitleGroup">
 						<div class="heroChips">
 							<span class="chip">
-								<svelte:component this={getVisibilityIcon(editForm.visibility)} class="h-3.5 w-3.5" />
+								<svelte:component
+									this={getVisibilityIcon(editForm.visibility)}
+									class="h-3.5 w-3.5"
+								/>
 								{formatVisibility(editForm.visibility)}
 							</span>
 							<span class="chip">
@@ -3264,7 +3572,9 @@
 							</span>
 							<span class="chip">
 								{editForm.mode === 'top' ? '🔢' : '⭐'}
-								{editForm.mode === 'rating' ? $_('custom_lists.detail.edit.mode_rating') : $_('custom_lists.detail.edit.mode_top')}
+								{editForm.mode === 'rating'
+									? $_('custom_lists.detail.edit.mode_rating')
+									: $_('custom_lists.detail.edit.mode_top')}
 							</span>
 							<span class="chip chipAccent">
 								{$_('custom_lists.detail.levels_badge', { values: { count: list.items.length } })}
@@ -3278,18 +3588,36 @@
 							<p class="heroDesc">{getManagePreviewDescription()}</p>
 						{/if}
 					</div>
-					{#if canEditSettings}
+					{#if canEditSettings || canCrawlPointercrateMirror}
 						<div class="heroActions">
-							<Button
-								variant="outline"
-								size="sm"
-								on:click={handleRefreshLeaderboardClick}
-								disabled={refreshingLeaderboard}
-								title="Refresh leaderboard"
-							>
-								<RefreshCw class="mr-2 h-4 w-4 {refreshingLeaderboard ? 'animate-spin' : ''}" />
-								{refreshingLeaderboard ? `${$_('general.loading')}...` : 'Refresh leaderboard'}
-							</Button>
+							{#if canEditSettings}
+								<Button
+									variant="outline"
+									size="sm"
+									on:click={handleRefreshLeaderboardClick}
+									disabled={refreshingLeaderboard}
+									title="Refresh leaderboard"
+								>
+									<RefreshCw class="mr-2 h-4 w-4 {refreshingLeaderboard ? 'animate-spin' : ''}" />
+									{refreshingLeaderboard ? `${$_('general.loading')}...` : 'Refresh leaderboard'}
+								</Button>
+							{/if}
+							{#if canCrawlPointercrateMirror}
+								<Button
+									variant="outline"
+									size="sm"
+									on:click={crawlPointercrateMirrorList}
+									disabled={crawlingPointercrateMirror || savingLevelDrafts}
+									title={$_('custom_lists.manage.pointercrate_crawl_hint')}
+								>
+									<RefreshCw
+										class="mr-2 h-4 w-4 {crawlingPointercrateMirror ? 'animate-spin' : ''}"
+									/>
+									{crawlingPointercrateMirror
+										? `${$_('general.loading')}...`
+										: $_('custom_lists.manage.pointercrate_crawl_button')}
+								</Button>
+							{/if}
 						</div>
 					{/if}
 				</div>
@@ -3391,11 +3719,7 @@
 
 			{#if canEditSettings}
 				<Tabs.Content value="basic">
-					<BasicTab
-						bind:editForm
-						{list}
-						{updateItemSort}
-					/>
+					<BasicTab bind:editForm {list} {updateItemSort} />
 				</Tabs.Content>
 
 				<Tabs.Content value="appearance">
@@ -3417,7 +3741,9 @@
 							<h2 class="toolHeading">{$_('custom_lists.manage.record_filter.heading')}</h2>
 							<div class="recordFilterFormGrid">
 								<div class="recordFilterField">
-									<span class="recordFilterFieldLabel">{$_('custom_lists.manage.record_filter.platform_label')}</span>
+									<span class="recordFilterFieldLabel"
+										>{$_('custom_lists.manage.record_filter.platform_label')}</span
+									>
 									<div class="recordFilterOptionRow">
 										{#each RECORD_FILTER_PLATFORM_OPTIONS as platform}
 											<button
@@ -3434,7 +3760,9 @@
 								</div>
 
 								<div class="recordFilterField">
-									<span class="recordFilterFieldLabel">{$_('custom_lists.manage.record_filter.acceptance_label')}</span>
+									<span class="recordFilterFieldLabel"
+										>{$_('custom_lists.manage.record_filter.acceptance_label')}</span
+									>
 									<div class="recordFilterOptionRow">
 										{#each RECORD_FILTER_ACCEPTANCE_OPTIONS as acceptanceStatus}
 											<button
@@ -3452,25 +3780,31 @@
 
 								<div class="recordFilterFieldGroup">
 									<div class="recordFilterField">
-										<label for="list-record-filter-min-refresh-rate">{$_('custom_lists.manage.record_filter.min_refresh_rate_label')}</label>
+										<label for="list-record-filter-min-refresh-rate"
+											>{$_('custom_lists.manage.record_filter.min_refresh_rate_label')}</label
+										>
 										<input
 											id="list-record-filter-min-refresh-rate"
 											type="number"
 											inputmode="numeric"
 											min="1"
 											value={editForm.recordFilterMinRefreshRate ?? ''}
-											on:input={(event) => updateRecordFilterRefreshRate('recordFilterMinRefreshRate', event)}
+											on:input={(event) =>
+												updateRecordFilterRefreshRate('recordFilterMinRefreshRate', event)}
 										/>
 									</div>
 									<div class="recordFilterField">
-										<label for="list-record-filter-max-refresh-rate">{$_('custom_lists.manage.record_filter.max_refresh_rate_label')}</label>
+										<label for="list-record-filter-max-refresh-rate"
+											>{$_('custom_lists.manage.record_filter.max_refresh_rate_label')}</label
+										>
 										<input
 											id="list-record-filter-max-refresh-rate"
 											type="number"
 											inputmode="numeric"
 											min="1"
 											value={editForm.recordFilterMaxRefreshRate ?? ''}
-											on:input={(event) => updateRecordFilterRefreshRate('recordFilterMaxRefreshRate', event)}
+											on:input={(event) =>
+												updateRecordFilterRefreshRate('recordFilterMaxRefreshRate', event)}
 										/>
 									</div>
 								</div>
@@ -3493,14 +3827,7 @@
 
 			{#if canBan || canDelete}
 				<Tabs.Content value="danger">
-					<DangerTab
-						{list}
-						{canBan}
-						{canDelete}
-						{savingBanState}
-						{setBanState}
-						{deleteList}
-					/>
+					<DangerTab {list} {canBan} {canDelete} {savingBanState} {setBanState} {deleteList} />
 				</Tabs.Content>
 			{/if}
 
@@ -3534,7 +3861,7 @@
 						{canReviewSubmissions}
 						loading={pendingSubmissionsLoading}
 						errorMessage={pendingSubmissionsError}
-						savingSubmissionId={savingSubmissionId}
+						{savingSubmissionId}
 						reviewSubmission={reviewPendingSubmission}
 						rejectSubmission={rejectPendingSubmission}
 					/>
@@ -3545,116 +3872,144 @@
 		<Dialog.Root bind:open={showPendingLevelChangesDialog}>
 			<Dialog.Content class="max-w-[860px]">
 				<div class="pendingChangesDialog">
-				<Dialog.Header>
-					<Dialog.Title>{$_('custom_lists.manage.unsaved_manage_changes_title')}</Dialog.Title>
-				</Dialog.Header>
+					<Dialog.Header>
+						<Dialog.Title>{$_('custom_lists.manage.unsaved_manage_changes_title')}</Dialog.Title>
+					</Dialog.Header>
 
-				<div class="pendingChangesSummary">
-					{#if pendingSettingsAuditFieldCount}
-						<Badge variant="secondary">{$_('custom_lists.manage.audit.list_updated')}</Badge>
-					{/if}
-					{#if pendingLevelAuditAddedCount}
-						<Badge variant="secondary">
-							{$_('custom_lists.manage.unsaved_level_edits_dialog_added_count', {
-								values: { count: pendingLevelAuditAddedCount }
-							})}
-						</Badge>
-					{/if}
-					{#if pendingLevelAuditUpdatedCount}
-						<Badge variant="secondary">
-							{$_('custom_lists.manage.unsaved_level_edits_dialog_updated_count', {
-								values: { count: pendingLevelAuditUpdatedCount }
-							})}
-						</Badge>
-					{/if}
-					{#if pendingLevelAuditRemovedCount}
-						<Badge variant="destructive">
-							{$_('custom_lists.manage.unsaved_level_edits_dialog_removed_count', {
-								values: { count: pendingLevelAuditRemovedCount }
-							})}
-						</Badge>
-					{/if}
-				</div>
-
-				{#if pendingManageAuditEntries.length}
-					<div class="pendingChangesList">
-						{#each pendingManageAuditEntries as entry}
-							<section class="pendingChangeEntry">
-								<div class="pendingChangeHeader">
-									<div class="pendingChangeHeading">
-										<div class="pendingChangeTitleRow">
-											<Badge variant={entry.action === 'level_removed' ? 'destructive' : 'secondary'}>
-												{getPendingLevelAuditEntryActionLabel(entry)}
-											</Badge>
-											<h3>{entry.label}</h3>
-											{#if entry.identifier != null}
-												<Badge variant="outline">#{entry.identifier}</Badge>
-											{/if}
-										</div>
-										{#if entry.creator}
-											<p class="hint">{$_('custom_lists.detail.levels.by')} {entry.creator}</p>
-										{/if}
-										<p class="pendingChangeDetail">{getPendingLevelAuditEntryDetail(entry)}</p>
-									</div>
-									<div class="pendingChangeAuditAction">
-										<span class="pendingChangeMetaLabel">{$_('custom_lists.manage.unsaved_level_edits_dialog_audit_action_label')}</span>
-										<code>{entry.action}</code>
-									</div>
-								</div>
-
-								{#if entry.action === 'level_updated' || entry.action === 'list_updated'}
-									<div class="pendingChangeFieldList">
-										{#each entry.fields as field}
-											<div class="pendingChangeFieldRow">
-												<div class="pendingChangeFieldLabel">{getPendingManageAuditFieldLabel(field)}</div>
-												<div class="pendingChangeFieldValues">
-													<span class="pendingChangeFieldValue pendingChangeFieldValueOld">{formatPendingManageAuditValue(field, entry.metadata.changes?.[field]?.old)}</span>
-													<span class="pendingChangeFieldArrow" aria-hidden="true">→</span>
-													<span class="pendingChangeFieldValue pendingChangeFieldValueNew">{formatPendingManageAuditValue(field, entry.metadata.changes?.[field]?.new)}</span>
-												</div>
-											</div>
-										{/each}
-									</div>
-								{:else if entry.action === 'level_added'}
-									<div class="pendingChangeFieldList">
-										{#each getPendingLevelAdditionPreviewRows(entry) as row}
-											<div class="pendingChangeFieldRow">
-												<div class="pendingChangeFieldLabel">{getPendingManageAuditFieldLabel(row.field)}</div>
-												<div class="pendingChangeFieldValues pendingChangeFieldValuesSingle">
-													<span class="pendingChangeFieldValue pendingChangeFieldValueNew">{formatPendingManageAuditValue(row.field, row.value)}</span>
-												</div>
-											</div>
-										{/each}
-									</div>
-								{:else}
-									<div class="pendingChangeFieldList">
-										{#each getPendingLevelRemovalPreviewRows(entry) as row}
-											<div class="pendingChangeFieldRow">
-												<div class="pendingChangeFieldLabel">{getPendingManageAuditFieldLabel(row.field)}</div>
-												<div class="pendingChangeFieldValues pendingChangeFieldValuesSingle">
-													<span class="pendingChangeFieldValue">{formatPendingManageAuditValue(row.field, row.value)}</span>
-												</div>
-											</div>
-										{/each}
-									</div>
-								{/if}
-
-								<details class="pendingChangePayload">
-									<summary>{$_('custom_lists.manage.unsaved_level_edits_dialog_payload_label')}</summary>
-									<pre>{JSON.stringify(entry.metadata, null, 2)}</pre>
-								</details>
-							</section>
-						{/each}
+					<div class="pendingChangesSummary">
+						{#if pendingSettingsAuditFieldCount}
+							<Badge variant="secondary">{$_('custom_lists.manage.audit.list_updated')}</Badge>
+						{/if}
+						{#if pendingLevelAuditAddedCount}
+							<Badge variant="secondary">
+								{$_('custom_lists.manage.unsaved_level_edits_dialog_added_count', {
+									values: { count: pendingLevelAuditAddedCount }
+								})}
+							</Badge>
+						{/if}
+						{#if pendingLevelAuditUpdatedCount}
+							<Badge variant="secondary">
+								{$_('custom_lists.manage.unsaved_level_edits_dialog_updated_count', {
+									values: { count: pendingLevelAuditUpdatedCount }
+								})}
+							</Badge>
+						{/if}
+						{#if pendingLevelAuditRemovedCount}
+							<Badge variant="destructive">
+								{$_('custom_lists.manage.unsaved_level_edits_dialog_removed_count', {
+									values: { count: pendingLevelAuditRemovedCount }
+								})}
+							</Badge>
+						{/if}
 					</div>
-				{:else}
-					<p class="hint">{$_('custom_lists.manage.unsaved_level_edits_dialog_empty')}</p>
-				{/if}
 
-				<Dialog.Footer>
-					<Button variant="outline" on:click={() => (showPendingLevelChangesDialog = false)}>
-						{$_('general.close')}
-					</Button>
-				</Dialog.Footer>
+					{#if pendingManageAuditEntries.length}
+						<div class="pendingChangesList">
+							{#each pendingManageAuditEntries as entry}
+								<section class="pendingChangeEntry">
+									<div class="pendingChangeHeader">
+										<div class="pendingChangeHeading">
+											<div class="pendingChangeTitleRow">
+												<Badge
+													variant={entry.action === 'level_removed' ? 'destructive' : 'secondary'}
+												>
+													{getPendingLevelAuditEntryActionLabel(entry)}
+												</Badge>
+												<h3>{entry.label}</h3>
+												{#if entry.identifier != null}
+													<Badge variant="outline">#{entry.identifier}</Badge>
+												{/if}
+											</div>
+											{#if entry.creator}
+												<p class="hint">{$_('custom_lists.detail.levels.by')} {entry.creator}</p>
+											{/if}
+											<p class="pendingChangeDetail">{getPendingLevelAuditEntryDetail(entry)}</p>
+										</div>
+										<div class="pendingChangeAuditAction">
+											<span class="pendingChangeMetaLabel"
+												>{$_(
+													'custom_lists.manage.unsaved_level_edits_dialog_audit_action_label'
+												)}</span
+											>
+											<code>{entry.action}</code>
+										</div>
+									</div>
+
+									{#if entry.action === 'level_updated' || entry.action === 'list_updated'}
+										<div class="pendingChangeFieldList">
+											{#each entry.fields as field}
+												<div class="pendingChangeFieldRow">
+													<div class="pendingChangeFieldLabel">
+														{getPendingManageAuditFieldLabel(field)}
+													</div>
+													<div class="pendingChangeFieldValues">
+														<span class="pendingChangeFieldValue pendingChangeFieldValueOld"
+															>{formatPendingManageAuditValue(
+																field,
+																entry.metadata.changes?.[field]?.old
+															)}</span
+														>
+														<span class="pendingChangeFieldArrow" aria-hidden="true">→</span>
+														<span class="pendingChangeFieldValue pendingChangeFieldValueNew"
+															>{formatPendingManageAuditValue(
+																field,
+																entry.metadata.changes?.[field]?.new
+															)}</span
+														>
+													</div>
+												</div>
+											{/each}
+										</div>
+									{:else if entry.action === 'level_added'}
+										<div class="pendingChangeFieldList">
+											{#each getPendingLevelAdditionPreviewRows(entry) as row}
+												<div class="pendingChangeFieldRow">
+													<div class="pendingChangeFieldLabel">
+														{getPendingManageAuditFieldLabel(row.field)}
+													</div>
+													<div class="pendingChangeFieldValues pendingChangeFieldValuesSingle">
+														<span class="pendingChangeFieldValue pendingChangeFieldValueNew"
+															>{formatPendingManageAuditValue(row.field, row.value)}</span
+														>
+													</div>
+												</div>
+											{/each}
+										</div>
+									{:else}
+										<div class="pendingChangeFieldList">
+											{#each getPendingLevelRemovalPreviewRows(entry) as row}
+												<div class="pendingChangeFieldRow">
+													<div class="pendingChangeFieldLabel">
+														{getPendingManageAuditFieldLabel(row.field)}
+													</div>
+													<div class="pendingChangeFieldValues pendingChangeFieldValuesSingle">
+														<span class="pendingChangeFieldValue"
+															>{formatPendingManageAuditValue(row.field, row.value)}</span
+														>
+													</div>
+												</div>
+											{/each}
+										</div>
+									{/if}
+
+									<details class="pendingChangePayload">
+										<summary
+											>{$_('custom_lists.manage.unsaved_level_edits_dialog_payload_label')}</summary
+										>
+										<pre>{JSON.stringify(entry.metadata, null, 2)}</pre>
+									</details>
+								</section>
+							{/each}
+						</div>
+					{:else}
+						<p class="hint">{$_('custom_lists.manage.unsaved_level_edits_dialog_empty')}</p>
+					{/if}
+
+					<Dialog.Footer>
+						<Button variant="outline" on:click={() => (showPendingLevelChangesDialog = false)}>
+							{$_('general.close')}
+						</Button>
+					</Dialog.Footer>
 				</div>
 			</Dialog.Content>
 		</Dialog.Root>
@@ -3665,7 +4020,9 @@
 					<div class="unsavedBarInfo">
 						<div class="unsavedBarDot" aria-hidden="true"></div>
 						<div class="unsavedBarText">
-							<h2 class="unsavedBarTitle">{$_('custom_lists.manage.unsaved_manage_changes_title')}</h2>
+							<h2 class="unsavedBarTitle">
+								{$_('custom_lists.manage.unsaved_manage_changes_title')}
+							</h2>
 							<div class="unsavedBarBadges">
 								{#if pendingSettingsAuditFieldCount}
 									<Badge variant="secondary">{$_('custom_lists.manage.audit.list_updated')}</Badge>
@@ -3696,16 +4053,28 @@
 					</div>
 					<div class="unsavedBarActions">
 						{#if pendingManageAuditEntries.length}
-							<Button variant="ghost" size="sm" on:click={viewPendingLevelChanges} disabled={savingLevelDrafts || !pendingManageAuditEntries.length}>
+							<Button
+								variant="ghost"
+								size="sm"
+								on:click={viewPendingLevelChanges}
+								disabled={savingLevelDrafts || !pendingManageAuditEntries.length}
+							>
 								{$_('custom_lists.manage.unsaved_level_edits_view_changes')}
 							</Button>
 						{/if}
-						<Button variant="outline" size="sm" on:click={discardStagedManageChanges} disabled={savingLevelDrafts}>
+						<Button
+							variant="outline"
+							size="sm"
+							on:click={discardStagedManageChanges}
+							disabled={savingLevelDrafts}
+						>
 							{$_('custom_lists.detail.levels.cancel_button')}
 						</Button>
 						<Button size="sm" on:click={saveStagedManageChanges} disabled={savingLevelDrafts}>
 							<Save class="mr-2 h-4 w-4" />
-							{savingLevelDrafts ? `${$_('general.loading')}...` : $_('custom_lists.detail.edit.save')}
+							{savingLevelDrafts
+								? `${$_('general.loading')}...`
+								: $_('custom_lists.detail.edit.save')}
 						</Button>
 					</div>
 				</div>
@@ -3920,7 +4289,10 @@
 		background: transparent;
 		border: 1px solid transparent;
 		white-space: nowrap;
-		transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
+		transition:
+			color 120ms ease,
+			background-color 120ms ease,
+			border-color 120ms ease;
 	}
 
 	.tabRail :global(.manageTab:hover) {
@@ -4062,7 +4434,9 @@
 		border-radius: 999px;
 		cursor: pointer;
 		font-size: 0.85rem;
-		transition: background 0.15s ease, border-color 0.15s ease;
+		transition:
+			background 0.15s ease,
+			border-color 0.15s ease;
 	}
 
 	.recordFilterOptionBtn:hover {
@@ -4136,7 +4510,8 @@
 	}
 
 	@keyframes unsavedBarPulse {
-		0%, 100% {
+		0%,
+		100% {
 			box-shadow: 0 0 0 4px hsl(var(--primary) / 0.2);
 		}
 		50% {

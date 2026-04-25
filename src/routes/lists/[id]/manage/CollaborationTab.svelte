@@ -294,6 +294,7 @@
 		if (action === 'collaboration_settings_updated') return $_('custom_lists.manage.audit.collaboration_settings_updated');
 		if (action === 'ban_state_updated') return $_('custom_lists.manage.audit.ban_state_updated');
 		if (action === 'leaderboard_refreshed') return $_('custom_lists.manage.audit.leaderboard_refreshed');
+		if (action === 'pointercrate_mirror_crawled') return $_('custom_lists.manage.audit.pointercrate_mirror_crawled');
 		return action.replaceAll('_', ' ');
 	}
 
@@ -440,6 +441,19 @@
 					actor,
 					totalPlayers: String(metadata.totalPlayers ?? '-'),
 					totalRecords: String(metadata.totalRecords ?? '-')
+				}
+			});
+		}
+
+		if (entry.action === 'pointercrate_mirror_crawled') {
+			return $_('custom_lists.manage.audit_detail.pointercrate_mirror_crawled', {
+				values: {
+					actor,
+					processed: String(metadata.processed ?? '-'),
+					inserted: String(metadata.inserted ?? '-'),
+					updated: String(metadata.updated ?? '-'),
+					removed: String(metadata.removed ?? '-'),
+					failed: String(metadata.failed ?? '-')
 				}
 			});
 		}

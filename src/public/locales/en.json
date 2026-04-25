@@ -2053,6 +2053,8 @@
 		},
 		"manage": {
 			"title": "Manage",
+			"pointercrate_crawl_button": "Crawl Pointercrate",
+			"pointercrate_crawl_hint": "Sync positions, requirements, and videos from Pointercrate.",
 			"tabs": {
 				"basic": "Basic info",
 				"appearance": "Appearance",
@@ -2154,7 +2156,8 @@
 				"ownership_transferred": "Ownership transferred",
 				"collaboration_settings_updated": "Collaboration settings updated",
 				"ban_state_updated": "Ban state updated",
-				"leaderboard_refreshed": "Leaderboard refreshed"
+				"leaderboard_refreshed": "Leaderboard refreshed",
+				"pointercrate_mirror_crawled": "Pointercrate mirror crawled"
 			},
 			"audit_detail": {
 				"actor_label": "Actor",
@@ -2175,7 +2178,8 @@
 				"ownership_transferred": "{actor} transferred ownership to {target}.",
 				"collaboration_settings_updated": "{actor} set admin helper access to {enabled}.",
 				"ban_state_updated": "{actor} performed: {state}.",
-				"leaderboard_refreshed": "{actor} refreshed the leaderboard ({totalPlayers} players, {totalRecords} records)."
+				"leaderboard_refreshed": "{actor} refreshed the leaderboard ({totalPlayers} players, {totalRecords} records).",
+				"pointercrate_mirror_crawled": "{actor} synced Pointercrate ({processed} checked, {inserted} added, {updated} updated, {removed} removed, {failed} failed)."
 			},
 			"unsaved_settings_title": "Unsaved settings",
 			"unsaved_settings_hint": "You have changes that have not been saved yet. Save them before leaving this page so the list settings stay in sync.",
@@ -2271,8 +2275,10 @@
 			"level_id_invalid": "Enter a valid level ID",
 			"saving_list": "Saving list...",
 			"refreshing_leaderboard": "Refreshing leaderboard...",
+			"crawling_pointercrate": "Crawling Pointercrate mirror...",
 			"list_updated": "List updated",
 			"leaderboard_refreshed": "Leaderboard refreshed",
+			"pointercrate_crawled": "Pointercrate sync complete. Added {added}. Updated {updated}. Skipped {skipped}. Removed {removed}. Failed {failed}.",
 			"leaderboard_refreshed_players": "Leaderboard refreshed ({total} ranked players)",
 			"leaderboard_refreshed_records": "Leaderboard refreshed ({total} ranked players, {totalRecords} records)",
 			"list_deleted": "List deleted",
@@ -2286,6 +2292,9 @@
 			"failed_load": "Failed to load list",
 			"failed_update": "Failed to update list",
 			"failed_refresh_leaderboard": "Failed to refresh leaderboard",
+			"failed_pointercrate_crawl": "Failed to crawl Pointercrate mirror",
+			"save_before_pointercrate_crawl": "Save or discard pending changes before crawling Pointercrate.",
+			"pointercrate_crawl_page_limit": "Pointercrate crawl stopped after too many pages.",
 			"failed_delete": "Failed to delete list",
 			"failed_create": "Failed to create list",
 			"failed_add_level": "Failed to add level",
