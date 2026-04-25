@@ -1,25 +1,27 @@
 <script lang="ts">
 	import RecordDetail from '$lib/components/recordDetail.svelte';
+	import ListSelector, { type ListSelectorOption } from '$lib/components/listSelector.svelte';
 	import Title from '$lib/components/Title.svelte';
 	import { Label } from '$lib/components/ui/label';
 	import { Button } from '$lib/components/ui/button';
 	import * as Table from '$lib/components/ui/table';
-	import * as Select from '$lib/components/ui/select';
 	import CrossCircled from 'svelte-radix/CrossCircled.svelte';
 	import CheckCircled from 'svelte-radix/CheckCircled.svelte';
 	import type { PageData } from './$types';
 	import { user } from '$lib/client';
-	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 
 	export let data: PageData;
 
-	let originalData: PageData = {
-		...data,
-		data: []
-	};
+	const listSearchUrl = `${import.meta.env.VITE_API_URL}/lists`;
+
 	let isOpen = false;
-	let userID: string, levelID: number;
+	let userID: string, levelID: number, recordID: number | null = null;
+	let selectedListId: number | null = null;
+	let records: any[] = data.data || [];
+	let recordsLoading = false;
+
+	$: listOptions = getListOptions(data.lists || [], records);
 
 	function getTimeString(ms: number) {
 		const minutes = Math.floor(ms / 60000);
@@ -29,7 +31,100 @@
 		return `${minutes}:${seconds.toString().padStart(2, '0')}.${milliseconds}`;
 	}
 
-	async function accept(userID: string, level: any) {
+	function getRecordLists(record: any) {
+		return Array.isArray(record?.lists) ? record.lists : [];
+	}
+
+	function toListOption(list: any): ListSelectorOption | null {
+		const id = Number(list?.id);
+		const title = typeof list?.title === 'string' ? list.title.trim() : '';
+
+		if (!Number.isFinite(id) || !title) {
+			return null;
+		}
+
+		return {
+			id,
+			title,
+			identifier: typeof list.slug === 'string' ? list.slug : null,
+			subtitle: list.isOfficial ? 'Official' : list.isVerified ? 'Verified' : null
+		};
+	}
+
+	function getListOptions(lists: any[], records: any[]) {
+		const optionsById = new Map<number, ListSelectorOption>();
+
+		for (const list of lists) {
+			const option = toListOption(list);
+
+			if (option) {
+				optionsById.set(option.id, option);
+			}
+		}
+
+		for (const record of records) {
+			for (const list of getRecordLists(record)) {
+				const option = toListOption(list);
+
+				if (option && !optionsById.has(option.id)) {
+					optionsById.set(option.id, option);
+				}
+			}
+		}
+
+		return [...optionsById.values()].sort((left, right) => left.title.localeCompare(right.title));
+	}
+
+	function handleListSelection(event: CustomEvent<ListSelectorOption | null>) {
+		selectedListId = event.detail?.id ?? null;
+		void loadRecords(selectedListId);
+	}
+
+	function getListHref(list: any) {
+		return `/lists/${list.slug || list.id}`;
+	}
+
+	async function loadRecords(listId: number | null) {
+		recordsLoading = true;
+		const query = new URLSearchParams({
+			end: '500',
+			isChecked: 'false'
+		});
+
+		if (listId !== null) {
+			query.set('listId', String(listId));
+		}
+
+		try {
+			const response = await fetch(`${import.meta.env.VITE_API_URL}/records?${query.toString()}`);
+
+			if (!response.ok) {
+				throw new Error(response.statusText);
+			}
+
+			records = await response.json();
+		} catch {
+			toast.error('Failed to load submissions');
+			records = [];
+		} finally {
+			recordsLoading = false;
+		}
+	}
+
+	function handleAcceptClick(event: MouseEvent, record: any) {
+		event.stopPropagation();
+		void accept(record);
+	}
+
+	function handleRejectClick(event: MouseEvent, record: any) {
+		event.stopPropagation();
+		void reject(record);
+	}
+
+	async function accept(record: any) {
+		const level = record.levels;
+		const player = record.players;
+
 		if (!confirm('Accept this record?')) {
 			return;
 		}
@@ -39,9 +134,13 @@
 		await fetch(`${import.meta.env.VITE_API_URL}/records`, {
 			method: 'PUT',
 			body: JSON.stringify({
-				userid: userID,
+				id: record.id,
+				userid: player.uid,
 				levelid: level.id,
-				isChecked: true
+				acceptedManually: true,
+				isChecked: true,
+				needMod: false,
+				queueNo: null
 			}),
 			headers: {
 				Authorization: `Bearer ${await $user.token()}`,
@@ -52,7 +151,7 @@
 		await fetch(`${import.meta.env.VITE_API_URL}/notifications`, {
 			method: 'POST',
 			body: JSON.stringify({
-				to: userID,
+				to: player.uid,
 				status: 1,
 				content: `Your ${level.name} (${level.id}) submission has been accepted by a moderator`
 			}),
@@ -65,7 +164,9 @@
 		window.location.reload();
 	}
 
-	async function reject(userID: string, level: any) {
+	async function reject(record: any) {
+		const level = record.levels;
+		const player = record.players;
 		const reason = prompt('Reason for rejection');
 
 		if (!confirm('Reject this record?')) {
@@ -73,8 +174,9 @@
 		}
 
 		toast.loading('Submitting verdict... This page will be refreshed.');
+		const recordQuery = record.id ? `?id=${record.id}` : '';
 
-		await fetch(`${import.meta.env.VITE_API_URL}/records/${userID}/${level.id}`, {
+		await fetch(`${import.meta.env.VITE_API_URL}/records/${player.uid}/${level.id}${recordQuery}`, {
 			method: 'DELETE',
 			headers: {
 				Authorization: `Bearer ${await $user.token()}`
@@ -84,7 +186,7 @@
 		await fetch(`${import.meta.env.VITE_API_URL}/notifications`, {
 			method: 'POST',
 			body: JSON.stringify({
-				to: userID,
+				to: player.uid,
 				status: 2,
 				content: `Your ${level.name} (${level.id}) submission has been rejected by a moderator. Reason: ${reason}`
 			}),
@@ -96,100 +198,39 @@
 
 		window.location.reload();
 	}
-
-	function filter(value: string) {
-		let filtered: PageData = {
-			...data,
-			data: []
-		};
-
-		if (value == 'all') {
-			filtered = originalData;
-		} else if (value == 'needMod') {
-			for (const i of originalData.data) {
-				if (i.needMod) {
-					filtered.data.push(i);
-				}
-			}
-		} else if (value == 'dl') {
-			for (const i of originalData.data) {
-				if (i.levels.rating && !i.levels.isChallenge) {
-					filtered.data.push(i);
-				}
-			}
-		} else if (value == 'pl') {
-			for (const i of originalData.data) {
-				if (i.levels.isPlatformer) {
-					filtered.data.push(i);
-				}
-			}
-		} else if (value == 'fl') {
-			for (const i of originalData.data) {
-				if (i.levels.flPt) {
-					filtered.data.push(i);
-				}
-			}
-		} else if (value == 'cl') {
-			for (const i of originalData.data) {
-				if (i.levels.isChallenge) {
-					filtered.data.push(i);
-				}
-			}
-		} else if (value == 'newLevel') {
-			for (const i of originalData.data) {
-				if (!i.levels.flPt && !i.levels.rating && !i.levels.isChallenge) {
-					filtered.data.push(i);
-				}
-			}
-		}
-
-		data = filtered;
-	}
-
-	onMount(() => {
-		originalData = structuredClone(data);
-	});
 </script>
 
-<RecordDetail bind:open={isOpen} uid={userID} {levelID} />
+<RecordDetail bind:open={isOpen} uid={userID} {levelID} recordId={recordID} />
 
 <Title value="Submission" />
 
 <div class="wrapper">
-	<div class="flex items-center gap-[5px]">
-		<Label>Filter</Label>
-		<Select.Root
-			onSelectedChange={(e) => {
-				if (!e) {
-					return;
-				}
-
-				filter(e.value);
-			}}
-			selected={{
-				label: 'All',
-				value: 'all'
-			}}
-		>
-			<Select.Trigger class="w-[250px]">
-				<Select.Value />
-			</Select.Trigger>
-			<Select.Content>
-				<Select.Item value="all">All</Select.Item>
-				<Select.Item value="needMod">Need further inspection</Select.Item>
-				<Select.Item value="newLevel">New level</Select.Item>
-				<Select.Item value="dl">Classic</Select.Item>
-				<Select.Item value="pl">Platformer</Select.Item>
-				<Select.Item value="fl">Featured</Select.Item>
-				<Select.Item value="cl">Challenge</Select.Item>
-			</Select.Content>
-		</Select.Root>
+	<div class="filterBar">
+		<div class="filterField">
+			<Label for="submission-list-filter">List</Label>
+			<ListSelector
+				id="submission-list-filter"
+				selectedId={selectedListId}
+				options={listOptions}
+				searchUrl={listSearchUrl}
+				placeholder="All lists"
+				searchPlaceholder="Search lists..."
+				emptyLabel="No lists found"
+				loadingLabel="Loading..."
+				allowClear
+				clearLabel="All lists"
+				triggerClass="min-w-[260px]"
+				on:select={handleListSelection}
+			/>
+		</div>
 	</div>
 	<Table.Root>
-		<Table.Caption>Total record: {data.data.length}</Table.Caption>
+		<Table.Caption>Total record: {records.length}{recordsLoading ? ' (loading...)' : ''}</Table.Caption>
 		<Table.Header>
 			<Table.Row>
+				<Table.Head class="w-[80px] text-center">Queue</Table.Head>
 				<Table.Head>Level</Table.Head>
+				<Table.Head>Lists</Table.Head>
 				<Table.Head class="w-[100px] text-center">Submitted by</Table.Head>
 				<Table.Head class="w-[100px] text-center">Device</Table.Head>
 				<Table.Head class="w-[80px] text-center">Progress</Table.Head>
@@ -199,7 +240,7 @@
 			</Table.Row>
 		</Table.Header>
 		<Table.Body>
-			{#each data.data as record}
+			{#each records as record (record.id)}
 				<Table.Row
 					on:click={(e) => {
 						// @ts-expect-error
@@ -209,13 +250,29 @@
 
 						userID = record.players.uid;
 						levelID = record.levels.id;
+						recordID = record.id ?? null;
 						isOpen = true;
 					}}
 				>
+					<Table.Cell class="text-center">{record.queueNo ? `#${record.queueNo}` : '-'}</Table.Cell>
 					<Table.Cell class="font-medium">
 						<a href={`/level/${record.levels.id}`} data-sveltekit-preload-data="tap">
 							{record.levels.name}
 						</a>
+					</Table.Cell>
+					<Table.Cell>
+						{#if getRecordLists(record).length}
+							<div class="listBadges">
+								{#each getRecordLists(record).slice(0, 3) as list (list.id)}
+									<a class="listBadge" href={getListHref(list)}>{list.title}</a>
+								{/each}
+								{#if getRecordLists(record).length > 3}
+									<span class="listBadge muted">+{getRecordLists(record).length - 3}</span>
+								{/if}
+							</div>
+						{:else}
+							<span class="text-muted-foreground">No list</span>
+						{/if}
 					</Table.Cell>
 					<Table.Cell class="text-center"
 						><a href={`/player/${record.players.uid}`}>{record.players.name}</a></Table.Cell
@@ -233,26 +290,14 @@
 						>{record.levels.isPlatformer ? getTimeString(record.progress) : '-'}</Table.Cell
 					>
 					<Table.Cell class="text-center">
-						<button
-							on:click={() => {
-								accept(record.players.uid, record.levels);
-							}}
-						>
-							<Button variant="icon">
-								<CheckCircled size={20} />
-							</Button>
-						</button>
+						<Button variant="ghost" size="icon" on:click={(event) => handleAcceptClick(event, record)}>
+							<CheckCircled size={20} />
+						</Button>
 					</Table.Cell>
 					<Table.Cell class="text-center">
-						<button
-							on:click={() => {
-								reject(record.players.uid, record.levels);
-							}}
-						>
-							<Button variant="icon">
-								<CrossCircled size={20} />
-							</Button>
-						</button>
+						<Button variant="ghost" size="icon" on:click={(event) => handleRejectClick(event, record)}>
+							<CrossCircled size={20} />
+						</Button>
 					</Table.Cell>
 				</Table.Row>
 			{/each}
@@ -263,6 +308,48 @@
 <style lang="scss">
 	.wrapper {
 		padding-inline: 50px;
+	}
+
+	.filterBar {
+		display: flex;
+		align-items: flex-end;
+		gap: 12px;
+		margin-bottom: 16px;
+	}
+
+	.filterField {
+		display: grid;
+		gap: 6px;
+		width: min(360px, 100%);
+	}
+
+	.listBadges {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+
+	.listBadge {
+		display: inline-flex;
+		max-width: 180px;
+		align-items: center;
+		border-radius: 6px;
+		border: 1px solid hsl(var(--border));
+		padding: 2px 8px;
+		font-size: 12px;
+		line-height: 1.5;
+		color: hsl(var(--foreground));
+		text-decoration: none;
+	}
+
+	.listBadge:not(.muted) {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.listBadge.muted {
+		color: hsl(var(--muted-foreground));
 	}
 
 	@media screen and (max-width: 900px) {

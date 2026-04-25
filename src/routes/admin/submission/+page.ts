@@ -1,14 +1,24 @@
 import type { PageLoad } from './$types';
 
-export async function load({ params, fetch }: Parameters<PageLoad>[0]) {
-    const query = new URLSearchParams({
+export async function load({ fetch }: Parameters<PageLoad>[0]) {
+    const recordsQuery = new URLSearchParams({
         end: '500',
-        isChecked: 'false',
-    })
+        isChecked: 'false'
+    });
+    const listsQuery = new URLSearchParams({
+        limit: '100'
+    });
 
-    const res: any[] = await (await fetch(`${import.meta.env.VITE_API_URL}/records?${query.toString()}`)).json()
+    const [recordsResponse, listsResponse] = await Promise.all([
+        fetch(`${import.meta.env.VITE_API_URL}/records?${recordsQuery.toString()}`),
+        fetch(`${import.meta.env.VITE_API_URL}/lists?${listsQuery.toString()}`)
+    ]);
+
+    const records: any[] = recordsResponse.ok ? await recordsResponse.json() : [];
+    const listsPayload = listsResponse.ok ? await listsResponse.json() : { data: [] };
 
     return {
-        data: res
-    }
-};
+        data: records,
+        lists: Array.isArray(listsPayload) ? listsPayload : listsPayload.data || []
+    };
+}
