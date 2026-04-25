@@ -592,6 +592,25 @@
 		return JSON.stringify(value);
 	}
 
+	function hasLeaderboardConfigDraftChanged() {
+		const savedSettingsSnapshot = getSavedSettingsSnapshot(list);
+
+		if (!savedSettingsSnapshot) {
+			return false;
+		}
+
+		const editableSettingsSnapshot = getEditableSettingsSnapshot(editForm);
+
+		return (
+			editableSettingsSnapshot.weightFormula !== savedSettingsSnapshot.weightFormula
+			|| editableSettingsSnapshot.recordFilterPlatform !== savedSettingsSnapshot.recordFilterPlatform
+			|| editableSettingsSnapshot.recordFilterMinRefreshRate !== savedSettingsSnapshot.recordFilterMinRefreshRate
+			|| editableSettingsSnapshot.recordFilterMaxRefreshRate !== savedSettingsSnapshot.recordFilterMaxRefreshRate
+			|| editableSettingsSnapshot.recordFilterAcceptanceStatus !== savedSettingsSnapshot.recordFilterAcceptanceStatus
+			|| editableSettingsSnapshot.leaderboardEnabled !== savedSettingsSnapshot.leaderboardEnabled
+		);
+	}
+
 	function hasDraftValue(patch: LevelItemPatch | undefined, key: keyof LevelItemPatch) {
 		return patch ? Object.prototype.hasOwnProperty.call(patch, key) : false;
 	}
@@ -1520,7 +1539,19 @@
 		}
 	}
 
-	function handleRefreshLeaderboardClick() {
+	async function handleRefreshLeaderboardClick() {
+		if (!list || refreshingLeaderboard) return;
+
+		if (hasUnsavedSettings) {
+			const leaderboardConfigChanged = hasLeaderboardConfigDraftChanged();
+
+			await saveStagedManageChanges();
+
+			if (hasUnsavedSettings || leaderboardConfigChanged) {
+				return;
+			}
+		}
+
 		void refreshLeaderboardPrecalc();
 	}
 
@@ -2814,20 +2845,7 @@
 		const currentHasUnsavedSettings = hasUnsavedSettings;
 		const currentHasUnsavedLevelEdits = hasUnsavedLevelEdits;
 		const settingsPayload = currentHasUnsavedSettings ? buildSettingsMutationPayload() : undefined;
-		const savedSettingsSnapshot = list ? getSavedSettingsSnapshot(list) : null;
-		const editableSettingsSnapshot = getEditableSettingsSnapshot(editForm);
-		const leaderboardConfigChanged = Boolean(
-			currentHasUnsavedSettings
-			&& savedSettingsSnapshot
-			&& (
-				editableSettingsSnapshot.weightFormula !== savedSettingsSnapshot.weightFormula
-				|| editableSettingsSnapshot.recordFilterPlatform !== savedSettingsSnapshot.recordFilterPlatform
-				|| editableSettingsSnapshot.recordFilterMinRefreshRate !== savedSettingsSnapshot.recordFilterMinRefreshRate
-				|| editableSettingsSnapshot.recordFilterMaxRefreshRate !== savedSettingsSnapshot.recordFilterMaxRefreshRate
-				|| editableSettingsSnapshot.recordFilterAcceptanceStatus !== savedSettingsSnapshot.recordFilterAcceptanceStatus
-				|| editableSettingsSnapshot.leaderboardEnabled !== savedSettingsSnapshot.leaderboardEnabled
-			)
-		);
+		const leaderboardConfigChanged = currentHasUnsavedSettings && hasLeaderboardConfigDraftChanged();
 		let nextList = list;
 		const totalPendingLevelChanges = currentPendingLevelAdditions.length + currentDeletionDraftIds.length + Object.keys(currentDrafts).length + Object.keys(currentPendingOrderDrafts).length;
 

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as Table from '$lib/components/ui/table';
 	import * as Select from '$lib/components/ui/select';
+	import * as Alert from '$lib/components/ui/alert';
 	import AcceptanceBadge from '$lib/components/AcceptanceBadge.svelte';
 	import RecordDetail from '$lib/components/recordDetail.svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -8,6 +9,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Switch } from '$lib/components/ui/switch';
 	import { _ } from 'svelte-i18n';
+	import { Info } from 'lucide-svelte';
 	import type { PlayerListRecordEntry } from '$lib/types/playerRankedList';
 
 	type SelectOption = {
@@ -78,14 +80,6 @@
 		const seconds = Math.floor((ms % 60000) / 1000);
 		const milliseconds = ms % 1000;
 		return `${minutes}:${seconds.toString().padStart(2, '0')}.${milliseconds}`;
-	}
-
-	function formatPoint(value: number | null | undefined) {
-		if (typeof value !== 'number' || !Number.isFinite(value)) {
-			return '0';
-		}
-
-		return String(Math.round(value));
 	}
 
 	function isAcceptedRecord(record: PlayerListRecordEntry) {
@@ -205,6 +199,11 @@
 	/>
 {/if}
 
+<Alert.Root class="mb-4 bg-muted/40">
+	<Info class="h-4 w-4" />
+	<Alert.Description>{$_('player.records_point_sort_notice')}</Alert.Description>
+</Alert.Root>
+
 {#if acceptedRecordTotal}
 	<div class="filterBar">
 		<div class="filterGroup">
@@ -277,7 +276,6 @@
 					<Table.Head class="w-[100px] text-center">{$_('player.table.submitted_on')}</Table.Head>
 					<Table.Head class="w-[70px] text-center">{$_('acceptance.short_label')}</Table.Head>
 					<Table.Head class="w-[100px] text-center">{$_('player.table.device')}</Table.Head>
-					<Table.Head class="w-[80px] text-center">{$_('player.table.point')}</Table.Head>
 					<Table.Head class="w-[80px] text-center">{resultColumnLabel}</Table.Head>
 				</Table.Row>
 			</Table.Header>
@@ -324,9 +322,6 @@
 							{#if record.refreshRate}
 								<br />({record.refreshRate}fps)
 							{/if}
-						</Table.Cell>
-						<Table.Cell class="text-center">
-							{formatPoint(record.point)}
 						</Table.Cell>
 						{#if isPlatformerRecord(record)}
 							<Table.Cell class="text-center">{getTimeString(record.progress)}</Table.Cell>

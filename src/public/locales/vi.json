@@ -1017,6 +1017,7 @@
     "supporter_badge": "Supporter",
     "supporter_expires": "Hết hạn",
     "copy_discord": "Đã sao chép tên Discord vào bảng nhớ tạm!",
+    "records_point_sort_notice": "Để xem bản ghi được sắp xếp theo điểm, hãy vào trang danh sách > Record của tôi.",
     "filter": {
       "level_id": "Level ID",
       "level_id_placeholder": "vd. 12345",
