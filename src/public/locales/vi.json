@@ -1814,6 +1814,7 @@
       "tabs": {
         "levels": "Levels",
         "leaderboard": "Bảng xếp hạng",
+        "my_record": "Record của tôi",
         "records": "Điểm bản ghi",
         "community": "Bài viết cộng đồng"
       },
@@ -1829,6 +1830,7 @@
       },
       "records": {
         "heading": "Điểm bản ghi của {title}",
+        "my_record_heading": "Điểm record của tôi",
         "subhead_top": "Điểm cuối cùng của từng bản ghi hợp lệ được tính sẵn trực tiếp từ công thức MathJS khi làm mới bảng xếp hạng.",
         "subhead_rating": "Điểm cuối cùng của từng bản ghi hợp lệ được tính sẵn trực tiếp từ công thức MathJS khi làm mới bảng xếp hạng.",
         "position_label": "Hạng",
@@ -1885,6 +1887,8 @@
         "logo_url_hint": "URL ảnh tùy chọn thay thế logo ở góc trên bên trái trên trang danh sách này.",
         "logo_upload_button": "Tải logo lên",
         "asset_upload_hint": "Tải tệp hình ảnh lên. Ảnh tải lên sẽ tự điền vào thiết lập này; hãy lưu thay đổi để áp dụng.",
+        "leaderboard_enabled_label": "Bảng xếp hạng",
+        "leaderboard_enabled_hint": "Bật bảng xếp hạng người chơi và tab record của tôi cho danh sách này.",
         "top_enabled_label": "Hiện top của level",
         "top_enabled_hint": "Hiển thị thứ hạng của level trên level card và trong huy hiệu danh sách ở trang level.",
         "preview_heading": "Xem trước",

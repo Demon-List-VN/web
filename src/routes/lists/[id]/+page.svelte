@@ -78,6 +78,7 @@
 		bannerUrl?: string | null;
 		borderColor?: string | null;
 		communityEnabled: boolean;
+		leaderboardEnabled?: boolean;
 		faviconUrl?: string | null;
 		isBanned: boolean;
 		isPlatformer: boolean;
@@ -134,7 +135,7 @@
 		name: string;
 	} & Record<string, any>;
 
-	type DetailTab = 'levels' | 'leaderboard' | 'community';
+	type DetailTab = 'levels' | 'leaderboard' | 'my-record' | 'community';
 
 	let list: CustomList | null = data?.list ?? null;
 	let loadingError = data?.error ?? '';
@@ -160,6 +161,12 @@
 	let recordPointsFetchKey = '';
 	let recordPointsPage = 1;
 	let recordPointsDialogOpen = false;
+	let myRecordPoints: CustomListRecordPoint[] = [];
+	let myRecordPointsCount = 0;
+	let myRecordPointsError = '';
+	let myRecordPointsLoading = false;
+	let myRecordPointsFetchKey = '';
+	let myRecordPointsPage = 1;
 	let listLevelsObserver: IntersectionObserver | undefined;
 	let listLevelsSentinel: HTMLDivElement | null = null;
 	let listLevelsLoading = false;
@@ -328,6 +335,7 @@
 		const tab = searchParams.get('tab');
 
 		if (tab === 'leaderboard') return 'leaderboard';
+		if (tab === 'my-record') return 'my-record';
 		if (tab === 'records') return 'leaderboard';
 		if (tab === 'community') return 'community';
 		return 'levels';
@@ -359,6 +367,10 @@
 	}
 
 	function switchTab(nextTab: DetailTab) {
+		if (nextTab === 'my-record') {
+			myRecordPointsPage = 1;
+		}
+
 		goto(buildDetailUrl(nextTab, nextTab === 'leaderboard' ? activeLeaderboardPage : 1), {
 			keepFocus: true,
 			noScroll: true
@@ -376,6 +388,10 @@
 
 	function setRecordPointsPage(nextPage: number) {
 		recordPointsPage = nextPage;
+	}
+
+	function setMyRecordPointsPage(nextPage: number) {
+		myRecordPointsPage = nextPage;
 	}
 
 	function selectLeaderboardPlayer(player: LeaderboardPlayer) {
@@ -659,6 +675,8 @@
 	}
 
 	async function handleFilterChange(event: CustomEvent) {
+		const finishApplying = typeof event.detail.done === 'function' ? event.detail.done : null;
+
 		filters = {
 			topStart: event.detail.topStart ?? null,
 			topEnd: event.detail.topEnd ?? null,
@@ -672,6 +690,7 @@
 		};
 
 		if (!list) {
+			finishApplying?.();
 			return;
 		}
 
@@ -710,6 +729,8 @@
 			if (fetchKey === listLevelsFetchKey) {
 				listLevelsLoading = false;
 			}
+
+			finishApplying?.();
 		}
 	}
 
@@ -844,35 +865,41 @@
 		}
 	}
 
+	async function requestRecordPoints(uid: string, pageNumber: number) {
+		const query = new URLSearchParams({
+			start: String((pageNumber - 1) * 50),
+			end: String(pageNumber * 50 - 1),
+			uid
+		});
+		const headers = $user.loggedIn
+			? {
+					Authorization: `Bearer ${await $user.token()}`
+				}
+			: undefined;
+		const res = await fetch(
+			`${import.meta.env.VITE_API_URL}/lists/${$page.params.id}/records?${query.toString()}`,
+			{
+				headers
+			}
+		);
+		const payload = await res.json().catch(() => null);
+
+		if (!res.ok) {
+			throw new Error(payload?.error || $_('custom_lists.detail.records.failed_load'));
+		}
+
+		return payload;
+	}
+
 	async function fetchRecordPoints(fetchKey: string, uid: string, pageNumber: number) {
 		recordPointsLoading = true;
 		recordPointsError = '';
 
 		try {
-			const query = new URLSearchParams({
-				start: String((pageNumber - 1) * 50),
-				end: String(pageNumber * 50 - 1),
-				uid
-			});
-			const headers = $user.loggedIn
-				? {
-						Authorization: `Bearer ${await $user.token()}`
-					}
-				: undefined;
-			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/lists/${$page.params.id}/records?${query.toString()}`,
-				{
-					headers
-				}
-			);
-			const payload = await res.json().catch(() => null);
+			const payload = await requestRecordPoints(uid, pageNumber);
 
 			if (fetchKey !== recordPointsFetchKey) {
 				return;
-			}
-
-			if (!res.ok) {
-				throw new Error(payload?.error || $_('custom_lists.detail.records.failed_load'));
 			}
 
 			recordPoints = payload?.data ?? [];
@@ -894,6 +921,36 @@
 		}
 	}
 
+	async function fetchMyRecordPoints(fetchKey: string, uid: string, pageNumber: number) {
+		myRecordPointsLoading = true;
+		myRecordPointsError = '';
+
+		try {
+			const payload = await requestRecordPoints(uid, pageNumber);
+
+			if (fetchKey !== myRecordPointsFetchKey) {
+				return;
+			}
+
+			myRecordPoints = payload?.data ?? [];
+			myRecordPointsCount = payload?.total ?? 0;
+			myRecordPointsError = '';
+		} catch (error) {
+			if (fetchKey !== myRecordPointsFetchKey) {
+				return;
+			}
+
+			myRecordPoints = [];
+			myRecordPointsCount = 0;
+			myRecordPointsError =
+				error instanceof Error ? error.message : $_('custom_lists.detail.records.failed_load');
+		} finally {
+			if (fetchKey === myRecordPointsFetchKey) {
+				myRecordPointsLoading = false;
+			}
+		}
+	}
+
 	$: canManageList = Boolean(
 		list &&
 			(list.permissions?.canEditSettings ||
@@ -905,9 +962,18 @@
 	$: listCardType = list?.isPlatformer ? 'pl' : 'dl';
 	$: canStarList = Boolean(list && list.id > 0 && list.visibility !== 'private');
 	$: canShowCommunity = Boolean(list && list.visibility !== 'private' && list.communityEnabled);
+	$: canShowLeaderboard = Boolean(list && list.leaderboardEnabled !== false);
+	$: canShowMyRecord = Boolean(canShowLeaderboard && $user.loggedIn && $user.data?.uid);
 	$: requestedTab = getRequestedTab($page.url.searchParams);
 	$: activeLeaderboardPage = getRequestedLeaderboardPage($page.url.searchParams);
-	$: activeTab = requestedTab === 'community' && !canShowCommunity ? 'levels' : requestedTab;
+	$: activeTab =
+		requestedTab === 'community' && !canShowCommunity
+			? 'levels'
+			: requestedTab === 'leaderboard' && !canShowLeaderboard
+				? 'levels'
+				: requestedTab === 'my-record' && !canShowMyRecord
+					? 'levels'
+					: requestedTab;
 	$: selectedLeaderboardPlayer =
 		(leaderboard.find((player) => player.uid === selectedLeaderboardPlayerUid) as
 			| LeaderboardPlayer
@@ -923,12 +989,34 @@
 			fetchRelatedPosts(list.id);
 		}
 	}
-	$: if (list?.id && activeTab === 'leaderboard') {
+	$: if (!canShowLeaderboard) {
+		leaderboard = [];
+		leaderboardCount = 0;
+		leaderboardFetchKey = '';
+		recordPoints = [];
+		recordPointsCount = 0;
+		recordPointsFetchKey = '';
+		recordPointsDialogOpen = false;
+	}
+	$: if (!canShowMyRecord) {
+		myRecordPoints = [];
+		myRecordPointsCount = 0;
+		myRecordPointsFetchKey = '';
+	}
+	$: if (list?.id && canShowLeaderboard && activeTab === 'leaderboard') {
 		const nextKey = `${list.id}:${activeLeaderboardPage}:${$user.loggedIn ? $user.data?.uid || 'authed' : 'anon'}`;
 
 		if (nextKey !== leaderboardFetchKey) {
 			leaderboardFetchKey = nextKey;
 			fetchLeaderboard(nextKey);
+		}
+	}
+	$: if (list?.id && canShowMyRecord && activeTab === 'my-record' && $user.data?.uid) {
+		const nextKey = `${list.id}:${$user.data.uid}:${myRecordPointsPage}:${$user.loggedIn ? $user.data?.uid || 'authed' : 'anon'}`;
+
+		if (nextKey !== myRecordPointsFetchKey) {
+			myRecordPointsFetchKey = nextKey;
+			fetchMyRecordPoints(nextKey, $user.data.uid, myRecordPointsPage);
 		}
 	}
 	$: if (!selectedLeaderboardPlayer && !leaderboardLoading) {
@@ -1119,9 +1207,16 @@
 					<Tabs.Trigger value="levels" on:click={() => switchTab('levels')}>
 						{$_('custom_lists.detail.tabs.levels')}
 					</Tabs.Trigger>
-					<Tabs.Trigger value="leaderboard" on:click={() => switchTab('leaderboard')}>
-						{$_('custom_lists.detail.tabs.leaderboard')}
-					</Tabs.Trigger>
+					{#if canShowLeaderboard}
+						<Tabs.Trigger value="leaderboard" on:click={() => switchTab('leaderboard')}>
+							{$_('custom_lists.detail.tabs.leaderboard')}
+						</Tabs.Trigger>
+					{/if}
+					{#if canShowMyRecord}
+						<Tabs.Trigger value="my-record" on:click={() => switchTab('my-record')}>
+							{$_('custom_lists.detail.tabs.my_record')}
+						</Tabs.Trigger>
+					{/if}
 					{#if canShowCommunity}
 						<Tabs.Trigger value="community" on:click={() => switchTab('community')}>
 							{$_('custom_lists.detail.tabs.community')}
@@ -1536,6 +1631,166 @@
 					{/if}
 				</div>
 			</Tabs.Content>
+
+			{#if canShowMyRecord}
+				<Tabs.Content value="my-record">
+					<div class="levelsSection">
+						<div class="leaderboardHeader">
+							<div>
+								<h2>{$_('custom_lists.detail.records.my_record_heading')}</h2>
+								<p class="leaderboardSubhead">
+									{list.mode === 'top'
+										? $_('custom_lists.detail.records.subhead_top')
+										: $_('custom_lists.detail.records.subhead_rating')}
+								</p>
+							</div>
+							<Badge variant="outline">{myRecordPointsCount}</Badge>
+						</div>
+
+						{#if myRecordPointsLoading}
+							<div class="emptyState slim">{$_('general.loading')}...</div>
+						{:else if myRecordPointsError}
+							<div class="emptyState slim">
+								<h3>{$_('custom_lists.detail.error_title')}</h3>
+								<p>{myRecordPointsError}</p>
+							</div>
+						{:else if myRecordPoints.length === 0}
+							<div class="emptyState slim">
+								<p>{$_('custom_lists.detail.records.empty')}</p>
+							</div>
+						{:else}
+							<div class="tableWrapper">
+								<Table.Root>
+									<Table.Header>
+										<Table.Row>
+											<Table.Head class="w-[70px]"
+												>{$_('custom_lists.detail.records.position_label')}</Table.Head
+											>
+											<Table.Head>{$_('custom_lists.detail.records.level_label')}</Table.Head>
+											<Table.Head class="w-[110px] text-right"
+												>{$_('custom_lists.detail.records.progress_label')}</Table.Head
+											>
+											<Table.Head class="w-[150px] text-right"
+												>{$_('custom_lists.detail.records.point_label')}</Table.Head
+											>
+										</Table.Row>
+									</Table.Header>
+									<Table.Body>
+										{#each myRecordPoints as entry}
+											<Table.Row>
+												<Table.Cell class="font-medium">#{entry.no}</Table.Cell>
+												<Table.Cell>
+													<div class="recordLevelName">
+														{entry.level?.name ||
+															$_('custom_lists.detail.level_badge', {
+																values: { id: entry.levelId }
+															})}
+													</div>
+													{#if entry.level?.creator}
+														<div class="recordLevelMeta">{entry.level.creator}</div>
+													{/if}
+												</Table.Cell>
+												<Table.Cell class="text-right"
+													>{formatRecordProgress(entry.progress)}</Table.Cell
+												>
+												<Table.Cell class="text-right">
+													<div class="recordPointCell">
+														<span>{formatPoint(entry.point)}</span>
+														<Popover.Root>
+															<Popover.Trigger
+																class="recordPointInfo"
+																aria-label={$_('custom_lists.detail.records.variable_values_label')}
+															>
+																<Info class="h-3.5 w-3.5" />
+															</Popover.Trigger>
+															<Popover.Content class="recordPointPopover" align="end">
+																<div class="recordPointPopoverTitle">
+																	{$_('custom_lists.detail.records.variable_values_label')}
+																</div>
+																<div class="recordPointPopoverGrid">
+																	<div>
+																		<span>{$_('custom_lists.formula.position_label')}</span>
+																		<span>{formatFormulaScopeValue('position', entry.formulaScope.position)}</span>
+																	</div>
+																	<div>
+																		<span>{$_('custom_lists.formula.level_count_label')}</span>
+																		<span>{formatFormulaScopeValue('levelCount', entry.formulaScope.levelCount)}</span>
+																	</div>
+																	{#if list.mode === 'top'}
+																		<div>
+																			<span>{$_('custom_lists.formula.top_label')}</span>
+																			<span>{formatFormulaScopeValue('top', entry.formulaScope.top)}</span>
+																		</div>
+																	{:else}
+																		<div>
+																			<span>{$_('custom_lists.formula.rating_label')}</span>
+																			<span>{formatFormulaScopeValue('rating', entry.formulaScope.rating)}</span>
+																		</div>
+																	{/if}
+																	<div>
+																		<span>{list.isPlatformer ? $_('custom_lists.formula.time_label') : $_('custom_lists.formula.progress_label')}</span>
+																		<span>{formatFormulaScopeValue('progress', entry.formulaScope.progress)}</span>
+																	</div>
+																	<div>
+																		<span>
+																			{list.isPlatformer
+																				? $_('custom_lists.formula.base_time_label')
+																				: $_('custom_lists.formula.min_progress_label')}
+																		</span>
+																		<span>{formatFormulaScopeValue('minProgress', entry.formulaScope.minProgress)}</span>
+																	</div>
+																</div>
+															</Popover.Content>
+														</Popover.Root>
+													</div>
+												</Table.Cell>
+											</Table.Row>
+										{/each}
+									</Table.Body>
+								</Table.Root>
+							</div>
+
+							<Pagination.Root
+								count={myRecordPointsCount}
+								perPage={50}
+								page={myRecordPointsPage}
+								let:pages={myRecordPointsPages}
+								let:currentPage={myRecordPointsCurrentPage}
+							>
+								<Pagination.Content>
+									<Pagination.Item>
+										<Pagination.PrevButton
+											on:click={() => setMyRecordPointsPage(Math.max(1, myRecordPointsCurrentPage - 1))}
+										/>
+									</Pagination.Item>
+									{#each myRecordPointsPages as p (p.key)}
+										{#if p.type === 'ellipsis'}
+											<Pagination.Item>
+												<Pagination.Ellipsis />
+											</Pagination.Item>
+										{:else}
+											<Pagination.Item isVisible={myRecordPointsCurrentPage == p.value}>
+												<Pagination.Link
+													page={p}
+													isActive={myRecordPointsCurrentPage == p.value}
+													on:click={() => setMyRecordPointsPage(p.value)}
+												>
+													{p.value}
+												</Pagination.Link>
+											</Pagination.Item>
+										{/if}
+									{/each}
+									<Pagination.Item>
+										<Pagination.NextButton
+											on:click={() => setMyRecordPointsPage(myRecordPointsCurrentPage + 1)}
+										/>
+									</Pagination.Item>
+								</Pagination.Content>
+							</Pagination.Root>
+						{/if}
+					</div>
+				</Tabs.Content>
+			{/if}
 
 			{#if canShowCommunity}
 				<Tabs.Content value="community">

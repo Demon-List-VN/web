@@ -1815,6 +1815,7 @@
       "tabs": {
         "levels": "Levels",
         "leaderboard": "Leaderboard",
+        "my_record": "My record",
         "records": "Record points",
         "community": "Community posts"
       },
@@ -1830,6 +1831,7 @@
       },
       "records": {
         "heading": "{title} record points",
+        "my_record_heading": "My record points",
         "subhead_top": "Each eligible record's final points are precalculated directly from the MathJS formula when the leaderboard is refreshed.",
         "subhead_rating": "Each eligible record's final points are precalculated directly from the MathJS formula when the leaderboard is refreshed.",
         "position_label": "Position",
@@ -1886,6 +1888,8 @@
         "logo_url_hint": "Optional image URL that replaces the navbar logo on this list page.",
         "logo_upload_button": "Upload logo",
         "asset_upload_hint": "Upload an image file. Uploaded files fill this setting automatically; save changes to apply them.",
+        "leaderboard_enabled_label": "Leaderboard",
+        "leaderboard_enabled_hint": "Enable ranked player standings and the My record tab for this list.",
         "top_enabled_label": "Show level top",
         "top_enabled_hint": "Show each level's list position on level cards and on the level detail list badges.",
         "preview_heading": "Preview",

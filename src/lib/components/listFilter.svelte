@@ -7,7 +7,7 @@
 	import { Switch } from '$lib/components/ui/switch';
 	import { Badge } from '$lib/components/ui/badge';
 	import { createEventDispatcher, onMount } from 'svelte';
-	import { Pin, ChevronDown, Filter, Funnel, X } from 'lucide-svelte';
+	import { Pin, ChevronDown, Filter, Funnel, Loader2, X } from 'lucide-svelte';
 	import { browser } from '$app/environment';
 	import { _ } from 'svelte-i18n';
 
@@ -22,6 +22,8 @@
 	let sortBy = '';
 	let isPinned = false;
 	let isCollapsed = true;
+	let applying = false;
+	let applyRequestId = 0;
 	let ascending = listType !== 'cl';
 
 	// Tag system
@@ -66,6 +68,12 @@
 	}
 
 	function handleApplyFilters() {
+		if (applying) return;
+
+		const requestId = applyRequestId + 1;
+		applyRequestId = requestId;
+		applying = true;
+
 		dispatch('filter', {
 			topStart: topStart.trim() === '' ? null : topStart,
 			topEnd: topEnd.trim() === '' ? null : topEnd,
@@ -75,7 +83,12 @@
 			creatorSearch: creatorSearch.trim(),
 			sortBy: sortBy.trim() === '' ? null : sortBy,
 			ascending: ascending,
-			tagIds: selectedTagIds.length > 0 ? selectedTagIds.join(',') : null
+			tagIds: selectedTagIds.length > 0 ? selectedTagIds.join(',') : null,
+			done: () => {
+				if (requestId === applyRequestId) {
+					applying = false;
+				}
+			}
 		});
 	}
 
@@ -249,7 +262,12 @@
 					{/if}
 				</div>
 				<div class="filterActions">
-					<Button on:click={handleApplyFilters}>{$_('list_filter.apply')}</Button>
+					<Button on:click={handleApplyFilters} disabled={applying}>
+						{#if applying}
+							<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+						{/if}
+						{$_('list_filter.apply')}
+					</Button>
 					<Button variant="outline" on:click={handleClearFilters}>{$_('list_filter.clear')}</Button>
 				</div>
 			</Card.Content>

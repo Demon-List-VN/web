@@ -177,6 +177,7 @@
 		bannerUrl?: string | null;
 		borderColor?: string | null;
 		communityEnabled: boolean;
+		leaderboardEnabled?: boolean;
 		faviconUrl?: string | null;
 		isBanned: boolean;
 		isPlatformer: boolean;
@@ -292,6 +293,7 @@
 		bannerUrl: string;
 		borderColor: string;
 		communityEnabled: boolean;
+		leaderboardEnabled: boolean;
 		levelSubmissionEnabled: boolean;
 		faviconUrl: string;
 		isPlatformer: boolean;
@@ -409,6 +411,7 @@
 		bannerUrl: '',
 		borderColor: '',
 		communityEnabled: true,
+		leaderboardEnabled: true,
 		levelSubmissionEnabled: false,
 		faviconUrl: '',
 		isPlatformer: false,
@@ -476,6 +479,7 @@
 		editForm.bannerUrl = list.bannerUrl || '';
 		editForm.borderColor = list.borderColor || '';
 		editForm.communityEnabled = list.communityEnabled;
+		editForm.leaderboardEnabled = list.leaderboardEnabled ?? true;
 		editForm.levelSubmissionEnabled = list.levelSubmissionEnabled ?? false;
 		editForm.faviconUrl = list.faviconUrl || '';
 		editForm.isPlatformer = list.isPlatformer;
@@ -517,6 +521,7 @@
 			bannerUrl: currentList.bannerUrl || '',
 			borderColor: currentList.borderColor || '',
 			communityEnabled: currentList.communityEnabled,
+			leaderboardEnabled: currentList.leaderboardEnabled ?? true,
 			levelSubmissionEnabled: currentList.levelSubmissionEnabled ?? false,
 			faviconUrl: currentList.faviconUrl || '',
 			isPlatformer: currentList.isPlatformer,
@@ -543,6 +548,7 @@
 			bannerUrl: currentForm.bannerUrl,
 			borderColor: currentForm.borderColor,
 			communityEnabled: currentForm.communityEnabled,
+			leaderboardEnabled: currentForm.leaderboardEnabled,
 			levelSubmissionEnabled: currentForm.levelSubmissionEnabled,
 			faviconUrl: currentForm.faviconUrl,
 			isPlatformer: currentForm.isPlatformer,
@@ -1419,6 +1425,7 @@
 			bannerUrl: editForm.bannerUrl,
 			borderColor: editForm.borderColor,
 			communityEnabled: editForm.communityEnabled,
+			leaderboardEnabled: editForm.leaderboardEnabled,
 			levelSubmissionEnabled: editForm.levelSubmissionEnabled,
 			faviconUrl: editForm.faviconUrl,
 			isPlatformer: editForm.isPlatformer,
@@ -2280,6 +2287,7 @@
 		if (field === 'bannerUrl') return $_('custom_lists.detail.edit.banner_url_label');
 		if (field === 'borderColor') return $_('custom_lists.detail.edit.border_color_label');
 		if (field === 'communityEnabled') return $_('custom_lists.detail.edit.community_label');
+		if (field === 'leaderboardEnabled') return $_('custom_lists.detail.edit.leaderboard_enabled_label');
 		if (field === 'faviconUrl') return $_('custom_lists.detail.edit.favicon_url_label');
 		if (field === 'isPlatformer') return $_('custom_lists.detail.edit.type_label');
 		if (field === 'levelSubmissionEnabled') return $_('custom_lists.detail.edit.level_submission_label');
@@ -2344,7 +2352,7 @@
 		}
 
 		if (
-			(field === 'communityEnabled' || field === 'topEnabled' || field === 'levelSubmissionEnabled')
+			(field === 'communityEnabled' || field === 'leaderboardEnabled' || field === 'topEnabled' || field === 'levelSubmissionEnabled')
 			&& typeof value === 'boolean'
 		) {
 			return value ? $_('general.yes') : $_('general.no');
@@ -2790,6 +2798,7 @@
 				|| editableSettingsSnapshot.recordFilterMinRefreshRate !== savedSettingsSnapshot.recordFilterMinRefreshRate
 				|| editableSettingsSnapshot.recordFilterMaxRefreshRate !== savedSettingsSnapshot.recordFilterMaxRefreshRate
 				|| editableSettingsSnapshot.recordFilterManualAcceptanceOnly !== savedSettingsSnapshot.recordFilterManualAcceptanceOnly
+				|| editableSettingsSnapshot.leaderboardEnabled !== savedSettingsSnapshot.leaderboardEnabled
 			)
 		);
 		let nextList = list;

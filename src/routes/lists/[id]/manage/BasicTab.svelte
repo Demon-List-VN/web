@@ -67,6 +67,18 @@
 			<div class="field">
 				<div class="switchRow">
 					<div>
+						<label for="list-leaderboard-enabled">{$_('custom_lists.detail.edit.leaderboard_enabled_label')}</label>
+						<p class="hint">{$_('custom_lists.detail.edit.leaderboard_enabled_hint')}</p>
+					</div>
+					<div class="switchControl">
+						<span class="switchLabel">{editForm.leaderboardEnabled ? $_('general.yes') : $_('general.no')}</span>
+						<Switch id="list-leaderboard-enabled" bind:checked={editForm.leaderboardEnabled} />
+					</div>
+				</div>
+			</div>
+			<div class="field">
+				<div class="switchRow">
+					<div>
 						<label for="list-level-submission-enabled">{$_('custom_lists.detail.edit.level_submission_label')}</label>
 						<p class="hint">{$_('custom_lists.detail.edit.level_submission_hint')}</p>
 					</div>
