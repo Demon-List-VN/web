@@ -42,7 +42,8 @@
 		Star,
 		MessageSquare,
 		RefreshCw,
-		ChevronUp
+		ChevronUp,
+		Users
 	} from 'lucide-svelte';
 	import { onDestroy, onMount } from 'svelte';
 	import { fly } from 'svelte/transition';
@@ -72,6 +73,21 @@
 		canViewMembers?: boolean;
 	};
 
+	type CustomListMember = {
+		id: number;
+		uid: string;
+		role: 'admin' | 'helper';
+		playerData?: any | null;
+	};
+
+	type PublicStaffRole = 'owner' | 'admin' | 'helper';
+
+	type PublicStaffEntry = {
+		uid: string;
+		role: PublicStaffRole;
+		playerData?: any | null;
+	};
+
 	type CustomList = {
 		id: number;
 		slug?: string | null;
@@ -89,6 +105,7 @@
 		isPlatformer: boolean;
 		isOfficial?: boolean;
 		levelSubmissionEnabled?: boolean;
+		staffListEnabled?: boolean;
 		logoUrl?: string | null;
 		topEnabled?: boolean;
 		visibility: 'private' | 'unlisted' | 'public';
@@ -99,6 +116,7 @@
 		starCount?: number;
 		starred?: boolean;
 		ownerData?: any;
+		members?: CustomListMember[];
 		permissions?: CustomListPermissionFlags;
 		rankBadges?: CustomListRankBadge[];
 		weightFormula?: string;
@@ -144,7 +162,7 @@
 		name: string;
 	} & Record<string, any>;
 
-	type DetailTab = 'levels' | 'leaderboard' | 'my-record' | 'community';
+	type DetailTab = 'levels' | 'leaderboard' | 'my-record' | 'staff' | 'community';
 
 	let list: CustomList | null = data?.list ?? null;
 	let loadingError = data?.error ?? '';
@@ -184,6 +202,7 @@
 	let reachedEnd = false;
 	let showScrollToTop = false;
 	let crawlingPointercrateMirror = false;
+	let publicStaffEntries: PublicStaffEntry[] = [];
 
 	type LevelFilters = {
 		topStart: string | null;
@@ -253,6 +272,66 @@
 	function getModeIcon(mode: string) {
 		return mode === 'top' ? ListOrdered : Star;
 	}
+
+	function shouldHideOwnerInfo(
+		currentList: Pick<CustomList, 'id' | 'isOfficial' | 'isMirror'> | null | undefined
+	) {
+		return Boolean(
+			currentList?.isOfficial ||
+				currentList?.isMirror ||
+				isPointercrateMirrorList(currentList)
+		);
+	}
+
+	function getStaffRoleLabel(role: PublicStaffRole) {
+		if (role === 'owner') return $_('custom_lists.manage.roles.owner');
+		if (role === 'admin') return $_('custom_lists.manage.roles.admin');
+		return $_('custom_lists.manage.roles.helper');
+	}
+
+	function getPublicStaffEntries(currentList: CustomList | null) {
+		if (!currentList?.staffListEnabled) {
+			return [] as PublicStaffEntry[];
+		}
+
+		const entries: PublicStaffEntry[] = [];
+		const seen = new Set<string>();
+
+		const pushEntry = (entry: PublicStaffEntry) => {
+			if (!entry.uid || seen.has(entry.uid)) {
+				return;
+			}
+
+			seen.add(entry.uid);
+			entries.push(entry);
+		};
+
+		pushEntry({
+			uid: currentList.owner,
+			role: 'owner',
+			playerData: currentList.ownerData ?? null
+		});
+
+		for (const member of currentList.members ?? []) {
+			pushEntry({
+				uid: member.uid,
+				role: member.role,
+				playerData: member.playerData ?? null
+			});
+		}
+
+		return entries;
+	}
+
+	function shouldShowStaffSection(currentList: CustomList | null, entries: PublicStaffEntry[]) {
+		if (!currentList?.staffListEnabled || !entries.length) {
+			return false;
+		}
+
+		return shouldHideOwnerInfo(currentList) || entries.length > 1;
+	}
+
+	$: publicStaffEntries = getPublicStaffEntries(list);
 
 	function isHexColor(value: string | null | undefined) {
 		return typeof value === 'string' && /^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(value.trim());
@@ -357,6 +436,7 @@
 
 		if (tab === 'leaderboard') return 'leaderboard';
 		if (tab === 'my-record') return 'my-record';
+		if (tab === 'staff') return 'staff';
 		if (tab === 'records') return 'leaderboard';
 		if (tab === 'community') return 'community';
 		return 'levels';
@@ -1045,6 +1125,7 @@
 	$: canShowCommunity = Boolean(list && list.visibility !== 'private' && list.communityEnabled);
 	$: canShowLeaderboard = Boolean(list && list.leaderboardEnabled !== false);
 	$: canShowMyRecord = Boolean(canShowLeaderboard && $user.loggedIn && $user.data?.uid);
+	$: canShowStaffTab = Boolean(shouldShowStaffSection(list, publicStaffEntries));
 	$: requestedTab = getRequestedTab($page.url.searchParams);
 	$: activeLeaderboardPage = getRequestedLeaderboardPage($page.url.searchParams);
 	$: activeTab =
@@ -1054,7 +1135,9 @@
 				? 'levels'
 				: requestedTab === 'my-record' && !canShowMyRecord
 					? 'levels'
-					: requestedTab;
+					: requestedTab === 'staff' && !canShowStaffTab
+						? 'levels'
+						: requestedTab;
 	$: selectedLeaderboardPlayer =
 		(leaderboard.find((player) => player.uid === selectedLeaderboardPlayerUid) as
 			| LeaderboardPlayer
@@ -1250,7 +1333,7 @@
 			</div>
 
 			<div class="heroMeta">
-				{#if list.ownerData}
+				{#if list.ownerData && !shouldHideOwnerInfo(list)}
 					<span class="metaChip">
 						{$_('custom_lists.index.browse.by')}
 						<span class="metaOwner">
@@ -1299,6 +1382,7 @@
 				<Clock class="h-3.5 w-3.5" />
 				{$_('custom_lists.detail.updated', { values: { date: formatDate(list.updated_at) } })}
 			</p>
+
 		</div>
 
 		<Ads dataAdFormat="auto" />
@@ -1317,6 +1401,11 @@
 					{#if canShowMyRecord}
 						<Tabs.Trigger value="my-record" on:click={() => switchTab('my-record')}>
 							{$_('custom_lists.detail.tabs.my_record')}
+						</Tabs.Trigger>
+					{/if}
+					{#if canShowStaffTab}
+						<Tabs.Trigger value="staff" on:click={() => switchTab('staff')}>
+							{$_('custom_lists.detail.tabs.staff')}
 						</Tabs.Trigger>
 					{/if}
 					{#if canShowCommunity}
@@ -1968,6 +2057,42 @@
 				</Tabs.Content>
 			{/if}
 
+			{#if canShowStaffTab}
+				<Tabs.Content value="staff">
+					<div class="levelsSection staffSection">
+						<div class="sectionHeader sectionHeaderWrap staffHeader">
+							<div>
+								<div class="staffHeadingRow">
+									<Users class="h-4 w-4" />
+									<h2>{$_('custom_lists.detail.staff.heading')}</h2>
+								</div>
+								<p class="staffHint">{$_('custom_lists.detail.staff.hint')}</p>
+							</div>
+							<Badge variant="outline">{publicStaffEntries.length}</Badge>
+						</div>
+
+						<div class="staffGrid">
+							{#each publicStaffEntries as staffMember}
+								<article class="staffCard">
+									<div class="staffCardTop">
+										<div class="staffName">
+											{#if staffMember.playerData}
+												<PlayerLink player={staffMember.playerData} />
+											{:else}
+												<span>{staffMember.uid}</span>
+											{/if}
+										</div>
+										<span class="staffRole">
+											<Badge variant="outline">{getStaffRoleLabel(staffMember.role)}</Badge>
+										</span>
+									</div>
+								</article>
+							{/each}
+						</div>
+					</div>
+				</Tabs.Content>
+			{/if}
+
 			{#if canShowCommunity}
 				<Tabs.Content value="community">
 					<div class="levelsSection">
@@ -2185,6 +2310,74 @@
 		margin: 0;
 		font-size: 0.8rem;
 		color: var(--custom-surface-muted, hsl(var(--muted-foreground)));
+	}
+
+	.staffSection {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		padding: 18px 20px;
+		border-radius: 16px;
+		border: 1px solid hsl(var(--border));
+		background: hsl(var(--card));
+	}
+
+	.staffHeader {
+		align-items: flex-start;
+	}
+
+	.staffHeadingRow {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.staffHeadingRow h2 {
+		margin: 0;
+		font-size: 1.05rem;
+		font-weight: 600;
+	}
+
+	.staffHint {
+		margin: 6px 0 0;
+		font-size: 0.9rem;
+		color: hsl(var(--muted-foreground));
+	}
+
+	.staffGrid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+		gap: 10px;
+	}
+
+	.staffCard {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		padding: 12px 14px;
+		border-radius: 14px;
+		border: 1px solid hsl(var(--border));
+		background: hsl(var(--background));
+	}
+
+	.staffCardTop {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
+	}
+
+	.staffName {
+		min-width: 0;
+		font-weight: 600;
+	}
+
+	.staffName :global(.wrapper) {
+		gap: 6px;
+	}
+
+	.staffRole {
+		white-space: nowrap;
 	}
 
 	/* Levels */

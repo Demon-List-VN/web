@@ -185,6 +185,7 @@
 		isPlatformer: boolean;
 		isOfficial?: boolean;
 		levelSubmissionEnabled?: boolean;
+		staffListEnabled?: boolean;
 		logoUrl?: string | null;
 		topEnabled?: boolean;
 		isMirror?: boolean;
@@ -300,6 +301,7 @@
 		communityEnabled: boolean;
 		leaderboardEnabled: boolean;
 		levelSubmissionEnabled: boolean;
+		staffListEnabled: boolean;
 		faviconUrl: string;
 		isPlatformer: boolean;
 		logoUrl: string;
@@ -439,6 +441,7 @@
 		communityEnabled: true,
 		leaderboardEnabled: true,
 		levelSubmissionEnabled: false,
+		staffListEnabled: true,
 		faviconUrl: '',
 		isPlatformer: false,
 		logoUrl: '',
@@ -525,6 +528,7 @@
 		editForm.communityEnabled = list.communityEnabled;
 		editForm.leaderboardEnabled = list.leaderboardEnabled ?? true;
 		editForm.levelSubmissionEnabled = list.levelSubmissionEnabled ?? false;
+		editForm.staffListEnabled = list.staffListEnabled ?? true;
 		editForm.faviconUrl = list.faviconUrl || '';
 		editForm.isPlatformer = list.isPlatformer;
 		editForm.logoUrl = list.logoUrl || '';
@@ -573,6 +577,7 @@
 			communityEnabled: currentList.communityEnabled,
 			leaderboardEnabled: currentList.leaderboardEnabled ?? true,
 			levelSubmissionEnabled: currentList.levelSubmissionEnabled ?? false,
+			staffListEnabled: currentList.staffListEnabled ?? true,
 			faviconUrl: currentList.faviconUrl || '',
 			isPlatformer: currentList.isPlatformer,
 			logoUrl: currentList.logoUrl || '',
@@ -601,6 +606,7 @@
 			communityEnabled: currentForm.communityEnabled,
 			leaderboardEnabled: currentForm.leaderboardEnabled,
 			levelSubmissionEnabled: currentForm.levelSubmissionEnabled,
+			staffListEnabled: currentForm.staffListEnabled,
 			faviconUrl: currentForm.faviconUrl,
 			isPlatformer: currentForm.isPlatformer,
 			logoUrl: currentForm.logoUrl,
@@ -1585,6 +1591,7 @@
 			communityEnabled: editForm.communityEnabled,
 			leaderboardEnabled: editForm.leaderboardEnabled,
 			levelSubmissionEnabled: editForm.levelSubmissionEnabled,
+			staffListEnabled: editForm.staffListEnabled,
 			faviconUrl: editForm.faviconUrl,
 			isPlatformer: editForm.isPlatformer,
 			logoUrl: editForm.logoUrl,
@@ -2573,6 +2580,8 @@
 		if (field === 'isPlatformer') return $_('custom_lists.detail.edit.type_label');
 		if (field === 'levelSubmissionEnabled')
 			return $_('custom_lists.detail.edit.level_submission_label');
+		if (field === 'staffListEnabled')
+			return $_('custom_lists.detail.edit.staff_list_label');
 		if (field === 'logoUrl') return $_('custom_lists.detail.edit.logo_url_label');
 		if (field === 'mode') return $_('custom_lists.detail.edit.mode_label');
 		if (field === 'rankBadges') return $_('custom_lists.detail.edit.rank_badges_label');
@@ -2649,7 +2658,8 @@
 			(field === 'communityEnabled' ||
 				field === 'leaderboardEnabled' ||
 				field === 'topEnabled' ||
-				field === 'levelSubmissionEnabled') &&
+				field === 'levelSubmissionEnabled' ||
+				field === 'staffListEnabled') &&
 			typeof value === 'boolean'
 		) {
 			return value ? $_('general.yes') : $_('general.no');

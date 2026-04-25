@@ -1852,6 +1852,7 @@
 				"levels": "Levels",
 				"leaderboard": "Bảng xếp hạng",
 				"my_record": "Record của tôi",
+				"staff": "Staff",
 				"records": "Điểm bản ghi",
 				"community": "Bài viết cộng đồng"
 			},
@@ -1879,6 +1880,10 @@
 				"empty": "Chưa có bản ghi hợp lệ nào.",
 				"failed_load": "Không thể tải điểm bản ghi"
 			},
+			"staff": {
+				"heading": "Nhóm quản lý",
+				"hint": "Liên hệ những người đang quản lý danh sách này."
+			},
 			"delete_confirm": "Xoá danh sách này? Hành động này không thể hoàn tác.",
 			"edit": {
 				"heading": "Chỉnh sửa thông tin",
@@ -1888,6 +1893,8 @@
 				"community_hint": "Cho phép gắn bài viết cộng đồng vào danh sách này.",
 				"level_submission_label": "Nộp level",
 				"level_submission_hint": "Cho phép người dùng đã đăng nhập gửi level vào hàng đợi duyệt của danh sách này.",
+				"staff_list_label": "Danh sách staff công khai",
+				"staff_list_hint": "Hiển thị owner và cộng tác viên trên trang danh sách công khai để người xem biết ai để liên hệ.",
 				"type_label": "Loại danh sách",
 				"type_hint": "Danh sách platformer chỉ nhận level platformer và hiển thị base time thay vì phần trăm tối thiểu.",
 				"visibility_label": "Chế độ hiển thị",

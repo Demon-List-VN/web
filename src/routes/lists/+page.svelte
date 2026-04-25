@@ -9,6 +9,7 @@
 	import { user } from '$lib/client';
 	import { toast } from 'svelte-sonner';
 	import PlayerLink from '$lib/components/playerLink.svelte';
+	import { isPointercrateMirrorList } from '$lib/client/pointercrateMirrorCrawler';
 	import {
 		Globe2,
 		Link as LinkIcon,
@@ -140,6 +141,10 @@
 
 	function getListHref(list: ListSummary) {
 		return `/lists/${list.slug || list.id}`;
+	}
+
+	function shouldHideOwnerInfo(list: Pick<ListSummary, 'id' | 'isOfficial' | 'isMirror'>) {
+		return Boolean(list.isOfficial || list.isMirror || isPointercrateMirrorList(list));
 	}
 
 	function isHexColor(value: string | null | undefined) {
@@ -568,7 +573,7 @@
 												<Clock class="h-3.5 w-3.5" />
 												{formatDate(list.updated_at)}
 											</span>
-											{#if list.ownerData}
+											{#if list.ownerData && !shouldHideOwnerInfo(list)}
 												<span class="ownerInfo">
 													{$_('custom_lists.index.browse.by')}
 													<PlayerLink player={list.ownerData} />
@@ -746,7 +751,7 @@
 											<Clock class="h-3.5 w-3.5" />
 											{formatDate(list.updated_at)}
 										</span>
-										{#if list.ownerData}
+										{#if list.ownerData && !shouldHideOwnerInfo(list)}
 											<span class="ownerInfo">
 												{$_('custom_lists.index.browse.by')}
 												<PlayerLink player={list.ownerData} />
@@ -923,7 +928,7 @@
 											<Clock class="h-3.5 w-3.5" />
 											{formatDate(list.updated_at)}
 										</span>
-										{#if list.ownerData}
+										{#if list.ownerData && !shouldHideOwnerInfo(list)}
 											<span class="ownerInfo">
 												{$_('custom_lists.index.browse.by')}
 												<PlayerLink player={list.ownerData} />
@@ -1248,7 +1253,7 @@
 												<Clock class="h-3.5 w-3.5" />
 												{formatDate(list.updated_at)}
 											</span>
-											{#if list.ownerData}
+											{#if list.ownerData && !shouldHideOwnerInfo(list)}
 												<span class="ownerInfo">
 													{$_('custom_lists.index.browse.by')}
 													<PlayerLink player={list.ownerData} />

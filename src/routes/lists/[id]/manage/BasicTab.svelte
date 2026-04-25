@@ -89,6 +89,18 @@
 				</div>
 			</div>
 			<div class="field">
+				<div class="switchRow">
+					<div>
+						<label for="list-staff-list-enabled">{$_('custom_lists.detail.edit.staff_list_label')}</label>
+						<p class="hint">{$_('custom_lists.detail.edit.staff_list_hint')}</p>
+					</div>
+					<div class="switchControl">
+						<span class="switchLabel">{editForm.staffListEnabled ? $_('general.yes') : $_('general.no')}</span>
+						<Switch id="list-staff-list-enabled" bind:checked={editForm.staffListEnabled} />
+					</div>
+				</div>
+			</div>
+			<div class="field">
 				<span class="fieldLabel">{$_('custom_lists.detail.edit.visibility_label')}</span>
 				<div class="optionRow">
 					{#each visibilityOptions as visibility}

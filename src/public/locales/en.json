@@ -1853,6 +1853,7 @@
 				"levels": "Levels",
 				"leaderboard": "Leaderboard",
 				"my_record": "My record",
+				"staff": "Staff",
 				"records": "Record points",
 				"community": "Community posts"
 			},
@@ -1880,6 +1881,10 @@
 				"empty": "No eligible records yet.",
 				"failed_load": "Failed to load record points"
 			},
+			"staff": {
+				"heading": "Staff",
+				"hint": "Contact the people maintaining this list."
+			},
 			"delete_confirm": "Delete this list? This cannot be undone.",
 			"edit": {
 				"heading": "Edit metadata",
@@ -1889,6 +1894,8 @@
 				"community_hint": "Allow community posts to be attached to this list.",
 				"level_submission_label": "Level submissions",
 				"level_submission_hint": "Allow signed-in users to submit levels into this list's review queue.",
+				"staff_list_label": "Public staff list",
+				"staff_list_hint": "Show the owner and collaborators on the public list page so viewers know who to contact.",
 				"type_label": "List type",
 				"type_hint": "Platformer lists only accept platformer levels and display base time instead of percentage minimums.",
 				"visibility_label": "Visibility",
