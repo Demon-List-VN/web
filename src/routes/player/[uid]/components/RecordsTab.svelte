@@ -22,7 +22,8 @@
 	};
 
 	type PlatformFilterValue = 'all' | 'pc' | 'mobile';
-	type RecordSortValue = 'date_submitted' | 'point';
+	type RecordSortValue = 'date_submitted' | 'point' | 'progress';
+	type RecordSortDirection = 'desc' | 'asc';
 
 	export let data: any;
 
@@ -32,6 +33,7 @@
 	let draftListId: number | null = null;
 	let draftPlatform: PlatformFilterValue = 'all';
 	let draftSortBy: RecordSortValue = 'date_submitted';
+	let draftSortDirection: RecordSortDirection = 'desc';
 	let draftShowAcceptedManually = true;
 	let draftShowAcceptedAuto = true;
 	let showAcceptedManually = true;
@@ -40,6 +42,7 @@
 	let appliedListId: number | null = null;
 	let appliedPlatform: PlatformFilterValue = 'all';
 	let appliedSortBy: RecordSortValue = 'date_submitted';
+	let appliedSortDirection: RecordSortDirection = 'desc';
 	let selectedListRecordsResponse: PlayerListRecordsResponse | null = null;
 	let selectedListRecordsLoadedForId: number | null = null;
 	let selectedListRecordsRequestId = 0;
@@ -52,8 +55,13 @@
 	] satisfies Array<SelectOption<PlatformFilterValue>>;
 	$: sortOptions = [
 		{ value: 'date_submitted', label: $_('player.filter.date_submitted') },
+		{ value: 'progress', label: $_('player.table.progress') },
 		{ value: 'point', label: $_('player.filter.point'), disabled: draftListId === null }
 	] satisfies Array<SelectOption<RecordSortValue>>;
+	$: sortDirectionOptions = [
+		{ value: 'desc', label: $_('player.filter.descending') },
+		{ value: 'asc', label: $_('player.filter.ascending') }
+	] satisfies Array<SelectOption<RecordSortDirection>>;
 	$: if (draftListId === null && draftSortBy === 'point') {
 		draftSortBy = 'date_submitted';
 	}
@@ -79,6 +87,9 @@
 		platformOptions.find((option) => option.value === draftPlatform) ?? platformOptions[0];
 	$: selectedSortOption =
 		sortOptions.find((option) => option.value === draftSortBy) ?? sortOptions[0];
+	$: selectedSortDirectionOption =
+		sortDirectionOptions.find((option) => option.value === draftSortDirection) ??
+		sortDirectionOptions[0];
 	$: acceptedRecords = records.filter((record: PlayerListRecordEntry) => isAcceptedRecord(record));
 	$: matchingRecords = acceptedRecords.filter(
 		(record: PlayerListRecordEntry) =>
@@ -86,7 +97,12 @@
 			matchesLevelIdFilter(record, appliedLevelId) &&
 			matchesPlatformFilter(record, appliedPlatform)
 	);
-	$: filteredRecords = sortRecords(matchingRecords, appliedSortBy, appliedListId !== null);
+	$: filteredRecords = sortRecords(
+		matchingRecords,
+		appliedSortBy,
+		appliedSortDirection,
+		appliedListId !== null
+	);
 	$: acceptedRecordTotal = acceptedRecords.length;
 	$: showRecordControls =
 		acceptedRecordTotal > 0 || appliedListId !== null || baseRecords.length > 0;
@@ -384,6 +400,7 @@
 		appliedListId = nextListId;
 		appliedPlatform = draftPlatform;
 		appliedSortBy = nextListId === null && draftSortBy === 'point' ? 'date_submitted' : draftSortBy;
+		appliedSortDirection = draftSortDirection;
 		showAcceptedManually = draftShowAcceptedManually;
 		showAcceptedAuto = draftShowAcceptedAuto;
 
@@ -445,6 +462,10 @@
 		draftSortBy = draftListId === null && nextSort === 'point' ? 'date_submitted' : nextSort;
 	}
 
+	function handleSortDirectionSelection(option: { value?: string } | undefined) {
+		draftSortDirection = (option?.value as RecordSortDirection) ?? 'desc';
+	}
+
 	function handleFilterKeydown(event: KeyboardEvent) {
 		if (event.key !== 'Enter') {
 			return;
@@ -482,9 +503,54 @@
 		return String(Math.round(value * 1000) / 1000);
 	}
 
+	function compareBySubmittedAt(
+		left: PlayerListRecordEntry,
+		right: PlayerListRecordEntry,
+		sortDirection: RecordSortDirection
+	) {
+		const submittedAtDiff = getSubmittedAtTime(right) - getSubmittedAtTime(left);
+
+		return sortDirection === 'asc' ? -submittedAtDiff : submittedAtDiff;
+	}
+
+	function compareByProgress(
+		left: PlayerListRecordEntry,
+		right: PlayerListRecordEntry,
+		sortDirection: RecordSortDirection
+	) {
+		const leftProgress = Number(left.progress);
+		const rightProgress = Number(right.progress);
+
+		if (!Number.isFinite(leftProgress) && !Number.isFinite(rightProgress)) {
+			return 0;
+		}
+
+		if (!Number.isFinite(leftProgress)) {
+			return 1;
+		}
+
+		if (!Number.isFinite(rightProgress)) {
+			return -1;
+		}
+
+		const leftIsPlatformer = isPlatformerRecord(left);
+		const rightIsPlatformer = isPlatformerRecord(right);
+
+		if (leftIsPlatformer && rightIsPlatformer) {
+			const progressDiff = leftProgress - rightProgress;
+
+			return sortDirection === 'asc' ? -progressDiff : progressDiff;
+		}
+
+		const progressDiff = rightProgress - leftProgress;
+
+		return sortDirection === 'asc' ? -progressDiff : progressDiff;
+	}
+
 	function sortRecords(
 		recordsToSort: PlayerListRecordEntry[],
 		sortBy: RecordSortValue,
+		sortDirection: RecordSortDirection,
 		canUsePointSort: boolean
 	) {
 		const nextRecords = [...recordsToSort];
@@ -507,13 +573,34 @@
 					return acceptanceDiff;
 				}
 
-				const pointDiff = (right.point ?? 0) - (left.point ?? 0);
+				const pointDiff =
+					sortDirection === 'asc'
+						? (left.point ?? 0) - (right.point ?? 0)
+						: (right.point ?? 0) - (left.point ?? 0);
 
 				if (pointDiff !== 0) {
 					return pointDiff;
 				}
 
-				return getSubmittedAtTime(right) - getSubmittedAtTime(left);
+				return compareBySubmittedAt(left, right, sortDirection);
+			});
+		}
+
+		if (sortBy === 'progress') {
+			return nextRecords.sort((left, right) => {
+				const acceptanceDiff = compareByManualAcceptance(left, right);
+
+				if (acceptanceDiff !== 0) {
+					return acceptanceDiff;
+				}
+
+				const progressDiff = compareByProgress(left, right, sortDirection);
+
+				if (progressDiff !== 0) {
+					return progressDiff;
+				}
+
+				return compareBySubmittedAt(left, right, sortDirection);
 			});
 		}
 
@@ -524,7 +611,7 @@
 				return acceptanceDiff;
 			}
 
-			return getSubmittedAtTime(right) - getSubmittedAtTime(left);
+			return compareBySubmittedAt(left, right, sortDirection);
 		});
 	}
 </script>
@@ -598,6 +685,24 @@
 								disabled={sortOption.disabled}
 							>
 								{sortOption.label}
+							</Select.Item>
+						{/each}
+					</Select.Content>
+				</Select.Root>
+			</div>
+			<div class="filterField">
+				<Label for="record-sort-direction-filter">{$_('player.filter.sort_order')}</Label>
+				<Select.Root
+					selected={selectedSortDirectionOption}
+					onSelectedChange={handleSortDirectionSelection}
+				>
+					<Select.Trigger id="record-sort-direction-filter" class="w-full min-w-[160px]">
+						<Select.Value placeholder={$_('player.filter.descending')} />
+					</Select.Trigger>
+					<Select.Content>
+						{#each sortDirectionOptions as sortDirectionOption}
+							<Select.Item value={sortDirectionOption.value} label={sortDirectionOption.label}>
+								{sortDirectionOption.label}
 							</Select.Item>
 						{/each}
 					</Select.Content>
