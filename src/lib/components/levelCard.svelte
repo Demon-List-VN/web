@@ -93,8 +93,10 @@
 	}
 
 	let levelCardStyle: string | undefined;
+	let resolvedHref = '#!';
 
 	export let id: LevelCardProps['id'] = null;
+	export let href: LevelCardProps['href'] = null;
 	export let videoID: LevelCardProps['videoID'] = null;
 	export let name: LevelCardProps['name'] = null;
 	export let rating: LevelCardProps['rating'] = null;
@@ -131,6 +133,8 @@
 
 		levelCardStyle = nextStyle.length ? nextStyle.join(' ') : undefined;
 	}
+
+	$: resolvedHref = typeof href === 'string' && href.length > 0 ? href : id != null ? `/level/${id}` : '#!';
 </script>
 
 {#if !loading}
@@ -139,7 +143,7 @@
 			<Card.Content>
 				<ContextMenu.Root>
 					<ContextMenu.Trigger>
-						<a href={`/level/${id}`} data-sveltekit-preload-data="tap">
+						<a href={resolvedHref} data-sveltekit-preload-data="tap">
 							<div class="relative flex h-[235px] justify-center">
 								<img
 									src={thumbnailUrl}
@@ -164,7 +168,7 @@
 						</a>
 						<div class="levelInfo relative h-[60px]">
 							<a
-								href={`/level/${id}`}
+								href={resolvedHref}
 								class="absolute inset-0 z-10"
 								data-sveltekit-preload-data="tap"							
 								aria-label={name || 'Level details'}							

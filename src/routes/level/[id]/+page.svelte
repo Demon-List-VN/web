@@ -34,6 +34,7 @@
 	let activeTab = 'records';
 	let levelTags: any[] = [];
 	let levelVariants: any[] = [];
+	let effectiveVideoId: string | null = null;
 
 	type StarredListEntry = {
 		id: number;
@@ -162,6 +163,10 @@
 
 		return data.level.isPlatformer ? $_('level.platformer_rating') : $_('level.classic_rating');
 	}
+
+	$: effectiveVideoId = 'level' in data
+		? (($page.url.searchParams.get('videoId') || '').trim() || data.level.videoID || null)
+		: null;
 
 	function hasStarredListPositionBadge(list: StarredListEntry) {
 		return list.topEnabled ?? list.mode === 'top';
@@ -395,7 +400,7 @@
 		property="og:image"
 		content={'pointercrate' in data
 			? `https://img.youtube.com/vi/${new URL(data.pointercrate.video).searchParams.get('v')}/0.jpg`
-			: `https://img.youtube.com/vi/${data.level.videoID}/mqdefault.jpg`}
+			: `https://img.youtube.com/vi/${effectiveVideoId}/mqdefault.jpg`}
 	/>
 </svelte:head>
 
@@ -404,7 +409,7 @@
 	class="bg"
 	src={'pointercrate' in data
 		? `https://img.youtube.com/vi/${new URL(data.pointercrate.video).searchParams.get('v')}/0.jpg`
-		: `https://img.youtube.com/vi/${data.level.videoID}/0.jpg`}
+		: `https://img.youtube.com/vi/${effectiveVideoId}/0.jpg`}
 	alt="thumbnail"
 />
 
@@ -520,7 +525,7 @@
 			<Card.Content>
 				{#if !('pointercrate' in data)}
 					<iframe
-						src={`https://www.youtube.com/embed/${data.level.videoID}?si=3M9vP_nLFlxX-0hE`}
+						src={`https://www.youtube.com/embed/${effectiveVideoId}?si=3M9vP_nLFlxX-0hE`}
 						title="YouTube video player"
 						frameborder="0"
 						allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"

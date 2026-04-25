@@ -233,6 +233,17 @@
 		return isPlatformer ? $_('custom_lists.type.platformer') : $_('custom_lists.type.classic');
 	}
 
+	function getLevelDetailHref(item: CustomListItem) {
+		const videoId = item.videoID ?? item.level?.videoID ?? null;
+
+		if (!videoId) {
+			return `/level/${item.levelId}`;
+		}
+
+		const params = new URLSearchParams({ videoId });
+		return `/level/${item.levelId}?${params.toString()}`;
+	}
+
 	function getVisibilityIcon(visibility: string) {
 		if (visibility === 'public') return Globe2;
 		if (visibility === 'unlisted') return EyeOff;
@@ -1342,6 +1353,7 @@
 									<LevelCard
 										{...toLevelCardProps(item.level, itemCardType, {
 											videoID: item.videoID ?? item.level.videoID ?? null,
+											href: getLevelDetailHref(item),
 											rating:
 												list.mode === 'rating'
 													? (item.rating ?? item.level.rating)
