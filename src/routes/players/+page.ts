@@ -1,4 +1,6 @@
-export async function load({ fetch }) {
+import type { PageLoad } from './$types';
+
+export async function load({ fetch }: Parameters<PageLoad>[0]) {
     const res: any = await (await fetch(`${import.meta.env.VITE_API_URL}/provinces`)).json()
 
     return {

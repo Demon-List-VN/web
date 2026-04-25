@@ -1,6 +1,7 @@
 import { error } from '@sveltejs/kit';
+import type { PageLoad } from './$types';
 
-export async function load({ params, fetch }) {
+export async function load({ params, fetch }: Parameters<PageLoad>[0]) {
 	const { id } = params;
 
 	try {

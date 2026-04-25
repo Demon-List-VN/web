@@ -1,4 +1,6 @@
-export async function load({ params, url, fetch }) {
+import type { PageLoad } from './$types';
+
+export async function load({ params, url, fetch }: Parameters<PageLoad>[0]) {
     const uidA = url.searchParams.get("a");
     const uidB = url.searchParams.get("b");
     const levelIDs: number[] = JSON.parse(url.searchParams.get("levels")!);

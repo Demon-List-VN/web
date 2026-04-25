@@ -1,4 +1,6 @@
-export async function load({ fetch }) {
+import type { PageLoad } from './$types';
+
+export async function load({ fetch }: Parameters<PageLoad>[0]) {
     // Note: This will be called without auth token initially
     // The actual authenticated fetch will be done on the client side if needed
     // For now, return empty array and let the page handle fetching with auth

@@ -1,4 +1,6 @@
-export async function load({ fetch }) {
+import type { PageLoad } from './$types';
+
+export async function load({ fetch }: Parameters<PageLoad>[0]) {
 	try {
 		const intervalMs = 30 * 24 * 60 * 60 * 1000; // 30 days
 		const [topBuyers, progress] = await Promise.all([

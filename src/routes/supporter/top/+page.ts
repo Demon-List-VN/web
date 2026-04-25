@@ -1,4 +1,6 @@
-export async function load({ fetch, url }) {
+import type { PageLoad } from './$types';
+
+export async function load({ fetch, url }: Parameters<PageLoad>[0]) {
 	const interval = url.searchParams.get('interval') || '30';
 	
 	let intervalMs: number;

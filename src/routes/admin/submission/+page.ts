@@ -1,4 +1,6 @@
-export async function load({ params, fetch }) {
+import type { PageLoad } from './$types';
+
+export async function load({ params, fetch }: Parameters<PageLoad>[0]) {
     const query = new URLSearchParams({
         end: '500',
         isChecked: 'false',

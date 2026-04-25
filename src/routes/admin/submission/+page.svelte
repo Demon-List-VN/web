@@ -15,6 +15,7 @@
 	export let data: PageData;
 
 	let originalData: PageData = {
+		...data,
 		data: []
 	};
 	let isOpen = false;
@@ -98,6 +99,7 @@
 
 	function filter(value: string) {
 		let filtered: PageData = {
+			...data,
 			data: []
 		};
 

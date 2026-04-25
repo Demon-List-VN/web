@@ -1,4 +1,6 @@
-export async function load({ params, fetch }) {
+import type { PageLoad } from './$types';
+
+export async function load({ params, fetch }: Parameters<PageLoad>[0]) {
     const [recordsRes, levelSubmissionsRes] = await Promise.all([
         fetch(`${import.meta.env.VITE_API_URL}/players/${params.uid}/submissions?end=500`),
         fetch(`${import.meta.env.VITE_API_URL}/level-submissions/user/${params.uid}`)

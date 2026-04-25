@@ -49,6 +49,7 @@
 
 	function handlePlayerSelect(event: CustomEvent<any>) {
 		loadPlayer(event.detail.uid, selectingFor);
+		selectorOpen = false;
 	}
 
 	function openSelector(slot: 1 | 2) {
@@ -432,12 +433,20 @@
 		</Card.Root>
 	{/if}
 
-	<!-- Player Selector -->
-	<PlayerSelector
-		bind:open={selectorOpen}
-		title="{$_('compare.select_player')} {selectingFor}"
-		on:select={handlePlayerSelect}
-	/>
+	{#if selectorOpen}
+		<div class="selector-overlay">
+			<button
+				type="button"
+				class="selector-backdrop"
+				aria-label="Close player selector"
+				on:click={() => (selectorOpen = false)}
+			></button>
+			<div class="selector-panel">
+				<h2>{$_('compare.select_player')} {selectingFor}</h2>
+				<PlayerSelector on:select={handlePlayerSelect} />
+			</div>
+		</div>
+	{/if}
 </div>
 
 <style lang="scss">
@@ -593,6 +602,40 @@
 		&:hover {
 			opacity: 0.8;
 			text-decoration: underline;
+		}
+	}
+
+	.selector-overlay {
+		position: fixed;
+		inset: 0;
+		z-index: 50;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 1rem;
+	}
+
+	.selector-backdrop {
+		position: absolute;
+		inset: 0;
+		border: 0;
+		background-color: rgb(0 0 0 / 0.55);
+	}
+
+	.selector-panel {
+		position: relative;
+		z-index: 1;
+		width: min(480px, 100%);
+		border: 1px solid hsl(var(--border));
+		border-radius: 0.5rem;
+		background-color: hsl(var(--background));
+		padding: 1rem;
+		box-shadow: 0 20px 40px rgb(0 0 0 / 0.25);
+
+		h2 {
+			margin-bottom: 1rem;
+			font-size: 1.125rem;
+			font-weight: 600;
 		}
 	}
 

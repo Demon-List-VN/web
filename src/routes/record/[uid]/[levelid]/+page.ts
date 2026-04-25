@@ -1,6 +1,8 @@
+import type { PageLoad } from './$types';
+
 export const ssr = false;
 
-export async function load({ params, url }) {
+export async function load({ params, url }: Parameters<PageLoad>[0]) {
 	return {
 		uid: params.uid,
 		levelid: params.levelid,

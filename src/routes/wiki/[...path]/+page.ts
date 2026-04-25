@@ -1,6 +1,7 @@
 import { redirect } from '@sveltejs/kit';
+import type { PageLoad } from './$types';
 
-export async function load({ fetch, params, url }) {
+export async function load({ fetch, params, url }: Parameters<PageLoad>[0]) {
 	const { path } = params;
 	const parts: string[] = path.split('/');
 	const locale = parts[0];
