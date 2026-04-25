@@ -63,6 +63,8 @@
 		} | null;
 	};
 
+	const DEATH_COUNT_AUTO_RECORD_SOURCE = 'Submitted via Death Count';
+
 	let record: any = null;
 	let deathCount: any = null;
 
@@ -180,6 +182,15 @@
 			.replace(/\.$/, '');
 	}
 
+	function isDeathCountAutoRecord(recordData: any) {
+		return Boolean(
+			recordData?.acceptedAuto
+			&& !recordData?.acceptedManually
+			&& recordData?.videoLink === DEATH_COUNT_AUTO_RECORD_SOURCE
+			&& recordData?.raw === DEATH_COUNT_AUTO_RECORD_SOURCE
+		);
+	}
+
 	function getPublicListHref(stat: RecordPublicListStat) {
 		return `/lists/${stat.list.slug || stat.list.id}`;
 	}
@@ -277,6 +288,45 @@
 				success: () => { goto(`/level/${record.data.levelid}`); return 'Deleted.'; },
 				loading: 'Deleting...',
 				error: 'An error occured'
+			}
+		);
+	}
+
+	async function resetDeathCount() {
+		if (!confirm('Reset death count for this player on this level?')) {
+			return;
+		}
+
+		const removesCurrentRecord = isDeathCountAutoRecord(record?.data);
+
+		toast.promise(
+			(async () => {
+				const response = await fetch(
+					`${import.meta.env.VITE_API_URL}/deathCount/${record.data.userid}/${record.data.levelid}`,
+					{
+						method: 'DELETE',
+						headers: {
+							Authorization: 'Bearer ' + (await $user.token())!
+						}
+					}
+				);
+
+				if (!response.ok) {
+					throw new Error((await response.text()) || 'Failed to reset death count');
+				}
+
+				if (removesCurrentRecord) {
+					goto(`/level/${record.data.levelid}`);
+					return;
+				}
+
+				await fetchData();
+			})(),
+			{
+				loading: 'Resetting death count...',
+				success: 'Death count reset.',
+				error: (error) =>
+					error instanceof Error ? error.message : 'Failed to reset death count'
 			}
 		);
 	}
@@ -843,6 +893,9 @@
 										<Switch bind:checked={record.data.mobile} />
 									</div>
 									<Button class="mt-2" on:click={applyEdit}>Apply</Button>
+									<Button variant="outline" on:click={resetDeathCount}>
+										<Activity size={14} />&nbsp;Reset Death Count
+									</Button>
 									<Button variant="destructive" on:click={deleteRecord}>
 										<Trash2 size={14} />&nbsp;Delete Record
 									</Button>

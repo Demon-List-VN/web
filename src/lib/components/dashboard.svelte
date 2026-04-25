@@ -9,7 +9,6 @@
 	import Gear from 'svelte-radix/Gear.svelte';
 	import ChevronDown from 'svelte-radix/ChevronDown.svelte';
 	import { _ } from 'svelte-i18n';
-	import RecordDetail from '$lib/components/recordDetail.svelte';
 	import DashboardSettings from '$lib/components/widgets/dashboardSettings.svelte';
 	import DashboardSearch from '$lib/components/widgets/dashboardSearch.svelte';
 	import DashboardWeather from '$lib/components/widgets/dashboardWeather.svelte';
@@ -24,9 +23,6 @@
 
 	// Check if user is a supporter
 	$: isSupporter = $user.loggedIn && isActive($user.data?.supporterUntil);
-
-	const selectedSubmission: any = null;
-	let recordDetailOpen = false;
 
 	let dashboardBg: string = '';
 	let overlayType: 'none' | 'dark' | 'blur' | 'both' = 'none';
@@ -390,14 +386,6 @@
 		</button>
 	</div>
 </div>
-
-{#if selectedSubmission && $user.data}
-	<RecordDetail
-		uid={$user.data.uid}
-		levelID={selectedSubmission.levelid}
-		bind:open={recordDetailOpen}
-	/>
-{/if}
 
 <style lang="scss">
 	.dashboard-hero {

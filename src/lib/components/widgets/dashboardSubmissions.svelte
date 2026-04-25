@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import * as Card from '$lib/components/ui/card';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { _ } from 'svelte-i18n';
@@ -15,6 +16,11 @@
 			.padStart(2, '0')}.${(progress % 1000)
 			.toString()
 			.padStart(3, '0')}`;
+	}
+
+	function getRecordDetailHref(submission: any) {
+		const recordQuery = submission?.id ? `?id=${submission.id}` : '';
+		return `/record/${submission.uid}/${submission.levelid}${recordQuery}`;
 	}
 </script>
 
@@ -53,10 +59,7 @@
 			<div class="space-y-1">
 				{#each submissions.slice(0, 3) as submission}
 					<button
-						on:click={() => {
-							const event = new CustomEvent('submissionSelected', { detail: submission });
-							window.dispatchEvent(event);
-						}}
+						on:click={() => goto(getRecordDetailHref(submission))}
 						class="flex w-full items-center gap-2 rounded-md p-1.5 transition-colors hover:bg-muted/50 sm:gap-3 sm:p-2"
 					>
 						<div class="flex-1 overflow-hidden">

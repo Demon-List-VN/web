@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { PageData } from '../../$types';
+	import { goto } from '$app/navigation';
 	import * as Select from '$lib/components/ui/select';
 	import { Button } from '$lib/components/ui/button';
-	import RecordDetail from '$lib/components/recordDetail.svelte';
 	import { _ } from 'svelte-i18n';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import { user } from '$lib/client';
@@ -23,9 +23,6 @@
 
 	$: isOwner = $user.loggedIn && $user.data?.uid === data.player.uid;
 	$: canCustomize = isOwner && isActive(data.player.supporterUntil);
-
-	let selectedRecord: { uid: string; levelID: number; recordId: number | null } | null = null;
-	let recordDetailOpen = false;
 
 	let isCustomizing = false;
 	let draggedCard: string | null = null;
@@ -135,9 +132,13 @@
 		await saveCardPositions(positions);
 	}
 
+	function getRecordDetailHref(uid: string, levelID: number, recordId: number | null = null) {
+		const recordQuery = recordId ? `?id=${recordId}` : '';
+		return `/record/${uid}/${levelID}${recordQuery}`;
+	}
+
 	function openRecordDetail(uid: string, levelID: number, recordId: number | null = null) {
-		selectedRecord = { uid, levelID, recordId };
-		recordDetailOpen = true;
+		goto(getRecordDetailHref(uid, levelID, recordId));
 	}
 
 	async function saveCardPositions(
@@ -208,16 +209,6 @@
 		}
 	});
 </script>
-
-{#if selectedRecord}
-	<RecordDetail
-		uid={selectedRecord.uid}
-		levelID={selectedRecord.levelID}
-		recordId={selectedRecord.recordId}
-		bind:open={recordDetailOpen}
-	/>
-{/if}
-
 {#if canCustomize}
 	<div class="customize-controls">
 		<Button

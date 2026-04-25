@@ -10,7 +10,6 @@
 	import imageCompression from 'browser-image-compression';
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import Markdown from '$lib/components/markdown.svelte';
-	import RecordDetail from '$lib/components/recordDetail.svelte';
 	import ReportDialog from './ReportDialog.svelte';
 	import MentionDropdown from './MentionDropdown.svelte';
 	import LevelPicker from './LevelPicker.svelte';
@@ -62,11 +61,6 @@
 	// Report state
 	let reportDialogOpen = false;
 	let reportTarget: { type: 'post' | 'comment'; id: number } | null = null;
-
-	// Record detail dialog state
-	let recordDialogOpen = false;
-	const recordDetailUid = '';
-	const recordDetailLevelID = 0;
 
 	// @ mention state
 	let showMentionDropdown = false;
@@ -156,6 +150,12 @@
 		const days = Math.floor(hours / 24);
 		if (days < 30) return `${days}d`;
 		return formatDate(dateStr);
+	}
+
+	function getAttachedRecordHref(attachedRecord: any) {
+		const uid = attachedRecord?.userid ?? attachedRecord?.uid ?? post?.uid;
+		const recordQuery = attachedRecord?.id ? `?id=${attachedRecord.id}` : '';
+		return uid ? `/record/${uid}/${attachedRecord.levelid}${recordQuery}` : '#';
 	}
 
 	async function getHeaders() {
@@ -878,7 +878,10 @@
 				{#if post.attachedRecord}
 					<!-- svelte-ignore a11y-click-events-have-key-events -->
 					<!-- svelte-ignore a11y-no-static-element-interactions -->
-					<div class="attachedCard clickable" on:click={() => (recordDialogOpen = true)}>
+					<div
+						class="attachedCard clickable"
+						on:click={() => goto(getAttachedRecordHref(post.attachedRecord))}
+					>
 						<Trophy class="h-5 w-5 text-amber-500" />
 						<div class="attachedInfo">
 							<strong>{post.attachedRecord.levelName}</strong>
@@ -1409,15 +1412,6 @@
 		</div>
 	{/if}
 </div>
-
-<!-- Record Detail -->
-{#if post?.attachedRecord}
-	<RecordDetail
-		uid={post.uid}
-		levelID={post.attachedRecord.levelid}
-		bind:open={recordDialogOpen}
-	/>
-{/if}
 
 <!-- Report Dialog -->
 <ReportDialog bind:open={reportDialogOpen} target={reportTarget} {apiPrefix} />

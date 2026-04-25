@@ -16,7 +16,6 @@
 	import StarFilled from 'svelte-radix/StarFilled.svelte';
 	import type { PageData } from './$types';
 	import PlayerHoverCard from '$lib/components/playerLink.svelte';
-	import RecordDetail from '$lib/components/recordDetail.svelte';
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { user } from '$lib/client';
@@ -57,12 +56,15 @@
 	};
 	let appliedMembersFilter = structuredClone(membersFilter);
 	let appliedRecordsFilter = structuredClone(recordsFilter);
-	let opened = false;
-	let uid: string, levelID: number;
 	let fileinput: any;
 	let membersState = 0;
 	let recordsState = 0;
 	let invitation: any = null;
+
+	function getRecordDetailHref(record: any) {
+		const recordQuery = record?.id ? `?id=${record.id}` : '';
+		return `/record/${record.players.uid}/${record.levels.id}${recordQuery}`;
+	}
 
 	function fetchMembers(e: any, append = false) {
 		membersState = 1;
@@ -371,7 +373,6 @@
 	on:change={(e) => getImage(e)}
 	bind:this={fileinput}
 />
-<RecordDetail {levelID} {uid} bind:open={opened} />
 
 <div class="wrapper mt-[-50px] min-h-[100vh] pt-[85px]">
 	{#if isActive(data.boostedUntil)}
@@ -628,14 +629,12 @@
 						{#each records as item, index}
 							<Table.Row
 								on:click={(e) => {
-									// @ts-expect-error
-									if (e.target.nodeName != 'TD') {
+									const target = e.target;
+									if (target instanceof HTMLElement && target.closest('a, button')) {
 										return;
 									}
 
-									uid = item.players.uid;
-									levelID = item.levels.id;
-									opened = true;
+									goto(getRecordDetailHref(item));
 								}}
 							>
 								<Table.Cell class="font-medium">

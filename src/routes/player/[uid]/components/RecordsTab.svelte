@@ -1,13 +1,14 @@
 <script lang="ts">
 	import * as Table from '$lib/components/ui/table';
 	import * as Select from '$lib/components/ui/select';
+	import { goto } from '$app/navigation';
 	import AcceptanceBadge from '$lib/components/AcceptanceBadge.svelte';
-	import RecordDetail from '$lib/components/recordDetail.svelte';
 	import ListSelector, { type ListSelectorOption } from '$lib/components/listSelector.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Switch } from '$lib/components/ui/switch';
+	import InfoCircled from 'svelte-radix/InfoCircled.svelte';
 	import { _ } from 'svelte-i18n';
 	import type {
 		PlayerListRecordEntry,
@@ -27,8 +28,6 @@
 
 	export let data: any;
 
-	let recordDetailOpened = false;
-	let selectedRecord: PlayerListRecordEntry | null = null;
 	let draftLevelId = '';
 	let draftListId: number | null = null;
 	let draftPlatform: PlatformFilterValue = 'all';
@@ -130,6 +129,11 @@
 		const seconds = Math.floor((ms % 60000) / 1000);
 		const milliseconds = ms % 1000;
 		return `${minutes}:${seconds.toString().padStart(2, '0')}.${milliseconds}`;
+	}
+
+	function getRecordDetailHref(record: PlayerListRecordEntry) {
+		const recordQuery = record.id ? `?id=${record.id}` : '';
+		return `/record/${record.uid}/${record.levelId}${recordQuery}`;
 	}
 
 	function isAcceptedRecord(record: PlayerListRecordEntry) {
@@ -615,16 +619,6 @@
 		});
 	}
 </script>
-
-{#if selectedRecord}
-	<RecordDetail
-		bind:open={recordDetailOpened}
-		uid={selectedRecord.uid}
-		levelID={selectedRecord.levelId}
-		recordId={selectedRecord.id ?? null}
-	/>
-{/if}
-
 {#if showRecordControls}
 	<div class="filterBar">
 		<div class="filterGroup">
@@ -739,16 +733,19 @@
 						<Table.Head class="w-[90px] text-center">{$_('player.table.point')}</Table.Head>
 					{/if}
 					<Table.Head class="w-[80px] text-center">{resultColumnLabel}</Table.Head>
+					<Table.Head class="w-[56px] text-center"></Table.Head>
 				</Table.Row>
 			</Table.Header>
 			<Table.Body>
 				{#each filteredRecords as record}
 					<Table.Row
 						on:click={(e) => {
-							// @ts-expect-error
-							if (e.target.nodeName == 'A') return;
-							selectedRecord = record;
-							recordDetailOpened = true;
+							const target = e.target;
+							if (target instanceof HTMLElement && target.closest('a, button')) {
+								return;
+							}
+
+							goto(getRecordDetailHref(record));
 						}}
 					>
 						<Table.Cell class="font-medium">
@@ -793,6 +790,17 @@
 						{:else}
 							<Table.Cell class="text-center">{record.progress}%</Table.Cell>
 						{/if}
+						<Table.Cell class="text-center">
+							<a
+								class="recordDetailButton"
+								href={getRecordDetailHref(record)}
+								title="View detail"
+								aria-label="View detail"
+								data-sveltekit-preload-data="tap"
+							>
+								<InfoCircled class="h-4 w-4" />
+							</a>
+						</Table.Cell>
 					</Table.Row>
 				{/each}
 			</Table.Body>
@@ -874,6 +882,24 @@
 
 	.emptyState {
 		color: var(--textColorDimmed);
+	}
+
+	.recordDetailButton {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		height: 32px;
+		width: 32px;
+		border-radius: 9999px;
+		color: hsl(var(--muted-foreground));
+		transition:
+			background-color 0.15s ease,
+			color 0.15s ease;
+
+		&:hover {
+			background-color: hsl(var(--muted));
+			color: hsl(var(--foreground));
+		}
 	}
 
 	@media screen and (max-width: 1200px) {
