@@ -20,8 +20,8 @@ export type PlayerListRecordEntry = {
 	id: number | null;
 	uid: string;
 	levelId: number;
-	point: number;
-	no: number;
+	point: number | null;
+	no: number | null;
 	createdAt?: string | null;
 	progress: number;
 	timestamp: number | null;

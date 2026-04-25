@@ -169,7 +169,7 @@ export async function getPlayerData(player: any, fetch: any, url: URL) {
 				return timestampDiff;
 			}
 
-			return right.point - left.point;
+			return (right.point ?? 0) - (left.point ?? 0);
 		});
 
 	const allListRecords: PlayerListRecordsResponse = {
