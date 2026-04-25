@@ -25,6 +25,10 @@
     "previous": "Previous",
     "loading": "Loading"
   },
+  "list_selector": {
+    "search_placeholder": "Search lists...",
+    "no_results": "No lists found"
+  },
   "acceptance": {
     "label": "Acceptance",
     "short_label": "Accept",

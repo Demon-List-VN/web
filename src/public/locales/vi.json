@@ -25,6 +25,10 @@
     "previous": "Trước",
     "loading": "Đang tải"
   },
+  "list_selector": {
+    "search_placeholder": "Tìm danh sách...",
+    "no_results": "Không tìm thấy danh sách"
+  },
   "acceptance": {
     "label": "Trạng thái duyệt",
     "short_label": "Duyệt",

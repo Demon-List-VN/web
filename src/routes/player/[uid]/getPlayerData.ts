@@ -51,13 +51,15 @@ function normalizePlayerRecords(
 	return value.map((record: any) => {
 		const listIdentifier = getRecordListIdentifier(record);
 		const rankedList = listIdentifier
-			? listSummaries.find((list) => list.identifier === listIdentifier) ?? null
+			? (listSummaries.find((list) => list.identifier === listIdentifier) ?? null)
 			: null;
 
 		return {
 			id: Number.isFinite(Number(record.id)) ? Number(record.id) : null,
 			uid: record.userid ?? record.uid ?? uid,
-			levelId: Number(record.levelid ?? record.levelId ?? record.levels?.id ?? record.level?.id ?? 0),
+			levelId: Number(
+				record.levelid ?? record.levelId ?? record.levels?.id ?? record.level?.id ?? 0
+			),
 			point: getRecordPoint(record),
 			no: Number(record.no ?? 0),
 			createdAt: record.createdAt ?? null,
@@ -91,12 +93,12 @@ export async function getPlayerData(player: any, fetch: any, url: URL) {
 	};
 
 	const [listSummaries, events, rawPlayerRecords] = await Promise.all([
-		(
-			await fetch(`${import.meta.env.VITE_API_URL}/players/${player.uid}/lists`)
-		).json() as Promise<PlayerRankedListSummary[]>,
-		(
-			await fetch(`${import.meta.env.VITE_API_URL}/players/${player.uid}/events`)
-		).json() as Promise<any[]>,
+		(await fetch(`${import.meta.env.VITE_API_URL}/players/${player.uid}/lists`)).json() as Promise<
+			PlayerRankedListSummary[]
+		>,
+		(await fetch(`${import.meta.env.VITE_API_URL}/players/${player.uid}/events`)).json() as Promise<
+			any[]
+		>,
 		fetch(`${import.meta.env.VITE_API_URL}/players/${player.uid}/records`)
 			.then((response: Response) => (response.ok ? response.json() : []))
 			.catch(() => [])
@@ -110,7 +112,10 @@ export async function getPlayerData(player: any, fetch: any, url: URL) {
 		lastRefreshedAt: null
 	};
 
-	const selectedList = resolvePlayerRankedListSelection(listSummaries, url.searchParams.get('list'));
+	const selectedList = resolvePlayerRankedListSelection(
+		listSummaries,
+		url.searchParams.get('list')
+	);
 	const listRecordResponses = await Promise.all(
 		listSummaries.map(async (listSummary) => {
 			let response = emptyRecordsResponse;
@@ -118,7 +123,7 @@ export async function getPlayerData(player: any, fetch: any, url: URL) {
 			try {
 				const rawResponse = await (
 					await fetch(
-						`${import.meta.env.VITE_API_URL}/lists/${listSummary.id}/records?uid=${player.uid}&end=5000`
+						`${import.meta.env.VITE_API_URL}/lists/${listSummary.id}/records?uid=${player.uid}&end=5000&ignoreRecordSettings=true`
 					)
 				).json();
 				response = normalizePlayerListRecordsResponse(rawResponse, emptyRecordsResponse);
@@ -134,7 +139,8 @@ export async function getPlayerData(player: any, fetch: any, url: URL) {
 	);
 
 	const selectedListRecords: PlayerListRecordsResponse = selectedList
-		? listRecordResponses.find(({ listSummary }) => listSummary.id === selectedList.id)?.response || emptyRecordsResponse
+		? listRecordResponses.find(({ listSummary }) => listSummary.id === selectedList.id)?.response ||
+			emptyRecordsResponse
 		: emptyRecordsResponse;
 
 	const allListRecordData = listRecordResponses
@@ -150,7 +156,8 @@ export async function getPlayerData(player: any, fetch: any, url: URL) {
 			}))
 		)
 		.sort((left, right) => {
-			const createdAtDiff = new Date(right.createdAt ?? 0).getTime() - new Date(left.createdAt ?? 0).getTime();
+			const createdAtDiff =
+				new Date(right.createdAt ?? 0).getTime() - new Date(left.createdAt ?? 0).getTime();
 
 			if (createdAtDiff !== 0) {
 				return createdAtDiff;

@@ -13,9 +13,9 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import { upload } from '$lib/client/storage';
+	import ListSelector, { type ListSelectorOption } from '$lib/components/listSelector.svelte';
 	import type { PlayerRankedListSummary } from '$lib/types/playerRankedList';
 	import {
-		buildPlayerCardStatLineOptions,
 		normalizePlayerCardStatLines,
 		PLAYER_CARD_STAT_LINE_COUNT
 	} from '$lib/utils/playerCardStatLines';
@@ -43,9 +43,15 @@
 	let isLoadingPlayerCardStatLines = false;
 
 	$: (open, reset());
-	$: playerCardStatLineOptions = buildPlayerCardStatLineOptions(playerCardListSummaries);
+	$: listSearchUrl = `${import.meta.env.VITE_API_URL}/lists`;
+	$: playerCardStatLineOptions = getPlayerCardStatLineOptions(playerCardListSummaries);
 	$: playerCardStatLineIds = normalizePlayerCardStatLines(player?.playerCardStatLines);
-	$: if (open && player?.uid && playerCardStatLinesLoadedForUid !== player.uid && !isLoadingPlayerCardStatLines) {
+	$: if (
+		open &&
+		player?.uid &&
+		playerCardStatLinesLoadedForUid !== player.uid &&
+		!isLoadingPlayerCardStatLines
+	) {
 		void loadPlayerCardStatLines(player.uid);
 	}
 
@@ -71,7 +77,7 @@
 		? $_('profile_edit.rename_locked')
 		: $_('profile_edit.rename_cooldown', {
 				values: { date: new Date(player.renameCooldown).toLocaleDateString() }
-		  });
+			});
 
 	async function loadPlayerCardStatLines(uid: string) {
 		isLoadingPlayerCardStatLines = true;
@@ -85,6 +91,17 @@
 		} finally {
 			isLoadingPlayerCardStatLines = false;
 		}
+	}
+
+	function getPlayerCardStatLineOptions(
+		listSummaries: PlayerRankedListSummary[]
+	): ListSelectorOption[] {
+		return listSummaries.map((summary) => ({
+			id: summary.id,
+			title: summary.title,
+			identifier: summary.identifier,
+			subtitle: summary.isOfficial ? 'Official' : summary.isVerified ? 'Verified' : null
+		}));
 	}
 
 	function updatePlayerCardStatLine(index: number, value: number | undefined) {
@@ -115,16 +132,6 @@
 			...player,
 			playerCardStatLines: deduped
 		};
-	}
-
-	function getPlayerCardStatLineSelection(index: number) {
-		const id = playerCardStatLineIds[index];
-
-		if (typeof id !== 'number') {
-			return undefined;
-		}
-
-		return playerCardStatLineOptions.find((option) => option.value === id) || undefined;
 	}
 
 	async function savePlayerCardStatLines() {
@@ -339,13 +346,9 @@
 				<div class="grid grid-cols-4 items-center gap-4">
 					<Label for="name" class="text-right">{$_('profile_edit.name')}</Label>
 					<div class="col-span-3 flex flex-col gap-1">
-						<Input
-							id="name"
-							bind:value={player.name}
-							disabled={renameCooldownActive}
-						/>
+						<Input id="name" bind:value={player.name} disabled={renameCooldownActive} />
 						{#if renameCooldownActive}
-							<p class="text-muted-foreground text-xs">{renameCooldownMessage}</p>
+							<p class="text-xs text-muted-foreground">{renameCooldownMessage}</p>
 						{/if}
 					</div>
 				</div>
@@ -438,7 +441,9 @@
 				<div class="grid gap-3 rounded-md border p-4">
 					<div class="space-y-1">
 						<p class="text-sm font-semibold">{$_('profile_edit.player_card_stat_lines')}</p>
-						<p class="text-xs text-muted-foreground">{$_('profile_edit.player_card_stat_lines_description')}</p>
+						<p class="text-xs text-muted-foreground">
+							{$_('profile_edit.player_card_stat_lines_description')}
+						</p>
 					</div>
 					{#each Array(PLAYER_CARD_STAT_LINE_COUNT) as _slot, index}
 						<div class="grid grid-cols-4 items-center gap-4">
@@ -446,19 +451,18 @@
 								{$_('profile_edit.player_card_stat_line', { values: { index: index + 1 } })}
 							</Label>
 							{#key `${playerCardStatLineOptions.length}:${playerCardStatLineIds[index] ?? ''}`}
-								<Select.Root
-									selected={getPlayerCardStatLineSelection(index)}
-									onSelectedChange={(option) => updatePlayerCardStatLine(index, option?.value)}
-								>
-									<Select.Trigger class="col-span-3">
-										<Select.Value placeholder={$_('general.select')} />
-									</Select.Trigger>
-									<Select.Content>
-										{#each playerCardStatLineOptions as option}
-											<Select.Item value={option.value}>{option.label}</Select.Item>
-										{/each}
-									</Select.Content>
-								</Select.Root>
+								<ListSelector
+									selectedId={playerCardStatLineIds[index] ?? null}
+									options={playerCardStatLineOptions}
+									searchUrl={listSearchUrl}
+									placeholder={$_('general.select')}
+									searchPlaceholder={$_('list_selector.search_placeholder')}
+									emptyLabel={$_('list_selector.no_results')}
+									loadingLabel={`${$_('general.loading')}...`}
+									disabled={isLoadingPlayerCardStatLines}
+									triggerClass="col-span-3"
+									on:select={(event) => updatePlayerCardStatLine(index, event.detail?.id)}
+								/>
 							{/key}
 						</div>
 					{/each}

@@ -1,67 +1,101 @@
 <script lang="ts">
 	import * as Table from '$lib/components/ui/table';
 	import * as Select from '$lib/components/ui/select';
-	import * as Alert from '$lib/components/ui/alert';
 	import AcceptanceBadge from '$lib/components/AcceptanceBadge.svelte';
 	import RecordDetail from '$lib/components/recordDetail.svelte';
+	import ListSelector, { type ListSelectorOption } from '$lib/components/listSelector.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Switch } from '$lib/components/ui/switch';
 	import { _ } from 'svelte-i18n';
-	import { Info } from 'lucide-svelte';
-	import type { PlayerListRecordEntry } from '$lib/types/playerRankedList';
+	import type {
+		PlayerListRecordEntry,
+		PlayerListRecordsResponse,
+		PlayerRankedListSummary
+	} from '$lib/types/playerRankedList';
 
-	type SelectOption = {
-		value: string;
+	type SelectOption<TValue extends string = string> = {
+		value: TValue;
 		label: string;
+		disabled?: boolean;
 	};
 
 	type PlatformFilterValue = 'all' | 'pc' | 'mobile';
-
-	const allListsValue = '';
+	type RecordSortValue = 'date_submitted' | 'point';
 
 	export let data: any;
 
 	let recordDetailOpened = false;
 	let selectedRecord: PlayerListRecordEntry | null = null;
 	let draftLevelId = '';
-	let draftListIdentifier = allListsValue;
+	let draftListId: number | null = null;
 	let draftPlatform: PlatformFilterValue = 'all';
+	let draftSortBy: RecordSortValue = 'date_submitted';
 	let draftShowAcceptedManually = true;
 	let draftShowAcceptedAuto = true;
 	let showAcceptedManually = true;
 	let showAcceptedAuto = true;
 	let appliedLevelId = '';
-	let appliedListIdentifier = '';
+	let appliedListId: number | null = null;
 	let appliedPlatform: PlatformFilterValue = 'all';
+	let appliedSortBy: RecordSortValue = 'date_submitted';
+	let selectedListRecordsResponse: PlayerListRecordsResponse | null = null;
+	let selectedListRecordsLoadedForId: number | null = null;
+	let selectedListRecordsRequestId = 0;
+	let isLoadingSelectedListRecords = false;
 
-	$: allListsOption = {
-		value: allListsValue,
-		label: $_('player.filter.all_lists')
-	};
 	$: platformOptions = [
 		{ value: 'all', label: $_('player.filter.all_platforms') },
 		{ value: 'pc', label: $_('player.filter.platform_pc') },
 		{ value: 'mobile', label: $_('player.filter.platform_mobile') }
-	] satisfies Array<SelectOption & { value: PlatformFilterValue }>;
-	$: recordsResponse = data.playerRecords ?? data.allListRecords ?? data.selectedListRecords;
-	$: records = recordsResponse?.data || [];
-	$: selectedListFallback = data.playerRecords ? null : data.selectedList;
-	$: listOptions = getListOptions(records, selectedListFallback);
-	$: selectedListOption =
-		listOptions.find((option) => option.value === draftListIdentifier) ?? allListsOption;
+	] satisfies Array<SelectOption<PlatformFilterValue>>;
+	$: sortOptions = [
+		{ value: 'date_submitted', label: $_('player.filter.date_submitted') },
+		{ value: 'point', label: $_('player.filter.point'), disabled: draftListId === null }
+	] satisfies Array<SelectOption<RecordSortValue>>;
+	$: if (draftListId === null && draftSortBy === 'point') {
+		draftSortBy = 'date_submitted';
+	}
+	$: baseRecordsResponse = data.playerRecords ?? data.selectedListRecords ?? data.allListRecords;
+	$: listRecordsResponse = data.allListRecords ?? data.selectedListRecords ?? data.playerRecords;
+	$: selectedListFallback = data.selectedList;
+	$: listSearchUrl = `${import.meta.env.VITE_API_URL}/lists`;
+	$: baseRecords = baseRecordsResponse?.data || [];
+	$: listRecords = listRecordsResponse?.data || [];
+	$: selectedListRecords =
+		appliedListId !== null && selectedListRecordsLoadedForId === appliedListId
+			? selectedListRecordsResponse?.data || []
+			: listRecords;
+	$: records = getDisplayRecords(
+		baseRecords,
+		selectedListRecords,
+		appliedListId,
+		data.listSummaries || [],
+		selectedListFallback
+	);
+	$: listOptions = getListOptions(data.listSummaries || [], listRecordsResponse?.data || []);
 	$: selectedPlatformOption =
 		platformOptions.find((option) => option.value === draftPlatform) ?? platformOptions[0];
+	$: selectedSortOption =
+		sortOptions.find((option) => option.value === draftSortBy) ?? sortOptions[0];
 	$: acceptedRecords = records.filter((record: PlayerListRecordEntry) => isAcceptedRecord(record));
-	$: filteredRecords = acceptedRecords.filter(
+	$: matchingRecords = acceptedRecords.filter(
 		(record: PlayerListRecordEntry) =>
 			matchesAcceptanceFilter(record, showAcceptedManually, showAcceptedAuto) &&
 			matchesLevelIdFilter(record, appliedLevelId) &&
-			matchesListFilter(record, appliedListIdentifier, selectedListFallback?.identifier ?? '') &&
 			matchesPlatformFilter(record, appliedPlatform)
 	);
+	$: filteredRecords = sortRecords(matchingRecords, appliedSortBy, appliedListId !== null);
 	$: acceptedRecordTotal = acceptedRecords.length;
+	$: showRecordControls =
+		acceptedRecordTotal > 0 || appliedListId !== null || baseRecords.length > 0;
+	$: isLoadingAppliedListRecords =
+		appliedListId !== null &&
+		isLoadingSelectedListRecords &&
+		selectedListRecordsLoadedForId !== appliedListId &&
+		!records.length;
+	$: showPointColumn = appliedListId !== null;
 	$: hasPlatformerRecords = filteredRecords.some((record: PlayerListRecordEntry) =>
 		isPlatformerRecord(record)
 	);
@@ -86,23 +120,214 @@
 		return Boolean(record?.acceptedManually) || Boolean(record?.acceptedAuto);
 	}
 
-	function getListOptions(records: PlayerListRecordEntry[], selectedList: any): SelectOption[] {
-		const optionsByValue = new Map<string, SelectOption>();
+	function getListOptions(
+		listSummaries: PlayerRankedListSummary[],
+		records: PlayerListRecordEntry[]
+	): ListSelectorOption[] {
+		const optionsById = new Map<number, ListSelectorOption>();
 
-		for (const record of records) {
-			const value = record.rankedList?.identifier ?? selectedList?.identifier;
-			const label = record.rankedList?.title ?? selectedList?.title;
-
-			if (!value || !label || optionsByValue.has(value)) {
+		for (const list of listSummaries) {
+			if (!Number.isFinite(list.id) || optionsById.has(list.id)) {
 				continue;
 			}
 
-			optionsByValue.set(value, { value, label });
+			optionsById.set(list.id, {
+				id: list.id,
+				title: list.title,
+				identifier: list.identifier,
+				subtitle: list.isOfficial ? 'Official' : list.isVerified ? 'Verified' : null
+			});
 		}
 
-		return Array.from(optionsByValue.values()).sort((left, right) =>
-			left.label.localeCompare(right.label)
+		for (const record of records) {
+			const list = record.rankedList;
+
+			if (!list?.id || !list.title || optionsById.has(list.id)) {
+				continue;
+			}
+
+			optionsById.set(list.id, {
+				id: list.id,
+				title: list.title,
+				identifier: list.identifier
+			});
+		}
+
+		return Array.from(optionsById.values()).sort((left, right) =>
+			left.title.localeCompare(right.title)
 		);
+	}
+
+	function toRankedListReference(
+		list:
+			| Pick<PlayerRankedListSummary, 'id' | 'identifier' | 'title' | 'isPlatformer'>
+			| null
+			| undefined
+	): PlayerListRecordEntry['rankedList'] {
+		if (!list) {
+			return null;
+		}
+
+		return {
+			id: list.id,
+			identifier: list.identifier,
+			title: list.title,
+			isPlatformer: list.isPlatformer
+		};
+	}
+
+	function getSelectedListReference(
+		listId: number,
+		listSummaries: PlayerRankedListSummary[],
+		selectedList: PlayerRankedListSummary | null | undefined,
+		records: PlayerListRecordEntry[]
+	): PlayerListRecordEntry['rankedList'] {
+		const summary = listSummaries.find((list) => list.id === listId);
+
+		if (summary) {
+			return toRankedListReference(summary);
+		}
+
+		if (selectedList?.id === listId) {
+			return toRankedListReference(selectedList);
+		}
+
+		return records.find((record) => record.rankedList?.id === listId)?.rankedList ?? null;
+	}
+
+	function getPayloadListReference(value: unknown, fallbackId: number) {
+		if (!value || typeof value !== 'object') {
+			return null;
+		}
+
+		const list = value as Record<string, unknown>;
+		const id = Number(list.id ?? fallbackId);
+		const title = typeof list.title === 'string' ? list.title : '';
+
+		if (!Number.isFinite(id) || !title) {
+			return null;
+		}
+
+		const identifier =
+			typeof list.identifier === 'string'
+				? list.identifier
+				: typeof list.slug === 'string'
+					? list.slug
+					: String(id);
+
+		return {
+			id,
+			identifier,
+			title,
+			isPlatformer: Boolean(list.isPlatformer)
+		} satisfies PlayerListRecordEntry['rankedList'];
+	}
+
+	function normalizeListRecordsPayload(
+		payload: unknown,
+		listId: number
+	): PlayerListRecordsResponse {
+		const response = payload && typeof payload === 'object' ? (payload as any) : {};
+		const listReference = getPayloadListReference(response.list, listId);
+		const records = Array.isArray(response.data)
+			? response.data.map((record: PlayerListRecordEntry) => ({
+					...record,
+					rankedList: record.rankedList ?? listReference
+				}))
+			: [];
+
+		return {
+			list: response.list ?? null,
+			data: records,
+			total: typeof response.total === 'number' ? response.total : records.length,
+			lastRefreshedAt:
+				typeof response.lastRefreshedAt === 'string' || response.lastRefreshedAt === null
+					? response.lastRefreshedAt
+					: null
+		};
+	}
+
+	function getRecordIdentityKey(record: PlayerListRecordEntry) {
+		if (record.id !== null && record.id !== undefined) {
+			return `record:${record.id}`;
+		}
+
+		return `level:${record.uid}:${record.levelId}:${record.rankedList?.id ?? ''}`;
+	}
+
+	function getRecordLevelKey(record: PlayerListRecordEntry) {
+		return `${record.uid}:${record.levelId}`;
+	}
+
+	function mergeWithListRecord(
+		record: PlayerListRecordEntry,
+		listRecord: PlayerListRecordEntry | undefined,
+		listReference: PlayerListRecordEntry['rankedList']
+	) {
+		if (!listRecord) {
+			return {
+				...record,
+				rankedList: record.rankedList ?? listReference
+			};
+		}
+
+		return {
+			...record,
+			point: listRecord.point,
+			no: listRecord.no,
+			formulaScope: listRecord.formulaScope ?? record.formulaScope,
+			rankedList: listRecord.rankedList ?? record.rankedList ?? listReference
+		};
+	}
+
+	function getDisplayRecords(
+		playerRecords: PlayerListRecordEntry[],
+		allListRecords: PlayerListRecordEntry[],
+		listId: number | null,
+		listSummaries: PlayerRankedListSummary[],
+		selectedList: PlayerRankedListSummary | null | undefined
+	) {
+		if (listId === null) {
+			return playerRecords;
+		}
+
+		const listReference = getSelectedListReference(
+			listId,
+			listSummaries,
+			selectedList,
+			allListRecords
+		);
+		const listMatches = allListRecords
+			.filter((record) => matchesListFilter(record, listId, listReference?.id ?? null))
+			.map((record) => ({
+				...record,
+				rankedList: record.rankedList ?? listReference
+			}));
+		const listRecordById = new Map(
+			listMatches
+				.filter((record) => record.id !== null && record.id !== undefined)
+				.map((record) => [record.id, record])
+		);
+		const listRecordByLevel = new Map(
+			listMatches.map((record) => [getRecordLevelKey(record), record])
+		);
+		const mergedPlayerRecords = playerRecords
+			.filter((record) => record.rankedList?.id === listId)
+			.map((record) =>
+				mergeWithListRecord(
+					record,
+					record.id !== null && record.id !== undefined
+						? listRecordById.get(record.id)
+						: listRecordByLevel.get(getRecordLevelKey(record)),
+					listReference
+				)
+			);
+		const mergedRecordKeys = new Set(mergedPlayerRecords.map(getRecordIdentityKey));
+		const remainingListRecords = listMatches.filter(
+			(record) => !mergedRecordKeys.has(getRecordIdentityKey(record))
+		);
+
+		return [...mergedPlayerRecords, ...remainingListRecords];
 	}
 
 	function matchesAcceptanceFilter(
@@ -126,14 +351,14 @@
 
 	function matchesListFilter(
 		record: PlayerListRecordEntry,
-		listIdentifierFilter: string,
-		selectedListIdentifier: string
+		listIdFilter: number | null,
+		selectedListId: number | null
 	) {
-		if (!listIdentifierFilter) {
+		if (listIdFilter === null) {
 			return true;
 		}
 
-		return (record.rankedList?.identifier ?? selectedListIdentifier) === listIdentifierFilter;
+		return (record.rankedList?.id ?? selectedListId) === listIdFilter;
 	}
 
 	function matchesPlatformFilter(
@@ -153,19 +378,71 @@
 	}
 
 	function applyFilters() {
+		const nextListId = draftListId;
+
 		appliedLevelId = draftLevelId.trim();
-		appliedListIdentifier = draftListIdentifier;
+		appliedListId = nextListId;
 		appliedPlatform = draftPlatform;
+		appliedSortBy = nextListId === null && draftSortBy === 'point' ? 'date_submitted' : draftSortBy;
 		showAcceptedManually = draftShowAcceptedManually;
 		showAcceptedAuto = draftShowAcceptedAuto;
+
+		if (nextListId !== null) {
+			void loadSelectedListRecords(nextListId);
+		} else {
+			selectedListRecordsResponse = null;
+			selectedListRecordsLoadedForId = null;
+		}
 	}
 
-	function handleListSelection(option: { value?: string } | undefined) {
-		draftListIdentifier = option?.value ?? allListsValue;
+	async function loadSelectedListRecords(listId: number) {
+		if (selectedListRecordsLoadedForId === listId && selectedListRecordsResponse) {
+			return;
+		}
+
+		const requestId = ++selectedListRecordsRequestId;
+		isLoadingSelectedListRecords = true;
+
+		try {
+			const response = await fetch(
+				`${import.meta.env.VITE_API_URL}/lists/${listId}/records?uid=${data.player.uid}&end=5000&ignoreRecordSettings=true`
+			);
+
+			if (!response.ok) {
+				throw new Error(response.statusText);
+			}
+
+			const payload = await response.json();
+
+			if (requestId !== selectedListRecordsRequestId) {
+				return;
+			}
+
+			selectedListRecordsResponse = normalizeListRecordsPayload(payload, listId);
+			selectedListRecordsLoadedForId = listId;
+		} catch {
+			if (requestId === selectedListRecordsRequestId) {
+				selectedListRecordsResponse = null;
+				selectedListRecordsLoadedForId = listId;
+			}
+		} finally {
+			if (requestId === selectedListRecordsRequestId) {
+				isLoadingSelectedListRecords = false;
+			}
+		}
+	}
+
+	function handleListSelection(event: CustomEvent<ListSelectorOption | null>) {
+		draftListId = event.detail?.id ?? null;
 	}
 
 	function handlePlatformSelection(option: { value?: string } | undefined) {
 		draftPlatform = (option?.value as PlatformFilterValue) ?? 'all';
+	}
+
+	function handleSortSelection(option: { value?: string } | undefined) {
+		const nextSort = (option?.value as RecordSortValue) ?? 'date_submitted';
+		draftSortBy = draftListId === null && nextSort === 'point' ? 'date_submitted' : nextSort;
 	}
 
 	function handleFilterKeydown(event: KeyboardEvent) {
@@ -188,6 +465,68 @@
 
 		return '-';
 	}
+
+	function getSubmittedAtTime(record: PlayerListRecordEntry) {
+		if (record.createdAt) {
+			return new Date(record.createdAt).getTime();
+		}
+
+		return record.timestamp ?? 0;
+	}
+
+	function formatPoint(value: number | null | undefined) {
+		if (typeof value !== 'number' || !Number.isFinite(value)) {
+			return '-';
+		}
+
+		return String(Math.round(value * 1000) / 1000);
+	}
+
+	function sortRecords(
+		recordsToSort: PlayerListRecordEntry[],
+		sortBy: RecordSortValue,
+		canUsePointSort: boolean
+	) {
+		const nextRecords = [...recordsToSort];
+		const compareByManualAcceptance = (
+			left: PlayerListRecordEntry,
+			right: PlayerListRecordEntry
+		) => {
+			if (left.acceptedManually === right.acceptedManually) {
+				return 0;
+			}
+
+			return left.acceptedManually ? -1 : 1;
+		};
+
+		if (sortBy === 'point' && canUsePointSort) {
+			return nextRecords.sort((left, right) => {
+				const acceptanceDiff = compareByManualAcceptance(left, right);
+
+				if (acceptanceDiff !== 0) {
+					return acceptanceDiff;
+				}
+
+				const pointDiff = (right.point ?? 0) - (left.point ?? 0);
+
+				if (pointDiff !== 0) {
+					return pointDiff;
+				}
+
+				return getSubmittedAtTime(right) - getSubmittedAtTime(left);
+			});
+		}
+
+		return nextRecords.sort((left, right) => {
+			const acceptanceDiff = compareByManualAcceptance(left, right);
+
+			if (acceptanceDiff !== 0) {
+				return acceptanceDiff;
+			}
+
+			return getSubmittedAtTime(right) - getSubmittedAtTime(left);
+		});
+	}
 </script>
 
 {#if selectedRecord}
@@ -199,12 +538,7 @@
 	/>
 {/if}
 
-<Alert.Root class="mb-4 bg-muted/40">
-	<Info class="h-4 w-4" />
-	<Alert.Description>{$_('player.records_point_sort_notice')}</Alert.Description>
-</Alert.Root>
-
-{#if acceptedRecordTotal}
+{#if showRecordControls}
 	<div class="filterBar">
 		<div class="filterGroup">
 			<div class="filterField">
@@ -220,21 +554,20 @@
 			</div>
 			<div class="filterField">
 				<Label for="record-list-filter">{$_('player.filter.list')}</Label>
-				<Select.Root selected={selectedListOption} onSelectedChange={handleListSelection}>
-					<Select.Trigger id="record-list-filter" class="w-full min-w-[220px]">
-						<Select.Value placeholder={$_('player.filter.all_lists')} />
-					</Select.Trigger>
-					<Select.Content>
-						<Select.Item value="" label={$_('player.filter.all_lists')}>
-							{$_('player.filter.all_lists')}
-						</Select.Item>
-						{#each listOptions as listOption}
-							<Select.Item value={listOption.value} label={listOption.label}>
-								{listOption.label}
-							</Select.Item>
-						{/each}
-					</Select.Content>
-				</Select.Root>
+				<ListSelector
+					id="record-list-filter"
+					selectedId={draftListId}
+					options={listOptions}
+					searchUrl={listSearchUrl}
+					placeholder={$_('player.filter.all_lists')}
+					searchPlaceholder={$_('list_selector.search_placeholder')}
+					emptyLabel={$_('list_selector.no_results')}
+					loadingLabel={`${$_('general.loading')}...`}
+					allowClear
+					clearLabel={$_('player.filter.all_lists')}
+					triggerClass="min-w-[220px]"
+					on:select={handleListSelection}
+				/>
 			</div>
 			<div class="filterField">
 				<Label for="record-platform-filter">{$_('player.filter.platform')}</Label>
@@ -246,6 +579,25 @@
 						{#each platformOptions as platformOption}
 							<Select.Item value={platformOption.value} label={platformOption.label}>
 								{platformOption.label}
+							</Select.Item>
+						{/each}
+					</Select.Content>
+				</Select.Root>
+			</div>
+			<div class="filterField">
+				<Label for="record-sort-filter">{$_('player.filter.sort_by')}</Label>
+				<Select.Root selected={selectedSortOption} onSelectedChange={handleSortSelection}>
+					<Select.Trigger id="record-sort-filter" class="w-full min-w-[180px]">
+						<Select.Value placeholder={$_('player.filter.date_submitted')} />
+					</Select.Trigger>
+					<Select.Content>
+						{#each sortOptions as sortOption}
+							<Select.Item
+								value={sortOption.value}
+								label={sortOption.label}
+								disabled={sortOption.disabled}
+							>
+								{sortOption.label}
 							</Select.Item>
 						{/each}
 					</Select.Content>
@@ -265,7 +617,9 @@
 		</div>
 	</div>
 
-	{#if filteredRecords.length}
+	{#if isLoadingAppliedListRecords}
+		<div class="emptyState">{$_('general.loading')}...</div>
+	{:else if filteredRecords.length}
 		<Table.Root>
 			<Table.Caption>
 				{$_('player.table.total_record')}: {filteredRecords.length} / {acceptedRecordTotal}
@@ -276,6 +630,9 @@
 					<Table.Head class="w-[100px] text-center">{$_('player.table.submitted_on')}</Table.Head>
 					<Table.Head class="w-[70px] text-center">{$_('acceptance.short_label')}</Table.Head>
 					<Table.Head class="w-[100px] text-center">{$_('player.table.device')}</Table.Head>
+					{#if showPointColumn}
+						<Table.Head class="w-[90px] text-center">{$_('player.table.point')}</Table.Head>
+					{/if}
 					<Table.Head class="w-[80px] text-center">{resultColumnLabel}</Table.Head>
 				</Table.Row>
 			</Table.Header>
@@ -323,6 +680,9 @@
 								<br />({record.refreshRate}fps)
 							{/if}
 						</Table.Cell>
+						{#if showPointColumn}
+							<Table.Cell class="text-center">{formatPoint(record.point)}</Table.Cell>
+						{/if}
 						{#if isPlatformerRecord(record)}
 							<Table.Cell class="text-center">{getTimeString(record.progress)}</Table.Cell>
 						{:else}
