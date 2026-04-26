@@ -90,8 +90,8 @@
 	"acceptance": {
 		"label": "Acceptance",
 		"short_label": "Accept",
-		"manual": "Manually accepted",
-		"auto": "Auto accepted",
+		"manual": "Verified",
+		"auto": "Unverified",
 		"pending": "Pending acceptance"
 	},
 	"time_unit": {
@@ -1087,8 +1087,8 @@
 			"level_id_placeholder": "e.g. 12345",
 			"list": "List",
 			"platform": "Platform",
-			"accepted_manually": "Accepted manually",
-			"accepted_automatically": "Accepted automatically",
+			"accepted_manually": "Verified",
+			"accepted_automatically": "Unverified",
 			"all_lists": "All lists",
 			"all_platforms": "All platforms",
 			"platform_pc": "PC",
@@ -2150,10 +2150,10 @@
 				"platform_mobile": "Mobile only",
 				"acceptance_label": "Acceptance mode",
 				"acceptance_hint": "Choose which accepted records count toward this list leaderboard.",
-				"acceptance_manual_only": "Manual only",
-				"acceptance_manual_or_auto": "Manual or auto",
-				"acceptance_auto_only": "Auto only",
-				"acceptance_any": "Manual or auto",
+				"acceptance_manual_only": "Verified only",
+				"acceptance_manual_or_auto": "Verified or unverified",
+				"acceptance_auto_only": "Unverified only",
+				"acceptance_any": "Verified or unverified",
 				"min_refresh_rate_label": "Min FPS",
 				"max_refresh_rate_label": "Max FPS",
 				"refresh_rate_hint": "Leave either field blank to avoid filtering on that side of the FPS range."

@@ -90,8 +90,8 @@
 	"acceptance": {
 		"label": "Trạng thái duyệt",
 		"short_label": "Duyệt",
-		"manual": "Duyệt thủ công",
-		"auto": "Duyệt tự động",
+		"manual": "Đã xác minh",
+		"auto": "Chưa xác minh",
 		"pending": "Chờ duyệt"
 	},
 	"time_unit": {
@@ -1086,8 +1086,8 @@
 			"level_id_placeholder": "vd. 12345",
 			"list": "Danh sách",
 			"platform": "Thiết bị",
-			"accepted_manually": "Duyệt thủ công",
-			"accepted_automatically": "Duyệt tự động",
+			"accepted_manually": "Đã xác minh",
+			"accepted_automatically": "Chưa xác minh",
 			"all_lists": "Tất cả danh sách",
 			"all_platforms": "Mọi thiết bị",
 			"platform_pc": "PC",
@@ -2149,10 +2149,10 @@
 				"platform_mobile": "Chỉ Mobile",
 				"acceptance_label": "Chế độ chấp nhận",
 				"acceptance_hint": "Chọn record đã duyệt nào sẽ được tính vào bảng xếp hạng của danh sách này.",
-				"acceptance_manual_only": "Chỉ thủ công",
-				"acceptance_manual_or_auto": "Thủ công hoặc tự động",
-				"acceptance_auto_only": "Chỉ tự động",
-				"acceptance_any": "Thủ công hoặc tự động",
+				"acceptance_manual_only": "Đã xác minh",
+				"acceptance_manual_or_auto": "Đã xác minh hoặc chưa xác minh",
+				"acceptance_auto_only": "Chưa xác minh",
+				"acceptance_any": "Đã xác minh hoặc chưa xác minh",
 				"min_refresh_rate_label": "FPS tối thiểu",
 				"max_refresh_rate_label": "FPS tối đa",
 				"refresh_rate_hint": "Để trống một trong hai ô nếu không muốn lọc ở phía đó của khoảng FPS."
