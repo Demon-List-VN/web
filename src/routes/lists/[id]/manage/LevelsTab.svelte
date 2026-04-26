@@ -201,14 +201,6 @@
 		return `${$_('custom_lists.detail.levels.video_id_label')}: ${videoId}${suffix}`;
 	}
 
-	function getListItemTop(item: any, index: number) {
-		if (item.position == null) {
-			return index + 1;
-		}
-
-		return Number(item.position);
-	}
-
 	function hasDraftValue(patch: LevelItemPatch | undefined, key: keyof LevelItemPatch) {
 		return patch ? Object.prototype.hasOwnProperty.call(patch, key) : false;
 	}
