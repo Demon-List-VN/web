@@ -189,6 +189,7 @@
 		itemSort?: 'mode_default' | 'created_at';
 		visibility: 'private' | 'unlisted' | 'public';
 		mode: 'rating' | 'top';
+		levelCount: number;
 		tags: string[];
 		updated_at: string;
 		lastRefreshedAt?: string | null;
@@ -400,6 +401,11 @@
 	let pendingSubmissionsLoading = false;
 	let pendingSubmissionsError = '';
 	let pendingSubmissionsRequestKey = '';
+	let levelsPage = 1;
+	let levelsRequestedPage = 1;
+	let listLevelsLoading = false;
+	let listLevelsError = '';
+	let listLevelsFetchKey = '';
 	let savingSubmissionId: number | null = null;
 	let levelsTabList: (CustomList & { items: CustomListItem[] }) | null = null;
 	let showPendingLevelChangesDialog = false;
@@ -409,6 +415,7 @@
 	const CSV_IMPORT_RATE_LIMIT_RETRY_MS = 1000;
 	const CSV_IMPORT_RATE_LIMIT_TIMEOUT_MS = 15000;
 	const DEFAULT_ITEM_SORT: 'mode_default' | 'created_at' = 'mode_default';
+	const LEVELS_PAGE_SIZE = 50;
 	const LEVEL_AUDIT_MUTABLE_FIELDS: Array<keyof LevelItemPatch> = [
 		'rating',
 		'minProgress',
@@ -461,8 +468,145 @@
 	let initialManageTabSettled = false;
 	let collaborationTabProps: any = {};
 
-	function buildListRequestUrl() {
-		return `${import.meta.env.VITE_API_URL}/lists/${$page.params.id}`;
+	function buildListRequestUrl(start: number = 0, end: number = LEVELS_PAGE_SIZE - 1) {
+		const params = new URLSearchParams({
+			start: String(start),
+			end: String(end)
+		});
+
+		return `${import.meta.env.VITE_API_URL}/lists/${$page.params.id}?${params.toString()}`;
+	}
+
+	function getLevelsPageCount(currentList: CustomList | null = list) {
+		const totalCount = currentList?.levelCount ?? 0;
+		return totalCount > 0 ? Math.ceil(totalCount / LEVELS_PAGE_SIZE) : 1;
+	}
+
+	function clampLevelsPage(pageNumber: number, currentList: CustomList | null = list) {
+		return Math.min(Math.max(pageNumber, 1), getLevelsPageCount(currentList));
+	}
+
+	function getLevelsPageRange(pageNumber: number) {
+		const safePage = Math.max(pageNumber, 1);
+		const start = (safePage - 1) * LEVELS_PAGE_SIZE;
+
+		return {
+			start,
+			end: start + LEVELS_PAGE_SIZE - 1
+		};
+	}
+
+	function hasSingleLevelsPage(currentList: CustomList | null = list) {
+		return getLevelsPageCount(currentList) === 1;
+	}
+
+	function applyFetchedLevelsPage(
+		payload: CustomList,
+		pageNumber: number,
+		options: { syncForm?: boolean } = {}
+	) {
+		const nextList = normalizeMutationListPayload(payload);
+		const nextPage = clampLevelsPage(pageNumber, nextList);
+
+		levelsPage = nextPage;
+		levelsRequestedPage = nextPage;
+		list = nextList;
+		loadingError = '';
+		listLevelsError = '';
+
+		if (options.syncForm !== false) {
+			syncForm();
+		}
+
+		return list;
+	}
+
+	function applyPagedListPayload(payload: CustomList, options: { syncForm?: boolean } = {}) {
+		const nextList = normalizeMutationListPayload(payload);
+		const nextPage = clampLevelsPage(levelsPage, nextList);
+		const { start, end } = getLevelsPageRange(nextPage);
+
+		levelsPage = nextPage;
+		levelsRequestedPage = nextPage;
+		list = {
+			...nextList,
+			items: nextList.items.slice(start, end + 1)
+		};
+		loadingError = '';
+		listLevelsError = '';
+
+		if (options.syncForm !== false) {
+			syncForm();
+		}
+
+		return list;
+	}
+
+	async function fetchListDetail(start: number, end: number, headers?: HeadersInit) {
+		const res = await fetch(buildListRequestUrl(start, end), headers ? { headers } : undefined);
+		const payload = await res.json().catch(() => null);
+
+		if (!res.ok || !payload) {
+			throw new Error(payload?.error || 'Failed to load list');
+		}
+
+		return payload as CustomList;
+	}
+
+	async function setLevelsPage(pageNumber: number, options: { force?: boolean } = {}) {
+		if (!list) {
+			return;
+		}
+
+		const nextPage = clampLevelsPage(pageNumber);
+
+		if (!options.force && nextPage === levelsPage) {
+			return;
+		}
+
+		if (!options.force && nextPage !== levelsPage && hasUnsavedLevelEdits) {
+			toast.error('Save or discard level changes before switching pages');
+			return;
+		}
+
+		const { start, end } = getLevelsPageRange(nextPage);
+		const fetchKey = `${$page.params.id}:${$user.loggedIn ? $user.data?.uid || 'authed' : 'anon'}:${nextPage}`;
+		const headers = $user.loggedIn
+			? {
+					Authorization: `Bearer ${await $user.token()}`
+				}
+			: undefined;
+
+		levelsRequestedPage = nextPage;
+		listLevelsFetchKey = fetchKey;
+		listLevelsLoading = true;
+		listLevelsError = '';
+
+		try {
+			const payload = await fetchListDetail(start, end, headers);
+
+			if (fetchKey !== listLevelsFetchKey) {
+				return;
+			}
+
+			applyFetchedLevelsPage(payload, nextPage, { syncForm: false });
+		} catch (error) {
+			if (fetchKey === listLevelsFetchKey) {
+				listLevelsError = error instanceof Error ? error.message : 'Failed to load list';
+			}
+		} finally {
+			if (fetchKey === listLevelsFetchKey) {
+				listLevelsLoading = false;
+			}
+		}
+	}
+
+	function retryLevelsPage() {
+		void setLevelsPage(levelsRequestedPage, { force: true });
+	}
+
+	function handleLevelsPageRequest(pageNumber?: number) {
+		return pageNumber == null ? retryLevelsPage() : setLevelsPage(pageNumber);
 	}
 
 	function getRecordFilterAcceptanceStatus(source: {
@@ -968,14 +1112,13 @@
 		}
 
 		try {
-			const res = await fetch(buildListRequestUrl(), {
+			const { start, end } = getLevelsPageRange(levelsPage);
+			const res = await fetch(buildListRequestUrl(start, end), {
 				headers: { Authorization: `Bearer ${await $user.token()}` }
 			});
 			const payload = await res.json().catch(() => null);
 			if (res.ok && payload) {
-				list = payload as CustomList;
-				loadingError = '';
-				syncForm();
+				applyFetchedLevelsPage(payload as CustomList, levelsPage);
 				hasResolvedManageAccess = true;
 				return;
 			}
@@ -1133,8 +1276,7 @@
 			const payload = await res.json();
 			if (!res.ok)
 				throw new Error(payload.error || $_('custom_lists.toast.failed_collaboration_update'));
-			list = payload;
-			syncForm();
+			applyPagedListPayload(payload);
 			toast.success($_('custom_lists.toast.collaboration_updated'));
 		} catch (error) {
 			toast.error(
@@ -1167,8 +1309,7 @@
 			const payload = await res.json();
 			if (!res.ok)
 				throw new Error(payload.error || $_('custom_lists.toast.failed_invite_collaborator'));
-			list = payload;
-			syncForm();
+			applyPagedListPayload(payload);
 			toast.success($_('custom_lists.toast.invitation_sent'));
 		} catch (error) {
 			toast.error(
@@ -1199,8 +1340,7 @@
 			const payload = await res.json();
 			if (!res.ok)
 				throw new Error(payload.error || $_('custom_lists.toast.failed_update_collaborator'));
-			list = payload;
-			syncForm();
+			applyPagedListPayload(payload);
 			toast.success($_('custom_lists.toast.collaborator_role_updated'));
 		} catch (error) {
 			toast.error(
@@ -1230,8 +1370,7 @@
 			const payload = await res.json();
 			if (!res.ok)
 				throw new Error(payload.error || $_('custom_lists.toast.failed_remove_collaborator'));
-			list = payload;
-			syncForm();
+			applyPagedListPayload(payload);
 			toast.success($_('custom_lists.toast.collaborator_removed'));
 		} catch (error) {
 			toast.error(
@@ -1259,8 +1398,7 @@
 			const payload = await res.json();
 			if (!res.ok)
 				throw new Error(payload.error || $_('custom_lists.toast.failed_transfer_ownership'));
-			list = payload;
-			syncForm();
+			applyPagedListPayload(payload);
 			toast.success($_('custom_lists.toast.ownership_transferred'));
 		} catch (error) {
 			toast.error(
@@ -1289,8 +1427,7 @@
 			const payload = await res.json().catch(() => null);
 			if (!res.ok)
 				throw new Error(payload?.error || $_('custom_lists.toast.failed_revoke_invitation'));
-			list = payload;
-			syncForm();
+			applyPagedListPayload(payload);
 			toast.success($_('custom_lists.toast.invitation_revoked'));
 		} catch (error) {
 			toast.error(
@@ -1694,8 +1831,7 @@
 				getToken: () => $user.token(),
 				failedMessage: $_('custom_lists.toast.failed_mirror_crawl')
 			});
-			list = normalizeMutationListPayload({ ...list, ...result.list });
-			syncForm();
+			applyPagedListPayload({ ...list, ...result.list });
 			toast.dismiss(crawlToast);
 			toast.success(
 				$_('custom_lists.toast.mirror_crawled', {
@@ -3118,7 +3254,6 @@
 		const settingsPayload = currentHasUnsavedSettings ? buildSettingsMutationPayload() : undefined;
 		const leaderboardConfigChanged =
 			currentHasUnsavedSettings && hasLeaderboardConfigDraftChanged();
-		let nextList = list;
 		const totalPendingLevelChanges =
 			currentPendingLevelAdditions.length +
 			currentDeletionDraftIds.length +
@@ -3216,9 +3351,7 @@
 				throw new Error(payload?.error || $_('custom_lists.toast.failed_update_level'));
 			}
 
-			nextList = normalizeMutationListPayload(payload);
-			list = nextList;
-			syncForm();
+			applyPagedListPayload(payload);
 			pendingLevelAdditions = [];
 			levelDrafts = {};
 			levelDeletionDraftIds = [];
@@ -3270,8 +3403,7 @@
 			});
 			const payload = await res.json();
 			if (!res.ok) throw new Error(payload.error || $_('custom_lists.toast.failed_ban'));
-			list = payload;
-			syncForm();
+			applyPagedListPayload(payload);
 			toast.success(
 				$_(nextIsBanned ? 'custom_lists.toast.list_banned' : 'custom_lists.toast.list_unbanned')
 			);
@@ -3296,7 +3428,7 @@
 			});
 			const payload = await res.json();
 			if (!res.ok) throw new Error(payload.error || $_('custom_lists.toast.failed_reorder'));
-			list = normalizeMutationListPayload(payload);
+			applyPagedListPayload(payload, { syncForm: false });
 			toast.success($_('custom_lists.toast.reordered'));
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('custom_lists.toast.failed_reorder'));
@@ -3336,8 +3468,7 @@
 				throw new Error(responsePayload?.error || $_('custom_lists.toast.failed_update_level'));
 			}
 
-			list = normalizeMutationListPayload(responsePayload);
-			syncForm();
+			applyPagedListPayload(responsePayload);
 			await loadPendingSubmissions(true);
 			toast.success(payload.accept ? 'Submission approved' : 'Submission rejected');
 		} catch (error) {
@@ -3836,10 +3967,15 @@
 			<Tabs.Content value="levels">
 				<LevelsTab
 					list={levelsTabList}
+					loadedLevelCount={levelsPage}
+					allLevelsLoaded={hasSingleLevelsPage(list)}
 					{canEditLevels}
 					{levelDrafts}
 					{levelDeletionDraftIds}
 					{addingLevel}
+					loadingMoreLevels={listLevelsLoading}
+					levelsLoadingError={listLevelsError}
+					retryLoadMoreLevels={handleLevelsPageRequest}
 					{batchAddProgress}
 					{abortBatchAddImport}
 					{savingLevelItemId}

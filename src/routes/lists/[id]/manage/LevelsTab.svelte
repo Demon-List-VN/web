@@ -4,6 +4,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Collapsible from '$lib/components/ui/collapsible';
 	import { Input } from '$lib/components/ui/input';
+	import * as Pagination from '$lib/components/ui/pagination';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { tick } from 'svelte';
 	import { toast } from 'svelte-sonner';
@@ -51,10 +52,15 @@
 	};
 
 	export let list: any = null;
+	export let loadedLevelCount = 1;
+	export let allLevelsLoaded = false;
 	export let canEditLevels = false;
 	export let levelDrafts: Record<number, LevelItemPatch> = {};
 	export let levelDeletionDraftIds: number[] = [];
 	export let addingLevel = false;
+	export let loadingMoreLevels = false;
+	export let levelsLoadingError = '';
+	export let retryLoadMoreLevels: (pageNumber?: number) => void | Promise<void> = async () => {};
 	export let batchAddProgress: BatchAddProgress | null = null;
 	export let abortBatchAddImport: () => void | Promise<void> = async () => {};
 	export let savingLevelItemId: number | null = null;
@@ -95,6 +101,7 @@
 	let csvFileInput: HTMLInputElement | null = null;
 	let csvAddSummary: (BatchAddLevelsResult & { invalidRows: number }) | null = null;
 	let addToolsOpen = false;
+	const levelsPageSize = 50;
 	const csvExampleColumns = ['levelId', 'createdAt', 'top', 'rating', 'minProgress', 'videoId'];
 	const csvExampleRows = [
 		['128', '2024-01-05T12:00:00Z', '3', '5', '47', 'dQw4w9WgXcQ'],
@@ -106,12 +113,15 @@
 		? getDisplayedItems(list, levelDrafts, levelDeletionDraftIds)
 		: [];
 	$: canDragReorder = canEditLevels
+		&& allLevelsLoaded
 		&& list?.mode === 'top'
 		&& list?.itemSort !== 'created_at'
 		&& !savingReorder
 		&& !levelDeletionDraftIds.length
 		&& !getPendingAdditionCount(list);
 	$: quickLevelId = getQuickLevelId();
+	$: currentLevelsPage = Math.max(loadedLevelCount, 1);
+	$: levelsPageCount = Math.max(Math.ceil((list?.levelCount ?? 0) / levelsPageSize), 1);
 	$: csvProgressPercent = batchAddProgress?.total
 		? Math.min((batchAddProgress.completed / batchAddProgress.total) * 100, 100)
 		: 0;
@@ -1136,7 +1146,7 @@
 						{$_('custom_lists.detail.edit.mode_top')}
 					</Badge>
 				{/if}
-				<Badge variant="outline">{displayedItems.length}</Badge>
+				<Badge variant="outline">{list?.levelCount ?? displayedItems.length}</Badge>
 			</div>
 		</div>
 
@@ -1449,6 +1459,70 @@
 					</div>
 				{/each}
 			</div>
+			{#if levelsPageCount > 1}
+				<div class="paginationWrap">
+					<Pagination.Root
+						count={list?.levelCount ?? displayedItems.length}
+						perPage={levelsPageSize}
+						page={currentLevelsPage}
+						let:pages
+						let:currentPage={paginationCurrentPage}
+					>
+						<Pagination.Content>
+							<Pagination.Item>
+								<Button
+									type="button"
+									variant="ghost"
+									size="sm"
+									disabled={paginationCurrentPage <= 1 || loadingMoreLevels}
+									on:click={() => retryLoadMoreLevels(paginationCurrentPage - 1)}
+								>
+									Previous
+								</Button>
+							</Pagination.Item>
+							{#each pages as p (p.key)}
+								{#if p.type === 'ellipsis'}
+									<Pagination.Item>
+										<Pagination.Ellipsis />
+									</Pagination.Item>
+								{:else}
+									<Pagination.Item isVisible={currentLevelsPage === p.value}>
+										<Button
+											type="button"
+											variant={currentLevelsPage === p.value ? 'outline' : 'ghost'}
+											size="icon"
+											disabled={loadingMoreLevels}
+											on:click={() => retryLoadMoreLevels(p.value)}
+										>
+											{p.value}
+										</Button>
+									</Pagination.Item>
+								{/if}
+							{/each}
+							<Pagination.Item>
+								<Button
+									type="button"
+									variant="ghost"
+									size="sm"
+									disabled={paginationCurrentPage >= levelsPageCount || loadingMoreLevels}
+									on:click={() => retryLoadMoreLevels(paginationCurrentPage + 1)}
+								>
+									Next
+								</Button>
+							</Pagination.Item>
+						</Pagination.Content>
+					</Pagination.Root>
+					{#if loadingMoreLevels}
+						<p class="paginationStatus">{$_('general.loading')}...</p>
+					{/if}
+				</div>
+			{/if}
+			{#if levelsLoadingError}
+				<div class="pageError">
+					<p>{levelsLoadingError}</p>
+					<Button variant="outline" size="sm" on:click={() => retryLoadMoreLevels()}>Retry</Button>
+				</div>
+			{/if}
 		{/if}
 	</div>
 </div>
@@ -1817,6 +1891,36 @@
 		gap: 10px;
 	}
 
+	.paginationWrap {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 10px;
+		padding-top: 8px;
+	}
+
+	.paginationStatus {
+		font-size: 0.85rem;
+		color: hsl(var(--muted-foreground));
+	}
+
+	.pageError {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		padding: 12px 14px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 10px;
+		background: hsl(var(--muted) / 0.08);
+	}
+
+	.pageError p {
+		margin: 0;
+		font-size: 0.9rem;
+		color: hsl(var(--muted-foreground));
+	}
+
 	.levelItem {
 		background: hsl(var(--card));
 		border: 1px solid hsl(var(--border));
@@ -2079,6 +2183,11 @@
 
 		.levelItem {
 			padding: 12px 14px;
+		}
+
+		.pageError {
+			flex-direction: column;
+			align-items: stretch;
 		}
 	}
 </style>
