@@ -399,10 +399,7 @@
 
 <svelte:head>
 	<title>{$_('head.titles.lists')} - {$_('head.site_name')}</title>
-	<meta
-		name="description"
-		content={$_('head.descriptions.lists')}
-	/>
+	<meta name="description" content={$_('head.descriptions.lists')} />
 </svelte:head>
 
 <div class="page">

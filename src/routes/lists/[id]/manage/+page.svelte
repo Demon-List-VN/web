@@ -15,10 +15,7 @@
 	import { browser } from '$app/environment';
 	import { onDestroy, onMount } from 'svelte';
 	import { clearCustomListBranding, setCustomListBranding } from '$lib/client/customListBranding';
-	import {
-		crawlPointercrateMirrorList as runPointercrateMirrorCrawler,
-		isPointercrateMirrorList
-	} from '$lib/client/pointercrateMirrorCrawler';
+	import { crawlMirrorList as runMirrorCrawler } from '$lib/client/mirrorCrawler';
 	import {
 		normalizeCustomListRankBadges,
 		type CustomListRankBadge
@@ -385,7 +382,7 @@
 	let savingLevelDrafts = false;
 	let savingReorder = false;
 	let refreshingLeaderboard = false;
-	let crawlingPointercrateMirror = false;
+	let crawlingMirror = false;
 	let savingBanState = false;
 	let savingCollaboration = false;
 	let hasUnsavedSettings = false;
@@ -1679,30 +1676,29 @@
 		void refreshLeaderboardPrecalc();
 	}
 
-	async function crawlPointercrateMirrorList() {
-		if (!list || !isPointercrateMirrorList(list) || !canEditLevels || crawlingPointercrateMirror) return;
+	async function crawlMirrorList() {
+		if (!list || !canCrawlMirror || crawlingMirror) return;
 
 		if (hasUnsavedManageChanges) {
-			toast.error($_('custom_lists.toast.save_before_pointercrate_crawl'));
+			toast.error($_('custom_lists.toast.save_before_mirror_crawl'));
 			return;
 		}
 
-		crawlingPointercrateMirror = true;
-		const crawlToast = toast.loading($_('custom_lists.toast.crawling_pointercrate'));
+		crawlingMirror = true;
+		const crawlToast = toast.loading($_('custom_lists.toast.crawling_mirror'));
 
 		try {
-			const result = await runPointercrateMirrorCrawler<CustomList>({
+			const result = await runMirrorCrawler<CustomList>({
 				apiUrl: import.meta.env.VITE_API_URL,
 				listId: list.id,
 				getToken: () => $user.token(),
-				failedMessage: $_('custom_lists.toast.failed_pointercrate_crawl'),
-				pageLimitMessage: $_('custom_lists.toast.pointercrate_crawl_page_limit')
+				failedMessage: $_('custom_lists.toast.failed_mirror_crawl')
 			});
 			list = normalizeMutationListPayload(result.list);
 			syncForm();
 			toast.dismiss(crawlToast);
 			toast.success(
-				$_('custom_lists.toast.pointercrate_crawled', {
+				$_('custom_lists.toast.mirror_crawled', {
 					values: {
 						added: result.inserted,
 						updated: result.updated,
@@ -1715,10 +1711,10 @@
 		} catch (error) {
 			toast.dismiss(crawlToast);
 			toast.error(
-				error instanceof Error ? error.message : $_('custom_lists.toast.failed_pointercrate_crawl')
+				error instanceof Error ? error.message : $_('custom_lists.toast.failed_mirror_crawl')
 			);
 		} finally {
-			crawlingPointercrateMirror = false;
+			crawlingMirror = false;
 		}
 	}
 
@@ -2580,8 +2576,7 @@
 		if (field === 'isPlatformer') return $_('custom_lists.detail.edit.type_label');
 		if (field === 'levelSubmissionEnabled')
 			return $_('custom_lists.detail.edit.level_submission_label');
-		if (field === 'staffListEnabled')
-			return $_('custom_lists.detail.edit.staff_list_label');
+		if (field === 'staffListEnabled') return $_('custom_lists.detail.edit.staff_list_label');
 		if (field === 'logoUrl') return $_('custom_lists.detail.edit.logo_url_label');
 		if (field === 'mode') return $_('custom_lists.detail.edit.mode_label');
 		if (field === 'rankBadges') return $_('custom_lists.detail.edit.rank_badges_label');
@@ -3372,7 +3367,7 @@
 	$: canViewPendingInvitations = Boolean(list && permissions.canViewPendingInvitations);
 	$: canRespondToInvitation = Boolean(list && permissions.canRespondToInvitation);
 	$: canReviewSubmissions = Boolean(list && permissions.canReviewSubmissions);
-	$: canCrawlPointercrateMirror = Boolean(isPointercrateMirrorList(list) && canEditLevels);
+	$: canCrawlMirror = Boolean(list?.isMirror && canEditLevels);
 	$: if (
 		browser &&
 		list &&
@@ -3598,7 +3593,7 @@
 							<p class="heroDesc">{getManagePreviewDescription()}</p>
 						{/if}
 					</div>
-					{#if canEditSettings || canCrawlPointercrateMirror}
+					{#if canEditSettings || canCrawlMirror}
 						<div class="heroActions">
 							{#if canEditSettings}
 								<Button
@@ -3612,20 +3607,18 @@
 									{refreshingLeaderboard ? `${$_('general.loading')}...` : 'Refresh leaderboard'}
 								</Button>
 							{/if}
-							{#if canCrawlPointercrateMirror}
+							{#if canCrawlMirror}
 								<Button
 									variant="outline"
 									size="sm"
-									on:click={crawlPointercrateMirrorList}
-									disabled={crawlingPointercrateMirror || savingLevelDrafts}
-									title={$_('custom_lists.manage.pointercrate_crawl_hint')}
+									on:click={crawlMirrorList}
+									disabled={crawlingMirror || savingLevelDrafts}
+									title={$_('custom_lists.manage.mirror_crawl_hint')}
 								>
-									<RefreshCw
-										class="mr-2 h-4 w-4 {crawlingPointercrateMirror ? 'animate-spin' : ''}"
-									/>
-									{crawlingPointercrateMirror
+									<RefreshCw class="mr-2 h-4 w-4 {crawlingMirror ? 'animate-spin' : ''}" />
+									{crawlingMirror
 										? `${$_('general.loading')}...`
-										: $_('custom_lists.manage.pointercrate_crawl_button')}
+										: $_('custom_lists.manage.mirror_crawl_button')}
 								</Button>
 							{/if}
 						</div>

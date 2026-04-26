@@ -15,10 +15,8 @@
 	import Ads from '$lib/components/ads.svelte';
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import { clearCustomListBranding, setCustomListBranding } from '$lib/client/customListBranding';
-	import {
-		crawlPointercrateMirrorList as runPointercrateMirrorCrawler,
-		isPointercrateMirrorList
-	} from '$lib/client/pointercrateMirrorCrawler';
+	import { isPointercrateMirrorList } from '$lib/client/pointercrateMirrorCrawler';
+	import { crawlMirrorList as runMirrorCrawler } from '$lib/client/mirrorCrawler';
 	import {
 		normalizeCustomListRankBadges,
 		resolveCustomListRankBadge,
@@ -201,7 +199,7 @@
 	let listLevelsFetchKey = '';
 	let reachedEnd = false;
 	let showScrollToTop = false;
-	let crawlingPointercrateMirror = false;
+	let crawlingMirror = false;
 	let publicStaffEntries: PublicStaffEntry[] = [];
 
 	type LevelFilters = {
@@ -277,9 +275,7 @@
 		currentList: Pick<CustomList, 'id' | 'isOfficial' | 'isMirror'> | null | undefined
 	) {
 		return Boolean(
-			currentList?.isOfficial ||
-				currentList?.isMirror ||
-				isPointercrateMirrorList(currentList)
+			currentList?.isOfficial || currentList?.isMirror || isPointercrateMirrorList(currentList)
 		);
 	}
 
@@ -897,19 +893,18 @@
 		}
 	}
 
-	async function crawlPointercrateMirrorList() {
-		if (!list || !canCrawlPointercrateMirror || crawlingPointercrateMirror) return;
+	async function crawlMirrorList() {
+		if (!list || !canCrawlMirror || crawlingMirror) return;
 
-		crawlingPointercrateMirror = true;
-		const crawlToast = toast.loading($_('custom_lists.toast.crawling_pointercrate'));
+		crawlingMirror = true;
+		const crawlToast = toast.loading($_('custom_lists.toast.crawling_mirror'));
 
 		try {
-			const result = await runPointercrateMirrorCrawler<CustomList>({
+			const result = await runMirrorCrawler<CustomList>({
 				apiUrl: import.meta.env.VITE_API_URL,
 				listId: list.id,
 				getToken: () => $user.token(),
-				failedMessage: $_('custom_lists.toast.failed_pointercrate_crawl'),
-				pageLimitMessage: $_('custom_lists.toast.pointercrate_crawl_page_limit')
+				failedMessage: $_('custom_lists.toast.failed_mirror_crawl')
 			});
 
 			try {
@@ -929,7 +924,7 @@
 			listLevelsFetchKey = '';
 			toast.dismiss(crawlToast);
 			toast.success(
-				$_('custom_lists.toast.pointercrate_crawled', {
+				$_('custom_lists.toast.mirror_crawled', {
 					values: {
 						added: result.inserted,
 						updated: result.updated,
@@ -942,10 +937,10 @@
 		} catch (error) {
 			toast.dismiss(crawlToast);
 			toast.error(
-				error instanceof Error ? error.message : $_('custom_lists.toast.failed_pointercrate_crawl')
+				error instanceof Error ? error.message : $_('custom_lists.toast.failed_mirror_crawl')
 			);
 		} finally {
-			crawlingPointercrateMirror = false;
+			crawlingMirror = false;
 		}
 	}
 
@@ -1119,9 +1114,7 @@
 	$: listItems = list?.items ?? [];
 	$: listCardType = list?.isPlatformer ? 'pl' : 'dl';
 	$: canStarList = Boolean(list && list.id > 0 && list.visibility !== 'private');
-	$: canCrawlPointercrateMirror = Boolean(
-		isPointercrateMirrorList(list) && list?.permissions?.canEditLevels
-	);
+	$: canCrawlMirror = Boolean(list?.isMirror && list?.permissions?.canEditLevels);
 	$: canShowCommunity = Boolean(list && list.visibility !== 'private' && list.communityEnabled);
 	$: canShowLeaderboard = Boolean(list && list.leaderboardEnabled !== false);
 	$: canShowMyRecord = Boolean(canShowLeaderboard && $user.loggedIn && $user.data?.uid);
@@ -1294,21 +1287,21 @@
 						<p class="heroDesc muted">{$_('custom_lists.detail.no_description')}</p>
 					{/if}
 				</div>
-				{#if canCrawlPointercrateMirror || canStarList}
+				{#if canCrawlMirror || canStarList}
 					<div class="heroActions">
-						{#if canCrawlPointercrateMirror}
+						{#if canCrawlMirror}
 							<Button
 								variant="outline"
 								size="sm"
 								class="heroCrawlButton"
-								on:click={crawlPointercrateMirrorList}
-								disabled={crawlingPointercrateMirror}
-								title={$_('custom_lists.manage.pointercrate_crawl_hint')}
+								on:click={crawlMirrorList}
+								disabled={crawlingMirror}
+								title={$_('custom_lists.manage.mirror_crawl_hint')}
 							>
-								<RefreshCw class={`mr-2 h-4 w-4 ${crawlingPointercrateMirror ? 'spinning' : ''}`} />
-								{crawlingPointercrateMirror
-									? $_('custom_lists.manage.pointercrate_crawl_running')
-									: $_('custom_lists.manage.pointercrate_crawl_button')}
+								<RefreshCw class={`mr-2 h-4 w-4 ${crawlingMirror ? 'spinning' : ''}`} />
+								{crawlingMirror
+									? $_('custom_lists.manage.mirror_crawl_running')
+									: $_('custom_lists.manage.mirror_crawl_button')}
 							</Button>
 						{/if}
 						{#if canStarList}
@@ -1382,7 +1375,6 @@
 				<Clock class="h-3.5 w-3.5" />
 				{$_('custom_lists.detail.updated', { values: { date: formatDate(list.updated_at) } })}
 			</p>
-
 		</div>
 
 		<Ads dataAdFormat="auto" />

@@ -2118,8 +2118,15 @@
 		},
 		"manage": {
 			"title": "Manage",
+			"mirror_crawl_button": "Crawl mirror",
+			"mirror_crawl_running": "Crawling mirror...",
+			"mirror_crawl_hint": "Sync this mirror list from its configured source.",
 			"pointercrate_crawl_button": "Crawl Pointercrate",
+			"pointercrate_crawl_running": "Crawling Pointercrate...",
 			"pointercrate_crawl_hint": "Sync positions, requirements, and videos from Pointercrate.",
+			"aredl_crawl_button": "Crawl AREDL",
+			"aredl_crawl_running": "Crawling AREDL...",
+			"aredl_crawl_hint": "Sync positions and points from AREDL.",
 			"tabs": {
 				"basic": "Basic info",
 				"appearance": "Appearance",
@@ -2222,7 +2229,8 @@
 				"collaboration_settings_updated": "Collaboration settings updated",
 				"ban_state_updated": "Ban state updated",
 				"leaderboard_refreshed": "Leaderboard refreshed",
-				"pointercrate_mirror_crawled": "Pointercrate mirror crawled"
+				"pointercrate_mirror_crawled": "Pointercrate mirror crawled",
+				"aredl_mirror_crawled": "AREDL mirror crawled"
 			},
 			"audit_detail": {
 				"actor_label": "Actor",
@@ -2244,7 +2252,8 @@
 				"collaboration_settings_updated": "{actor} set admin helper access to {enabled}.",
 				"ban_state_updated": "{actor} performed: {state}.",
 				"leaderboard_refreshed": "{actor} refreshed the leaderboard ({totalPlayers} players, {totalRecords} records).",
-				"pointercrate_mirror_crawled": "{actor} synced Pointercrate ({processed} checked, {inserted} added, {updated} updated, {removed} removed, {failed} failed)."
+				"pointercrate_mirror_crawled": "{actor} synced Pointercrate ({processed} checked, {inserted} added, {updated} updated, {removed} removed, {failed} failed).",
+				"aredl_mirror_crawled": "{actor} synced AREDL ({processed} checked, {inserted} added, {updated} updated, {removed} removed, {failed} failed)."
 			},
 			"unsaved_settings_title": "Unsaved settings",
 			"unsaved_settings_hint": "You have changes that have not been saved yet. Save them before leaving this page so the list settings stay in sync.",
@@ -2340,10 +2349,14 @@
 			"level_id_invalid": "Enter a valid level ID",
 			"saving_list": "Saving list...",
 			"refreshing_leaderboard": "Refreshing leaderboard...",
+			"crawling_mirror": "Crawling mirror list...",
 			"crawling_pointercrate": "Crawling Pointercrate mirror...",
+			"crawling_aredl": "Crawling AREDL mirror...",
 			"list_updated": "List updated",
 			"leaderboard_refreshed": "Leaderboard refreshed",
+			"mirror_crawled": "Mirror sync complete. Added {added}. Updated {updated}. Skipped {skipped}. Removed {removed}. Failed {failed}.",
 			"pointercrate_crawled": "Pointercrate sync complete. Added {added}. Updated {updated}. Skipped {skipped}. Removed {removed}. Failed {failed}.",
+			"aredl_crawled": "AREDL sync complete. Added {added}. Updated {updated}. Skipped {skipped}. Removed {removed}. Failed {failed}.",
 			"leaderboard_refreshed_players": "Leaderboard refreshed ({total} ranked players)",
 			"leaderboard_refreshed_records": "Leaderboard refreshed ({total} ranked players, {totalRecords} records)",
 			"list_deleted": "List deleted",
@@ -2357,8 +2370,12 @@
 			"failed_load": "Failed to load list",
 			"failed_update": "Failed to update list",
 			"failed_refresh_leaderboard": "Failed to refresh leaderboard",
+			"failed_mirror_crawl": "Failed to crawl mirror list",
 			"failed_pointercrate_crawl": "Failed to crawl Pointercrate mirror",
+			"failed_aredl_crawl": "Failed to crawl AREDL mirror",
+			"save_before_mirror_crawl": "Save or discard pending changes before crawling this mirror list.",
 			"save_before_pointercrate_crawl": "Save or discard pending changes before crawling Pointercrate.",
+			"save_before_aredl_crawl": "Save or discard pending changes before crawling AREDL.",
 			"pointercrate_crawl_page_limit": "Pointercrate crawl stopped after too many pages.",
 			"failed_delete": "Failed to delete list",
 			"failed_create": "Failed to create list",

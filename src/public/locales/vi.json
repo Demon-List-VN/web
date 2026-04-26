@@ -2117,8 +2117,15 @@
 		},
 		"manage": {
 			"title": "Quản lý",
+			"mirror_crawl_button": "Crawl mirror",
+			"mirror_crawl_running": "Đang crawl mirror...",
+			"mirror_crawl_hint": "Đồng bộ danh sách mirror này từ nguồn đã cấu hình.",
 			"pointercrate_crawl_button": "Crawl Pointercrate",
+			"pointercrate_crawl_running": "Đang crawl Pointercrate...",
 			"pointercrate_crawl_hint": "Đồng bộ vị trí, mốc tối thiểu và video từ Pointercrate.",
+			"aredl_crawl_button": "Crawl AREDL",
+			"aredl_crawl_running": "Đang crawl AREDL...",
+			"aredl_crawl_hint": "Đồng bộ vị trí và điểm từ AREDL.",
 			"tabs": {
 				"basic": "Thông tin cơ bản",
 				"appearance": "Giao diện",
@@ -2221,7 +2228,8 @@
 				"collaboration_settings_updated": "Đã cập nhật thiết lập cộng tác",
 				"ban_state_updated": "Đã cập nhật trạng thái cấm",
 				"leaderboard_refreshed": "Đã làm mới bảng xếp hạng",
-				"pointercrate_mirror_crawled": "Đã crawl mirror Pointercrate"
+				"pointercrate_mirror_crawled": "Đã crawl mirror Pointercrate",
+				"aredl_mirror_crawled": "Đã crawl mirror AREDL"
 			},
 			"audit_detail": {
 				"actor_label": "Người thực hiện",
@@ -2243,7 +2251,8 @@
 				"collaboration_settings_updated": "{actor} đã đặt quyền quản trị viên thêm trợ lý thành {enabled}.",
 				"ban_state_updated": "{actor} đã thực hiện: {state}.",
 				"leaderboard_refreshed": "{actor} đã làm mới bảng xếp hạng ({totalPlayers} người chơi, {totalRecords} bản ghi).",
-				"pointercrate_mirror_crawled": "{actor} đã đồng bộ Pointercrate ({processed} đã kiểm tra, {inserted} thêm, {updated} cập nhật, {removed} xóa, {failed} lỗi)."
+				"pointercrate_mirror_crawled": "{actor} đã đồng bộ Pointercrate ({processed} đã kiểm tra, {inserted} thêm, {updated} cập nhật, {removed} xóa, {failed} lỗi).",
+				"aredl_mirror_crawled": "{actor} đã đồng bộ AREDL ({processed} đã kiểm tra, {inserted} thêm, {updated} cập nhật, {removed} xóa, {failed} lỗi)."
 			},
 			"unsaved_settings_title": "Có thiết lập chưa lưu",
 			"unsaved_settings_hint": "Bạn đang có thay đổi chưa được lưu. Hãy lưu trước khi rời khỏi trang để thiết lập của danh sách không bị lệch.",
@@ -2339,10 +2348,14 @@
 			"level_id_invalid": "Nhập ID level hợp lệ",
 			"saving_list": "Đang lưu danh sách...",
 			"refreshing_leaderboard": "Đang làm mới bảng xếp hạng...",
+			"crawling_mirror": "Đang crawl danh sách mirror...",
 			"crawling_pointercrate": "Đang crawl mirror Pointercrate...",
+			"crawling_aredl": "Đang crawl mirror AREDL...",
 			"list_updated": "Đã cập nhật danh sách",
 			"leaderboard_refreshed": "Đã làm mới bảng xếp hạng",
+			"mirror_crawled": "Đã đồng bộ mirror. Đã thêm {added}. Đã cập nhật {updated}. Bỏ qua {skipped}. Đã xóa {removed}. Lỗi {failed}.",
 			"pointercrate_crawled": "Đã đồng bộ Pointercrate. Đã thêm {added}. Đã cập nhật {updated}. Bỏ qua {skipped}. Đã xóa {removed}. Lỗi {failed}.",
+			"aredl_crawled": "Đã đồng bộ AREDL. Đã thêm {added}. Đã cập nhật {updated}. Bỏ qua {skipped}. Đã xóa {removed}. Lỗi {failed}.",
 			"leaderboard_refreshed_players": "Đã làm mới bảng xếp hạng ({total} người chơi được xếp hạng)",
 			"leaderboard_refreshed_records": "Đã làm mới bảng xếp hạng ({total} người chơi được xếp hạng, {totalRecords} bản ghi)",
 			"list_deleted": "Đã xoá danh sách",
@@ -2356,8 +2369,12 @@
 			"failed_load": "Không thể tải danh sách",
 			"failed_update": "Không thể cập nhật danh sách",
 			"failed_refresh_leaderboard": "Không thể làm mới bảng xếp hạng",
+			"failed_mirror_crawl": "Không thể crawl danh sách mirror",
 			"failed_pointercrate_crawl": "Không thể crawl mirror Pointercrate",
+			"failed_aredl_crawl": "Không thể crawl mirror AREDL",
+			"save_before_mirror_crawl": "Hãy lưu hoặc hủy các thay đổi đang chờ trước khi crawl danh sách mirror này.",
 			"save_before_pointercrate_crawl": "Hãy lưu hoặc hủy các thay đổi đang chờ trước khi crawl Pointercrate.",
+			"save_before_aredl_crawl": "Hãy lưu hoặc hủy các thay đổi đang chờ trước khi crawl AREDL.",
 			"pointercrate_crawl_page_limit": "Đã dừng crawl Pointercrate vì vượt quá số trang cho phép.",
 			"failed_delete": "Không thể xoá danh sách",
 			"failed_create": "Không thể tạo danh sách",

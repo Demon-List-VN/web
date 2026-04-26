@@ -14,15 +14,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { goto } from '$app/navigation';
 	import { _ } from 'svelte-i18n';
-	import {
-		MessageSquare,
-		Tag,
-		Link,
-		Crown,
-		Monitor,
-		Smartphone,
-		ListPlus,
-	} from 'lucide-svelte';
+	import { MessageSquare, Tag, Link, Crown, Monitor, Smartphone, ListPlus } from 'lucide-svelte';
 	import { InfoCircled } from 'svelte-radix';
 
 	export let data: any;
@@ -167,9 +159,10 @@
 		return data.level.isPlatformer ? $_('level.platformer_rating') : $_('level.classic_rating');
 	}
 
-	$: effectiveVideoId = 'level' in data
-		? (($page.url.searchParams.get('videoId') || '').trim() || data.level.videoID || null)
-		: null;
+	$: effectiveVideoId =
+		'level' in data
+			? ($page.url.searchParams.get('videoId') || '').trim() || data.level.videoID || null
+			: null;
 
 	function hasStarredListPositionBadge(list: StarredListEntry) {
 		return list.topEnabled ?? list.mode === 'top';
@@ -393,14 +386,20 @@
 
 <svelte:head>
 	{#if 'gdbrowser' in data}
-		<title>{data.gdbrowser.name} {$_('head.labels.by')} {data.gdbrowser.author} - {$_('head.site_name')}</title>
+		<title
+			>{data.gdbrowser.name}
+			{$_('head.labels.by')}
+			{data.gdbrowser.author} - {$_('head.site_name')}</title
+		>
 		<meta
 			property="og:title"
 			content={`${data.gdbrowser.name} ${$_('head.labels.by')} ${data.gdbrowser.author} - ${$_('head.site_name')}`}
 		/>
 		<meta property="og:description" content={data.gdbrowser.description} />
 	{:else}
-		<title>{data.level.name} {$_('head.labels.by')} {data.level.creator} - {$_('head.site_name')}</title>
+		<title
+			>{data.level.name} {$_('head.labels.by')} {data.level.creator} - {$_('head.site_name')}</title
+		>
 		<meta
 			property="og:title"
 			content={`${data.level.name} ${$_('head.labels.by')} ${data.level.creator} - ${$_('head.site_name')}`}
@@ -452,7 +451,8 @@
 								{#each levelTags as tag}
 									<span
 										class="levelTagBadge"
-										style="background: {tag.color || '#666'}18; color: {tag.color || '#666'}; border: 1px solid {tag.color || '#666'}30"
+										style="background: {tag.color || '#666'}18; color: {tag.color ||
+											'#666'}; border: 1px solid {tag.color || '#666'}30"
 									>
 										<Tag class="h-3 w-3" />
 										{tag.name}
@@ -462,7 +462,11 @@
 						{/if}
 						{#if 'level' in data}
 							<div class="levelActionRow">
-								<Button variant="outline" size="sm" on:click={() => goto(`/lists?levelId=${$page.params.id}`)}>
+								<Button
+									variant="outline"
+									size="sm"
+									on:click={() => goto(`/lists?levelId=${$page.params.id}`)}
+								>
 									<ListPlus class="mr-2 h-4 w-4" />
 									Add to List
 								</Button>
@@ -495,7 +499,9 @@
 											<div class="starredListTitleWrap">
 												<h3>{list.title}</h3>
 												{#if isOfficialLevelList(list)}
-													<div class="starredListOfficial">{$_('custom_lists.detail.official_badge')}</div>
+													<div class="starredListOfficial">
+														{$_('custom_lists.detail.official_badge')}
+													</div>
 												{:else if list.ownerData && !shouldHideStarredListOwner(list)}
 													<div class="starredListAuthor" data-starred-list-author>
 														<span>{$_('custom_lists.index.browse.by')}</span>
@@ -506,7 +512,9 @@
 											<div class="starredListBadges">
 												<span class="starredListBadge">{formatStarredListPrimaryValue(list)}</span>
 												{#if list.mode === 'rating' && hasStarredListPositionBadge(list) && list.item?.rating != null}
-													<span class="starredListRatingChip">{formatStarredListRatingValue(list)}</span>
+													<span class="starredListRatingChip"
+														>{formatStarredListRatingValue(list)}</span
+													>
 												{/if}
 											</div>
 										</div>
@@ -745,7 +753,9 @@
 		border-radius: 10px;
 		border: 1px solid transparent;
 		cursor: pointer;
-		transition: background 0.15s, border-color 0.15s;
+		transition:
+			background 0.15s,
+			border-color 0.15s;
 
 		&:hover {
 			background: hsl(var(--muted) / 0.5);
@@ -757,7 +767,11 @@
 			border-color: rgba(234, 179, 8, 0.25);
 
 			&:hover {
-				background: linear-gradient(90deg, rgba(234, 179, 8, 0.14) 0%, rgba(234, 179, 8, 0.04) 100%);
+				background: linear-gradient(
+					90deg,
+					rgba(234, 179, 8, 0.14) 0%,
+					rgba(234, 179, 8, 0.04) 100%
+				);
 				border-color: rgba(234, 179, 8, 0.4);
 			}
 		}
@@ -838,7 +852,10 @@
 		background: hsl(var(--background));
 		color: hsl(var(--foreground));
 		cursor: pointer;
-		transition: background 0.15s, border-color 0.15s, color 0.15s;
+		transition:
+			background 0.15s,
+			border-color 0.15s,
+			color 0.15s;
 		flex-shrink: 0;
 
 		&:hover {
@@ -881,7 +898,6 @@
 		.record-acceptance :global(.acceptanceBadge span) {
 			display: none;
 		}
-
 	}
 
 	.chartWrapper {
@@ -1008,7 +1024,9 @@
 		border-radius: var(--radius);
 		text-decoration: none;
 		color: inherit;
-		transition: background 0.15s ease, border-color 0.15s ease;
+		transition:
+			background 0.15s ease,
+			border-color 0.15s ease;
 
 		&:hover {
 			background: hsl(var(--muted) / 0.25);
