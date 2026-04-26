@@ -1694,7 +1694,7 @@
 				getToken: () => $user.token(),
 				failedMessage: $_('custom_lists.toast.failed_mirror_crawl')
 			});
-			list = normalizeMutationListPayload(result.list);
+			list = normalizeMutationListPayload({ ...list, ...result.list });
 			syncForm();
 			toast.dismiss(crawlToast);
 			toast.success(

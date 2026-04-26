@@ -916,7 +916,7 @@
 				list = { ...refreshedList, items: incomingItems };
 				reachedEnd = incomingItems.length < LEVELS_PAGE_SIZE;
 			} catch {
-				list = { ...result.list, items: result.list.items ?? [] };
+				list = { ...list, ...result.list, items: result.list.items ?? list.items ?? [] };
 				reachedEnd = false;
 			}
 
@@ -1560,25 +1560,25 @@
 							count={leaderboardCount}
 							perPage={50}
 							page={activeLeaderboardPage}
-							let:pages={leaderboardPages}
-							let:currentPage={leaderboardCurrentPage}
+							let:pages
+							let:currentPage
 						>
 							<Pagination.Content>
 								<Pagination.Item>
 									<Pagination.PrevButton
-										on:click={() => setLeaderboardPage(Math.max(1, leaderboardCurrentPage - 1))}
+										on:click={() => setLeaderboardPage(Math.max(1, currentPage - 1))}
 									/>
 								</Pagination.Item>
-								{#each leaderboardPages as p (p.key)}
+								{#each pages as p (p.key)}
 									{#if p.type === 'ellipsis'}
 										<Pagination.Item>
 											<Pagination.Ellipsis />
 										</Pagination.Item>
 									{:else}
-										<Pagination.Item isVisible={leaderboardCurrentPage == p.value}>
+										<Pagination.Item isVisible={currentPage == p.value}>
 											<Pagination.Link
 												page={p}
-												isActive={leaderboardCurrentPage == p.value}
+												isActive={currentPage == p.value}
 												on:click={() => setLeaderboardPage(p.value)}
 											>
 												{p.value}
@@ -1588,7 +1588,7 @@
 								{/each}
 								<Pagination.Item>
 									<Pagination.NextButton
-										on:click={() => setLeaderboardPage(leaderboardCurrentPage + 1)}
+										on:click={() => setLeaderboardPage(currentPage + 1)}
 									/>
 								</Pagination.Item>
 							</Pagination.Content>
@@ -1801,26 +1801,26 @@
 												count={recordPointsCount}
 												perPage={50}
 												page={recordPointsPage}
-												let:pages={recordPointsPages}
-												let:currentPage={recordPointsCurrentPage}
+													let:pages
+													let:currentPage
 											>
 												<Pagination.Content>
 													<Pagination.Item>
 														<Pagination.PrevButton
 															on:click={() =>
-																setRecordPointsPage(Math.max(1, recordPointsCurrentPage - 1))}
+																	setRecordPointsPage(Math.max(1, currentPage - 1))}
 														/>
 													</Pagination.Item>
-													{#each recordPointsPages as p (p.key)}
+														{#each pages as p (p.key)}
 														{#if p.type === 'ellipsis'}
 															<Pagination.Item>
 																<Pagination.Ellipsis />
 															</Pagination.Item>
 														{:else}
-															<Pagination.Item isVisible={recordPointsCurrentPage == p.value}>
+																<Pagination.Item isVisible={currentPage == p.value}>
 																<Pagination.Link
 																	page={p}
-																	isActive={recordPointsCurrentPage == p.value}
+																		isActive={currentPage == p.value}
 																	on:click={() => setRecordPointsPage(p.value)}
 																>
 																	{p.value}
@@ -1830,7 +1830,7 @@
 													{/each}
 													<Pagination.Item>
 														<Pagination.NextButton
-															on:click={() => setRecordPointsPage(recordPointsCurrentPage + 1)}
+															on:click={() => setRecordPointsPage(currentPage + 1)}
 														/>
 													</Pagination.Item>
 												</Pagination.Content>
@@ -2010,26 +2010,26 @@
 								count={myRecordPointsCount}
 								perPage={50}
 								page={myRecordPointsPage}
-								let:pages={myRecordPointsPages}
-								let:currentPage={myRecordPointsCurrentPage}
+								let:pages
+								let:currentPage
 							>
 								<Pagination.Content>
 									<Pagination.Item>
 										<Pagination.PrevButton
 											on:click={() =>
-												setMyRecordPointsPage(Math.max(1, myRecordPointsCurrentPage - 1))}
+												setMyRecordPointsPage(Math.max(1, currentPage - 1))}
 										/>
 									</Pagination.Item>
-									{#each myRecordPointsPages as p (p.key)}
+									{#each pages as p (p.key)}
 										{#if p.type === 'ellipsis'}
 											<Pagination.Item>
 												<Pagination.Ellipsis />
 											</Pagination.Item>
 										{:else}
-											<Pagination.Item isVisible={myRecordPointsCurrentPage == p.value}>
+											<Pagination.Item isVisible={currentPage == p.value}>
 												<Pagination.Link
 													page={p}
-													isActive={myRecordPointsCurrentPage == p.value}
+													isActive={currentPage == p.value}
 													on:click={() => setMyRecordPointsPage(p.value)}
 												>
 													{p.value}
@@ -2039,7 +2039,7 @@
 									{/each}
 									<Pagination.Item>
 										<Pagination.NextButton
-											on:click={() => setMyRecordPointsPage(myRecordPointsCurrentPage + 1)}
+											on:click={() => setMyRecordPointsPage(currentPage + 1)}
 										/>
 									</Pagination.Item>
 								</Pagination.Content>
