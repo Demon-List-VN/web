@@ -3,7 +3,6 @@
 	import AcceptanceBadge from '$lib/components/AcceptanceBadge.svelte';
 	import CommunityPostCard from '$lib/components/communityPostCard.svelte';
 	import PlayerLink from '$lib/components/playerLink.svelte';
-	import { isPointercrateMirrorList } from '$lib/client/mirrorCrawler';
 	import { fade } from 'svelte/transition';
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
@@ -216,7 +215,7 @@
 	function shouldHideStarredListOwner(
 		list: Pick<StarredListEntry, 'id' | 'slug' | 'isOfficial' | 'isMirror'>
 	) {
-		return Boolean(isOfficialLevelList(list) || list.isMirror || isPointercrateMirrorList(list));
+		return Boolean(isOfficialLevelList(list) || list.isMirror);
 	}
 
 	function getOfficialLevelLists(level: any): StarredListEntry[] {

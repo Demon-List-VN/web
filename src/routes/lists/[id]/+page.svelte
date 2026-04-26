@@ -15,7 +15,6 @@
 	import Ads from '$lib/components/ads.svelte';
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import { clearCustomListBranding, setCustomListBranding } from '$lib/client/customListBranding';
-	import { isPointercrateMirrorList } from '$lib/client/mirrorCrawler';
 	import { crawlMirrorList as runMirrorCrawler } from '$lib/client/mirrorCrawler';
 	import {
 		normalizeCustomListRankBadges,
@@ -274,9 +273,7 @@
 	function shouldHideOwnerInfo(
 		currentList: Pick<CustomList, 'id' | 'isOfficial' | 'isMirror'> | null | undefined
 	) {
-		return Boolean(
-			currentList?.isOfficial || currentList?.isMirror || isPointercrateMirrorList(currentList)
-		);
+		return Boolean(currentList?.isOfficial || currentList?.isMirror);
 	}
 
 	function getStaffRoleLabel(role: PublicStaffRole) {

@@ -9,7 +9,6 @@
 	import { user } from '$lib/client';
 	import { toast } from 'svelte-sonner';
 	import PlayerLink from '$lib/components/playerLink.svelte';
-	import { isPointercrateMirrorList } from '$lib/client/mirrorCrawler';
 	import {
 		Globe2,
 		Link as LinkIcon,
@@ -144,7 +143,7 @@
 	}
 
 	function shouldHideOwnerInfo(list: Pick<ListSummary, 'id' | 'isOfficial' | 'isMirror'>) {
-		return Boolean(list.isOfficial || list.isMirror || isPointercrateMirrorList(list));
+		return Boolean(list.isOfficial || list.isMirror);
 	}
 
 	function isHexColor(value: string | null | undefined) {

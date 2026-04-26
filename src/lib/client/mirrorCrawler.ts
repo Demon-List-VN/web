@@ -8,12 +8,6 @@ export type MirrorCrawlCounters = {
 	gdFailed: number;
 };
 
-export const POINTERCRATE_MIRROR_LIST_ID = 109;
-
-export function isPointercrateMirrorList(list: { id: number } | null | undefined) {
-	return list?.id === POINTERCRATE_MIRROR_LIST_ID;
-}
-
 export type MirrorCrawlResult<TList> = MirrorCrawlCounters & {
 	source: {
 		name: string;
