@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { locale } from 'svelte-i18n';
-	import { BadgeCheck, ExternalLink, ListChecks } from 'lucide-svelte';
+	import { ExternalLink } from 'lucide-svelte';
 
 	export let lists: any[] = [];
 	export let loading = false;
@@ -11,43 +11,12 @@
 		return $locale == 'vi' ? vi : en;
 	}
 
-	function formatTime(ms: number | null | undefined) {
-		if (ms == null || !Number.isFinite(ms)) {
-			return '--';
-		}
-
-		const minutes = Math.floor(ms / 60000);
-		const seconds = Math.floor((ms % 60000) / 1000);
-		const milliseconds = ms % 1000;
-
-		return `${minutes}:${seconds.toString().padStart(2, '0')}.${milliseconds
-			.toString()
-			.padStart(3, '0')}`;
-	}
-
 	function getListHref(list: any) {
 		return `/lists/${list.slug || list.id}`;
 	}
 
 	function getOwnerName(list: any) {
 		return list.ownerData?.name || null;
-	}
-
-	function getRequirementLabel(list: any) {
-		const minProgress = list.item?.minProgress;
-
-		if (minProgress == null) {
-			return t('Không có mốc tối thiểu', 'No minimum threshold');
-		}
-
-		if (list.isPlatformer) {
-			return t(
-				`Mốc thời gian: ${formatTime(minProgress)}`,
-				`Base time: ${formatTime(minProgress)}`
-			);
-		}
-
-		return t(`Tối thiểu ${minProgress}%`, `Minimum ${minProgress}%`);
 	}
 
 	function getListTypeLabel(list: any) {
@@ -62,12 +31,12 @@
 	$: panelDescription =
 		mode === 'eligible'
 			? t(
-				'Dưới đây là các list mà record hiện tại đạt mốc tối thiểu',
-				'These are the lists whose minimum threshold is met by the current record'
+				'Dưới đây là các list mà record hiện tại đủ điều kiện',
+				'These are the lists your current record qualifies for'
 			)
 			: t(
-				'Các list công khai đang chứa level này. Mỗi card hiển thị mốc tối thiểu để bạn biết record cần đạt gì',
-				'These public lists currently contain this level. Each card shows the minimum threshold so you can see what the record needs'
+				'Các list công khai đang chứa level này.',
+				'These public lists currently contain this level.'
 			);
 	$: loadingMessage =
 		mode === 'eligible'
@@ -76,8 +45,8 @@
 	$: emptyMessage =
 		mode === 'eligible'
 			? t(
-				'Chưa có list nào phù hợp với progress hoặc thời gian hiện tại.',
-				'No lists match the current progress or time yet.'
+				'Chưa có list nào phù hợp với record hiện tại.',
+				'No lists match the current record yet.'
 			)
 			: t('Level này chưa nằm trong list công khai nào.', 'This level is not in any public list yet.');
 </script>
@@ -125,7 +94,6 @@
 						{#if list.item?.rating != null}
 							<span class="list-chip">{list.item.rating}pt</span>
 						{/if}
-						<span class="list-chip requirement">{getRequirementLabel(list)}</span>
 					</div>
 				</a>
 			{/each}
@@ -249,15 +217,6 @@
 		gap: 6px;
 	}
 
-	.eligible-list-footer {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-		font-size: 12px;
-		color: hsl(var(--primary));
-		font-weight: 500;
-	}
-
 	.list-chip {
 		display: inline-flex;
 		align-items: center;
@@ -274,9 +233,5 @@
 		border-color: hsl(var(--primary) / 0.35);
 		background: hsl(var(--primary) / 0.1);
 		color: hsl(var(--primary));
-	}
-
-	.list-chip.requirement {
-		background: hsl(var(--accent) / 0.08);
 	}
 </style>

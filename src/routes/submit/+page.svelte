@@ -6,15 +6,15 @@
 	import { locale, _ } from 'svelte-i18n';
 	import { toast } from 'svelte-sonner';
 	import { fly } from 'svelte/transition';
-	import { ArrowLeft, ListPlus } from 'lucide-svelte';
+	import { ArrowLeft } from 'lucide-svelte';
 
 	import SubmitStepper from '$lib/components/submit/SubmitStepper.svelte';
 	import StepRules from '$lib/components/submit/StepRules.svelte';
 	import StepLevelId from '$lib/components/submit/StepLevelId.svelte';
 	import StepConfirmLevel from '$lib/components/submit/StepConfirmLevel.svelte';
-	import EligibleListsPanel from '$lib/components/submit/EligibleListsPanel.svelte';
 	import StepRequiredFields from '$lib/components/submit/StepRequiredFields.svelte';
 	import StepOptionalFields from '$lib/components/submit/StepOptionalFields.svelte';
+	import StepSubmitReview from '$lib/components/submit/StepSubmitReview.svelte';
 	import SubmitResult from '$lib/components/submit/SubmitResult.svelte';
 	import {
 		createDefaultState,
@@ -36,6 +36,11 @@
 		isPlatformer: boolean;
 		isOfficial?: boolean;
 		topEnabled?: boolean;
+		recordFilterPlatform?: 'any' | 'pc' | 'mobile' | null;
+		recordFilterMinRefreshRate?: number | null;
+		recordFilterMaxRefreshRate?: number | null;
+		recordFilterAcceptanceStatus?: 'manual' | 'auto' | 'any' | null;
+		recordFilterManualAcceptanceOnly?: boolean | null;
 		ownerData?: any | null;
 		eligible?: boolean | null;
 		item?: {
@@ -51,7 +56,6 @@
 	let eligibleListsError = '';
 	let eligibleListsRequestKey = '';
 	let eligibleListsRequestToken = 0;
-	let eligibleListPanelMode: 'preview' | 'eligible' = 'preview';
 
 	$: steps = getSteps(state.type).map((s) => {
 		const labels: Record<string, { vi: string; en: string }> = {
@@ -59,12 +63,12 @@
 			Level: { vi: 'Level', en: 'Level' },
 			Confirm: { vi: 'Xác nhận', en: 'Confirm' },
 			Details: { vi: 'Chi tiết', en: 'Details' },
-			Optional: { vi: 'Tùy chọn', en: 'Optional' }
+			Optional: { vi: 'Tùy chọn', en: 'Optional' },
+			Review: { vi: 'Xem lại', en: 'Review' }
 		};
 		return labels[s] ? ($locale == 'vi' ? labels[s].vi : labels[s].en) : s;
 	});
-	// Record: last step = 4 (with apiLevel loaded)
-	$: isLastStep = state.step === 4;
+	$: isLastStep = state.step === steps.length - 1;
 
 	function t(vi: string, en: string) {
 		return $locale == 'vi' ? vi : en;
@@ -173,18 +177,16 @@
 		state.apiLevel,
 		state.levelid
 	);
-	$: showEligibleListsPanel =
+	$: shouldLoadEligibleLists =
 		state.type === 'record' &&
-		(state.step === 2 || state.step === 3) &&
-		activeEligibleLevelId !== null;
-	$: eligibleListPanelMode =
-		state.step === 3 && activeEligibleProgress != null ? 'eligible' : 'preview';
+		state.step === steps.length - 1 &&
+		activeEligibleLevelId !== null &&
+		activeEligibleProgress !== null;
 
 	$: {
 		const progress = activeEligibleProgress;
 		const levelId = activeEligibleLevelId;
-		const canLoadEligibleLists =
-			state.type === 'record' && (state.step === 2 || state.step === 3) && levelId !== null;
+		const canLoadEligibleLists = shouldLoadEligibleLists && levelId !== null && progress !== null;
 
 		if (!canLoadEligibleLists) {
 			eligibleLists = [];
@@ -192,7 +194,7 @@
 			eligibleListsError = '';
 			eligibleListsRequestKey = '';
 		} else {
-			const requestKey = `${levelId}:${progress ?? 'preview'}`;
+			const requestKey = `${levelId}:${progress}`;
 
 			if (eligibleListsRequestKey !== requestKey) {
 				eligibleListsRequestKey = requestKey;
@@ -302,16 +304,9 @@
 				);
 				return;
 			}
-
-			if (state.level && state.progress < state.level.minProgress) {
-				toast.error(t('Progress chưa đủ', 'Not enough progress'));
-				return;
-			}
 		}
 
-		// Record: step 5 (optional) → submit
-		// Record: step 4 (optional) → submit
-		if (state.step === 4) {
+		if (state.step === steps.length - 1) {
 			submitRecord();
 			return;
 		}
@@ -405,22 +400,6 @@
 					? 'Bạn cần đăng nhập để nộp record.'
 					: 'You need to sign in to submit a record.'}
 			</p>
-			<div class="level-submit-callout">
-				<div class="callout-icon">
-					<ListPlus size={18} />
-				</div>
-				<div class="callout-copy">
-					<h2>{$locale == 'vi' ? 'Bạn muốn nộp level?' : 'Submitting a level?'}</h2>
-					<p>
-						{$locale == 'vi'
-							? 'Trang này dùng để nộp record hoàn thành. Để gửi level vào một danh sách, hãy chọn danh sách đang mở nhận level.'
-							: 'This page is for completion records. To submit a level to a list, choose a list that is accepting level submissions.'}
-					</p>
-				</div>
-				<Button variant="outline" size="sm" href="/lists">
-					{$locale == 'vi' ? 'Xem danh sách' : 'Browse lists'}
-				</Button>
-			</div>
 		</div>
 	{:else}
 		<div class="submit-container">
@@ -428,23 +407,6 @@
 				<ArrowLeft size={16} />
 				<span>{$locale == 'vi' ? 'Trang chủ' : 'Home'}</span>
 			</a>
-
-			<div class="level-submit-callout">
-				<div class="callout-icon">
-					<ListPlus size={18} />
-				</div>
-				<div class="callout-copy">
-					<h2>{$locale == 'vi' ? 'Bạn muốn nộp level?' : 'Submitting a level?'}</h2>
-					<p>
-						{$locale == 'vi'
-							? 'Trang này dùng để nộp record hoàn thành. Để gửi level vào một danh sách, hãy chọn danh sách đang mở nhận level.'
-							: 'This page is for completion records. To submit a level to a list, choose a list that is accepting level submissions.'}
-					</p>
-				</div>
-				<Button variant="outline" size="sm" href="/lists">
-					{$locale == 'vi' ? 'Xem danh sách' : 'Browse lists'}
-				</Button>
-			</div>
 
 			<div class="submit-card">
 				{#if !submitted}
@@ -457,26 +419,18 @@
 								in:fly={{ x: direction * 40, duration: 250, delay: 100 }}
 								out:fly={{ x: direction * -40, duration: 150 }}
 							>
-									{#if state.step === 0}
-										<StepRules submissionType={state.type} />
-									{:else if state.step === 1}
-										<StepLevelId bind:levelId={state.levelid} submissionType="record" />
-									{:else if state.step === 2}
-										<StepConfirmLevel
-											apiLevel={state.apiLevel}
-											level={state.level}
-											levelVariants={state.levelVariants}
-											bind:selectedVariantId={state.selectedVariantId}
-										/>
-										{#if showEligibleListsPanel}
-											<EligibleListsPanel
-												lists={eligibleLists}
-												loading={eligibleListsLoading}
-												errorMessage={eligibleListsError}
-												mode={eligibleListPanelMode}
-											/>
-										{/if}
-									{:else if state.step === 3}
+								{#if state.step === 0}
+									<StepRules submissionType={state.type} />
+								{:else if state.step === 1}
+									<StepLevelId bind:levelId={state.levelid} submissionType="record" />
+								{:else if state.step === 2}
+									<StepConfirmLevel
+										apiLevel={state.apiLevel}
+										level={state.level}
+										levelVariants={state.levelVariants}
+										bind:selectedVariantId={state.selectedVariantId}
+									/>
+								{:else if state.step === 3}
 									<StepRequiredFields
 										apiLevel={state.apiLevel}
 										level={state.level}
@@ -487,12 +441,30 @@
 										bind:mobile={state.mobile}
 										bind:time={state.time}
 									/>
-									{:else if state.step === 4}
+								{:else if state.step === 4}
 									<StepOptionalFields
 										apiLevel={state.apiLevel}
 										progress={state.progress}
 										bind:suggestedRating={state.suggestedRating}
 										bind:comment={state.comment}
+									/>
+								{:else if state.step === 5}
+									<StepSubmitReview
+										levelId={state.levelid}
+										selectedVariantId={state.selectedVariantId}
+										apiLevel={state.apiLevel}
+										level={state.level}
+										progress={state.progress}
+										refreshRate={state.refreshRate}
+										videoLink={state.videoLink}
+										raw={state.raw}
+										mobile={state.mobile}
+										time={state.time}
+										suggestedRating={state.suggestedRating}
+										comment={state.comment}
+										lists={eligibleLists}
+										loading={eligibleListsLoading}
+										errorMessage={eligibleListsError}
 									/>
 								{/if}
 							</div>
@@ -605,46 +577,6 @@
 		}
 	}
 
-	.level-submit-callout {
-		border: 1px solid hsl(var(--border));
-		border-radius: 12px;
-		padding: 14px;
-		background: hsl(var(--card, var(--background)));
-		display: grid;
-		grid-template-columns: auto 1fr auto;
-		align-items: center;
-		gap: 12px;
-		width: 100%;
-		max-width: 672px;
-	}
-
-	.callout-icon {
-		width: 34px;
-		height: 34px;
-		border-radius: 8px;
-		background: hsl(var(--primary) / 0.12);
-		color: hsl(var(--primary));
-		display: grid;
-		place-items: center;
-	}
-
-	.callout-copy {
-		min-width: 0;
-
-		h2 {
-			margin: 0;
-			font-size: 0.95rem;
-			font-weight: 600;
-		}
-
-		p {
-			margin: 2px 0 0;
-			font-size: 0.82rem;
-			color: hsl(var(--muted-foreground));
-			line-height: 1.45;
-		}
-	}
-
 	.step-wrapper {
 		position: relative;
 		min-height: 200px;
@@ -669,15 +601,6 @@
 	}
 
 	@media (max-width: 480px) {
-		.level-submit-callout {
-			grid-template-columns: auto 1fr;
-		}
-
-		.level-submit-callout :global(a) {
-			grid-column: 1 / -1;
-			width: 100%;
-		}
-
 		.step-footer :global(.footer-btn) {
 			flex: 1;
 		}

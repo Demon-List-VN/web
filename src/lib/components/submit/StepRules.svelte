@@ -72,8 +72,8 @@
 				<div class="rule-text">
 					<h3>{t('Record tốt hơn', 'Better record')}</h3>
 					<p>{t(
-						'Nếu bạn đã có record ở level này, bạn chỉ có thể gửi record tốt hơn. Thứ tự ưu tiên: (1) progress cao hơn, (2) refresh rate thấp hơn, (3) mobile được coi là tốt hơn PC. Record cũ được giữ cho tới khi record mới được duyệt; nếu bị từ chối, record cũ vẫn còn nguyên.',
-						'If you already have a record on this level, you can only submit a better one. Priority: (1) higher progress, (2) lower refresh rate, (3) mobile is considered better than PC. Your old record is kept until the new one is accepted; if rejected, your old record is preserved.'
+						'Nếu bạn đã có record đã được duyệt ở level này, bạn chỉ có thể gửi record tốt hơn. Thứ tự ưu tiên: (1) progress cao hơn, (2) refresh rate thấp hơn, (3) mobile được coi là tốt hơn PC. Record auto-accepted chưa xác minh sẽ không chặn việc gửi record mới; cả hai bản sẽ được giữ cho tới khi moderator đưa ra quyết định. Nếu record mới được duyệt, bản auto-accepted cũ sẽ bị xóa.',
+						'If you already have a verified record on this level, you can only submit a better one. Priority: (1) higher progress, (2) lower refresh rate, (3) mobile is considered better than PC. Unverified auto-accepted records do not block a new submission; both versions are kept until a moderator decides. If the new submission is accepted, the old auto-accepted version is removed.'
 					)}</p>
 				</div>
 			</div>

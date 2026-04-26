@@ -45,12 +45,8 @@
 						{$locale == 'vi' ? 'Thời gian hoàn thành level' : 'Your completion time'}
 					{:else}
 						{$locale == 'vi'
-							? level && level.rating
-								? `Tối thiểu ${level.minProgress}%`
-								: 'Tối thiểu 100%'
-							: level && level.rating
-								? `Minimum ${level.minProgress}%`
-								: 'Minimum 100%'}
+							? 'Progress bạn đạt được trong lần chơi này'
+							: 'Progress reached in this run'}
 					{/if}
 				</p>
 			</div>
@@ -77,9 +73,7 @@
 				type="number"
 				inputmode="numeric"
 				bind:value={progress}
-				placeholder={level && level.rating
-					? `${$_('submit.required.minimum')} ${level.minProgress}%`
-					: `${$_('submit.required.minimum')} 100%`}
+				placeholder={$locale == 'vi' ? '0-100%' : '0-100%'}
 			/>
 		{/if}
 	</div>
