@@ -2356,7 +2356,7 @@
 			"crawling_aredl": "Crawling AREDL mirror...",
 			"list_updated": "List updated",
 			"leaderboard_refreshed": "Leaderboard refreshed",
-			"mirror_crawled": "Mirror sync complete. Added {added}. Updated {updated}. Skipped {skipped}. Removed {removed}. Failed {failed}.",
+			"mirror_crawled": "Mirror sync complete. API {apiFetched}. GD {gdFetched}. GD failed {gdFailed}. Upserted {upserted}.",
 			"pointercrate_crawled": "Pointercrate sync complete. Added {added}. Updated {updated}. Skipped {skipped}. Removed {removed}. Failed {failed}.",
 			"aredl_crawled": "AREDL sync complete. Added {added}. Updated {updated}. Skipped {skipped}. Removed {removed}. Failed {failed}.",
 			"leaderboard_refreshed_players": "Leaderboard refreshed ({total} ranked players)",

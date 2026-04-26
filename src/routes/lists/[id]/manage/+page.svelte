@@ -1700,11 +1700,10 @@
 			toast.success(
 				$_('custom_lists.toast.mirror_crawled', {
 					values: {
-						added: result.inserted,
-						updated: result.updated,
-						skipped: result.unchanged,
-						removed: result.removed,
-						failed: result.failed
+						apiFetched: result.source.fetched ?? result.sourceLevelCount,
+						gdFetched: result.gdFetched,
+						gdFailed: result.gdFailed,
+						upserted: result.inserted + result.updated
 					}
 				})
 			);

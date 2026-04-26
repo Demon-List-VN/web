@@ -3,7 +3,7 @@
 	import AcceptanceBadge from '$lib/components/AcceptanceBadge.svelte';
 	import CommunityPostCard from '$lib/components/communityPostCard.svelte';
 	import PlayerLink from '$lib/components/playerLink.svelte';
-	import { isPointercrateMirrorList } from '$lib/client/pointercrateMirrorCrawler';
+	import { isPointercrateMirrorList } from '$lib/client/mirrorCrawler';
 	import { fade } from 'svelte/transition';
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';

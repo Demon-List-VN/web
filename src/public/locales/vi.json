@@ -2355,7 +2355,7 @@
 			"crawling_aredl": "Đang crawl mirror AREDL...",
 			"list_updated": "Đã cập nhật danh sách",
 			"leaderboard_refreshed": "Đã làm mới bảng xếp hạng",
-			"mirror_crawled": "Đã đồng bộ mirror. Đã thêm {added}. Đã cập nhật {updated}. Bỏ qua {skipped}. Đã xóa {removed}. Lỗi {failed}.",
+			"mirror_crawled": "Đã đồng bộ mirror. API {apiFetched}. GD {gdFetched}. GD lỗi {gdFailed}. Upsert {upserted}.",
 			"pointercrate_crawled": "Đã đồng bộ Pointercrate. Đã thêm {added}. Đã cập nhật {updated}. Bỏ qua {skipped}. Đã xóa {removed}. Lỗi {failed}.",
 			"aredl_crawled": "Đã đồng bộ AREDL. Đã thêm {added}. Đã cập nhật {updated}. Bỏ qua {skipped}. Đã xóa {removed}. Lỗi {failed}.",
 			"leaderboard_refreshed_players": "Đã làm mới bảng xếp hạng ({total} người chơi được xếp hạng)",

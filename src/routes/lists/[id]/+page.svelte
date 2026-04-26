@@ -15,7 +15,7 @@
 	import Ads from '$lib/components/ads.svelte';
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import { clearCustomListBranding, setCustomListBranding } from '$lib/client/customListBranding';
-	import { isPointercrateMirrorList } from '$lib/client/pointercrateMirrorCrawler';
+	import { isPointercrateMirrorList } from '$lib/client/mirrorCrawler';
 	import { crawlMirrorList as runMirrorCrawler } from '$lib/client/mirrorCrawler';
 	import {
 		normalizeCustomListRankBadges,
@@ -926,11 +926,10 @@
 			toast.success(
 				$_('custom_lists.toast.mirror_crawled', {
 					values: {
-						added: result.inserted,
-						updated: result.updated,
-						skipped: result.unchanged,
-						removed: result.removed,
-						failed: result.failed
+						apiFetched: result.source.fetched ?? result.sourceLevelCount,
+						gdFetched: result.gdFetched,
+						gdFailed: result.gdFailed,
+						upserted: result.inserted + result.updated
 					}
 				})
 			);

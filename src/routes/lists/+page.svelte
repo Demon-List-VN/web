@@ -9,7 +9,7 @@
 	import { user } from '$lib/client';
 	import { toast } from 'svelte-sonner';
 	import PlayerLink from '$lib/components/playerLink.svelte';
-	import { isPointercrateMirrorList } from '$lib/client/pointercrateMirrorCrawler';
+	import { isPointercrateMirrorList } from '$lib/client/mirrorCrawler';
 	import {
 		Globe2,
 		Link as LinkIcon,
