@@ -19,13 +19,8 @@
 		id: NaN,
 		name: '',
 		creator: '',
-		videoID: '',
-		minProgress: NaN,
-		flTop: NaN,
-		rating: NaN,
-		insaneTier: NaN,
-		isPlatformer: false,
-		isNonList: false
+		difficulty: null,
+		isPlatformer: false
 	};
 
 	// Tag management state
@@ -56,6 +51,13 @@
 			Authorization: `Bearer ${token}`,
 			'Content-Type': 'application/json'
 		};
+	}
+
+	function normalizeNullableText(value: unknown) {
+		if (typeof value !== 'string') return null;
+
+		const trimmed = value.trim();
+		return trimmed ? trimmed : null;
 	}
 
 	// Tag CRUD
@@ -264,32 +266,37 @@
 				fetchVariants();
 				if (allTags.length === 0) fetchAllTags();
 			})
-			.catch((err) => {
+			.catch((_err) => {
 				fetch(`${import.meta.env.VITE_API_URL}/levels/${level.id}?fromGD=1`)
 					.then((res) => res.json())
 					.then((res: any) => {
-						level.name = res.name;
-						level.creator = res.author;
+						level = {
+							...level,
+							name: res.name,
+							creator: res.author,
+							difficulty: res.difficulty ?? null,
+							isPlatformer: res.length === 5
+						};
 						state = 2;
 					})
-					.catch((err) => (state = 3));
+					.catch((_err) => (state = 3));
 			});
 	}
 
 	async function updateLevel() {
-		if (!level.isPlatformer) {
-			level.isPlatformer = false;
-		}
-
-		for (const i in level) {
-			if (level[i] === '') {
-				level[i] = null;
-			}
-		}
+		const payload = {
+			id: level.id,
+			name: normalizeNullableText(level.name),
+			creator: normalizeNullableText(level.creator),
+			difficulty: normalizeNullableText(level.difficulty),
+			creatorId: level.creatorId ?? null,
+			main_level_id: level.main_level_id ?? null,
+			isPlatformer: Boolean(level.isPlatformer)
+		};
 
 		fetch(`${import.meta.env.VITE_API_URL}/levels`, {
 			method: 'PUT',
-			body: JSON.stringify(level),
+			body: JSON.stringify(payload),
 			headers: {
 				Authorization: `Bearer ${await $user.token()}`,
 				'Content-Type': 'application/json'
@@ -458,66 +465,8 @@
 				/>
 			</div>
 			<div class="input">
-				<Label for="videoID" class="w-[100px]">Video ID</Label>
-				<Input
-					id="videoID"
-					class="w-[300px]"
-					placeholder="Required"
-					required
-					bind:value={level.videoID}
-				/>
-			</div>
-			<div class="input">
-				<Label for="flTop" class="w-[100px]">FL Top</Label>
-				<Input
-					id="flTop"
-					type="number"
-					inputmode="numeric"
-					class="w-[300px]"
-					bind:value={level.flTop}
-				/>
-			</div>
-			<div class="input">
-				<Label for="minProgress" class="w-[100px]">Minimum progress</Label>
-				<Input
-					id="minProgress"
-					type="number"
-					inputmode="numeric"
-					class="w-[300px]"
-					placeholder="Required"
-					required
-					bind:value={level.minProgress}
-				/>
-			</div>
-			<div class="input">
-				<Label for="rating" class="w-[100px]">Rating</Label>
-				<Input
-					id="rating"
-					type="number"
-					inputmode="numeric"
-					class="w-[300px]"
-					bind:value={level.rating}
-				/>
-			</div>
-			<div class="input">
-				<Label for="rating" class="w-[100px]">Insane Tier</Label>
-				<Input
-					id="rating"
-					type="number"
-					inputmode="numeric"
-					class="w-[300px]"
-					bind:value={level.insaneTier}
-					placeholder="Enter a number for tier"
-				/>
-				0: D, 1: C, 2: B, 3: A, 4: S, 5: SS
-			</div>
-			<div class="input">
-				<Label for="rating" class="w-[100px]">Platformer</Label>
-				<Switch bind:checked={level.isPlatformer}></Switch>
-			</div>
-			<div class="input">
-				<Label for="rating" class="w-[100px]">Non List</Label>
-				<Switch bind:checked={level.isNonList}></Switch>
+				<Label for="isPlatformer" class="w-[100px]">Platformer</Label>
+				<Switch id="isPlatformer" bind:checked={level.isPlatformer}></Switch>
 			</div>
 			<div class="flex w-[150px] flex-col gap-[15px]">
 				<Button on:click={updateLevel}>{state == 1 ? 'Update' : 'Add new level'}</Button>
