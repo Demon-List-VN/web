@@ -72,6 +72,20 @@ function clearCachedUserData() {
 	}
 }
 
+async function fetchCurrentPlayer() {
+	const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/me`, {
+		headers: {
+			Authorization: `Bearer ${await userData.token()}`
+		}
+	});
+
+	if (!response.ok) {
+		throw new Error(`Failed to fetch current user: ${response.status}`);
+	}
+
+	return response.json();
+}
+
 async function addNewUser() {
 	const { error } = await supabase.auth.getSession();
 
@@ -136,8 +150,7 @@ const userData: userType = {
 		}
 
 		const tmp = Promise.all([
-			fetch(`${import.meta.env.VITE_API_URL}/players/${userId}?cached=true`)
-				.then((res) => res.json())
+			fetchCurrentPlayer()
 				.then((res) => {
 					userData.data = res;
 				}),
@@ -153,11 +166,10 @@ const userData: userType = {
 				saveCachedUserData(userId, userData.data, userData.ratings);
 				user.set(userData);
 			})
-			.catch((err) => {
+			.catch((_err) => {
 				addNewUser().then(() => {
 					Promise.all([
-						fetch(`${import.meta.env.VITE_API_URL}/players/${userId}?cached=true`)
-							.then((res) => res.json())
+						fetchCurrentPlayer()
 							.then((res) => {
 								userData.data = res;
 							}),
