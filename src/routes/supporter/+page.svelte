@@ -6,6 +6,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { _ } from 'svelte-i18n';
 	import TopSupporters from '$lib/components/topSupporters.svelte';
+	import DonateDialog from './DonateDialog.svelte';
 
 	export let data: any;
 
@@ -33,12 +34,15 @@
 <div class="relative flex flex-col items-center pl-[10px] pr-[10px]">
 	<BigTitle value={$_('supporter.title')} description={$_('supporter.description')} />
 	<div class="mt-[-20px] flex max-w-[1000px] flex-col items-center">
-		<div class="flex items-center gap-[10px]">
+		<div class="flex flex-col items-center gap-[10px]">
 			<PaymentButton title={$_('supporter.price')} />
 			<span class="text-gray-400">{$_('supporter.or')}</span>
-			<a href="/store">
-				<Button>{$_('supporter.store_button')}</Button>
-			</a>
+			<div>
+				<a href="/store">
+					<Button>{$_('supporter.store_button')}</Button>
+				</a>
+				<DonateDialog />
+			</div>
 		</div>
 
 		<TopSupporters topBuyers={data.topBuyers} />
@@ -51,16 +55,10 @@
 					<span>{serverCostPercent}%</span>
 				</div>
 				<div class="goalBar">
-					<div class="goalBarFill bg-green-600" style={`width: ${toBarWidth(serverCostPercent)}`}></div>
-				</div>
-			</div>
-			<div class="goalRow">
-				<div class="goalHeader">
-					<span>{$_('supporter.goals.minecraft_server')}</span>
-					<span>{minecraftServerPercent}%</span>
-				</div>
-				<div class="goalBar">
-					<div class="goalBarFill bg-green-600" style={`width: ${toBarWidth(minecraftServerPercent)}`}></div>
+					<div
+						class="goalBarFill bg-green-600"
+						style={`width: ${toBarWidth(serverCostPercent)}`}
+					></div>
 				</div>
 			</div>
 		</div>
@@ -181,9 +179,9 @@
 			</Card.Root>
 			<Card.Root class="w-[300px]">
 				<Card.Header>
-				<Card.Title>{$_('supporter.perks.advanced_filtering.title')}</Card.Title>
-				<Card.Description class="w-[250px]">
-					{$_('supporter.perks.advanced_filtering.description')}
+					<Card.Title>{$_('supporter.perks.advanced_filtering.title')}</Card.Title>
+					<Card.Description class="w-[250px]">
+						{$_('supporter.perks.advanced_filtering.description')}
 					</Card.Description>
 				</Card.Header>
 			</Card.Root>
