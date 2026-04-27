@@ -3,7 +3,7 @@ import { addMessages, init, locale } from 'svelte-i18n';
 import en from './public/locales/en.json';
 import vi from './public/locales/vi.json';
 
-export const DEFAULT_LOCALE = 'vi';
+export const DEFAULT_LOCALE = 'en';
 
 addMessages('en', en);
 addMessages('vi', vi);
