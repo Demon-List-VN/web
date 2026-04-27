@@ -1726,7 +1726,7 @@
 		"step_of": "Bước {step}/{total}",
 		"welcome_title": "Chào mừng đến với GDVN!",
 		"welcome_desc": "Cộng đồng Geometry Dash lớn nhất Việt Nam. Hãy thiết lập hồ sơ của bạn để bắt đầu.",
-		"welcome_gift": "🎁 Hoàn thành thiết lập để nhận 7 ngày Supporter miễn phí!",
+		"welcome_gift": "Hoàn thành thiết lập để cá nhân hóa hồ sơ và mở khóa trải nghiệm GDVN đầy đủ.",
 		"name_title": "Đặt tên hiển thị",
 		"name_desc": "Tên này sẽ xuất hiện trên bảng xếp hạng. Không thể thay đổi trong 30 ngày.",
 		"name_placeholder": "VD: NguoiChoiGD",
@@ -1776,7 +1776,7 @@
 		"social_facebook_placeholder": "URL trang Facebook",
 		"done_title": "Bạn đã sẵn sàng!",
 		"done_desc": "Hồ sơ đã được thiết lập. Bắt đầu hành trình của bạn.",
-		"done_gift": "🎁 7 ngày Supporter đã được cộng vào tài khoản của bạn!",
+		"done_gift": "Hồ sơ của bạn đã sẵn sàng. Bạn luôn có thể cập nhật các thông tin này sau trong phần cài đặt hồ sơ.",
 		"done_discord_title": "Liên kết tài khoản Discord",
 		"done_discord_desc": "Kết nối Discord để mở khóa role và tính năng độc quyền gắn với tài khoản GDVN của bạn.",
 		"done_discord_link": "Liên kết tài khoản Discord",
@@ -1790,7 +1790,7 @@
 		"skip_later": "Để sau",
 		"saving": "Đang lưu...",
 		"progress_title": "Hoàn thành thiết lập hồ sơ",
-		"progress_desc": "Nhận 7 ngày Supporter miễn phí khi hoàn thành",
+		"progress_desc": "Hoàn thành thiết lập hồ sơ để mở khóa trải nghiệm GDVN đầy đủ",
 		"progress_continue": "Tiếp tục thiết lập"
 	},
 	"adblock": {

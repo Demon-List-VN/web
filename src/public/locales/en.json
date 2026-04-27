@@ -1727,7 +1727,7 @@
 		"step_of": "Step {step}/{total}",
 		"welcome_title": "Welcome to GDVN!",
 		"welcome_desc": "The largest Geometry Dash community in Vietnam. Set up your profile to get started.",
-		"welcome_gift": "🎁 Complete setup to receive 7 days of Supporter for free!",
+		"welcome_gift": "Complete setup to personalize your profile and unlock the full GDVN experience.",
 		"name_title": "Set display name",
 		"name_desc": "This name will appear on leaderboards. Cannot be changed for 30 days.",
 		"name_placeholder": "E.g. MyGDName",
@@ -1777,7 +1777,7 @@
 		"social_facebook_placeholder": "Facebook profile URL",
 		"done_title": "You're all set!",
 		"done_desc": "Your profile is ready. Start your GD journey.",
-		"done_gift": "🎁 7 days of Supporter have been added to your account!",
+		"done_gift": "Your profile is ready. You can update these details later from your profile settings.",
 		"done_discord_title": "Link your Discord account",
 		"done_discord_desc": "Connect Discord to unlock exclusive roles and features tied to your GDVN account.",
 		"done_discord_link": "Link Discord account",
@@ -1791,7 +1791,7 @@
 		"skip_later": "Later",
 		"saving": "Saving...",
 		"progress_title": "Complete profile setup",
-		"progress_desc": "Receive 7 days of free Supporter when you finish",
+		"progress_desc": "Finish setting up your profile to unlock the full GDVN experience",
 		"progress_continue": "Continue setup"
 	},
 	"adblock": {

@@ -169,9 +169,6 @@
 					<img src="/logo.png" alt="GDVN" class="mx-auto h-16 invert-0 dark:invert" />
 					<h2 class="text-2xl font-bold">{$_('onboarding.welcome_title')}</h2>
 					<p class="text-muted-foreground">{$_('onboarding.welcome_desc')}</p>
-					<div class="rounded-lg border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm font-medium text-yellow-800 dark:border-yellow-700 dark:bg-yellow-950 dark:text-yellow-200">
-						{$_('onboarding.welcome_gift')}
-					</div>
 					<Button class="w-full" on:click={() => goToStep(2)}>
 						{$_('onboarding.next')} →
 					</Button>
@@ -480,9 +477,6 @@
 					<div>
 						<h2 class="text-2xl font-bold">{$_('onboarding.done_title')}</h2>
 						<p class="mt-1 text-muted-foreground">{$_('onboarding.done_desc')}</p>
-					</div>
-					<div class="rounded-lg border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm font-medium text-yellow-800 dark:border-yellow-700 dark:bg-yellow-950 dark:text-yellow-200">
-						{$_('onboarding.done_gift')}
 					</div>
 					<!-- Discord account linking -->
 					<div class="rounded-xl border border-indigo-200 bg-indigo-50 p-4 text-left dark:border-indigo-800 dark:bg-indigo-950/30">
