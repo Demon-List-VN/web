@@ -254,6 +254,15 @@
 		list: CustomList;
 	};
 
+	type CustomListBatchSavePayload = {
+		settings?: unknown;
+		creates?: unknown[];
+		updates?: unknown[];
+		deletes?: unknown[];
+		auditEntries?: unknown[];
+		reorderLevelIds?: number[];
+	};
+
 	type BatchAddProgressPhase = 'adding' | 'updating' | 'reordering';
 
 	type BatchAddProgress = {
@@ -414,6 +423,7 @@
 	const CUSTOM_LIST_CDN_BASE_URL = 'https://cdn.gdvn.net';
 	const CSV_IMPORT_RATE_LIMIT_RETRY_MS = 1000;
 	const CSV_IMPORT_RATE_LIMIT_TIMEOUT_MS = 15000;
+	const CUSTOM_LIST_BATCH_SAVE_TARGET_BYTES = 80 * 1024;
 	const DEFAULT_ITEM_SORT: 'mode_default' | 'created_at' = 'mode_default';
 	const LEVELS_PAGE_SIZE = 50;
 	const LEVEL_AUDIT_MUTABLE_FIELDS: Array<keyof LevelItemPatch> = [
@@ -2183,6 +2193,151 @@
 		};
 	}
 
+	function getJsonPayloadSize(payload: unknown) {
+		return new TextEncoder().encode(JSON.stringify(payload)).length;
+	}
+
+	function buildCustomListBatchSavePayload(
+		payload: CustomListBatchSavePayload
+	): CustomListBatchSavePayload {
+		const nextPayload: CustomListBatchSavePayload = {};
+
+		if (payload.settings !== undefined) {
+			nextPayload.settings = payload.settings;
+		}
+
+		if (payload.creates?.length) {
+			nextPayload.creates = payload.creates;
+		}
+
+		if (payload.updates?.length) {
+			nextPayload.updates = payload.updates;
+		}
+
+		if (payload.deletes?.length) {
+			nextPayload.deletes = payload.deletes;
+		}
+
+		if (payload.auditEntries?.length) {
+			nextPayload.auditEntries = payload.auditEntries;
+		}
+
+		if (payload.reorderLevelIds?.length) {
+			nextPayload.reorderLevelIds = payload.reorderLevelIds;
+		}
+
+		return nextPayload;
+	}
+
+	function buildArrayBatchSavePayload<K extends keyof CustomListBatchSavePayload>(
+		key: K,
+		items: NonNullable<CustomListBatchSavePayload[K]>
+	): CustomListBatchSavePayload {
+		return buildCustomListBatchSavePayload({
+			[key]: items
+		} as CustomListBatchSavePayload);
+	}
+
+	function chunkBatchSaveArray<K extends keyof CustomListBatchSavePayload>(
+		key: K,
+		items: NonNullable<CustomListBatchSavePayload[K]>
+	) {
+		if (!Array.isArray(items) || !items.length) {
+			return [];
+		}
+
+		const chunks: CustomListBatchSavePayload[] = [];
+		let currentChunk: unknown[] = [];
+
+		for (const item of items) {
+			const candidateChunk = [...currentChunk, item];
+			const candidatePayload = buildArrayBatchSavePayload(
+				key,
+				candidateChunk as NonNullable<CustomListBatchSavePayload[K]>
+			);
+
+			if (
+				currentChunk.length &&
+				getJsonPayloadSize(candidatePayload) > CUSTOM_LIST_BATCH_SAVE_TARGET_BYTES
+			) {
+				chunks.push(
+					buildArrayBatchSavePayload(
+						key,
+						currentChunk as NonNullable<CustomListBatchSavePayload[K]>
+					)
+				);
+				currentChunk = [item];
+			} else {
+				currentChunk = candidateChunk;
+			}
+		}
+
+		if (currentChunk.length) {
+			chunks.push(
+				buildArrayBatchSavePayload(
+					key,
+					currentChunk as NonNullable<CustomListBatchSavePayload[K]>
+				)
+			);
+		}
+
+		return chunks;
+	}
+
+	async function requestSaveCustomListBatch(
+		listId: number,
+		payload: CustomListBatchSavePayload,
+		token: string | undefined
+	) {
+		const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${listId}/levels/batch`, {
+			method: 'PATCH',
+			headers: {
+				Authorization: `Bearer ${token}`,
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify(payload)
+		});
+		const responsePayload = await res.json().catch(() => null);
+
+		if (!res.ok) {
+			throw new Error(responsePayload?.error || $_('custom_lists.toast.failed_update_level'));
+		}
+
+		return responsePayload as CustomList;
+	}
+
+	async function saveCustomListBatchPayload(
+		listId: number,
+		payload: CustomListBatchSavePayload
+	) {
+		const normalizedPayload = buildCustomListBatchSavePayload(payload);
+		const token = await $user.token();
+
+		if (getJsonPayloadSize(normalizedPayload) <= CUSTOM_LIST_BATCH_SAVE_TARGET_BYTES) {
+			return requestSaveCustomListBatch(listId, normalizedPayload, token);
+		}
+
+		let latestPayload: CustomList | null = null;
+		const payloadChunks: CustomListBatchSavePayload[] = [
+			...(normalizedPayload.settings !== undefined
+				? [buildCustomListBatchSavePayload({ settings: normalizedPayload.settings })]
+				: []),
+			...chunkBatchSaveArray('deletes', normalizedPayload.deletes ?? []),
+			...chunkBatchSaveArray('creates', normalizedPayload.creates ?? []),
+			...chunkBatchSaveArray('updates', normalizedPayload.updates ?? []),
+			...chunkBatchSaveArray('auditEntries', normalizedPayload.auditEntries ?? []),
+			...(normalizedPayload.reorderLevelIds?.length
+				? [buildCustomListBatchSavePayload({ reorderLevelIds: normalizedPayload.reorderLevelIds })]
+				: [])
+		];
+
+		for (const payloadChunk of payloadChunks) {
+			latestPayload = await requestSaveCustomListBatch(listId, payloadChunk, token);
+		}
+
+		return latestPayload ?? requestSaveCustomListBatch(listId, normalizedPayload, token);
+	}
+
 	async function requestUpdateLevel(
 		listId: number,
 		levelId: number,
@@ -3303,7 +3458,7 @@
 					...patch
 				}));
 
-			const batchPayload = {
+			const batchPayload: CustomListBatchSavePayload = {
 				creates: createInputs,
 				updates: updateInputs,
 				deletes: currentDeletionDraftIds,
@@ -3337,19 +3492,7 @@
 			}
 
 			savingLevelItemId = null;
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/levels/batch`, {
-				method: 'PATCH',
-				headers: {
-					Authorization: `Bearer ${await $user.token()}`,
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify(batchPayload)
-			});
-			const payload = await res.json().catch(() => null);
-
-			if (!res.ok) {
-				throw new Error(payload?.error || $_('custom_lists.toast.failed_update_level'));
-			}
+			const payload = await saveCustomListBatchPayload(list.id, batchPayload);
 
 			applyPagedListPayload(payload);
 			pendingLevelAdditions = [];
