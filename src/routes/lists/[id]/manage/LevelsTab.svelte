@@ -45,6 +45,14 @@
 		aborted: boolean;
 	};
 
+	type BatchCrawlProgress = {
+ 		total: number;
+ 		completed: number;
+ 		currentLevelId: number | null;
+ 		retrying: boolean;
+ 		retryElapsedMs: number;
+ 	};
+
 	type LevelItemPatch = {
 		rating?: number;
 		minProgress?: number | null;
@@ -62,6 +70,7 @@
 	export let levelsLoadingError = '';
 	export let retryLoadMoreLevels: (pageNumber?: number) => void | Promise<void> = async () => {};
 	export let batchAddProgress: BatchAddProgress | null = null;
+	export let batchCrawlProgress: BatchCrawlProgress | null = null;
 	export let abortBatchAddImport: () => void | Promise<void> = async () => {};
 	export let savingLevelItemId: number | null = null;
 	export let savingLevelDrafts = false;
@@ -124,6 +133,9 @@
 	$: levelsPageCount = Math.max(Math.ceil((list?.levelCount ?? 0) / levelsPageSize), 1);
 	$: csvProgressPercent = batchAddProgress?.total
 		? Math.min((batchAddProgress.completed / batchAddProgress.total) * 100, 100)
+		: 0;
+	$: crawlProgressPercent = batchCrawlProgress?.total
+		? Math.min((batchCrawlProgress.completed / batchCrawlProgress.total) * 100, 100)
 		: 0;
 	$: hasBulkEditValues = Boolean(
 		(list?.mode === 'rating' && bulkRatingValue.trim().length > 0)
@@ -1087,6 +1099,36 @@
 								{$_('custom_lists.detail.add_level.csv_progress_retry')}
 							</p>
 						{/if}
+					</div>
+				{/if}
+
+				{#if batchCrawlProgress}
+					<div class="csvProgress" aria-live="polite">
+						<div class="csvProgressHeader">
+							<div class="csvProgressHeaderCopy">
+								<p class="csvProgressTitle">Crawling progress</p>
+								<p class="csvProgressValue">{batchCrawlProgress.completed}/{batchCrawlProgress.total}</p>
+							</div>
+							{#if addingLevel}
+								<Button type="button" variant="outline" size="sm" on:click={() => abortBatchAddImport()}>
+									{$_('custom_lists.detail.add_level.csv_abort_button')}
+								</Button>
+							{/if}
+						</div>
+						<div
+							class="csvProgressBar"
+							role="progressbar"
+							aria-valuemin="0"
+							aria-valuemax={batchCrawlProgress.total}
+							aria-valuenow={batchCrawlProgress.completed}
+						>
+							<div class="csvProgressFill" style={`width: ${crawlProgressPercent}%`}></div>
+						</div>
+						<p class="csvProgressCurrent">
+							{batchCrawlProgress.currentLevelId
+								? `Crawling: #${batchCrawlProgress.currentLevelId}`
+								: 'Preparing...'}
+						</p>
 					</div>
 				{/if}
 

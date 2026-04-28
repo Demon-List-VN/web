@@ -279,6 +279,14 @@
 		aborted: boolean;
 	};
 
+	type BatchCrawlProgress = {
+		total: number;
+		completed: number;
+		currentLevelId: number | null;
+		retrying: boolean;
+		retryElapsedMs: number;
+	};
+
 	type LevelItemPatch = {
 		rating?: number;
 		minProgress?: number | null;
@@ -401,6 +409,7 @@
 	let initialSyncDone = false;
 	let uploadingAsset: 'banner' | 'favicon' | 'logo' | null = null;
 	let batchAddProgress: BatchAddProgress | null = null;
+	let batchCrawlProgress: BatchCrawlProgress | null = null;
 	let batchAddAbortController: AbortController | null = null;
 	let levelDrafts: Record<number, LevelItemPatch> = {};
 	let levelDeletionDraftIds: number[] = [];
@@ -2008,6 +2017,38 @@
 		};
 	}
 
+	function createBatchCrawlProgress(total: number): BatchCrawlProgress {
+		return {
+			total,
+			completed: 0,
+			currentLevelId: null,
+			retrying: false,
+			retryElapsedMs: 0
+		};
+	}
+
+	function updateBatchCrawlProgress(patch: Partial<BatchCrawlProgress>) {
+		if (!batchCrawlProgress) return;
+
+		batchCrawlProgress = {
+			...batchCrawlProgress,
+			...patch
+		};
+	}
+
+	function incrementBatchCrawlProgress(patch: Partial<BatchCrawlProgress> = {}) {
+		if (!batchCrawlProgress) return;
+
+		const nextCompleted = Math.min(batchCrawlProgress.completed + 1, batchCrawlProgress.total);
+		batchCrawlProgress = {
+			...batchCrawlProgress,
+			...patch,
+			completed: nextCompleted,
+			retrying: false,
+			retryElapsedMs: 0
+		};
+	}
+
 	async function withRateLimitRetry<T extends { ok: boolean; status?: number; error?: string }>(
 		request: () => Promise<T>,
 		options: {
@@ -2163,6 +2204,32 @@
 		};
 	}
 
+	async function requestBatchGetMissingLevels(levelIds: number[], signal?: AbortSignal) {
+		const res = await fetch(`${import.meta.env.VITE_API_URL}/levels/missing`, {
+			method: 'POST',
+			signal,
+			headers: {
+				Authorization: `Bearer ${await $user.token()}`,
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({ batch: levelIds })
+		});
+		const payload = await res.json().catch(() => null);
+
+		if (!res.ok) {
+			return {
+				ok: false as const,
+				status: res.status,
+				error: payload?.error || $_('custom_lists.toast.failed_add_level')
+			};
+		}
+
+		return {
+			ok: true as const,
+			payload: Array.isArray(payload) ? payload.map((v: any) => Number(v)) : ([] as number[])
+		};
+	}
+
 	async function requestBatchAddExistingLevels(
 		listId: number,
 		levelInputs: Array<Pick<BatchAddLevelInput, 'levelId' | 'createdAt'>>,
@@ -2274,10 +2341,7 @@
 
 		if (currentChunk.length) {
 			chunks.push(
-				buildArrayBatchSavePayload(
-					key,
-					currentChunk as NonNullable<CustomListBatchSavePayload[K]>
-				)
+				buildArrayBatchSavePayload(key, currentChunk as NonNullable<CustomListBatchSavePayload[K]>)
 			);
 		}
 
@@ -2306,10 +2370,7 @@
 		return responsePayload as CustomList;
 	}
 
-	async function saveCustomListBatchPayload(
-		listId: number,
-		payload: CustomListBatchSavePayload
-	) {
+	async function saveCustomListBatchPayload(listId: number, payload: CustomListBatchSavePayload) {
 		const normalizedPayload = buildCustomListBatchSavePayload(payload);
 		const token = await $user.token();
 
@@ -2536,49 +2597,75 @@
 
 			if (newLevelInputs.length) {
 				const newLevelIds = newLevelInputs.map((levelInput) => levelInput.levelId);
-				// Step 1: fetch all already-existing levels from the `levels` table in a single request.
-				// This avoids the Cloudflare Worker subrequest limit that the previous server-side
-				// batch crawl used to hit when importing large CSVs.
-				const existingResult = await requestBatchGetExistingLevels(newLevelIds, importSignal);
 
-				if (!existingResult.ok) {
-					throw new Error(existingResult.error);
+				// Step 1: ask the API which of these IDs are missing in the `levels` table.
+				const missingResult = await requestBatchGetMissingLevels(newLevelIds, importSignal);
+
+				if (!missingResult.ok) {
+					throw new Error(missingResult.error);
 				}
 
+				const missingSet = new Set<number>(missingResult.payload || []);
+
+				// Fetch details only for IDs that already exist (to mark them as skipped).
+				const existingIds = newLevelIds.filter((id) => !missingSet.has(id));
 				const existingById = new Map<number, PreparedCustomListLevel>();
 
-				for (const level of existingResult.payload) {
-					existingById.set(level.id, level);
-					crawledLevelsById.set(level.id, {
-						id: level.id,
-						status: 'skipped',
-						level
-					});
-				}
+				if (existingIds.length) {
+					const existingResult = await requestBatchGetExistingLevels(existingIds, importSignal);
 
-				// Step 2: for every level that doesn't exist yet, send one FE request per level so
-				// each crawl runs in its own Worker invocation (and its own subrequest budget).
-				const missingLevelIds = newLevelIds.filter((id) => !existingById.has(id));
-
-				for (const levelId of missingLevelIds) {
-					throwIfBatchAddAborted(importSignal);
-
-					const crawlResult = await requestCrawlLevel(levelId, importSignal);
-
-					if (!crawlResult.ok) {
-						crawledLevelsById.set(levelId, {
-							id: levelId,
-							status: 'not_found',
-							error: crawlResult.error
-						});
-						continue;
+					if (!existingResult.ok) {
+						throw new Error(existingResult.error);
 					}
 
-					crawledLevelsById.set(levelId, {
-						id: levelId,
-						status: crawlResult.payload.crawlStatus ?? 'crawled',
-						level: crawlResult.payload
-					});
+					for (const level of existingResult.payload) {
+						existingById.set(level.id, level);
+						crawledLevelsById.set(level.id, {
+							id: level.id,
+							status: 'skipped',
+							level
+						});
+					}
+				}
+
+				// Step 2: crawl only the IDs reported missing by the API so each crawl runs in its own Worker invocation.
+				const missingLevelIds = Array.from(missingSet);
+
+				if (missingLevelIds.length) {
+					batchCrawlProgress = createBatchCrawlProgress(missingLevelIds.length);
+
+					for (const levelId of missingLevelIds) {
+						throwIfBatchAddAborted(importSignal);
+
+						updateBatchCrawlProgress({
+							currentLevelId: levelId,
+							retrying: false,
+							retryElapsedMs: 0
+						});
+
+						const crawlResult = await requestCrawlLevel(levelId, importSignal);
+
+						if (!crawlResult.ok) {
+							crawledLevelsById.set(levelId, {
+								id: levelId,
+								status: 'not_found',
+								error: crawlResult.error
+							});
+							incrementBatchCrawlProgress({ currentLevelId: null });
+							continue;
+						}
+
+						crawledLevelsById.set(levelId, {
+							id: levelId,
+							status: crawlResult.payload.crawlStatus ?? 'crawled',
+							level: crawlResult.payload
+						});
+
+						incrementBatchCrawlProgress({ currentLevelId: null });
+					}
+
+					// clear crawl progress when done
+					batchCrawlProgress = null;
 				}
 			}
 
@@ -2759,6 +2846,9 @@
 					aborted: true
 				});
 
+				// clear any crawling progress state
+				batchCrawlProgress = null;
+
 				return {
 					added,
 					updated,
@@ -2772,6 +2862,7 @@
 		} finally {
 			batchAddAbortController = null;
 			addingLevel = false;
+			batchCrawlProgress = null;
 		}
 	}
 
@@ -4120,6 +4211,7 @@
 					levelsLoadingError={listLevelsError}
 					retryLoadMoreLevels={handleLevelsPageRequest}
 					{batchAddProgress}
+					{batchCrawlProgress}
 					{abortBatchAddImport}
 					{savingLevelItemId}
 					{savingLevelDrafts}
