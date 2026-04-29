@@ -267,7 +267,7 @@
 								<h2 class="text-xl font-bold">
 									{indexToRoman(index + 1)}. {level ? level.name : '???'}
 								</h2>
-								{#if event.type == 'basic'}
+								{#if event.type == 'contest'}
 									<span
 										class="inline h-fit rounded-sm bg-[var(--textColor)] pl-[5px] pr-[5px] text-[12px] font-semibold text-[var(--textColorInverted)]"
 										>{level ? level.point : '???'}pt</span
