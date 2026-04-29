@@ -292,7 +292,8 @@
 			difficulty: normalizeNullableText(level.difficulty),
 			creatorId: level.creatorId ?? null,
 			main_level_id: level.main_level_id ?? null,
-			isPlatformer: Boolean(level.isPlatformer)
+			isPlatformer: Boolean(level.isPlatformer),
+			videoID: level.videoID || 'N/a'
 		};
 
 		fetch(`${import.meta.env.VITE_API_URL}/levels`, {
