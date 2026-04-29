@@ -19,6 +19,7 @@
 		id: NaN,
 		name: '',
 		creator: '',
+		videoID: '',
 		difficulty: null,
 		isPlatformer: false
 	};
@@ -462,6 +463,16 @@
 					placeholder="Required"
 					required
 					bind:value={level.creator}
+				/>
+			</div>
+						<div class="input">
+				<Label for="creator" class="w-[100px]">VideoID</Label>
+				<Input
+					id="creator"
+					class="w-[300px]"
+					placeholder="Required"
+					required
+					bind:value={level.videoID}
 				/>
 			</div>
 			<div class="input">
