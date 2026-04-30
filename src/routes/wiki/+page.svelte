@@ -62,10 +62,10 @@
 	});
 
 	$: quickLinks = [
-		{ icon: Scale, labelKey: 'wiki.quick_links.rules', href: `wiki/${$locale}/rules` },
-		{ icon: Newspaper, labelKey: 'wiki.quick_links.news', href: `/wiki/${$locale}/news` },
-		{ icon: History, labelKey: 'wiki.quick_links.changelog', href: `/wiki/${$locale}/changelogs` },
-		{ icon: FileText, labelKey: 'wiki.quick_links.guides', href: `/wiki/${$locale}/guides` }
+		{ icon: Scale, labelKey: 'wiki.quick_links.rules', href: `wiki/rules` },
+		{ icon: Newspaper, labelKey: 'wiki.quick_links.news', href: `/wiki/news` },
+		{ icon: History, labelKey: 'wiki.quick_links.changelog', href: `/wiki/changelogs` },
+		{ icon: FileText, labelKey: 'wiki.quick_links.guides', href: `/wiki/guides` }
 	];
 </script>
 

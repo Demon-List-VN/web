@@ -40,7 +40,10 @@
 
 <svelte:head>
 	<title>{metadata.title} - {$_('head.titles.wiki')} - {$_('head.site_name')}</title>
-	<meta property="og:title" content={`${metadata.title} - ${$_('head.titles.wiki')} - ${$_('head.site_name')}`} />
+	<meta
+		property="og:title"
+		content={`${metadata.title} - ${$_('head.titles.wiki')} - ${$_('head.site_name')}`}
+	/>
 	<meta property="og:description" content={metadata.description} />
 	{#if metadata.image}
 		<meta property="og:image" content={metadata.image} />
@@ -62,11 +65,17 @@
 <Card.Root class="relative z-10 mx-auto max-w-[1000px] {metadata.image ? 'mt-[-200px]' : ''}">
 	<div class="ml-[25px] mt-[10px] flex items-center gap-[5px]">
 		{#each breadcrumbs as crumb, index}
-			<a href={crumb.link}>
+			{#if index == breadcrumbs.length - 1}
 				<Button variant="link" class="p-0 font-light opacity-75">
 					{crumb.title}
 				</Button>
-			</a>
+			{:else}
+				<a href={crumb.link}>
+					<Button variant="link" class="p-0 font-light opacity-75">
+						{crumb.title}
+					</Button>
+				</a>
+			{/if}
 			{#if index !== breadcrumbs.length - 1}
 				<span class="opacity-50">{'>'}</span>
 			{/if}

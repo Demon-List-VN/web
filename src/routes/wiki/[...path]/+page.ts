@@ -2,10 +2,14 @@ import { redirect } from '@sveltejs/kit';
 import type { PageLoad } from './$types';
 
 export async function load({ fetch, params, url }: Parameters<PageLoad>[0]) {
-	const { path } = params;
-	const parts: string[] = path.split('/');
+	const parts: string[] = url.pathname.split('/');
+
+	if(parts[0] === '') {
+		parts.shift();
+	}
+
 	const locale = parts[0];
-	const src = parts.slice(1).join('/');
+	const src = parts.slice(2).join('/');
 	const page = Number(url.searchParams.get('page') || '1');
 	const limit = 12;
 

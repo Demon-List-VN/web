@@ -37,7 +37,7 @@
 </script>
 
 {#if item}
-	<a href={`/wiki/${locale}/${item.path}`}>
+	<a href={`/${locale}/wiki/${item.path}`}>
 		<Card class="h-full hover:border-primary/50 hover:shadow-md">
 			{#if metadata?.image}
 				<div class="relative overflow-hidden rounded-t-xl">

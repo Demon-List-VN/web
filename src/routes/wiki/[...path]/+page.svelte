@@ -42,7 +42,7 @@
 
 			res.push({
 				title: part,
-				link: `/wiki/${locale}/` + parts.slice(0, i + 1).join('/')
+				link: `/wiki/` + parts.slice(0, i + 1).join('/')
 			});
 		}
 
@@ -57,6 +57,10 @@
 			.map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
 			.join(' ');
 	}
+
+	onMount(() => {
+		console.log(isFolder, detail)
+	})
 </script>
 
 {#if isFolder}
