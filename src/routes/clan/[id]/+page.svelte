@@ -174,6 +174,8 @@
 		delete editedData.created_at;
 		delete editedData.players;
 		delete editedData.boostedUntil;
+		delete editedData.initialLocale;
+		delete editedData.nameFts;
 
 		toast.promise(
 			fetch(`${import.meta.env.VITE_API_URL}/clans/${$page.params.id}`, {
