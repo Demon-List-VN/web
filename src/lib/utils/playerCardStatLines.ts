@@ -16,7 +16,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export function shouldShowPlayerCardEloStat(overviewData: unknown): boolean {
-	return isRecord(overviewData) && overviewData[PLAYER_CARD_SHOW_ELO_STAT_KEY] === true;
+	return !isRecord(overviewData) || overviewData[PLAYER_CARD_SHOW_ELO_STAT_KEY] !== false;
 }
 
 export function setPlayerCardEloStatVisibility(
@@ -26,9 +26,9 @@ export function setPlayerCardEloStatVisibility(
 	const nextOverviewData = isRecord(overviewData) ? { ...overviewData } : {};
 
 	if (showEloStat) {
-		nextOverviewData[PLAYER_CARD_SHOW_ELO_STAT_KEY] = true;
-	} else {
 		delete nextOverviewData[PLAYER_CARD_SHOW_ELO_STAT_KEY];
+	} else {
+		nextOverviewData[PLAYER_CARD_SHOW_ELO_STAT_KEY] = false;
 	}
 
 	return nextOverviewData;
