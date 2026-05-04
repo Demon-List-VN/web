@@ -2,11 +2,14 @@ import type { PlayerRankedListSummary } from '$lib/types/playerRankedList';
 
 export const PLAYER_CARD_STAT_LINE_COUNT = 4;
 export const PLAYER_CARD_SHOW_ELO_STAT_KEY = 'showEloStat';
+export const DEFAULT_PLAYER_CARD_STAT_LINE_SLUGS = ['dl', 'pl', 'cl', 'fl'] as const;
 
 export type PlayerCardStatLineOption = {
 	value: number;
 	label: string;
 };
+
+export type DefaultPlayerCardStatLineSlug = (typeof DEFAULT_PLAYER_CARD_STAT_LINE_SLUGS)[number];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return Boolean(value && typeof value === 'object' && !Array.isArray(value));

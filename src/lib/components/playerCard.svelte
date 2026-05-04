@@ -8,9 +8,11 @@
 	import { isActive } from '$lib/client/isSupporterActive';
 	import type { PlayerRankedListSummary } from '$lib/types/playerRankedList';
 	import {
+		DEFAULT_PLAYER_CARD_STAT_LINE_SLUGS,
 		normalizePlayerCardStatLines,
 		resolvePlayerCardStatLineIds,
-		shouldShowPlayerCardEloStat
+		shouldShowPlayerCardEloStat,
+		type DefaultPlayerCardStatLineSlug
 	} from '$lib/utils/playerCardStatLines';
 	import {
 		normalizeCustomListRankBadges,
@@ -44,9 +46,11 @@
 	$: showEloStat = shouldShowPlayerCardEloStat(player?.overviewData);
 	$: hasConfiguredStatLines = configuredStatLineIds.length > 0;
 	$: effectiveStatLineIds = resolvePlayerCardStatLineIds(configuredStatLineIds, summaries);
-	$: resolvedStatLines = effectiveStatLineIds
-		.map((id) => resolvePlayerCardStatLine(id))
-		.filter((line): line is NonNullable<typeof line> => line !== null);
+	$: resolvedStatLines = hasConfiguredStatLines
+		? effectiveStatLineIds
+				.map((id) => resolvePlayerCardStatLine(id))
+				.filter((line): line is NonNullable<typeof line> => line !== null)
+		: DEFAULT_PLAYER_CARD_STAT_LINE_SLUGS.map((slug) => resolveDefaultPlayerCardStatLine(slug, $_));
 	$: showStatLineSkeleton =
 		active &&
 		hasConfiguredStatLines &&
@@ -90,7 +94,7 @@
 	}
 
 	function formatRank(value: number | null | undefined) {
-		return typeof value === 'number' && Number.isFinite(value) ? `#${value}` : null;
+		return typeof value === 'number' && Number.isFinite(value) && value > 0 ? `#${value}` : null;
 	}
 
 	function resolvePlayerCardStatLine(listId: number) {
@@ -112,6 +116,47 @@
 			valueStyle: badge ? `background: ${badge.color}; color: white;` : '',
 			tooltip: badge?.name || null
 		};
+	}
+
+	function resolveDefaultPlayerCardStatLine(
+		slug: DefaultPlayerCardStatLineSlug,
+		translate: (id: string) => string
+	) {
+		switch (slug) {
+			case 'pl':
+				return {
+					label: translate('player_card.plat_rating'),
+					value: formatScore(player?.plRating ?? 0),
+					rank: formatRank(player?.plrank),
+					valueStyle: '',
+					tooltip: null
+				};
+			case 'cl':
+				return {
+					label: translate('player_card.challenge_rating'),
+					value: formatScore(player?.clRating ?? 0),
+					rank: formatRank(player?.clrank),
+					valueStyle: '',
+					tooltip: null
+				};
+			case 'fl':
+				return {
+					label: translate('player_card.featured'),
+					value: formatScore(player?.totalFLpt ?? 0),
+					rank: formatRank(player?.flrank),
+					valueStyle: '',
+					tooltip: null
+				};
+			case 'dl':
+			default:
+				return {
+					label: translate('player_card.rating'),
+					value: formatScore(player?.rating ?? player?.totalDLpt ?? 0),
+					rank: formatRank(player?.overallRank ?? player?.dlrank),
+					valueStyle: '',
+					tooltip: null
+				};
+		}
 	}
 </script>
 
