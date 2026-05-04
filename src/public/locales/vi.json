@@ -81,7 +81,7 @@
     },
     "descriptions": {
       "homepage": "Website dành cho cộng đồng Geometry Dash Việt Nam",
-      "discord": "Tham gia cộng đồng Geometry Dash Việt Nam trên Discord hoặc thêm bot vào server của bạn!",
+      "discord": "Tham gia Discord Geometry Dash Việt Nam, thêm GDVN bot vào server của bạn và dùng dữ liệu list mới nhất ngay trong chat.",
       "community": "Chia sẻ, thảo luận và kết nối với cộng đồng Geometry Dash Việt Nam",
       "lists": "Xem các danh sách công khai và quản lý bộ sưu tập level của bạn.",
       "wiki": "Khám phá Wiki của Geometry Dash Việt Nam - hướng dẫn, luật lệ, tin tức và cập nhật"
@@ -1285,8 +1285,8 @@
         "description": "Đừng lo lắng. Sẽ có thêm nhiều tính năng cho supporter trong tương lai."
       },
       "discord_bot": {
-        "title": "Sử dụng lệnh Discord Bot nâng cao",
-        "description": "Có quyền truy cập vào các lệnh và tính năng nâng cao trong bot Discord của chúng tôi, nâng cao trải nghiệm của bạn."
+        "title": "Vai trò Discord cộng đồng",
+        "description": "Đồng bộ vai trò supporter trên server Discord chính thức của GDVN."
       }
     },
     "decision": {
@@ -1447,42 +1447,143 @@
   "discord_bot": {
     "title": "Discord Bot",
     "page_title": "Discord",
-    "page_description": "Tham gia cộng đồng hoặc thêm bot vào server của bạn",
+    "page_description": "Tra cứu player, level, record và list GDVN ngay trong Discord",
     "description": "Truy cập Geometry Dash Việt Nam ngay trong Discord",
-    "server_title": "Tham Gia Server",
-    "server_description": "Kết nối với cộng đồng Geometry Dash Việt Nam",
-    "server_feature_1": "Trò chuyện với người chơi khác",
-    "server_feature_2": "Nhận thông báo & cập nhật mới nhất",
-    "server_feature_3": "Tham gia các sự kiện",
+    "hero_badge": "Bot đã mở cho mọi người",
+    "hero_title": "GDVN trong Discord",
+    "hero_description": "Tra cứu player, level, record, leaderboard và bản nộp bằng slash command rõ ràng, nhanh và dùng API GDVN mới.",
     "join_server": "Tham Gia Server",
-    "bot_title": "Thêm Bot",
-    "bot_description": "Đưa Geometry Dash Việt Nam vào server của bạn",
-    "bot_feature_1": "Lệnh slash để truy cập nhanh",
-    "bot_feature_2": "Cập nhật dữ liệu theo thời gian thực",
-    "bot_feature_3": "Dễ dàng cài đặt",
     "add_button": "Thêm vào Server",
-    "features_title": "Tính Năng Bot",
-    "features_subtitle": "Mọi thứ bạn cần ngay trong Discord",
-    "feature_level_search": {
-      "title": "Tra cứu level",
-      "description": "Xem thông tin chi tiết về bất kỳ level nào trong Geometry Dash Việt Nam"
+    "highlights": {
+      "public": "Không còn giới hạn supporter",
+      "current_api": "Dùng API list mới",
+      "custom_lists": "Hỗ trợ official và custom list"
     },
-    "feature_leaderboard": {
-      "title": "Bảng xếp hạng",
-      "description": "Theo dõi thứ hạng của người chơi trên các list khác nhau"
+    "quick": {
+      "link_account": {
+        "title": "Liên kết Discord",
+        "description": "Dùng /profile nhanh hơn"
+      },
+      "submit": {
+        "title": "Nộp record",
+        "description": "Mở flow nộp trên web"
+      },
+      "lists": {
+        "title": "Khám phá lists",
+        "description": "Official, verified và custom"
+      }
     },
-    "feature_player_profile": {
-      "title": "Hồ sơ người chơi",
-      "description": "Xem hồ sơ, bản ghi và thành tích của người chơi"
+    "audiences_eyebrow": "Dành cho ai",
+    "audiences_title": "Lệnh hữu ích cho mọi góc của cộng đồng",
+    "audiences": {
+      "players": {
+        "title": "Người chơi",
+        "description": "Xem hồ sơ, rank, level ngẫu nhiên và record cá nhân trong vài giây."
+      },
+      "submitters": {
+        "title": "Người nộp record",
+        "description": "Kiểm tra bản nộp đang chờ, queue và record accepted/pending."
+      },
+      "managers": {
+        "title": "Quản lý list",
+        "description": "Chia sẻ list, leaderboard và thống kê nhanh cho server của bạn."
+      },
+      "community": {
+        "title": "Cộng đồng",
+        "description": "Dùng link nhanh, tra cứu level khi thảo luận và theo dõi hoạt động GDVN."
+      }
     },
-    "feature_latest_records": {
-      "title": "Bản ghi mới nhất",
-      "description": "Cập nhật các bản ghi được chấp nhận gần đây nhất"
+    "features_eyebrow": "Tính năng",
+    "features_title": "Nhanh, rõ, đúng với GDVN hiện tại",
+    "features": {
+      "lookup": {
+        "title": "Tra cứu thông minh",
+        "description": "Tìm player bằng Discord, tên, UID; tìm level bằng tên hoặc ID."
+      },
+      "leaderboard": {
+        "title": "Leaderboard mới",
+        "description": "Xem official/custom list với phân trang và autocomplete."
+      },
+      "submissions": {
+        "title": "Record và bản nộp",
+        "description": "Xem accepted, pending, recent, best và queue mà không bị che."
+      },
+      "random": {
+        "title": "Random level",
+        "description": "Lấy thử thách ngẫu nhiên từ list bạn chọn."
+      },
+      "links": {
+        "title": "Quick links",
+        "description": "Mở submit, link Discord, server, list và bot invite."
+      },
+      "stats": {
+        "title": "Tóm tắt nhanh",
+        "description": "Xem số level, người chơi, record và top player của list."
+      }
     },
+    "commands_eyebrow": "Slash commands",
     "commands_title": "Danh sách lệnh",
-    "command_params": "Tham số:",
+    "commands_subtitle": "Tên lệnh trên trang này khớp với bot mới. Các lệnh đều public; supporter chỉ còn là trạng thái/thông tin riêng.",
+    "command_groups": {
+      "players": "Player và level",
+      "records": "Record và bản nộp",
+      "lists": "List và leaderboard",
+      "utility": "Tiện ích"
+    },
+    "public_badge": "Public",
+    "commands": {
+      "profile": {
+        "description": "Xem hồ sơ, rank, clan và Discord link của player."
+      },
+      "level": {
+        "description": "Tra cứu level bằng tên hoặc ID."
+      },
+      "record": {
+        "description": "Xem accepted, pending hoặc cả hai record cho một player và level."
+      },
+      "recent": {
+        "description": "Lấy record accepted mới nhất của player, có thể lọc theo list."
+      },
+      "best": {
+        "description": "Tìm record tốt nhất của player trong một list."
+      },
+      "submission": {
+        "description": "Xem bản nộp đang chờ gần nhất và queue nếu có."
+      },
+      "list": {
+        "description": "Xem level trong official hoặc custom list."
+      },
+      "leaderboard": {
+        "description": "Xem bảng xếp hạng của official hoặc custom list."
+      },
+      "random": {
+        "description": "Gợi ý một level ngẫu nhiên từ list."
+      },
+      "stats": {
+        "description": "Xem tổng quan GDVN hoặc một list cụ thể."
+      },
+      "links": {
+        "description": "Nhận các liên kết GDVN hữu ích."
+      },
+      "supporter": {
+        "description": "Kiểm tra trạng thái supporter; không mở khóa lệnh bot."
+      },
+      "help": {
+        "description": "Hiển thị danh sách lệnh có sẵn."
+      }
+    },
+    "params": {
+      "discord_user": "Discord user đã liên kết",
+      "player_query": "Tên player, UID hoặc @mention",
+      "level_query": "Tên hoặc ID level",
+      "record_variant": "accepted, pending hoặc both",
+      "list": "Slug, ID hoặc tên list",
+      "page": "Số trang"
+    },
     "param_required": "bắt buộc",
-    "param_optional": "tùy chọn"
+    "param_optional": "tùy chọn",
+    "final_title": "Sẵn sàng đưa GDVN vào server của bạn",
+    "final_description": "Thêm bot để server có lookup, leaderboard và record tools nhất quán với website GDVN."
   },
   "dashboard": {
     "welcome": "Chào mừng đến",

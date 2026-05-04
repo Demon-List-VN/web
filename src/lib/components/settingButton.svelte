@@ -21,6 +21,7 @@
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
+	import { DISCORD_OAUTH_URL } from '$lib/client/discord';
 
 	let token = '';
 	let open1 = false;
@@ -102,14 +103,11 @@
 	});
 
 	async function syncDiscordRole() {
-		toast.promise(
-			$user.syncRole(),
-			{
-				loading: 'Syncing role...',
-				success: $_('settings.account.sync_role_synced'),
-				error: 'Failed to sync role'
-			}
-		);
+		toast.promise($user.syncRole(), {
+			loading: 'Syncing role...',
+			success: $_('settings.account.sync_role_synced'),
+			error: 'Failed to sync role'
+		});
 	}
 
 	function setTheme(theme: string) {
@@ -401,9 +399,7 @@
 							>{$_('settings.account.sync_role')}</Button
 						>
 					{:else}
-						<a
-							href="https://discord.com/oauth2/authorize?client_id=1071500325338488843&response_type=code&redirect_uri=https%3A%2F%2Fapi.gdvn.net%2Fauth%2Fcallback%2Fdiscord&scope=identify"
-						>
+						<a href={DISCORD_OAUTH_URL}>
 							<Button class="w-full" variant="outline">{$_('settings.account.link')}</Button>
 						</a>
 					{/if}

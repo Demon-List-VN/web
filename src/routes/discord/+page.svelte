@@ -1,324 +1,678 @@
 <script lang="ts">
-	import BigTitle from '$lib/components/bigTitle.svelte';
-	import * as Card from '$lib/components/ui/card/index.js';
 	import { Button } from '$lib/components/ui/button';
-	import { fade } from 'svelte/transition';
-	import { Bot, Gem, Terminal, Users } from 'lucide-svelte';
+	import { Badge } from '$lib/components/ui/badge';
+	import * as Card from '$lib/components/ui/card';
+	import {
+		Activity,
+		ArrowUpRight,
+		Bot,
+		CheckCircle2,
+		ClipboardCheck,
+		ExternalLink,
+		Link2,
+		ListOrdered,
+		Radio,
+		Search,
+		Shuffle,
+		Sparkles,
+		Trophy,
+		UserRound,
+		Users
+	} from 'lucide-svelte';
 	import { _ } from 'svelte-i18n';
+	import {
+		DISCORD_BOT_INVITE_URL,
+		DISCORD_COMMANDS,
+		DISCORD_OAUTH_URL,
+		DISCORD_SERVER_INVITE_URL,
+		type DiscordCommandGroup
+	} from '$lib/client/discord';
 
-	const BOT_INVITE_URL =
-		'https://discord.com/oauth2/authorize?client_id=1071500325338488843&permissions=85056&integration_type=0&scope=bot';
-	const SERVER_INVITE_URL = 'https://discord.gg/fybxJ9Y344';
+	const heroImage =
+		'https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?q=80&w=2070&auto=format&fit=crop';
 
-	interface Command {
-		name: string;
-		description: string;
-		params: { name: string; description: string; required: boolean }[];
-		supporterOnly?: boolean;
-	}
+	const highlights = [
+		'discord_bot.highlights.public',
+		'discord_bot.highlights.current_api',
+		'discord_bot.highlights.custom_lists'
+	];
 
-	const commands: Command[] = [
+	const audiences = [
 		{
-			name: '/recent',
-			description: 'Lấy bản ghi được chấp nhận mới nhất',
-			params: [
-				{ name: 'user', description: 'Người dùng để lấy bản ghi', required: false },
-				{ name: 'list', description: 'Lọc theo list', required: false }
-			]
+			icon: UserRound,
+			title: 'discord_bot.audiences.players.title',
+			description: 'discord_bot.audiences.players.description'
 		},
 		{
-			name: '/profile',
-			description: 'Lấy hồ sơ của người dùng',
-			params: [{ name: 'user', description: 'Người dùng muốn xem hồ sơ', required: false }]
+			icon: ClipboardCheck,
+			title: 'discord_bot.audiences.submitters.title',
+			description: 'discord_bot.audiences.submitters.description'
 		},
 		{
-			name: '/leaderboard',
-			description: 'Lấy bảng xếp hạng, sắp xếp theo top',
-			params: [
-				{ name: 'list', description: 'Chọn list', required: true },
-				{ name: 'page', description: 'Số trang (mặc định: 1)', required: false }
-			],
-			supporterOnly: true
+			icon: ListOrdered,
+			title: 'discord_bot.audiences.managers.title',
+			description: 'discord_bot.audiences.managers.description'
 		},
 		{
-			name: '/supporter',
-			description: 'Kiểm tra trạng thái supporter của người chơi',
-			params: [{ name: 'user', description: 'Người dùng muốn kiểm tra', required: false }]
-		},
-		{
-			name: '/level',
-			description: 'Lấy thông tin của một level',
-			params: [{ name: 'query', description: 'Tên hoặc ID của level', required: true }]
-		},
-		{
-			name: '/lists',
-			description: 'Lấy level trong list, sắp xếp theo top',
-			params: [
-				{ name: 'list', description: 'Chọn list', required: true },
-				{ name: 'page', description: 'Số trang (mặc định: 1)', required: false }
-			],
-			supporterOnly: true
-		},
-		{
-			name: '/best',
-			description: 'Lấy bản ghi tốt nhất của người chơi',
-			params: [
-				{ name: 'list', description: 'Chọn list', required: true },
-				{ name: 'user', description: 'Người dùng để lấy bản ghi', required: false }
-			]
+			icon: Users,
+			title: 'discord_bot.audiences.community.title',
+			description: 'discord_bot.audiences.community.description'
 		}
 	];
+
+	const featureTiles = [
+		{
+			icon: Search,
+			title: 'discord_bot.features.lookup.title',
+			description: 'discord_bot.features.lookup.description'
+		},
+		{
+			icon: Trophy,
+			title: 'discord_bot.features.leaderboard.title',
+			description: 'discord_bot.features.leaderboard.description'
+		},
+		{
+			icon: Radio,
+			title: 'discord_bot.features.submissions.title',
+			description: 'discord_bot.features.submissions.description'
+		},
+		{
+			icon: Shuffle,
+			title: 'discord_bot.features.random.title',
+			description: 'discord_bot.features.random.description'
+		},
+		{
+			icon: Link2,
+			title: 'discord_bot.features.links.title',
+			description: 'discord_bot.features.links.description'
+		},
+		{
+			icon: Activity,
+			title: 'discord_bot.features.stats.title',
+			description: 'discord_bot.features.stats.description'
+		}
+	];
+
+	const commandGroups: Array<{
+		group: DiscordCommandGroup;
+		title: string;
+		icon: typeof UserRound;
+	}> = [
+		{ group: 'players', title: 'discord_bot.command_groups.players', icon: UserRound },
+		{ group: 'records', title: 'discord_bot.command_groups.records', icon: ClipboardCheck },
+		{ group: 'lists', title: 'discord_bot.command_groups.lists', icon: ListOrdered },
+		{ group: 'utility', title: 'discord_bot.command_groups.utility', icon: Bot }
+	];
+
+	function commandsFor(group: DiscordCommandGroup) {
+		return DISCORD_COMMANDS.filter((command) => command.group === group);
+	}
 </script>
 
 <svelte:head>
 	<title>{$_('discord_bot.page_title')} - {$_('head.site_name')}</title>
-	<meta
-		name="description"
-		content={$_('head.descriptions.discord')}
-	/>
+	<meta name="description" content={$_('head.descriptions.discord')} />
 </svelte:head>
 
-<div class="mt-[-50px]" in:fade={{ delay: 300, duration: 1000 }}>
-	<img
-		class="bgGradient absolute z-0 h-[650px] w-full object-cover"
-		src="https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?q=80&w=2070&auto=format&fit=crop"
-		alt="Discord background"
-	/>
-</div>
-
-<div class="relative mt-[50px] flex flex-col items-center">
-	<BigTitle value={$_('discord_bot.page_title')} description={$_('discord_bot.page_description')} />
-	<div class="mb-[80px] grid w-full max-w-[900px] gap-[20px] md:grid-cols-2">
-		<Card.Root
-			class="group relative overflow-hidden border-2 border-[#5865F2]/30 bg-gradient-to-br from-[#5865F2]/10 to-transparent transition-all hover:border-[#5865F2]/60 hover:shadow-lg hover:shadow-[#5865F2]/20"
-		>
-			<div
-				class="absolute right-[-20px] top-[-20px] h-[100px] w-[100px] rounded-full bg-[#5865F2]/10 blur-2xl transition-all group-hover:bg-[#5865F2]/20"
-			></div>
-			<Card.Header class="pb-[15px]">
-				<div
-					class="mb-[10px] flex h-[60px] w-[60px] items-center justify-center rounded-xl bg-[#5865F2]/20"
-				>
-					<Users class="h-[32px] w-[32px] text-[#5865F2]" />
-				</div>
-				<Card.Title class="text-xl">{$_('discord_bot.server_title')}</Card.Title>
-				<Card.Description class="text-base">
-					{$_('discord_bot.server_description')}
-				</Card.Description>
-			</Card.Header>
-			<Card.Content>
-				<a href={SERVER_INVITE_URL} target="_blank" rel="noopener noreferrer" class="block">
-					<Button class="w-full gap-[10px] bg-[#5865F2] text-base hover:bg-[#4752C4]">
-						<Users class="h-5 w-5" />
-						{$_('discord_bot.join_server')}
-					</Button>
-				</a>
-			</Card.Content>
-		</Card.Root>
-		<Card.Root
-			class="group relative overflow-hidden border-2 border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-transparent transition-all hover:border-emerald-500/60 hover:shadow-lg hover:shadow-emerald-500/20"
-		>
-			<div
-				class="absolute right-[-20px] top-[-20px] h-[100px] w-[100px] rounded-full bg-emerald-500/10 blur-2xl transition-all group-hover:bg-emerald-500/20"
-			></div>
-			<Card.Header class="pb-[15px]">
-				<div
-					class="mb-[10px] flex h-[60px] w-[60px] items-center justify-center rounded-xl bg-emerald-500/20"
-				>
-					<Bot class="h-[32px] w-[32px] text-emerald-500" />
-				</div>
-				<Card.Title class="text-xl">{$_('discord_bot.bot_title')}</Card.Title>
-				<Card.Description class="text-base">
-					{$_('discord_bot.bot_description')}
-				</Card.Description>
-			</Card.Header>
-			<Card.Content>
-				<a href={BOT_INVITE_URL} target="_blank" rel="noopener noreferrer" class="block">
-					<Button class="w-full gap-[10px] bg-emerald-600 text-base hover:bg-emerald-700">
-						<Bot class="h-5 w-5" />
-						{$_('discord_bot.add_button')}
-					</Button>
-				</a>
-			</Card.Content>
-		</Card.Root>
-	</div>
-	<div class="mb-[80px] w-full max-w-[900px]">
-		<h2 class="mb-[10px] text-center text-2xl font-bold">{$_('discord_bot.features_title')}</h2>
-		<p class="mb-[30px] text-center text-muted-foreground">{$_('discord_bot.features_subtitle')}</p>
-		<div class="grid gap-[15px] sm:grid-cols-2 lg:grid-cols-4">
-			<Card.Root class="text-center transition-all hover:bg-muted/50">
-				<Card.Header>
-					<div
-						class="mx-auto mb-[10px] flex h-[50px] w-[50px] items-center justify-center rounded-full bg-[#5865F2]/20"
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							class="h-6 w-6 text-[#5865F2]"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke="currentColor"
-							><path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-							/></svg
-						>
-					</div>
-					<Card.Title class="text-base">{$_('discord_bot.feature_level_search.title')}</Card.Title>
-					<Card.Description>
-						{$_('discord_bot.feature_level_search.description')}
-					</Card.Description>
-				</Card.Header>
-			</Card.Root>
-			<Card.Root class="text-center transition-all hover:bg-muted/50">
-				<Card.Header>
-					<div
-						class="mx-auto mb-[10px] flex h-[50px] w-[50px] items-center justify-center rounded-full bg-amber-500/20"
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							class="h-6 w-6 text-amber-500"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke="currentColor"
-							><path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-							/></svg
-						>
-					</div>
-					<Card.Title class="text-base">{$_('discord_bot.feature_leaderboard.title')}</Card.Title>
-					<Card.Description>
-						{$_('discord_bot.feature_leaderboard.description')}
-					</Card.Description>
-				</Card.Header>
-			</Card.Root>
-			<Card.Root class="text-center transition-all hover:bg-muted/50">
-				<Card.Header>
-					<div
-						class="mx-auto mb-[10px] flex h-[50px] w-[50px] items-center justify-center rounded-full bg-emerald-500/20"
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							class="h-6 w-6 text-emerald-500"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke="currentColor"
-							><path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-							/></svg
-						>
-					</div>
-					<Card.Title class="text-base">{$_('discord_bot.feature_player_profile.title')}</Card.Title
-					>
-					<Card.Description>{$_('discord_bot.feature_player_profile.description')}</Card.Description
-					>
-				</Card.Header>
-			</Card.Root>
-			<Card.Root class="text-center transition-all hover:bg-muted/50">
-				<Card.Header>
-					<div
-						class="mx-auto mb-[10px] flex h-[50px] w-[50px] items-center justify-center rounded-full bg-rose-500/20"
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							class="h-6 w-6 text-rose-500"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke="currentColor"
-							><path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-							/></svg
-						>
-					</div>
-					<Card.Title class="text-base">{$_('discord_bot.feature_latest_records.title')}</Card.Title
-					>
-					<Card.Description>{$_('discord_bot.feature_latest_records.description')}</Card.Description
-					>
-				</Card.Header>
-			</Card.Root>
+<section class="discordHero">
+	<img class="heroImage" src={heroImage} alt="Discord community workspace" />
+	<div class="heroScrim"></div>
+	<div class="heroContent">
+		<Badge class="heroBadge">
+			<Sparkles class="h-3.5 w-3.5" />
+			{$_('discord_bot.hero_badge')}
+		</Badge>
+		<h1>{$_('discord_bot.hero_title')}</h1>
+		<p>{$_('discord_bot.hero_description')}</p>
+		<div class="heroActions">
+			<a href={DISCORD_SERVER_INVITE_URL} target="_blank" rel="noopener noreferrer">
+				<Button class="heroPrimary">
+					<Users class="h-5 w-5" />
+					{$_('discord_bot.join_server')}
+				</Button>
+			</a>
+			<a href={DISCORD_BOT_INVITE_URL} target="_blank" rel="noopener noreferrer">
+				<Button variant="outline" class="heroSecondary">
+					<Bot class="h-5 w-5" />
+					{$_('discord_bot.add_button')}
+				</Button>
+			</a>
 		</div>
-	</div>
-	<div class="mb-[80px] w-full max-w-[900px]">
-		<h2
-			class="mb-[30px] flex items-center justify-center gap-[10px] text-center text-2xl font-bold"
-		>
-			<Terminal class="h-6 w-6" />
-			{$_('discord_bot.commands_title')}
-		</h2>
-
-		<div class="flex flex-col gap-[15px]">
-			{#each commands as command}
-				<Card.Root class="overflow-hidden">
-					<Card.Header class="pb-[10px]">
-						<div class="flex flex-wrap items-center gap-[10px]">
-							<Card.Title class="font-mono text-lg text-[#5865F2]">
-								{command.name}
-							</Card.Title>
-							{#if command.supporterOnly}
-								<span
-									class="flex items-center gap-[5px] rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 px-[10px] py-[2px] text-xs font-semibold text-black"
-								>
-									<Gem class="h-3 w-3" />
-									Supporter
-								</span>
-							{/if}
-						</div>
-						<Card.Description class="text-base">
-							{command.description}
-						</Card.Description>
-					</Card.Header>
-					{#if command.params.length > 0}
-						<Card.Content class="pt-0">
-							<div class="rounded-lg bg-muted/50 p-[15px]">
-								<p class="mb-[10px] text-sm font-medium text-muted-foreground">
-									{$_('discord_bot.command_params')}
-								</p>
-								<div class="flex flex-col gap-[8px]">
-									{#each command.params as param}
-										<div class="flex flex-wrap items-center gap-[8px]">
-											<code
-												class="rounded bg-muted px-[8px] py-[2px] font-mono text-sm text-foreground"
-											>
-												{param.name}
-											</code>
-											<span class="text-sm text-muted-foreground">
-												{param.description}
-											</span>
-											{#if param.required}
-												<span class="rounded bg-red-500/20 px-[6px] py-[1px] text-xs text-red-400">
-													{$_('discord_bot.param_required')}
-												</span>
-											{:else}
-												<span
-													class="rounded bg-gray-500/20 px-[6px] py-[1px] text-xs text-gray-400"
-												>
-													{$_('discord_bot.param_optional')}
-												</span>
-											{/if}
-										</div>
-									{/each}
-								</div>
-							</div>
-						</Card.Content>
-					{/if}
-				</Card.Root>
+		<div class="heroHighlights">
+			{#each highlights as highlight}
+				<span>
+					<CheckCircle2 class="h-4 w-4" />
+					{$_(highlight)}
+				</span>
 			{/each}
 		</div>
 	</div>
-</div>
+</section>
+
+<main class="discordPage">
+	<section class="quickLinks">
+		<a href={DISCORD_OAUTH_URL} class="quickLink">
+			<Link2 class="h-5 w-5" />
+			<span>
+				<strong>{$_('discord_bot.quick.link_account.title')}</strong>
+				<small>{$_('discord_bot.quick.link_account.description')}</small>
+			</span>
+			<ArrowUpRight class="h-4 w-4" />
+		</a>
+		<a href="/submit" class="quickLink">
+			<ClipboardCheck class="h-5 w-5" />
+			<span>
+				<strong>{$_('discord_bot.quick.submit.title')}</strong>
+				<small>{$_('discord_bot.quick.submit.description')}</small>
+			</span>
+			<ArrowUpRight class="h-4 w-4" />
+		</a>
+		<a href="/lists" class="quickLink">
+			<ListOrdered class="h-5 w-5" />
+			<span>
+				<strong>{$_('discord_bot.quick.lists.title')}</strong>
+				<small>{$_('discord_bot.quick.lists.description')}</small>
+			</span>
+			<ArrowUpRight class="h-4 w-4" />
+		</a>
+	</section>
+
+	<section class="sectionBlock">
+		<div class="sectionHeader">
+			<p>{$_('discord_bot.audiences_eyebrow')}</p>
+			<h2>{$_('discord_bot.audiences_title')}</h2>
+		</div>
+		<div class="audienceGrid">
+			{#each audiences as audience}
+				<Card.Root class="audienceCard">
+					<Card.Header>
+						<svelte:component this={audience.icon} class="h-6 w-6" />
+						<Card.Title>{$_(audience.title)}</Card.Title>
+						<Card.Description>{$_(audience.description)}</Card.Description>
+					</Card.Header>
+				</Card.Root>
+			{/each}
+		</div>
+	</section>
+
+	<section class="sectionBlock featureBand">
+		<div class="sectionHeader">
+			<p>{$_('discord_bot.features_eyebrow')}</p>
+			<h2>{$_('discord_bot.features_title')}</h2>
+		</div>
+		<div class="featureGrid">
+			{#each featureTiles as feature}
+				<div class="featureTile">
+					<svelte:component this={feature.icon} class="featureIcon h-5 w-5" />
+					<div>
+						<h3>{$_(feature.title)}</h3>
+						<p>{$_(feature.description)}</p>
+					</div>
+				</div>
+			{/each}
+		</div>
+	</section>
+
+	<section class="sectionBlock commandSection">
+		<div class="sectionHeader">
+			<p>{$_('discord_bot.commands_eyebrow')}</p>
+			<h2>{$_('discord_bot.commands_title')}</h2>
+			<span>{$_('discord_bot.commands_subtitle')}</span>
+		</div>
+
+		<div class="commandGroups">
+			{#each commandGroups as group}
+				<div class="commandGroup">
+					<div class="commandGroupHeader">
+						<svelte:component this={group.icon} class="h-5 w-5" />
+						<h3>{$_(group.title)}</h3>
+					</div>
+					<div class="commandList">
+						{#each commandsFor(group.group) as command}
+							<Card.Root class="commandCard">
+								<Card.Header>
+									<div class="commandTopline">
+										<code>{command.name}</code>
+										<Badge variant="secondary">{$_('discord_bot.public_badge')}</Badge>
+									</div>
+									<Card.Description>{$_(command.descriptionKey)}</Card.Description>
+								</Card.Header>
+								{#if command.params.length}
+									<Card.Content>
+										<div class="paramList">
+											{#each command.params as param}
+												<span class="paramChip" class:required={param.required}>
+													<code>{param.name}</code>
+													<small>{$_(param.descriptionKey)}</small>
+													<em>
+														{param.required
+															? $_('discord_bot.param_required')
+															: $_('discord_bot.param_optional')}
+													</em>
+												</span>
+											{/each}
+										</div>
+									</Card.Content>
+								{/if}
+							</Card.Root>
+						{/each}
+					</div>
+				</div>
+			{/each}
+		</div>
+	</section>
+
+	<section class="finalBand">
+		<div>
+			<Bot class="h-8 w-8" />
+			<h2>{$_('discord_bot.final_title')}</h2>
+			<p>{$_('discord_bot.final_description')}</p>
+		</div>
+		<div class="finalActions">
+			<a href={DISCORD_BOT_INVITE_URL} target="_blank" rel="noopener noreferrer">
+				<Button>
+					<ExternalLink class="h-4 w-4" />
+					{$_('discord_bot.add_button')}
+				</Button>
+			</a>
+			<a href={DISCORD_SERVER_INVITE_URL} target="_blank" rel="noopener noreferrer">
+				<Button variant="outline">
+					<Users class="h-4 w-4" />
+					{$_('discord_bot.join_server')}
+				</Button>
+			</a>
+		</div>
+	</section>
+</main>
 
 <style lang="scss">
-	.bgGradient {
-		mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0) 100%);
+	.discordHero {
+		position: relative;
+		min-height: min(620px, calc(100vh - 72px));
+		overflow: hidden;
+		display: flex;
+		align-items: center;
+		padding: 96px 24px 72px;
+	}
+
+	.heroImage,
+	.heroScrim {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+	}
+
+	.heroImage {
+		object-fit: cover;
+	}
+
+	.heroScrim {
+		background:
+			linear-gradient(
+				90deg,
+				hsl(var(--background)) 0%,
+				hsl(var(--background) / 0.84) 44%,
+				hsl(var(--background) / 0.2) 100%
+			),
+			linear-gradient(0deg, hsl(var(--background)) 0%, transparent 34%);
+	}
+
+	.heroContent {
+		position: relative;
+		z-index: 1;
+		width: min(760px, 100%);
+		margin: 0 auto;
+		margin-left: max(24px, calc((100vw - 1160px) / 2));
+	}
+
+	:global(.heroBadge) {
+		display: inline-flex;
+		gap: 8px;
+		align-items: center;
+		margin-bottom: 20px;
+		border-color: hsl(var(--primary) / 0.25);
+		background: hsl(var(--primary) / 0.12);
+		color: hsl(var(--foreground));
+	}
+
+	.heroContent h1 {
+		max-width: 760px;
+		font-size: clamp(3rem, 8vw, 6.25rem);
+		line-height: 0.94;
+		font-weight: 900;
+		letter-spacing: 0;
+	}
+
+	.heroContent p {
+		max-width: 620px;
+		margin-top: 22px;
+		font-size: 1.125rem;
+		line-height: 1.7;
+		color: hsl(var(--muted-foreground));
+	}
+
+	.heroActions,
+	.finalActions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 12px;
+		margin-top: 28px;
+	}
+
+	:global(.heroPrimary),
+	:global(.heroSecondary) {
+		gap: 10px;
+		min-height: 46px;
+	}
+
+	.heroHighlights {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 10px;
+		margin-top: 28px;
+	}
+
+	.heroHighlights span {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 999px;
+		padding: 8px 12px;
+		background: hsl(var(--background) / 0.72);
+		font-size: 0.875rem;
+		color: hsl(var(--foreground));
+		backdrop-filter: blur(12px);
+	}
+
+	.discordPage {
+		position: relative;
+		z-index: 2;
+		padding: 0 20px 96px;
+	}
+
+	.quickLinks {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 12px;
+		width: min(1120px, 100%);
+		margin: -26px auto 72px;
+	}
+
+	.quickLink {
+		display: grid;
+		grid-template-columns: auto 1fr auto;
+		align-items: center;
+		gap: 14px;
+		min-height: 82px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		padding: 16px;
+		background: hsl(var(--card));
+		color: hsl(var(--card-foreground));
+		box-shadow: 0 12px 32px hsl(var(--foreground) / 0.08);
+	}
+
+	.quickLink strong,
+	.quickLink small {
+		display: block;
+	}
+
+	.quickLink small {
+		margin-top: 3px;
+		color: hsl(var(--muted-foreground));
+		line-height: 1.35;
+	}
+
+	.sectionBlock {
+		width: min(1120px, 100%);
+		margin: 0 auto 80px;
+	}
+
+	.sectionHeader {
+		margin-bottom: 24px;
+	}
+
+	.sectionHeader p {
+		margin-bottom: 8px;
+		text-transform: uppercase;
+		font-size: 0.78rem;
+		font-weight: 800;
+		letter-spacing: 0.08em;
+		color: hsl(var(--primary));
+	}
+
+	.sectionHeader h2 {
+		font-size: clamp(2rem, 5vw, 3.35rem);
+		line-height: 1.04;
+		font-weight: 850;
+		letter-spacing: 0;
+	}
+
+	.sectionHeader span {
+		display: block;
+		max-width: 700px;
+		margin-top: 12px;
+		color: hsl(var(--muted-foreground));
+		line-height: 1.7;
+	}
+
+	.audienceGrid {
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: 12px;
+	}
+
+	:global(.audienceCard) {
+		border-radius: 8px;
+	}
+
+	:global(.audienceCard svg) {
+		color: hsl(var(--primary));
+		margin-bottom: 12px;
+	}
+
+	.featureBand {
+		padding: 40px 0;
+		border-top: 1px solid hsl(var(--border));
+		border-bottom: 1px solid hsl(var(--border));
+	}
+
+	.featureGrid {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 14px;
+	}
+
+	.featureTile {
+		display: grid;
+		grid-template-columns: auto 1fr;
+		gap: 14px;
+		padding: 18px;
+		border-radius: 8px;
+		background: hsl(var(--muted) / 0.42);
+		border: 1px solid hsl(var(--border));
+	}
+
+	:global(.featureIcon) {
+		color: hsl(var(--primary));
+		margin-top: 2px;
+	}
+
+	.featureTile h3 {
+		font-size: 1rem;
+		font-weight: 800;
+		margin-bottom: 4px;
+	}
+
+	.featureTile p {
+		color: hsl(var(--muted-foreground));
+		line-height: 1.55;
+		font-size: 0.925rem;
+	}
+
+	.commandGroups {
+		display: grid;
+		gap: 28px;
+	}
+
+	.commandGroupHeader {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		margin-bottom: 12px;
+	}
+
+	.commandGroupHeader h3 {
+		font-size: 1.15rem;
+		font-weight: 850;
+	}
+
+	.commandList {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 12px;
+	}
+
+	:global(.commandCard) {
+		border-radius: 8px;
+	}
+
+	.commandTopline {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		margin-bottom: 8px;
+	}
+
+	.commandTopline code {
+		color: hsl(var(--primary));
+		font-size: 1rem;
+		font-weight: 800;
+	}
+
+	.paramList {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	.paramChip {
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+		max-width: 100%;
+		border: 1px solid hsl(var(--border));
+		border-radius: 999px;
+		padding: 6px 9px;
+		background: hsl(var(--muted) / 0.4);
+		font-size: 0.78rem;
+	}
+
+	.paramChip.required {
+		border-color: hsl(var(--primary) / 0.45);
+	}
+
+	.paramChip code {
+		font-weight: 800;
+	}
+
+	.paramChip small {
+		color: hsl(var(--muted-foreground));
+		white-space: nowrap;
+	}
+
+	.paramChip em {
+		font-style: normal;
+		color: hsl(var(--primary));
+	}
+
+	.finalBand {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 24px;
+		width: min(1120px, 100%);
+		margin: 0 auto;
+		padding: 30px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		background: hsl(var(--muted) / 0.35);
+	}
+
+	.finalBand h2 {
+		margin-top: 12px;
+		font-size: 1.65rem;
+		font-weight: 850;
+	}
+
+	.finalBand p {
+		max-width: 620px;
+		margin-top: 6px;
+		color: hsl(var(--muted-foreground));
+		line-height: 1.6;
+	}
+
+	@media (max-width: 900px) {
+		.discordHero {
+			min-height: 560px;
+			padding-top: 84px;
+		}
+
+		.heroScrim {
+			background: linear-gradient(
+				0deg,
+				hsl(var(--background)) 0%,
+				hsl(var(--background) / 0.76) 42%,
+				hsl(var(--background) / 0.48) 100%
+			);
+		}
+
+		.heroContent {
+			margin-inline: auto;
+		}
+
+		.quickLinks,
+		.audienceGrid,
+		.featureGrid,
+		.commandList {
+			grid-template-columns: 1fr;
+		}
+
+		.finalBand {
+			align-items: flex-start;
+			flex-direction: column;
+		}
+	}
+
+	@media (max-width: 560px) {
+		.discordPage {
+			padding-inline: 12px;
+		}
+
+		.discordHero {
+			padding-inline: 16px;
+		}
+
+		.heroActions,
+		.heroActions a,
+		.finalActions,
+		.finalActions a {
+			width: 100%;
+		}
+
+		:global(.heroPrimary),
+		:global(.heroSecondary),
+		.finalActions :global(button) {
+			width: 100%;
+		}
+
+		.paramChip {
+			border-radius: 8px;
+			align-items: flex-start;
+			flex-direction: column;
+		}
 	}
 </style>

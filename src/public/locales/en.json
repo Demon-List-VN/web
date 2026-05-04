@@ -81,7 +81,7 @@
     },
     "descriptions": {
       "homepage": "A website for the Geometry Dash Việt Nam community",
-      "discord": "Join the Geometry Dash Việt Nam community on Discord or add the bot to your server!",
+      "discord": "Join the Geometry Dash Viet Nam Discord, add the GDVN bot to your server, and use current list data right in chat.",
       "community": "Share, discuss, and connect with the Geometry Dash Việt Nam community",
       "lists": "Browse public lists and manage your level collections.",
       "wiki": "Explore the Geometry Dash Việt Nam Wiki with guides, rules, news, and updates"
@@ -1265,8 +1265,8 @@
         "description": "Don't worry. More feature for supporters will be added in the future."
       },
       "discord_bot": {
-        "title": "Use advanced Discord Bot command",
-        "description": "Gain access to advanced commands and features in our Discord bot, enhancing your experience."
+        "title": "Community Discord role",
+        "description": "Sync your supporter role on the official GDVN Discord server."
       }
     },
     "decision": {
@@ -1448,42 +1448,143 @@
   "discord_bot": {
     "title": "Discord Bot",
     "page_title": "Discord",
-    "page_description": "Join our community or add our bot to your server",
-    "description": "Access Geometry Dash Việt Nam right in Discord",
-    "server_title": "Join Our Server",
-    "server_description": "Connect with the Geometry Dash Việt Nam community",
-    "server_feature_1": "Chat with other players",
-    "server_feature_2": "Get latest updates & announcements",
-    "server_feature_3": "Participate in events",
+    "page_description": "Look up GDVN players, levels, records, and lists inside Discord",
+    "description": "Access Geometry Dash Viet Nam right in Discord",
+    "hero_badge": "Bot commands are open to everyone",
+    "hero_title": "GDVN in Discord",
+    "hero_description": "Look up players, levels, records, leaderboards, and submissions with clear slash commands backed by the new GDVN API.",
     "join_server": "Join Server",
-    "bot_title": "Add Our Bot",
-    "bot_description": "Bring Geometry Dash Việt Nam to your server",
-    "bot_feature_1": "Slash commands for quick access",
-    "bot_feature_2": "Real-time data updates",
-    "bot_feature_3": "Easy to set up",
     "add_button": "Add to Server",
-    "features_title": "Bot Features",
-    "features_subtitle": "Everything you need right in Discord",
-    "feature_level_search": {
-      "title": "Level Search",
-      "description": "View detailed information about any level in Geometry Dash Việt Nam"
+    "highlights": {
+      "public": "No supporter-only command limits",
+      "current_api": "Uses the new list API",
+      "custom_lists": "Supports official and custom lists"
     },
-    "feature_leaderboard": {
-      "title": "Leaderboard",
-      "description": "Track player rankings across different lists"
+    "quick": {
+      "link_account": {
+        "title": "Link Discord",
+        "description": "Make /profile faster"
+      },
+      "submit": {
+        "title": "Submit record",
+        "description": "Open the web submit flow"
+      },
+      "lists": {
+        "title": "Browse lists",
+        "description": "Official, verified, and custom"
+      }
     },
-    "feature_player_profile": {
-      "title": "Player Profile",
-      "description": "View player profiles, records and achievements"
+    "audiences_eyebrow": "Built for",
+    "audiences_title": "Useful commands for every corner of the community",
+    "audiences": {
+      "players": {
+        "title": "Players",
+        "description": "View profiles, ranks, random levels, and personal records in seconds."
+      },
+      "submitters": {
+        "title": "Record submitters",
+        "description": "Check pending submissions, queue numbers, and accepted or pending records."
+      },
+      "managers": {
+        "title": "List managers",
+        "description": "Share lists, leaderboards, and quick stats with your server."
+      },
+      "community": {
+        "title": "Community members",
+        "description": "Use quick links, level lookup, and GDVN activity summaries while chatting."
+      }
     },
-    "feature_latest_records": {
-      "title": "Latest Records",
-      "description": "Get updated with recently accepted records"
+    "features_eyebrow": "Features",
+    "features_title": "Fast, clear, and current with GDVN",
+    "features": {
+      "lookup": {
+        "title": "Smart lookup",
+        "description": "Find players by Discord, name, UID; find levels by name or ID."
+      },
+      "leaderboard": {
+        "title": "New leaderboards",
+        "description": "Browse official/custom lists with pagination and autocomplete."
+      },
+      "submissions": {
+        "title": "Records and submissions",
+        "description": "View accepted, pending, recent, best, and queue info without hidden fields."
+      },
+      "random": {
+        "title": "Random level",
+        "description": "Pull a fresh challenge from the list you choose."
+      },
+      "links": {
+        "title": "Quick links",
+        "description": "Open submit, Discord linking, server, lists, and bot invite links."
+      },
+      "stats": {
+        "title": "Quick stats",
+        "description": "See list level counts, players, records, and the top player."
+      }
     },
+    "commands_eyebrow": "Slash commands",
     "commands_title": "Command List",
-    "command_params": "Parameters:",
+    "commands_subtitle": "The command names here match the rebuilt bot. Every command is public; supporter is now informational only.",
+    "command_groups": {
+      "players": "Players and levels",
+      "records": "Records and submissions",
+      "lists": "Lists and leaderboards",
+      "utility": "Utilities"
+    },
+    "public_badge": "Public",
+    "commands": {
+      "profile": {
+        "description": "View a player's profile, ranks, clan, and Discord link."
+      },
+      "level": {
+        "description": "Look up a level by name or ID."
+      },
+      "record": {
+        "description": "View accepted, pending, or both records for a player and level."
+      },
+      "recent": {
+        "description": "Show a player's latest accepted record, optionally within a list."
+      },
+      "best": {
+        "description": "Find a player's best record in a list."
+      },
+      "submission": {
+        "description": "Show the latest pending submission and queue info when available."
+      },
+      "list": {
+        "description": "Browse levels in an official or custom list."
+      },
+      "leaderboard": {
+        "description": "Browse an official or custom list leaderboard."
+      },
+      "random": {
+        "description": "Suggest a random level from a list."
+      },
+      "stats": {
+        "description": "Show a GDVN overview or stats for a specific list."
+      },
+      "links": {
+        "description": "Get useful GDVN links."
+      },
+      "supporter": {
+        "description": "Check supporter status; it does not unlock bot commands."
+      },
+      "help": {
+        "description": "Show the available command list."
+      }
+    },
+    "params": {
+      "discord_user": "Linked Discord user",
+      "player_query": "Player name, UID, or @mention",
+      "level_query": "Level name or ID",
+      "record_variant": "accepted, pending, or both",
+      "list": "List slug, ID, or name",
+      "page": "Page number"
+    },
     "param_required": "required",
-    "param_optional": "optional"
+    "param_optional": "optional",
+    "final_title": "Ready to bring GDVN into your server",
+    "final_description": "Add the bot so your server has lookup, leaderboard, and record tools consistent with the GDVN website."
   },
   "dashboard": {
     "welcome": "Welcome to",

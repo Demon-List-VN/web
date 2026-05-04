@@ -187,14 +187,6 @@
 			</Card.Root>
 			<Card.Root class="w-[300px]">
 				<Card.Header>
-					<Card.Title>{$_('supporter.perks.discord_bot.title')}</Card.Title>
-					<Card.Description class="w-[250px]">
-						{$_('supporter.perks.discord_bot.description')}
-					</Card.Description>
-				</Card.Header>
-			</Card.Root>
-			<Card.Root class="w-[300px]">
-				<Card.Header>
 					<Card.Title>{$_('supporter.perks.early_access.title')}</Card.Title>
 					<Card.Description class="w-[250px]">
 						{$_('supporter.perks.early_access.description')}
