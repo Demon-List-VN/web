@@ -1,5 +1,4 @@
 <script lang="ts">
-	import type { ComponentType } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import { page } from '$app/stores';
 	import { mediaQuery } from 'svelte-legos';
@@ -15,6 +14,7 @@
 	import ChevronDown from 'svelte-radix/ChevronDown.svelte';
 	import { Heart } from 'lucide-svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip';
+	import type { NavGroup } from '$lib/components/layout/navTypes';
 
 	$: pathname = $page.url.pathname;
 
@@ -33,13 +33,11 @@
 		return pathname.startsWith(cleanRoute);
 	}
 
-	function isGroupActive(
-		group: {
-			name: string;
-			routes?: { route: string; name: string }[];
-			route?: string;
-		}
-	): boolean {
+	function isGroupActive(group: {
+		name: string;
+		routes?: { route: string; name: string }[];
+		route?: string;
+	}): boolean {
 		if (group.routes) {
 			return group.routes.some((r) => isLinkActive(r.route));
 		}
@@ -49,12 +47,6 @@
 		return false;
 	}
 
-	type NavGroup = {
-		name: string;
-		icon: ComponentType;
-		route?: string;
-		routes?: { route: string; name: string; icon?: ComponentType }[];
-	};
 	export let linkGroup: NavGroup[] = [];
 	const DESKTOP_BREAKPOINT = 1025;
 	const isDesktop = mediaQuery(`(min-width: ${DESKTOP_BREAKPOINT}px)`);
@@ -99,7 +91,11 @@
 {#if $sidebarOpen || ($isDesktop && !$sidebarCollapsed)}
 	<!-- svelte-ignore a11y-click-events-have-key-events -->
 	<!-- svelte-ignore a11y-no-static-element-interactions -->
-	<div class="sidebar-backdrop" on:click={handleBackdropClick} transition:fade={{ duration: 200 }} />
+	<div
+		class="sidebar-backdrop"
+		on:click={handleBackdropClick}
+		transition:fade={{ duration: 200 }}
+	/>
 {/if}
 
 <aside class="sidebar" class:open={$sidebarOpen} class:collapsed={$sidebarCollapsed}>
@@ -237,38 +233,36 @@
 					<span>{$_('nav.supporter')}</span>
 				</a>
 			{/if}
+		{:else if showTooltip}
+			<Tooltip.Root openDelay={0} closeDelay={0}>
+				<Tooltip.Trigger asChild let:builder>
+					<a
+						{...builder}
+						use:builder.action
+						href="/supporter"
+						class="nav-item supporter-cta"
+						data-sveltekit-preload-data="tap"
+						on:click={handleLinkClick}
+					>
+						<Heart size={18} />
+						<span>{$_('nav.supporter')}</span>
+					</a>
+				</Tooltip.Trigger>
+				<Tooltip.Content side="right" align="center" sideOffset={10}>
+					{$_('nav.supporter')}
+					<Tooltip.Arrow class="fill-primary" />
+				</Tooltip.Content>
+			</Tooltip.Root>
 		{:else}
-			{#if showTooltip}
-				<Tooltip.Root openDelay={0} closeDelay={0}>
-					<Tooltip.Trigger asChild let:builder>
-						<a
-							{...builder}
-							use:builder.action
-							href="/supporter"
-							class="nav-item supporter-cta"
-							data-sveltekit-preload-data="tap"
-							on:click={handleLinkClick}
-						>
-							<Heart size={18} />
-							<span>{$_('nav.supporter')}</span>
-						</a>
-					</Tooltip.Trigger>
-					<Tooltip.Content side="right" align="center" sideOffset={10}>
-						{$_('nav.supporter')}
-						<Tooltip.Arrow class="fill-primary" />
-					</Tooltip.Content>
-				</Tooltip.Root>
-			{:else}
-				<a
-					href="/supporter"
-					class="nav-item supporter-cta"
-					data-sveltekit-preload-data="tap"
-					on:click={handleLinkClick}
-				>
-					<Heart size={18} />
-					<span>{$_('nav.supporter')}</span>
-				</a>
-			{/if}
+			<a
+				href="/supporter"
+				class="nav-item supporter-cta"
+				data-sveltekit-preload-data="tap"
+				on:click={handleLinkClick}
+			>
+				<Heart size={18} />
+				<span>{$_('nav.supporter')}</span>
+			</a>
 		{/if}
 	</nav>
 </aside>
@@ -361,7 +355,10 @@
 		background: none;
 		width: 100%;
 		text-align: left;
-		transition: background-color 0.1s, color 0.1s, padding 0.2s ease;
+		transition:
+			background-color 0.1s,
+			color 0.1s,
+			padding 0.2s ease;
 		white-space: nowrap;
 		overflow: hidden;
 
