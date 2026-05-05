@@ -138,6 +138,10 @@
 		};
 	}
 
+	function setPlayerColor(field: 'borderColor' | 'bgColor', event: Event) {
+		player[field] = (event.currentTarget as HTMLInputElement).value;
+	}
+
 	async function savePlayerCardStatLines() {
 		const token = await $user.token();
 		const overviewData = setPlayerCardEloStatVisibility(
@@ -389,20 +393,26 @@
 						}}>{$_('profile_edit.upload_banner')}</Button
 					>
 				</div>
-				{#if isActive(player.supporterUntil)}
-					<div class="mb-[10px] flex items-center gap-[10px] text-sm">
-						{$_('profile_edit.border')}
-						<Input type="color" bind:value={player.borderColor} />
-						{$_('profile_edit.background')}
-						<Input type="color" bind:value={player.bgColor} />
-						<Button
-							variant="outline"
-							on:click={() => {
-								player.borderColor = player.bgColor = null;
-							}}>{$_('profile_edit.reset')}</Button
-						>
-					</div>
-				{/if}
+				<div class="mb-[10px] flex items-center gap-[10px] text-sm">
+					{$_('profile_edit.border')}
+					<Input
+						type="color"
+						value={player.borderColor || '#000000'}
+						on:input={(event) => setPlayerColor('borderColor', event)}
+					/>
+					{$_('profile_edit.background')}
+					<Input
+						type="color"
+						value={player.bgColor || '#000000'}
+						on:input={(event) => setPlayerColor('bgColor', event)}
+					/>
+					<Button
+						variant="outline"
+						on:click={() => {
+							player.borderColor = player.bgColor = null;
+						}}>{$_('profile_edit.reset')}</Button
+					>
+				</div>
 				<div class="grid grid-cols-4 items-center gap-4">
 					<Label for="youtube" class="text-right">YouTube</Label>
 					<Input id="youtube" bind:value={player.youtube} class="col-span-3" />

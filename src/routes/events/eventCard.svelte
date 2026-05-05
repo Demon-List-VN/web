@@ -7,7 +7,7 @@
 		CardTitle
 	} from '$lib/components/ui/card';
 	import { Badge } from '$lib/components/ui/badge';
-	import { Calendar, Clock, Star } from 'svelte-radix';
+	import { Calendar, Clock } from 'svelte-radix';
 	import { _ } from 'svelte-i18n';
 
 	export let event: any;
@@ -45,12 +45,6 @@
 							class="flex w-[90px] justify-center hover:bg-primary hover:text-primary-foreground"
 						>
 							{$_('events.contest')}
-						</Badge>
-					{/if}
-					{#if event.isSupporterOnly}
-						<Badge variant="secondary" class="flex w-[90px] justify-center">
-							<Star class="mr-1 h-3 w-3" />
-							Supporter
 						</Badge>
 					{/if}
 					{#if event.isRanked}

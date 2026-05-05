@@ -431,8 +431,7 @@
       "purchase": "Purchase",
       "consuming": "Consuming boost...",
       "queue_boost_used": "Queue boost successfully applied!",
-      "queue_boost_error": "Failed to use queue boost. Please try again.",
-      "supporter_note": "All Supporters' submissions are prioritized by 30 days"
+      "queue_boost_error": "Failed to use queue boost. Please try again."
     }
   },
   "search": {
@@ -786,8 +785,8 @@
       "join_now": "Join now"
     },
     "dashboard_alert": {
-      "title": "Dashboard available for Supporters",
-      "description": "If you are a supporter, you can access the dashboard for extra features.",
+      "title": "Dashboard available",
+      "description": "Access the dashboard for extra features and customization.",
       "link": "Go to dashboard"
     }
   },
@@ -843,8 +842,8 @@
     "features": {
       "title": "Explore Premium Features",
       "supporter_title": "Supporter",
-      "supporter_desc": "Unlock custom profiles, GIF avatars, exclusive badge, and priority support.",
-      "supporter_b1": "Custom profile colors & banner",
+      "supporter_desc": "Unlock ads-free browsing, short profile URLs, GIF media, and exclusive supporter identity perks.",
+      "supporter_b1": "Short profile URL & ads-free browsing",
       "supporter_b2": "GIF avatar & animated banner",
       "supporter_b3": "Exclusive supporter badge",
       "bp_title": "Pass",
@@ -1075,6 +1074,8 @@
       "community_posts": "Posts",
       "convictions": "Convictions",
       "records": "Records",
+      "verified_records": "Verified records",
+      "unverified_records": "Unverified records",
       "activity": "Activity",
       "collection": "Collection"
     },
@@ -1101,7 +1102,11 @@
       "ascending": "Ascending",
       "descending": "Descending",
       "point": "Point",
-      "date_submitted": "Date submitted"
+      "date_submitted": "Date submitted",
+      "no_verified_matches": "No verified records match the current filters.",
+      "no_unverified_matches": "No unverified records match the current filters.",
+      "no_verified_records": "No verified ranked-list records yet.",
+      "no_unverified_records": "No unverified ranked-list records yet."
     },
     "table": {
       "total_record": "Total record",

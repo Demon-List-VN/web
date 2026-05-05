@@ -776,9 +776,6 @@
 												<li>{desc}</li>
 											{/each}
 										</ul>
-										<div class="info-callout yellow">
-											<p>{$_('record_detail.skip_ahead.supporter_note')}</p>
-										</div>
 										{#if totalBoosts > 0}
 											<div class="info-callout green">
 												<p class="font-medium">
@@ -1502,7 +1499,6 @@
 		border-radius: 10px;
 		font-size: 0.875rem;
 
-		&.yellow { background: rgba(234,179,8,0.1);  border: 1px solid rgba(234,179,8,0.2);  color: #fde047; }
 		&.green  { background: rgba(34,197,94,0.1);  border: 1px solid rgba(34,197,94,0.2);  color: #86efac; }
 		&.blue   { background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.2); color: #93c5fd; }
 	}

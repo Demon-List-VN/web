@@ -23,7 +23,7 @@
 	}?version=${player.bannerVersion}`;
 
 	function getBgColor() {
-		if (isSupporter && player.bgColor) {
+		if (player.bgColor) {
 			return `background-color: ${player.bgColor}`;
 		}
 		return '';
@@ -43,7 +43,7 @@
 		{/if}
 		<div
 			class="absolute inset-0"
-			style={`background: linear-gradient(to bottom, transparent 0%, transparent 50%, ${isSupporter && player.bgColor ? player.bgColor : 'hsl(var(--background))'} 100%);`}
+			style={`background: linear-gradient(to bottom, transparent 0%, transparent 50%, ${player.bgColor || 'hsl(var(--background))'} 100%);`}
 		/>
 	</div>
 
@@ -134,7 +134,7 @@
 	</div>
 </div>
 
-{#if isSupporter && player.bgColor}
+{#if player.bgColor}
 	<div
 		class="h-[60px] w-full"
 		style={`background: linear-gradient(to bottom, ${player.bgColor}, hsl(var(--background)));`}

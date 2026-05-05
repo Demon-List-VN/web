@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as Tabs from '$lib/components/ui/tabs';
 	import * as Table from '$lib/components/ui/table';
 	import * as Select from '$lib/components/ui/select';
 	import { goto } from '$app/navigation';
@@ -7,7 +8,6 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
-	import { Switch } from '$lib/components/ui/switch';
 	import InfoCircled from 'svelte-radix/InfoCircled.svelte';
 	import { _ } from 'svelte-i18n';
 	import type {
@@ -25,6 +25,7 @@
 	type PlatformFilterValue = 'all' | 'pc' | 'mobile';
 	type RecordSortValue = 'date_submitted' | 'point' | 'progress';
 	type RecordSortDirection = 'desc' | 'asc';
+	type RecordAcceptanceTab = 'verified' | 'unverified';
 
 	export let data: any;
 
@@ -33,10 +34,7 @@
 	let draftPlatform: PlatformFilterValue = 'all';
 	let draftSortBy: RecordSortValue = 'date_submitted';
 	let draftSortDirection: RecordSortDirection = 'desc';
-	let draftShowAcceptedManually = true;
-	let draftShowAcceptedAuto = true;
-	let showAcceptedManually = true;
-	let showAcceptedAuto = true;
+	let selectedRecordTab: RecordAcceptanceTab = 'verified';
 	let appliedLevelId = '';
 	let appliedListId: number | null = null;
 	let appliedPlatform: PlatformFilterValue = 'all';
@@ -89,10 +87,11 @@
 	$: selectedSortDirectionOption =
 		sortDirectionOptions.find((option) => option.value === draftSortDirection) ??
 		sortDirectionOptions[0];
-	$: acceptedRecords = records.filter((record: PlayerListRecordEntry) => isAcceptedRecord(record));
-	$: matchingRecords = acceptedRecords.filter(
+	$: tabbedRecords = records.filter((record: PlayerListRecordEntry) =>
+		matchesRecordAcceptanceTab(record, selectedRecordTab)
+	);
+	$: matchingRecords = tabbedRecords.filter(
 		(record: PlayerListRecordEntry) =>
-			matchesAcceptanceFilter(record, showAcceptedManually, showAcceptedAuto) &&
 			matchesLevelIdFilter(record, appliedLevelId) &&
 			matchesPlatformFilter(record, appliedPlatform)
 	);
@@ -102,14 +101,14 @@
 		appliedSortDirection,
 		appliedListId !== null
 	);
-	$: acceptedRecordTotal = acceptedRecords.length;
+	$: tabbedRecordTotal = tabbedRecords.length;
 	$: showRecordControls =
-		acceptedRecordTotal > 0 || appliedListId !== null || baseRecords.length > 0;
+		tabbedRecordTotal > 0 || appliedListId !== null || baseRecords.length > 0;
 	$: isLoadingAppliedListRecords =
 		appliedListId !== null &&
 		isLoadingSelectedListRecords &&
 		selectedListRecordsLoadedForId !== appliedListId &&
-		!records.length;
+		!tabbedRecords.length;
 	$: showPointColumn = appliedListId !== null;
 	$: hasPlatformerRecords = filteredRecords.some((record: PlayerListRecordEntry) =>
 		isPlatformerRecord(record)
@@ -136,8 +135,19 @@
 		return `/record/${record.uid}/${record.levelId}${recordQuery}`;
 	}
 
-	function isAcceptedRecord(record: PlayerListRecordEntry) {
-		return Boolean(record?.acceptedManually) || Boolean(record?.acceptedAuto);
+	function isVerifiedRecord(record: PlayerListRecordEntry) {
+		return Boolean(record?.acceptedManually);
+	}
+
+	function isUnverifiedRecord(record: PlayerListRecordEntry) {
+		return Boolean(record?.acceptedAuto) && !record?.acceptedManually;
+	}
+
+	function matchesRecordAcceptanceTab(
+		record: PlayerListRecordEntry,
+		tab: RecordAcceptanceTab
+	) {
+		return tab === 'verified' ? isVerifiedRecord(record) : isUnverifiedRecord(record);
 	}
 
 	function getListOptions(
@@ -350,17 +360,6 @@
 		return [...mergedPlayerRecords, ...remainingListRecords];
 	}
 
-	function matchesAcceptanceFilter(
-		record: PlayerListRecordEntry,
-		acceptedManuallyEnabled: boolean,
-		acceptedAutoEnabled: boolean
-	) {
-		const acceptedManually = Boolean(record?.acceptedManually);
-		const acceptedAuto = Boolean(record?.acceptedAuto);
-
-		return (acceptedManuallyEnabled && acceptedManually) || (acceptedAutoEnabled && acceptedAuto);
-	}
-
 	function matchesLevelIdFilter(record: PlayerListRecordEntry, levelIdFilter: string) {
 		if (!levelIdFilter) {
 			return true;
@@ -405,8 +404,6 @@
 		appliedPlatform = draftPlatform;
 		appliedSortBy = nextListId === null && draftSortBy === 'point' ? 'date_submitted' : draftSortBy;
 		appliedSortDirection = draftSortDirection;
-		showAcceptedManually = draftShowAcceptedManually;
-		showAcceptedAuto = draftShowAcceptedAuto;
 
 		if (nextListId !== null) {
 			void loadSelectedListRecords(nextListId);
@@ -620,202 +617,215 @@
 	}
 </script>
 {#if showRecordControls}
-	<div class="filterBar">
-		<div class="filterGroup">
-			<div class="filterField">
-				<Label for="record-level-id-filter">{$_('player.filter.level_id')}</Label>
-				<Input
-					id="record-level-id-filter"
-					bind:value={draftLevelId}
-					placeholder={$_('player.filter.level_id_placeholder')}
-					inputmode="numeric"
-					class="w-full min-w-[180px]"
-					on:keydown={handleFilterKeydown}
-				/>
-			</div>
-			<div class="filterField">
-				<Label for="record-list-filter">{$_('player.filter.list')}</Label>
-				<ListSelector
-					id="record-list-filter"
-					selectedId={draftListId}
-					options={listOptions}
-					searchUrl={listSearchUrl}
-					placeholder={$_('player.filter.all_lists')}
-					searchPlaceholder={$_('list_selector.search_placeholder')}
-					emptyLabel={$_('list_selector.no_results')}
-					loadingLabel={`${$_('general.loading')}...`}
-					allowClear
-					clearLabel={$_('player.filter.all_lists')}
-					triggerClass="min-w-[220px]"
-					on:select={handleListSelection}
-				/>
-			</div>
-			<div class="filterField">
-				<Label for="record-platform-filter">{$_('player.filter.platform')}</Label>
-				<Select.Root selected={selectedPlatformOption} onSelectedChange={handlePlatformSelection}>
-					<Select.Trigger id="record-platform-filter" class="w-full min-w-[180px]">
-						<Select.Value placeholder={$_('player.filter.all_platforms')} />
-					</Select.Trigger>
-					<Select.Content>
-						{#each platformOptions as platformOption}
-							<Select.Item value={platformOption.value} label={platformOption.label}>
-								{platformOption.label}
-							</Select.Item>
-						{/each}
-					</Select.Content>
-				</Select.Root>
-			</div>
-			<div class="filterField">
-				<Label for="record-sort-filter">{$_('player.filter.sort_by')}</Label>
-				<Select.Root selected={selectedSortOption} onSelectedChange={handleSortSelection}>
-					<Select.Trigger id="record-sort-filter" class="w-full min-w-[180px]">
-						<Select.Value placeholder={$_('player.filter.date_submitted')} />
-					</Select.Trigger>
-					<Select.Content>
-						{#each sortOptions as sortOption}
-							<Select.Item
-								value={sortOption.value}
-								label={sortOption.label}
-								disabled={sortOption.disabled}
-							>
-								{sortOption.label}
-							</Select.Item>
-						{/each}
-					</Select.Content>
-				</Select.Root>
-			</div>
-			<div class="filterField">
-				<Label for="record-sort-direction-filter">{$_('player.filter.sort_order')}</Label>
-				<Select.Root
-					selected={selectedSortDirectionOption}
-					onSelectedChange={handleSortDirectionSelection}
-				>
-					<Select.Trigger id="record-sort-direction-filter" class="w-full min-w-[160px]">
-						<Select.Value placeholder={$_('player.filter.descending')} />
-					</Select.Trigger>
-					<Select.Content>
-						{#each sortDirectionOptions as sortDirectionOption}
-							<Select.Item value={sortDirectionOption.value} label={sortDirectionOption.label}>
-								{sortDirectionOption.label}
-							</Select.Item>
-						{/each}
-					</Select.Content>
-				</Select.Root>
-			</div>
-			<div class="filterToggle">
-				<Label for="accepted-manually-filter">{$_('player.filter.accepted_manually')}</Label>
-				<Switch id="accepted-manually-filter" bind:checked={draftShowAcceptedManually} />
-			</div>
-			<div class="filterToggle">
-				<Label for="accepted-auto-filter">{$_('player.filter.accepted_automatically')}</Label>
-				<Switch id="accepted-auto-filter" bind:checked={draftShowAcceptedAuto} />
-			</div>
-		</div>
-		<div class="filterActions">
-			<Button type="button" on:click={applyFilters}>{$_('player.filter.apply')}</Button>
-		</div>
-	</div>
-
-	{#if isLoadingAppliedListRecords}
-		<div class="emptyState">{$_('general.loading')}...</div>
-	{:else if filteredRecords.length}
-		<Table.Root>
-			<Table.Caption>
-				{$_('player.table.total_record')}: {filteredRecords.length} / {acceptedRecordTotal}
-			</Table.Caption>
-			<Table.Header>
-				<Table.Row>
-					<Table.Head>{$_('player.table.level')}</Table.Head>
-					<Table.Head class="w-[100px] text-center">{$_('player.table.submitted_on')}</Table.Head>
-					<Table.Head class="w-[70px] text-center">{$_('acceptance.short_label')}</Table.Head>
-					<Table.Head class="w-[100px] text-center">{$_('player.table.device')}</Table.Head>
-					{#if showPointColumn}
-						<Table.Head class="w-[90px] text-center">{$_('player.table.point')}</Table.Head>
-					{/if}
-					<Table.Head class="w-[80px] text-center">{resultColumnLabel}</Table.Head>
-					<Table.Head class="w-[56px] text-center"></Table.Head>
-				</Table.Row>
-			</Table.Header>
-			<Table.Body>
-				{#each filteredRecords as record}
-					<Table.Row
-						on:click={(e) => {
-							const target = e.target;
-							if (target instanceof HTMLElement && target.closest('a, button')) {
-								return;
-							}
-
-							goto(getRecordDetailHref(record));
-						}}
+	<Tabs.Root bind:value={selectedRecordTab}>
+		<div class="filterBar">
+			<div class="filterGroup">
+				<div class="filterField">
+					<Label for="record-level-id-filter">{$_('player.filter.level_id')}</Label>
+					<Input
+						id="record-level-id-filter"
+						bind:value={draftLevelId}
+						placeholder={$_('player.filter.level_id_placeholder')}
+						inputmode="numeric"
+						class="w-full min-w-[180px]"
+						on:keydown={handleFilterKeydown}
+					/>
+				</div>
+				<div class="filterField">
+					<Label for="record-list-filter">{$_('player.filter.list')}</Label>
+					<ListSelector
+						id="record-list-filter"
+						selectedId={draftListId}
+						options={listOptions}
+						searchUrl={listSearchUrl}
+						placeholder={$_('player.filter.all_lists')}
+						searchPlaceholder={$_('list_selector.search_placeholder')}
+						emptyLabel={$_('list_selector.no_results')}
+						loadingLabel={`${$_('general.loading')}...`}
+						allowClear
+						clearLabel={$_('player.filter.all_lists')}
+						triggerClass="min-w-[220px]"
+						on:select={handleListSelection}
+					/>
+				</div>
+				<div class="filterField">
+					<Label for="record-platform-filter">{$_('player.filter.platform')}</Label>
+					<Select.Root selected={selectedPlatformOption} onSelectedChange={handlePlatformSelection}>
+						<Select.Trigger id="record-platform-filter" class="w-full min-w-[180px]">
+							<Select.Value placeholder={$_('player.filter.all_platforms')} />
+						</Select.Trigger>
+						<Select.Content>
+							{#each platformOptions as platformOption}
+								<Select.Item value={platformOption.value} label={platformOption.label}>
+									{platformOption.label}
+								</Select.Item>
+							{/each}
+						</Select.Content>
+					</Select.Root>
+				</div>
+				<div class="filterField">
+					<Label for="record-sort-filter">{$_('player.filter.sort_by')}</Label>
+					<Select.Root selected={selectedSortOption} onSelectedChange={handleSortSelection}>
+						<Select.Trigger id="record-sort-filter" class="w-full min-w-[180px]">
+							<Select.Value placeholder={$_('player.filter.date_submitted')} />
+						</Select.Trigger>
+						<Select.Content>
+							{#each sortOptions as sortOption}
+								<Select.Item
+									value={sortOption.value}
+									label={sortOption.label}
+									disabled={sortOption.disabled}
+								>
+									{sortOption.label}
+								</Select.Item>
+							{/each}
+						</Select.Content>
+					</Select.Root>
+				</div>
+				<div class="filterField">
+					<Label for="record-sort-direction-filter">{$_('player.filter.sort_order')}</Label>
+					<Select.Root
+						selected={selectedSortDirectionOption}
+						onSelectedChange={handleSortDirectionSelection}
 					>
-						<Table.Cell class="font-medium">
-							<div class="relative flex">
-								{#if record.level?.videoID}
-									<img
-										class="levelBG absolute ml-[-18px] mt-[-16px] box-border h-[53.5px] w-[350px] max-w-full object-cover"
-										src={`https://img.youtube.com/vi/${record.level.videoID}/0.jpg`}
-										alt="bg"
-									/>
+						<Select.Trigger id="record-sort-direction-filter" class="w-full min-w-[160px]">
+							<Select.Value placeholder={$_('player.filter.descending')} />
+						</Select.Trigger>
+						<Select.Content>
+							{#each sortDirectionOptions as sortDirectionOption}
+								<Select.Item
+									value={sortDirectionOption.value}
+									label={sortDirectionOption.label}
+								>
+									{sortDirectionOption.label}
+								</Select.Item>
+							{/each}
+						</Select.Content>
+					</Select.Root>
+				</div>
+			</div>
+			<div class="filterActions">
+				<Button type="button" on:click={applyFilters}>{$_('player.filter.apply')}</Button>
+			</div>
+		</div>
+		<Tabs.List class="w-fit">
+			<Tabs.Trigger value="verified">{$_('player.tabs.verified_records')}</Tabs.Trigger>
+			<Tabs.Trigger value="unverified">{$_('player.tabs.unverified_records')}</Tabs.Trigger>
+		</Tabs.List>
+
+		{#if isLoadingAppliedListRecords}
+			<div class="emptyState">{$_('general.loading')}...</div>
+		{:else if filteredRecords.length}
+			<Table.Root>
+				<Table.Caption>
+					{$_('player.table.total_record')}: {filteredRecords.length} / {tabbedRecordTotal}
+				</Table.Caption>
+				<Table.Header>
+					<Table.Row>
+						<Table.Head>{$_('player.table.level')}</Table.Head>
+						<Table.Head class="w-[100px] text-center">{$_('player.table.submitted_on')}</Table.Head>
+						<Table.Head class="w-[70px] text-center">{$_('acceptance.short_label')}</Table.Head>
+						<Table.Head class="w-[100px] text-center">{$_('player.table.device')}</Table.Head>
+						{#if showPointColumn}
+							<Table.Head class="w-[90px] text-center">{$_('player.table.point')}</Table.Head>
+						{/if}
+						<Table.Head class="w-[80px] text-center">{resultColumnLabel}</Table.Head>
+						<Table.Head class="w-[56px] text-center"></Table.Head>
+					</Table.Row>
+				</Table.Header>
+				<Table.Body>
+					{#each filteredRecords as record}
+						<Table.Row
+							on:click={(e) => {
+								const target = e.target;
+								if (target instanceof HTMLElement && target.closest('a, button')) {
+									return;
+								}
+
+								goto(getRecordDetailHref(record));
+							}}
+						>
+							<Table.Cell class="font-medium">
+								<div class="relative flex">
+									{#if record.level?.videoID}
+										<img
+											class="levelBG absolute ml-[-18px] mt-[-16px] box-border h-[53.5px] w-[350px] max-w-full object-cover"
+											src={`https://img.youtube.com/vi/${record.level.videoID}/0.jpg`}
+											alt="bg"
+										/>
+									{/if}
+									<a
+										class="levelName z-10"
+										href={`/level/${record.level?.id}`}
+										data-sveltekit-preload-data="tap"
+									>
+										{record.level?.name}
+									</a>
+								</div>
+							</Table.Cell>
+							<Table.Cell class="text-center">
+								{getSubmittedAt(record)}
+							</Table.Cell>
+							<Table.Cell class="text-center">
+								<AcceptanceBadge
+									acceptedManually={record.acceptedManually}
+									acceptedAuto={record.acceptedAuto}
+									compact
+								/>
+							</Table.Cell>
+							<Table.Cell class="text-center">
+								{record.mobile ? 'Mobile' : 'PC'}
+								{#if record.refreshRate}
+									<br />({record.refreshRate}fps)
 								{/if}
+							</Table.Cell>
+							{#if showPointColumn}
+								<Table.Cell class="text-center">{formatPoint(record.point)}</Table.Cell>
+							{/if}
+							{#if isPlatformerRecord(record)}
+								<Table.Cell class="text-center">{getTimeString(record.progress)}</Table.Cell>
+							{:else}
+								<Table.Cell class="text-center">{record.progress}%</Table.Cell>
+							{/if}
+							<Table.Cell class="text-center">
 								<a
-									class="levelName z-10"
-									href={`/level/${record.level?.id}`}
+									class="recordDetailButton"
+									href={getRecordDetailHref(record)}
+									title="View detail"
+									aria-label="View detail"
 									data-sveltekit-preload-data="tap"
 								>
-									{record.level?.name}
+									<InfoCircled class="h-4 w-4" />
 								</a>
-							</div>
-						</Table.Cell>
-						<Table.Cell class="text-center">
-							{getSubmittedAt(record)}
-						</Table.Cell>
-						<Table.Cell class="text-center">
-							<AcceptanceBadge
-								acceptedManually={record.acceptedManually}
-								acceptedAuto={record.acceptedAuto}
-								compact
-							/>
-						</Table.Cell>
-						<Table.Cell class="text-center">
-							{record.mobile ? 'Mobile' : 'PC'}
-							{#if record.refreshRate}
-								<br />({record.refreshRate}fps)
-							{/if}
-						</Table.Cell>
-						{#if showPointColumn}
-							<Table.Cell class="text-center">{formatPoint(record.point)}</Table.Cell>
-						{/if}
-						{#if isPlatformerRecord(record)}
-							<Table.Cell class="text-center">{getTimeString(record.progress)}</Table.Cell>
-						{:else}
-							<Table.Cell class="text-center">{record.progress}%</Table.Cell>
-						{/if}
-						<Table.Cell class="text-center">
-							<a
-								class="recordDetailButton"
-								href={getRecordDetailHref(record)}
-								title="View detail"
-								aria-label="View detail"
-								data-sveltekit-preload-data="tap"
-							>
-								<InfoCircled class="h-4 w-4" />
-							</a>
-						</Table.Cell>
-					</Table.Row>
-				{/each}
-			</Table.Body>
-		</Table.Root>
-	{:else}
-		<div class="emptyState">
-			{#if acceptedRecordTotal}
-				{$_('player.filter.no_matches')}
-			{:else}
-				{$_('player.filter.no_records')}
-			{/if}
-		</div>
-	{/if}
+							</Table.Cell>
+						</Table.Row>
+					{/each}
+				</Table.Body>
+			</Table.Root>
+		{:else}
+			<div class="emptyState">
+				{#if tabbedRecordTotal}
+					{#if selectedRecordTab === 'verified'}
+						{$_('player.filter.no_verified_matches')}
+					{:else}
+						{$_('player.filter.no_unverified_matches')}
+					{/if}
+				{:else if selectedRecordTab === 'verified'}
+					{$_('player.filter.no_verified_records')}
+				{:else}
+					{$_('player.filter.no_unverified_records')}
+				{/if}
+			</div>
+		{/if}
+	</Tabs.Root>
 {:else}
-	<div class="emptyState">{$_('player.filter.no_records')}</div>
+	<div class="emptyState">
+		{#if selectedRecordTab === 'verified'}
+			{$_('player.filter.no_verified_records')}
+		{:else}
+			{$_('player.filter.no_unverified_records')}
+		{/if}
+	</div>
 {/if}
 
 <style lang="scss">
@@ -854,6 +864,7 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 12px;
+		margin-top: 12px;
 	}
 
 	.filterField {
@@ -862,16 +873,6 @@
 		flex-direction: column;
 		gap: 8px;
 		min-width: 180px;
-	}
-
-	.filterToggle {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		border-radius: var(--radius);
-		border: 1px solid var(--border1);
-		padding: 8px 12px;
-		background: hsl(var(--background) / 0.6);
 	}
 
 	.filterActions {

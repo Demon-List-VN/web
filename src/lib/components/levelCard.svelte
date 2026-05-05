@@ -10,7 +10,6 @@
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { user } from '$lib/client';
 	import { calcRating } from '$lib/client/rating';
-	import { isActive } from '$lib/client/isSupporterActive';
 	import { _ } from 'svelte-i18n';
 	import PlayerLink from '$lib/components/playerLink.svelte';
 
@@ -191,7 +190,7 @@
 										</div>
 									{/if}
 									{#key $user}
-										{#if !hideRating && ratingPrediction && $user.loggedIn && isActive($user.data.supporterUntil) && type == 'dl'}
+										{#if !hideRating && ratingPrediction && $user.loggedIn && type == 'dl'}
 											{#if !record}
 												<Tooltip.Root>
 													<div class="relative z-20">

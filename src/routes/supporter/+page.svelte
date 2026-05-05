@@ -122,14 +122,6 @@
 			</Card.Root>
 			<Card.Root class="w-[300px]">
 				<Card.Header>
-					<Card.Title>{$_('supporter.perks.priority_queue.title')}</Card.Title>
-					<Card.Description class="w-[250px]">
-						{$_('supporter.perks.priority_queue.description')}
-					</Card.Description>
-				</Card.Header>
-			</Card.Root>
-			<Card.Root class="w-[300px]">
-				<Card.Header>
 					<Card.Title>{$_('supporter.perks.short_url.title')}</Card.Title>
 					<Card.Description class="w-[250px]">
 						{$_('supporter.perks.short_url.description')}<br />
@@ -142,54 +134,6 @@
 					<Card.Title>{$_('supporter.perks.discord_role.title')}</Card.Title>
 					<Card.Description class="w-[250px]">
 						{$_('supporter.perks.discord_role.description')}
-					</Card.Description>
-				</Card.Header>
-			</Card.Root>
-			<Card.Root class="w-[300px]">
-				<Card.Header>
-					<Card.Title>{$_('supporter.perks.discord_notifications.title')}</Card.Title>
-					<Card.Description class="w-[250px]">
-						{$_('supporter.perks.discord_notifications.description')}
-					</Card.Description>
-				</Card.Header>
-			</Card.Root>
-			<Card.Root class="w-[300px]">
-				<Card.Header>
-					<Card.Title>{$_('supporter.perks.exclusive_events.title')}</Card.Title>
-					<Card.Description class="w-[250px]">
-						{$_('supporter.perks.exclusive_events.description')}
-					</Card.Description>
-				</Card.Header>
-			</Card.Root>
-			<Card.Root class="w-[300px]">
-				<Card.Header>
-					<Card.Title>{$_('supporter.perks.autofill_level.title')}</Card.Title>
-					<Card.Description class="w-[250px]">
-						{$_('supporter.perks.autofill_level.description')}
-					</Card.Description>
-				</Card.Header>
-			</Card.Root>
-			<Card.Root class="w-[300px]">
-				<Card.Header>
-					<Card.Title>{$_('supporter.perks.rating_prediction.title')}</Card.Title>
-					<Card.Description class="w-[250px]">
-						{$_('supporter.perks.rating_prediction.description')}
-					</Card.Description>
-				</Card.Header>
-			</Card.Root>
-			<Card.Root class="w-[300px]">
-				<Card.Header>
-					<Card.Title>{$_('supporter.perks.advanced_filtering.title')}</Card.Title>
-					<Card.Description class="w-[250px]">
-						{$_('supporter.perks.advanced_filtering.description')}
-					</Card.Description>
-				</Card.Header>
-			</Card.Root>
-			<Card.Root class="w-[300px]">
-				<Card.Header>
-					<Card.Title>{$_('supporter.perks.early_access.title')}</Card.Title>
-					<Card.Description class="w-[250px]">
-						{$_('supporter.perks.early_access.description')}
 					</Card.Description>
 				</Card.Header>
 			</Card.Root>

@@ -3,10 +3,6 @@
 	import LevelCard from '$lib/components/levelCard.svelte';
 	import { toLevelCardProps } from '$lib/components/levelCardProps';
 	import Dashboard from '$lib/components/dashboard.svelte';
-	import { user } from '$lib/client';
-	import { isActive } from '$lib/client/isSupporterActive';
-	import { goto } from '$app/navigation';
-	import { browser } from '$app/environment';
 	import { onMount } from 'svelte';
 	import { _ } from 'svelte-i18n';
 
@@ -55,12 +51,6 @@
 		return await (
 			await fetch(`${import.meta.env.VITE_API_URL}/list/pl?${query.toString()}`)
 		).json();
-	}
-
-	$: if (browser && $user.checked) {
-		if (!$user.loggedIn || !isActive($user.data?.supporterUntil)) {
-			goto('/');
-		}
 	}
 
 	onMount(async () => {

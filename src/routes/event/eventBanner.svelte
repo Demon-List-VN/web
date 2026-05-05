@@ -1,7 +1,6 @@
 <script lang="ts">
 	import Clock from 'svelte-radix/Clock.svelte';
 	import ExternalLink from 'svelte-radix/ExternalLink.svelte';
-	import Star from 'svelte-radix/Star.svelte';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { _ } from 'svelte-i18n';
 
@@ -57,12 +56,6 @@
 					{#if data.isRanked}
 						<div class="period">
 							{$_('events.ranked')}
-						</div>
-					{/if}
-					{#if data.isSupporterOnly}
-						<div class="period">
-							<Star size={16} />
-							{$_('events.supporter_only')}
 						</div>
 					{/if}
 					{#if data.exp}

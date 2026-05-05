@@ -162,7 +162,7 @@
 
 <div
 	class="relative z-0 overflow-hidden rounded-md border-[1px] p-[12px]"
-	style={isActive(player.supporterUntil)
+	style={player.bgColor || player.borderColor
 		? `background-color: ${player.bgColor}; border-color: ${player.borderColor}; ${player.bgColor ? 'color: white' : ''}`
 		: ''}
 >

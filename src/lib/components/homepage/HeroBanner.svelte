@@ -7,7 +7,7 @@
 
 	$: isSupporter = $user.loggedIn && isActive($user.data.supporterUntil);
 	$: isLoggedIn = $user.loggedIn;
-	$: profileBannerUrl = $user.loggedIn && $user.data?.uid
+	$: profileBannerUrl = $user.loggedIn && isSupporter && $user.data?.uid
 		? `https://cdn.gdvn.net/banners/${$user.data.uid}${$user.data.isBannerGif ? '.gif' : '.jpg'}?version=${$user.data.bannerVersion || 0}`
 		: null;
 

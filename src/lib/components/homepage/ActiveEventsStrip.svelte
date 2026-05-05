@@ -1,8 +1,6 @@
 <script lang="ts">
 	import { _ } from 'svelte-i18n';
-	import { user } from '$lib/client';
-	import { isActive } from '$lib/client/isSupporterActive';
-	import { ArrowRight, Clock, Star, Trophy, Lock, Zap } from 'lucide-svelte';
+	import { ArrowRight, Clock, Trophy, Zap } from 'lucide-svelte';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 
 	export let events: any[] | null = null;
@@ -29,7 +27,6 @@
 		return item?.imgUrl || `https://cdn.gdvn.net/event-banner/${item?.id}.webp`;
 	}
 
-	$: isSupporter = $user.loggedIn && isActive($user.data?.supporterUntil);
 </script>
 
 {#if events === null}
@@ -79,16 +76,6 @@
 								<span class="badge rankedBadge">
 									<Zap class="h-3 w-3" />
 									{$_('homepage.events.ranked')}
-								</span>
-							{/if}
-							{#if event.isSupporterOnly}
-								<span class="badge supporterBadge">
-									{#if !isSupporter}
-										<Lock class="h-3 w-3" />
-									{:else}
-										<Star class="h-3 w-3" />
-									{/if}
-									{$_('homepage.events.supporter_only')}
 								</span>
 							{/if}
 						</div>
@@ -218,11 +205,6 @@
 
 	.rankedBadge {
 		background: rgba(139, 92, 246, 0.85);
-		color: white;
-	}
-
-	.supporterBadge {
-		background: rgba(236, 72, 153, 0.85);
 		color: white;
 	}
 

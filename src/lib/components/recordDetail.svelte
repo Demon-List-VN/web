@@ -577,9 +577,6 @@
 									<li>{$_('record_detail.skip_ahead.description')[2]}</li>
 									<li>{$_('record_detail.skip_ahead.description')[3]}</li>
 								</ul>
-								<div class="flex rounded bg-yellow-50 p-3 text-sm dark:bg-pink-950">
-									<p>{$_('record_detail.skip_ahead.supporter_note')}</p>
-								</div>
 								{#if queueBoostInventory.length > 0}
 									<div class="rounded bg-green-50 p-3 dark:bg-green-950">
 										<p class="text-sm font-medium text-green-700 dark:text-green-300">

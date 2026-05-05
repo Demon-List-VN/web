@@ -1,9 +1,7 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button/index.js';
-	import * as Alert from '$lib/components/ui/alert/index.js';
 	import Loading from '$lib/components/animation/loading.svelte';
 	import { user } from '$lib/client';
-	import { isActive } from '$lib/client/isSupporterActive';
 	import { locale, _ } from 'svelte-i18n';
 	import { toast } from 'svelte-sonner';
 	import { CheckCircle2, XCircle, ChevronDown, ChevronUp, Copy } from 'lucide-svelte';
@@ -46,35 +44,7 @@
 				<CheckCircle2 size={48} />
 			</div>
 			<h3>{$_('submit.send.success.title')}</h3>
-			{#if isActive($user.data.supporterUntil)}
-				<p class="text-muted">
-					{#if $locale == 'vi'}
-						Bản nộp của bạn đã được gửi đi và <span class="text-yellow-500">ưu tiên!</span> Nó
-						sẽ được duyệt trong thời gian ngắn nhất.
-					{:else}
-						Your submission has been sent and <span class="text-yellow-500">prioritized!</span>
-						It will be reviewed shortly.
-					{/if}
-				</p>
-			{:else}
-				<p class="text-muted">{$_('submit.send.success.description')}</p>
-			{/if}
-
-			{#if !isActive($user.data.supporterUntil)}
-				<Alert.Root class="supporter-alert">
-					<Alert.Description>
-						{#if $locale == 'vi'}
-							Bản nộp của <a class="underline" href="/supporter">Supporter</a> được ưu tiên duyệt.
-							Những bản nộp này được coi như nộp sớm hơn 30 ngày (bỏ qua khoảng hơn 1 nghìn bản
-							nộp khác).
-						{:else}
-							<a class="underline" href="/supporter">Supporters'</a> submissions are prioritized
-							in the review queue. Their records are treated as if they were submitted 30 days
-							earlier (skip ahead by about 1K+ submissions).
-						{/if}
-					</Alert.Description>
-				</Alert.Root>
-			{/if}
+			<p class="text-muted">{$_('submit.send.success.description')}</p>
 
 			<div class="result-actions">
 				<Button variant="outline" on:click={onReset}>
@@ -268,11 +238,6 @@
 		color: hsl(var(--destructive, 0 84% 60%));
 		max-width: 100%;
 		word-break: break-word;
-	}
-
-	.supporter-alert {
-		border-color: hsl(48 96% 53%) !important;
-		max-width: 400px;
 	}
 
 	.result-actions {

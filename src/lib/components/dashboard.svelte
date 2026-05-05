@@ -14,15 +14,11 @@
 	import DashboardWeather from '$lib/components/widgets/dashboardWeather.svelte';
 	import DashboardSubmissions from '$lib/components/widgets/dashboardSubmissions.svelte';
 	import DashboardEvents from '$lib/components/widgets/dashboardEvents.svelte';
-	import { isActive } from '$lib/client/isSupporterActive';
 
 	export let events: any[];
 
 	const DEFAULT_BG_URL =
 		'https://i0.wp.com/picjumbo.com/wp-content/uploads/modern-gradient-background-free-photo.jpg?w=2210&quality=70';
-
-	// Check if user is a supporter
-	$: isSupporter = $user.loggedIn && isActive($user.data?.supporterUntil);
 
 	let dashboardBg: string = '';
 	let overlayType: 'none' | 'dark' | 'blur' | 'both' = 'none';
@@ -243,20 +239,20 @@
 
 <div
 	class="dashboard-hero relative mt-[-50px] flex min-h-[100vh] w-full flex-col"
-	style={isSupporter && dashboardBg ? `background-image: url('${dashboardBg}')` : ''}
+	style={dashboardBg ? `background-image: url('${dashboardBg}')` : ''}
 >
-	<!-- Customizable Overlay (Supporter Only) -->
-	{#if isSupporter && (overlayType === 'dark' || overlayType === 'both')}
+	<!-- Customizable Overlay -->
+	{#if overlayType === 'dark' || overlayType === 'both'}
 		<div class="absolute inset-0 z-[1] bg-black/40"></div>
 	{/if}
-	{#if isSupporter && (overlayType === 'blur' || overlayType === 'both')}
+	{#if overlayType === 'blur' || overlayType === 'both'}
 		<div class="absolute inset-0 z-[1] backdrop-blur-sm"></div>
 	{/if}
 
 	<!-- Desktop Layout: Absolute positioned elements -->
 	<div>
-		<!-- Top Search Bar (Desktop) - Supporter Only -->
-		{#if isSupporter && searchEnabled && searchPosition === 'top'}
+		<!-- Top Search Bar (Desktop) -->
+		{#if searchEnabled && searchPosition === 'top'}
 			<div class="absolute left-1/2 top-[70px] z-20 w-full max-w-xl -translate-x-1/2 px-8">
 				<DashboardSearch
 					bind:searchEnabled
@@ -269,8 +265,8 @@
 			</div>
 		{/if}
 
-		<!-- Center Search Bar (Desktop) - Supporter Only -->
-		{#if isSupporter && searchEnabled && searchPosition === 'center'}
+		<!-- Center Search Bar (Desktop) -->
+		{#if searchEnabled && searchPosition === 'center'}
 			<div
 				class="absolute left-1/2 top-1/2 z-20 w-full max-w-xl -translate-x-1/2 -translate-y-1/2 px-8"
 			>
@@ -285,8 +281,8 @@
 			</div>
 		{/if}
 
-		<!-- Bottom Search Bar (Desktop) - Supporter Only -->
-		{#if isSupporter && searchEnabled && searchPosition === 'bottom'}
+		<!-- Bottom Search Bar (Desktop) -->
+		{#if searchEnabled && searchPosition === 'bottom'}
 			<div class="absolute bottom-32 left-1/2 z-20 w-full max-w-xl -translate-x-1/2 px-8">
 				<DashboardSearch
 					bind:searchEnabled

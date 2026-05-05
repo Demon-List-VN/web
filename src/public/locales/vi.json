@@ -430,8 +430,7 @@
       "purchase": "Mua",
       "consuming": "Đang sử dụng tăng tốc...",
       "queue_boost_used": "Đã áp dụng tăng tốc hàng chờ thành công!",
-      "queue_boost_error": "Không thể sử dụng tăng tốc hàng chờ. Vui lòng thử lại.",
-      "supporter_note": "Tất cả bản nộp của Supporter được ưu tiên thêm 30 ngày"
+      "queue_boost_error": "Không thể sử dụng tăng tốc hàng chờ. Vui lòng thử lại."
     }
   },
   "search": {
@@ -785,8 +784,8 @@
       "join_now": "Tham gia ngay"
     },
     "dashboard_alert": {
-      "title": "Dashboard dành cho Supporter",
-      "description": "Bạn có thể truy cập dashboard để sử dụng các tính năng độc quyền",
+      "title": "Dashboard đã mở",
+      "description": "Truy cập dashboard để dùng các tính năng và tuỳ chỉnh nâng cao.",
       "link": "Đi tới dashboard"
     }
   },
@@ -842,8 +841,8 @@
     "features": {
       "title": "Khám phá tính năng Premium",
       "supporter_title": "Supporter",
-      "supporter_desc": "Mở khóa hồ sơ tùy chỉnh, avatar GIF, huy hiệu độc quyền và hỗ trợ ưu tiên.",
-      "supporter_b1": "Tùy chỉnh màu hồ sơ & banner",
+      "supporter_desc": "Mở khóa trải nghiệm không quảng cáo, URL hồ sơ ngắn, GIF và danh tính supporter độc quyền.",
+      "supporter_b1": "URL hồ sơ ngắn & không quảng cáo",
       "supporter_b2": "Avatar & banner động GIF",
       "supporter_b3": "Huy hiệu supporter độc quyền",
       "bp_title": "Pass",
@@ -1074,6 +1073,8 @@
       "community_posts": "Bài viết",
       "convictions": "Án tích",
       "records": "Bản ghi",
+      "verified_records": "Bản ghi đã xác minh",
+      "unverified_records": "Bản ghi chưa xác minh",
       "activity": "Hoạt động",
       "collection": "Bộ sưu tập"
     },
@@ -1100,7 +1101,11 @@
       "ascending": "Tăng dần",
       "descending": "Giảm dần",
       "point": "Điểm",
-      "date_submitted": "Thời gian nộp"
+      "date_submitted": "Thời gian nộp",
+      "no_verified_matches": "Không có bản ghi đã xác minh nào khớp với bộ lọc hiện tại.",
+      "no_unverified_matches": "Không có bản ghi chưa xác minh nào khớp với bộ lọc hiện tại.",
+      "no_verified_records": "Chưa có bản ghi đã xác minh nào.",
+      "no_unverified_records": "Chưa có bản ghi chưa xác minh nào."
     },
     "table": {
       "total_record": "Số bản ghi",

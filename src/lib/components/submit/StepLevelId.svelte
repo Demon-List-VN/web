@@ -1,10 +1,7 @@
 <script lang="ts">
 	import { Input } from '$lib/components/ui/input/index.js';
-	import * as Alert from '$lib/components/ui/alert/index.js';
 	import { locale } from 'svelte-i18n';
-	import { Lightbulb, Search } from 'lucide-svelte';
-	import { user } from '$lib/client';
-	import { isActive } from '$lib/client/isSupporterActive';
+	import { Search } from 'lucide-svelte';
 
 	export let levelId: number;
 	export let submissionType: 'record' | 'level';
@@ -43,27 +40,6 @@
 			/>
 		</div>
 	</div>
-
-	{#if submissionType === 'record' && !isActive($user.data.supporterUntil)}
-		<Alert.Root>
-			<Alert.Description class="flex items-center gap-[10px]">
-				<Lightbulb size={18} class="shrink-0" />
-				<span class="text-sm">
-					{#if $locale == 'vi'}
-						Mẹo: Vào trang level và bấm Nộp để tự động điền ID. (Dành cho <a
-							class="underline"
-							href="/supporter">Supporter</a
-						>)
-					{:else}
-						Tip: Go to the level page and click Submit to auto-fill the ID. (For <a
-							class="underline"
-							href="/supporter">Supporter</a
-						>)
-					{/if}
-				</span>
-			</Alert.Description>
-		</Alert.Root>
-	{/if}
 </div>
 
 <style lang="scss">

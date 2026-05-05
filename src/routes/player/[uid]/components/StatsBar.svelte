@@ -5,7 +5,6 @@
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { getTitle } from '$lib/client';
 	import { getExpLevel } from '$lib/client/getExpLevel';
-	import { isActive } from '$lib/client/isSupporterActive';
 	import { normalizeCustomListRankBadges, resolveCustomListRankBadge } from '$lib/utils/customListRank';
 	import { getPlayerRankedListScoreLabel } from '$lib/types/playerRankedList';
 	import { _ } from 'svelte-i18n';
@@ -15,7 +14,6 @@
 	$: player = data.player;
 	$: listSummaries = data.listSummaries || [];
 	$: selectedList = data.selectedList;
-	$: isSupporter = isActive(player.supporterUntil);
 	$: exp = player.exp + player.extraExp;
 	$: expLevel = getExpLevel(exp);
 	$: selectedListOption = selectedList
@@ -56,7 +54,7 @@
 	}
 
 	function getBgTint() {
-		if (isSupporter && player.bgColor) {
+		if (player.bgColor) {
 			return `background-color: ${player.bgColor}20`;
 		}
 		return '';

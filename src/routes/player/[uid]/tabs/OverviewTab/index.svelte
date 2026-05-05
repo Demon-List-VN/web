@@ -4,7 +4,6 @@
 	import * as Select from '$lib/components/ui/select';
 	import { Button } from '$lib/components/ui/button';
 	import { _ } from 'svelte-i18n';
-	import { isActive } from '$lib/client/isSupporterActive';
 	import { user } from '$lib/client';
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
@@ -22,7 +21,7 @@
 	export let data: PageData;
 
 	$: isOwner = $user.loggedIn && $user.data?.uid === data.player.uid;
-	$: canCustomize = isOwner && isActive(data.player.supporterUntil);
+	$: canCustomize = isOwner;
 
 	let isCustomizing = false;
 	let draggedCard: string | null = null;
@@ -204,9 +203,6 @@
 			cardConfigs = [...defaultCards];
 		}
 
-		if (isOwner && !isActive(data.player.supporterUntil)) {
-			await resetToDefault();
-		}
 	});
 </script>
 {#if canCustomize}
