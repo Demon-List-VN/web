@@ -54,6 +54,25 @@
 		}
 	});
 
+	async function fetchStoredLevel(levelId: number) {
+		const res = await fetch(`${import.meta.env.VITE_API_URL}/levels/${levelId}`);
+		const payload = await res.json().catch(() => null);
+
+		return res.ok && payload ? payload : null;
+	}
+
+	async function crawlLevel(levelId: number) {
+		const res = await fetch(`${import.meta.env.VITE_API_URL}/levels/${levelId}/crawl`, {
+			method: 'POST',
+			headers: {
+				Authorization: `Bearer ${await $user.token()}`,
+				'Content-Type': 'application/json'
+			}
+		});
+
+		return res.ok;
+	}
+
 	async function loadLevel() {
 		levelLoading = true;
 		apiLevel = null;
@@ -62,10 +81,19 @@
 		selectedVariantId = null;
 
 		try {
-			const levelRes = await fetch(`${import.meta.env.VITE_API_URL}/levels/${levelid}`);
-			const levelPayload = await levelRes.json().catch(() => null);
+			let levelPayload = await fetchStoredLevel(levelid);
 
-			if (!levelRes.ok || !levelPayload) {
+			if (!levelPayload) {
+				const crawled = await crawlLevel(levelid);
+
+				if (!crawled) {
+					return false;
+				}
+
+				levelPayload = await fetchStoredLevel(levelid);
+			}
+
+			if (!levelPayload) {
 				return false;
 			}
 
