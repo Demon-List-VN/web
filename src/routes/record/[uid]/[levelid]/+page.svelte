@@ -6,6 +6,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { user } from '$lib/client';
+	import { pickRecordUpdatePayload } from '$lib/client/recordPayload';
 	import { toast } from 'svelte-sonner';
 	import { _, locale } from 'svelte-i18n';
 	import { get } from 'svelte/store';
@@ -260,9 +261,7 @@
 	}
 
 	async function applyEdit() {
-		const body = structuredClone(record.data);
-		delete body.levels;
-		delete body.players;
+		const body = pickRecordUpdatePayload(record.data);
 		toast.promise(
 			fetch(`${import.meta.env.VITE_API_URL}/records`, {
 				method: 'PUT',

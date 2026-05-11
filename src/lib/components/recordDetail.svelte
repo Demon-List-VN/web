@@ -9,6 +9,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Pencil1 } from 'svelte-radix';
 	import { user } from '$lib/client';
+	import { pickRecordUpdatePayload } from '$lib/client/recordPayload';
 	import { toast } from 'svelte-sonner';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Switch } from '$lib/components/ui/switch';
@@ -227,9 +228,7 @@
 	}
 
 	async function applyEdit() {
-		const data = structuredClone(record.data);
-		delete data.levels;
-		delete data.players;
+		const data = pickRecordUpdatePayload(record.data);
 
 		toast.promise(
 			fetch(`${import.meta.env.VITE_API_URL}/records`, {
