@@ -14,6 +14,7 @@
 	import { isActive } from '$lib/client/isSupporterActive';
 	import { upload } from '$lib/client/storage';
 	import ListSelector, { type ListSelectorOption } from '$lib/components/listSelector.svelte';
+	import { clearPlayerCardSettingsCache } from '$lib/components/playerCard.svelte';
 	import type { PlayerRankedListSummary } from '$lib/types/playerRankedList';
 	import {
 		normalizePlayerCardStatLines,
@@ -168,6 +169,7 @@
 
 		try {
 			await promise;
+			clearPlayerCardSettingsCache(player.uid);
 			data = { ...data, overviewData, playerCardStatLines: playerCardStatLineIds };
 			player = { ...player, overviewData, playerCardStatLines: playerCardStatLineIds };
 		} catch {
@@ -324,6 +326,7 @@
 			error: $_('toast.player_edit.save.error')
 		});
 
+		clearPlayerCardSettingsCache(playerToSave.uid);
 		data = playerToSave;
 		player = playerToSave;
 		open = false;

@@ -1,3 +1,16 @@
+<script context="module" lang="ts">
+	const playerCardSettingsCache = new Map<string, any>();
+
+	export function clearPlayerCardSettingsCache(uid?: string) {
+		if (uid) {
+			playerCardSettingsCache.delete(uid);
+			return;
+		}
+
+		playerCardSettingsCache.clear();
+	}
+</script>
+
 <script lang="ts">
 	import * as Avatar from '$lib/components/ui/avatar';
 	import * as Tooltip from '$lib/components/ui/tooltip';
@@ -26,25 +39,35 @@
 
 	let isBannerFailedToLoad = false;
 	let remoteSummaries: PlayerRankedListSummary[] = [];
+	let hydratedPlayer: any = null;
+	let isLoadingPlayerSettings = false;
 	let isLoadingLists = false;
 	let hasLoadedRemote = false;
 	let listLoadFailed = false;
+	let settingsLoadFailed = false;
 	let lastPlayerUid = '';
 
 	$: if (player?.uid !== lastPlayerUid) {
 		lastPlayerUid = player?.uid || '';
 		remoteSummaries = [];
+		hydratedPlayer = playerCardSettingsCache.get(lastPlayerUid) ?? null;
+		isLoadingPlayerSettings = false;
 		isLoadingLists = false;
 		hasLoadedRemote = false;
 		listLoadFailed = false;
+		settingsLoadFailed = false;
 	}
 
-	$: exp = player.exp + player.extraExp;
+	$: cardPlayer = hydratedPlayer ?? player;
+	$: hasKnownPlayerCardStatLines = Array.isArray(cardPlayer?.playerCardStatLines);
+	$: exp = (cardPlayer?.exp ?? 0) + (cardPlayer?.extraExp ?? 0);
 	$: expLevel = getExpLevel(exp);
 	$: summaries = listSummaries ?? remoteSummaries;
-	$: configuredStatLineIds = normalizePlayerCardStatLines(player?.playerCardStatLines);
-	$: showEloStat = shouldShowPlayerCardEloStat(player?.overviewData);
-	$: hasConfiguredStatLines = configuredStatLineIds.length > 0;
+	$: configuredStatLineIds = hasKnownPlayerCardStatLines
+		? normalizePlayerCardStatLines(cardPlayer?.playerCardStatLines)
+		: [];
+	$: showEloStat = shouldShowPlayerCardEloStat(cardPlayer?.overviewData);
+	$: hasConfiguredStatLines = hasKnownPlayerCardStatLines && configuredStatLineIds.length > 0;
 	$: effectiveStatLineIds = resolvePlayerCardStatLineIds(configuredStatLineIds, summaries);
 	$: resolvedStatLines = hasConfiguredStatLines
 		? effectiveStatLineIds
@@ -53,22 +76,58 @@
 		: DEFAULT_PLAYER_CARD_STAT_LINE_SLUGS.map((slug) => resolveDefaultPlayerCardStatLine(slug, $_));
 	$: showStatLineSkeleton =
 		active &&
-		hasConfiguredStatLines &&
-		listSummaries === null &&
-		!hasLoadedRemote &&
-		!listLoadFailed;
-	$: statLineSkeletonCount = configuredStatLineIds.length;
+		((!hasKnownPlayerCardStatLines && !settingsLoadFailed) ||
+			(hasConfiguredStatLines && listSummaries === null && !hasLoadedRemote && !listLoadFailed));
+	$: statLineSkeletonCount = hasConfiguredStatLines
+		? configuredStatLineIds.length
+		: DEFAULT_PLAYER_CARD_STAT_LINE_SLUGS.length;
 	$: statLineSkeletons = Array.from({ length: statLineSkeletonCount }, (_, index) => index);
+	$: if (
+		active &&
+		player?.uid &&
+		!hasKnownPlayerCardStatLines &&
+		!isLoadingPlayerSettings &&
+		!settingsLoadFailed
+	) {
+		void loadPlayerCardSettings(player.uid);
+	}
 	$: if (
 		active &&
 		hasConfiguredStatLines &&
 		listSummaries === null &&
-		player?.uid &&
+		cardPlayer?.uid &&
 		!hasLoadedRemote &&
 		!isLoadingLists &&
 		!listLoadFailed
 	) {
-		void loadPlayerRankedLists(player.uid);
+		void loadPlayerRankedLists(cardPlayer.uid);
+	}
+
+	async function loadPlayerCardSettings(uid: string) {
+		const cachedPlayer = playerCardSettingsCache.get(uid);
+
+		if (cachedPlayer) {
+			hydratedPlayer = cachedPlayer;
+			return;
+		}
+
+		isLoadingPlayerSettings = true;
+
+		try {
+			const response = await fetch(`${import.meta.env.VITE_API_URL}/players/${uid}`);
+
+			if (!response.ok) {
+				throw new Error('Failed to load player card settings');
+			}
+
+			const loadedPlayer = { ...player, ...(await response.json()) };
+			playerCardSettingsCache.set(uid, loadedPlayer);
+			hydratedPlayer = loadedPlayer;
+		} catch {
+			settingsLoadFailed = true;
+		} finally {
+			isLoadingPlayerSettings = false;
+		}
 	}
 
 	async function loadPlayerRankedLists(uid: string) {
@@ -126,24 +185,24 @@
 			case 'pl':
 				return {
 					label: translate('player_card.plat_rating'),
-					value: formatScore(player?.plRating ?? 0),
-					rank: formatRank(player?.plrank),
+					value: formatScore(cardPlayer?.plRating ?? 0),
+					rank: formatRank(cardPlayer?.plrank),
 					valueStyle: '',
 					tooltip: null
 				};
 			case 'cl':
 				return {
 					label: translate('player_card.challenge_rating'),
-					value: formatScore(player?.clRating ?? 0),
-					rank: formatRank(player?.clrank),
+					value: formatScore(cardPlayer?.clRating ?? 0),
+					rank: formatRank(cardPlayer?.clrank),
 					valueStyle: '',
 					tooltip: null
 				};
 			case 'fl':
 				return {
 					label: translate('player_card.featured'),
-					value: formatScore(player?.totalFLpt ?? 0),
-					rank: formatRank(player?.flrank),
+					value: formatScore(cardPlayer?.totalFLpt ?? 0),
+					rank: formatRank(cardPlayer?.flrank),
 					valueStyle: '',
 					tooltip: null
 				};
@@ -151,8 +210,8 @@
 			default:
 				return {
 					label: translate('player_card.rating'),
-					value: formatScore(player?.rating ?? player?.totalDLpt ?? 0),
-					rank: formatRank(player?.overallRank ?? player?.dlrank),
+					value: formatScore(cardPlayer?.rating ?? cardPlayer?.totalDLpt ?? 0),
+					rank: formatRank(cardPlayer?.overallRank ?? cardPlayer?.dlrank),
 					valueStyle: '',
 					tooltip: null
 				};
@@ -162,17 +221,17 @@
 
 <div
 	class="relative z-0 overflow-hidden rounded-md border-[1px] p-[12px]"
-	style={player.bgColor || player.borderColor
-		? `background-color: ${player.bgColor}; border-color: ${player.borderColor}; ${player.bgColor ? 'color: white' : ''}`
+	style={cardPlayer.bgColor || cardPlayer.borderColor
+		? `background-color: ${cardPlayer.bgColor}; border-color: ${cardPlayer.borderColor}; ${cardPlayer.bgColor ? 'color: white' : ''}`
 		: ''}
 >
-	{#if isActive(player.supporterUntil) && !isBannerFailedToLoad}
+	{#if isActive(cardPlayer.supporterUntil) && !isBannerFailedToLoad}
 		<img
 			on:error={() => {
 				isBannerFailedToLoad = true;
 			}}
 			class="bgGradient absolute top-[42px] z-[-1] ml-[-12px] h-[72px] w-[calc(100%+24px)] rounded object-cover"
-			src={`https://cdn.gdvn.net/banners/${player.uid}${player.isBannerGif ? '.gif' : '.jpg'}`}
+			src={`https://cdn.gdvn.net/banners/${cardPlayer.uid}${cardPlayer.isBannerGif ? '.gif' : '.jpg'}`}
 			alt=""
 		/>
 	{/if}
@@ -180,27 +239,27 @@
 		<Avatar.Root>
 			<Avatar.Image
 				class="object-cover"
-				src={`https://cdn.gdvn.net/avatars/${player.uid}${
-					isActive(player.supporterUntil) && player.isAvatarGif ? '.gif' : '.jpg'
+				src={`https://cdn.gdvn.net/avatars/${cardPlayer.uid}${
+					isActive(cardPlayer.supporterUntil) && cardPlayer.isAvatarGif ? '.gif' : '.jpg'
 				}`}
 				alt=""
 			/>
-			<Avatar.Fallback>{player.name[0]}</Avatar.Fallback>
+			<Avatar.Fallback>{cardPlayer.name[0]}</Avatar.Fallback>
 		</Avatar.Root>
-		{#if player.clan && isActive(player.clans.boostedUntil)}
+		{#if cardPlayer.clan && isActive(cardPlayer.clans.boostedUntil)}
 			<a
-				href={`/clan/${player.clan}`}
+				href={`/clan/${cardPlayer.clan}`}
 				class={`headerBadge ${badgeVariants({ variant: 'secondary' })}`}
-				style={`background-color: ${player.clans.tagBgColor}; color: ${player.clans.tagTextColor};`}
-				>{player.clans.tag}</a
+				style={`background-color: ${cardPlayer.clans.tagBgColor}; color: ${cardPlayer.clans.tagTextColor};`}
+				>{cardPlayer.clans.tag}</a
 			>
 		{/if}
 		<h4 class="playerName font-semibold">
-			<span class={isActive(player.supporterUntil) ? 'supporter-name' : ''}>
-				{#if player.clan && !isActive(player.clans.boostedUntil)}
-					<a href={`/clan/${player.clan}`}>[{player.clans.tag}]</a>
+			<span class={isActive(cardPlayer.supporterUntil) ? 'supporter-name' : ''}>
+				{#if cardPlayer.clan && !isActive(cardPlayer.clans.boostedUntil)}
+					<a href={`/clan/${cardPlayer.clan}`}>[{cardPlayer.clans.tag}]</a>
 				{/if}
-				<a href={`/player/${player.uid}`}>{player.name}</a>
+				<a href={`/player/${cardPlayer.uid}`}>{cardPlayer.name}</a>
 			</span>
 		</h4>
 	</div>
@@ -267,16 +326,16 @@
 				<Tooltip.Root>
 					<Tooltip.Trigger>
 						<div class="leftCol">
-							<div class="title" style={`background-color: ${getTitle('elo', player)?.color}`}>
-								{#if player.matchCount < 5}
-									<span class="opacity-50">{`${player.elo}?`}</span>
+							<div class="title" style={`background-color: ${getTitle('elo', cardPlayer)?.color}`}>
+								{#if cardPlayer.matchCount < 5}
+									<span class="opacity-50">{`${cardPlayer.elo}?`}</span>
 								{:else}
-									{player.elo}
+									{cardPlayer.elo}
 								{/if}
 							</div>
 						</div>
 					</Tooltip.Trigger>
-					<Tooltip.Content>{getTitle('elo', player)?.fullTitle}</Tooltip.Content>
+					<Tooltip.Content>{getTitle('elo', cardPlayer)?.fullTitle}</Tooltip.Content>
 				</Tooltip.Root>
 				<div class="rankWrapper">{$_('player_card.contest')}</div>
 			</div>
