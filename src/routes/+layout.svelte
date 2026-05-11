@@ -2,19 +2,19 @@
 	import type { LayoutData } from './$types';
 	import '../app.pcss';
 	import '../app.scss';
-	import 'non.geist';
 	import { resolveLocale, setAppLocale } from '../i18n';
 
 	import { ModeWatcher, setMode } from 'mode-watcher';
 
 	import { Toaster } from '$lib/components/ui/sonner';
 	import { LoadingBar } from 'svelte-loading-bar';
+	import { toast } from 'svelte-sonner';
 
 	import Search from '$lib/components/search.svelte';
 
 	import supabase from '$lib/client/supabase';
 	import { user } from '$lib/client';
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import { customListBranding } from '$lib/client/customListBranding';
 	import { page } from '$app/stores';
@@ -41,9 +41,15 @@
 	let removePad = false;
 	let pathname = '';
 	let currentCustomLogoUrl = '';
+	let passwordSignInOpen = false;
+	let passwordSignInEmail = '';
+	let passwordSignInPassword = '';
+	let passwordSignInLoading = false;
+	let passwordInput: HTMLInputElement;
 	const defaultNavLogoSrc = '/logo.png';
 	const defaultFaviconHref = '/favicon.png';
 	const customLogoFailed = writable(false);
+	const localPasswordSignInEmailKey = 'localPasswordSignIn.email';
 
 	function normalizeThemeAssetUrl(value: unknown) {
 		return typeof value === 'string' ? value.trim() : '';
@@ -101,6 +107,73 @@
 				redirectTo: window.location.origin
 			}
 		});
+	}
+
+	function isLocalhost() {
+		return ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+	}
+
+	async function openPasswordSignInPrompt() {
+		if (!isLocalhost() || passwordSignInOpen) return;
+
+		passwordSignInEmail = localStorage.getItem(localPasswordSignInEmailKey) || passwordSignInEmail;
+		passwordSignInPassword = '';
+		passwordSignInOpen = true;
+		await tick();
+		passwordInput?.focus();
+	}
+
+	function closePasswordSignInPrompt() {
+		if (passwordSignInLoading) return;
+
+		passwordSignInOpen = false;
+		passwordSignInPassword = '';
+	}
+
+	async function signInWithPassword() {
+		const email = passwordSignInEmail.trim();
+
+		if (!email || !passwordSignInPassword) {
+			toast.error('Email and password are required.');
+			return;
+		}
+
+		passwordSignInLoading = true;
+
+		try {
+			const { error } = await supabase.auth.signInWithPassword({
+				email,
+				password: passwordSignInPassword
+			});
+
+			if (error) {
+				throw error;
+			}
+
+			localStorage.setItem(localPasswordSignInEmailKey, email);
+			passwordSignInOpen = false;
+			passwordSignInPassword = '';
+			window.location.reload();
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : 'Failed to sign in.');
+		} finally {
+			passwordSignInLoading = false;
+		}
+	}
+
+	function handleLocalPasswordShortcut(event: KeyboardEvent) {
+		const isSlashKey = event.code === 'Slash' || event.key === '/' || event.key === '?';
+
+		if (event.ctrlKey && event.shiftKey && event.altKey && isSlashKey) {
+			event.preventDefault();
+			openPasswordSignInPrompt();
+		}
+	}
+
+	function handlePasswordSignInKeydown(event: KeyboardEvent) {
+		if (passwordSignInOpen && event.key === 'Escape') {
+			closePasswordSignInPrompt();
+		}
 	}
 
 	async function signOut() {
@@ -177,11 +250,18 @@
 
 		enableAds();
 
+		if (isLocalhost()) {
+			document.addEventListener('keydown', handleLocalPasswordShortcut);
+		}
+
 		return () => {
 			unsubscribeLocale();
+			document.removeEventListener('keydown', handleLocalPasswordShortcut);
 		};
 	});
 </script>
+
+<svelte:window on:keydown={handlePasswordSignInKeydown} />
 
 <svelte:head>
 	<link rel="icon" href={$faviconHref} />
@@ -195,6 +275,47 @@
 	--loading-bar-background-color="rgb(0 100 160 / 80%)"
 	--loading-bar-train-background-color="rgb(0 100 220 / 90%)"
 />
+
+{#if passwordSignInOpen}
+	<div class="passwordSignInLayer">
+		<button
+			type="button"
+			class="passwordSignInBackdrop"
+			aria-label="Close password sign in"
+			on:click={closePasswordSignInPrompt}
+		></button>
+		<form class="passwordSignInDialog" on:submit|preventDefault={signInWithPassword}>
+			<h2>Password sign in</h2>
+			<label>
+				<span>Email</span>
+				<input
+					type="email"
+					autocomplete="username"
+					bind:value={passwordSignInEmail}
+					disabled={passwordSignInLoading}
+				/>
+			</label>
+			<label>
+				<span>Password</span>
+				<input
+					bind:this={passwordInput}
+					type="password"
+					autocomplete="current-password"
+					bind:value={passwordSignInPassword}
+					disabled={passwordSignInLoading}
+				/>
+			</label>
+			<div class="passwordSignInActions">
+				<button type="button" on:click={closePasswordSignInPrompt} disabled={passwordSignInLoading}>
+					Cancel
+				</button>
+				<button type="submit" disabled={passwordSignInLoading}>
+					{passwordSignInLoading ? 'Signing in...' : 'Sign in'}
+				</button>
+			</div>
+		</form>
+	</div>
+{/if}
 
 {#if !hideNav}
 	<NavigationChrome
@@ -228,6 +349,84 @@
 </div>
 
 <style lang="scss">
+	.passwordSignInLayer {
+		position: fixed;
+		inset: 0;
+		z-index: 1000;
+		display: grid;
+		place-items: center;
+		padding: 20px;
+	}
+
+	.passwordSignInBackdrop {
+		position: absolute;
+		inset: 0;
+		border: 0;
+		padding: 0;
+		background: rgb(0 0 0 / 55%);
+	}
+
+	.passwordSignInDialog {
+		position: relative;
+		width: min(100%, 360px);
+		display: grid;
+		gap: 14px;
+		padding: 18px;
+		border: 1px solid rgb(255 255 255 / 12%);
+		border-radius: 8px;
+		background: var(--background, #111);
+		color: var(--foreground, #fff);
+		box-shadow: 0 18px 60px rgb(0 0 0 / 45%);
+
+		h2 {
+			margin: 0;
+			font-size: 18px;
+			font-weight: 650;
+		}
+
+		label {
+			display: grid;
+			gap: 6px;
+			font-size: 13px;
+		}
+
+		input {
+			width: 100%;
+			border: 1px solid rgb(255 255 255 / 16%);
+			border-radius: 6px;
+			padding: 9px 10px;
+			background: rgb(255 255 255 / 7%);
+			color: inherit;
+			font: inherit;
+		}
+	}
+
+	.passwordSignInActions {
+		display: flex;
+		justify-content: flex-end;
+		gap: 8px;
+		margin-top: 4px;
+
+		button {
+			border: 1px solid rgb(255 255 255 / 16%);
+			border-radius: 6px;
+			padding: 8px 12px;
+			background: rgb(255 255 255 / 8%);
+			color: inherit;
+			font: inherit;
+			cursor: pointer;
+		}
+
+		button[type='submit'] {
+			background: rgb(0 100 220 / 90%);
+		}
+
+		button:disabled {
+			opacity: 0.55;
+			cursor: not-allowed;
+		}
+	}
+
 	:global(.markdown) {
 		:global(h1) {
 			display: block;
