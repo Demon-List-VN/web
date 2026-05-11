@@ -24,6 +24,7 @@
 	import { DISCORD_OAUTH_URL } from '$lib/client/discord';
 
 	let token = '';
+	let settingsOpen = false;
 	let open1 = false;
 	let APIKeys: any[] = [];
 
@@ -114,9 +115,14 @@
 		document.documentElement.setAttribute('data-theme', theme);
 		localStorage.setItem('theme', theme);
 	}
+
+	function openOtpGrantPage() {
+		settingsOpen = false;
+		goto('/auth/otp');
+	}
 </script>
 
-<Dialog.Root>
+<Dialog.Root bind:open={settingsOpen}>
 	<Dialog.Trigger let:builder>
 		<Button builders={[builder]} variant="outline" size="icon">
 			<Gear class="h-[1.2rem] w-[1.2rem]" />
@@ -296,6 +302,15 @@
 				</div>
 			</Tabs.Content>
 			<Tabs.Content value="api">
+				<div class="otp-auth">
+					<div>
+						<p class="text-sm font-medium">{$_('settings.auth.otp.title')}</p>
+						<p class="text-sm text-muted-foreground">{$_('settings.auth.otp.description')}</p>
+					</div>
+					<Button variant="outline" on:click={openOtpGrantPage}>
+						{$_('settings.auth.otp.button')}
+					</Button>
+				</div>
 				<Table.Root>
 					<Table.Header>
 						<Table.Row>
@@ -444,6 +459,21 @@
 
 		.right {
 			margin-left: auto;
+		}
+	}
+
+	.otp-auth {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		justify-content: space-between;
+		margin-bottom: 12px;
+	}
+
+	@media screen and (max-width: 520px) {
+		.otp-auth {
+			align-items: stretch;
+			flex-direction: column;
 		}
 	}
 </style>

@@ -272,7 +272,7 @@
     "title": "Settings",
     "tabs": {
       "general": "General",
-      "api": "API",
+      "api": "Auth",
       "sub": "Subscriptions",
       "discord": "Discord"
     },
@@ -310,6 +310,13 @@
         "description": "Anyone with this key can submit and make change to your account.",
         "cancel": "Cancel",
         "continue": "Continue"
+      }
+    },
+    "auth": {
+      "otp": {
+        "title": "Grant OTP",
+        "description": "Open the Geode mod, copy the 6-digit OTP code, then enter it on the grant page.",
+        "button": "Grant OTP"
       }
     },
     "subscriptions": {
@@ -1798,14 +1805,16 @@
   },
   "otp": {
     "title": "Grant OTP",
-    "description": "Authorize this OTP code to grant access to your account.",
-    "code_label": "Code:",
+    "description": "Enter the 6-digit OTP code from the Geode mod to grant access to your account.",
+    "code_label": "OTP code",
     "grant": "Grant Access",
     "granting": "Granting...",
     "granted": "OTP has been granted successfully.",
     "not_logged_in": "Please log in to grant this OTP.",
     "success": "OTP granted successfully!",
-    "error": "Failed to grant OTP."
+    "error": "Failed to grant OTP.",
+    "not_found": "OTP does not exist.",
+    "invalid_code": "OTP code must be 6 digits."
   },
   "wiki": {
     "created_at": "Created at:",

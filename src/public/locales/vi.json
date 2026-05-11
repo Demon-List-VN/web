@@ -272,7 +272,7 @@
     "title": "Cài đặt",
     "tabs": {
       "general": "Chung",
-      "api": "API",
+      "api": "Auth",
       "sub": "Gói"
     },
     "general": {
@@ -309,6 +309,13 @@
         "description": "Bất cứ ai với khoá này có thể nộp và thay đổi tài khoản của bạn.",
         "cancel": "Huỷ",
         "continue": "Tiếp tục"
+      }
+    },
+    "auth": {
+      "otp": {
+        "title": "Cấp quyền OTP",
+        "description": "Mở mod Geode, lấy mã OTP 6 số, rồi nhập mã trên trang cấp quyền.",
+        "button": "Cấp quyền OTP"
       }
     },
     "subscriptions": {
@@ -1797,14 +1804,16 @@
   },
   "otp": {
     "title": "Cấp quyền OTP",
-    "description": "Xác nhận mã OTP này để cấp quyền truy cập tài khoản của bạn.",
-    "code_label": "Mã:",
+    "description": "Nhập mã OTP 6 số từ mod Geode để cấp quyền truy cập tài khoản của bạn.",
+    "code_label": "Mã OTP",
     "grant": "Cấp quyền",
     "granting": "Đang cấp...",
     "granted": "OTP đã được cấp quyền thành công.",
     "not_logged_in": "Vui lòng đăng nhập để cấp quyền OTP.",
     "success": "Cấp quyền OTP thành công!",
-    "error": "Không thể cấp quyền OTP."
+    "error": "Không thể cấp quyền OTP.",
+    "not_found": "OTP không tồn tại.",
+    "invalid_code": "Mã OTP phải gồm 6 số."
   },
   "wiki": {
     "created_at": "Được tạo lúc:",
