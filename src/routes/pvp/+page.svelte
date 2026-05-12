@@ -67,6 +67,9 @@
 	let routedMatchId: number | string | null = null;
 	let announcedMatchIds = new Set<string>();
 	let endedMatchBellIds = new Set<string>();
+	let matchDialogOpen = false;
+	let pendingDialogTimeout: ReturnType<typeof setTimeout> | null = null;
+	let keydownHandler: ((e: KeyboardEvent) => void) | null = null;
 
 	$: currentUid = $user.data?.uid;
 	$: activeMatch = lobby.activeMatch && isActivePvpMatch(lobby.activeMatch) ? lobby.activeMatch : null;
@@ -104,13 +107,24 @@
 
 	onMount(() => {
 		ticker = setInterval(() => {
-			now = Date.now();
-		}, 1000);
+				now = Date.now();
+			}, 1000);
+
+		keydownHandler = (e: KeyboardEvent) => {
+			if (e.key === 'Escape' && pendingMatch) {
+				e.preventDefault();
+				e.stopPropagation();
+			}
+		};
+
+		window.addEventListener('keydown', keydownHandler);
 	});
 
 	onDestroy(() => {
 		if (ticker) clearInterval(ticker);
 		cleanupRealtime?.();
+		if (keydownHandler) window.removeEventListener('keydown', keydownHandler);
+		if (pendingDialogTimeout) clearTimeout(pendingDialogTimeout);
 	});
 
 	async function initializeRealtime(uid: string) {
@@ -137,7 +151,7 @@
 		try {
 			const previousActiveMatch = lobby.activeMatch;
 			const nextLobby = await getPvpMe(await $user.token());
-			handleLobbyMatchSounds(previousActiveMatch, nextLobby.activeMatch);
+				handleLobbyMatchSounds(previousActiveMatch, nextLobby.activeMatch);
 			lobby = nextLobby;
 			routeAcceptedInvite(lobby.incomingInvites);
 			routeAcceptedInvite(lobby.outgoingInvites);
@@ -158,12 +172,34 @@
 		}
 
 		const previousId = getPvpMatchId(previousMatch);
-		const previousWasActive = Boolean(previousMatch && isActivePvpMatch(previousMatch));
+		const previousStatus = getPvpStatus(previousMatch, '');
+		const previousWasInProgress = previousStatus === 'in_progress';
 		const nextStillActive = Boolean(nextMatch && isActivePvpMatch(nextMatch));
 
-		if (previousId && previousWasActive && !nextStillActive && !endedMatchBellIds.has(String(previousId))) {
+		// Play end bell only if the previous match was actually in-progress (not just pending acceptance)
+		if (previousId && previousWasInProgress && !nextStillActive && !endedMatchBellIds.has(String(previousId))) {
 			endedMatchBellIds.add(String(previousId));
 			playPvpBell();
+		}
+	}
+
+	// Control dialog open state and auto-close when acceptance expires
+	$: if (pendingMatch) {
+		if (!matchDialogOpen) matchDialogOpen = true;
+		const expires = getPvpMatchAcceptanceExpiresMs(pendingMatch);
+		if (expires) {
+			if (pendingDialogTimeout) clearTimeout(pendingDialogTimeout);
+			const delay = Math.max(0, expires - Date.now());
+			pendingDialogTimeout = setTimeout(() => {
+				matchDialogOpen = false;
+				pendingDialogTimeout = null;
+			}, delay);
+		}
+	} else {
+		matchDialogOpen = false;
+		if (pendingDialogTimeout) {
+			clearTimeout(pendingDialogTimeout);
+			pendingDialogTimeout = null;
 		}
 	}
 
@@ -375,7 +411,7 @@
 		</a>
 	</section>
 
-	<Dialog.Root open={Boolean(pendingMatch)}>
+	<Dialog.Root bind:open={matchDialogOpen} on:openChange={(e) => { if (e?.detail === false && pendingMatch) { matchDialogOpen = true; } }}>
 		<Dialog.Content class="sm:max-w-[440px]">
 			<Dialog.Header>
 				<div class="match-found-icon">

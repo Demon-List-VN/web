@@ -33,7 +33,7 @@
 	import { onDestroy, onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { _ } from 'svelte-i18n';
-	import { ArrowLeft, Clock, ExternalLink, Gauge, Loader2, LogIn, RefreshCw, Trophy } from 'lucide-svelte';
+	import { ArrowLeft, Clock, ExternalLink, Gauge, Loader2, LogIn, RefreshCw, Trophy, Copy } from 'lucide-svelte';
 
 	let match: PvpMatch | null = null;
 	let loading = false;
@@ -108,7 +108,8 @@
 		const id = getPvpMatchId(nextMatch);
 		if (!id || endedBellPlayedFor === String(id)) return;
 
-		if (previousMatch && isActivePvpMatch(previousMatch) && nextMatch && !isActivePvpMatch(nextMatch)) {
+		const previousStatus = getPvpStatus(previousMatch, '');
+		if (previousMatch && previousStatus === 'in_progress' && nextMatch && !isActivePvpMatch(nextMatch)) {
 			endedBellPlayedFor = String(id);
 			playPvpBell();
 		}
@@ -175,6 +176,27 @@
 	function participantName(participant: PvpParticipant) {
 		const player = getPvpParticipantPlayer(participant);
 		return player?.name || getPvpParticipantUid(participant) || '--';
+	}
+
+	async function copyLevelId() {
+		const id = String(level?.id ?? match?.levelId ?? '');
+		if (!id) return;
+		try {
+			await navigator.clipboard.writeText(id);
+			toast.success($_('clipboard'));
+		} catch (err) {
+			try {
+				const ta = document.createElement('textarea');
+				ta.value = id;
+				document.body.appendChild(ta);
+				ta.select();
+				document.execCommand('copy');
+				document.body.removeChild(ta);
+				toast.success($_('clipboard'));
+			} catch (err2) {
+				toast.error('Copy failed');
+			}
+		}
 	}
 </script>
 
@@ -312,6 +334,12 @@
 									{$_('pvp.open_level')}
 									<ExternalLink class="h-4 w-4" />
 								</a>
+								<div class="level-id">
+									<span class="id-label">ID: {level.id ?? match.levelId}</span>
+									<Button variant="ghost" size="icon" on:click={copyLevelId} aria-label={$_('pvp.copy_level_id')}>
+										<Copy class="h-4 w-4" />
+									</Button>
+								</div>
 							{/if}
 						</div>
 					{:else}
@@ -502,6 +530,18 @@
 
 	.level-meta {
 		flex-wrap: wrap;
+	}
+
+	.level-id {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		margin-left: 8px;
+	}
+
+	.id-label {
+		color: hsl(var(--muted-foreground));
+		font-size: 13px;
 	}
 
 	.participant-row {
