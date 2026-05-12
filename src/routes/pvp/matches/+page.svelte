@@ -16,7 +16,9 @@
 	import { onDestroy, onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { _ } from 'svelte-i18n';
-	import { ArrowLeft, Loader2, LogIn, RefreshCw, Swords } from 'lucide-svelte';
+	import { ArrowLeft, Eye, EyeOff, Loader2, LogIn, RefreshCw, Swords } from 'lucide-svelte';
+
+	const PVP_HIDE_OPPONENT_INFO_KEY = 'gdvn:pvp-hide-opponent-info';
 
 	let matches: PvpMatch[] = [];
 	let loading = false;
@@ -25,6 +27,8 @@
 	let now = Date.now();
 	let ticker: ReturnType<typeof setInterval> | null = null;
 	let endedMatchBellIds = new Set<string>();
+	let hideOpponentInfo = false;
+	let preferencesReady = false;
 
 	$: currentUid = $user.data?.uid;
 	$: ongoingMatches = matches.filter((match) => isActivePvpMatch(match));
@@ -40,10 +44,17 @@
 	}
 
 	onMount(() => {
+		hideOpponentInfo = localStorage.getItem(PVP_HIDE_OPPONENT_INFO_KEY) === 'true';
+		preferencesReady = true;
+
 		ticker = setInterval(() => {
 			now = Date.now();
 		}, 1000);
 	});
+
+	$: if (preferencesReady) {
+		localStorage.setItem(PVP_HIDE_OPPONENT_INFO_KEY, String(hideOpponentInfo));
+	}
 
 	onDestroy(() => {
 		if (ticker) clearInterval(ticker);
@@ -84,7 +95,9 @@
 	}
 
 	function handleMatchEndSounds(previousMatches: PvpMatch[], nextMatches: PvpMatch[]) {
-		const previousById = new Map(previousMatches.map((match) => [String(getPvpMatchId(match)), match]));
+		const previousById = new Map(
+			previousMatches.map((match) => [String(getPvpMatchId(match)), match])
+		);
 
 		for (const match of nextMatches) {
 			const id = getPvpMatchId(match);
@@ -127,10 +140,25 @@
 		</div>
 
 		{#if $user.loggedIn}
-			<Button variant="outline" disabled={loading} on:click={refreshMatches}>
-				<RefreshCw class={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-				{$_('pvp.refresh')}
-			</Button>
+			<div class="topbar-actions">
+				<Button
+					variant="outline"
+					aria-pressed={hideOpponentInfo}
+					on:click={() => (hideOpponentInfo = !hideOpponentInfo)}
+				>
+					{#if hideOpponentInfo}
+						<Eye class="mr-2 h-4 w-4" />
+						{$_('pvp.show_opponent_info')}
+					{:else}
+						<EyeOff class="mr-2 h-4 w-4" />
+						{$_('pvp.hide_opponent_info')}
+					{/if}
+				</Button>
+				<Button variant="outline" disabled={loading} on:click={refreshMatches}>
+					<RefreshCw class={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+					{$_('pvp.refresh')}
+				</Button>
+			</div>
 		{/if}
 	</section>
 
@@ -165,7 +193,13 @@
 			{:else}
 				<div class="match-grid">
 					{#each ongoingMatches as match}
-						<MatchCard match={match} {currentUid} now={now} href={`/pvp/matches/${match.id ?? match.matchId}`} />
+						<MatchCard
+							{match}
+							{currentUid}
+							{now}
+							{hideOpponentInfo}
+							href={`/pvp/matches/${match.id ?? match.matchId}`}
+						/>
 					{/each}
 				</div>
 			{/if}
@@ -180,7 +214,13 @@
 			{:else}
 				<div class="match-grid">
 					{#each pastMatches as match}
-						<MatchCard match={match} {currentUid} now={now} href={`/pvp/matches/${match.id ?? match.matchId}`} />
+						<MatchCard
+							{match}
+							{currentUid}
+							{now}
+							{hideOpponentInfo}
+							href={`/pvp/matches/${match.id ?? match.matchId}`}
+						/>
 					{/each}
 				</div>
 			{/if}
@@ -196,6 +236,7 @@
 	}
 
 	.matches-topbar,
+	.topbar-actions,
 	:global(.auth-content) {
 		display: flex;
 		align-items: center;
@@ -205,6 +246,11 @@
 
 	.matches-topbar {
 		margin-bottom: 24px;
+	}
+
+	.topbar-actions {
+		flex-wrap: wrap;
+		justify-content: flex-end;
 	}
 
 	h1 {
@@ -294,6 +340,7 @@
 		}
 
 		.matches-topbar,
+		.topbar-actions,
 		:global(.auth-content) {
 			align-items: stretch;
 			flex-direction: column;

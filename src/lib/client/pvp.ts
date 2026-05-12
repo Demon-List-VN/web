@@ -22,6 +22,8 @@ export type PvpPlayer = {
 	uid?: string;
 	id?: string;
 	name?: string | null;
+	anonymous?: boolean;
+	isAnonymous?: boolean;
 	avatarVersion?: number;
 	isAvatarGif?: boolean;
 	supporterUntil?: string | null;
@@ -57,6 +59,9 @@ export type PvpResult = {
 	submitted_at?: string | null;
 	player?: PvpPlayer | null;
 	players?: PvpPlayer | null;
+	anonymous?: boolean;
+	isAnonymous?: boolean;
+	is_anonymous?: boolean;
 	[key: string]: unknown;
 };
 
@@ -66,6 +71,9 @@ export type PvpParticipant = {
 	playerId?: string;
 	player?: PvpPlayer | null;
 	players?: PvpPlayer | null;
+	anonymous?: boolean;
+	isAnonymous?: boolean;
+	is_anonymous?: boolean;
 	result?: PvpResult | null;
 	progress?: number | null;
 	bestProgress?: number | null;
@@ -114,6 +122,8 @@ export type PvpMatchMessage = {
 	created_at?: string;
 	sender?: PvpPlayer | null;
 	player?: PvpPlayer | null;
+	senderAnonymous?: boolean;
+	sender_anonymous?: boolean;
 	[key: string]: unknown;
 };
 
@@ -134,6 +144,8 @@ export type PvpInvite = {
 	invitee?: PvpPlayer | null;
 	fromPlayer?: PvpPlayer | null;
 	toPlayer?: PvpPlayer | null;
+	inviterAnonymous?: boolean;
+	inviteeAnonymous?: boolean;
 	match?: PvpMatch | null;
 	[key: string]: unknown;
 };
@@ -144,6 +156,7 @@ export type PvpMatchmakingRequest = {
 	difficulty?: PvpDifficulty | string;
 	uid?: string;
 	userId?: string;
+	anonymous?: boolean;
 	matchId?: number | string | null;
 	match?: PvpMatch | null;
 	expiresAt?: string | null;
@@ -258,12 +271,13 @@ export async function getPvpMe(token?: string | null) {
 
 export async function startPvpMatchmaking(
 	token: string | null | undefined,
-	difficulty: PvpDifficulty
+	difficulty: PvpDifficulty,
+	anonymous = false
 ) {
 	return pvpRequest<PvpMatchmakingRequest | PvpMe>('/pvp/matchmaking', {
 		method: 'POST',
 		token,
-		body: { difficulty }
+		body: { difficulty, anonymous }
 	});
 }
 
@@ -276,7 +290,7 @@ export async function cancelPvpMatchmaking(token?: string | null) {
 
 export async function sendPvpInvite(
 	token: string | null | undefined,
-	payload: { inviteeUid: string; difficulty: PvpDifficulty }
+	payload: { inviteeUid: string; difficulty: PvpDifficulty; anonymous?: boolean }
 ) {
 	return pvpRequest<PvpInvite>('/pvp/invites', {
 		method: 'POST',
@@ -285,10 +299,15 @@ export async function sendPvpInvite(
 	});
 }
 
-export async function acceptPvpInvite(token: string | null | undefined, id: number | string) {
+export async function acceptPvpInvite(
+	token: string | null | undefined,
+	id: number | string,
+	anonymous = false
+) {
 	return pvpRequest<PvpInvite | PvpMatch>(`/pvp/invites/${id}/accept`, {
 		method: 'POST',
-		token
+		token,
+		body: { anonymous }
 	});
 }
 
@@ -392,7 +411,24 @@ export function getPvpParticipantUid(participant: PvpParticipant | PvpResult | n
 export function getPvpParticipantPlayer(
 	participant: PvpParticipant | PvpResult | null | undefined
 ) {
+	if (getPvpParticipantIsAnonymous(participant)) return null;
 	return participant?.player ?? participant?.players ?? null;
+}
+
+export function getPvpParticipantIsAnonymous(
+	participant: PvpParticipant | PvpResult | null | undefined
+) {
+	return Boolean(
+		participant?.anonymous ??
+			(participant as PvpParticipant | undefined)?.isAnonymous ??
+			(participant as PvpParticipant | undefined)?.is_anonymous ??
+			participant?.player?.anonymous ??
+			participant?.player?.isAnonymous
+	);
+}
+
+export function getPvpMessageSenderIsAnonymous(message: PvpMatchMessage | null | undefined) {
+	return Boolean(message?.senderAnonymous ?? message?.sender_anonymous);
 }
 
 export function getPvpOpponent(

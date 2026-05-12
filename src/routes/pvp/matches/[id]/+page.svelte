@@ -6,9 +6,11 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Textarea } from '$lib/components/ui/textarea';
+	import * as Avatar from '$lib/components/ui/avatar';
 	import * as Alert from '$lib/components/ui/alert';
 	import * as Card from '$lib/components/ui/card';
 	import * as Drawer from '$lib/components/ui/drawer';
+	import { isActive as isSupporterActive } from '$lib/client/isSupporterActive';
 	import {
 		acceptPvpMatch,
 		getPvpMatchMessages,
@@ -17,7 +19,9 @@
 		getPvpMatch,
 		getPvpMatchEndMs,
 		getPvpMatchId,
+		getPvpMessageSenderIsAnonymous,
 		getPvpParticipants,
+		getPvpParticipantIsAnonymous,
 		getPvpParticipantPlayer,
 		getPvpParticipantUid,
 		getPvpProgress,
@@ -44,6 +48,8 @@
 		ArrowLeft,
 		Clock,
 		ExternalLink,
+		Eye,
+		EyeOff,
 		Flag,
 		Gauge,
 		Loader2,
@@ -53,10 +59,15 @@
 		Trophy,
 		Copy,
 		Send,
+		UserRound,
+		Volume2,
+		VolumeX,
 		X
 	} from 'lucide-svelte';
 
 	const PVP_GEODE_ALERT_DISMISSED_KEY = 'gdvn:pvp-geode-alert-dismissed';
+	const PVP_HIDE_OPPONENT_INFO_KEY = 'gdvn:pvp-hide-opponent-info';
+	const PVP_CHAT_MUTED_KEY = 'gdvn:pvp-chat-muted';
 	const POST_MATCH_CHAT_GRACE_MS = 3 * 60 * 1000;
 
 	let match: PvpMatch | null = null;
@@ -74,6 +85,9 @@
 	let desktopChatScrollEl: HTMLDivElement | null = null;
 	let mobileChatScrollEl: HTMLDivElement | null = null;
 	let mobileChatOpen = false;
+	let hideOpponentInfo = false;
+	let chatMuted = false;
+	let preferencesReady = false;
 
 	$: matchId = $page.params.id;
 	$: currentUid = $user.data?.uid;
@@ -102,11 +116,16 @@
 	$: chatOpenDuringMatch = ['in_progress', 'waiting_result'].includes(status) && remainingMs > 0;
 	$: chatOpenAfterMatch = status === 'completed' && postMatchChatRemainingMs > 0;
 	$: chatDisabled = !chatOpenDuringMatch && !chatOpenAfterMatch;
-	$: chatDescription = chatDisabled
-		? 'Chat is disabled for this match.'
-		: chatOpenAfterMatch
-			? `Post-match chat closes in ${formatDuration(postMatchChatRemainingMs)}.`
-			: 'Talk during the match.';
+	$: chatInputDisabled = chatDisabled || chatMuted;
+	$: chatDescription = chatMuted
+		? $_('pvp.chat_muted_description')
+		: chatDisabled
+			? $_('pvp.chat_disabled')
+			: chatOpenAfterMatch
+				? $_('pvp.post_match_chat_closes', {
+						values: { time: formatDuration(postMatchChatRemainingMs) }
+					})
+				: $_('pvp.chat_during_match');
 
 	$: if (
 		$user.checked &&
@@ -119,11 +138,19 @@
 
 	onMount(() => {
 		showGeodeAlert = localStorage.getItem(PVP_GEODE_ALERT_DISMISSED_KEY) !== 'true';
+		hideOpponentInfo = localStorage.getItem(PVP_HIDE_OPPONENT_INFO_KEY) === 'true';
+		chatMuted = localStorage.getItem(PVP_CHAT_MUTED_KEY) === 'true';
+		preferencesReady = true;
 
 		ticker = setInterval(() => {
 			now = Date.now();
 		}, 1000);
 	});
+
+	$: if (preferencesReady) {
+		localStorage.setItem(PVP_HIDE_OPPONENT_INFO_KEY, String(hideOpponentInfo));
+		localStorage.setItem(PVP_CHAT_MUTED_KEY, String(chatMuted));
+	}
 
 	onDestroy(() => {
 		if (ticker) clearInterval(ticker);
@@ -239,7 +266,7 @@
 	}
 
 	async function sendChatMessage() {
-		if (!matchId || chatDisabled || actionLoading === 'send-chat') return;
+		if (!matchId || chatInputDisabled || actionLoading === 'send-chat') return;
 
 		const content = chatDraft.trim();
 		if (!content) return;
@@ -320,8 +347,20 @@
 	}
 
 	function participantName(participant: PvpParticipant) {
+		if (getPvpParticipantIsAnonymous(participant)) return $_('pvp.anonymous_player');
+		if (shouldHideParticipantInfo(participant)) return $_('pvp.hidden_opponent');
+
 		const player = getPvpParticipantPlayer(participant);
 		return player?.name || getPvpParticipantUid(participant) || '--';
+	}
+
+	function shouldHideParticipantInfo(participant: PvpParticipant | null | undefined) {
+		const uid = getPvpParticipantUid(participant);
+		return Boolean(hideOpponentInfo && uid && uid !== currentUid);
+	}
+
+	function shouldMaskParticipant(participant: PvpParticipant | null | undefined) {
+		return getPvpParticipantIsAnonymous(participant) || shouldHideParticipantInfo(participant);
 	}
 
 	function participantTitleName(participant: PvpParticipant | null | undefined) {
@@ -356,7 +395,20 @@
 	function messageSenderName(message: PvpMatchMessage) {
 		if (message.type === 'system') return 'Arena';
 		if (message.senderUid === currentUid) return $_('pvp.you');
+		if (getPvpMessageSenderIsAnonymous(message) || messageSenderParticipantIsAnonymous(message)) {
+			return $_('pvp.anonymous_player');
+		}
+		if (hideOpponentInfo && message.senderUid) return $_('pvp.hidden_opponent');
 		return message.sender?.name || message.player?.name || message.senderUid || $_('pvp.rival');
+	}
+
+	function messageSenderParticipantIsAnonymous(message: PvpMatchMessage) {
+		if (!message.senderUid) return false;
+
+		const participant = participants.find(
+			(item) => getPvpParticipantUid(item) === message.senderUid
+		);
+		return getPvpParticipantIsAnonymous(participant);
 	}
 
 	function messageTime(message: PvpMatchMessage) {
@@ -373,6 +425,24 @@
 		if (status !== 'completed') return null;
 		if (!winnerUid) return $_('pvp.result.draw');
 		return getPvpParticipantUid(participant) === winnerUid ? $_('pvp.winner') : null;
+	}
+
+	function participantAvatarUrl(player: any) {
+		if (!player?.uid) return '';
+
+		const extension =
+			isSupporterActive(player.supporterUntil) && player.isAvatarGif ? 'gif' : 'jpg';
+		return `https://cdn.gdvn.net/avatars/${player.uid}.${extension}?version=${player.avatarVersion}`;
+	}
+
+	function participantAvatarFallback(player: any) {
+		const name = String(player?.name || '').trim();
+		return name ? name[0].toUpperCase() : '?';
+	}
+
+	function chatPlaceholder() {
+		if (chatMuted) return $_('pvp.chat_muted_placeholder');
+		return chatDisabled ? $_('pvp.chat_closed_placeholder') : $_('pvp.chat_placeholder');
 	}
 
 	function dismissGeodeAlert() {
@@ -445,6 +515,19 @@
 
 		{#if $user.loggedIn}
 			<div class="topbar-actions">
+				<Button
+					variant="outline"
+					aria-pressed={hideOpponentInfo}
+					on:click={() => (hideOpponentInfo = !hideOpponentInfo)}
+				>
+					{#if hideOpponentInfo}
+						<Eye class="mr-2 h-4 w-4" />
+						{$_('pvp.show_opponent_info')}
+					{:else}
+						<EyeOff class="mr-2 h-4 w-4" />
+						{$_('pvp.hide_opponent_info')}
+					{/if}
+				</Button>
 				{#if canResign}
 					<Button
 						variant="destructive"
@@ -538,6 +621,8 @@
 							{:else}
 								<div class="side-grid">
 									{#each orderedParticipants as participant, index}
+										{@const participantPlayer = getPvpParticipantPlayer(participant)}
+										{@const participantMasked = shouldMaskParticipant(participant)}
 										<div
 											class:left-side={index === 0}
 											class:right-side={index === 1}
@@ -557,16 +642,29 @@
 												{/if}
 											</div>
 
-											<div class="participant-name">
-												{#if getPvpParticipantPlayer(participant)?.uid}
-													<PlayerLink
-														player={getPvpParticipantPlayer(participant)}
-														showAvatar
-														truncate={26}
-													/>
-												{:else}
-													<strong>{participantName(participant)}</strong>
-												{/if}
+											<div class="participant-identity">
+												<Avatar.Root class="participant-avatar">
+													{#if !participantMasked && participantPlayer?.uid}
+														<Avatar.Image
+															src={participantAvatarUrl(participantPlayer)}
+															alt={participantPlayer.name || participantName(participant)}
+														/>
+														<Avatar.Fallback>
+															{participantAvatarFallback(participantPlayer)}
+														</Avatar.Fallback>
+													{:else}
+														<Avatar.Fallback class="participant-avatar-placeholder">
+															<UserRound class="h-5 w-5" />
+														</Avatar.Fallback>
+													{/if}
+												</Avatar.Root>
+												<div class="participant-name">
+													{#if !participantMasked && participantPlayer?.uid}
+														<PlayerLink player={participantPlayer} truncate={26} />
+													{:else}
+														<strong>{participantName(participant)}</strong>
+													{/if}
+												</div>
 											</div>
 
 											<div class="participant-progress">
@@ -676,18 +774,31 @@
 					<Card.Header>
 						<div class="chat-header">
 							<div>
-								<Card.Title>Match chat</Card.Title>
+								<Card.Title>{$_('pvp.match_chat')}</Card.Title>
 								<Card.Description>{chatDescription}</Card.Description>
 							</div>
-							{#if chatLoading}
-								<Loader2 class="h-4 w-4 animate-spin text-muted-foreground" />
-							{/if}
+							<div class="chat-actions">
+								{#if chatLoading}
+									<Loader2 class="h-4 w-4 animate-spin text-muted-foreground" />
+								{/if}
+								<Button variant="outline" size="sm" on:click={() => (chatMuted = !chatMuted)}>
+									{#if chatMuted}
+										<Volume2 class="mr-2 h-4 w-4" />
+										{$_('pvp.unmute_chat')}
+									{:else}
+										<VolumeX class="mr-2 h-4 w-4" />
+										{$_('pvp.mute_chat')}
+									{/if}
+								</Button>
+							</div>
 						</div>
 					</Card.Header>
 					<Card.Content class="chat-content">
 						<div class="chat-messages" bind:this={desktopChatScrollEl}>
-							{#if messages.length === 0}
-								<div class="empty-state">No messages yet.</div>
+							{#if chatMuted}
+								<div class="empty-state">{$_('pvp.chat_muted_state')}</div>
+							{:else if messages.length === 0}
+								<div class="empty-state">{$_('pvp.no_messages')}</div>
 							{:else}
 								{#each messages as message}
 									<div
@@ -710,8 +821,8 @@
 								bind:value={chatDraft}
 								rows={2}
 								maxlength={500}
-								disabled={chatDisabled || actionLoading === 'send-chat'}
-								placeholder={chatDisabled ? 'Match chat is closed.' : 'Type a message...'}
+								disabled={chatInputDisabled || actionLoading === 'send-chat'}
+								placeholder={chatPlaceholder()}
 								on:keydown={(event) => {
 									if (event.key === 'Enter' && !event.shiftKey) {
 										event.preventDefault();
@@ -721,8 +832,8 @@
 							/>
 							<Button
 								type="submit"
-								disabled={chatDisabled || !chatDraft.trim() || actionLoading === 'send-chat'}
-								aria-label="Send message"
+								disabled={chatInputDisabled || !chatDraft.trim() || actionLoading === 'send-chat'}
+								aria-label={$_('pvp.send_message')}
 							>
 								{#if actionLoading === 'send-chat'}
 									<Loader2 class="h-4 w-4 animate-spin" />
@@ -740,25 +851,38 @@
 			<Drawer.Trigger asChild let:builder>
 				<Button builders={[builder]} class="mobile-chat-trigger" type="button">
 					<MessageCircle class="h-4 w-4" />
-					Match chat
+					{$_('pvp.match_chat')}
 				</Button>
 			</Drawer.Trigger>
 			<Drawer.Content class="mobile-chat-drawer">
 				<Drawer.Header>
 					<div class="chat-header">
 						<div>
-							<Drawer.Title>Match chat</Drawer.Title>
+							<Drawer.Title>{$_('pvp.match_chat')}</Drawer.Title>
 							<Drawer.Description>{chatDescription}</Drawer.Description>
 						</div>
-						{#if chatLoading}
-							<Loader2 class="h-4 w-4 animate-spin text-muted-foreground" />
-						{/if}
+						<div class="chat-actions">
+							{#if chatLoading}
+								<Loader2 class="h-4 w-4 animate-spin text-muted-foreground" />
+							{/if}
+							<Button variant="outline" size="sm" on:click={() => (chatMuted = !chatMuted)}>
+								{#if chatMuted}
+									<Volume2 class="mr-2 h-4 w-4" />
+									{$_('pvp.unmute_chat')}
+								{:else}
+									<VolumeX class="mr-2 h-4 w-4" />
+									{$_('pvp.mute_chat')}
+								{/if}
+							</Button>
+						</div>
 					</div>
 				</Drawer.Header>
 				<div class="mobile-chat-body">
 					<div class="chat-messages" bind:this={mobileChatScrollEl}>
-						{#if messages.length === 0}
-							<div class="empty-state">No messages yet.</div>
+						{#if chatMuted}
+							<div class="empty-state">{$_('pvp.chat_muted_state')}</div>
+						{:else if messages.length === 0}
+							<div class="empty-state">{$_('pvp.no_messages')}</div>
 						{:else}
 							{#each messages as message}
 								<div
@@ -781,8 +905,8 @@
 							bind:value={chatDraft}
 							rows={2}
 							maxlength={500}
-							disabled={chatDisabled || actionLoading === 'send-chat'}
-							placeholder={chatDisabled ? 'Match chat is closed.' : 'Type a message...'}
+							disabled={chatInputDisabled || actionLoading === 'send-chat'}
+							placeholder={chatPlaceholder()}
 							on:keydown={(event) => {
 								if (event.key === 'Enter' && !event.shiftKey) {
 									event.preventDefault();
@@ -792,8 +916,8 @@
 						/>
 						<Button
 							type="submit"
-							disabled={chatDisabled || !chatDraft.trim() || actionLoading === 'send-chat'}
-							aria-label="Send message"
+							disabled={chatInputDisabled || !chatDraft.trim() || actionLoading === 'send-chat'}
+							aria-label={$_('pvp.send_message')}
 						>
 							{#if actionLoading === 'send-chat'}
 								<Loader2 class="h-4 w-4 animate-spin" />
@@ -834,9 +958,11 @@
 	:global(.auth-content),
 	.match-panel-header,
 	.chat-header,
+	.chat-actions,
 	.result-line,
 	.timer-display,
 	.level-meta,
+	.participant-identity,
 	.participant-name,
 	.participant-topline,
 	.progress-label span {
@@ -968,6 +1094,11 @@
 		gap: 12px;
 	}
 
+	.chat-actions {
+		flex-wrap: wrap;
+		justify-content: flex-end;
+	}
+
 	.result-line {
 		flex-wrap: wrap;
 		justify-content: flex-end;
@@ -1072,7 +1203,28 @@
 		justify-content: space-between;
 	}
 
+	.participant-identity {
+		min-width: 0;
+		gap: 12px;
+	}
+
+	:global(.participant-avatar) {
+		width: 44px;
+		height: 44px;
+		border: 1px solid hsl(var(--border));
+	}
+
+	:global(.participant-avatar img) {
+		object-fit: cover;
+	}
+
+	:global(.participant-avatar-placeholder) {
+		background: hsl(var(--muted));
+		color: hsl(var(--muted-foreground));
+	}
+
 	.participant-name {
+		min-width: 0;
 		min-height: 32px;
 	}
 

@@ -6,6 +6,7 @@
 	import supabase from '$lib/client/supabase';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
+	import { Switch } from '$lib/components/ui/switch/index.js';
 	import * as Alert from '$lib/components/ui/alert';
 	import * as Card from '$lib/components/ui/card';
 	import * as Dialog from '$lib/components/ui/dialog';
@@ -21,7 +22,6 @@
 		getPvpMatchedMatchId,
 		getPvpMatchId,
 		getPvpMe,
-		getPvpMatch,
 		getPvpStatus,
 		getPvpSelfParticipant,
 		hasPvpParticipantAccepted,
@@ -36,7 +36,7 @@
 	import { playPvpBell } from '$lib/client/pvpSound';
 	import { onDestroy, onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import { _, locale } from 'svelte-i18n';
+	import { _ } from 'svelte-i18n';
 	import {
 		ArrowRight,
 		BellRing,
@@ -52,9 +52,14 @@
 	} from 'lucide-svelte';
 
 	const PVP_GEODE_ALERT_DISMISSED_KEY = 'gdvn:pvp-geode-alert-dismissed';
+	const PVP_ANONYMOUS_MODE_KEY = 'gdvn:pvp-anonymous-mode';
+	const PVP_HIDE_OPPONENT_INFO_KEY = 'gdvn:pvp-hide-opponent-info';
 
 	let selectedDifficulty: PvpDifficulty | null = 'easy';
 	let selectedPlayer: any = null;
+	let anonymousMode = false;
+	let hideOpponentInfo = false;
+	let anonymousModeReady = false;
 	let lobby: PvpMe = {
 		activeMatch: null,
 		matchmaking: null,
@@ -86,7 +91,6 @@
 	);
 	$: queueStatus = getPvpStatus(lobby.matchmaking, 'idle');
 	$: isSearching = queueStatus === 'searching';
-	$: queueMatchId = getPvpMatchedMatchId(lobby.matchmaking);
 	$: queueElapsedMs = getElapsedMs(lobby.matchmaking?.created_at, now);
 	$: showSlowSearchAlert = isSearching && queueElapsedMs >= 90 * 1000;
 	$: incomingPending = lobby.incomingInvites.filter((invite) => getPvpStatus(invite) === 'pending');
@@ -111,17 +115,11 @@
 		lobbyReady = false;
 	}
 
-	$: if (
-		queueStatus === 'matched' &&
-		queueMatchId &&
-		activeMatch &&
-		getPvpStatus(activeMatch) === 'in_progress'
-	) {
-		navigateToMatch(queueMatchId);
-	}
-
 	onMount(() => {
 		showGeodeAlert = localStorage.getItem(PVP_GEODE_ALERT_DISMISSED_KEY) !== 'true';
+		anonymousMode = localStorage.getItem(PVP_ANONYMOUS_MODE_KEY) === 'true';
+		hideOpponentInfo = localStorage.getItem(PVP_HIDE_OPPONENT_INFO_KEY) === 'true';
+		anonymousModeReady = true;
 
 		ticker = setInterval(() => {
 			now = Date.now();
@@ -136,6 +134,11 @@
 
 		window.addEventListener('keydown', keydownHandler);
 	});
+
+	$: if (anonymousModeReady) {
+		localStorage.setItem(PVP_ANONYMOUS_MODE_KEY, String(anonymousMode));
+		localStorage.setItem(PVP_HIDE_OPPONENT_INFO_KEY, String(hideOpponentInfo));
+	}
 
 	onDestroy(() => {
 		if (ticker) clearInterval(ticker);
@@ -173,8 +176,6 @@
 			const nextLobby = await getPvpMe(await $user.token());
 			handleLobbyMatchSounds(previousActiveMatch, nextLobby.activeMatch);
 			lobby = nextLobby;
-			await routeAcceptedInvite(lobby.incomingInvites);
-			await routeAcceptedInvite(lobby.outgoingInvites);
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.load_failed'));
 		} finally {
@@ -231,29 +232,6 @@
 		}
 	}
 
-	async function routeAcceptedInvite(invites: PvpInvite[]) {
-		if (!Array.isArray(invites) || invites.length === 0) return;
-		const token = await $user.token();
-		for (const invite of invites) {
-			if (getPvpStatus(invite) !== 'accepted') continue;
-			const matchId = getPvpMatchedMatchId(invite);
-			if (!matchId) continue;
-
-			let match = (invite as any)?.match ?? null;
-			if (!match) {
-				try {
-					match = await getPvpMatch(token, matchId);
-				} catch {
-					continue;
-				}
-			}
-
-			if (isActivePvpMatch(match)) {
-				navigateToMatch(matchId);
-			}
-		}
-	}
-
 	function navigateToMatch(matchId: number | string | null) {
 		if (!matchId || routedMatchId === matchId) return;
 		routedMatchId = matchId;
@@ -281,12 +259,8 @@
 
 		actionLoading = 'matchmaking';
 		try {
-			const response = await startPvpMatchmaking(await $user.token(), selectedDifficulty);
-			const responseStatus = getPvpStatus(response as any, 'searching');
-			const matchId = responseStatus === 'matched' ? getPvpMatchedMatchId(response as any) : null;
+			await startPvpMatchmaking(await $user.token(), selectedDifficulty, anonymousMode);
 			await refreshLobby();
-			if (matchId && getPvpStatus((response as any)?.match) === 'in_progress')
-				navigateToMatch(matchId);
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.matchmaking_failed'));
 		} finally {
@@ -324,14 +298,13 @@
 
 		actionLoading = 'invite';
 		try {
-			const invite = await sendPvpInvite(await $user.token(), {
+			await sendPvpInvite(await $user.token(), {
 				inviteeUid: selectedPlayer.uid,
-				difficulty: selectedDifficulty
+				difficulty: selectedDifficulty,
+				anonymous: anonymousMode
 			});
-			const matchId = getPvpMatchedMatchId(invite);
 			selectedPlayer = null;
 			await refreshLobby();
-			if (matchId) navigateToMatch(matchId);
 			toast.success($_('pvp.toast.invite_sent'));
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.invite_failed'));
@@ -346,10 +319,8 @@
 
 		actionLoading = `accept-${inviteId}`;
 		try {
-			const response = await acceptPvpInvite(await $user.token(), inviteId);
-			const matchId = getPvpMatchedMatchId(response as any) ?? getPvpMatchId(response as any);
+			await acceptPvpInvite(await $user.token(), inviteId, anonymousMode);
 			await refreshLobby();
-			if (matchId) navigateToMatch(matchId);
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.accept_failed'));
 		} finally {
@@ -362,12 +333,8 @@
 
 		actionLoading = `accept-match-${pendingMatchId}`;
 		try {
-			const response = await acceptPvpMatch(await $user.token(), pendingMatchId);
+			await acceptPvpMatch(await $user.token(), pendingMatchId);
 			await refreshLobby();
-
-			if (getPvpStatus(response) === 'in_progress') {
-				navigateToMatch(pendingMatchId);
-			}
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.accept_match_failed'));
 		} finally {
@@ -400,6 +367,8 @@
 	}
 
 	function inviteName(invite: PvpInvite, direction: 'incoming' | 'outgoing') {
+		if (inviteAnonymous(invite, direction)) return $_('pvp.anonymous_player');
+
 		const player =
 			direction === 'incoming'
 				? (invite.inviter ?? invite.fromPlayer)
@@ -408,6 +377,12 @@
 		return (
 			player?.name || player?.uid || (direction === 'incoming' ? invite.from : invite.to) || '--'
 		);
+	}
+
+	function inviteAnonymous(invite: PvpInvite, direction: 'incoming' | 'outgoing') {
+		return direction === 'incoming'
+			? Boolean(invite.inviterAnonymous)
+			: Boolean(invite.inviteeAnonymous);
 	}
 
 	function remainingLabel(targetMs: number | null, currentNow: number) {
@@ -581,6 +556,7 @@
 					match={activeMatch}
 					{currentUid}
 					{now}
+					{hideOpponentInfo}
 					href={`/pvp/matches/${getPvpMatchId(activeMatch)}`}
 				/>
 			</section>
@@ -606,6 +582,29 @@
 							</button>
 						{/each}
 					</div>
+					<div class="anonymous-row">
+						<div>
+							<strong>{$_('pvp.anonymous_mode')}</strong>
+							<span>{$_('pvp.anonymous_mode_hint')}</span>
+						</div>
+						<Switch
+							id="pvp-anonymous-mode"
+							bind:checked={anonymousMode}
+							disabled={Boolean(actionLoading || activeMatch || isSearching)}
+							aria-label={$_('pvp.anonymous_mode')}
+						/>
+					</div>
+					<div class="anonymous-row">
+						<div>
+							<strong>{$_('pvp.hide_opponent_info')}</strong>
+							<span>{$_('pvp.hide_opponent_info_hint')}</span>
+						</div>
+						<Switch
+							id="pvp-hide-opponent-info"
+							bind:checked={hideOpponentInfo}
+							aria-label={$_('pvp.hide_opponent_info')}
+						/>
+					</div>
 				</Card.Content>
 			</Card.Root>
 
@@ -613,7 +612,11 @@
 				<Card.Header>
 					<Card.Title>{$_('pvp.matchmaking')}</Card.Title>
 					<Card.Description>
-						{isSearching ? $_('pvp.searching_state') : $_('pvp.queue_state_idle')}
+						{activeMatch
+							? $_('pvp.active_match')
+							: isSearching
+								? $_('pvp.searching_state')
+								: $_('pvp.queue_state_idle')}
 					</Card.Description>
 				</Card.Header>
 				<Card.Content class="action-panel">
@@ -626,7 +629,7 @@
 					{:else if activeMatch}
 						<Button on:click={() => navigateToMatch(getPvpMatchId(activeMatch))}>
 							<Swords class="mr-2 h-4 w-4" />
-							{$_('pvp.enter_match')}
+							{$_('pvp.rejoin_ongoing_match')}
 						</Button>
 					{:else if isSearching}
 						<div class="queue-status">
@@ -916,6 +919,33 @@
 		display: grid;
 		grid-template-columns: repeat(3, minmax(0, 1fr));
 		gap: 10px;
+	}
+
+	.anonymous-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 14px;
+		margin-top: 12px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		padding: 12px;
+	}
+
+	.anonymous-row strong,
+	.anonymous-row span {
+		display: block;
+	}
+
+	.anonymous-row strong {
+		font-size: 14px;
+	}
+
+	.anonymous-row span {
+		margin-top: 3px;
+		color: hsl(var(--muted-foreground));
+		font-size: 13px;
+		line-height: 1.35;
 	}
 
 	.difficulty-button {

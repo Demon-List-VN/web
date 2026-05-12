@@ -8,6 +8,7 @@
 		getPvpMatchEndMs,
 		getPvpOpponent,
 		getPvpParticipants,
+		getPvpParticipantIsAnonymous,
 		getPvpParticipantPlayer,
 		getPvpParticipantUid,
 		getPvpProgress,
@@ -26,6 +27,7 @@
 	export let currentUid: string | null | undefined = null;
 	export let href: string | null = null;
 	export let now = Date.now();
+	export let hideOpponentInfo = false;
 
 	$: status = getPvpStatus(match);
 	$: level = getPvpLevel(match);
@@ -84,8 +86,20 @@
 	}
 
 	function participantName(participant: typeof titleLeft) {
+		if (getPvpParticipantIsAnonymous(participant)) return $_('pvp.anonymous_player');
+		if (shouldHideParticipantInfo(participant)) return $_('pvp.hidden_opponent');
+
 		const player = getPvpParticipantPlayer(participant);
 		return player?.name || getPvpParticipantUid(participant) || $_('pvp.waiting_opponent');
+	}
+
+	function shouldHideParticipantInfo(participant: typeof titleLeft) {
+		const uid = getPvpParticipantUid(participant);
+		return Boolean(hideOpponentInfo && uid && uid !== currentUid);
+	}
+
+	function shouldMaskParticipant(participant: typeof titleLeft) {
+		return getPvpParticipantIsAnonymous(participant) || shouldHideParticipantInfo(participant);
 	}
 
 	function winnerName() {
@@ -102,7 +116,7 @@
 			<div class="match-title">
 				<Swords class="h-4 w-4" />
 				<span class="match-title-name">
-					{#if getPvpParticipantPlayer(titleLeft)?.uid}
+					{#if !shouldMaskParticipant(titleLeft) && getPvpParticipantPlayer(titleLeft)?.uid}
 						<PlayerLink player={getPvpParticipantPlayer(titleLeft)} truncate={18} />
 					{:else}
 						{participantName(titleLeft)}
@@ -110,7 +124,7 @@
 				</span>
 				<span class="versus">vs</span>
 				<span class="match-title-name">
-					{#if getPvpParticipantPlayer(titleRight)?.uid}
+					{#if !shouldMaskParticipant(titleRight) && getPvpParticipantPlayer(titleRight)?.uid}
 						<PlayerLink player={getPvpParticipantPlayer(titleRight)} truncate={18} />
 					{:else}
 						{participantName(titleRight)}
@@ -138,7 +152,9 @@
 	<Card.Content class="match-card-content">
 		<div class="opponent-row">
 			<span>{$_('pvp.opponent')}</span>
-			{#if opponentPlayer?.uid}
+			{#if shouldMaskParticipant(opponent)}
+				<strong>{participantName(opponent)}</strong>
+			{:else if opponentPlayer?.uid}
 				<PlayerLink player={opponentPlayer} showAvatar truncate={24} />
 			{:else}
 				<strong>{$_('pvp.waiting_opponent')}</strong>
