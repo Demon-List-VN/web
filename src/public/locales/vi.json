@@ -218,6 +218,7 @@
 		},
 		"matchmaking": "Ghép trận",
 		"searching_state": "Đang tìm đối thủ",
+		"search_slow_hint": "Tìm trận lâu hơn bình thường. Hãy thử đổi độ khó để ghép nhanh hơn.",
 		"queue_state_idle": "Ghép với người chơi cùng độ khó",
 		"start_matchmaking": "Ghép trận",
 		"cancel_search": "Hủy tìm trận",

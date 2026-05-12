@@ -73,6 +73,7 @@
 	let endedMatchBellIds = new Set<string>();
 	let matchDialogOpen = false;
 	let showGeodeAlert = true;
+	let lobbyReady = false;
 	let pendingDialogTimeout: ReturnType<typeof setTimeout> | null = null;
 	let keydownHandler: ((e: KeyboardEvent) => void) | null = null;
 
@@ -89,11 +90,14 @@
 	$: queueStatus = getPvpStatus(lobby.matchmaking, 'idle');
 	$: isSearching = queueStatus === 'searching';
 	$: queueMatchId = getPvpMatchedMatchId(lobby.matchmaking);
+	$: queueElapsedMs = getElapsedMs(lobby.matchmaking?.created_at, now);
+	$: showSlowSearchAlert = isSearching && queueElapsedMs >= 90 * 1000;
 	$: incomingPending = lobby.incomingInvites.filter((invite) => getPvpStatus(invite) === 'pending');
 	$: outgoingVisible = lobby.outgoingInvites.filter((invite) =>
 		['pending', 'accepted', 'declined', 'expired', 'cancelled'].includes(getPvpStatus(invite))
 	);
-	$: controlsDisabled = Boolean(activeMatch || isSearching || actionLoading);
+	$: checkingLobby = $user.checked && $user.loggedIn && !lobbyReady;
+	$: controlsDisabled = Boolean(checkingLobby || activeMatch || isSearching || actionLoading);
 
 	$: if ($user.checked && $user.loggedIn && currentUid && initializedForUid !== currentUid) {
 		initializeRealtime(currentUid);
@@ -107,6 +111,7 @@
 			outgoingInvites: []
 		};
 		initializedForUid = '';
+		lobbyReady = false;
 	}
 
 	$: if (
@@ -144,17 +149,20 @@
 
 	async function initializeRealtime(uid: string) {
 		initializedForUid = uid;
+		lobbyReady = false;
 		cleanupRealtime?.();
 
 		try {
 			const token = await $user.token();
 			setPvpRealtimeAuth(token);
 			await refreshLobby();
+			lobbyReady = true;
 
 			cleanupRealtime = subscribeToPvpLobby(uid, async () => {
 				await refreshLobby();
 			});
 		} catch (error) {
+			lobbyReady = true;
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.load_failed'));
 		}
 	}
@@ -422,16 +430,20 @@
 	}
 
 	function elapsedLabel(startValue: unknown, currentNow: number) {
-		if (!startValue) return '0:00';
-
-		const startMs = new Date(String(startValue)).getTime();
-		if (!Number.isFinite(startMs)) return '0:00';
-
-		const totalSeconds = Math.max(0, Math.floor((currentNow - startMs) / 1000));
+		const totalSeconds = Math.max(0, Math.floor(getElapsedMs(startValue, currentNow) / 1000));
 		const minutes = Math.floor(totalSeconds / 60);
 		const seconds = totalSeconds % 60;
 
 		return `${minutes}:${String(seconds).padStart(2, '0')}`;
+	}
+
+	function getElapsedMs(startValue: unknown, currentNow: number) {
+		if (!startValue) return 0;
+
+		const startMs = new Date(String(startValue)).getTime();
+		if (!Number.isFinite(startMs)) return 0;
+
+		return Math.max(0, currentNow - startMs);
 	}
 
 	function dismissGeodeAlert() {
@@ -608,7 +620,18 @@
 					</Card.Description>
 				</Card.Header>
 				<Card.Content class="action-panel">
-					{#if isSearching}
+					{#if checkingLobby}
+						<div class="matchmaking-skeleton" aria-label={$_('general.loading')}>
+							<div></div>
+							<div></div>
+							<div></div>
+						</div>
+					{:else if activeMatch}
+						<Button on:click={() => navigateToMatch(getPvpMatchId(activeMatch))}>
+							<Swords class="mr-2 h-4 w-4" />
+							{$_('pvp.enter_match')}
+						</Button>
+					{:else if isSearching}
 						<div class="queue-status">
 							<Badge>{statusLabel(queueStatus)}</Badge>
 							<span>
@@ -616,6 +639,11 @@
 								{elapsedLabel(lobby.matchmaking?.created_at, now)}
 							</span>
 						</div>
+						{#if showSlowSearchAlert}
+							<div class="queue-hint">
+								{$_('pvp.search_slow_hint')}
+							</div>
+						{/if}
 						<Button variant="outline" disabled={Boolean(actionLoading)} on:click={cancelQueue}>
 							{#if actionLoading === 'cancel-matchmaking'}
 								<Loader2 class="mr-2 h-4 w-4 animate-spin" />
@@ -936,6 +964,52 @@
 		border: 1px solid hsl(var(--border));
 		border-radius: 8px;
 		padding: 10px 12px;
+	}
+
+	.queue-hint {
+		border: 1px solid hsl(var(--primary) / 0.28);
+		border-radius: 8px;
+		background: hsl(var(--primary) / 0.08);
+		padding: 10px 12px;
+		color: hsl(var(--foreground));
+		font-size: 13px;
+		line-height: 1.45;
+	}
+
+	.matchmaking-skeleton {
+		display: grid;
+		gap: 10px;
+	}
+
+	.matchmaking-skeleton div {
+		height: 40px;
+		border-radius: 8px;
+		background: linear-gradient(
+			90deg,
+			hsl(var(--muted) / 0.45),
+			hsl(var(--muted) / 0.22),
+			hsl(var(--muted) / 0.45)
+		);
+		background-size: 200% 100%;
+		animation: pvp-skeleton 1.2s ease-in-out infinite;
+	}
+
+	.matchmaking-skeleton div:nth-child(2) {
+		width: 78%;
+	}
+
+	.matchmaking-skeleton div:nth-child(3) {
+		width: 56%;
+	}
+
+	@keyframes pvp-skeleton {
+		from {
+			background-position: 200% 0;
+		}
+
+		to {
+			background-position: -200% 0;
+		}
 	}
 
 	.invite-list {

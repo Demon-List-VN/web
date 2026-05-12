@@ -218,6 +218,7 @@
 		},
 		"matchmaking": "Matchmaking",
 		"searching_state": "Searching for an opponent",
+		"search_slow_hint": "Search is taking longer than usual. Try another difficulty for a faster match.",
 		"queue_state_idle": "Queue with another player at the same difficulty",
 		"start_matchmaking": "Start matchmaking",
 		"cancel_search": "Cancel search",
