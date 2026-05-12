@@ -20,6 +20,7 @@
 		getPvpMatchedMatchId,
 		getPvpMatchId,
 		getPvpMe,
+		getPvpMatch,
 		getPvpOpponent,
 		getPvpParticipantPlayer,
 		getPvpStatus,
@@ -153,8 +154,8 @@
 			const nextLobby = await getPvpMe(await $user.token());
 				handleLobbyMatchSounds(previousActiveMatch, nextLobby.activeMatch);
 			lobby = nextLobby;
-			routeAcceptedInvite(lobby.incomingInvites);
-			routeAcceptedInvite(lobby.outgoingInvites);
+			await routeAcceptedInvite(lobby.incomingInvites);
+			await routeAcceptedInvite(lobby.outgoingInvites);
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.load_failed'));
 		} finally {
@@ -203,11 +204,26 @@
 		}
 	}
 
-	function routeAcceptedInvite(invites: PvpInvite[]) {
+	async function routeAcceptedInvite(invites: PvpInvite[]) {
+		if (!Array.isArray(invites) || invites.length === 0) return;
+		const token = await $user.token();
 		for (const invite of invites) {
 			if (getPvpStatus(invite) !== 'accepted') continue;
 			const matchId = getPvpMatchedMatchId(invite);
-			if (matchId) navigateToMatch(matchId);
+			if (!matchId) continue;
+
+			let match = (invite as any)?.match ?? null;
+			if (!match) {
+				try {
+					match = await getPvpMatch(token, matchId);
+				} catch {
+					continue;
+				}
+			}
+
+			if (isActivePvpMatch(match)) {
+				navigateToMatch(matchId);
+			}
 		}
 	}
 
@@ -396,7 +412,17 @@
 	<title>{$_('pvp.lobby_title')} - {$_('head.site_name')}</title>
 </svelte:head>
 
+
 <main class="arena-page">
+	{#if activeMatch}
+		<div class="pvp-top-alert">
+			<div class="pvp-top-alert-inner">
+				<strong>{$_('pvp.active_match')}</strong>
+				<a class="inline-link" href={`/pvp/matches/${getPvpMatchId(activeMatch)}`}>{$_('pvp.enter_match')}</a>
+			</div>
+		</div>
+	{/if}
+
 	<section class="arena-topbar">
 		<div>
 			<div class="eyebrow">
@@ -915,5 +941,22 @@
 		.difficulty-grid {
 			grid-template-columns: 1fr;
 		}
+	}
+
+	.pvp-top-alert {
+		margin-bottom: 12px;
+		padding: 12px;
+		border-radius: 8px;
+		background: hsl(var(--muted) / 0.08);
+		border: 1px solid hsl(var(--border));
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	.pvp-top-alert-inner {
+		display: flex;
+		align-items: center;
+		gap: 12px;
 	}
 </style>
