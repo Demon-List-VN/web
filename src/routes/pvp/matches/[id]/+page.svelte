@@ -95,10 +95,18 @@
 	$: level = getPvpLevel(match);
 	$: levelVideoId = getYouTubeVideoId(level?.videoID);
 	$: participants = getPvpParticipants(match);
-	$: matchTitle = getMatchTitle(participants);
+	$: matchTitle = getMatchTitle(participants, hideOpponentInfo, currentUid);
 	$: orderedParticipants = orderParticipants(participants, currentUid);
 	$: winnerUid = getPvpWinnerUid(match);
 	$: resultReason = getPvpResultReason(match);
+	$: resultTitleText = resultTitle(
+		match,
+		status,
+		winnerUid,
+		participants,
+		hideOpponentInfo,
+		currentUid
+	);
 	$: remainingMs = Math.max(0, (getPvpMatchEndMs(match) ?? now) - now);
 	$: endedMs = getTimeMs(match?.endedAt);
 	$: postMatchChatRemainingMs = Math.max(
@@ -334,50 +342,92 @@
 		return match?.[1] ?? null;
 	}
 
-	function resultTitle() {
-		if (!match) return $_('pvp.match_loading');
-		if (status === 'completed') {
-			if (!winnerUid) return $_('pvp.result.draw');
-			return $_('pvp.winner_named', { values: { name: winnerName() } });
+	function resultTitle(
+		currentMatch: PvpMatch | null = match,
+		currentStatus: string = status,
+		currentWinnerUid: string | null | undefined = winnerUid,
+		items: PvpParticipant[] = participants,
+		hideInfo: boolean = hideOpponentInfo,
+		viewerUid: string | null | undefined = currentUid
+	) {
+		if (!currentMatch) return $_('pvp.match_loading');
+		if (currentStatus === 'completed') {
+			if (!currentWinnerUid) return $_('pvp.result.draw');
+			return $_('pvp.winner_named', {
+				values: { name: winnerName(currentWinnerUid, items, hideInfo, viewerUid) }
+			});
 		}
-		if (status === 'cancelled') return $_('pvp.result.cancelled');
-		if (status === 'disputed') return $_('pvp.result.disputed');
-		if (status === 'pending') return $_('pvp.match_found_title');
+		if (currentStatus === 'cancelled') return $_('pvp.result.cancelled');
+		if (currentStatus === 'disputed') return $_('pvp.result.disputed');
+		if (currentStatus === 'pending') return $_('pvp.match_found_title');
 		return $_('pvp.timer_active');
 	}
 
-	function participantName(participant: PvpParticipant) {
+	function participantName(
+		participant: PvpParticipant | null | undefined,
+		hideInfo: boolean = hideOpponentInfo,
+		viewerUid: string | null | undefined = currentUid
+	) {
 		if (getPvpParticipantIsAnonymous(participant)) return $_('pvp.anonymous_player');
-		if (shouldHideParticipantInfo(participant)) return $_('pvp.hidden_opponent');
+		if (shouldHideParticipantInfo(participant, hideInfo, viewerUid))
+			return $_('pvp.hidden_opponent');
 
 		const player = getPvpParticipantPlayer(participant);
 		return player?.name || getPvpParticipantUid(participant) || '--';
 	}
 
-	function shouldHideParticipantInfo(participant: PvpParticipant | null | undefined) {
+	function shouldHideParticipantInfo(
+		participant: PvpParticipant | null | undefined,
+		hideInfo: boolean = hideOpponentInfo,
+		viewerUid: string | null | undefined = currentUid
+	) {
 		const uid = getPvpParticipantUid(participant);
-		return Boolean(hideOpponentInfo && uid && uid !== currentUid);
+		return Boolean(hideInfo && uid && uid !== viewerUid);
 	}
 
-	function shouldMaskParticipant(participant: PvpParticipant | null | undefined) {
-		return getPvpParticipantIsAnonymous(participant) || shouldHideParticipantInfo(participant);
-	}
-
-	function participantTitleName(participant: PvpParticipant | null | undefined) {
-		if (!participant) return $_('pvp.waiting_opponent');
-		return participantName(participant);
-	}
-
-	function getMatchTitle(items: PvpParticipant[]) {
-		if (items.length === 0) return $_('pvp.match_loading');
-		return `${participantTitleName(items[0])} vs ${participantTitleName(items[1])}`;
-	}
-
-	function winnerName() {
-		const winner = participants.find(
-			(participant) => getPvpParticipantUid(participant) === winnerUid
+	function shouldMaskParticipant(
+		participant: PvpParticipant | null | undefined,
+		hideInfo: boolean = hideOpponentInfo,
+		viewerUid: string | null | undefined = currentUid
+	) {
+		return (
+			getPvpParticipantIsAnonymous(participant) ||
+			shouldHideParticipantInfo(participant, hideInfo, viewerUid)
 		);
-		return winner ? participantName(winner) : winnerUid || '--';
+	}
+
+	function participantTitleName(
+		participant: PvpParticipant | null | undefined,
+		hideInfo: boolean = hideOpponentInfo,
+		viewerUid: string | null | undefined = currentUid
+	) {
+		if (!participant) return $_('pvp.waiting_opponent');
+		return participantName(participant, hideInfo, viewerUid);
+	}
+
+	function getMatchTitle(
+		items: PvpParticipant[],
+		hideInfo: boolean = hideOpponentInfo,
+		viewerUid: string | null | undefined = currentUid
+	) {
+		if (items.length === 0) return $_('pvp.match_loading');
+		return `${participantTitleName(items[0], hideInfo, viewerUid)} vs ${participantTitleName(
+			items[1],
+			hideInfo,
+			viewerUid
+		)}`;
+	}
+
+	function winnerName(
+		currentWinnerUid: string | null | undefined = winnerUid,
+		items: PvpParticipant[] = participants,
+		hideInfo: boolean = hideOpponentInfo,
+		viewerUid: string | null | undefined = currentUid
+	) {
+		const winner = items.find(
+			(participant) => getPvpParticipantUid(participant) === currentWinnerUid
+		);
+		return winner ? participantName(winner, hideInfo, viewerUid) : currentWinnerUid || '--';
 	}
 
 	function orderParticipants(items: PvpParticipant[], uid: string | null | undefined) {
@@ -388,26 +438,46 @@
 		return [items[selfIndex], ...items.slice(0, selfIndex), ...items.slice(selfIndex + 1)];
 	}
 
-	function participantLabel(participant: PvpParticipant) {
-		return getPvpParticipantUid(participant) === currentUid ? $_('pvp.you') : $_('pvp.rival');
+	function participantLabel(
+		participant: PvpParticipant,
+		viewerUid: string | null | undefined = currentUid
+	) {
+		return getPvpParticipantUid(participant) === viewerUid ? $_('pvp.you') : $_('pvp.rival');
 	}
 
-	function messageSenderName(message: PvpMatchMessage) {
+	function messageSenderName(
+		message: PvpMatchMessage,
+		hideInfo: boolean = hideOpponentInfo,
+		viewerUid: string | null | undefined = currentUid,
+		items: PvpParticipant[] = participants,
+		senderUid: string | null | undefined = messageSenderUid(message)
+	) {
 		if (message.type === 'system') return 'Arena';
-		if (message.senderUid === currentUid) return $_('pvp.you');
-		if (getPvpMessageSenderIsAnonymous(message) || messageSenderParticipantIsAnonymous(message)) {
+		if (senderUid === viewerUid) return $_('pvp.you');
+		if (
+			getPvpMessageSenderIsAnonymous(message) ||
+			messageSenderParticipantIsAnonymous(message, items, senderUid)
+		) {
 			return $_('pvp.anonymous_player');
 		}
-		if (hideOpponentInfo && message.senderUid) return $_('pvp.hidden_opponent');
-		return message.sender?.name || message.player?.name || message.senderUid || $_('pvp.rival');
+		if (hideInfo && (!senderUid || senderUid !== viewerUid)) {
+			return $_('pvp.hidden_opponent');
+		}
+		return message.sender?.name || message.player?.name || senderUid || $_('pvp.rival');
 	}
 
-	function messageSenderParticipantIsAnonymous(message: PvpMatchMessage) {
-		if (!message.senderUid) return false;
+	function messageSenderUid(message: PvpMatchMessage) {
+		return message.senderUid || message.sender?.uid || message.player?.uid || null;
+	}
 
-		const participant = participants.find(
-			(item) => getPvpParticipantUid(item) === message.senderUid
-		);
+	function messageSenderParticipantIsAnonymous(
+		message: PvpMatchMessage,
+		items: PvpParticipant[] = participants,
+		senderUid: string | null | undefined = messageSenderUid(message)
+	) {
+		if (!senderUid) return false;
+
+		const participant = items.find((item) => getPvpParticipantUid(item) === senderUid);
 		return getPvpParticipantIsAnonymous(participant);
 	}
 
@@ -421,10 +491,14 @@
 		}).format(new Date(ms));
 	}
 
-	function participantResult(participant: PvpParticipant) {
-		if (status !== 'completed') return null;
-		if (!winnerUid) return $_('pvp.result.draw');
-		return getPvpParticipantUid(participant) === winnerUid ? $_('pvp.winner') : null;
+	function participantResult(
+		participant: PvpParticipant,
+		currentStatus: string = status,
+		currentWinnerUid: string | null | undefined = winnerUid
+	) {
+		if (currentStatus !== 'completed') return null;
+		if (!currentWinnerUid) return $_('pvp.result.draw');
+		return getPvpParticipantUid(participant) === currentWinnerUid ? $_('pvp.winner') : null;
 	}
 
 	function participantAvatarUrl(player: any) {
@@ -585,7 +659,7 @@
 						<Card.Header>
 							<div class="match-panel-header">
 								<div>
-									<Card.Title>{resultTitle()}</Card.Title>
+									<Card.Title>{resultTitleText}</Card.Title>
 									<Card.Description>
 										{#if resultReason}
 											{resultReasonLabel(resultReason)}
@@ -622,7 +696,21 @@
 								<div class="side-grid">
 									{#each orderedParticipants as participant, index}
 										{@const participantPlayer = getPvpParticipantPlayer(participant)}
-										{@const participantMasked = shouldMaskParticipant(participant)}
+										{@const participantMasked = shouldMaskParticipant(
+											participant,
+											hideOpponentInfo,
+											currentUid
+										)}
+										{@const participantDisplayName = participantName(
+											participant,
+											hideOpponentInfo,
+											currentUid
+										)}
+										{@const participantResultLabel = participantResult(
+											participant,
+											status,
+											winnerUid
+										)}
 										<div
 											class:left-side={index === 0}
 											class:right-side={index === 1}
@@ -635,10 +723,10 @@
 														? 'default'
 														: 'outline'}
 												>
-													{participantLabel(participant)}
+													{participantLabel(participant, currentUid)}
 												</Badge>
-												{#if participantResult(participant)}
-													<Badge variant="secondary">{participantResult(participant)}</Badge>
+												{#if participantResultLabel}
+													<Badge variant="secondary">{participantResultLabel}</Badge>
 												{/if}
 											</div>
 
@@ -647,7 +735,7 @@
 													{#if !participantMasked && participantPlayer?.uid}
 														<Avatar.Image
 															src={participantAvatarUrl(participantPlayer)}
-															alt={participantPlayer.name || participantName(participant)}
+															alt={participantPlayer.name || participantDisplayName}
 														/>
 														<Avatar.Fallback>
 															{participantAvatarFallback(participantPlayer)}
@@ -662,7 +750,7 @@
 													{#if !participantMasked && participantPlayer?.uid}
 														<PlayerLink player={participantPlayer} truncate={26} />
 													{:else}
-														<strong>{participantName(participant)}</strong>
+														<strong>{participantDisplayName}</strong>
 													{/if}
 												</div>
 											</div>
@@ -801,13 +889,21 @@
 								<div class="empty-state">{$_('pvp.no_messages')}</div>
 							{:else}
 								{#each messages as message}
+									{@const senderUid = messageSenderUid(message)}
+									{@const senderName = messageSenderName(
+										message,
+										hideOpponentInfo,
+										currentUid,
+										participants,
+										senderUid
+									)}
 									<div
-										class:own-message={message.senderUid === currentUid}
+										class:own-message={senderUid === currentUid}
 										class:system-message={message.type === 'system'}
 										class="chat-message"
 									>
 										<div class="chat-message-meta">
-											<strong>{messageSenderName(message)}</strong>
+											<strong>{senderName}</strong>
 											<span>{messageTime(message)}</span>
 										</div>
 										<p>{message.content}</p>
@@ -885,13 +981,21 @@
 							<div class="empty-state">{$_('pvp.no_messages')}</div>
 						{:else}
 							{#each messages as message}
+								{@const senderUid = messageSenderUid(message)}
+								{@const senderName = messageSenderName(
+									message,
+									hideOpponentInfo,
+									currentUid,
+									participants,
+									senderUid
+								)}
 								<div
-									class:own-message={message.senderUid === currentUid}
+									class:own-message={senderUid === currentUid}
 									class:system-message={message.type === 'system'}
 									class="chat-message"
 								>
 									<div class="chat-message-meta">
-										<strong>{messageSenderName(message)}</strong>
+										<strong>{senderName}</strong>
 										<span>{messageTime(message)}</span>
 									</div>
 									<p>{message.content}</p>
