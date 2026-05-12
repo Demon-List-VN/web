@@ -62,6 +62,7 @@
 	$: currentUid = $user.data?.uid;
 	$: status = getPvpStatus(match);
 	$: level = getPvpLevel(match);
+	$: levelVideoId = getYouTubeVideoId(level?.videoID);
 	$: participants = getPvpParticipants(match);
 	$: matchTitle = getMatchTitle(participants);
 	$: orderedParticipants = orderParticipants(participants, currentUid);
@@ -187,6 +188,17 @@
 		const seconds = totalSeconds % 60;
 
 		return `${minutes}:${String(seconds).padStart(2, '0')}`;
+	}
+
+	function getYouTubeVideoId(value: unknown) {
+		const raw = String(value || '').trim();
+		if (!raw) return null;
+		if (/^[a-zA-Z0-9_-]{11}$/.test(raw)) return raw;
+
+		const match = raw.match(
+			/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/
+		);
+		return match?.[1] ?? null;
 	}
 
 	function resultTitle() {
@@ -501,6 +513,16 @@
 								</div>
 							{/if}
 						</div>
+						{#if levelVideoId}
+							<div class="level-video">
+								<iframe
+									src={`https://www.youtube.com/embed/${levelVideoId}`}
+									title={level.name || $_('pvp.challenge_level')}
+									allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+									allowfullscreen
+								></iframe>
+							</div>
+						{/if}
 					{:else}
 						<div class="empty-state">{$_('pvp.level_pending')}</div>
 					{/if}
@@ -686,6 +708,21 @@
 		align-items: center;
 		gap: 8px;
 		margin-left: 8px;
+	}
+
+	.level-video {
+		aspect-ratio: 16 / 9;
+		overflow: hidden;
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		background: hsl(var(--muted) / 0.35);
+	}
+
+	.level-video iframe {
+		display: block;
+		width: 100%;
+		height: 100%;
+		border: 0;
 	}
 
 	.id-label {
