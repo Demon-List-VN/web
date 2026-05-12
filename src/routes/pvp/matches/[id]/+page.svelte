@@ -29,6 +29,7 @@
 		getTimeMs,
 		hasPvpParticipantAccepted,
 		isActivePvpMatch,
+		resignPvpMatch,
 		sendPvpMatchMessage,
 		type PvpMatch,
 		type PvpMatchMessage,
@@ -43,6 +44,7 @@
 		ArrowLeft,
 		Clock,
 		ExternalLink,
+		Flag,
 		Gauge,
 		Loader2,
 		LogIn,
@@ -85,10 +87,18 @@
 	$: resultReason = getPvpResultReason(match);
 	$: remainingMs = Math.max(0, (getPvpMatchEndMs(match) ?? now) - now);
 	$: endedMs = getTimeMs(match?.endedAt);
-	$: postMatchChatRemainingMs = Math.max(0, (endedMs ? endedMs + POST_MATCH_CHAT_GRACE_MS : now) - now);
+	$: postMatchChatRemainingMs = Math.max(
+		0,
+		(endedMs ? endedMs + POST_MATCH_CHAT_GRACE_MS : now) - now
+	);
 	$: acceptanceRemainingMs = Math.max(0, (getPvpMatchAcceptanceExpiresMs(match) ?? now) - now);
 	$: isActive = isActivePvpMatch(match);
-	$: selfAccepted = hasPvpParticipantAccepted(getPvpSelfParticipant(match, currentUid));
+	$: selfParticipant = getPvpSelfParticipant(match, currentUid);
+	$: selfAccepted = hasPvpParticipantAccepted(selfParticipant);
+	$: canResign =
+		['in_progress', 'waiting_result'].includes(status) &&
+		remainingMs > 0 &&
+		Boolean(selfParticipant);
 	$: chatOpenDuringMatch = ['in_progress', 'waiting_result'].includes(status) && remainingMs > 0;
 	$: chatOpenAfterMatch = status === 'completed' && postMatchChatRemainingMs > 0;
 	$: chatDisabled = !chatOpenDuringMatch && !chatOpenAfterMatch;
@@ -211,6 +221,23 @@
 		}
 	}
 
+	async function resignMatch() {
+		if (!matchId || !canResign || actionLoading) return;
+		if (!confirm($_('pvp.resign_confirm'))) return;
+
+		actionLoading = 'resign-match';
+		try {
+			const response = await resignPvpMatch(await $user.token(), matchId);
+			match = response;
+			await refreshMessages();
+			toast.success($_('pvp.toast.resign_success'));
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : $_('pvp.toast.resign_failed'));
+		} finally {
+			actionLoading = '';
+		}
+	}
+
 	async function sendChatMessage() {
 		if (!matchId || chatDisabled || actionLoading === 'send-chat') return;
 
@@ -249,6 +276,14 @@
 	function statusLabel(value: unknown) {
 		const key = String(value || 'pending');
 		return $_(`pvp.status.${key}`);
+	}
+
+	function resultReasonLabel(value: unknown) {
+		const key = String(value || '').trim();
+		if (!key) return '';
+
+		const label = $_(`pvp.result_reason.${key}`);
+		return label === `pvp.result_reason.${key}` ? key : label;
 	}
 
 	function formatDuration(ms: number | null) {
@@ -409,10 +444,26 @@
 		</div>
 
 		{#if $user.loggedIn}
-			<Button variant="outline" disabled={loading} on:click={refreshMatch}>
-				<RefreshCw class={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-				{$_('pvp.refresh')}
-			</Button>
+			<div class="topbar-actions">
+				{#if canResign}
+					<Button
+						variant="destructive"
+						disabled={Boolean(actionLoading) || loading}
+						on:click={resignMatch}
+					>
+						{#if actionLoading === 'resign-match'}
+							<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+						{:else}
+							<Flag class="mr-2 h-4 w-4" />
+						{/if}
+						{$_('pvp.resign')}
+					</Button>
+				{/if}
+				<Button variant="outline" disabled={loading} on:click={refreshMatch}>
+					<RefreshCw class={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+					{$_('pvp.refresh')}
+				</Button>
+			</div>
 		{/if}
 	</section>
 
@@ -454,7 +505,7 @@
 									<Card.Title>{resultTitle()}</Card.Title>
 									<Card.Description>
 										{#if resultReason}
-											{resultReason}
+											{resultReasonLabel(resultReason)}
 										{:else}
 											{statusLabel(status)}
 										{/if}
@@ -802,6 +853,13 @@
 
 	.match-topbar {
 		margin-bottom: 24px;
+	}
+
+	.topbar-actions {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: flex-end;
+		gap: 10px;
 	}
 
 	h1 {
@@ -1184,6 +1242,14 @@
 		.chat-header {
 			align-items: stretch;
 			flex-direction: column;
+		}
+
+		.topbar-actions {
+			justify-content: stretch;
+		}
+
+		.topbar-actions :global(button) {
+			width: 100%;
 		}
 
 		.result-line {

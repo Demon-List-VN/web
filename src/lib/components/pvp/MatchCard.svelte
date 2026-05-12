@@ -52,6 +52,14 @@
 		return $_(`pvp.status.${value}`) || value;
 	}
 
+	function resultReasonLabel(value: unknown) {
+		const key = String(value || '').trim();
+		if (!key) return '';
+
+		const label = $_(`pvp.result_reason.${key}`);
+		return label === `pvp.result_reason.${key}` ? key : label;
+	}
+
 	function formatDuration(ms: number | null) {
 		if (ms === null) return '--:--';
 
@@ -177,7 +185,7 @@
 			{/if}
 			<span>{resultLabel()}</span>
 			{#if resultReason}
-				<span class="reason">- {resultReason}</span>
+				<span class="reason">- {resultReasonLabel(resultReason)}</span>
 			{/if}
 		</div>
 

@@ -9,7 +9,13 @@ export type PvpMatchStatus =
 	| 'disputed'
 	| string;
 
-export type PvpInviteStatus = 'pending' | 'accepted' | 'declined' | 'expired' | 'cancelled' | string;
+export type PvpInviteStatus =
+	| 'pending'
+	| 'accepted'
+	| 'declined'
+	| 'expired'
+	| 'cancelled'
+	| string;
 export type PvpQueueStatus = 'idle' | 'searching' | 'matched' | 'cancelled' | 'expired' | string;
 
 export type PvpPlayer = {
@@ -250,7 +256,10 @@ export async function getPvpMe(token?: string | null) {
 	return normalizePvpMe(await pvpRequest('/pvp/me', { token }));
 }
 
-export async function startPvpMatchmaking(token: string | null | undefined, difficulty: PvpDifficulty) {
+export async function startPvpMatchmaking(
+	token: string | null | undefined,
+	difficulty: PvpDifficulty
+) {
 	return pvpRequest<PvpMatchmakingRequest | PvpMe>('/pvp/matchmaking', {
 		method: 'POST',
 		token,
@@ -305,6 +314,13 @@ export async function acceptPvpMatch(token: string | null | undefined, id: numbe
 	});
 }
 
+export async function resignPvpMatch(token: string | null | undefined, id: number | string) {
+	return pvpRequest<PvpMatch>(`/pvp/matches/${id}/resign`, {
+		method: 'POST',
+		token
+	});
+}
+
 export async function getPvpMatchMessages(token: string | null | undefined, id: number | string) {
 	const payload = await pvpRequest<
 		PvpMatchMessage[] | { messages?: PvpMatchMessage[]; data?: PvpMatchMessage[] }
@@ -345,7 +361,9 @@ export function isActivePvpMatch(match: PvpMatch | null | undefined) {
 }
 
 export function getPvpLevel(match: PvpMatch | null | undefined): PvpLevel | null {
-	return match?.level ?? match?.levels ?? match?.selectedLevel ?? (match?.matchLevel as PvpLevel) ?? null;
+	return (
+		match?.level ?? match?.levels ?? match?.selectedLevel ?? (match?.matchLevel as PvpLevel) ?? null
+	);
 }
 
 export function getPvpParticipants(match: PvpMatch | null | undefined): PvpParticipant[] {
@@ -371,11 +389,16 @@ export function getPvpParticipantUid(participant: PvpParticipant | PvpResult | n
 	return participant?.uid ?? participant?.userId ?? participant?.playerId ?? null;
 }
 
-export function getPvpParticipantPlayer(participant: PvpParticipant | PvpResult | null | undefined) {
+export function getPvpParticipantPlayer(
+	participant: PvpParticipant | PvpResult | null | undefined
+) {
 	return participant?.player ?? participant?.players ?? null;
 }
 
-export function getPvpOpponent(match: PvpMatch | null | undefined, currentUid: string | null | undefined) {
+export function getPvpOpponent(
+	match: PvpMatch | null | undefined,
+	currentUid: string | null | undefined
+) {
 	const participants = getPvpParticipants(match);
 	return (
 		participants.find((participant) => getPvpParticipantUid(participant) !== currentUid) ??
@@ -384,8 +407,15 @@ export function getPvpOpponent(match: PvpMatch | null | undefined, currentUid: s
 	);
 }
 
-export function getPvpSelfParticipant(match: PvpMatch | null | undefined, currentUid: string | null | undefined) {
-	return getPvpParticipants(match).find((participant) => getPvpParticipantUid(participant) === currentUid) ?? null;
+export function getPvpSelfParticipant(
+	match: PvpMatch | null | undefined,
+	currentUid: string | null | undefined
+) {
+	return (
+		getPvpParticipants(match).find(
+			(participant) => getPvpParticipantUid(participant) === currentUid
+		) ?? null
+	);
 }
 
 export function getPvpProgress(participant: PvpParticipant | PvpResult | null | undefined) {
@@ -414,7 +444,8 @@ export function getPvpTimeReachedMs(participant: PvpParticipant | PvpResult | nu
 export function getPvpWinnerUid(match: PvpMatch | null | undefined) {
 	if (!match) return null;
 	if (typeof match.winner === 'string') return match.winner;
-	if (match.winner && typeof match.winner === 'object') return match.winner.uid ?? match.winner.id ?? null;
+	if (match.winner && typeof match.winner === 'object')
+		return match.winner.uid ?? match.winner.id ?? null;
 	return match.winnerUid ?? match.winnerId ?? null;
 }
 
@@ -434,7 +465,9 @@ export function getPvpMatchAcceptanceExpiresMs(match: PvpMatch | null | undefine
 	return getTimeMs(match?.acceptanceExpiresAt ?? match?.acceptance_expires_at);
 }
 
-export function getPvpInviteExpiresMs(invite: PvpInvite | PvpMatchmakingRequest | null | undefined) {
+export function getPvpInviteExpiresMs(
+	invite: PvpInvite | PvpMatchmakingRequest | null | undefined
+) {
 	return getTimeMs(invite?.expiresAt ?? invite?.expires_at);
 }
 

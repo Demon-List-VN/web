@@ -205,6 +205,8 @@
 		"enter_match": "Vào trận",
 		"view_match": "Xem trận",
 		"refresh": "Tải lại",
+		"resign": "Đầu hàng",
+		"resign_confirm": "Đầu hàng trận này? Đối thủ của bạn sẽ được tính thắng.",
 		"sign_in_title": "Đăng nhập để vào Arena",
 		"sign_in_hint": "Ghép trận và lời mời Arena dùng tài khoản GDVN của bạn.",
 		"choose_difficulty": "Độ khó",
@@ -275,6 +277,16 @@
 			"cancelled": "Đã hủy",
 			"disputed": "Khiếu nại"
 		},
+		"result_reason": {
+			"completion": "Hoàn thành",
+			"progress": "Tiến độ cao hơn",
+			"time_reached": "Thời gian nhanh hơn",
+			"time_elapsed": "Hết giờ",
+			"draw": "Hòa",
+			"resignation": "Đầu hàng",
+			"forfeit": "Bỏ cuộc",
+			"acceptance_timeout": "Hết giờ xác nhận"
+		},
 		"toast": {
 			"load_failed": "Tải dữ liệu Arena thất bại.",
 			"select_difficulty": "Hãy chọn độ khó trước.",
@@ -286,7 +298,9 @@
 			"invite_failed": "Gửi lời mời thất bại.",
 			"accept_failed": "Chấp nhận lời mời thất bại.",
 			"accept_match_failed": "Chấp nhận trận thất bại.",
-			"decline_failed": "Từ chối lời mời thất bại."
+			"decline_failed": "Từ chối lời mời thất bại.",
+			"resign_success": "Bạn đã đầu hàng trận đấu.",
+			"resign_failed": "Đầu hàng trận đấu thất bại."
 		}
 	},
 	"dropdown": {
