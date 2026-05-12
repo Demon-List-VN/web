@@ -193,9 +193,12 @@
 		"lobby_title": "Đấu trường Challenge 1v1",
 		"matches_title": "Trận đấu Arena",
 		"match": "Trận",
+		"winner": "Người thắng",
+		"winner_named": "Người thắng: {name}",
 		"geode_alert": {
 			"title": "Cần cài GDVN Geode mod",
 			"description": "Để chơi Arena, hãy cài GDVN Geode mod phiên bản 5.0.3 trở lên.",
+			"release_page": "Trang phát hành",
 			"dismiss": "Đóng"
 		},
 		"active_match": "Trận đang diễn ra",

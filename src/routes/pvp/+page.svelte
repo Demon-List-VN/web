@@ -6,6 +6,7 @@
 	import supabase from '$lib/client/supabase';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
+	import * as Alert from '$lib/components/ui/alert';
 	import * as Card from '$lib/components/ui/card';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import {
@@ -458,11 +459,21 @@
 
 <main class="arena-page">
 	{#if showGeodeAlert}
-		<div class="pvp-top-alert geode-alert">
-			<div class="pvp-top-alert-inner">
-				<strong>{$_('pvp.geode_alert.title')}</strong>
-				<span>{$_('pvp.geode_alert.description')}</span>
-			</div>
+		<Alert.Root
+			class="relative mb-3 border-yellow-300 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/40"
+		>
+			<Alert.Title class="pr-8">{$_('pvp.geode_alert.title')}</Alert.Title>
+			<Alert.Description class="pr-8">
+				{$_('pvp.geode_alert.description')}
+				<a
+					href="https://github.com/NamPE286/DemonListVN-geode-mod/releases"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="ml-1 font-semibold underline"
+				>
+					{$_('pvp.geode_alert.release_page')}
+				</a>
+			</Alert.Description>
 			<button
 				type="button"
 				class="pvp-alert-dismiss"
@@ -471,7 +482,7 @@
 			>
 				<X class="h-4 w-4" />
 			</button>
-		</div>
+		</Alert.Root>
 	{/if}
 
 	{#if activeMatch}
@@ -1102,12 +1113,10 @@
 		gap: 12px;
 	}
 
-	.geode-alert {
-		background: hsl(var(--primary) / 0.08);
-		border-color: hsl(var(--primary) / 0.28);
-	}
-
 	.pvp-alert-dismiss {
+		position: absolute;
+		top: 12px;
+		right: 12px;
 		display: inline-flex;
 		width: 32px;
 		height: 32px;

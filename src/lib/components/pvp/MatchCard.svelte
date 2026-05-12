@@ -6,9 +6,10 @@
 		getPvpLevel,
 		getPvpMatchAcceptanceExpiresMs,
 		getPvpMatchEndMs,
-		getPvpMatchId,
 		getPvpOpponent,
+		getPvpParticipants,
 		getPvpParticipantPlayer,
+		getPvpParticipantUid,
 		getPvpProgress,
 		getPvpResultReason,
 		getPvpSelfParticipant,
@@ -18,7 +19,7 @@
 		isActivePvpMatch,
 		type PvpMatch
 	} from '$lib/client/pvp';
-	import { _, locale } from 'svelte-i18n';
+	import { _ } from 'svelte-i18n';
 	import { ArrowRight, Clock, Gauge, Swords, Trophy } from 'lucide-svelte';
 
 	export let match: PvpMatch;
@@ -26,11 +27,13 @@
 	export let href: string | null = null;
 	export let now = Date.now();
 
-	$: matchId = getPvpMatchId(match);
 	$: status = getPvpStatus(match);
 	$: level = getPvpLevel(match);
+	$: participants = getPvpParticipants(match);
 	$: self = getPvpSelfParticipant(match, currentUid);
 	$: opponent = getPvpOpponent(match, currentUid);
+	$: titleLeft = participants[0] ?? self;
+	$: titleRight = participants[1] ?? opponent;
 	$: selfProgress = getPvpProgress(self);
 	$: opponentProgress = getPvpProgress(opponent);
 	$: opponentPlayer = getPvpParticipantPlayer(opponent);
@@ -62,13 +65,26 @@
 	function resultLabel() {
 		if (status === 'completed') {
 			if (!winnerUid) return $_('pvp.result.draw');
-			return winnerUid === currentUid ? $_('pvp.result.win') : $_('pvp.result.loss');
+			return $_('pvp.winner_named', { values: { name: winnerName() } });
 		}
 
 		if (status === 'cancelled') return $_('pvp.result.cancelled');
 		if (status === 'disputed') return $_('pvp.result.disputed');
-		if (status === 'pending') return `${$_('pvp.awaiting_acceptance_short')} ${formatDuration(acceptanceRemainingMs)}`;
+		if (status === 'pending')
+			return `${$_('pvp.awaiting_acceptance_short')} ${formatDuration(acceptanceRemainingMs)}`;
 		return formatDuration(remainingMs);
+	}
+
+	function participantName(participant: typeof titleLeft) {
+		const player = getPvpParticipantPlayer(participant);
+		return player?.name || getPvpParticipantUid(participant) || $_('pvp.waiting_opponent');
+	}
+
+	function winnerName() {
+		const winner = participants.find(
+			(participant) => getPvpParticipantUid(participant) === winnerUid
+		);
+		return winner ? participantName(winner) : winnerUid || '--';
 	}
 </script>
 
@@ -77,7 +93,21 @@
 		<div>
 			<div class="match-title">
 				<Swords class="h-4 w-4" />
-				<span>{$_('pvp.match')} #{matchId}</span>
+				<span class="match-title-name">
+					{#if getPvpParticipantPlayer(titleLeft)?.uid}
+						<PlayerLink player={getPvpParticipantPlayer(titleLeft)} truncate={18} />
+					{:else}
+						{participantName(titleLeft)}
+					{/if}
+				</span>
+				<span class="versus">vs</span>
+				<span class="match-title-name">
+					{#if getPvpParticipantPlayer(titleRight)?.uid}
+						<PlayerLink player={getPvpParticipantPlayer(titleRight)} truncate={18} />
+					{:else}
+						{participantName(titleRight)}
+					{/if}
+				</span>
 			</div>
 			<Card.Description>
 				{#if level?.name}
@@ -152,7 +182,7 @@
 		</div>
 
 		{#if href}
-			<a class="detail-link" href={href}>
+			<a class="detail-link" {href}>
 				{$_('pvp.view_match')}
 				<ArrowRight class="h-4 w-4" />
 			</a>

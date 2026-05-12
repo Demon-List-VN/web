@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import MatchCard from '$lib/components/pvp/MatchCard.svelte';
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import { user } from '$lib/client';
 	import supabase from '$lib/client/supabase';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
+	import * as Alert from '$lib/components/ui/alert';
 	import * as Card from '$lib/components/ui/card';
 	import {
 		acceptPvpMatch,
@@ -33,7 +33,20 @@
 	import { onDestroy, onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { _ } from 'svelte-i18n';
-	import { ArrowLeft, Clock, ExternalLink, Gauge, Loader2, LogIn, RefreshCw, Trophy, Copy } from 'lucide-svelte';
+	import {
+		ArrowLeft,
+		Clock,
+		ExternalLink,
+		Gauge,
+		Loader2,
+		LogIn,
+		RefreshCw,
+		Trophy,
+		Copy,
+		X
+	} from 'lucide-svelte';
+
+	const PVP_GEODE_ALERT_DISMISSED_KEY = 'gdvn:pvp-geode-alert-dismissed';
 
 	let match: PvpMatch | null = null;
 	let loading = false;
@@ -43,12 +56,15 @@
 	let ticker: ReturnType<typeof setInterval> | null = null;
 	let actionLoading = '';
 	let endedBellPlayedFor: string | null = null;
+	let showGeodeAlert = true;
 
 	$: matchId = $page.params.id;
 	$: currentUid = $user.data?.uid;
 	$: status = getPvpStatus(match);
 	$: level = getPvpLevel(match);
 	$: participants = getPvpParticipants(match);
+	$: matchTitle = getMatchTitle(participants);
+	$: orderedParticipants = orderParticipants(participants, currentUid);
 	$: winnerUid = getPvpWinnerUid(match);
 	$: resultReason = getPvpResultReason(match);
 	$: remainingMs = Math.max(0, (getPvpMatchEndMs(match) ?? now) - now);
@@ -56,11 +72,18 @@
 	$: isActive = isActivePvpMatch(match);
 	$: selfAccepted = hasPvpParticipantAccepted(getPvpSelfParticipant(match, currentUid));
 
-	$: if ($user.checked && $user.loggedIn && matchId && initializedFor !== `${currentUid}:${matchId}`) {
+	$: if (
+		$user.checked &&
+		$user.loggedIn &&
+		matchId &&
+		initializedFor !== `${currentUid}:${matchId}`
+	) {
 		initializeRealtime(matchId);
 	}
 
 	onMount(() => {
+		showGeodeAlert = localStorage.getItem(PVP_GEODE_ALERT_DISMISSED_KEY) !== 'true';
+
 		ticker = setInterval(() => {
 			now = Date.now();
 		}, 1000);
@@ -109,7 +132,12 @@
 		if (!id || endedBellPlayedFor === String(id)) return;
 
 		const previousStatus = getPvpStatus(previousMatch, '');
-		if (previousMatch && previousStatus === 'in_progress' && nextMatch && !isActivePvpMatch(nextMatch)) {
+		if (
+			previousMatch &&
+			previousStatus === 'in_progress' &&
+			nextMatch &&
+			!isActivePvpMatch(nextMatch)
+		) {
 			endedBellPlayedFor = String(id);
 			playPvpBell();
 		}
@@ -165,7 +193,7 @@
 		if (!match) return $_('pvp.match_loading');
 		if (status === 'completed') {
 			if (!winnerUid) return $_('pvp.result.draw');
-			return winnerUid === currentUid ? $_('pvp.result.win') : $_('pvp.result.loss');
+			return $_('pvp.winner_named', { values: { name: winnerName() } });
 		}
 		if (status === 'cancelled') return $_('pvp.result.cancelled');
 		if (status === 'disputed') return $_('pvp.result.disputed');
@@ -176,6 +204,46 @@
 	function participantName(participant: PvpParticipant) {
 		const player = getPvpParticipantPlayer(participant);
 		return player?.name || getPvpParticipantUid(participant) || '--';
+	}
+
+	function participantTitleName(participant: PvpParticipant | null | undefined) {
+		if (!participant) return $_('pvp.waiting_opponent');
+		return participantName(participant);
+	}
+
+	function getMatchTitle(items: PvpParticipant[]) {
+		if (items.length === 0) return $_('pvp.match_loading');
+		return `${participantTitleName(items[0])} vs ${participantTitleName(items[1])}`;
+	}
+
+	function winnerName() {
+		const winner = participants.find(
+			(participant) => getPvpParticipantUid(participant) === winnerUid
+		);
+		return winner ? participantName(winner) : winnerUid || '--';
+	}
+
+	function orderParticipants(items: PvpParticipant[], uid: string | null | undefined) {
+		if (!uid) return items;
+		const selfIndex = items.findIndex((participant) => getPvpParticipantUid(participant) === uid);
+		if (selfIndex <= 0) return items;
+
+		return [items[selfIndex], ...items.slice(0, selfIndex), ...items.slice(selfIndex + 1)];
+	}
+
+	function participantLabel(participant: PvpParticipant) {
+		return getPvpParticipantUid(participant) === currentUid ? $_('pvp.you') : $_('pvp.rival');
+	}
+
+	function participantResult(participant: PvpParticipant) {
+		if (status !== 'completed') return null;
+		if (!winnerUid) return $_('pvp.result.draw');
+		return getPvpParticipantUid(participant) === winnerUid ? $_('pvp.winner') : null;
+	}
+
+	function dismissGeodeAlert() {
+		showGeodeAlert = false;
+		localStorage.setItem(PVP_GEODE_ALERT_DISMISSED_KEY, 'true');
 	}
 
 	async function copyLevelId() {
@@ -201,17 +269,44 @@
 </script>
 
 <svelte:head>
-	<title>{$_('pvp.match')} #{matchId} - {$_('head.site_name')}</title>
+	<title>{matchTitle} - {$_('head.site_name')}</title>
 </svelte:head>
 
 <main class="match-page">
+	{#if showGeodeAlert}
+		<Alert.Root
+			class="relative mb-4 border-yellow-300 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/40"
+		>
+			<Alert.Title class="pr-8">{$_('pvp.geode_alert.title')}</Alert.Title>
+			<Alert.Description class="pr-8">
+				{$_('pvp.geode_alert.description')}
+				<a
+					href="https://github.com/NamPE286/DemonListVN-geode-mod/releases"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="ml-1 font-semibold underline"
+				>
+					{$_('pvp.geode_alert.release_page')}
+				</a>
+			</Alert.Description>
+			<button
+				type="button"
+				class="alert-dismiss"
+				on:click={dismissGeodeAlert}
+				aria-label={$_('pvp.geode_alert.dismiss')}
+			>
+				<X class="h-4 w-4" />
+			</button>
+		</Alert.Root>
+	{/if}
+
 	<section class="match-topbar">
 		<div>
 			<a class="back-link" href="/pvp/matches">
 				<ArrowLeft class="h-4 w-4" />
 				{$_('pvp.matches_title')}
 			</a>
-			<h1>{$_('pvp.match')} #{matchId}</h1>
+			<h1>{matchTitle}</h1>
 		</div>
 
 		{#if $user.loggedIn}
@@ -251,24 +346,26 @@
 		</Card.Root>
 	{:else if match}
 		<div class="summary-grid">
-			<MatchCard match={match} {currentUid} now={now} />
-
-			<Card.Root class="result-panel">
+			<Card.Root class="match-progress-panel">
 				<Card.Header>
-					<Card.Title>{resultTitle()}</Card.Title>
-					<Card.Description>
-						{#if resultReason}
-							{resultReason}
-						{:else}
-							{statusLabel(status)}
-						{/if}
-					</Card.Description>
-				</Card.Header>
-				<Card.Content class="result-content">
-					<div class="result-line">
-						<Badge variant={isActive ? 'default' : 'secondary'}>{statusLabel(status)}</Badge>
-						<Badge variant="outline">{difficultyLabel(match.difficulty)}</Badge>
+					<div class="match-panel-header">
+						<div>
+							<Card.Title>{resultTitle()}</Card.Title>
+							<Card.Description>
+								{#if resultReason}
+									{resultReason}
+								{:else}
+									{statusLabel(status)}
+								{/if}
+							</Card.Description>
+						</div>
+						<div class="result-line">
+							<Badge variant={isActive ? 'default' : 'secondary'}>{statusLabel(status)}</Badge>
+							<Badge variant="outline">{difficultyLabel(match.difficulty)}</Badge>
+						</div>
 					</div>
+				</Card.Header>
+				<Card.Content class="match-progress-content">
 					<div class="timer-display">
 						{#if status === 'completed'}
 							<Trophy class="h-5 w-5" />
@@ -283,6 +380,63 @@
 							{/if}
 						</strong>
 					</div>
+
+					{#if orderedParticipants.length === 0}
+						<div class="empty-state">{$_('pvp.waiting_opponent')}</div>
+					{:else}
+						<div class="side-grid">
+							{#each orderedParticipants as participant, index}
+								<div
+									class:left-side={index === 0}
+									class:right-side={index === 1}
+									class:winner={winnerUid && getPvpParticipantUid(participant) === winnerUid}
+									class="participant-card"
+								>
+									<div class="participant-topline">
+										<Badge
+											variant={getPvpParticipantUid(participant) === currentUid
+												? 'default'
+												: 'outline'}
+										>
+											{participantLabel(participant)}
+										</Badge>
+										{#if participantResult(participant)}
+											<Badge variant="secondary">{participantResult(participant)}</Badge>
+										{/if}
+									</div>
+
+									<div class="participant-name">
+										{#if getPvpParticipantPlayer(participant)?.uid}
+											<PlayerLink
+												player={getPvpParticipantPlayer(participant)}
+												showAvatar
+												truncate={26}
+											/>
+										{:else}
+											<strong>{participantName(participant)}</strong>
+										{/if}
+									</div>
+
+									<div class="participant-progress">
+										<div class="progress-label">
+											<span>{getPvpProgress(participant)}%</span>
+											<span>
+												<Gauge class="h-3.5 w-3.5" />
+												{formatDuration(getPvpTimeReachedMs(participant))}
+											</span>
+										</div>
+										<div class="progress-track">
+											<div
+												class="progress-bar"
+												style={`width: ${Math.min(100, getPvpProgress(participant))}%;`}
+											/>
+										</div>
+									</div>
+								</div>
+							{/each}
+						</div>
+					{/if}
+
 					{#if status === 'pending'}
 						<div class="acceptance-panel">
 							<p>{$_('pvp.match_found_hint')}</p>
@@ -336,7 +490,12 @@
 								</a>
 								<div class="level-id">
 									<span class="id-label">ID: {level.id ?? match.levelId}</span>
-									<Button variant="ghost" size="icon" on:click={copyLevelId} aria-label={$_('pvp.copy_level_id')}>
+									<Button
+										variant="ghost"
+										size="icon"
+										on:click={copyLevelId}
+										aria-label={$_('pvp.copy_level_id')}
+									>
 										<Copy class="h-4 w-4" />
 									</Button>
 								</div>
@@ -344,53 +503,6 @@
 						</div>
 					{:else}
 						<div class="empty-state">{$_('pvp.level_pending')}</div>
-					{/if}
-				</Card.Content>
-			</Card.Root>
-
-			<Card.Root>
-				<Card.Header>
-					<Card.Title>{$_('pvp.live_progress')}</Card.Title>
-				</Card.Header>
-				<Card.Content>
-					{#if participants.length === 0}
-						<div class="empty-state">{$_('pvp.waiting_opponent')}</div>
-					{:else}
-						<div class="participant-list">
-							{#each participants as participant}
-								<div
-									class:winner={winnerUid && getPvpParticipantUid(participant) === winnerUid}
-									class="participant-row"
-								>
-									<div class="participant-name">
-										{#if getPvpParticipantPlayer(participant)?.uid}
-											<PlayerLink player={getPvpParticipantPlayer(participant)} showAvatar truncate={26} />
-										{:else}
-											<strong>{participantName(participant)}</strong>
-										{/if}
-										{#if getPvpParticipantUid(participant) === currentUid}
-											<Badge variant="outline">{$_('pvp.you')}</Badge>
-										{/if}
-									</div>
-
-									<div class="participant-progress">
-										<div class="progress-label">
-											<span>{getPvpProgress(participant)}%</span>
-											<span>
-												<Gauge class="h-3.5 w-3.5" />
-												{formatDuration(getPvpTimeReachedMs(participant))}
-											</span>
-										</div>
-										<div class="progress-track">
-											<div
-												class="progress-bar"
-												style={`width: ${Math.min(100, getPvpProgress(participant))}%;`}
-											/>
-										</div>
-									</div>
-								</div>
-							{/each}
-						</div>
 					{/if}
 				</Card.Content>
 			</Card.Root>
@@ -411,10 +523,12 @@
 
 	.match-topbar,
 	:global(.auth-content),
+	.match-panel-header,
 	.result-line,
 	.timer-display,
 	.level-meta,
 	.participant-name,
+	.participant-topline,
 	.progress-label span {
 		display: flex;
 		align-items: center;
@@ -454,6 +568,26 @@
 		text-decoration: underline;
 	}
 
+	.alert-dismiss {
+		position: absolute;
+		top: 12px;
+		right: 12px;
+		display: inline-flex;
+		width: 32px;
+		height: 32px;
+		align-items: center;
+		justify-content: center;
+		border: 0;
+		border-radius: 6px;
+		background: transparent;
+		color: hsl(var(--muted-foreground));
+		cursor: pointer;
+	}
+
+	.alert-dismiss:hover {
+		background: hsl(var(--primary) / 0.12);
+	}
+
 	:global(.state-content) {
 		display: flex;
 		align-items: center;
@@ -478,7 +612,7 @@
 	.summary-grid,
 	.detail-grid {
 		display: grid;
-		grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.65fr);
+		grid-template-columns: 1fr;
 		gap: 16px;
 	}
 
@@ -486,10 +620,25 @@
 		margin-top: 16px;
 	}
 
-	:global(.result-content),
-	:global(.level-content),
-	.participant-list {
+	.match-panel-header {
+		justify-content: space-between;
+		gap: 16px;
+	}
+
+	.result-line {
+		flex-wrap: wrap;
+		justify-content: flex-end;
+	}
+
+	:global(.match-progress-content),
+	:global(.level-content) {
 		display: grid;
+		gap: 14px;
+	}
+
+	.side-grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: 14px;
 	}
 
@@ -544,21 +693,29 @@
 		font-size: 13px;
 	}
 
-	.participant-row {
+	.participant-card {
 		display: grid;
-		gap: 10px;
+		gap: 12px;
 		border: 1px solid hsl(var(--border));
 		border-radius: 8px;
-		padding: 12px;
+		padding: 14px;
 	}
 
-	.participant-row.winner {
+	.participant-card.winner {
 		border-color: hsl(var(--primary));
 		background: hsl(var(--primary) / 0.08);
 	}
 
-	.participant-name {
+	.participant-card.right-side .progress-bar {
+		background: hsl(var(--destructive));
+	}
+
+	.participant-topline {
 		justify-content: space-between;
+	}
+
+	.participant-name {
+		min-height: 32px;
 	}
 
 	.progress-label {
@@ -589,8 +746,7 @@
 	}
 
 	@media (max-width: 900px) {
-		.summary-grid,
-		.detail-grid {
+		.side-grid {
 			grid-template-columns: 1fr;
 		}
 	}
@@ -602,9 +758,14 @@
 		}
 
 		.match-topbar,
-		:global(.auth-content) {
+		:global(.auth-content),
+		.match-panel-header {
 			align-items: stretch;
 			flex-direction: column;
+		}
+
+		.result-line {
+			justify-content: flex-start;
 		}
 	}
 </style>

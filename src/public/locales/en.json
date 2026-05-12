@@ -193,9 +193,12 @@
 		"lobby_title": "1v1 Challenge Arena",
 		"matches_title": "Arena Matches",
 		"match": "Match",
+		"winner": "Winner",
+		"winner_named": "Winner: {name}",
 		"geode_alert": {
 			"title": "GDVN Geode mod required",
 			"description": "To play Arena, install GDVN Geode mod version 5.0.3 or newer.",
+			"release_page": "Release page",
 			"dismiss": "Dismiss"
 		},
 		"active_match": "Active match",
