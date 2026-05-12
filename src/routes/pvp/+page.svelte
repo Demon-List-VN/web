@@ -48,8 +48,11 @@
 		Send,
 		Swords,
 		UserCheck,
-		Users
+		Users,
+		X
 	} from 'lucide-svelte';
+
+	const PVP_GEODE_ALERT_DISMISSED_KEY = 'gdvn:pvp-geode-alert-dismissed';
 
 	let selectedDifficulty: PvpDifficulty | null = 'easy';
 	let selectedPlayer: any = null;
@@ -69,16 +72,20 @@
 	let announcedMatchIds = new Set<string>();
 	let endedMatchBellIds = new Set<string>();
 	let matchDialogOpen = false;
+	let showGeodeAlert = true;
 	let pendingDialogTimeout: ReturnType<typeof setTimeout> | null = null;
 	let keydownHandler: ((e: KeyboardEvent) => void) | null = null;
 
 	$: currentUid = $user.data?.uid;
-	$: activeMatch = lobby.activeMatch && isActivePvpMatch(lobby.activeMatch) ? lobby.activeMatch : null;
+	$: activeMatch =
+		lobby.activeMatch && isActivePvpMatch(lobby.activeMatch) ? lobby.activeMatch : null;
 	$: pendingMatch = activeMatch && getPvpStatus(activeMatch) === 'pending' ? activeMatch : null;
 	$: pendingMatchId = getPvpMatchId(pendingMatch);
 	$: pendingOpponent = getPvpOpponent(pendingMatch, currentUid);
 	$: pendingOpponentPlayer = getPvpParticipantPlayer(pendingOpponent);
-	$: pendingSelfAccepted = hasPvpParticipantAccepted(getPvpSelfParticipant(pendingMatch, currentUid));
+	$: pendingSelfAccepted = hasPvpParticipantAccepted(
+		getPvpSelfParticipant(pendingMatch, currentUid)
+	);
 	$: queueStatus = getPvpStatus(lobby.matchmaking, 'idle');
 	$: isSearching = queueStatus === 'searching';
 	$: queueMatchId = getPvpMatchedMatchId(lobby.matchmaking);
@@ -102,14 +109,21 @@
 		initializedForUid = '';
 	}
 
-	$: if (queueStatus === 'matched' && queueMatchId && activeMatch && getPvpStatus(activeMatch) === 'in_progress') {
+	$: if (
+		queueStatus === 'matched' &&
+		queueMatchId &&
+		activeMatch &&
+		getPvpStatus(activeMatch) === 'in_progress'
+	) {
 		navigateToMatch(queueMatchId);
 	}
 
 	onMount(() => {
+		showGeodeAlert = localStorage.getItem(PVP_GEODE_ALERT_DISMISSED_KEY) !== 'true';
+
 		ticker = setInterval(() => {
-				now = Date.now();
-			}, 1000);
+			now = Date.now();
+		}, 1000);
 
 		keydownHandler = (e: KeyboardEvent) => {
 			if (e.key === 'Escape' && pendingMatch) {
@@ -152,7 +166,7 @@
 		try {
 			const previousActiveMatch = lobby.activeMatch;
 			const nextLobby = await getPvpMe(await $user.token());
-				handleLobbyMatchSounds(previousActiveMatch, nextLobby.activeMatch);
+			handleLobbyMatchSounds(previousActiveMatch, nextLobby.activeMatch);
 			lobby = nextLobby;
 			await routeAcceptedInvite(lobby.incomingInvites);
 			await routeAcceptedInvite(lobby.outgoingInvites);
@@ -163,7 +177,10 @@
 		}
 	}
 
-	function handleLobbyMatchSounds(previousMatch: PvpMe['activeMatch'], nextMatch: PvpMe['activeMatch']) {
+	function handleLobbyMatchSounds(
+		previousMatch: PvpMe['activeMatch'],
+		nextMatch: PvpMe['activeMatch']
+	) {
 		const nextId = getPvpMatchId(nextMatch);
 		const nextStatus = getPvpStatus(nextMatch, '');
 
@@ -178,7 +195,12 @@
 		const nextStillActive = Boolean(nextMatch && isActivePvpMatch(nextMatch));
 
 		// Play end bell only if the previous match was actually in-progress (not just pending acceptance)
-		if (previousId && previousWasInProgress && !nextStillActive && !endedMatchBellIds.has(String(previousId))) {
+		if (
+			previousId &&
+			previousWasInProgress &&
+			!nextStillActive &&
+			!endedMatchBellIds.has(String(previousId))
+		) {
 			endedMatchBellIds.add(String(previousId));
 			playPvpBell();
 		}
@@ -258,7 +280,8 @@
 			const responseStatus = getPvpStatus(response as any, 'searching');
 			const matchId = responseStatus === 'matched' ? getPvpMatchedMatchId(response as any) : null;
 			await refreshLobby();
-			if (matchId && getPvpStatus((response as any)?.match) === 'in_progress') navigateToMatch(matchId);
+			if (matchId && getPvpStatus((response as any)?.match) === 'in_progress')
+				navigateToMatch(matchId);
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.matchmaking_failed'));
 		} finally {
@@ -374,14 +397,18 @@
 	function inviteName(invite: PvpInvite, direction: 'incoming' | 'outgoing') {
 		const player =
 			direction === 'incoming'
-				? invite.inviter ?? invite.fromPlayer
-				: invite.invitee ?? invite.toPlayer;
+				? (invite.inviter ?? invite.fromPlayer)
+				: (invite.invitee ?? invite.toPlayer);
 
-		return player?.name || player?.uid || (direction === 'incoming' ? invite.from : invite.to) || '--';
+		return (
+			player?.name || player?.uid || (direction === 'incoming' ? invite.from : invite.to) || '--'
+		);
 	}
 
 	function pendingOpponentName() {
-		return pendingOpponentPlayer?.name || pendingOpponentPlayer?.uid || pendingOpponent?.uid || '--';
+		return (
+			pendingOpponentPlayer?.name || pendingOpponentPlayer?.uid || pendingOpponent?.uid || '--'
+		);
 	}
 
 	function remainingLabel(targetMs: number | null, currentNow: number) {
@@ -406,19 +433,42 @@
 
 		return `${minutes}:${String(seconds).padStart(2, '0')}`;
 	}
+
+	function dismissGeodeAlert() {
+		showGeodeAlert = false;
+		localStorage.setItem(PVP_GEODE_ALERT_DISMISSED_KEY, 'true');
+	}
 </script>
 
 <svelte:head>
 	<title>{$_('pvp.lobby_title')} - {$_('head.site_name')}</title>
 </svelte:head>
 
-
 <main class="arena-page">
+	{#if showGeodeAlert}
+		<div class="pvp-top-alert geode-alert">
+			<div class="pvp-top-alert-inner">
+				<strong>{$_('pvp.geode_alert.title')}</strong>
+				<span>{$_('pvp.geode_alert.description')}</span>
+			</div>
+			<button
+				type="button"
+				class="pvp-alert-dismiss"
+				on:click={dismissGeodeAlert}
+				aria-label={$_('pvp.geode_alert.dismiss')}
+			>
+				<X class="h-4 w-4" />
+			</button>
+		</div>
+	{/if}
+
 	{#if activeMatch}
 		<div class="pvp-top-alert">
 			<div class="pvp-top-alert-inner">
 				<strong>{$_('pvp.active_match')}</strong>
-				<a class="inline-link" href={`/pvp/matches/${getPvpMatchId(activeMatch)}`}>{$_('pvp.enter_match')}</a>
+				<a class="inline-link" href={`/pvp/matches/${getPvpMatchId(activeMatch)}`}
+					>{$_('pvp.enter_match')}</a
+				>
 			</div>
 		</div>
 	{/if}
@@ -437,7 +487,14 @@
 		</a>
 	</section>
 
-	<Dialog.Root bind:open={matchDialogOpen} on:openChange={(e) => { if (e?.detail === false && pendingMatch) { matchDialogOpen = true; } }}>
+	<Dialog.Root
+		bind:open={matchDialogOpen}
+		on:openChange={(e) => {
+			if (e?.detail === false && pendingMatch) {
+				matchDialogOpen = true;
+			}
+		}}
+	>
 		<Dialog.Content class="sm:max-w-[440px]">
 			<Dialog.Header>
 				<div class="match-found-icon">
@@ -511,7 +568,12 @@
 					<h2>{$_('pvp.active_match')}</h2>
 					<a href={`/pvp/matches/${getPvpMatchId(activeMatch)}`}>{$_('pvp.enter_match')}</a>
 				</div>
-				<MatchCard match={activeMatch} {currentUid} now={now} href={`/pvp/matches/${getPvpMatchId(activeMatch)}`} />
+				<MatchCard
+					match={activeMatch}
+					{currentUid}
+					{now}
+					href={`/pvp/matches/${getPvpMatchId(activeMatch)}`}
+				/>
 			</section>
 		{/if}
 
@@ -554,11 +616,7 @@
 								{elapsedLabel(lobby.matchmaking?.created_at, now)}
 							</span>
 						</div>
-						<Button
-							variant="outline"
-							disabled={Boolean(actionLoading)}
-							on:click={cancelQueue}
-						>
+						<Button variant="outline" disabled={Boolean(actionLoading)} on:click={cancelQueue}>
 							{#if actionLoading === 'cancel-matchmaking'}
 								<Loader2 class="mr-2 h-4 w-4 animate-spin" />
 							{/if}
@@ -588,7 +646,10 @@
 						disabled={controlsDisabled}
 						placeholder={$_('pvp.search_player')}
 					/>
-					<Button disabled={controlsDisabled || !selectedDifficulty || !selectedPlayer} on:click={invitePlayer}>
+					<Button
+						disabled={controlsDisabled || !selectedDifficulty || !selectedPlayer}
+						on:click={invitePlayer}
+					>
 						{#if actionLoading === 'invite'}
 							<Loader2 class="mr-2 h-4 w-4 animate-spin" />
 						{:else}
@@ -650,7 +711,13 @@
 				<Card.Header>
 					<div class="section-heading inside">
 						<Card.Title>{$_('pvp.outgoing_invites')}</Card.Title>
-						<Button variant="ghost" size="icon" disabled={loading} on:click={refreshLobby} aria-label={$_('pvp.refresh')}>
+						<Button
+							variant="ghost"
+							size="icon"
+							disabled={loading}
+							on:click={refreshLobby}
+							aria-label={$_('pvp.refresh')}
+						>
 							<RefreshCw class={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
 						</Button>
 					</div>
@@ -671,7 +738,8 @@
 											{statusLabel(getPvpStatus(invite))}
 										</Badge>
 										{#if getPvpStatus(invite) === 'pending'}
-											<span class="timer">{remainingLabel(getPvpInviteExpiresMs(invite), now)}</span>
+											<span class="timer">{remainingLabel(getPvpInviteExpiresMs(invite), now)}</span
+											>
 										{/if}
 										{#if getPvpMatchedMatchId(invite)}
 											<a class="inline-link" href={`/pvp/matches/${getPvpMatchedMatchId(invite)}`}>
@@ -958,5 +1026,42 @@
 		display: flex;
 		align-items: center;
 		gap: 12px;
+	}
+
+	.geode-alert {
+		background: hsl(var(--primary) / 0.08);
+		border-color: hsl(var(--primary) / 0.28);
+	}
+
+	.pvp-alert-dismiss {
+		display: inline-flex;
+		width: 32px;
+		height: 32px;
+		flex: 0 0 auto;
+		align-items: center;
+		justify-content: center;
+		border: 0;
+		border-radius: 6px;
+		background: transparent;
+		color: hsl(var(--muted-foreground));
+		cursor: pointer;
+	}
+
+	.pvp-alert-dismiss:hover {
+		background: hsl(var(--primary) / 0.12);
+		color: hsl(var(--foreground));
+	}
+
+	@media (max-width: 640px) {
+		.pvp-top-alert {
+			align-items: flex-start;
+			gap: 10px;
+		}
+
+		.pvp-top-alert-inner {
+			align-items: flex-start;
+			flex-direction: column;
+			gap: 4px;
+		}
 	}
 </style>
