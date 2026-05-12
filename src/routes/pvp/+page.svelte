@@ -350,7 +350,6 @@
 			<Card.Root>
 				<Card.Header>
 					<Card.Title>{$_('pvp.choose_difficulty')}</Card.Title>
-					<Card.Description>{$_('pvp.difficulty_band_hint')}</Card.Description>
 				</Card.Header>
 				<Card.Content>
 					<div class="difficulty-grid">
