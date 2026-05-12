@@ -65,6 +65,8 @@ export type PvpParticipant = {
 	bestProgress?: number | null;
 	timeReachedMs?: number | null;
 	timeReachedProgress?: number | null;
+	acceptedAt?: string | null;
+	accepted_at?: string | null;
 	[key: string]: unknown;
 };
 
@@ -82,6 +84,8 @@ export type PvpMatch = {
 	startedAt?: string | null;
 	startsAt?: string | null;
 	started_at?: string | null;
+	acceptanceExpiresAt?: string | null;
+	acceptance_expires_at?: string | null;
 	endAt?: string | null;
 	endsAt?: string | null;
 	endedAt?: string | null;
@@ -281,6 +285,13 @@ export async function getPvpMatch(token: string | null | undefined, id: number |
 	return pvpRequest<PvpMatch>(`/pvp/matches/${id}`, { token });
 }
 
+export async function acceptPvpMatch(token: string | null | undefined, id: number | string) {
+	return pvpRequest<PvpMatch>(`/pvp/matches/${id}/accept`, {
+		method: 'POST',
+		token
+	});
+}
+
 export function getPvpMatchId(match: PvpMatch | null | undefined) {
 	return match?.id ?? match?.matchId ?? null;
 }
@@ -383,6 +394,10 @@ export function getPvpMatchEndMs(match: PvpMatch | null | undefined) {
 	return started ? started + 15 * 60 * 1000 : null;
 }
 
+export function getPvpMatchAcceptanceExpiresMs(match: PvpMatch | null | undefined) {
+	return getTimeMs(match?.acceptanceExpiresAt ?? match?.acceptance_expires_at);
+}
+
 export function getPvpInviteExpiresMs(invite: PvpInvite | PvpMatchmakingRequest | null | undefined) {
 	return getTimeMs(invite?.expiresAt ?? invite?.expires_at);
 }
@@ -393,6 +408,10 @@ export function getPvpMatchedMatchId(value: PvpInvite | PvpMatchmakingRequest | 
 
 export function getPvpResultReason(match: PvpMatch | null | undefined) {
 	return match?.resultReason ?? match?.reason ?? null;
+}
+
+export function hasPvpParticipantAccepted(participant: PvpParticipant | null | undefined) {
+	return Boolean(participant?.acceptedAt ?? participant?.accepted_at);
 }
 
 export function getTimeMs(value: unknown) {

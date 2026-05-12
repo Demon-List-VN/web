@@ -4,6 +4,7 @@
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import {
 		getPvpLevel,
+		getPvpMatchAcceptanceExpiresMs,
 		getPvpMatchEndMs,
 		getPvpMatchId,
 		getPvpOpponent,
@@ -36,6 +37,7 @@
 	$: winnerUid = getPvpWinnerUid(match);
 	$: resultReason = getPvpResultReason(match);
 	$: remainingMs = Math.max(0, (getPvpMatchEndMs(match) ?? now) - now);
+	$: acceptanceRemainingMs = Math.max(0, (getPvpMatchAcceptanceExpiresMs(match) ?? now) - now);
 	$: isActive = isActivePvpMatch(match);
 
 	function difficultyLabel(value: unknown) {
@@ -65,6 +67,7 @@
 
 		if (status === 'cancelled') return $_('pvp.result.cancelled');
 		if (status === 'disputed') return $_('pvp.result.disputed');
+		if (status === 'pending') return `${$_('pvp.awaiting_acceptance_short')} ${formatDuration(acceptanceRemainingMs)}`;
 		return formatDuration(remainingMs);
 	}
 </script>

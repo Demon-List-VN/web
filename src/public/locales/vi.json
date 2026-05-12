@@ -237,6 +237,12 @@
     "you": "Bạn",
     "rival": "Đối thủ",
     "timer_active": "Đang tính giờ",
+    "match_found_title": "Đã tìm thấy trận",
+    "match_found_hint": "Xác nhận rằng bạn đã sẵn sàng. Trận chỉ bắt đầu khi cả hai người chơi đều chấp nhận.",
+    "accept_match": "Chấp nhận trận",
+    "acceptance_timer": "Thời gian xác nhận",
+    "waiting_for_acceptance": "Đang chờ đối thủ",
+    "awaiting_acceptance_short": "Xác nhận",
     "match_loading": "Đang tải trận",
     "match_not_found": "Không tìm thấy trận.",
     "status": {
@@ -270,6 +276,7 @@
       "invite_sent": "Đã gửi lời mời.",
       "invite_failed": "Gửi lời mời thất bại.",
       "accept_failed": "Chấp nhận lời mời thất bại.",
+      "accept_match_failed": "Chấp nhận trận thất bại.",
       "decline_failed": "Từ chối lời mời thất bại."
     }
   },

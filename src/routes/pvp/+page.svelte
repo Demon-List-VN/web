@@ -7,17 +7,24 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
+	import * as Dialog from '$lib/components/ui/dialog';
 	import {
 		PVP_DIFFICULTIES,
 		acceptPvpInvite,
+		acceptPvpMatch,
 		cancelPvpMatchmaking,
 		declinePvpInvite,
 		getPvpInviteExpiresMs,
+		getPvpMatchAcceptanceExpiresMs,
 		getPvpInviteId,
 		getPvpMatchedMatchId,
 		getPvpMatchId,
 		getPvpMe,
+		getPvpOpponent,
+		getPvpParticipantPlayer,
 		getPvpStatus,
+		getPvpSelfParticipant,
+		hasPvpParticipantAccepted,
 		isActivePvpMatch,
 		sendPvpInvite,
 		startPvpMatchmaking,
@@ -26,11 +33,13 @@
 		type PvpMe
 	} from '$lib/client/pvp';
 	import { setPvpRealtimeAuth, subscribeToPvpLobby } from '$lib/client/pvpRealtime';
+	import { playPvpBell } from '$lib/client/pvpSound';
 	import { onDestroy, onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { _, locale } from 'svelte-i18n';
 	import {
 		ArrowRight,
+		BellRing,
 		Clock,
 		Loader2,
 		LogIn,
@@ -56,9 +65,16 @@
 	let now = Date.now();
 	let ticker: ReturnType<typeof setInterval> | null = null;
 	let routedMatchId: number | string | null = null;
+	let announcedMatchIds = new Set<string>();
+	let endedMatchBellIds = new Set<string>();
 
 	$: currentUid = $user.data?.uid;
 	$: activeMatch = lobby.activeMatch && isActivePvpMatch(lobby.activeMatch) ? lobby.activeMatch : null;
+	$: pendingMatch = activeMatch && getPvpStatus(activeMatch) === 'pending' ? activeMatch : null;
+	$: pendingMatchId = getPvpMatchId(pendingMatch);
+	$: pendingOpponent = getPvpOpponent(pendingMatch, currentUid);
+	$: pendingOpponentPlayer = getPvpParticipantPlayer(pendingOpponent);
+	$: pendingSelfAccepted = hasPvpParticipantAccepted(getPvpSelfParticipant(pendingMatch, currentUid));
 	$: queueStatus = getPvpStatus(lobby.matchmaking, 'idle');
 	$: isSearching = queueStatus === 'searching';
 	$: queueMatchId = getPvpMatchedMatchId(lobby.matchmaking);
@@ -82,7 +98,7 @@
 		initializedForUid = '';
 	}
 
-	$: if (queueStatus === 'matched' && queueMatchId) {
+	$: if (queueStatus === 'matched' && queueMatchId && activeMatch && getPvpStatus(activeMatch) === 'in_progress') {
 		navigateToMatch(queueMatchId);
 	}
 
@@ -119,13 +135,35 @@
 
 		loading = true;
 		try {
-			lobby = await getPvpMe(await $user.token());
+			const previousActiveMatch = lobby.activeMatch;
+			const nextLobby = await getPvpMe(await $user.token());
+			handleLobbyMatchSounds(previousActiveMatch, nextLobby.activeMatch);
+			lobby = nextLobby;
 			routeAcceptedInvite(lobby.incomingInvites);
 			routeAcceptedInvite(lobby.outgoingInvites);
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.load_failed'));
 		} finally {
 			loading = false;
+		}
+	}
+
+	function handleLobbyMatchSounds(previousMatch: PvpMe['activeMatch'], nextMatch: PvpMe['activeMatch']) {
+		const nextId = getPvpMatchId(nextMatch);
+		const nextStatus = getPvpStatus(nextMatch, '');
+
+		if (nextId && nextStatus === 'pending' && !announcedMatchIds.has(String(nextId))) {
+			announcedMatchIds.add(String(nextId));
+			playPvpBell();
+		}
+
+		const previousId = getPvpMatchId(previousMatch);
+		const previousWasActive = Boolean(previousMatch && isActivePvpMatch(previousMatch));
+		const nextStillActive = Boolean(nextMatch && isActivePvpMatch(nextMatch));
+
+		if (previousId && previousWasActive && !nextStillActive && !endedMatchBellIds.has(String(previousId))) {
+			endedMatchBellIds.add(String(previousId));
+			playPvpBell();
 		}
 	}
 
@@ -168,7 +206,7 @@
 			const responseStatus = getPvpStatus(response as any, 'searching');
 			const matchId = responseStatus === 'matched' ? getPvpMatchedMatchId(response as any) : null;
 			await refreshLobby();
-			if (matchId) navigateToMatch(matchId);
+			if (matchId && getPvpStatus((response as any)?.match) === 'in_progress') navigateToMatch(matchId);
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.matchmaking_failed'));
 		} finally {
@@ -239,6 +277,24 @@
 		}
 	}
 
+	async function acceptPendingMatch() {
+		if (!pendingMatchId) return;
+
+		actionLoading = `accept-match-${pendingMatchId}`;
+		try {
+			const response = await acceptPvpMatch(await $user.token(), pendingMatchId);
+			await refreshLobby();
+
+			if (getPvpStatus(response) === 'in_progress') {
+				navigateToMatch(pendingMatchId);
+			}
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : $_('pvp.toast.accept_match_failed'));
+		} finally {
+			actionLoading = '';
+		}
+	}
+
 	async function declineInvite(invite: PvpInvite) {
 		const inviteId = getPvpInviteId(invite);
 		if (!inviteId) return;
@@ -270,6 +326,10 @@
 				: invite.invitee ?? invite.toPlayer;
 
 		return player?.name || player?.uid || (direction === 'incoming' ? invite.from : invite.to) || '--';
+	}
+
+	function pendingOpponentName() {
+		return pendingOpponentPlayer?.name || pendingOpponentPlayer?.uid || pendingOpponent?.uid || '--';
 	}
 
 	function remainingLabel(targetMs: number | null, currentNow: number) {
@@ -314,6 +374,53 @@
 			<ArrowRight class="h-4 w-4" />
 		</a>
 	</section>
+
+	<Dialog.Root open={Boolean(pendingMatch)}>
+		<Dialog.Content class="sm:max-w-[440px]">
+			<Dialog.Header>
+				<div class="match-found-icon">
+					<BellRing class="h-5 w-5" />
+				</div>
+				<Dialog.Title>{$_('pvp.match_found_title')}</Dialog.Title>
+				<Dialog.Description>
+					{$_('pvp.match_found_hint')}
+				</Dialog.Description>
+			</Dialog.Header>
+
+			<div class="match-found-body">
+				<div class="match-found-row">
+					<span>{$_('pvp.opponent')}</span>
+					<strong>{pendingOpponentName()}</strong>
+				</div>
+				<div class="match-found-row">
+					<span>{$_('pvp.choose_difficulty')}</span>
+					<strong>{difficultyLabel(pendingMatch?.difficulty)}</strong>
+				</div>
+				<div class="match-found-row">
+					<span>{$_('pvp.acceptance_timer')}</span>
+					<strong>{remainingLabel(getPvpMatchAcceptanceExpiresMs(pendingMatch), now)}</strong>
+				</div>
+			</div>
+
+			<Dialog.Footer>
+				{#if pendingSelfAccepted}
+					<Button disabled class="w-full">
+						<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+						{$_('pvp.waiting_for_acceptance')}
+					</Button>
+				{:else}
+					<Button class="w-full" disabled={Boolean(actionLoading)} on:click={acceptPendingMatch}>
+						{#if actionLoading === `accept-match-${pendingMatchId}`}
+							<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+						{:else}
+							<UserCheck class="mr-2 h-4 w-4" />
+						{/if}
+						{$_('pvp.accept_match')}
+					</Button>
+				{/if}
+			</Dialog.Footer>
+		</Dialog.Content>
+	</Dialog.Root>
 
 	{#if !$user.checked}
 		<Card.Root class="state-panel">
@@ -563,6 +670,38 @@
 		font-size: 14px;
 		font-weight: 700;
 		text-transform: uppercase;
+	}
+
+	.match-found-icon {
+		display: inline-flex;
+		width: 40px;
+		height: 40px;
+		align-items: center;
+		justify-content: center;
+		border-radius: 8px;
+		background: hsl(var(--primary) / 0.12);
+		color: hsl(var(--primary));
+	}
+
+	.match-found-body {
+		display: grid;
+		gap: 10px;
+		margin: 18px 0;
+	}
+
+	.match-found-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 14px;
+		border-radius: 8px;
+		background: hsl(var(--muted) / 0.55);
+		padding: 10px 12px;
+		font-size: 14px;
+	}
+
+	.match-found-row span {
+		color: hsl(var(--muted-foreground));
 	}
 
 	.topbar-link,

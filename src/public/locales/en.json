@@ -237,6 +237,12 @@
     "you": "You",
     "rival": "Rival",
     "timer_active": "Timer running",
+    "match_found_title": "Match found",
+    "match_found_hint": "Confirm that you are ready. The match starts only after both players accept.",
+    "accept_match": "Accept match",
+    "acceptance_timer": "Accept within",
+    "waiting_for_acceptance": "Waiting for opponent",
+    "awaiting_acceptance_short": "Accept",
     "match_loading": "Loading match",
     "match_not_found": "Match not found.",
     "status": {
@@ -270,6 +276,7 @@
       "invite_sent": "Invite sent.",
       "invite_failed": "Failed to send invite.",
       "accept_failed": "Failed to accept invite.",
+      "accept_match_failed": "Failed to accept match.",
       "decline_failed": "Failed to decline invite."
     }
   },

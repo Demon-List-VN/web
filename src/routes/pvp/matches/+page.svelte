@@ -6,11 +6,13 @@
 	import * as Card from '$lib/components/ui/card';
 	import {
 		getPvpMatches,
+		getPvpMatchId,
 		getPvpStatus,
 		isActivePvpMatch,
 		type PvpMatch
 	} from '$lib/client/pvp';
 	import { setPvpRealtimeAuth, subscribeToPvpMatches } from '$lib/client/pvpRealtime';
+	import { playPvpBell } from '$lib/client/pvpSound';
 	import { onDestroy, onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { _ } from 'svelte-i18n';
@@ -22,6 +24,7 @@
 	let cleanupRealtime: (() => Promise<void>) | null = null;
 	let now = Date.now();
 	let ticker: ReturnType<typeof setInterval> | null = null;
+	let endedMatchBellIds = new Set<string>();
 
 	$: currentUid = $user.data?.uid;
 	$: ongoingMatches = matches.filter((match) => isActivePvpMatch(match));
@@ -69,11 +72,29 @@
 
 		loading = true;
 		try {
-			matches = await getPvpMatches(await $user.token());
+			const previousMatches = matches;
+			const nextMatches = await getPvpMatches(await $user.token());
+			handleMatchEndSounds(previousMatches, nextMatches);
+			matches = nextMatches;
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.load_failed'));
 		} finally {
 			loading = false;
+		}
+	}
+
+	function handleMatchEndSounds(previousMatches: PvpMatch[], nextMatches: PvpMatch[]) {
+		const previousById = new Map(previousMatches.map((match) => [String(getPvpMatchId(match)), match]));
+
+		for (const match of nextMatches) {
+			const id = getPvpMatchId(match);
+			if (!id || endedMatchBellIds.has(String(id))) continue;
+
+			const previous = previousById.get(String(id));
+			if (previous && isActivePvpMatch(previous) && !isActivePvpMatch(match)) {
+				endedMatchBellIds.add(String(id));
+				playPvpBell();
+			}
 		}
 	}
 

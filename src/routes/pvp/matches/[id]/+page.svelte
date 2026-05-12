@@ -8,7 +8,9 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
 	import {
+		acceptPvpMatch,
 		getPvpLevel,
+		getPvpMatchAcceptanceExpiresMs,
 		getPvpMatch,
 		getPvpMatchEndMs,
 		getPvpMatchId,
@@ -17,14 +19,17 @@
 		getPvpParticipantUid,
 		getPvpProgress,
 		getPvpResultReason,
+		getPvpSelfParticipant,
 		getPvpStatus,
 		getPvpTimeReachedMs,
 		getPvpWinnerUid,
+		hasPvpParticipantAccepted,
 		isActivePvpMatch,
 		type PvpMatch,
 		type PvpParticipant
 	} from '$lib/client/pvp';
 	import { setPvpRealtimeAuth, subscribeToPvpMatchDetail } from '$lib/client/pvpRealtime';
+	import { playPvpBell } from '$lib/client/pvpSound';
 	import { onDestroy, onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { _ } from 'svelte-i18n';
@@ -36,6 +41,8 @@
 	let cleanupRealtime: (() => Promise<void>) | null = null;
 	let now = Date.now();
 	let ticker: ReturnType<typeof setInterval> | null = null;
+	let actionLoading = '';
+	let endedBellPlayedFor: string | null = null;
 
 	$: matchId = $page.params.id;
 	$: currentUid = $user.data?.uid;
@@ -45,7 +52,9 @@
 	$: winnerUid = getPvpWinnerUid(match);
 	$: resultReason = getPvpResultReason(match);
 	$: remainingMs = Math.max(0, (getPvpMatchEndMs(match) ?? now) - now);
+	$: acceptanceRemainingMs = Math.max(0, (getPvpMatchAcceptanceExpiresMs(match) ?? now) - now);
 	$: isActive = isActivePvpMatch(match);
+	$: selfAccepted = hasPvpParticipantAccepted(getPvpSelfParticipant(match, currentUid));
 
 	$: if ($user.checked && $user.loggedIn && matchId && initializedFor !== `${currentUid}:${matchId}`) {
 		initializeRealtime(matchId);
@@ -84,11 +93,38 @@
 
 		loading = true;
 		try {
-			match = await getPvpMatch(await $user.token(), matchId);
+			const previousMatch = match;
+			const nextMatch = await getPvpMatch(await $user.token(), matchId);
+			handleMatchSound(previousMatch, nextMatch);
+			match = nextMatch;
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.load_failed'));
 		} finally {
 			loading = false;
+		}
+	}
+
+	function handleMatchSound(previousMatch: PvpMatch | null, nextMatch: PvpMatch | null) {
+		const id = getPvpMatchId(nextMatch);
+		if (!id || endedBellPlayedFor === String(id)) return;
+
+		if (previousMatch && isActivePvpMatch(previousMatch) && nextMatch && !isActivePvpMatch(nextMatch)) {
+			endedBellPlayedFor = String(id);
+			playPvpBell();
+		}
+	}
+
+	async function acceptMatch() {
+		if (!matchId) return;
+
+		actionLoading = 'accept-match';
+		try {
+			const response = await acceptPvpMatch(await $user.token(), matchId);
+			match = response;
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : $_('pvp.toast.accept_match_failed'));
+		} finally {
+			actionLoading = '';
 		}
 	}
 
@@ -132,6 +168,7 @@
 		}
 		if (status === 'cancelled') return $_('pvp.result.cancelled');
 		if (status === 'disputed') return $_('pvp.result.disputed');
+		if (status === 'pending') return $_('pvp.match_found_title');
 		return $_('pvp.timer_active');
 	}
 
@@ -216,8 +253,32 @@
 						{:else}
 							<Clock class="h-5 w-5" />
 						{/if}
-						<strong>{isActive ? formatDuration(remainingMs) : statusLabel(status)}</strong>
+						<strong>
+							{#if status === 'pending'}
+								{formatDuration(acceptanceRemainingMs)}
+							{:else}
+								{isActive ? formatDuration(remainingMs) : statusLabel(status)}
+							{/if}
+						</strong>
 					</div>
+					{#if status === 'pending'}
+						<div class="acceptance-panel">
+							<p>{$_('pvp.match_found_hint')}</p>
+							{#if selfAccepted}
+								<Button disabled class="w-full">
+									<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+									{$_('pvp.waiting_for_acceptance')}
+								</Button>
+							{:else}
+								<Button disabled={Boolean(actionLoading)} class="w-full" on:click={acceptMatch}>
+									{#if actionLoading === 'accept-match'}
+										<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+									{/if}
+									{$_('pvp.accept_match')}
+								</Button>
+							{/if}
+						</div>
+					{/if}
 				</Card.Content>
 			</Card.Root>
 		</div>
@@ -413,6 +474,20 @@
 
 	.timer-display strong {
 		font-size: 1.4rem;
+	}
+
+	.acceptance-panel {
+		display: grid;
+		gap: 12px;
+		border-radius: 8px;
+		background: hsl(var(--muted) / 0.55);
+		padding: 14px;
+	}
+
+	.acceptance-panel p {
+		margin: 0;
+		color: hsl(var(--muted-foreground));
+		font-size: 14px;
 	}
 
 	:global(.level-content) h2 {

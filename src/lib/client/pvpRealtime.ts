@@ -90,6 +90,13 @@ export function subscribeToPvpLobby(uid: string, callback: RealtimeCallback) {
 			`uid=eq.${uid}`,
 			'result',
 			callback
+		),
+		subscribeToTable(
+			`pvp-lobby-matches-${uid}`,
+			'pvpMatches',
+			null,
+			'match',
+			callback
 		)
 	];
 
@@ -112,6 +119,13 @@ export function subscribeToPvpMatches(uid: string, callback: RealtimeCallback) {
 			'pvpMatchResults',
 			`uid=eq.${uid}`,
 			'result',
+			callback
+		),
+		subscribeToTable(
+			`pvp-matches-match-rows-${uid}`,
+			'pvpMatches',
+			null,
+			'match',
 			callback
 		)
 	];
@@ -148,4 +162,3 @@ export function subscribeToPvpMatchDetail(matchId: number | string, callback: Re
 
 	return () => removeChannels(channels);
 }
-
