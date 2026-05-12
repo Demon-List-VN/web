@@ -22,8 +22,6 @@
 		getPvpMatchId,
 		getPvpMe,
 		getPvpMatch,
-		getPvpOpponent,
-		getPvpParticipantPlayer,
 		getPvpStatus,
 		getPvpSelfParticipant,
 		hasPvpParticipantAccepted,
@@ -83,8 +81,6 @@
 		lobby.activeMatch && isActivePvpMatch(lobby.activeMatch) ? lobby.activeMatch : null;
 	$: pendingMatch = activeMatch && getPvpStatus(activeMatch) === 'pending' ? activeMatch : null;
 	$: pendingMatchId = getPvpMatchId(pendingMatch);
-	$: pendingOpponent = getPvpOpponent(pendingMatch, currentUid);
-	$: pendingOpponentPlayer = getPvpParticipantPlayer(pendingOpponent);
 	$: pendingSelfAccepted = hasPvpParticipantAccepted(
 		getPvpSelfParticipant(pendingMatch, currentUid)
 	);
@@ -414,12 +410,6 @@
 		);
 	}
 
-	function pendingOpponentName() {
-		return (
-			pendingOpponentPlayer?.name || pendingOpponentPlayer?.uid || pendingOpponent?.uid || '--'
-		);
-	}
-
 	function remainingLabel(targetMs: number | null, currentNow: number) {
 		if (!targetMs) return '--:--';
 
@@ -530,10 +520,6 @@
 			</Dialog.Header>
 
 			<div class="match-found-body">
-				<div class="match-found-row">
-					<span>{$_('pvp.opponent')}</span>
-					<strong>{pendingOpponentName()}</strong>
-				</div>
 				<div class="match-found-row">
 					<span>{$_('pvp.choose_difficulty')}</span>
 					<strong>{difficultyLabel(pendingMatch?.difficulty)}</strong>

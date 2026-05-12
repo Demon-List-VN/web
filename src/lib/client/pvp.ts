@@ -98,6 +98,19 @@ export type PvpMatch = {
 	[key: string]: unknown;
 };
 
+export type PvpMatchMessage = {
+	id?: number | string;
+	matchId?: number | string;
+	senderUid?: string | null;
+	type?: 'user' | 'system' | string;
+	content?: string;
+	metadata?: Record<string, unknown> | null;
+	created_at?: string;
+	sender?: PvpPlayer | null;
+	player?: PvpPlayer | null;
+	[key: string]: unknown;
+};
+
 export type PvpInvite = {
 	id?: number | string;
 	inviteId?: number | string;
@@ -289,6 +302,29 @@ export async function acceptPvpMatch(token: string | null | undefined, id: numbe
 	return pvpRequest<PvpMatch>(`/pvp/matches/${id}/accept`, {
 		method: 'POST',
 		token
+	});
+}
+
+export async function getPvpMatchMessages(token: string | null | undefined, id: number | string) {
+	const payload = await pvpRequest<
+		PvpMatchMessage[] | { messages?: PvpMatchMessage[]; data?: PvpMatchMessage[] }
+	>(`/pvp/matches/${id}/messages`, { token });
+
+	if (Array.isArray(payload)) return payload;
+	if (Array.isArray(payload?.messages)) return payload.messages;
+	if (Array.isArray(payload?.data)) return payload.data;
+	return [];
+}
+
+export async function sendPvpMatchMessage(
+	token: string | null | undefined,
+	id: number | string,
+	content: string
+) {
+	return pvpRequest<PvpMatchMessage>(`/pvp/matches/${id}/messages`, {
+		method: 'POST',
+		token,
+		body: { content }
 	});
 }
 

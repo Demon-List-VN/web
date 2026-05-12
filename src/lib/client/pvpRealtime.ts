@@ -6,7 +6,8 @@ type PvpRealtimeScope =
 	| 'outgoingInvite'
 	| 'participant'
 	| 'result'
-	| 'match';
+	| 'match'
+	| 'message';
 
 export type PvpRealtimeEvent = {
 	scope: PvpRealtimeScope;
@@ -156,6 +157,13 @@ export function subscribeToPvpMatchDetail(matchId: number | string, callback: Re
 			'pvpMatchResults',
 			`matchId=eq.${matchId}`,
 			'result',
+			callback
+		),
+		subscribeToTable(
+			`pvp-match-detail-messages-${matchId}`,
+			'pvpMatchMessages',
+			`matchId=eq.${matchId}`,
+			'message',
 			callback
 		)
 	];

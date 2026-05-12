@@ -5,10 +5,13 @@
 	import supabase from '$lib/client/supabase';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
+	import { Textarea } from '$lib/components/ui/textarea';
 	import * as Alert from '$lib/components/ui/alert';
 	import * as Card from '$lib/components/ui/card';
+	import * as Drawer from '$lib/components/ui/drawer';
 	import {
 		acceptPvpMatch,
+		getPvpMatchMessages,
 		getPvpLevel,
 		getPvpMatchAcceptanceExpiresMs,
 		getPvpMatch,
@@ -23,14 +26,17 @@
 		getPvpStatus,
 		getPvpTimeReachedMs,
 		getPvpWinnerUid,
+		getTimeMs,
 		hasPvpParticipantAccepted,
 		isActivePvpMatch,
+		sendPvpMatchMessage,
 		type PvpMatch,
+		type PvpMatchMessage,
 		type PvpParticipant
 	} from '$lib/client/pvp';
 	import { setPvpRealtimeAuth, subscribeToPvpMatchDetail } from '$lib/client/pvpRealtime';
 	import { playPvpBell } from '$lib/client/pvpSound';
-	import { onDestroy, onMount } from 'svelte';
+	import { onDestroy, onMount, tick } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { _ } from 'svelte-i18n';
 	import {
@@ -40,13 +46,16 @@
 		Gauge,
 		Loader2,
 		LogIn,
+		MessageCircle,
 		RefreshCw,
 		Trophy,
 		Copy,
+		Send,
 		X
 	} from 'lucide-svelte';
 
 	const PVP_GEODE_ALERT_DISMISSED_KEY = 'gdvn:pvp-geode-alert-dismissed';
+	const POST_MATCH_CHAT_GRACE_MS = 3 * 60 * 1000;
 
 	let match: PvpMatch | null = null;
 	let loading = false;
@@ -57,6 +66,12 @@
 	let actionLoading = '';
 	let endedBellPlayedFor: string | null = null;
 	let showGeodeAlert = true;
+	let messages: PvpMatchMessage[] = [];
+	let chatDraft = '';
+	let chatLoading = false;
+	let desktopChatScrollEl: HTMLDivElement | null = null;
+	let mobileChatScrollEl: HTMLDivElement | null = null;
+	let mobileChatOpen = false;
 
 	$: matchId = $page.params.id;
 	$: currentUid = $user.data?.uid;
@@ -69,9 +84,19 @@
 	$: winnerUid = getPvpWinnerUid(match);
 	$: resultReason = getPvpResultReason(match);
 	$: remainingMs = Math.max(0, (getPvpMatchEndMs(match) ?? now) - now);
+	$: endedMs = getTimeMs(match?.endedAt);
+	$: postMatchChatRemainingMs = Math.max(0, (endedMs ? endedMs + POST_MATCH_CHAT_GRACE_MS : now) - now);
 	$: acceptanceRemainingMs = Math.max(0, (getPvpMatchAcceptanceExpiresMs(match) ?? now) - now);
 	$: isActive = isActivePvpMatch(match);
 	$: selfAccepted = hasPvpParticipantAccepted(getPvpSelfParticipant(match, currentUid));
+	$: chatOpenDuringMatch = ['in_progress', 'waiting_result'].includes(status) && remainingMs > 0;
+	$: chatOpenAfterMatch = status === 'completed' && postMatchChatRemainingMs > 0;
+	$: chatDisabled = !chatOpenDuringMatch && !chatOpenAfterMatch;
+	$: chatDescription = chatDisabled
+		? 'Chat is disabled for this match.'
+		: chatOpenAfterMatch
+			? `Post-match chat closes in ${formatDuration(postMatchChatRemainingMs)}.`
+			: 'Talk during the match.';
 
 	$: if (
 		$user.checked &&
@@ -102,9 +127,14 @@
 		try {
 			const token = await $user.token();
 			setPvpRealtimeAuth(token);
-			await refreshMatch();
+			await Promise.all([refreshMatch(), refreshMessages()]);
 
-			cleanupRealtime = subscribeToPvpMatchDetail(id, async () => {
+			cleanupRealtime = subscribeToPvpMatchDetail(id, async (event) => {
+				if (event.scope === 'message') {
+					await refreshMessages();
+					return;
+				}
+
 				await refreshMatch();
 			});
 		} catch (error) {
@@ -125,6 +155,29 @@
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.load_failed'));
 		} finally {
 			loading = false;
+		}
+	}
+
+	async function refreshMessages() {
+		if (!$user.loggedIn || !matchId) return;
+
+		chatLoading = true;
+		try {
+			messages = await getPvpMatchMessages(await $user.token(), matchId);
+			await scrollChatToBottom();
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : 'Failed to load match chat');
+		} finally {
+			chatLoading = false;
+		}
+	}
+
+	async function scrollChatToBottom() {
+		await tick();
+		for (const element of [desktopChatScrollEl, mobileChatScrollEl]) {
+			if (element) {
+				element.scrollTop = element.scrollHeight;
+			}
 		}
 	}
 
@@ -153,6 +206,24 @@
 			match = response;
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.accept_match_failed'));
+		} finally {
+			actionLoading = '';
+		}
+	}
+
+	async function sendChatMessage() {
+		if (!matchId || chatDisabled || actionLoading === 'send-chat') return;
+
+		const content = chatDraft.trim();
+		if (!content) return;
+
+		actionLoading = 'send-chat';
+		try {
+			await sendPvpMatchMessage(await $user.token(), matchId, content);
+			chatDraft = '';
+			await refreshMessages();
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : 'Failed to send message');
 		} finally {
 			actionLoading = '';
 		}
@@ -247,6 +318,22 @@
 		return getPvpParticipantUid(participant) === currentUid ? $_('pvp.you') : $_('pvp.rival');
 	}
 
+	function messageSenderName(message: PvpMatchMessage) {
+		if (message.type === 'system') return 'Arena';
+		if (message.senderUid === currentUid) return $_('pvp.you');
+		return message.sender?.name || message.player?.name || message.senderUid || $_('pvp.rival');
+	}
+
+	function messageTime(message: PvpMatchMessage) {
+		const ms = message.created_at ? new Date(message.created_at).getTime() : NaN;
+		if (!Number.isFinite(ms)) return '';
+
+		return new Intl.DateTimeFormat(undefined, {
+			hour: '2-digit',
+			minute: '2-digit'
+		}).format(new Date(ms));
+	}
+
 	function participantResult(participant: PvpParticipant) {
 		if (status !== 'completed') return null;
 		if (!winnerUid) return $_('pvp.result.draw');
@@ -314,7 +401,7 @@
 
 	<section class="match-topbar">
 		<div>
-			<a class="back-link" href="/pvp/matches">
+			<a class="back-link" href="/pvp">
 				<ArrowLeft class="h-4 w-4" />
 				{$_('pvp.matches_title')}
 			</a>
@@ -357,178 +444,316 @@
 			</Card.Content>
 		</Card.Root>
 	{:else if match}
-		<div class="summary-grid">
-			<Card.Root class="match-progress-panel">
-				<Card.Header>
-					<div class="match-panel-header">
-						<div>
-							<Card.Title>{resultTitle()}</Card.Title>
-							<Card.Description>
-								{#if resultReason}
-									{resultReason}
-								{:else}
-									{statusLabel(status)}
-								{/if}
-							</Card.Description>
-						</div>
-						<div class="result-line">
-							<Badge variant={isActive ? 'default' : 'secondary'}>{statusLabel(status)}</Badge>
-							<Badge variant="outline">{difficultyLabel(match.difficulty)}</Badge>
-						</div>
-					</div>
-				</Card.Header>
-				<Card.Content class="match-progress-content">
-					<div class="timer-display">
-						{#if status === 'completed'}
-							<Trophy class="h-5 w-5" />
-						{:else}
-							<Clock class="h-5 w-5" />
-						{/if}
-						<strong>
-							{#if status === 'pending'}
-								{formatDuration(acceptanceRemainingMs)}
-							{:else}
-								{isActive ? formatDuration(remainingMs) : statusLabel(status)}
-							{/if}
-						</strong>
-					</div>
-
-					{#if orderedParticipants.length === 0}
-						<div class="empty-state">{$_('pvp.waiting_opponent')}</div>
-					{:else}
-						<div class="side-grid">
-							{#each orderedParticipants as participant, index}
-								<div
-									class:left-side={index === 0}
-									class:right-side={index === 1}
-									class:winner={winnerUid && getPvpParticipantUid(participant) === winnerUid}
-									class="participant-card"
-								>
-									<div class="participant-topline">
-										<Badge
-											variant={getPvpParticipantUid(participant) === currentUid
-												? 'default'
-												: 'outline'}
-										>
-											{participantLabel(participant)}
-										</Badge>
-										{#if participantResult(participant)}
-											<Badge variant="secondary">{participantResult(participant)}</Badge>
-										{/if}
-									</div>
-
-									<div class="participant-name">
-										{#if getPvpParticipantPlayer(participant)?.uid}
-											<PlayerLink
-												player={getPvpParticipantPlayer(participant)}
-												showAvatar
-												truncate={26}
-											/>
+		<div class="match-layout">
+			<div class="match-main-column">
+				<div class="summary-grid">
+					<Card.Root class="match-progress-panel">
+						<Card.Header>
+							<div class="match-panel-header">
+								<div>
+									<Card.Title>{resultTitle()}</Card.Title>
+									<Card.Description>
+										{#if resultReason}
+											{resultReason}
 										{:else}
-											<strong>{participantName(participant)}</strong>
+											{statusLabel(status)}
 										{/if}
-									</div>
-
-									<div class="participant-progress">
-										<div class="progress-label">
-											<span>{getPvpProgress(participant)}%</span>
-											<span>
-												<Gauge class="h-3.5 w-3.5" />
-												{formatDuration(getPvpTimeReachedMs(participant))}
-											</span>
-										</div>
-										<div class="progress-track">
-											<div
-												class="progress-bar"
-												style={`width: ${Math.min(100, getPvpProgress(participant))}%;`}
-											/>
-										</div>
-									</div>
+									</Card.Description>
 								</div>
-							{/each}
-						</div>
-					{/if}
-
-					{#if status === 'pending'}
-						<div class="acceptance-panel">
-							<p>{$_('pvp.match_found_hint')}</p>
-							{#if selfAccepted}
-								<Button disabled class="w-full">
-									<Loader2 class="mr-2 h-4 w-4 animate-spin" />
-									{$_('pvp.waiting_for_acceptance')}
-								</Button>
-							{:else}
-								<Button disabled={Boolean(actionLoading)} class="w-full" on:click={acceptMatch}>
-									{#if actionLoading === 'accept-match'}
-										<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+								<div class="result-line">
+									<Badge variant={isActive ? 'default' : 'secondary'}>{statusLabel(status)}</Badge>
+									<Badge variant="outline">{difficultyLabel(match.difficulty)}</Badge>
+								</div>
+							</div>
+						</Card.Header>
+						<Card.Content class="match-progress-content">
+							<div class="timer-display">
+								{#if status === 'completed'}
+									<Trophy class="h-5 w-5" />
+								{:else}
+									<Clock class="h-5 w-5" />
+								{/if}
+								<strong>
+									{#if status === 'pending'}
+										{formatDuration(acceptanceRemainingMs)}
+									{:else}
+										{isActive ? formatDuration(remainingMs) : statusLabel(status)}
 									{/if}
-									{$_('pvp.accept_match')}
-								</Button>
+								</strong>
+							</div>
+
+							{#if orderedParticipants.length === 0}
+								<div class="empty-state">{$_('pvp.waiting_opponent')}</div>
+							{:else}
+								<div class="side-grid">
+									{#each orderedParticipants as participant, index}
+										<div
+											class:left-side={index === 0}
+											class:right-side={index === 1}
+											class:winner={winnerUid && getPvpParticipantUid(participant) === winnerUid}
+											class="participant-card"
+										>
+											<div class="participant-topline">
+												<Badge
+													variant={getPvpParticipantUid(participant) === currentUid
+														? 'default'
+														: 'outline'}
+												>
+													{participantLabel(participant)}
+												</Badge>
+												{#if participantResult(participant)}
+													<Badge variant="secondary">{participantResult(participant)}</Badge>
+												{/if}
+											</div>
+
+											<div class="participant-name">
+												{#if getPvpParticipantPlayer(participant)?.uid}
+													<PlayerLink
+														player={getPvpParticipantPlayer(participant)}
+														showAvatar
+														truncate={26}
+													/>
+												{:else}
+													<strong>{participantName(participant)}</strong>
+												{/if}
+											</div>
+
+											<div class="participant-progress">
+												<div class="progress-label">
+													<span>{getPvpProgress(participant)}%</span>
+													<span>
+														<Gauge class="h-3.5 w-3.5" />
+														{formatDuration(getPvpTimeReachedMs(participant))}
+													</span>
+												</div>
+												<div class="progress-track">
+													<div
+														class="progress-bar"
+														style={`width: ${Math.min(100, getPvpProgress(participant))}%;`}
+													/>
+												</div>
+											</div>
+										</div>
+									{/each}
+								</div>
+							{/if}
+
+							{#if status === 'pending'}
+								<div class="acceptance-panel">
+									<p>{$_('pvp.match_found_hint')}</p>
+									{#if selfAccepted}
+										<Button disabled class="w-full">
+											<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+											{$_('pvp.waiting_for_acceptance')}
+										</Button>
+									{:else}
+										<Button disabled={Boolean(actionLoading)} class="w-full" on:click={acceptMatch}>
+											{#if actionLoading === 'accept-match'}
+												<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+											{/if}
+											{$_('pvp.accept_match')}
+										</Button>
+									{/if}
+								</div>
+							{/if}
+						</Card.Content>
+					</Card.Root>
+				</div>
+
+				<section class="detail-grid">
+					<Card.Root>
+						<Card.Header>
+							<Card.Title>{$_('pvp.challenge_level')}</Card.Title>
+						</Card.Header>
+						<Card.Content class="level-content">
+							{#if level}
+								<div>
+									<h2>{level.name || `#${level.id || match.levelId}`}</h2>
+									<p>
+										{#if level.creator || level.author}
+											{$_('head.labels.by')} {level.creator || level.author}
+										{:else}
+											{$_('pvp.level_pending')}
+										{/if}
+									</p>
+								</div>
+								<div class="level-meta">
+									{#if level.rating !== null && level.rating !== undefined}
+										<Badge variant="secondary">{level.rating}pt</Badge>
+									{/if}
+									{#if level.difficulty}
+										<Badge variant="outline">{level.difficulty}</Badge>
+									{/if}
+									{#if level.id || match.levelId}
+										<a class="level-link" href={`/level/${level.id || match.levelId}`}>
+											{$_('pvp.open_level')}
+											<ExternalLink class="h-4 w-4" />
+										</a>
+										<div class="level-id">
+											<span class="id-label">ID: {level.id ?? match.levelId}</span>
+											<Button
+												variant="ghost"
+												size="icon"
+												on:click={copyLevelId}
+												aria-label={$_('pvp.copy_level_id')}
+											>
+												<Copy class="h-4 w-4" />
+											</Button>
+										</div>
+									{/if}
+								</div>
+								{#if levelVideoId}
+									<div class="level-video">
+										<iframe
+											src={`https://www.youtube.com/embed/${levelVideoId}`}
+											title={level.name || $_('pvp.challenge_level')}
+											allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+											allowfullscreen
+										></iframe>
+									</div>
+								{/if}
+							{:else}
+								<div class="empty-state">{$_('pvp.level_pending')}</div>
+							{/if}
+						</Card.Content>
+					</Card.Root>
+				</section>
+			</div>
+
+			<aside class="desktop-chat-panel">
+				<Card.Root class="desktop-chat-card">
+					<Card.Header>
+						<div class="chat-header">
+							<div>
+								<Card.Title>Match chat</Card.Title>
+								<Card.Description>{chatDescription}</Card.Description>
+							</div>
+							{#if chatLoading}
+								<Loader2 class="h-4 w-4 animate-spin text-muted-foreground" />
 							{/if}
 						</div>
-					{/if}
-				</Card.Content>
-			</Card.Root>
+					</Card.Header>
+					<Card.Content class="chat-content">
+						<div class="chat-messages" bind:this={desktopChatScrollEl}>
+							{#if messages.length === 0}
+								<div class="empty-state">No messages yet.</div>
+							{:else}
+								{#each messages as message}
+									<div
+										class:own-message={message.senderUid === currentUid}
+										class:system-message={message.type === 'system'}
+										class="chat-message"
+									>
+										<div class="chat-message-meta">
+											<strong>{messageSenderName(message)}</strong>
+											<span>{messageTime(message)}</span>
+										</div>
+										<p>{message.content}</p>
+									</div>
+								{/each}
+							{/if}
+						</div>
+
+						<form class="chat-form" on:submit|preventDefault={sendChatMessage}>
+							<Textarea
+								bind:value={chatDraft}
+								rows={2}
+								maxlength={500}
+								disabled={chatDisabled || actionLoading === 'send-chat'}
+								placeholder={chatDisabled ? 'Match chat is closed.' : 'Type a message...'}
+								on:keydown={(event) => {
+									if (event.key === 'Enter' && !event.shiftKey) {
+										event.preventDefault();
+										sendChatMessage();
+									}
+								}}
+							/>
+							<Button
+								type="submit"
+								disabled={chatDisabled || !chatDraft.trim() || actionLoading === 'send-chat'}
+								aria-label="Send message"
+							>
+								{#if actionLoading === 'send-chat'}
+									<Loader2 class="h-4 w-4 animate-spin" />
+								{:else}
+									<Send class="h-4 w-4" />
+								{/if}
+							</Button>
+						</form>
+					</Card.Content>
+				</Card.Root>
+			</aside>
 		</div>
 
-		<section class="detail-grid">
-			<Card.Root>
-				<Card.Header>
-					<Card.Title>{$_('pvp.challenge_level')}</Card.Title>
-				</Card.Header>
-				<Card.Content class="level-content">
-					{#if level}
+		<Drawer.Root bind:open={mobileChatOpen}>
+			<Drawer.Trigger asChild let:builder>
+				<Button builders={[builder]} class="mobile-chat-trigger" type="button">
+					<MessageCircle class="h-4 w-4" />
+					Match chat
+				</Button>
+			</Drawer.Trigger>
+			<Drawer.Content class="mobile-chat-drawer">
+				<Drawer.Header>
+					<div class="chat-header">
 						<div>
-							<h2>{level.name || `#${level.id || match.levelId}`}</h2>
-							<p>
-								{#if level.creator || level.author}
-									{$_('head.labels.by')} {level.creator || level.author}
-								{:else}
-									{$_('pvp.level_pending')}
-								{/if}
-							</p>
+							<Drawer.Title>Match chat</Drawer.Title>
+							<Drawer.Description>{chatDescription}</Drawer.Description>
 						</div>
-						<div class="level-meta">
-							{#if level.rating !== null && level.rating !== undefined}
-								<Badge variant="secondary">{level.rating}pt</Badge>
-							{/if}
-							{#if level.difficulty}
-								<Badge variant="outline">{level.difficulty}</Badge>
-							{/if}
-							{#if level.id || match.levelId}
-								<a class="level-link" href={`/level/${level.id || match.levelId}`}>
-									{$_('pvp.open_level')}
-									<ExternalLink class="h-4 w-4" />
-								</a>
-								<div class="level-id">
-									<span class="id-label">ID: {level.id ?? match.levelId}</span>
-									<Button
-										variant="ghost"
-										size="icon"
-										on:click={copyLevelId}
-										aria-label={$_('pvp.copy_level_id')}
-									>
-										<Copy class="h-4 w-4" />
-									</Button>
-								</div>
-							{/if}
-						</div>
-						{#if levelVideoId}
-							<div class="level-video">
-								<iframe
-									src={`https://www.youtube.com/embed/${levelVideoId}`}
-									title={level.name || $_('pvp.challenge_level')}
-									allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-									allowfullscreen
-								></iframe>
-							</div>
+						{#if chatLoading}
+							<Loader2 class="h-4 w-4 animate-spin text-muted-foreground" />
 						{/if}
-					{:else}
-						<div class="empty-state">{$_('pvp.level_pending')}</div>
-					{/if}
-				</Card.Content>
-			</Card.Root>
-		</section>
+					</div>
+				</Drawer.Header>
+				<div class="mobile-chat-body">
+					<div class="chat-messages" bind:this={mobileChatScrollEl}>
+						{#if messages.length === 0}
+							<div class="empty-state">No messages yet.</div>
+						{:else}
+							{#each messages as message}
+								<div
+									class:own-message={message.senderUid === currentUid}
+									class:system-message={message.type === 'system'}
+									class="chat-message"
+								>
+									<div class="chat-message-meta">
+										<strong>{messageSenderName(message)}</strong>
+										<span>{messageTime(message)}</span>
+									</div>
+									<p>{message.content}</p>
+								</div>
+							{/each}
+						{/if}
+					</div>
+
+					<form class="chat-form" on:submit|preventDefault={sendChatMessage}>
+						<Textarea
+							bind:value={chatDraft}
+							rows={2}
+							maxlength={500}
+							disabled={chatDisabled || actionLoading === 'send-chat'}
+							placeholder={chatDisabled ? 'Match chat is closed.' : 'Type a message...'}
+							on:keydown={(event) => {
+								if (event.key === 'Enter' && !event.shiftKey) {
+									event.preventDefault();
+									sendChatMessage();
+								}
+							}}
+						/>
+						<Button
+							type="submit"
+							disabled={chatDisabled || !chatDraft.trim() || actionLoading === 'send-chat'}
+							aria-label="Send message"
+						>
+							{#if actionLoading === 'send-chat'}
+								<Loader2 class="h-4 w-4 animate-spin" />
+							{:else}
+								<Send class="h-4 w-4" />
+							{/if}
+						</Button>
+					</form>
+				</div>
+			</Drawer.Content>
+		</Drawer.Root>
 	{:else}
 		<Card.Root>
 			<Card.Content class="state-content">{$_('pvp.match_not_found')}</Card.Content>
@@ -538,14 +763,26 @@
 
 <style>
 	.match-page {
-		width: min(1120px, calc(100vw - 32px));
+		width: min(1440px, calc(100vw - 32px));
 		margin: 0 auto;
 		padding: 36px 0 64px;
+	}
+
+	.match-layout {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		gap: 18px;
+		align-items: start;
+	}
+
+	.match-main-column {
+		min-width: 0;
 	}
 
 	.match-topbar,
 	:global(.auth-content),
 	.match-panel-header,
+	.chat-header,
 	.result-line,
 	.timer-display,
 	.level-meta,
@@ -642,9 +879,35 @@
 		margin-top: 16px;
 	}
 
+	.desktop-chat-panel {
+		position: sticky;
+		top: 18px;
+		min-width: 0;
+	}
+
+	:global(.desktop-chat-card) {
+		display: flex;
+		height: calc(100vh - 36px);
+		min-height: 560px;
+		max-height: 860px;
+		flex-direction: column;
+	}
+
+	:global(.desktop-chat-card .chat-content) {
+		display: grid;
+		flex: 1;
+		grid-template-rows: minmax(0, 1fr) auto;
+		min-height: 0;
+	}
+
 	.match-panel-header {
 		justify-content: space-between;
 		gap: 16px;
+	}
+
+	.chat-header {
+		justify-content: space-between;
+		gap: 12px;
 	}
 
 	.result-line {
@@ -776,6 +1039,103 @@
 		transition: width 180ms ease;
 	}
 
+	:global(.chat-content) {
+		display: grid;
+		gap: 12px;
+	}
+
+	.chat-messages {
+		display: grid;
+		align-content: start;
+		gap: 10px;
+		height: 320px;
+		overflow-y: auto;
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		background: hsl(var(--muted) / 0.25);
+		padding: 12px;
+	}
+
+	.desktop-chat-panel .chat-messages {
+		height: auto;
+		min-height: 0;
+	}
+
+	.chat-message {
+		max-width: min(78%, 560px);
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		background: hsl(var(--background));
+		padding: 9px 11px;
+	}
+
+	.chat-message.own-message {
+		justify-self: end;
+		border-color: hsl(var(--primary) / 0.35);
+		background: hsl(var(--primary) / 0.09);
+	}
+
+	.chat-message.system-message {
+		justify-self: center;
+		max-width: 92%;
+		border-color: hsl(var(--primary) / 0.25);
+		background: hsl(var(--primary) / 0.08);
+		text-align: center;
+	}
+
+	.chat-message-meta {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
+		color: hsl(var(--muted-foreground));
+		font-size: 12px;
+	}
+
+	.chat-message-meta strong {
+		color: hsl(var(--foreground));
+	}
+
+	.chat-message p {
+		margin: 4px 0 0;
+		overflow-wrap: anywhere;
+		white-space: pre-wrap;
+		font-size: 14px;
+		line-height: 1.45;
+	}
+
+	.chat-form {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		gap: 10px;
+		align-items: end;
+	}
+
+	.chat-form :global(button) {
+		width: 44px;
+		height: 44px;
+		padding: 0;
+	}
+
+	:global(.mobile-chat-trigger) {
+		display: none !important;
+	}
+
+	:global(.mobile-chat-drawer) {
+		height: 86vh;
+		max-height: 86vh;
+	}
+
+	.mobile-chat-body {
+		display: grid;
+		flex: 1;
+		gap: 12px;
+		grid-template-rows: minmax(0, 1fr) auto;
+		min-height: 0;
+		overflow: hidden;
+		padding: 0 16px 16px;
+	}
+
 	.empty-state {
 		display: flex;
 		align-items: center;
@@ -783,8 +1143,31 @@
 	}
 
 	@media (max-width: 900px) {
+		.match-layout {
+			grid-template-columns: 1fr;
+		}
+
+		.desktop-chat-panel {
+			display: none;
+		}
+
 		.side-grid {
 			grid-template-columns: 1fr;
+		}
+
+		:global(.mobile-chat-trigger) {
+			position: fixed;
+			right: 16px;
+			bottom: max(16px, env(safe-area-inset-bottom));
+			z-index: 40;
+			display: inline-flex !important;
+			gap: 8px;
+			box-shadow: 0 12px 28px hsl(var(--foreground) / 0.18);
+		}
+
+		.mobile-chat-body .chat-messages {
+			height: auto;
+			min-height: 0;
 		}
 	}
 
@@ -792,17 +1175,23 @@
 		.match-page {
 			width: min(100vw - 20px, 1120px);
 			padding-top: 24px;
+			padding-bottom: 88px;
 		}
 
 		.match-topbar,
 		:global(.auth-content),
-		.match-panel-header {
+		.match-panel-header,
+		.chat-header {
 			align-items: stretch;
 			flex-direction: column;
 		}
 
 		.result-line {
 			justify-content: flex-start;
+		}
+
+		.chat-message {
+			max-width: 92%;
 		}
 	}
 </style>
