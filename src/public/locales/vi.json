@@ -206,6 +206,7 @@
 		"rejoin_ongoing_match": "Vào lại trận đang diễn ra",
 		"view_match": "Xem trận",
 		"refresh": "Tải lại",
+		"rematch": "Tái đấu",
 		"resign": "Đầu hàng",
 		"resign_confirm": "Đầu hàng trận này? Đối thủ của bạn sẽ được tính thắng.",
 		"sign_in_title": "Đăng nhập để vào Arena",
@@ -320,6 +321,8 @@
 			"accept_failed": "Chấp nhận lời mời thất bại.",
 			"accept_match_failed": "Chấp nhận trận thất bại.",
 			"decline_failed": "Từ chối lời mời thất bại.",
+			"rematch_sent": "Đã gửi lời mời tái đấu.",
+			"rematch_failed": "Gửi lời mời tái đấu thất bại.",
 			"resign_success": "Bạn đã đầu hàng trận đấu.",
 			"resign_failed": "Đầu hàng trận đấu thất bại."
 		}

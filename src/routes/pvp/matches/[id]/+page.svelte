@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import { user } from '$lib/client';
 	import supabase from '$lib/client/supabase';
@@ -12,6 +13,7 @@
 	import * as Drawer from '$lib/components/ui/drawer';
 	import { isActive as isSupporterActive } from '$lib/client/isSupporterActive';
 	import {
+		PVP_DIFFICULTIES,
 		acceptPvpMatch,
 		getPvpMatchMessages,
 		getPvpLevel,
@@ -20,6 +22,7 @@
 		getPvpMatchEndMs,
 		getPvpMatchId,
 		getPvpMessageSenderIsAnonymous,
+		getPvpOpponent,
 		getPvpParticipants,
 		getPvpParticipantIsAnonymous,
 		getPvpParticipantPlayer,
@@ -34,7 +37,9 @@
 		hasPvpParticipantAccepted,
 		isActivePvpMatch,
 		resignPvpMatch,
+		sendPvpInvite,
 		sendPvpMatchMessage,
+		type PvpDifficulty,
 		type PvpMatch,
 		type PvpMatchMessage,
 		type PvpParticipant
@@ -120,6 +125,11 @@
 	$: isActive = isActivePvpMatch(match);
 	$: selfParticipant = getPvpSelfParticipant(match, currentUid);
 	$: selfAccepted = hasPvpParticipantAccepted(selfParticipant);
+	$: rematchOpponent = getPvpOpponent(match, currentUid);
+	$: rematchOpponentUid = getPvpParticipantUid(rematchOpponent);
+	$: canRematch = Boolean(
+		match && !isActive && selfParticipant && rematchOpponentUid && rematchDifficulty(match)
+	);
 	$: canResign =
 		['in_progress', 'waiting_result'].includes(status) &&
 		remainingMs > 0 &&
@@ -350,6 +360,33 @@
 		}
 	}
 
+	async function requestRematch() {
+		if (!match || actionLoading) return;
+
+		const inviteeUid = String(rematchOpponentUid || '');
+		const difficulty = rematchDifficulty(match);
+
+		if (!inviteeUid || !difficulty) {
+			toast.error($_('pvp.toast.rematch_failed'));
+			return;
+		}
+
+		actionLoading = 'rematch';
+		try {
+			await sendPvpInvite(await $user.token(), {
+				inviteeUid,
+				difficulty,
+				anonymous: getPvpParticipantIsAnonymous(selfParticipant)
+			});
+			toast.success($_('pvp.toast.rematch_sent'));
+			await goto('/pvp');
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : $_('pvp.toast.rematch_failed'));
+		} finally {
+			actionLoading = '';
+		}
+	}
+
 	async function sendChatMessage() {
 		if (!matchId || chatInputDisabled || actionLoading === 'send-chat') return;
 
@@ -384,6 +421,11 @@
 
 	function difficultyLabel(value: unknown) {
 		return $_(`pvp.difficulty.${String(value || 'easy')}`);
+	}
+
+	function rematchDifficulty(currentMatch: PvpMatch | null = match): PvpDifficulty | null {
+		const value = String(currentMatch?.difficulty || '');
+		return PVP_DIFFICULTIES.includes(value as PvpDifficulty) ? (value as PvpDifficulty) : null;
 	}
 
 	function statusLabel(value: unknown) {
@@ -680,6 +722,16 @@
 						{$_('pvp.hide_opponent_info')}
 					{/if}
 				</Button>
+				{#if canRematch}
+					<Button disabled={Boolean(actionLoading) || loading} on:click={requestRematch}>
+						{#if actionLoading === 'rematch'}
+							<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+						{:else}
+							<Send class="mr-2 h-4 w-4" />
+						{/if}
+						{$_('pvp.rematch')}
+					</Button>
+				{/if}
 				{#if canResign}
 					<Button
 						variant="destructive"

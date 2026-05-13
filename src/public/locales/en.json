@@ -206,6 +206,7 @@
 		"rejoin_ongoing_match": "Rejoin ongoing match",
 		"view_match": "View match",
 		"refresh": "Refresh",
+		"rematch": "Rematch",
 		"resign": "Resign",
 		"resign_confirm": "Resign this match? Your opponent will receive the win.",
 		"sign_in_title": "Sign in to enter Arena",
@@ -320,6 +321,8 @@
 			"accept_failed": "Failed to accept invite.",
 			"accept_match_failed": "Failed to accept match.",
 			"decline_failed": "Failed to decline invite.",
+			"rematch_sent": "Rematch invite sent.",
+			"rematch_failed": "Failed to send rematch invite.",
 			"resign_success": "You resigned from the match.",
 			"resign_failed": "Failed to resign match."
 		}
