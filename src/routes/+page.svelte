@@ -13,7 +13,7 @@
 	import FeatureDiscovery from '$lib/components/homepage/FeatureDiscovery.svelte';
 	import OnboardingProgress from '$lib/components/homepage/OnboardingProgress.svelte';
 	import OnboardingModal from '$lib/components/OnboardingModal.svelte';
-	import CustomListPromo from '$lib/components/homepage/CustomListPromo.svelte';
+	import PvpOneVsOnePromo from '$lib/components/homepage/PvpOneVsOnePromo.svelte';
 	import RecordCardPromo from '$lib/components/homepage/RecordCardPromo.svelte';
 
 	export let data: any;
@@ -87,7 +87,7 @@
 	<!-- Top promos -->
 	<div class="promoRow">
 		<RecordCardPromo />
-		<CustomListPromo />
+		<PvpOneVsOnePromo />
 	</div>
 
 	<!-- Onboarding progress banner (new users only) -->
@@ -172,13 +172,13 @@
 
 		@media screen and (max-width: 1180px) {
 			:global(.record-card-promo),
-			:global(.custom-list-promo) {
+			:global(.pvp-one-v-one-promo) {
 				flex-direction: column;
 				align-items: stretch;
 			}
 
 			:global(.record-card-promo .demo-card-wrap),
-			:global(.custom-list-promo .preview-wrap) {
+			:global(.pvp-one-v-one-promo .arena-preview) {
 				width: 100%;
 			}
 		}
