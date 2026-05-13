@@ -1,6 +1,6 @@
 import supabase from '$lib/client/supabase';
 
-type PvpRealtimeScope =
+export type PvpRealtimeScope =
 	| 'matchmaking'
 	| 'incomingInvite'
 	| 'outgoingInvite'
@@ -91,13 +91,6 @@ export function subscribeToPvpLobby(uid: string, callback: RealtimeCallback) {
 			`uid=eq.${uid}`,
 			'result',
 			callback
-		),
-		subscribeToTable(
-			`pvp-lobby-matches-${uid}`,
-			'pvpMatches',
-			null,
-			'match',
-			callback
 		)
 	];
 
@@ -121,15 +114,23 @@ export function subscribeToPvpMatches(uid: string, callback: RealtimeCallback) {
 			`uid=eq.${uid}`,
 			'result',
 			callback
-		),
-		subscribeToTable(
-			`pvp-matches-match-rows-${uid}`,
-			'pvpMatches',
-			null,
-			'match',
-			callback
 		)
 	];
+
+	return () => removeChannels(channels);
+}
+
+export function subscribeToPvpMatchRows(
+	matchIds: Array<number | string | null | undefined>,
+	callback: RealtimeCallback,
+	channelPrefix = 'pvp-match-rows'
+) {
+	const ids = [...new Set(matchIds.map((id) => String(id ?? '')).filter(Boolean))];
+	if (ids.length === 0) return () => Promise.resolve();
+
+	const channels = ids.map((id) =>
+		subscribeToTable(`${channelPrefix}-${id}`, 'pvpMatches', `id=eq.${id}`, 'match', callback)
+	);
 
 	return () => removeChannels(channels);
 }

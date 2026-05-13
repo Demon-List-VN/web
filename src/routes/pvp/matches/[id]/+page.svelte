@@ -69,11 +69,14 @@
 	const PVP_HIDE_OPPONENT_INFO_KEY = 'gdvn:pvp-hide-opponent-info';
 	const PVP_CHAT_MUTED_KEY = 'gdvn:pvp-chat-muted';
 	const POST_MATCH_CHAT_GRACE_MS = 3 * 60 * 1000;
+	const REALTIME_COALESCE_MS = 200;
+	const MESSAGE_FETCH_LIMIT = 100;
 
 	let match: PvpMatch | null = null;
 	let loading = false;
 	let initializedFor = '';
 	let cleanupRealtime: (() => Promise<void>) | null = null;
+	let scheduledRealtimeTasks = new Map<string, ReturnType<typeof setTimeout>>();
 	let now = Date.now();
 	let ticker: ReturnType<typeof setInterval> | null = null;
 	let actionLoading = '';
@@ -163,6 +166,7 @@
 	onDestroy(() => {
 		if (ticker) clearInterval(ticker);
 		cleanupRealtime?.();
+		clearScheduledRealtimeTasks();
 	});
 
 	async function initializeRealtime(id: string) {
@@ -176,11 +180,11 @@
 
 			cleanupRealtime = subscribeToPvpMatchDetail(id, async (event) => {
 				if (event.scope === 'message') {
-					await refreshMessages();
+					scheduleRealtimeTask('messages', () => refreshMessages({ incremental: true }));
 					return;
 				}
 
-				await refreshMatch();
+				scheduleRealtimeTask('match', refreshMatch);
 			});
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.load_failed'));
@@ -203,18 +207,91 @@
 		}
 	}
 
-	async function refreshMessages() {
+	async function refreshMessages(options: { incremental?: boolean } = {}) {
 		if (!$user.loggedIn || !matchId) return;
 
 		chatLoading = true;
 		try {
-			messages = await getPvpMatchMessages(await $user.token(), matchId);
-			await scrollChatToBottom();
+			const nextMessages = await getPvpMatchMessages(await $user.token(), matchId, {
+				afterId: options.incremental ? latestMessageId() : null,
+				limit: options.incremental ? MESSAGE_FETCH_LIMIT : null
+			});
+			if (options.incremental) {
+				messages = mergeMessages(messages, nextMessages);
+			} else {
+				messages = nextMessages;
+			}
+			if (nextMessages.length) {
+				await scrollChatToBottom();
+			}
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : 'Failed to load match chat');
 		} finally {
 			chatLoading = false;
 		}
+	}
+
+	function scheduleRealtimeTask(key: string, task: () => Promise<void>) {
+		const existing = scheduledRealtimeTasks.get(key);
+		if (existing) clearTimeout(existing);
+
+		const timeout = setTimeout(async () => {
+			scheduledRealtimeTasks.delete(key);
+			try {
+				await task();
+			} catch (error) {
+				toast.error(error instanceof Error ? error.message : $_('pvp.toast.load_failed'));
+			}
+		}, REALTIME_COALESCE_MS);
+
+		scheduledRealtimeTasks.set(key, timeout);
+	}
+
+	function clearScheduledRealtimeTasks() {
+		for (const timeout of scheduledRealtimeTasks.values()) {
+			clearTimeout(timeout);
+		}
+		scheduledRealtimeTasks.clear();
+	}
+
+	function messageId(message: PvpMatchMessage) {
+		return message.id === undefined || message.id === null ? null : String(message.id);
+	}
+
+	function latestMessageId() {
+		return messages.reduce<number | null>((latest, message) => {
+			const id = Number(message.id);
+			if (!Number.isInteger(id)) return latest;
+			return latest === null || id > latest ? id : latest;
+		}, null);
+	}
+
+	function mergeMessages(current: PvpMatchMessage[], incoming: PvpMatchMessage[]) {
+		const merged = [...current];
+		const indexById = new Map(
+			merged
+				.map((message, index) => [messageId(message), index] as const)
+				.filter(([id]) => Boolean(id))
+		);
+
+		for (const message of incoming) {
+			const id = messageId(message);
+			const existingIndex = id ? indexById.get(id) : undefined;
+			if (existingIndex !== undefined) {
+				merged[existingIndex] = message;
+			} else {
+				if (id) indexById.set(id, merged.length);
+				merged.push(message);
+			}
+		}
+
+		return merged.sort((a, b) => {
+			const idA = Number(a.id);
+			const idB = Number(b.id);
+			if (Number.isInteger(idA) && Number.isInteger(idB)) return idA - idB;
+
+			return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
+		});
 	}
 
 	async function scrollChatToBottom() {
@@ -264,7 +341,7 @@
 		try {
 			const response = await resignPvpMatch(await $user.token(), matchId);
 			match = response;
-			await refreshMessages();
+			await refreshMessages({ incremental: true });
 			toast.success($_('pvp.toast.resign_success'));
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.resign_failed'));
@@ -281,9 +358,10 @@
 
 		actionLoading = 'send-chat';
 		try {
-			await sendPvpMatchMessage(await $user.token(), matchId, content);
+			const message = await sendPvpMatchMessage(await $user.token(), matchId, content);
 			chatDraft = '';
-			await refreshMessages();
+			messages = mergeMessages(messages, [message]);
+			await scrollChatToBottom();
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : 'Failed to send message');
 		} finally {

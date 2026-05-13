@@ -6,12 +6,18 @@
 	import * as Card from '$lib/components/ui/card';
 	import {
 		getPvpMatches,
+		getPvpMatch,
 		getPvpMatchId,
 		getPvpStatus,
 		isActivePvpMatch,
 		type PvpMatch
 	} from '$lib/client/pvp';
-	import { setPvpRealtimeAuth, subscribeToPvpMatches } from '$lib/client/pvpRealtime';
+	import {
+		setPvpRealtimeAuth,
+		subscribeToPvpMatches,
+		subscribeToPvpMatchRows,
+		type PvpRealtimeEvent
+	} from '$lib/client/pvpRealtime';
 	import { playPvpBell } from '$lib/client/pvpSound';
 	import { onDestroy, onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
@@ -19,11 +25,15 @@
 	import { ArrowLeft, Eye, EyeOff, Loader2, LogIn, RefreshCw, Swords } from 'lucide-svelte';
 
 	const PVP_HIDE_OPPONENT_INFO_KEY = 'gdvn:pvp-hide-opponent-info';
+	const REALTIME_COALESCE_MS = 200;
 
 	let matches: PvpMatch[] = [];
 	let loading = false;
 	let initializedForUid = '';
 	let cleanupRealtime: (() => Promise<void>) | null = null;
+	let cleanupActiveMatchRealtime: (() => Promise<void>) | null = null;
+	let activeMatchRealtimeKey = '';
+	let scheduledRealtimeTasks = new Map<string, ReturnType<typeof setTimeout>>();
 	let now = Date.now();
 	let ticker: ReturnType<typeof setInterval> | null = null;
 	let endedMatchBellIds = new Set<string>();
@@ -33,6 +43,10 @@
 	$: currentUid = $user.data?.uid;
 	$: ongoingMatches = matches.filter((match) => isActivePvpMatch(match));
 	$: pastMatches = matches.filter((match) => !isActivePvpMatch(match));
+	$: updateActiveMatchRealtime(
+		$user.loggedIn,
+		ongoingMatches.map((match) => getPvpMatchId(match)).filter(Boolean) as Array<number | string>
+	);
 
 	$: if ($user.checked && $user.loggedIn && currentUid && initializedForUid !== currentUid) {
 		initializeRealtime(currentUid);
@@ -59,6 +73,8 @@
 	onDestroy(() => {
 		if (ticker) clearInterval(ticker);
 		cleanupRealtime?.();
+		cleanupActiveMatchRealtime?.();
+		clearScheduledRealtimeTasks();
 	});
 
 	async function initializeRealtime(uid: string) {
@@ -70,9 +86,7 @@
 			setPvpRealtimeAuth(token);
 			await refreshMatches();
 
-			cleanupRealtime = subscribeToPvpMatches(uid, async () => {
-				await refreshMatches();
-			});
+			cleanupRealtime = subscribeToPvpMatches(uid, handleMatchesRealtimeEvent);
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.load_failed'));
 		}
@@ -92,6 +106,92 @@
 		} finally {
 			loading = false;
 		}
+	}
+
+	function scheduleRealtimeTask(key: string, task: () => Promise<void>) {
+		const existing = scheduledRealtimeTasks.get(key);
+		if (existing) clearTimeout(existing);
+
+		const timeout = setTimeout(async () => {
+			scheduledRealtimeTasks.delete(key);
+			try {
+				await task();
+			} catch (error) {
+				toast.error(error instanceof Error ? error.message : $_('pvp.toast.load_failed'));
+			}
+		}, REALTIME_COALESCE_MS);
+
+		scheduledRealtimeTasks.set(key, timeout);
+	}
+
+	function clearScheduledRealtimeTasks() {
+		for (const timeout of scheduledRealtimeTasks.values()) {
+			clearTimeout(timeout);
+		}
+		scheduledRealtimeTasks.clear();
+	}
+
+	function realtimeRow(event: PvpRealtimeEvent) {
+		return event.payload?.new ?? event.payload?.old ?? {};
+	}
+
+	function handleMatchesRealtimeEvent(event: PvpRealtimeEvent) {
+		const row = realtimeRow(event);
+		const matchId = event.scope === 'match' ? (row?.id ?? row?.matchId) : row?.matchId;
+		if (!matchId) return;
+
+		scheduleRealtimeTask(`match:${matchId}`, async () => {
+			const nextMatch = await getPvpMatch(await $user.token(), matchId);
+			applyMatch(nextMatch);
+		});
+	}
+
+	function applyMatch(nextMatch: PvpMatch | null | undefined) {
+		if (!nextMatch) return;
+
+		const matchId = getPvpMatchId(nextMatch);
+		if (!matchId) return;
+
+		const previousMatches = matches;
+		const existingIndex = matches.findIndex(
+			(match) => String(getPvpMatchId(match)) === String(matchId)
+		);
+		const nextMatches =
+			existingIndex >= 0
+				? matches.map((match, index) => (index === existingIndex ? nextMatch : match))
+				: [nextMatch, ...matches];
+
+		handleMatchEndSounds(previousMatches, nextMatches);
+		matches = sortMatches(nextMatches);
+	}
+
+	function sortMatches(items: PvpMatch[]) {
+		return [...items].sort((a, b) => {
+			const activeDelta = Number(isActivePvpMatch(b)) - Number(isActivePvpMatch(a));
+			if (activeDelta) return activeDelta;
+
+			return (
+				new Date(b.created_at || b.startedAt || 0).getTime() -
+				new Date(a.created_at || a.startedAt || 0).getTime()
+			);
+		});
+	}
+
+	function updateActiveMatchRealtime(loggedIn: boolean, matchIds: Array<number | string>) {
+		const key = loggedIn ? [...new Set(matchIds.map(String))].sort().join(',') : '';
+		if (key === activeMatchRealtimeKey) return;
+
+		cleanupActiveMatchRealtime?.();
+		cleanupActiveMatchRealtime = null;
+		activeMatchRealtimeKey = key;
+
+		if (!loggedIn || !key) return;
+
+		cleanupActiveMatchRealtime = subscribeToPvpMatchRows(
+			matchIds,
+			handleMatchesRealtimeEvent,
+			`pvp-matches-active-${currentUid}`
+		);
 	}
 
 	function handleMatchEndSounds(previousMatches: PvpMatch[], nextMatches: PvpMatch[]) {

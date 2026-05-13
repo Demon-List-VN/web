@@ -17,10 +17,12 @@
 		cancelPvpMatchmaking,
 		declinePvpInvite,
 		getPvpInviteExpiresMs,
+		getPvpInvite,
 		getPvpMatchAcceptanceExpiresMs,
 		getPvpInviteId,
 		getPvpMatchedMatchId,
 		getPvpMatchId,
+		getPvpMatch,
 		getPvpMe,
 		getPvpStatus,
 		getPvpSelfParticipant,
@@ -30,9 +32,16 @@
 		startPvpMatchmaking,
 		type PvpDifficulty,
 		type PvpInvite,
+		type PvpMatch,
+		type PvpMatchmakingRequest,
 		type PvpMe
 	} from '$lib/client/pvp';
-	import { setPvpRealtimeAuth, subscribeToPvpLobby } from '$lib/client/pvpRealtime';
+	import {
+		setPvpRealtimeAuth,
+		subscribeToPvpLobby,
+		subscribeToPvpMatchRows,
+		type PvpRealtimeEvent
+	} from '$lib/client/pvpRealtime';
 	import { playPvpBell } from '$lib/client/pvpSound';
 	import { onDestroy, onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
@@ -54,6 +63,7 @@
 	const PVP_GEODE_ALERT_DISMISSED_KEY = 'gdvn:pvp-geode-alert-dismissed';
 	const PVP_ANONYMOUS_MODE_KEY = 'gdvn:pvp-anonymous-mode';
 	const PVP_HIDE_OPPONENT_INFO_KEY = 'gdvn:pvp-hide-opponent-info';
+	const REALTIME_COALESCE_MS = 200;
 
 	let selectedDifficulty: PvpDifficulty | null = 'easy';
 	let selectedPlayer: any = null;
@@ -70,6 +80,9 @@
 	let actionLoading = '';
 	let initializedForUid = '';
 	let cleanupRealtime: (() => Promise<void>) | null = null;
+	let cleanupActiveMatchRealtime: (() => Promise<void>) | null = null;
+	let activeMatchRealtimeKey = '';
+	let scheduledRealtimeTasks = new Map<string, ReturnType<typeof setTimeout>>();
 	let now = Date.now();
 	let ticker: ReturnType<typeof setInterval> | null = null;
 	let routedMatchId: number | string | null = null;
@@ -99,6 +112,7 @@
 	);
 	$: checkingLobby = $user.checked && $user.loggedIn && !lobbyReady;
 	$: controlsDisabled = Boolean(checkingLobby || activeMatch || isSearching || actionLoading);
+	$: updateActiveMatchRealtime($user.loggedIn, getLobbyRealtimeMatchIds());
 
 	$: if ($user.checked && $user.loggedIn && currentUid && initializedForUid !== currentUid) {
 		initializeRealtime(currentUid);
@@ -143,6 +157,8 @@
 	onDestroy(() => {
 		if (ticker) clearInterval(ticker);
 		cleanupRealtime?.();
+		cleanupActiveMatchRealtime?.();
+		clearScheduledRealtimeTasks();
 		if (keydownHandler) window.removeEventListener('keydown', keydownHandler);
 		if (pendingDialogTimeout) clearTimeout(pendingDialogTimeout);
 	});
@@ -158,9 +174,7 @@
 			await refreshLobby();
 			lobbyReady = true;
 
-			cleanupRealtime = subscribeToPvpLobby(uid, async () => {
-				await refreshLobby();
-			});
+			cleanupRealtime = subscribeToPvpLobby(uid, handleLobbyRealtimeEvent);
 		} catch (error) {
 			lobbyReady = true;
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.load_failed'));
@@ -181,6 +195,202 @@
 		} finally {
 			loading = false;
 		}
+	}
+
+	function scheduleRealtimeTask(key: string, task: () => Promise<void>) {
+		const existing = scheduledRealtimeTasks.get(key);
+		if (existing) clearTimeout(existing);
+
+		const timeout = setTimeout(async () => {
+			scheduledRealtimeTasks.delete(key);
+			try {
+				await task();
+			} catch (error) {
+				toast.error(error instanceof Error ? error.message : $_('pvp.toast.load_failed'));
+			}
+		}, REALTIME_COALESCE_MS);
+
+		scheduledRealtimeTasks.set(key, timeout);
+	}
+
+	function clearScheduledRealtimeTasks() {
+		for (const timeout of scheduledRealtimeTasks.values()) {
+			clearTimeout(timeout);
+		}
+		scheduledRealtimeTasks.clear();
+	}
+
+	function realtimeRow(event: PvpRealtimeEvent) {
+		return event.payload?.new ?? event.payload?.old ?? {};
+	}
+
+	function handleLobbyRealtimeEvent(event: PvpRealtimeEvent) {
+		const row = realtimeRow(event);
+
+		if (event.scope === 'matchmaking') {
+			applyMatchmaking(row);
+			const matchId = row?.matchId ?? row?.match?.id ?? row?.match?.matchId;
+			if (matchId) scheduleFetchMatch(matchId);
+			return;
+		}
+
+		if (event.scope === 'incomingInvite' || event.scope === 'outgoingInvite') {
+			const inviteId = row?.id ?? row?.inviteId;
+			if (inviteId) scheduleFetchInvite(inviteId, event.scope);
+			return;
+		}
+
+		if (event.scope === 'participant' || event.scope === 'result') {
+			if (row?.matchId) scheduleFetchMatch(row.matchId);
+			return;
+		}
+
+		if (event.scope === 'match') {
+			const matchId = row?.id ?? row?.matchId;
+			if (matchId) scheduleFetchMatch(matchId);
+		}
+	}
+
+	function scheduleFetchMatch(matchId: number | string) {
+		scheduleRealtimeTask(`match:${matchId}`, async () => {
+			const nextMatch = await getPvpMatch(await $user.token(), matchId);
+			applyMatch(nextMatch);
+		});
+	}
+
+	function scheduleFetchInvite(
+		inviteId: number | string,
+		scope: 'incomingInvite' | 'outgoingInvite'
+	) {
+		scheduleRealtimeTask(`invite:${inviteId}`, async () => {
+			const invite = await getPvpInvite(await $user.token(), inviteId);
+			applyInvite(invite, scope);
+		});
+	}
+
+	function applyMatchmaking(nextMatchmaking: PvpMatchmakingRequest | null | undefined) {
+		const status = getPvpStatus(nextMatchmaking, 'idle');
+		const matchmaking = ['searching', 'matched'].includes(status)
+			? (nextMatchmaking ?? null)
+			: null;
+		lobby = { ...lobby, matchmaking };
+	}
+
+	function applyMatch(nextMatch: PvpMatch | null | undefined) {
+		if (!nextMatch) return;
+
+		const matchId = getPvpMatchId(nextMatch);
+		if (!matchId) return;
+
+		const previousActiveMatch = lobby.activeMatch;
+		const currentActiveId = getPvpMatchId(lobby.activeMatch);
+		const nextActiveMatch =
+			isActivePvpMatch(nextMatch) || String(currentActiveId) === String(matchId)
+				? isActivePvpMatch(nextMatch)
+					? nextMatch
+					: null
+				: lobby.activeMatch;
+
+		lobby = {
+			...lobby,
+			activeMatch: nextActiveMatch,
+			matchmaking:
+				String(lobby.matchmaking?.matchId) === String(matchId)
+					? {
+							...lobby.matchmaking,
+							match: isActivePvpMatch(nextMatch) ? nextMatch : null
+						}
+					: lobby.matchmaking,
+			incomingInvites: updateInviteMatches(lobby.incomingInvites, nextMatch),
+			outgoingInvites: updateInviteMatches(lobby.outgoingInvites, nextMatch)
+		};
+		handleLobbyMatchSounds(previousActiveMatch, lobby.activeMatch);
+	}
+
+	function updateInviteMatches(invites: PvpInvite[], nextMatch: PvpMatch) {
+		const matchId = getPvpMatchId(nextMatch);
+		if (!matchId) return invites;
+
+		return invites
+			.map((invite) =>
+				String(invite.matchId) === String(matchId)
+					? { ...invite, match: isActivePvpMatch(nextMatch) ? nextMatch : null }
+					: invite
+			)
+			.filter(
+				(invite) => !(getPvpStatus(invite) === 'accepted' && invite.matchId && !invite.match)
+			);
+	}
+
+	function applyInvite(
+		invite: PvpInvite | null,
+		fallbackScope: 'incomingInvite' | 'outgoingInvite'
+	) {
+		if (!invite) return;
+
+		const direction =
+			invite.inviteeUid === currentUid
+				? 'incomingInvite'
+				: invite.inviterUid === currentUid
+					? 'outgoingInvite'
+					: fallbackScope;
+		lobby =
+			direction === 'incomingInvite'
+				? { ...lobby, incomingInvites: upsertInvite(lobby.incomingInvites, invite) }
+				: { ...lobby, outgoingInvites: upsertInvite(lobby.outgoingInvites, invite) };
+
+		if (invite.match) {
+			applyMatch(invite.match);
+		}
+	}
+
+	function upsertInvite(invites: PvpInvite[], invite: PvpInvite) {
+		const inviteId = getPvpInviteId(invite);
+		if (!inviteId) return invites;
+
+		const shouldHideAcceptedFinished =
+			getPvpStatus(invite) === 'accepted' && invite.matchId && !invite.match;
+		if (shouldHideAcceptedFinished) {
+			return invites.filter((item) => String(getPvpInviteId(item)) !== String(inviteId));
+		}
+
+		const next = invites.filter((item) => String(getPvpInviteId(item)) !== String(inviteId));
+		return [invite, ...next].slice(0, 20);
+	}
+
+	function removeInvite(inviteId: number | string) {
+		const matchesId = (invite: PvpInvite) => String(getPvpInviteId(invite)) === String(inviteId);
+		lobby = {
+			...lobby,
+			incomingInvites: lobby.incomingInvites.filter((invite) => !matchesId(invite)),
+			outgoingInvites: lobby.outgoingInvites.filter((invite) => !matchesId(invite))
+		};
+	}
+
+	function getLobbyRealtimeMatchIds() {
+		return [
+			getPvpMatchId(lobby.activeMatch),
+			getPvpMatchedMatchId(lobby.matchmaking),
+			...lobby.incomingInvites.map((invite) => invite.matchId),
+			...lobby.outgoingInvites.map((invite) => invite.matchId)
+		].filter(Boolean) as Array<number | string>;
+	}
+
+	function updateActiveMatchRealtime(loggedIn: boolean, matchIds: Array<number | string>) {
+		const key = loggedIn ? [...new Set(matchIds.map(String))].sort().join(',') : '';
+		if (key === activeMatchRealtimeKey) return;
+
+		cleanupActiveMatchRealtime?.();
+		cleanupActiveMatchRealtime = null;
+		activeMatchRealtimeKey = key;
+
+		if (!loggedIn || !key) return;
+
+		cleanupActiveMatchRealtime = subscribeToPvpMatchRows(
+			matchIds,
+			handleLobbyRealtimeEvent,
+			`pvp-lobby-active-matches-${currentUid}`
+		);
 	}
 
 	function handleLobbyMatchSounds(
@@ -259,8 +469,20 @@
 
 		actionLoading = 'matchmaking';
 		try {
-			await startPvpMatchmaking(await $user.token(), selectedDifficulty, anonymousMode);
-			await refreshLobby();
+			const response = await startPvpMatchmaking(
+				await $user.token(),
+				selectedDifficulty,
+				anonymousMode
+			);
+			if ('activeMatch' in response || 'incomingInvites' in response) {
+				const nextLobby = response as PvpMe;
+				handleLobbyMatchSounds(lobby.activeMatch, nextLobby.activeMatch);
+				lobby = nextLobby;
+			} else {
+				applyMatchmaking(response as PvpMatchmakingRequest);
+				const match = (response as PvpMatchmakingRequest).match;
+				if (match) applyMatch(match);
+			}
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.matchmaking_failed'));
 		} finally {
@@ -271,8 +493,8 @@
 	async function cancelQueue() {
 		actionLoading = 'cancel-matchmaking';
 		try {
-			await cancelPvpMatchmaking(await $user.token());
-			await refreshLobby();
+			const response = await cancelPvpMatchmaking(await $user.token());
+			applyMatchmaking(response);
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.cancel_failed'));
 		} finally {
@@ -298,13 +520,13 @@
 
 		actionLoading = 'invite';
 		try {
-			await sendPvpInvite(await $user.token(), {
+			const invite = await sendPvpInvite(await $user.token(), {
 				inviteeUid: selectedPlayer.uid,
 				difficulty: selectedDifficulty,
 				anonymous: anonymousMode
 			});
 			selectedPlayer = null;
-			await refreshLobby();
+			applyInvite(invite, 'outgoingInvite');
 			toast.success($_('pvp.toast.invite_sent'));
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.invite_failed'));
@@ -319,8 +541,9 @@
 
 		actionLoading = `accept-${inviteId}`;
 		try {
-			await acceptPvpInvite(await $user.token(), inviteId, anonymousMode);
-			await refreshLobby();
+			const response = await acceptPvpInvite(await $user.token(), inviteId, anonymousMode);
+			removeInvite(inviteId);
+			applyMatch(response as PvpMatch);
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.accept_failed'));
 		} finally {
@@ -333,8 +556,8 @@
 
 		actionLoading = `accept-match-${pendingMatchId}`;
 		try {
-			await acceptPvpMatch(await $user.token(), pendingMatchId);
-			await refreshLobby();
+			const response = await acceptPvpMatch(await $user.token(), pendingMatchId);
+			applyMatch(response);
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.accept_match_failed'));
 		} finally {
@@ -348,8 +571,8 @@
 
 		actionLoading = `decline-${inviteId}`;
 		try {
-			await declinePvpInvite(await $user.token(), inviteId);
-			await refreshLobby();
+			const invite = await declinePvpInvite(await $user.token(), inviteId);
+			applyInvite(invite, 'incomingInvite');
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.decline_failed'));
 		} finally {

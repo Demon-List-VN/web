@@ -318,6 +318,10 @@ export async function declinePvpInvite(token: string | null | undefined, id: num
 	});
 }
 
+export async function getPvpInvite(token: string | null | undefined, id: number | string) {
+	return pvpRequest<PvpInvite | null>(`/pvp/invites/${id}`, { token });
+}
+
 export async function getPvpMatches(token?: string | null) {
 	return normalizePvpMatches(await pvpRequest('/pvp/matches', { token }));
 }
@@ -340,10 +344,22 @@ export async function resignPvpMatch(token: string | null | undefined, id: numbe
 	});
 }
 
-export async function getPvpMatchMessages(token: string | null | undefined, id: number | string) {
+export async function getPvpMatchMessages(
+	token: string | null | undefined,
+	id: number | string,
+	options: { afterId?: number | string | null; limit?: number | string | null } = {}
+) {
+	const params = new URLSearchParams();
+	if (options.afterId !== undefined && options.afterId !== null && options.afterId !== '') {
+		params.set('afterId', String(options.afterId));
+	}
+	if (options.limit !== undefined && options.limit !== null && options.limit !== '') {
+		params.set('limit', String(options.limit));
+	}
+	const query = params.toString();
 	const payload = await pvpRequest<
 		PvpMatchMessage[] | { messages?: PvpMatchMessage[]; data?: PvpMatchMessage[] }
-	>(`/pvp/matches/${id}/messages`, { token });
+	>(`/pvp/matches/${id}/messages${query ? `?${query}` : ''}`, { token });
 
 	if (Array.isArray(payload)) return payload;
 	if (Array.isArray(payload?.messages)) return payload.messages;
@@ -377,6 +393,10 @@ export function getPvpStatus(value: { status?: string } | null | undefined, fall
 
 export function isActivePvpMatch(match: PvpMatch | null | undefined) {
 	return PVP_ACTIVE_MATCH_STATUSES.includes(getPvpStatus(match));
+}
+
+export function isFinishedPvpMatch(match: PvpMatch | null | undefined) {
+	return PVP_FINISHED_MATCH_STATUSES.includes(getPvpStatus(match, ''));
 }
 
 export function getPvpLevel(match: PvpMatch | null | undefined): PvpLevel | null {
