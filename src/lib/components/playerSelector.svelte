@@ -52,7 +52,10 @@
 		isSearching = false;
 	}
 
-	function handleSearchInput() {
+	function handleSearchInput(event?: Event) {
+		const input = event?.target as HTMLInputElement | null;
+		if (input) searchValue = input.value;
+
 		clearTimeout(searchTimeout);
 		showDropdown = true;
 		searchTimeout = setTimeout(() => {
@@ -92,7 +95,6 @@
 		};
 	});
 
-	$: (searchValue, handleSearchInput());
 	$: if (value) {
 		searchValue = value.name;
 	}
@@ -107,6 +109,7 @@
 			{disabled}
 			class="pl-10 pr-20"
 			on:focus={() => (showDropdown = true)}
+			on:input={handleSearchInput}
 		/>
 		<div class="input-actions">
 			{#if searchValue}
