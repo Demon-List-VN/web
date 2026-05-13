@@ -38,8 +38,8 @@
 	} from '$lib/client/pvp';
 	import {
 		setPvpRealtimeAuth,
+		subscribeToPvpMatchActivity,
 		subscribeToPvpLobby,
-		subscribeToPvpMatchRows,
 		type PvpRealtimeEvent
 	} from '$lib/client/pvpRealtime';
 	import { playPvpBell } from '$lib/client/pvpSound';
@@ -386,7 +386,7 @@
 
 		if (!loggedIn || !key) return;
 
-		cleanupActiveMatchRealtime = subscribeToPvpMatchRows(
+		cleanupActiveMatchRealtime = subscribeToPvpMatchActivity(
 			matchIds,
 			handleLobbyRealtimeEvent,
 			`pvp-lobby-active-matches-${currentUid}`

@@ -14,6 +14,7 @@ export type PvpRealtimeEvent = {
 	payload: any;
 };
 
+type RealtimePostgresChangeEvent = '*' | 'INSERT' | 'UPDATE' | 'DELETE';
 type RealtimeCallback = (event: PvpRealtimeEvent) => void | Promise<void>;
 
 function subscribeToTable(
@@ -21,24 +22,29 @@ function subscribeToTable(
 	table: string,
 	filter: string | null,
 	scope: PvpRealtimeScope,
-	callback: RealtimeCallback
+	callback: RealtimeCallback,
+	events: RealtimePostgresChangeEvent | RealtimePostgresChangeEvent[] = '*'
 ) {
 	const channel = supabase.channel(channelName);
-	const config: Record<string, string> = {
-		event: '*',
-		schema: 'public',
-		table
-	};
+	const eventList = Array.isArray(events) ? events : [events];
 
-	if (filter) {
-		config.filter = filter;
+	for (const event of eventList) {
+		const config: Record<string, string> = {
+			event,
+			schema: 'public',
+			table
+		};
+
+		if (filter) {
+			config.filter = filter;
+		}
+
+		channel.on('postgres_changes', config as any, (payload) => {
+			callback({ scope, payload });
+		});
 	}
 
-	channel
-		.on('postgres_changes', config as any, (payload) => {
-			callback({ scope, payload });
-		})
-		.subscribe();
+	channel.subscribe();
 
 	return channel;
 }
@@ -62,35 +68,32 @@ export function subscribeToPvpLobby(uid: string, callback: RealtimeCallback) {
 			'pvpMatchmakingRequests',
 			`uid=eq.${uid}`,
 			'matchmaking',
-			callback
+			callback,
+			['INSERT', 'UPDATE']
 		),
 		subscribeToTable(
 			`pvp-lobby-incoming-invites-${uid}`,
 			'pvpInvites',
 			`inviteeUid=eq.${uid}`,
 			'incomingInvite',
-			callback
+			callback,
+			['INSERT', 'UPDATE']
 		),
 		subscribeToTable(
 			`pvp-lobby-outgoing-invites-${uid}`,
 			'pvpInvites',
 			`inviterUid=eq.${uid}`,
 			'outgoingInvite',
-			callback
+			callback,
+			['INSERT', 'UPDATE']
 		),
 		subscribeToTable(
 			`pvp-lobby-participants-${uid}`,
 			'pvpMatchParticipants',
 			`uid=eq.${uid}`,
 			'participant',
-			callback
-		),
-		subscribeToTable(
-			`pvp-lobby-results-${uid}`,
-			'pvpMatchResults',
-			`uid=eq.${uid}`,
-			'result',
-			callback
+			callback,
+			['INSERT', 'UPDATE']
 		)
 	];
 
@@ -106,14 +109,8 @@ export function subscribeToPvpMatches(uid: string, callback: RealtimeCallback) {
 			'pvpMatchParticipants',
 			`uid=eq.${uid}`,
 			'participant',
-			callback
-		),
-		subscribeToTable(
-			`pvp-matches-results-${uid}`,
-			'pvpMatchResults',
-			`uid=eq.${uid}`,
-			'result',
-			callback
+			callback,
+			['INSERT', 'UPDATE']
 		)
 	];
 
@@ -129,8 +126,53 @@ export function subscribeToPvpMatchRows(
 	if (ids.length === 0) return () => Promise.resolve();
 
 	const channels = ids.map((id) =>
-		subscribeToTable(`${channelPrefix}-${id}`, 'pvpMatches', `id=eq.${id}`, 'match', callback)
+		subscribeToTable(
+			`${channelPrefix}-${id}`,
+			'pvpMatches',
+			`id=eq.${id}`,
+			'match',
+			callback,
+			'UPDATE'
+		)
 	);
+
+	return () => removeChannels(channels);
+}
+
+export function subscribeToPvpMatchActivity(
+	matchIds: Array<number | string | null | undefined>,
+	callback: RealtimeCallback,
+	channelPrefix = 'pvp-match-activity'
+) {
+	const ids = [...new Set(matchIds.map((id) => String(id ?? '')).filter(Boolean))];
+	if (ids.length === 0) return () => Promise.resolve();
+
+	const channels = ids.flatMap((id) => [
+		subscribeToTable(
+			`${channelPrefix}-match-${id}`,
+			'pvpMatches',
+			`id=eq.${id}`,
+			'match',
+			callback,
+			'UPDATE'
+		),
+		subscribeToTable(
+			`${channelPrefix}-participants-${id}`,
+			'pvpMatchParticipants',
+			`matchId=eq.${id}`,
+			'participant',
+			callback,
+			'UPDATE'
+		),
+		subscribeToTable(
+			`${channelPrefix}-results-${id}`,
+			'pvpMatchResults',
+			`matchId=eq.${id}`,
+			'result',
+			callback,
+			['INSERT', 'UPDATE']
+		)
+	]);
 
 	return () => removeChannels(channels);
 }
@@ -144,28 +186,32 @@ export function subscribeToPvpMatchDetail(matchId: number | string, callback: Re
 			'pvpMatches',
 			`id=eq.${matchId}`,
 			'match',
-			callback
+			callback,
+			'UPDATE'
 		),
 		subscribeToTable(
 			`pvp-match-detail-participants-${matchId}`,
 			'pvpMatchParticipants',
 			`matchId=eq.${matchId}`,
 			'participant',
-			callback
+			callback,
+			'UPDATE'
 		),
 		subscribeToTable(
 			`pvp-match-detail-results-${matchId}`,
 			'pvpMatchResults',
 			`matchId=eq.${matchId}`,
 			'result',
-			callback
+			callback,
+			['INSERT', 'UPDATE']
 		),
 		subscribeToTable(
 			`pvp-match-detail-messages-${matchId}`,
 			'pvpMatchMessages',
 			`matchId=eq.${matchId}`,
 			'message',
-			callback
+			callback,
+			'INSERT'
 		)
 	];
 
