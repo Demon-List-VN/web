@@ -18,6 +18,7 @@
 		getPvpTimeReachedMs,
 		getPvpWinnerUid,
 		isActivePvpMatch,
+		isPvpMatchConfirmedByBoth,
 		type PvpMatch
 	} from '$lib/client/pvp';
 	import { _ } from 'svelte-i18n';
@@ -28,9 +29,11 @@
 	export let href: string | null = null;
 	export let now = Date.now();
 	export let hideOpponentInfo = false;
+	export let hideLevelUntilConfirmed = false;
 
 	$: status = getPvpStatus(match);
 	$: level = getPvpLevel(match);
+	$: shouldShowLevel = !hideLevelUntilConfirmed || isPvpMatchConfirmedByBoth(match);
 	$: participants = getPvpParticipants(match);
 	$: self = getPvpSelfParticipant(match, currentUid);
 	$: opponent = getPvpOpponent(match, currentUid);
@@ -132,7 +135,7 @@
 				</span>
 			</div>
 			<Card.Description>
-				{#if level?.name}
+				{#if shouldShowLevel && level?.name}
 					{level.name}
 					{#if level.creator || level.author}
 						<span>{$_('head.labels.by')} {level.creator || level.author}</span>

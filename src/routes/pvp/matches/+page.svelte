@@ -298,6 +298,7 @@
 							{currentUid}
 							{now}
 							{hideOpponentInfo}
+							hideLevelUntilConfirmed
 							href={`/pvp/matches/${match.id ?? match.matchId}`}
 						/>
 					{/each}
@@ -319,6 +320,7 @@
 							{currentUid}
 							{now}
 							{hideOpponentInfo}
+							hideLevelUntilConfirmed
 							href={`/pvp/matches/${match.id ?? match.matchId}`}
 						/>
 					{/each}

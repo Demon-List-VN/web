@@ -539,6 +539,17 @@ export function hasPvpParticipantAccepted(participant: PvpParticipant | null | u
 	return Boolean(participant?.acceptedAt ?? participant?.accepted_at);
 }
 
+export function isPvpMatchConfirmedByBoth(match: PvpMatch | null | undefined) {
+	if (!match) return false;
+
+	const participants = getPvpParticipants(match);
+	if (participants.length >= 2 && participants.every(hasPvpParticipantAccepted)) return true;
+
+	return ['in_progress', 'waiting_result', 'completed', 'disputed'].includes(
+		getPvpStatus(match, '')
+	);
+}
+
 export function getTimeMs(value: unknown) {
 	if (!value) return null;
 	const ms = new Date(String(value)).getTime();

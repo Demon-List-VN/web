@@ -29,6 +29,7 @@
 		getPvpSelfParticipant,
 		hasPvpParticipantAccepted,
 		isActivePvpMatch,
+		isPvpMatchConfirmedByBoth,
 		sendPvpInvite,
 		startPvpMatchmaking,
 		type PvpDifficulty,
@@ -428,14 +429,23 @@
 
 	function autoRedirectToActiveMatch(match: PvpMatch | null) {
 		const matchId = getPvpMatchId(match);
-		if (!browser || !currentUid || !matchId || !match || !isActivePvpMatch(match)) return;
+		if (
+			!browser ||
+			!currentUid ||
+			!matchId ||
+			!match ||
+			!isActivePvpMatch(match) ||
+			!isPvpMatchConfirmedByBoth(match)
+		)
+			return;
 
 		const matchKey = String(matchId);
+		const redirectKey = `confirmed:${matchKey}`;
 		if (routedMatchId !== null && String(routedMatchId) === matchKey) return;
 
-		if (localStorage.getItem(PVP_LAST_AUTO_REDIRECTED_MATCH_KEY) === matchKey) return;
+		if (localStorage.getItem(PVP_LAST_AUTO_REDIRECTED_MATCH_KEY) === redirectKey) return;
 
-		localStorage.setItem(PVP_LAST_AUTO_REDIRECTED_MATCH_KEY, matchKey);
+		localStorage.setItem(PVP_LAST_AUTO_REDIRECTED_MATCH_KEY, redirectKey);
 		routedMatchId = matchId;
 		goto(`/pvp/matches/${matchId}`);
 	}

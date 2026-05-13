@@ -36,6 +36,7 @@
 		getTimeMs,
 		hasPvpParticipantAccepted,
 		isActivePvpMatch,
+		isPvpMatchConfirmedByBoth,
 		resignPvpMatch,
 		sendPvpInvite,
 		sendPvpMatchMessage,
@@ -101,7 +102,9 @@
 	$: currentUid = $user.data?.uid;
 	$: status = getPvpStatus(match);
 	$: level = getPvpLevel(match);
-	$: levelVideoId = getYouTubeVideoId(level?.videoID);
+	$: levelConfirmed = isPvpMatchConfirmedByBoth(match);
+	$: visibleLevel = levelConfirmed ? level : null;
+	$: levelVideoId = getYouTubeVideoId(visibleLevel?.videoID);
 	$: participants = getPvpParticipants(match);
 	$: matchTitle = getMatchTitle(participants, hideOpponentInfo, currentUid);
 	$: orderedParticipants = orderParticipants(participants, currentUid);
@@ -645,7 +648,7 @@
 	}
 
 	async function copyLevelId() {
-		const id = String(level?.id ?? match?.levelId ?? '');
+		const id = String(visibleLevel?.id ?? (levelConfirmed ? match?.levelId : '') ?? '');
 		if (!id) return;
 		try {
 			await navigator.clipboard.writeText(id);
@@ -933,31 +936,31 @@
 							<Card.Title>{$_('pvp.challenge_level')}</Card.Title>
 						</Card.Header>
 						<Card.Content class="level-content">
-							{#if level}
+							{#if visibleLevel}
 								<div>
-									<h2>{level.name || `#${level.id || match.levelId}`}</h2>
+									<h2>{visibleLevel.name || `#${visibleLevel.id || match.levelId}`}</h2>
 									<p>
-										{#if level.creator || level.author}
-											{$_('head.labels.by')} {level.creator || level.author}
+										{#if visibleLevel.creator || visibleLevel.author}
+											{$_('head.labels.by')} {visibleLevel.creator || visibleLevel.author}
 										{:else}
 											{$_('pvp.level_pending')}
 										{/if}
 									</p>
 								</div>
 								<div class="level-meta">
-									{#if level.rating !== null && level.rating !== undefined}
-										<Badge variant="secondary">{level.rating}pt</Badge>
+									{#if visibleLevel.rating !== null && visibleLevel.rating !== undefined}
+										<Badge variant="secondary">{visibleLevel.rating}pt</Badge>
 									{/if}
-									{#if level.difficulty}
-										<Badge variant="outline">{level.difficulty}</Badge>
+									{#if visibleLevel.difficulty}
+										<Badge variant="outline">{visibleLevel.difficulty}</Badge>
 									{/if}
-									{#if level.id || match.levelId}
-										<a class="level-link" href={`/level/${level.id || match.levelId}`}>
+									{#if visibleLevel.id || match.levelId}
+										<a class="level-link" href={`/level/${visibleLevel.id || match.levelId}`}>
 											{$_('pvp.open_level')}
 											<ExternalLink class="h-4 w-4" />
 										</a>
 										<div class="level-id">
-											<span class="id-label">ID: {level.id ?? match.levelId}</span>
+											<span class="id-label">ID: {visibleLevel.id ?? match.levelId}</span>
 											<Button
 												variant="ghost"
 												size="icon"
@@ -973,7 +976,7 @@
 									<div class="level-video">
 										<iframe
 											src={`https://www.youtube.com/embed/${levelVideoId}`}
-											title={level.name || $_('pvp.challenge_level')}
+											title={visibleLevel.name || $_('pvp.challenge_level')}
 											allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
 											allowfullscreen
 										></iframe>
