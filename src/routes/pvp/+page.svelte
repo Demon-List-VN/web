@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import PlayerSelector from '$lib/components/playerSelector.svelte';
 	import MatchCard from '$lib/components/pvp/MatchCard.svelte';
@@ -63,6 +64,7 @@
 	const PVP_GEODE_ALERT_DISMISSED_KEY = 'gdvn:pvp-geode-alert-dismissed';
 	const PVP_ANONYMOUS_MODE_KEY = 'gdvn:pvp-anonymous-mode';
 	const PVP_HIDE_OPPONENT_INFO_KEY = 'gdvn:pvp-hide-opponent-info';
+	const PVP_LAST_AUTO_REDIRECTED_MATCH_KEY = 'gdvn:pvp-last-auto-redirected-match-id';
 	const REALTIME_COALESCE_MS = 200;
 
 	let selectedDifficulty: PvpDifficulty | null = 'easy';
@@ -113,6 +115,7 @@
 	$: checkingLobby = $user.checked && $user.loggedIn && !lobbyReady;
 	$: controlsDisabled = Boolean(checkingLobby || activeMatch || isSearching || actionLoading);
 	$: updateActiveMatchRealtime($user.loggedIn, getLobbyRealtimeMatchIds());
+	$: autoRedirectToActiveMatch(activeMatch);
 
 	$: if ($user.checked && $user.loggedIn && currentUid && initializedForUid !== currentUid) {
 		initializeRealtime(currentUid);
@@ -127,6 +130,7 @@
 		};
 		initializedForUid = '';
 		lobbyReady = false;
+		routedMatchId = null;
 	}
 
 	onMount(() => {
@@ -422,6 +426,20 @@
 		}
 	}
 
+	function autoRedirectToActiveMatch(match: PvpMatch | null) {
+		const matchId = getPvpMatchId(match);
+		if (!browser || !currentUid || !matchId || !match || !isActivePvpMatch(match)) return;
+
+		const matchKey = String(matchId);
+		if (routedMatchId !== null && String(routedMatchId) === matchKey) return;
+
+		if (localStorage.getItem(PVP_LAST_AUTO_REDIRECTED_MATCH_KEY) === matchKey) return;
+
+		localStorage.setItem(PVP_LAST_AUTO_REDIRECTED_MATCH_KEY, matchKey);
+		routedMatchId = matchId;
+		goto(`/pvp/matches/${matchId}`);
+	}
+
 	// Control dialog open state and auto-close when acceptance expires
 	$: if (pendingMatch) {
 		if (!matchDialogOpen) matchDialogOpen = true;
@@ -443,7 +461,7 @@
 	}
 
 	function navigateToMatch(matchId: number | string | null) {
-		if (!matchId || routedMatchId === matchId) return;
+		if (!matchId || (routedMatchId !== null && String(routedMatchId) === String(matchId))) return;
 		routedMatchId = matchId;
 		goto(`/pvp/matches/${matchId}`);
 	}
