@@ -4,6 +4,7 @@ import type {
 	PlayerRankedListSummary
 } from '$lib/types/playerRankedList';
 import { resolvePlayerRankedListSelection } from '$lib/types/playerRankedList';
+import { normalizePvpMatches } from '$lib/client/pvp';
 
 function normalizePlayerListRecordsResponse(
 	value: unknown,
@@ -92,7 +93,7 @@ export async function getPlayerData(player: any, fetch: any, url: URL) {
 		lastRefreshedAt: null
 	};
 
-	const [listSummaries, events, rawPlayerRecords] = await Promise.all([
+	const [listSummaries, events, rawPlayerRecords, rawPvpMatches] = await Promise.all([
 		(await fetch(`${import.meta.env.VITE_API_URL}/players/${player.uid}/lists`)).json() as Promise<
 			PlayerRankedListSummary[]
 		>,
@@ -100,6 +101,11 @@ export async function getPlayerData(player: any, fetch: any, url: URL) {
 			any[]
 		>,
 		fetch(`${import.meta.env.VITE_API_URL}/players/${player.uid}/records`)
+			.then((response: Response) => (response.ok ? response.json() : []))
+			.catch(() => []),
+		fetch(
+			`${import.meta.env.VITE_API_URL}/pvp/players/${encodeURIComponent(player.uid)}/matches?limit=25`
+		)
 			.then((response: Response) => (response.ok ? response.json() : []))
 			.catch(() => [])
 	]);
@@ -196,6 +202,7 @@ export async function getPlayerData(player: any, fetch: any, url: URL) {
 		playerRecords,
 		selectedListRecords,
 		allListRecords,
-		events
+		events,
+		pvpMatches: normalizePvpMatches(rawPvpMatches)
 	};
 }

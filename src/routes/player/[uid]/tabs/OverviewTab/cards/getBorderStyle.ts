@@ -1,6 +1,8 @@
+import { browser } from '$app/environment';
+
 export function getBorderStyle(player: any) {
 	if (player.borderColor) {
-		const isDark = localStorage.getItem('theme') == 'dark';
+		const isDark = browser && localStorage.getItem('theme') == 'dark';
 		const bgColor = isDark ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.5)';
 
 		let style = `border-color: ${player.borderColor}; background-color: ${bgColor}`;

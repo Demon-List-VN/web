@@ -6,7 +6,6 @@
 	import { _ } from 'svelte-i18n';
 	import OverviewTab from './tabs/OverviewTab/index.svelte';
 	import ProfileHero from './components/ProfileHero.svelte';
-	import StatsBar from './components/StatsBar.svelte';
 	import RecordsTab from './components/RecordsTab.svelte';
 	import ActivityTab from './components/ActivityTab.svelte';
 	import CollectionTab from './components/CollectionTab.svelte';
@@ -32,11 +31,11 @@
 </svelte:head>
 
 {#if data.player.isBanned}
-	<div class="flex h-[50px] items-center justify-center bg-red-600 relative z-50">
+	<div class="relative z-50 flex h-[50px] items-center justify-center bg-red-600">
 		{$_('player.banned_notice')}
 	</div>
 {:else if data.player.isHidden}
-	<div class="flex h-[50px] items-center justify-center bg-yellow-600 relative z-50">
+	<div class="relative z-50 flex h-[50px] items-center justify-center bg-yellow-600">
 		{$_('player.hidden_notice')}
 	</div>
 {/if}
