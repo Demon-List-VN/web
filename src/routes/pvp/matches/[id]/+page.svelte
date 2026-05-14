@@ -624,6 +624,8 @@
 	}
 
 	function participantRatingLabel(participant: PvpParticipant | null | undefined) {
+		if (shouldMaskParticipant(participant)) return null;
+
 		const rating = getPvpVisibleParticipantRating(participant);
 		return rating === null ? null : Math.round(rating);
 	}

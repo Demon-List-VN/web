@@ -213,7 +213,7 @@
 		"sign_in_hint": "Ghép trận và lời mời Arena dùng tài khoản GDVN của bạn.",
 		"options": "Tùy chọn",
 		"pvp_rating": "Elo PvP",
-		"pvp_rating_short": "PvP {rating}",
+		"pvp_rating_short": "{rating}",
 		"pvp_rating_summary": "Elo hiện tại {rating}, đã chơi {count} trận xếp hạng.",
 		"starting_rating_hint": "Chọn Elo PvP khởi điểm trước khi chơi Arena. Bạn chỉ được chọn một lần.",
 		"starting_rating": {

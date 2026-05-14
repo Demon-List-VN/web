@@ -124,6 +124,8 @@
 	}
 
 	function ratingLabel(participant: typeof self) {
+		if (!participant || shouldMaskParticipant(participant)) return null;
+
 		const rating = getPvpVisibleParticipantRating(participant);
 		return rating === null ? null : Math.round(rating);
 	}

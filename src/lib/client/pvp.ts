@@ -91,6 +91,8 @@ export type PvpParticipant = {
 	pvp_rating_after?: number | null;
 	pvpRatingDiff?: number | null;
 	pvp_rating_diff?: number | null;
+	pvpRating?: number | null;
+	pvp_rating?: number | null;
 	[key: string]: unknown;
 };
 
@@ -614,34 +616,43 @@ export function getPvpLevelRating(match: PvpMatch | null | undefined) {
 		level?.listRating ??
 		level?.rating ??
 		null;
-	return Number.isFinite(Number(value)) ? Number(value) : null;
+	return getFinitePvpNumber(value);
 }
 
 export function getPvpParticipantRatingBefore(
 	participant: PvpParticipant | null | undefined
 ) {
 	const value = participant?.pvpRatingBefore ?? participant?.pvp_rating_before ?? null;
-	return Number.isFinite(Number(value)) ? Number(value) : null;
+	return getFinitePvpNumber(value);
 }
 
 export function getPvpParticipantRatingAfter(
 	participant: PvpParticipant | null | undefined
 ) {
 	const value = participant?.pvpRatingAfter ?? participant?.pvp_rating_after ?? null;
-	return Number.isFinite(Number(value)) ? Number(value) : null;
+	return getFinitePvpNumber(value);
 }
 
 export function getPvpParticipantRatingDiff(
 	participant: PvpParticipant | null | undefined
 ) {
 	const value = participant?.pvpRatingDiff ?? participant?.pvp_rating_diff ?? null;
-	return Number.isFinite(Number(value)) ? Number(value) : null;
+	return getFinitePvpNumber(value);
 }
 
 export function getPvpVisibleParticipantRating(
 	participant: PvpParticipant | null | undefined
 ) {
-	return getPvpParticipantRatingAfter(participant) ?? getPvpParticipantRatingBefore(participant);
+	const player = getPvpParticipantPlayer(participant);
+	const value =
+		getPvpParticipantRatingAfter(participant) ??
+		getPvpParticipantRatingBefore(participant) ??
+		participant?.pvpRating ??
+		participant?.pvp_rating ??
+		player?.pvpRating ??
+		null;
+
+	return getFinitePvpNumber(value);
 }
 
 export function hasPvpParticipantAccepted(participant: PvpParticipant | null | undefined) {
@@ -663,4 +674,11 @@ export function getTimeMs(value: unknown) {
 	if (!value) return null;
 	const ms = new Date(String(value)).getTime();
 	return Number.isFinite(ms) ? ms : null;
+}
+
+function getFinitePvpNumber(value: unknown) {
+	if (value === null || value === undefined || value === '') return null;
+
+	const numberValue = Number(value);
+	return Number.isFinite(numberValue) ? numberValue : null;
 }

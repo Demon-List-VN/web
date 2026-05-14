@@ -213,7 +213,7 @@
 		"sign_in_hint": "Arena matchmaking and invites are tied to your GDVN player account.",
 		"options": "Options",
 		"pvp_rating": "PvP rating",
-		"pvp_rating_short": "PvP {rating}",
+		"pvp_rating_short": "{rating}",
 		"pvp_rating_summary": "Current rating {rating}, {count} ranked matches played.",
 		"starting_rating_hint": "Choose your starting PvP rating before playing Arena. This can only be selected once.",
 		"starting_rating": {
