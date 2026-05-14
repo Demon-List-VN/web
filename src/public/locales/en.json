@@ -543,6 +543,7 @@
 		"rating": "Classic rating",
 		"featured": "Total Featured List point",
 		"contest": "Contest rating",
+		"pvp": "PvP Elo",
 		"plat_rating": "Platformer Rating",
 		"challenge_rating": "Challenge Rating"
 	},
@@ -563,6 +564,7 @@
 		"player_card_stat_lines": "Player card stat lines",
 		"player_card_stat_lines_description": "Choose which ranked stats appear on your player card.",
 		"show_elo_stat": "Show Elo stat",
+		"show_pvp_elo_stat": "Show PvP Elo stat",
 		"player_card_stat_line": "Stat line {index}",
 		"save_stat_lines": "Save stat lines",
 		"save": "Save changes"

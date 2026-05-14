@@ -2,6 +2,7 @@ import type { PlayerRankedListSummary } from '$lib/types/playerRankedList';
 
 export const PLAYER_CARD_STAT_LINE_COUNT = 4;
 export const PLAYER_CARD_SHOW_ELO_STAT_KEY = 'showEloStat';
+export const PLAYER_CARD_SHOW_PVP_ELO_STAT_KEY = 'showPvpEloStat';
 export const DEFAULT_PLAYER_CARD_STAT_LINE_SLUGS = ['dl', 'pl', 'cl', 'fl'] as const;
 
 export type PlayerCardStatLineOption = {
@@ -19,6 +20,10 @@ export function shouldShowPlayerCardEloStat(overviewData: unknown): boolean {
 	return !isRecord(overviewData) || overviewData[PLAYER_CARD_SHOW_ELO_STAT_KEY] !== false;
 }
 
+export function shouldShowPlayerCardPvpEloStat(overviewData: unknown): boolean {
+	return !isRecord(overviewData) || overviewData[PLAYER_CARD_SHOW_PVP_ELO_STAT_KEY] !== false;
+}
+
 export function setPlayerCardEloStatVisibility(
 	overviewData: unknown,
 	showEloStat: boolean
@@ -29,6 +34,21 @@ export function setPlayerCardEloStatVisibility(
 		delete nextOverviewData[PLAYER_CARD_SHOW_ELO_STAT_KEY];
 	} else {
 		nextOverviewData[PLAYER_CARD_SHOW_ELO_STAT_KEY] = false;
+	}
+
+	return nextOverviewData;
+}
+
+export function setPlayerCardPvpEloStatVisibility(
+	overviewData: unknown,
+	showPvpEloStat: boolean
+): Record<string, unknown> {
+	const nextOverviewData = isRecord(overviewData) ? { ...overviewData } : {};
+
+	if (showPvpEloStat) {
+		delete nextOverviewData[PLAYER_CARD_SHOW_PVP_ELO_STAT_KEY];
+	} else {
+		nextOverviewData[PLAYER_CARD_SHOW_PVP_ELO_STAT_KEY] = false;
 	}
 
 	return nextOverviewData;

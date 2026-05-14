@@ -25,6 +25,7 @@
 		normalizePlayerCardStatLines,
 		resolvePlayerCardStatLineIds,
 		shouldShowPlayerCardEloStat,
+		shouldShowPlayerCardPvpEloStat,
 		type DefaultPlayerCardStatLineSlug
 	} from '$lib/utils/playerCardStatLines';
 	import {
@@ -67,6 +68,7 @@
 		? normalizePlayerCardStatLines(cardPlayer?.playerCardStatLines)
 		: [];
 	$: showEloStat = shouldShowPlayerCardEloStat(cardPlayer?.overviewData);
+	$: showPvpEloStat = shouldShowPlayerCardPvpEloStat(cardPlayer?.overviewData);
 	$: hasConfiguredStatLines = hasKnownPlayerCardStatLines && configuredStatLineIds.length > 0;
 	$: effectiveStatLineIds = resolvePlayerCardStatLineIds(configuredStatLineIds, summaries);
 	$: resolvedStatLines = hasConfiguredStatLines
@@ -217,6 +219,29 @@
 				};
 		}
 	}
+
+	function getPvpRatingValue(player: any) {
+		const value = player?.pvpRating ?? player?.pvp_rating ?? null;
+		const numberValue = Number(value);
+
+		return Number.isFinite(numberValue) ? Math.round(numberValue) : null;
+	}
+
+	function getPvpRatedMatchCount(player: any) {
+		const value = player?.pvpRatedMatchCount ?? player?.pvp_rated_match_count ?? null;
+		const numberValue = Number(value);
+
+		return Number.isFinite(numberValue) ? numberValue : null;
+	}
+
+	function formatPvpRating(player: any) {
+		const rating = getPvpRatingValue(player);
+
+		if (rating === null) return '-';
+
+		const matchCount = getPvpRatedMatchCount(player);
+		return `${rating}${matchCount !== null && matchCount < 5 ? '?' : ''}`;
+	}
 </script>
 
 <div
@@ -338,6 +363,16 @@
 					<Tooltip.Content>{getTitle('elo', cardPlayer)?.fullTitle}</Tooltip.Content>
 				</Tooltip.Root>
 				<div class="rankWrapper">{$_('player_card.contest')}</div>
+			</div>
+		{/if}
+		{#if showPvpEloStat}
+			<div class="rating">
+				<div class="leftCol">
+					<div class="title">
+						{formatPvpRating(cardPlayer)}
+					</div>
+				</div>
+				<div class="rankWrapper">{$_('player_card.pvp')}</div>
 			</div>
 		{/if}
 	</div>

@@ -542,6 +542,7 @@
 		"rating": "Điểm Classic",
 		"featured": "Tổng điểm Featured",
 		"contest": "Điểm cuộc thi",
+		"pvp": "Elo PvP",
 		"plat_rating": "Điểm Platformer",
 		"challenge_rating": "Điểm Challenge"
 	},
@@ -562,6 +563,7 @@
 		"player_card_stat_lines": "Dòng chỉ số trên thẻ người chơi",
 		"player_card_stat_lines_description": "Chọn các chỉ số xếp hạng sẽ xuất hiện trên thẻ người chơi của bạn.",
 		"show_elo_stat": "Hiển thị điểm Elo",
+		"show_pvp_elo_stat": "Hiển thị Elo PvP",
 		"player_card_stat_line": "Dòng chỉ số {index}",
 		"save_stat_lines": "Lưu dòng chỉ số",
 		"save": "Lưu thay đổi"

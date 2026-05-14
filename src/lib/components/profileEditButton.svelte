@@ -20,7 +20,9 @@
 		normalizePlayerCardStatLines,
 		PLAYER_CARD_STAT_LINE_COUNT,
 		setPlayerCardEloStatVisibility,
-		shouldShowPlayerCardEloStat
+		setPlayerCardPvpEloStatVisibility,
+		shouldShowPlayerCardEloStat,
+		shouldShowPlayerCardPvpEloStat
 	} from '$lib/utils/playerCardStatLines';
 	import { _ } from 'svelte-i18n';
 
@@ -45,6 +47,7 @@
 	let playerCardStatLinesLoadedForUid: string | null = null;
 	let isLoadingPlayerCardStatLines = false;
 	let playerCardShowEloStat = false;
+	let playerCardShowPvpEloStat = true;
 
 	$: (open, reset());
 	$: listSearchUrl = `${import.meta.env.VITE_API_URL}/lists`;
@@ -62,6 +65,7 @@
 	function reset() {
 		player = structuredClone(data);
 		playerCardShowEloStat = shouldShowPlayerCardEloStat(player?.overviewData);
+		playerCardShowPvpEloStat = shouldShowPlayerCardPvpEloStat(player?.overviewData);
 		provinceItem = {
 			disabled: false,
 			label: player.province,
@@ -145,9 +149,12 @@
 
 	async function savePlayerCardStatLines() {
 		const token = await $user.token();
-		const overviewData = setPlayerCardEloStatVisibility(
-			player?.overviewData ?? data?.overviewData,
-			playerCardShowEloStat
+		const overviewData = setPlayerCardPvpEloStatVisibility(
+			setPlayerCardEloStatVisibility(
+				player?.overviewData ?? data?.overviewData,
+				playerCardShowEloStat
+			),
+			playerCardShowPvpEloStat
 		);
 		const promise = fetch(`${import.meta.env.VITE_API_URL}/players`, {
 			method: 'PUT',
@@ -308,7 +315,10 @@
 
 		const playerToSave = {
 			...player,
-			overviewData: setPlayerCardEloStatVisibility(player?.overviewData, playerCardShowEloStat)
+			overviewData: setPlayerCardPvpEloStatVisibility(
+				setPlayerCardEloStatVisibility(player?.overviewData, playerCardShowEloStat),
+				playerCardShowPvpEloStat
+			)
 		};
 
 		const token = await $user.token();
@@ -482,6 +492,16 @@
 							id="show-player-card-elo"
 							class="col-span-3"
 							bind:checked={playerCardShowEloStat}
+						/>
+					</div>
+					<div class="grid grid-cols-4 items-center gap-4">
+						<Label for="show-player-card-pvp-elo" class="text-right">
+							{$_('profile_edit.show_pvp_elo_stat')}
+						</Label>
+						<Switch
+							id="show-player-card-pvp-elo"
+							class="col-span-3"
+							bind:checked={playerCardShowPvpEloStat}
 						/>
 					</div>
 					{#each Array(PLAYER_CARD_STAT_LINE_COUNT) as _slot, index}
