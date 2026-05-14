@@ -32,7 +32,7 @@
 		getPvpSelfParticipant,
 		getPvpStatus,
 		getPvpTimeReachedMs,
-		getPvpVisibleParticipantRating,
+		getPvpVisibleParticipantRatingLabel,
 		getPvpParticipantRatingDiff,
 		getPvpWinnerUid,
 		getTimeMs,
@@ -626,8 +626,7 @@
 	function participantRatingLabel(participant: PvpParticipant | null | undefined) {
 		if (shouldMaskParticipant(participant)) return null;
 
-		const rating = getPvpVisibleParticipantRating(participant);
-		return rating === null ? null : Math.round(rating);
+		return getPvpVisibleParticipantRatingLabel(participant);
 	}
 
 	function participantRatingDiffLabel(participant: PvpParticipant | null | undefined) {
