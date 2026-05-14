@@ -101,6 +101,7 @@
 	let showGeodeAlert = true;
 	let lobbyReady = false;
 	let pendingDialogTimeout: ReturnType<typeof setTimeout> | null = null;
+	let pendingExpirationCheckMatchId: string | null = null;
 	let keydownHandler: ((e: KeyboardEvent) => void) | null = null;
 	let matchmakingCheckTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -115,10 +116,9 @@
 	$: queueStatus = getPvpStatus(lobby.matchmaking, 'idle');
 	$: isSearching = queueStatus === 'searching';
 	$: pvpRating = lobby.rating?.pvpRating ?? lobby.pvpRating ?? null;
-	$: pvpRatedMatchCount =
-		lobby.rating?.pvpRatedMatchCount ?? lobby.pvpRatedMatchCount ?? 0;
+	$: pvpRatedMatchCount = lobby.rating?.pvpRatedMatchCount ?? lobby.pvpRatedMatchCount ?? 0;
 	$: pvpRatingInitialized = Boolean(
-		(lobby.rating?.pvpRatingInitialized ?? lobby.pvpRatingInitialized) ?? pvpRating !== null
+		lobby.rating?.pvpRatingInitialized ?? lobby.pvpRatingInitialized ?? pvpRating !== null
 	);
 	$: currentSearchRange =
 		lobby.matchmaking?.currentSearchRange ?? lobby.matchmaking?.current_search_range ?? null;
@@ -129,9 +129,7 @@
 	$: queueElapsedMs = getElapsedMs(queueStartedAt, now);
 	$: showSlowSearchAlert = isSearching && queueElapsedMs >= 90 * 1000;
 	$: incomingPending = lobby.incomingInvites.filter((invite) => getPvpStatus(invite) === 'pending');
-	$: outgoingVisible = lobby.outgoingInvites.filter(
-		(invite) => getPvpStatus(invite) === 'pending'
-	);
+	$: outgoingVisible = lobby.outgoingInvites.filter((invite) => getPvpStatus(invite) === 'pending');
 	$: checkingLobby = $user.checked && $user.loggedIn && !lobbyReady;
 	$: shouldForceStartingRating =
 		$user.checked && $user.loggedIn && lobbyReady && !pvpRatingInitialized;
@@ -464,7 +462,8 @@
 			const response = await checkPvpMatchmaking(await $user.token());
 			applyMatchmakingResponse(response);
 		} catch (error) {
-			const message = error instanceof Error ? error.message : $_('pvp.toast.matchmaking_check_failed');
+			const message =
+				error instanceof Error ? error.message : $_('pvp.toast.matchmaking_check_failed');
 			if (!message.includes('No active matchmaking request')) {
 				toast.error(message);
 			}
@@ -529,9 +528,10 @@
 		const expires = getPvpMatchAcceptanceExpiresMs(pendingMatch);
 		if (expires) {
 			if (pendingDialogTimeout) clearTimeout(pendingDialogTimeout);
+			const matchId = pendingMatchId;
 			const delay = Math.max(0, expires - Date.now());
 			pendingDialogTimeout = setTimeout(() => {
-				matchDialogOpen = false;
+				if (matchId) void handlePendingMatchExpired(matchId);
 				pendingDialogTimeout = null;
 			}, delay);
 		}
@@ -540,6 +540,49 @@
 		if (pendingDialogTimeout) {
 			clearTimeout(pendingDialogTimeout);
 			pendingDialogTimeout = null;
+		}
+	}
+
+	async function handlePendingMatchExpired(matchId: number | string) {
+		if (!$user.loggedIn) return;
+
+		const matchKey = String(matchId);
+		if (pendingExpirationCheckMatchId === matchKey) return;
+		pendingExpirationCheckMatchId = matchKey;
+
+		const wasMatchmakingMatch = String(getPvpMatchedMatchId(lobby.matchmaking)) === matchKey;
+
+		try {
+			const token = await $user.token();
+			const latestMatch = await getPvpMatch(token, matchId);
+			applyMatch(latestMatch);
+
+			if (isPvpMatchConfirmedByBoth(latestMatch)) {
+				autoRedirectToActiveMatch(latestMatch);
+				return;
+			}
+
+			matchDialogOpen = false;
+
+			if (wasMatchmakingMatch) {
+				lobby = {
+					...lobby,
+					activeMatch:
+						String(getPvpMatchId(lobby.activeMatch)) === matchKey ? null : lobby.activeMatch,
+					matchmaking:
+						String(getPvpMatchedMatchId(lobby.matchmaking)) === matchKey ? null : lobby.matchmaking
+				};
+
+				const response = await startPvpMatchmaking(token, anonymousMode);
+				applyMatchmakingResponse(response);
+			}
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : $_('pvp.toast.load_failed'));
+			await refreshLobby();
+		} finally {
+			if (pendingExpirationCheckMatchId === matchKey) {
+				pendingExpirationCheckMatchId = null;
+			}
 		}
 	}
 
@@ -1075,10 +1118,7 @@
 						disabled={controlsDisabled}
 						placeholder={$_('pvp.search_player')}
 					/>
-					<Button
-						disabled={controlsDisabled || !selectedPlayer}
-						on:click={invitePlayer}
-					>
+					<Button disabled={controlsDisabled || !selectedPlayer} on:click={invitePlayer}>
 						{#if actionLoading === 'invite'}
 							<Loader2 class="mr-2 h-4 w-4 animate-spin" />
 						{:else}
