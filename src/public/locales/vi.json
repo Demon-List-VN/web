@@ -215,6 +215,18 @@
 		"pvp_rating": "Elo PvP",
 		"pvp_rating_short": "{rating}",
 		"pvp_rating_summary": "Elo hiện tại {rating}, đã chơi {count} trận xếp hạng.",
+		"elo_graph": {
+			"title": "Biểu đồ Elo",
+			"summary": "{count} trận, {delta} Elo",
+			"filter": "Khoảng biểu đồ Elo",
+			"empty": "Chơi trận xếp hạng để tạo biểu đồ Elo.",
+			"start": "Bắt đầu",
+			"filters": {
+				"25": "25 trận gần nhất",
+				"100": "100 trận gần nhất",
+				"all": "Tất cả"
+			}
+		},
 		"starting_rating_hint": "Chọn Elo PvP khởi điểm trước khi chơi Arena. Bạn chỉ được chọn một lần.",
 		"starting_rating": {
 			"beginner": "Mới chơi",

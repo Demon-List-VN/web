@@ -11,6 +11,8 @@
 	import * as Alert from '$lib/components/ui/alert';
 	import * as Card from '$lib/components/ui/card';
 	import * as Dialog from '$lib/components/ui/dialog';
+	import * as Tabs from '$lib/components/ui/tabs';
+	import Chart from 'chart.js/auto';
 	import {
 		acceptPvpInvite,
 		acceptPvpMatch,
@@ -24,12 +26,18 @@
 		getPvpMatchedMatchId,
 		getPvpMatchId,
 		getPvpMatch,
+		getPvpMatches,
+		getPvpMatchStartMs,
+		getPvpParticipantRatingAfter,
+		getPvpParticipantRatingBefore,
+		getPvpParticipantRatingDiff,
 		getPvpMe,
 		getPvpStatus,
 		getPvpSelfParticipant,
 		hasPvpParticipantAccepted,
 		isActivePvpMatch,
 		isPvpMatchConfirmedByBoth,
+		isPvpMatchRanked,
 		sendPvpInvite,
 		startPvpMatchmaking,
 		startPvpRating,
@@ -68,6 +76,11 @@
 	const PVP_HIDE_OPPONENT_INFO_KEY = 'gdvn:pvp-hide-opponent-info';
 	const PVP_LAST_AUTO_REDIRECTED_MATCH_KEY = 'gdvn:pvp-last-auto-redirected-match-id';
 	const REALTIME_COALESCE_MS = 200;
+	const ELO_GRAPH_FILTERS = [
+		{ key: '25', limit: 25 },
+		{ key: '100', limit: 100 },
+		{ key: 'all', limit: null }
+	] as const;
 	const STARTING_RATING_OPTIONS = [
 		{ rating: 800 as const, key: 'beginner' },
 		{ rating: 1500 as const, key: 'intermediate' },
@@ -84,6 +97,8 @@
 		incomingInvites: [],
 		outgoingInvites: []
 	};
+	let matches: PvpMatch[] = [];
+	let eloGraphFilter: (typeof ELO_GRAPH_FILTERS)[number]['key'] = '25';
 	let loading = false;
 	let actionLoading = '';
 	let initializedForUid = '';
@@ -120,6 +135,15 @@
 	$: pvpRatingInitialized = Boolean(
 		lobby.rating?.pvpRatingInitialized ?? lobby.pvpRatingInitialized ?? pvpRating !== null
 	);
+	$: selectedEloFilter =
+		ELO_GRAPH_FILTERS.find((filter) => filter.key === eloGraphFilter) ?? ELO_GRAPH_FILTERS[0];
+	$: eloGraphPoints = getEloGraphPoints(matches, currentUid, selectedEloFilter.limit);
+	$: eloGraphChartData = getEloGraphChartData(eloGraphPoints);
+	$: eloGraphStart = eloGraphPoints[0]?.rating ?? pvpRating ?? null;
+	$: eloGraphEnd = eloGraphPoints[eloGraphPoints.length - 1]?.rating ?? pvpRating ?? null;
+	$: eloGraphDelta =
+		eloGraphStart !== null && eloGraphEnd !== null ? Math.round(eloGraphEnd - eloGraphStart) : null;
+	$: eloGraphMatchCount = Math.max(0, eloGraphPoints.length - 1);
 	$: currentSearchRange =
 		lobby.matchmaking?.currentSearchRange ?? lobby.matchmaking?.current_search_range ?? null;
 	$: queueStartedAt =
@@ -151,6 +175,7 @@
 			incomingInvites: [],
 			outgoingInvites: []
 		};
+		matches = [];
 		initializedForUid = '';
 		lobbyReady = false;
 		routedMatchId = null;
@@ -199,7 +224,7 @@
 		try {
 			const token = await $user.token();
 			setPvpRealtimeAuth(token);
-			await refreshLobby();
+			await Promise.all([refreshLobby(), refreshMatchHistory()]);
 			lobbyReady = true;
 
 			cleanupRealtime = subscribeToPvpLobby(uid, handleLobbyRealtimeEvent);
@@ -222,6 +247,16 @@
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.load_failed'));
 		} finally {
 			loading = false;
+		}
+	}
+
+	async function refreshMatchHistory() {
+		if (!$user.loggedIn) return;
+
+		try {
+			matches = await getPvpMatches(await $user.token());
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : $_('pvp.toast.load_failed'));
 		}
 	}
 
@@ -333,6 +368,36 @@
 			outgoingInvites: updateInviteMatches(lobby.outgoingInvites, nextMatch)
 		};
 		handleLobbyMatchSounds(previousActiveMatch, lobby.activeMatch);
+		if (getPvpStatus(nextMatch, '') === 'completed' && isPvpMatchRanked(nextMatch)) {
+			upsertMatchHistory(nextMatch);
+		}
+	}
+
+	function upsertMatchHistory(nextMatch: PvpMatch) {
+		const matchId = getPvpMatchId(nextMatch);
+		if (!matchId) return;
+
+		const existingIndex = matches.findIndex(
+			(match) => String(getPvpMatchId(match)) === String(matchId)
+		);
+		const nextMatches =
+			existingIndex >= 0
+				? matches.map((match, index) => (index === existingIndex ? nextMatch : match))
+				: [nextMatch, ...matches];
+
+		matches = sortMatches(nextMatches);
+	}
+
+	function sortMatches(items: PvpMatch[]) {
+		return [...items].sort((a, b) => getMatchSortMs(b) - getMatchSortMs(a));
+	}
+
+	function getMatchSortMs(match: PvpMatch) {
+		const fallbackMs = new Date(
+			match.endedAt ?? match.endAt ?? match.endsAt ?? match.created_at ?? 0
+		).getTime();
+
+		return getPvpMatchStartMs(match) ?? (Number.isFinite(fallbackMs) ? fallbackMs : 0);
 	}
 
 	function updateInviteMatches(invites: PvpInvite[], nextMatch: PvpMatch) {
@@ -797,6 +862,215 @@
 		showGeodeAlert = false;
 		localStorage.setItem(PVP_GEODE_ALERT_DISMISSED_KEY, 'true');
 	}
+
+	type EloGraphPoint = {
+		index: number;
+		rating: number;
+		diff: number | null;
+	};
+
+	type EloGraphChartData = {
+		labels: string[];
+		ratings: number[];
+		diffs: Array<number | null>;
+		min: number;
+		max: number;
+	};
+
+	function getEloGraphPoints(
+		sourceMatches: PvpMatch[],
+		uid: string | null | undefined,
+		limit: number | null
+	): EloGraphPoint[] {
+		if (!uid) return [];
+
+		const ratedMatches = sortMatches(sourceMatches)
+			.filter((match) => getPvpStatus(match, '') === 'completed' && isPvpMatchRanked(match))
+			.reverse()
+			.map((match) => getPvpSelfParticipant(match, uid))
+			.filter(Boolean)
+			.map((participant) => ({
+				before: getPvpParticipantRatingBefore(participant),
+				after: getPvpParticipantRatingAfter(participant),
+				diff: getPvpParticipantRatingDiff(participant)
+			}))
+			.filter((point) => point.after !== null);
+
+		const visibleMatches = limit ? ratedMatches.slice(-limit) : ratedMatches;
+		if (visibleMatches.length === 0) return [];
+
+		const firstBefore = visibleMatches[0].before;
+		const rawRatings = [
+			firstBefore ?? visibleMatches[0].after,
+			...visibleMatches.map((point) => point.after)
+		].filter((rating): rating is number => rating !== null);
+
+		return rawRatings.map((rating, index) => {
+			const diff = index === 0 ? null : (visibleMatches[index - 1]?.diff ?? null);
+			return {
+				index,
+				rating,
+				diff
+			};
+		});
+	}
+
+	function getRatingBounds(ratings: number[]) {
+		const minRating = Math.min(...ratings);
+		const maxRating = Math.max(...ratings);
+		const padding = Math.max(20, Math.round((maxRating - minRating) * 0.15));
+
+		return {
+			min: Math.floor(minRating - padding),
+			max: Math.ceil(maxRating + padding)
+		};
+	}
+
+	function getEloGraphChartData(points: EloGraphPoint[]): EloGraphChartData {
+		const ratings = points.map((point) => Math.round(point.rating));
+		const bounds = ratings.length ? getRatingBounds(ratings) : { min: 0, max: 0 };
+
+		return {
+			labels: points.map((point) =>
+				point.index === 0 ? $_('pvp.elo_graph.start') : String(point.index)
+			),
+			ratings,
+			diffs: points.map((point) => (point.diff === null ? null : Math.round(point.diff))),
+			min: bounds.min,
+			max: bounds.max
+		};
+	}
+
+	function eloDeltaLabel(value: number | null) {
+		if (value === null) return '--';
+		return `${value > 0 ? '+' : ''}${value}`;
+	}
+
+	function chartColor(cssVariable: string, fallback: string) {
+		if (!browser) return fallback;
+		const value = getComputedStyle(document.documentElement).getPropertyValue(cssVariable).trim();
+		return value ? `hsl(${value})` : fallback;
+	}
+
+	function chartAlphaColor(cssVariable: string, alpha: number, fallback: string) {
+		if (!browser) return fallback;
+		const value = getComputedStyle(document.documentElement).getPropertyValue(cssVariable).trim();
+		return value ? `hsl(${value} / ${alpha})` : fallback;
+	}
+
+	function createEloChart(node: HTMLCanvasElement, data: EloGraphChartData) {
+		let chart: Chart<'line', number[], string> | null = buildEloChart(node, data);
+
+		return {
+			update(nextData: EloGraphChartData) {
+				if (!chart) {
+					chart = buildEloChart(node, nextData);
+					return;
+				}
+
+				chart.data.labels = nextData.labels;
+				chart.data.datasets[0].data = nextData.ratings;
+				chart.data.datasets[0].pointRadius = getEloPointRadii(nextData.ratings);
+				chart.options.scales!.y!.min = nextData.min;
+				chart.options.scales!.y!.max = nextData.max;
+				chart.options.plugins!.tooltip!.callbacks!.label = getEloTooltipLabel(nextData);
+				chart.update();
+			},
+			destroy() {
+				chart?.destroy();
+				chart = null;
+			}
+		};
+	}
+
+	function buildEloChart(node: HTMLCanvasElement, data: EloGraphChartData) {
+		return new Chart(node, {
+			type: 'line',
+			data: {
+				labels: data.labels,
+				datasets: [
+					{
+						label: $_('pvp.pvp_rating'),
+						data: data.ratings,
+						borderColor: chartColor('--primary', '#2563eb'),
+						backgroundColor: chartAlphaColor('--primary', 0.12, 'rgba(37, 99, 235, 0.12)'),
+						borderWidth: 2,
+						fill: true,
+						tension: 0,
+						pointBackgroundColor: chartColor('--background', '#ffffff'),
+						pointBorderColor: chartColor('--primary', '#2563eb'),
+						pointBorderWidth: 2,
+						pointRadius: getEloPointRadii(data.ratings),
+						pointHoverRadius: 6
+					}
+				]
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				animation: false,
+				interaction: {
+					mode: 'index',
+					intersect: false
+				},
+				scales: {
+					x: {
+						grid: {
+							display: false
+						},
+						ticks: {
+							color: chartColor('--muted-foreground', '#71717a'),
+							maxRotation: 0,
+							autoSkip: true,
+							maxTicksLimit: 6
+						}
+					},
+					y: {
+						min: data.min,
+						max: data.max,
+						border: {
+							display: false
+						},
+						grid: {
+							color: chartAlphaColor('--border', 0.85, 'rgba(161, 161, 170, 0.4)')
+						},
+						ticks: {
+							color: chartColor('--muted-foreground', '#71717a'),
+							precision: 0
+						}
+					}
+				},
+				plugins: {
+					legend: {
+						display: false
+					},
+					tooltip: {
+						callbacks: {
+							title: (context) => {
+								const index = context[0]?.dataIndex ?? 0;
+								return index === 0 ? $_('pvp.elo_graph.start') : `${$_('pvp.match')} ${index}`;
+							},
+							label: getEloTooltipLabel(data)
+						}
+					}
+				}
+			}
+		});
+	}
+
+	function getEloPointRadii(ratings: number[]) {
+		return ratings.map((_, index) => (index === ratings.length - 1 ? 4 : 3));
+	}
+
+	function getEloTooltipLabel(data: EloGraphChartData) {
+		return (context: { dataIndex: number; parsed: { y: number } }) => {
+			const diff = data.diffs[context.dataIndex];
+			const rating = context.parsed.y;
+
+			if (diff === null || diff === undefined) return `${$_('pvp.pvp_rating')}: ${rating}`;
+			return [`${$_('pvp.pvp_rating')}: ${rating}`, eloDeltaLabel(diff)];
+		};
+	}
 </script>
 
 <svelte:head>
@@ -1007,6 +1281,40 @@
 										})
 									: $_('pvp.rating_established')}
 							</span>
+						</div>
+						<div class="elo-graph-panel">
+							<div class="elo-graph-toolbar">
+								<div>
+									<strong>{$_('pvp.elo_graph.title')}</strong>
+									<span>
+										{$_('pvp.elo_graph.summary', {
+											values: {
+												count: eloGraphMatchCount,
+												delta: eloDeltaLabel(eloGraphDelta)
+											}
+										})}
+									</span>
+								</div>
+								<Tabs.Root bind:value={eloGraphFilter}>
+									<Tabs.List class="elo-filter-group" aria-label={$_('pvp.elo_graph.filter')}>
+										{#each ELO_GRAPH_FILTERS as filter}
+											<Tabs.Trigger value={filter.key} class="elo-filter-trigger">
+												{$_(`pvp.elo_graph.filters.${filter.key}`)}
+											</Tabs.Trigger>
+										{/each}
+									</Tabs.List>
+								</Tabs.Root>
+							</div>
+							{#if eloGraphPoints.length > 1}
+								<div class="elo-chart-wrapper">
+									<canvas
+										use:createEloChart={eloGraphChartData}
+										aria-label={$_('pvp.elo_graph.title')}
+									/>
+								</div>
+							{:else}
+								<div class="elo-graph-empty">{$_('pvp.elo_graph.empty')}</div>
+							{/if}
 						</div>
 					</Card.Content>
 				</Card.Root>
@@ -1388,6 +1696,72 @@
 		font-size: 1.4rem;
 	}
 
+	.elo-graph-panel {
+		display: grid;
+		gap: 12px;
+		margin-top: 18px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		padding: 14px;
+	}
+
+	.elo-graph-toolbar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 14px;
+	}
+
+	.elo-graph-toolbar strong,
+	.elo-graph-toolbar span {
+		display: block;
+	}
+
+	.elo-graph-toolbar strong {
+		font-size: 14px;
+	}
+
+	.elo-graph-toolbar span {
+		margin-top: 3px;
+		color: hsl(var(--muted-foreground));
+		font-size: 13px;
+	}
+
+	:global(.elo-filter-group) {
+		display: inline-grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		height: auto;
+		min-width: 220px;
+		overflow: hidden;
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		background: hsl(var(--muted) / 0.28);
+		padding: 3px;
+	}
+
+	:global(.elo-filter-trigger) {
+		min-height: 32px;
+		padding-inline: 10px;
+	}
+
+	.elo-chart-wrapper {
+		width: 100%;
+		height: 190px;
+		min-height: 190px;
+	}
+
+	.elo-graph-empty {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-height: 150px;
+		border: 1px dashed hsl(var(--border));
+		border-radius: 8px;
+		color: hsl(var(--muted-foreground));
+		font-size: 13px;
+		text-align: center;
+	}
+
 	.anonymous-row {
 		display: flex;
 		align-items: center;
@@ -1544,6 +1918,16 @@
 
 		.starting-rating-grid {
 			grid-template-columns: 1fr;
+		}
+
+		.elo-graph-toolbar {
+			align-items: stretch;
+			flex-direction: column;
+		}
+
+		:global(.elo-filter-group) {
+			width: 100%;
+			min-width: 0;
 		}
 	}
 

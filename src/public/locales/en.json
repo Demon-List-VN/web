@@ -215,6 +215,18 @@
 		"pvp_rating": "PvP rating",
 		"pvp_rating_short": "{rating}",
 		"pvp_rating_summary": "Current rating {rating}, {count} ranked matches played.",
+		"elo_graph": {
+			"title": "Elo graph",
+			"summary": "{count} matches, {delta} Elo",
+			"filter": "Elo graph range",
+			"empty": "Play ranked matches to build your Elo graph.",
+			"start": "Start",
+			"filters": {
+				"25": "Last 25",
+				"100": "Last 100",
+				"all": "All time"
+			}
+		},
 		"starting_rating_hint": "Choose your starting PvP rating before playing Arena. This can only be selected once.",
 		"starting_rating": {
 			"beginner": "Beginner",
