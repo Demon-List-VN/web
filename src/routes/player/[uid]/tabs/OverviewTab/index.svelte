@@ -447,13 +447,7 @@
 </script>
 
 <div class="overview-shell">
-	<Card.Root class="overflow-hidden" style={getBorderStyle(player)}>
-		<Card.Header>
-			<div class="section-heading">
-				<Activity class="h-5 w-5" />
-				<Card.Title class="text-xl">{$_('player.overview.activity_heatmap')}</Card.Title>
-			</div>
-		</Card.Header>
+	<Card.Root class="overflow-hidden pt-[20px]" style={getBorderStyle(player)}>
 		<Card.Content>
 			<div class="heatmap-frame">
 				{#key player.uid}
@@ -851,6 +845,9 @@
 	.heatmap-frame {
 		overflow-x: auto;
 		padding-bottom: 4px;
+		display: flex;
+		justify-content: center;
+		align-items: center;
 	}
 
 	.recent-list {
