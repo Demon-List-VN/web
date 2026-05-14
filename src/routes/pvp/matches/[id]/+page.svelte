@@ -13,10 +13,10 @@
 	import * as Drawer from '$lib/components/ui/drawer';
 	import { isActive as isSupporterActive } from '$lib/client/isSupporterActive';
 	import {
-		PVP_DIFFICULTIES,
 		acceptPvpMatch,
 		getPvpMatchMessages,
 		getPvpLevel,
+		getPvpLevelRating,
 		getPvpMatchAcceptanceExpiresMs,
 		getPvpMatch,
 		getPvpMatchEndMs,
@@ -32,15 +32,17 @@
 		getPvpSelfParticipant,
 		getPvpStatus,
 		getPvpTimeReachedMs,
+		getPvpVisibleParticipantRating,
+		getPvpParticipantRatingDiff,
 		getPvpWinnerUid,
 		getTimeMs,
 		hasPvpParticipantAccepted,
+		isPvpMatchRanked,
 		isActivePvpMatch,
 		isPvpMatchConfirmedByBoth,
 		resignPvpMatch,
 		sendPvpInvite,
 		sendPvpMatchMessage,
-		type PvpDifficulty,
 		type PvpMatch,
 		type PvpMatchMessage,
 		type PvpParticipant
@@ -110,6 +112,8 @@
 	$: orderedParticipants = orderParticipants(participants, currentUid);
 	$: winnerUid = getPvpWinnerUid(match);
 	$: resultReason = getPvpResultReason(match);
+	$: ranked = isPvpMatchRanked(match);
+	$: levelRating = getPvpLevelRating(match);
 	$: resultTitleText = resultTitle(
 		match,
 		status,
@@ -130,9 +134,7 @@
 	$: selfAccepted = hasPvpParticipantAccepted(selfParticipant);
 	$: rematchOpponent = getPvpOpponent(match, currentUid);
 	$: rematchOpponentUid = getPvpParticipantUid(rematchOpponent);
-	$: canRematch = Boolean(
-		match && !isActive && selfParticipant && rematchOpponentUid && rematchDifficulty(match)
-	);
+	$: canRematch = Boolean(match && !isActive && selfParticipant && rematchOpponentUid);
 	$: canResign =
 		['in_progress', 'waiting_result'].includes(status) &&
 		remainingMs > 0 &&
@@ -367,9 +369,8 @@
 		if (!match || actionLoading) return;
 
 		const inviteeUid = String(rematchOpponentUid || '');
-		const difficulty = rematchDifficulty(match);
 
-		if (!inviteeUid || !difficulty) {
+		if (!inviteeUid) {
 			toast.error($_('pvp.toast.rematch_failed'));
 			return;
 		}
@@ -378,7 +379,6 @@
 		try {
 			await sendPvpInvite(await $user.token(), {
 				inviteeUid,
-				difficulty,
 				anonymous: getPvpParticipantIsAnonymous(selfParticipant)
 			});
 			toast.success($_('pvp.toast.rematch_sent'));
@@ -420,15 +420,6 @@
 				redirectTo: window.location.origin
 			}
 		});
-	}
-
-	function difficultyLabel(value: unknown) {
-		return $_(`pvp.difficulty.${String(value || 'easy')}`);
-	}
-
-	function rematchDifficulty(currentMatch: PvpMatch | null = match): PvpDifficulty | null {
-		const value = String(currentMatch?.difficulty || '');
-		return PVP_DIFFICULTIES.includes(value as PvpDifficulty) ? (value as PvpDifficulty) : null;
 	}
 
 	function statusLabel(value: unknown) {
@@ -491,12 +482,20 @@
 		hideInfo: boolean = hideOpponentInfo,
 		viewerUid: string | null | undefined = currentUid
 	) {
-		if (getPvpParticipantIsAnonymous(participant)) return $_('pvp.anonymous_player');
+		if (participantIsAnonymousToViewer(participant, viewerUid)) return $_('pvp.anonymous_player');
 		if (shouldHideParticipantInfo(participant, hideInfo, viewerUid))
 			return $_('pvp.hidden_opponent');
 
 		const player = getPvpParticipantPlayer(participant);
 		return player?.name || getPvpParticipantUid(participant) || '--';
+	}
+
+	function participantIsAnonymousToViewer(
+		participant: PvpParticipant | null | undefined,
+		viewerUid: string | null | undefined = currentUid
+	) {
+		const uid = getPvpParticipantUid(participant);
+		return Boolean(getPvpParticipantIsAnonymous(participant) && (!uid || uid !== viewerUid));
 	}
 
 	function shouldHideParticipantInfo(
@@ -514,7 +513,7 @@
 		viewerUid: string | null | undefined = currentUid
 	) {
 		return (
-			getPvpParticipantIsAnonymous(participant) ||
+			participantIsAnonymousToViewer(participant, viewerUid) ||
 			shouldHideParticipantInfo(participant, hideInfo, viewerUid)
 		);
 	}
@@ -622,6 +621,17 @@
 		if (currentStatus !== 'completed') return null;
 		if (!currentWinnerUid) return $_('pvp.result.draw');
 		return getPvpParticipantUid(participant) === currentWinnerUid ? $_('pvp.winner') : null;
+	}
+
+	function participantRatingLabel(participant: PvpParticipant | null | undefined) {
+		const rating = getPvpVisibleParticipantRating(participant);
+		return rating === null ? null : Math.round(rating);
+	}
+
+	function participantRatingDiffLabel(participant: PvpParticipant | null | undefined) {
+		const diff = getPvpParticipantRatingDiff(participant);
+		if (diff === null) return null;
+		return `${diff > 0 ? '+' : ''}${Math.round(diff)}`;
 	}
 
 	function participantAvatarUrl(player: any) {
@@ -802,8 +812,15 @@
 									</Card.Description>
 								</div>
 								<div class="result-line">
+									<Badge variant={ranked ? 'default' : 'secondary'}>
+										{ranked ? $_('pvp.ranked') : $_('pvp.unranked')}
+									</Badge>
 									<Badge variant={isActive ? 'default' : 'secondary'}>{statusLabel(status)}</Badge>
-									<Badge variant="outline">{difficultyLabel(match.difficulty)}</Badge>
+									{#if levelRating !== null}
+										<Badge variant="outline">
+											{$_('pvp.level_rating', { values: { rating: levelRating } })}
+										</Badge>
+									{/if}
 								</div>
 							</div>
 						</Card.Header>
@@ -844,6 +861,8 @@
 											status,
 											winnerUid
 										)}
+										{@const participantRating = participantRatingLabel(participant)}
+										{@const participantRatingDiff = participantRatingDiffLabel(participant)}
 										<div
 											class:left-side={index === 0}
 											class:right-side={index === 1}
@@ -884,6 +903,18 @@
 														<PlayerLink player={participantPlayer} truncate={26} />
 													{:else}
 														<strong>{participantDisplayName}</strong>
+													{/if}
+													{#if participantRating !== null}
+														<span class="participant-rating">
+															{$_('pvp.pvp_rating_short', { values: { rating: participantRating } })}
+															{#if ranked && participantRatingDiff}
+																<strong
+																	class:positive={Number(getPvpParticipantRatingDiff(participant)) > 0}
+																>
+																	{participantRatingDiff}
+																</strong>
+															{/if}
+														</span>
 													{/if}
 												</div>
 											</div>
@@ -948,8 +979,10 @@
 									</p>
 								</div>
 								<div class="level-meta">
-									{#if visibleLevel.rating !== null && visibleLevel.rating !== undefined}
-										<Badge variant="secondary">{visibleLevel.rating}pt</Badge>
+									{#if levelRating !== null}
+										<Badge variant="secondary">
+											{$_('pvp.level_rating', { values: { rating: levelRating } })}
+										</Badge>
 									{/if}
 									{#if visibleLevel.difficulty}
 										<Badge variant="outline">{visibleLevel.difficulty}</Badge>
@@ -1461,8 +1494,25 @@
 	}
 
 	.participant-name {
+		display: grid;
+		gap: 3px;
 		min-width: 0;
 		min-height: 32px;
+	}
+
+	.participant-rating {
+		color: hsl(var(--muted-foreground));
+		font-size: 12px;
+		font-weight: 650;
+	}
+
+	.participant-rating strong {
+		margin-left: 6px;
+		color: hsl(var(--destructive));
+	}
+
+	.participant-rating strong.positive {
+		color: hsl(var(--primary));
 	}
 
 	.progress-label {

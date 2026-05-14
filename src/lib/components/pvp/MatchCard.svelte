@@ -4,6 +4,7 @@
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import {
 		getPvpLevel,
+		getPvpLevelRating,
 		getPvpMatchAcceptanceExpiresMs,
 		getPvpMatchEndMs,
 		getPvpOpponent,
@@ -16,7 +17,10 @@
 		getPvpSelfParticipant,
 		getPvpStatus,
 		getPvpTimeReachedMs,
+		getPvpVisibleParticipantRating,
+		getPvpParticipantRatingDiff,
 		getPvpWinnerUid,
+		isPvpMatchRanked,
 		isActivePvpMatch,
 		isPvpMatchConfirmedByBoth,
 		type PvpMatch
@@ -44,6 +48,8 @@
 	$: opponentPlayer = getPvpParticipantPlayer(opponent);
 	$: winnerUid = getPvpWinnerUid(match);
 	$: resultReason = getPvpResultReason(match);
+	$: ranked = isPvpMatchRanked(match);
+	$: levelRating = getPvpLevelRating(match);
 	$: remainingMs = Math.max(0, (getPvpMatchEndMs(match) ?? now) - now);
 	$: acceptanceRemainingMs = Math.max(0, (getPvpMatchAcceptanceExpiresMs(match) ?? now) - now);
 	$: isActive = isActivePvpMatch(match);
@@ -89,11 +95,16 @@
 	}
 
 	function participantName(participant: typeof titleLeft) {
-		if (getPvpParticipantIsAnonymous(participant)) return $_('pvp.anonymous_player');
+		if (participantIsAnonymousToViewer(participant)) return $_('pvp.anonymous_player');
 		if (shouldHideParticipantInfo(participant)) return $_('pvp.hidden_opponent');
 
 		const player = getPvpParticipantPlayer(participant);
 		return player?.name || getPvpParticipantUid(participant) || $_('pvp.waiting_opponent');
+	}
+
+	function participantIsAnonymousToViewer(participant: typeof titleLeft) {
+		const uid = getPvpParticipantUid(participant);
+		return Boolean(getPvpParticipantIsAnonymous(participant) && (!uid || uid !== currentUid));
 	}
 
 	function shouldHideParticipantInfo(participant: typeof titleLeft) {
@@ -102,7 +113,7 @@
 	}
 
 	function shouldMaskParticipant(participant: typeof titleLeft) {
-		return getPvpParticipantIsAnonymous(participant) || shouldHideParticipantInfo(participant);
+		return participantIsAnonymousToViewer(participant) || shouldHideParticipantInfo(participant);
 	}
 
 	function winnerName() {
@@ -110,6 +121,17 @@
 			(participant) => getPvpParticipantUid(participant) === winnerUid
 		);
 		return winner ? participantName(winner) : winnerUid || '--';
+	}
+
+	function ratingLabel(participant: typeof self) {
+		const rating = getPvpVisibleParticipantRating(participant);
+		return rating === null ? null : Math.round(rating);
+	}
+
+	function ratingDiffLabel(participant: typeof self) {
+		const diff = getPvpParticipantRatingDiff(participant);
+		if (diff === null) return null;
+		return `${diff > 0 ? '+' : ''}${Math.round(diff)}`;
 	}
 </script>
 
@@ -147,8 +169,15 @@
 		</div>
 
 		<div class="match-badges">
+			<Badge variant={ranked ? 'default' : 'secondary'}>
+				{ranked ? $_('pvp.ranked') : $_('pvp.unranked')}
+			</Badge>
 			<Badge variant={isActive ? 'default' : 'secondary'}>{statusLabel(status)}</Badge>
-			<Badge variant="outline">{difficultyLabel(match.difficulty)}</Badge>
+			{#if levelRating !== null}
+				<Badge variant="outline">{$_('pvp.level_rating', { values: { rating: levelRating } })}</Badge>
+			{:else if match.difficulty}
+				<Badge variant="outline">{difficultyLabel(match.difficulty)}</Badge>
+			{/if}
 		</div>
 	</Card.Header>
 
@@ -167,7 +196,12 @@
 		<div class="progress-grid">
 			<div>
 				<div class="progress-label">
-					<span>{$_('pvp.you')}</span>
+					<span>
+						{$_('pvp.you')}
+						{#if ratingLabel(self) !== null}
+							<small>{$_('pvp.pvp_rating_short', { values: { rating: ratingLabel(self) } })}</small>
+						{/if}
+					</span>
 					<strong>{selfProgress}%</strong>
 				</div>
 				<div class="progress-track">
@@ -176,12 +210,22 @@
 				<span class="time-mark">
 					<Gauge class="h-3.5 w-3.5" />
 					{formatDuration(getPvpTimeReachedMs(self))}
+					{#if ranked && ratingDiffLabel(self)}
+						<strong class:positive={Number(getPvpParticipantRatingDiff(self)) > 0} class="rating-diff">
+							{ratingDiffLabel(self)}
+						</strong>
+					{/if}
 				</span>
 			</div>
 
 			<div>
 				<div class="progress-label">
-					<span>{$_('pvp.rival')}</span>
+					<span>
+						{$_('pvp.rival')}
+						{#if ratingLabel(opponent) !== null}
+							<small>{$_('pvp.pvp_rating_short', { values: { rating: ratingLabel(opponent) } })}</small>
+						{/if}
+					</span>
 					<strong>{opponentProgress}%</strong>
 				</div>
 				<div class="progress-track">
@@ -190,6 +234,14 @@
 				<span class="time-mark">
 					<Gauge class="h-3.5 w-3.5" />
 					{formatDuration(getPvpTimeReachedMs(opponent))}
+					{#if ranked && ratingDiffLabel(opponent)}
+						<strong
+							class:positive={Number(getPvpParticipantRatingDiff(opponent)) > 0}
+							class="rating-diff"
+						>
+							{ratingDiffLabel(opponent)}
+						</strong>
+					{/if}
 				</span>
 			</div>
 		</div>
@@ -281,6 +333,17 @@
 		font-size: 13px;
 	}
 
+	.progress-label span {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.progress-label small {
+		font-size: 12px;
+		font-weight: 600;
+	}
+
 	.progress-track {
 		margin-top: 8px;
 		height: 8px;
@@ -306,6 +369,15 @@
 	.time-mark {
 		margin-top: 7px;
 		font-size: 12px;
+	}
+
+	.rating-diff {
+		color: hsl(var(--destructive));
+		font-weight: 750;
+	}
+
+	.rating-diff.positive {
+		color: hsl(var(--primary));
 	}
 
 	:global(.match-card-footer) {

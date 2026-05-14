@@ -22,6 +22,10 @@ export type PvpPlayer = {
 	uid?: string;
 	id?: string;
 	name?: string | null;
+	pvpRating?: number | null;
+	pvpRatedMatchCount?: number | null;
+	pvpStartingRating?: number | null;
+	pvpRatingInitializedAt?: string | null;
 	anonymous?: boolean;
 	isAnonymous?: boolean;
 	avatarVersion?: number;
@@ -81,6 +85,12 @@ export type PvpParticipant = {
 	timeReachedProgress?: number | null;
 	acceptedAt?: string | null;
 	accepted_at?: string | null;
+	pvpRatingBefore?: number | null;
+	pvp_rating_before?: number | null;
+	pvpRatingAfter?: number | null;
+	pvp_rating_after?: number | null;
+	pvpRatingDiff?: number | null;
+	pvp_rating_diff?: number | null;
 	[key: string]: unknown;
 };
 
@@ -95,6 +105,16 @@ export type PvpMatch = {
 	winnerId?: string | null;
 	resultReason?: string | null;
 	reason?: string | null;
+	ranked?: boolean;
+	isRanked?: boolean;
+	levelRating?: number | null;
+	level_rating?: number | null;
+	ratingTarget?: number | null;
+	rating_target?: number | null;
+	ratingOffset?: number | null;
+	rating_offset?: number | null;
+	ratingAppliedAt?: string | null;
+	rating_applied_at?: string | null;
 	startedAt?: string | null;
 	startsAt?: string | null;
 	started_at?: string | null;
@@ -159,6 +179,11 @@ export type PvpMatchmakingRequest = {
 	anonymous?: boolean;
 	matchId?: number | string | null;
 	match?: PvpMatch | null;
+	pvpRating?: number | null;
+	searchStartedAt?: string | null;
+	search_started_at?: string | null;
+	currentSearchRange?: number | null;
+	current_search_range?: number | null;
 	expiresAt?: string | null;
 	expires_at?: string | null;
 	created_at?: string;
@@ -166,7 +191,20 @@ export type PvpMatchmakingRequest = {
 	[key: string]: unknown;
 };
 
+export type PvpRatingState = {
+	pvpRating?: number | null;
+	pvpRatedMatchCount?: number | null;
+	pvpStartingRating?: number | null;
+	pvpRatingInitializedAt?: string | null;
+	pvpRatingInitialized?: boolean;
+	[key: string]: unknown;
+};
+
 export type PvpMe = {
+	rating?: PvpRatingState | null;
+	pvpRating?: number | null;
+	pvpRatedMatchCount?: number | null;
+	pvpRatingInitialized?: boolean;
 	activeMatch: PvpMatch | null;
 	matchmaking: PvpMatchmakingRequest | null;
 	incomingInvites: PvpInvite[];
@@ -229,6 +267,18 @@ async function pvpRequest<T>(path: string, options: PvpRequestInit = {}): Promis
 
 export function normalizePvpMe(payload: any): PvpMe {
 	return {
+		rating: payload?.rating ?? null,
+		pvpRating: payload?.pvpRating ?? payload?.pvp_rating ?? payload?.rating?.pvpRating ?? null,
+		pvpRatedMatchCount:
+			payload?.pvpRatedMatchCount ??
+			payload?.pvp_rated_match_count ??
+			payload?.rating?.pvpRatedMatchCount ??
+			null,
+		pvpRatingInitialized:
+			payload?.pvpRatingInitialized ??
+			payload?.pvp_rating_initialized ??
+			payload?.rating?.pvpRatingInitialized ??
+			false,
 		activeMatch:
 			payload?.activeMatch ??
 			payload?.active_match ??
@@ -271,13 +321,19 @@ export async function getPvpMe(token?: string | null) {
 
 export async function startPvpMatchmaking(
 	token: string | null | undefined,
-	difficulty: PvpDifficulty,
 	anonymous = false
 ) {
 	return pvpRequest<PvpMatchmakingRequest | PvpMe>('/pvp/matchmaking', {
 		method: 'POST',
 		token,
-		body: { difficulty, anonymous }
+		body: { anonymous }
+	});
+}
+
+export async function checkPvpMatchmaking(token?: string | null) {
+	return pvpRequest<PvpMatchmakingRequest | PvpMe>('/pvp/matchmaking/check', {
+		method: 'POST',
+		token
 	});
 }
 
@@ -290,12 +346,23 @@ export async function cancelPvpMatchmaking(token?: string | null) {
 
 export async function sendPvpInvite(
 	token: string | null | undefined,
-	payload: { inviteeUid: string; difficulty: PvpDifficulty; anonymous?: boolean }
+	payload: { inviteeUid: string; anonymous?: boolean }
 ) {
 	return pvpRequest<PvpInvite>('/pvp/invites', {
 		method: 'POST',
 		token,
 		body: payload
+	});
+}
+
+export async function startPvpRating(
+	token: string | null | undefined,
+	startingRating: 800 | 1500 | 2500
+) {
+	return pvpRequest<PvpRatingState>('/pvp/rating/start', {
+		method: 'POST',
+		token,
+		body: { startingRating }
 	});
 }
 
@@ -533,6 +600,48 @@ export function getPvpMatchedMatchId(value: PvpInvite | PvpMatchmakingRequest | 
 
 export function getPvpResultReason(match: PvpMatch | null | undefined) {
 	return match?.resultReason ?? match?.reason ?? null;
+}
+
+export function isPvpMatchRanked(match: PvpMatch | null | undefined) {
+	return Boolean(match?.ranked ?? match?.isRanked);
+}
+
+export function getPvpLevelRating(match: PvpMatch | null | undefined) {
+	const level = getPvpLevel(match);
+	const value =
+		match?.levelRating ??
+		match?.level_rating ??
+		level?.listRating ??
+		level?.rating ??
+		null;
+	return Number.isFinite(Number(value)) ? Number(value) : null;
+}
+
+export function getPvpParticipantRatingBefore(
+	participant: PvpParticipant | null | undefined
+) {
+	const value = participant?.pvpRatingBefore ?? participant?.pvp_rating_before ?? null;
+	return Number.isFinite(Number(value)) ? Number(value) : null;
+}
+
+export function getPvpParticipantRatingAfter(
+	participant: PvpParticipant | null | undefined
+) {
+	const value = participant?.pvpRatingAfter ?? participant?.pvp_rating_after ?? null;
+	return Number.isFinite(Number(value)) ? Number(value) : null;
+}
+
+export function getPvpParticipantRatingDiff(
+	participant: PvpParticipant | null | undefined
+) {
+	const value = participant?.pvpRatingDiff ?? participant?.pvp_rating_diff ?? null;
+	return Number.isFinite(Number(value)) ? Number(value) : null;
+}
+
+export function getPvpVisibleParticipantRating(
+	participant: PvpParticipant | null | undefined
+) {
+	return getPvpParticipantRatingAfter(participant) ?? getPvpParticipantRatingBefore(participant);
 }
 
 export function hasPvpParticipantAccepted(participant: PvpParticipant | null | undefined) {

@@ -12,10 +12,10 @@
 	import * as Card from '$lib/components/ui/card';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import {
-		PVP_DIFFICULTIES,
 		acceptPvpInvite,
 		acceptPvpMatch,
 		cancelPvpMatchmaking,
+		checkPvpMatchmaking,
 		declinePvpInvite,
 		getPvpInviteExpiresMs,
 		getPvpInvite,
@@ -32,7 +32,7 @@
 		isPvpMatchConfirmedByBoth,
 		sendPvpInvite,
 		startPvpMatchmaking,
-		type PvpDifficulty,
+		startPvpRating,
 		type PvpInvite,
 		type PvpMatch,
 		type PvpMatchmakingRequest,
@@ -56,6 +56,7 @@
 		LogIn,
 		RefreshCw,
 		Send,
+		ShieldCheck,
 		Swords,
 		UserCheck,
 		Users,
@@ -67,8 +68,12 @@
 	const PVP_HIDE_OPPONENT_INFO_KEY = 'gdvn:pvp-hide-opponent-info';
 	const PVP_LAST_AUTO_REDIRECTED_MATCH_KEY = 'gdvn:pvp-last-auto-redirected-match-id';
 	const REALTIME_COALESCE_MS = 200;
+	const STARTING_RATING_OPTIONS = [
+		{ rating: 800 as const, key: 'beginner' },
+		{ rating: 1500 as const, key: 'intermediate' },
+		{ rating: 2500 as const, key: 'expert' }
+	];
 
-	let selectedDifficulty: PvpDifficulty | null = 'easy';
 	let selectedPlayer: any = null;
 	let anonymousMode = false;
 	let hideOpponentInfo = false;
@@ -92,10 +97,12 @@
 	let announcedMatchIds = new Set<string>();
 	let endedMatchBellIds = new Set<string>();
 	let matchDialogOpen = false;
+	let ratingDialogOpen = false;
 	let showGeodeAlert = true;
 	let lobbyReady = false;
 	let pendingDialogTimeout: ReturnType<typeof setTimeout> | null = null;
 	let keydownHandler: ((e: KeyboardEvent) => void) | null = null;
+	let matchmakingCheckTimer: ReturnType<typeof setInterval> | null = null;
 
 	$: currentUid = $user.data?.uid;
 	$: activeMatch =
@@ -107,15 +114,32 @@
 	);
 	$: queueStatus = getPvpStatus(lobby.matchmaking, 'idle');
 	$: isSearching = queueStatus === 'searching';
-	$: queueElapsedMs = getElapsedMs(lobby.matchmaking?.created_at, now);
+	$: pvpRating = lobby.rating?.pvpRating ?? lobby.pvpRating ?? null;
+	$: pvpRatedMatchCount =
+		lobby.rating?.pvpRatedMatchCount ?? lobby.pvpRatedMatchCount ?? 0;
+	$: pvpRatingInitialized = Boolean(
+		(lobby.rating?.pvpRatingInitialized ?? lobby.pvpRatingInitialized) ?? pvpRating !== null
+	);
+	$: currentSearchRange =
+		lobby.matchmaking?.currentSearchRange ?? lobby.matchmaking?.current_search_range ?? null;
+	$: queueStartedAt =
+		lobby.matchmaking?.searchStartedAt ??
+		lobby.matchmaking?.search_started_at ??
+		lobby.matchmaking?.created_at;
+	$: queueElapsedMs = getElapsedMs(queueStartedAt, now);
 	$: showSlowSearchAlert = isSearching && queueElapsedMs >= 90 * 1000;
 	$: incomingPending = lobby.incomingInvites.filter((invite) => getPvpStatus(invite) === 'pending');
-	$: outgoingVisible = lobby.outgoingInvites.filter((invite) =>
-		['pending', 'accepted', 'declined', 'expired', 'cancelled'].includes(getPvpStatus(invite))
+	$: outgoingVisible = lobby.outgoingInvites.filter(
+		(invite) => getPvpStatus(invite) === 'pending'
 	);
 	$: checkingLobby = $user.checked && $user.loggedIn && !lobbyReady;
-	$: controlsDisabled = Boolean(checkingLobby || activeMatch || isSearching || actionLoading);
+	$: shouldForceStartingRating =
+		$user.checked && $user.loggedIn && lobbyReady && !pvpRatingInitialized;
+	$: controlsDisabled = Boolean(
+		checkingLobby || !pvpRatingInitialized || activeMatch || isSearching || actionLoading
+	);
 	$: updateActiveMatchRealtime($user.loggedIn, getLobbyRealtimeMatchIds());
+	$: updateMatchmakingCheckPolling($user.loggedIn, isSearching);
 	$: autoRedirectToActiveMatch(activeMatch);
 
 	$: if ($user.checked && $user.loggedIn && currentUid && initializedForUid !== currentUid) {
@@ -145,7 +169,7 @@
 		}, 1000);
 
 		keydownHandler = (e: KeyboardEvent) => {
-			if (e.key === 'Escape' && pendingMatch) {
+			if (e.key === 'Escape' && (pendingMatch || shouldForceStartingRating)) {
 				e.preventDefault();
 				e.stopPropagation();
 			}
@@ -164,6 +188,7 @@
 		cleanupRealtime?.();
 		cleanupActiveMatchRealtime?.();
 		clearScheduledRealtimeTasks();
+		clearMatchmakingCheckPolling();
 		if (keydownHandler) window.removeEventListener('keydown', keydownHandler);
 		if (pendingDialogTimeout) clearTimeout(pendingDialogTimeout);
 	});
@@ -398,6 +423,54 @@
 		);
 	}
 
+	function updateMatchmakingCheckPolling(loggedIn: boolean, searching: boolean) {
+		if (!browser) return;
+
+		if (!loggedIn || !searching) {
+			clearMatchmakingCheckPolling();
+			return;
+		}
+
+		if (matchmakingCheckTimer) return;
+
+		matchmakingCheckTimer = setInterval(checkMatchmaking, 15_000);
+	}
+
+	function clearMatchmakingCheckPolling() {
+		if (!matchmakingCheckTimer) return;
+		clearInterval(matchmakingCheckTimer);
+		matchmakingCheckTimer = null;
+	}
+
+	function applyMatchmakingResponse(response: PvpMatchmakingRequest | PvpMe) {
+		if ('activeMatch' in response || 'incomingInvites' in response) {
+			const nextLobby = response as PvpMe;
+			handleLobbyMatchSounds(lobby.activeMatch, nextLobby.activeMatch);
+			lobby = nextLobby;
+			return;
+		}
+
+		const matchmaking = response as PvpMatchmakingRequest;
+		applyMatchmaking(matchmaking);
+		if (matchmaking.match) {
+			applyMatch(matchmaking.match);
+		}
+	}
+
+	async function checkMatchmaking() {
+		if (!$user.loggedIn || !isSearching) return;
+
+		try {
+			const response = await checkPvpMatchmaking(await $user.token());
+			applyMatchmakingResponse(response);
+		} catch (error) {
+			const message = error instanceof Error ? error.message : $_('pvp.toast.matchmaking_check_failed');
+			if (!message.includes('No active matchmaking request')) {
+				toast.error(message);
+			}
+		}
+	}
+
 	function handleLobbyMatchSounds(
 		previousMatch: PvpMe['activeMatch'],
 		nextMatch: PvpMe['activeMatch']
@@ -470,6 +543,14 @@
 		}
 	}
 
+	$: if (shouldForceStartingRating && !ratingDialogOpen) {
+		ratingDialogOpen = true;
+	}
+
+	$: if (!shouldForceStartingRating && ratingDialogOpen) {
+		ratingDialogOpen = false;
+	}
+
 	function navigateToMatch(matchId: number | string | null) {
 		if (!matchId || (routedMatchId !== null && String(routedMatchId) === String(matchId))) return;
 		routedMatchId = matchId;
@@ -489,28 +570,35 @@
 		});
 	}
 
+	async function chooseStartingRating(startingRating: 800 | 1500 | 2500) {
+		actionLoading = `start-rating-${startingRating}`;
+		try {
+			const rating = await startPvpRating(await $user.token(), startingRating);
+			lobby = {
+				...lobby,
+				rating,
+				pvpRating: rating.pvpRating ?? null,
+				pvpRatedMatchCount: rating.pvpRatedMatchCount ?? 0,
+				pvpRatingInitialized: true
+			};
+			toast.success($_('pvp.toast.starting_rating_saved'));
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : $_('pvp.toast.starting_rating_failed'));
+		} finally {
+			actionLoading = '';
+		}
+	}
+
 	async function startQueue() {
-		if (!selectedDifficulty) {
-			toast.error($_('pvp.toast.select_difficulty'));
+		if (!pvpRatingInitialized) {
+			toast.error($_('pvp.toast.select_starting_rating'));
 			return;
 		}
 
 		actionLoading = 'matchmaking';
 		try {
-			const response = await startPvpMatchmaking(
-				await $user.token(),
-				selectedDifficulty,
-				anonymousMode
-			);
-			if ('activeMatch' in response || 'incomingInvites' in response) {
-				const nextLobby = response as PvpMe;
-				handleLobbyMatchSounds(lobby.activeMatch, nextLobby.activeMatch);
-				lobby = nextLobby;
-			} else {
-				applyMatchmaking(response as PvpMatchmakingRequest);
-				const match = (response as PvpMatchmakingRequest).match;
-				if (match) applyMatch(match);
-			}
+			const response = await startPvpMatchmaking(await $user.token(), anonymousMode);
+			applyMatchmakingResponse(response);
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.matchmaking_failed'));
 		} finally {
@@ -531,8 +619,8 @@
 	}
 
 	async function invitePlayer() {
-		if (!selectedDifficulty) {
-			toast.error($_('pvp.toast.select_difficulty'));
+		if (!pvpRatingInitialized) {
+			toast.error($_('pvp.toast.select_starting_rating'));
 			return;
 		}
 
@@ -550,7 +638,6 @@
 		try {
 			const invite = await sendPvpInvite(await $user.token(), {
 				inviteeUid: selectedPlayer.uid,
-				difficulty: selectedDifficulty,
 				anonymous: anonymousMode
 			});
 			selectedPlayer = null;
@@ -566,6 +653,10 @@
 	async function acceptInvite(invite: PvpInvite) {
 		const inviteId = getPvpInviteId(invite);
 		if (!inviteId) return;
+		if (!pvpRatingInitialized) {
+			toast.error($_('pvp.toast.select_starting_rating'));
+			return;
+		}
 
 		actionLoading = `accept-${inviteId}`;
 		try {
@@ -606,10 +697,6 @@
 		} finally {
 			actionLoading = '';
 		}
-	}
-
-	function difficultyLabel(value: unknown) {
-		return $_(`pvp.difficulty.${String(value || 'easy')}`);
 	}
 
 	function statusLabel(value: unknown) {
@@ -747,8 +834,8 @@
 
 			<div class="match-found-body">
 				<div class="match-found-row">
-					<span>{$_('pvp.choose_difficulty')}</span>
-					<strong>{difficultyLabel(pendingMatch?.difficulty)}</strong>
+					<span>{$_('pvp.match_type')}</span>
+					<strong>{$_('pvp.ranked')}</strong>
 				</div>
 				<div class="match-found-row">
 					<span>{$_('pvp.acceptance_timer')}</span>
@@ -773,6 +860,43 @@
 					</Button>
 				{/if}
 			</Dialog.Footer>
+		</Dialog.Content>
+	</Dialog.Root>
+
+	<Dialog.Root
+		bind:open={ratingDialogOpen}
+		on:openChange={(e) => {
+			if (e?.detail === false && shouldForceStartingRating) {
+				ratingDialogOpen = true;
+			}
+		}}
+	>
+		<Dialog.Content showClose={false} class="sm:max-w-[520px]">
+			<Dialog.Header>
+				<div class="match-found-icon">
+					<ShieldCheck class="h-5 w-5" />
+				</div>
+				<Dialog.Title>{$_('pvp.pvp_rating')}</Dialog.Title>
+				<Dialog.Description>
+					{$_('pvp.starting_rating_hint')}
+				</Dialog.Description>
+			</Dialog.Header>
+
+			<div class="starting-rating-grid">
+				{#each STARTING_RATING_OPTIONS as option}
+					<Button
+						variant="outline"
+						disabled={Boolean(actionLoading || checkingLobby)}
+						on:click={() => chooseStartingRating(option.rating)}
+					>
+						{#if actionLoading === `start-rating-${option.rating}`}
+							<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+						{/if}
+						<span>{$_(`pvp.starting_rating.${option.key}`)}</span>
+						<strong>{option.rating}</strong>
+					</Button>
+				{/each}
+			</div>
 		</Dialog.Content>
 	</Dialog.Root>
 
@@ -813,26 +937,45 @@
 			</section>
 		{/if}
 
+		{#if pvpRatingInitialized}
+			<section class="rating-start-section">
+				<Card.Root>
+					<Card.Header>
+						<Card.Title>{$_('pvp.pvp_rating')}</Card.Title>
+						<Card.Description>
+							{$_('pvp.pvp_rating_summary', {
+								values: {
+									rating: pvpRating,
+									count: pvpRatedMatchCount
+								}
+							})}
+						</Card.Description>
+					</Card.Header>
+					<Card.Content>
+						<div class="rating-summary">
+							<ShieldCheck class="h-5 w-5" />
+							<strong>{pvpRating}</strong>
+							<span>
+								{pvpRatedMatchCount < 5
+									? $_('pvp.provisional_matches_left', {
+											values: {
+												count: Math.max(0, 5 - Number(pvpRatedMatchCount || 0))
+											}
+										})
+									: $_('pvp.rating_established')}
+							</span>
+						</div>
+					</Card.Content>
+				</Card.Root>
+			</section>
+		{/if}
+
 		<section class="control-grid">
 			<Card.Root>
 				<Card.Header>
-					<Card.Title>{$_('pvp.choose_difficulty')}</Card.Title>
+					<Card.Title>{$_('pvp.options')}</Card.Title>
 				</Card.Header>
 				<Card.Content>
-					<div class="difficulty-grid">
-						{#each PVP_DIFFICULTIES as difficulty}
-							<button
-								type="button"
-								class:selected={selectedDifficulty === difficulty}
-								class="difficulty-button"
-								disabled={Boolean(actionLoading)}
-								on:click={() => (selectedDifficulty = difficulty)}
-							>
-								<span>{difficultyLabel(difficulty)}</span>
-								<small>{$_(`pvp.difficulty_band.${difficulty}`)}</small>
-							</button>
-						{/each}
-					</div>
 					<div class="anonymous-row">
 						<div>
 							<strong>{$_('pvp.anonymous_mode')}</strong>
@@ -887,8 +1030,15 @@
 							<Badge>{statusLabel(queueStatus)}</Badge>
 							<span>
 								<Clock class="h-4 w-4" />
-								{elapsedLabel(lobby.matchmaking?.created_at, now)}
+								{elapsedLabel(queueStartedAt, now)}
 							</span>
+							{#if currentSearchRange !== null}
+								<span>
+									{$_('pvp.search_range', {
+										values: { range: currentSearchRange }
+									})}
+								</span>
+							{/if}
 						</div>
 						{#if showSlowSearchAlert}
 							<div class="queue-hint">
@@ -902,7 +1052,7 @@
 							{$_('pvp.cancel_search')}
 						</Button>
 					{:else}
-						<Button disabled={controlsDisabled || !selectedDifficulty} on:click={startQueue}>
+						<Button disabled={controlsDisabled} on:click={startQueue}>
 							{#if actionLoading === 'matchmaking'}
 								<Loader2 class="mr-2 h-4 w-4 animate-spin" />
 							{:else}
@@ -926,7 +1076,7 @@
 						placeholder={$_('pvp.search_player')}
 					/>
 					<Button
-						disabled={controlsDisabled || !selectedDifficulty || !selectedPlayer}
+						disabled={controlsDisabled || !selectedPlayer}
 						on:click={invitePlayer}
 					>
 						{#if actionLoading === 'invite'}
@@ -954,13 +1104,13 @@
 								<div class="invite-row">
 									<div>
 										<strong>{inviteName(invite, 'incoming')}</strong>
-										<span>{difficultyLabel(invite.difficulty)}</span>
+										<span>{$_('pvp.unranked')}</span>
 									</div>
 									<div class="invite-actions">
 										<span class="timer">{remainingLabel(getPvpInviteExpiresMs(invite), now)}</span>
 										<Button
 											size="sm"
-											disabled={Boolean(actionLoading)}
+											disabled={Boolean(actionLoading || !pvpRatingInitialized)}
 											on:click={() => acceptInvite(invite)}
 										>
 											{#if actionLoading === `accept-${getPvpInviteId(invite)}`}
@@ -1010,7 +1160,7 @@
 								<div class="invite-row">
 									<div>
 										<strong>{inviteName(invite, 'outgoing')}</strong>
-										<span>{difficultyLabel(invite.difficulty)}</span>
+										<span>{$_('pvp.unranked')}</span>
 									</div>
 									<div class="invite-actions">
 										<Badge variant={getPvpStatus(invite) === 'pending' ? 'default' : 'secondary'}>
@@ -1129,7 +1279,8 @@
 	}
 
 	:global(.state-panel),
-	.active-section {
+	.active-section,
+	.rating-start-section {
 		margin-bottom: 20px;
 	}
 
@@ -1166,10 +1317,35 @@
 		margin-top: 16px;
 	}
 
-	.difficulty-grid {
+	.starting-rating-grid {
 		display: grid;
 		grid-template-columns: repeat(3, minmax(0, 1fr));
 		gap: 10px;
+	}
+
+	.starting-rating-grid :global(button) {
+		display: flex;
+		min-height: 78px;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+	}
+
+	.starting-rating-grid strong {
+		font-size: 1.2rem;
+	}
+
+	.rating-summary {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 10px;
+		color: hsl(var(--muted-foreground));
+	}
+
+	.rating-summary strong {
+		color: hsl(var(--foreground));
+		font-size: 1.4rem;
 	}
 
 	.anonymous-row {
@@ -1197,38 +1373,6 @@
 		color: hsl(var(--muted-foreground));
 		font-size: 13px;
 		line-height: 1.35;
-	}
-
-	.difficulty-button {
-		min-height: 86px;
-		border: 1px solid hsl(var(--border));
-		border-radius: 8px;
-		background: hsl(var(--background));
-		padding: 12px;
-		text-align: left;
-		transition:
-			border-color 140ms ease,
-			background-color 140ms ease,
-			color 140ms ease;
-	}
-
-	.difficulty-button span,
-	.difficulty-button small {
-		display: block;
-	}
-
-	.difficulty-button span {
-		font-weight: 750;
-	}
-
-	.difficulty-button small {
-		margin-top: 6px;
-		color: hsl(var(--muted-foreground));
-	}
-
-	.difficulty-button.selected {
-		border-color: hsl(var(--primary));
-		background: hsl(var(--primary) / 0.1);
 	}
 
 	:global(.action-panel),
@@ -1358,7 +1502,7 @@
 			flex-direction: column;
 		}
 
-		.difficulty-grid {
+		.starting-rating-grid {
 			grid-template-columns: 1fr;
 		}
 	}
