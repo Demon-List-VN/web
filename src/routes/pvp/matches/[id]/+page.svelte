@@ -1297,7 +1297,7 @@
 									</Button>
 								</div>
 							</div>
-							<div class="chat-content">
+							<div class="chat-content h-[70vh]">
 								<div class="chat-messages" bind:this={desktopChatScrollEl}>
 									{#if chatMuted}
 										<div class="empty-state">{$_('pvp.chat_muted_state')}</div>
