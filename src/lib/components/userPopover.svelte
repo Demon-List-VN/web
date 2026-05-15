@@ -3,6 +3,7 @@
 	import * as Avatar from '$lib/components/ui/avatar';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import PlayerCard from '$lib/components/playerCard.svelte';
+	import SupporterTierProgress from '$lib/components/SupporterTierProgress.svelte';
 	import { user } from '$lib/client';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import { goto } from '$app/navigation';
@@ -62,6 +63,12 @@
 			{/if}
 		</div>
 
+		{#if isActive($user.data.supporterUntil)}
+			<div class="tier-progress-wrap">
+				<SupporterTierProgress supporterUntil={$user.data.supporterUntil} compact />
+			</div>
+		{/if}
+
 		<div class="popover-separator" />
 
 		<!-- Navigation -->
@@ -117,6 +124,10 @@
 		display: flex;
 		align-items: center;
 		gap: 12px;
+	}
+
+	.tier-progress-wrap {
+		padding: 0 12px 12px;
 	}
 
 	.popover-separator {

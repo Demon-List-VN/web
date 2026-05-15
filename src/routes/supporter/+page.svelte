@@ -7,6 +7,9 @@
 	import { _ } from 'svelte-i18n';
 	import TopSupporters from '$lib/components/topSupporters.svelte';
 	import DonateDialog from './DonateDialog.svelte';
+	import SupporterTierProgress from '$lib/components/SupporterTierProgress.svelte';
+	import { user } from '$lib/client';
+	import { isActive } from '$lib/client/isSupporterActive';
 
 	export let data: any;
 
@@ -43,6 +46,14 @@
 				</a>
 				<DonateDialog />
 			</div>
+		</div>
+
+		<div class="tierProgressWrapper">
+			{#if $user.loggedIn && isActive($user.data?.supporterUntil)}
+				<SupporterTierProgress supporterUntil={$user.data.supporterUntil} />
+			{:else}
+				<SupporterTierProgress preview />
+			{/if}
 		</div>
 
 		<TopSupporters topBuyers={data.topBuyers} />
@@ -170,6 +181,12 @@
 	}
 
 	.goalWrapper {
+		width: 100%;
+		max-width: 700px;
+		margin-top: 24px;
+	}
+
+	.tierProgressWrapper {
 		width: 100%;
 		max-width: 700px;
 		margin-top: 24px;

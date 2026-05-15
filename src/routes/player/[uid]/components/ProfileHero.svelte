@@ -4,6 +4,7 @@
 	import { toast } from 'svelte-sonner';
 	import { user } from '$lib/client';
 	import { isActive } from '$lib/client/isSupporterActive';
+	import { getSupporterTier, getSupporterTierStyle } from '$lib/client/supporterTier';
 	import ProfileEditButton from '$lib/components/profileEditButton.svelte';
 	import { BadgeCheck, MapPin } from 'lucide-svelte';
 	import { _ } from 'svelte-i18n';
@@ -15,6 +16,8 @@
 
 	$: player = data.player;
 	$: isSupporter = isActive(player.supporterUntil);
+	$: supporterTier = getSupporterTier(player.supporterUntil);
+	$: supporterTierStyle = getSupporterTierStyle(supporterTier);
 	$: avatarSrc = `https://cdn.gdvn.net/avatars/${player.uid}${
 		isSupporter && player.isAvatarGif ? '.gif' : '.jpg'
 	}?version=${player.avatarVersion}`;
@@ -77,7 +80,10 @@
 							toast.success($_('player.copy_uid'));
 						}}
 					>
-						<h2 class="text-2xl font-bold sm:text-3xl" class:supporter-name={isSupporter}>
+						<h2
+							class={`text-2xl font-bold sm:text-3xl ${isSupporter ? 'supporter-tier-text supporter-tier-text--animated' : ''}`}
+							style={supporterTierStyle}
+						>
 							{#if player.clan && !isActive(player.clans.boostedUntil)}
 								[{player.clans.tag}]
 							{/if}
@@ -153,23 +159,4 @@
 		}
 	}
 
-	.supporter-name {
-		background: linear-gradient(90deg, #f6d365, #fda085, #f6d365);
-		background-size: 200%;
-		-webkit-background-clip: text;
-		-webkit-text-fill-color: transparent;
-		background-clip: text;
-		animation: shimmer 3s ease infinite;
-	}
-
-	@keyframes shimmer {
-		0% { background-position: 0% 50%; }
-		100% { background-position: 200% 50%; }
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.supporter-name {
-			animation: none;
-		}
-	}
 </style>

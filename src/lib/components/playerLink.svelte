@@ -5,6 +5,7 @@
 	import { getTitle } from '$lib/client';
 	import { badgeVariants } from '$lib/components/ui/badge';
 	import { isActive } from '$lib/client/isSupporterActive';
+	import { getSupporterTier, getSupporterTierStyle } from '$lib/client/supporterTier';
 	import type { PlayerLinkRankBadge } from '$lib/utils/customListRank';
 	import { BadgeCheck, CheckCheck, Crown } from 'lucide-svelte';
 	import PlayerCard from '$lib/components/playerCard.svelte';
@@ -43,6 +44,8 @@
 		: builtInRankBadge?.title
 			? `background-color: ${builtInRankBadge.color}`
 			: '';
+	$: supporterTier = getSupporterTier(player?.supporterUntil);
+	$: supporterTierStyle = getSupporterTierStyle(supporterTier);
 
 	function truncateText(str: string) {
 		if (!truncate) {
@@ -106,7 +109,12 @@
 					class="rounded-sm underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-8 focus-visible:outline-black"
 				>
 					<div class="flex items-center gap-[5px]">
-						<span class={isActive(player.supporterUntil) ? 'supporter-name' : ''}>
+						<span
+							class={isActive(player.supporterUntil)
+								? 'supporter-tier-text supporter-tier-text--animated'
+								: ''}
+							style={supporterTierStyle}
+						>
 							{truncateText(
 								player.clan && !isActive(player.clans.boostedUntil)
 									? `[${player.clans.tag}] ${player.name}`
@@ -124,7 +132,12 @@
 				</a>
 			{:else}
 				<div class="flex items-center gap-[5px]">
-					<span class={isActive(player.supporterUntil) ? 'supporter-name' : ''}>
+					<span
+						class={isActive(player.supporterUntil)
+							? 'supporter-tier-text supporter-tier-text--animated'
+							: ''}
+						style={supporterTierStyle}
+					>
 						{truncateText(
 							player.clan && !isActive(player.clans.boostedUntil)
 								? `[${player.clans.tag}] ${player.name}`
@@ -205,23 +218,4 @@
 		font-weight: 600;
 	}
 
-	:global(.supporter-name) {
-		background: linear-gradient(90deg, #f6d365, #fda085, #f6d365);
-		background-size: 200%;
-		-webkit-background-clip: text;
-		-webkit-text-fill-color: transparent;
-		background-clip: text;
-		animation: shimmer 3s ease infinite;
-	}
-
-	@keyframes shimmer {
-		0% { background-position: 0% 50%; }
-		100% { background-position: 200% 50%; }
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		:global(.supporter-name) {
-			animation: none;
-		}
-	}
 </style>

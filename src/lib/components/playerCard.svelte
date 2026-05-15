@@ -19,6 +19,7 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { getExpLevel } from '$lib/client/getExpLevel';
 	import { isActive } from '$lib/client/isSupporterActive';
+	import { getSupporterTier, getSupporterTierStyle } from '$lib/client/supporterTier';
 	import type { PlayerRankedListSummary } from '$lib/types/playerRankedList';
 	import {
 		DEFAULT_PLAYER_CARD_STAT_LINE_SLUGS,
@@ -60,6 +61,8 @@
 	}
 
 	$: cardPlayer = hydratedPlayer ?? player;
+	$: supporterTier = getSupporterTier(cardPlayer?.supporterUntil);
+	$: supporterTierStyle = getSupporterTierStyle(supporterTier);
 	$: hasKnownPlayerCardStatLines = Array.isArray(cardPlayer?.playerCardStatLines);
 	$: exp = (cardPlayer?.exp ?? 0) + (cardPlayer?.extraExp ?? 0);
 	$: expLevel = getExpLevel(exp);
@@ -280,7 +283,12 @@
 			>
 		{/if}
 		<h4 class="playerName font-semibold">
-			<span class={isActive(cardPlayer.supporterUntil) ? 'supporter-name' : ''}>
+			<span
+				class={isActive(cardPlayer.supporterUntil)
+					? 'supporter-tier-text supporter-tier-text--animated'
+					: ''}
+				style={supporterTierStyle}
+			>
 				{#if cardPlayer.clan && !isActive(cardPlayer.clans.boostedUntil)}
 					<a href={`/clan/${cardPlayer.clan}`}>[{cardPlayer.clans.tag}]</a>
 				{/if}
@@ -491,27 +499,4 @@
 		font-weight: 600;
 	}
 
-	:global(.supporter-name) {
-		background: linear-gradient(90deg, #f6d365, #fda085, #f6d365);
-		background-size: 200%;
-		-webkit-background-clip: text;
-		-webkit-text-fill-color: transparent;
-		background-clip: text;
-		animation: shimmer 3s ease infinite;
-	}
-
-	@keyframes shimmer {
-		0% {
-			background-position: 0% 50%;
-		}
-		100% {
-			background-position: 200% 50%;
-		}
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		:global(.supporter-name) {
-			animation: none;
-		}
-	}
 </style>
