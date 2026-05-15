@@ -49,6 +49,7 @@
 	import {
 		setPvpRealtimeAuth,
 		subscribeToPvpMatchActivity,
+		subscribeToPvpMatchRows,
 		subscribeToPvpLobby,
 		type PvpRealtimeEvent
 	} from '$lib/client/pvpRealtime';
@@ -104,7 +105,9 @@
 	let initializedForUid = '';
 	let cleanupRealtime: (() => Promise<void>) | null = null;
 	let cleanupActiveMatchRealtime: (() => Promise<void>) | null = null;
+	let cleanupPendingConfirmRealtime: (() => Promise<void>) | null = null;
 	let activeMatchRealtimeKey = '';
+	let pendingConfirmRealtimeKey = '';
 	let scheduledRealtimeTasks = new Map<string, ReturnType<typeof setTimeout>>();
 	let now = Date.now();
 	let ticker: ReturnType<typeof setInterval> | null = null;
@@ -161,6 +164,7 @@
 		checkingLobby || !pvpRatingInitialized || activeMatch || isSearching || actionLoading
 	);
 	$: updateActiveMatchRealtime($user.loggedIn, getLobbyRealtimeMatchIds());
+	$: updatePendingConfirmRealtime($user.loggedIn, pendingMatchId);
 	$: updateMatchmakingCheckPolling($user.loggedIn, isSearching);
 	$: autoRedirectToActiveMatch(activeMatch);
 
@@ -210,6 +214,7 @@
 		if (ticker) clearInterval(ticker);
 		cleanupRealtime?.();
 		cleanupActiveMatchRealtime?.();
+		cleanupPendingConfirmRealtime?.();
 		clearScheduledRealtimeTasks();
 		clearMatchmakingCheckPolling();
 		if (keydownHandler) window.removeEventListener('keydown', keydownHandler);
@@ -312,6 +317,20 @@
 			const matchId = row?.id ?? row?.matchId;
 			if (matchId) scheduleFetchMatch(matchId);
 		}
+	}
+
+	function handlePendingConfirmRealtimeEvent(event: PvpRealtimeEvent) {
+		const row = realtimeRow(event);
+		const matchId = row?.id ?? row?.matchId;
+		if (!matchId) return;
+
+		if (getPvpStatus(row, '') === 'in_progress') {
+			matchDialogOpen = false;
+			redirectToMatchId(matchId);
+			return;
+		}
+
+		scheduleFetchMatch(matchId);
 	}
 
 	function scheduleFetchMatch(matchId: number | string) {
@@ -490,6 +509,26 @@
 		);
 	}
 
+	function updatePendingConfirmRealtime(
+		loggedIn: boolean,
+		matchId: number | string | null
+	) {
+		const key = loggedIn && currentUid && matchId ? String(matchId) : '';
+		if (key === pendingConfirmRealtimeKey) return;
+
+		cleanupPendingConfirmRealtime?.();
+		cleanupPendingConfirmRealtime = null;
+		pendingConfirmRealtimeKey = key;
+
+		if (!key) return;
+
+		cleanupPendingConfirmRealtime = subscribeToPvpMatchRows(
+			[matchId],
+			handlePendingConfirmRealtimeEvent,
+			`pvp-pending-confirm-${currentUid}`
+		);
+	}
+
 	function updateMatchmakingCheckPolling(loggedIn: boolean, searching: boolean) {
 		if (!browser) return;
 
@@ -579,6 +618,12 @@
 			!isPvpMatchConfirmedByBoth(match)
 		)
 			return;
+
+		redirectToMatchId(matchId);
+	}
+
+	function redirectToMatchId(matchId: number | string | null) {
+		if (!browser || !currentUid || !matchId) return;
 
 		const matchKey = String(matchId);
 		const redirectKey = `confirmed:${matchKey}`;
