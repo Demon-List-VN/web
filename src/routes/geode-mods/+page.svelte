@@ -129,9 +129,12 @@
 			<Download size={20} />
 			<h2>{$_('geode_mods.install_title')}</h2>
 		</div>
-		<ol>
-			{#each steps as step}
-				<li>{$_(step)}</li>
+		<ol class="stepList">
+			{#each steps as step, index}
+				<li>
+					<span class="stepNumber">{index + 1}</span>
+					<span>{$_(step)}</span>
+				</li>
 			{/each}
 		</ol>
 		<p>{$_('geode_mods.install_hint')}</p>
@@ -145,9 +148,12 @@
 			<Dialog.Description>{$_('geode_mods.popup_description')}</Dialog.Description>
 		</Dialog.Header>
 
-		<ol class="dialogSteps">
-			{#each steps as step}
-				<li>{$_(step)}</li>
+		<ol class="stepList dialogSteps">
+			{#each steps as step, index}
+				<li>
+					<span class="stepNumber">{index + 1}</span>
+					<span>{$_(step)}</span>
+				</li>
 			{/each}
 		</ol>
 
@@ -334,17 +340,35 @@
 		line-height: 1.55;
 	}
 
-	.installSection ol {
+	.stepList {
 		display: grid;
 		gap: 12px;
 		margin: 18px 0;
-		padding-left: 24px;
+		padding: 0;
+		list-style: none;
 	}
 
-	.installSection li {
-		padding-left: 6px;
+	.stepList li {
+		display: grid;
+		grid-template-columns: 32px minmax(0, 1fr);
+		gap: 12px;
+		align-items: start;
 		line-height: 1.55;
 		color: var(--textColor);
+	}
+
+	.stepNumber {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 32px;
+		height: 32px;
+		border-radius: 999px;
+		background: hsl(var(--primary));
+		color: hsl(var(--primary-foreground));
+		font-size: 14px;
+		font-weight: 800;
+		line-height: 1;
 	}
 
 	:global(.installDialog) {
@@ -352,16 +376,19 @@
 	}
 
 	.dialogSteps {
-		display: grid;
 		gap: 10px;
 		margin: 4px 0 0;
-		padding-left: 22px;
 	}
 
 	.dialogSteps li {
-		padding-left: 6px;
-		color: var(--textColor);
+		grid-template-columns: 28px minmax(0, 1fr);
 		line-height: 1.5;
+	}
+
+	.dialogSteps .stepNumber {
+		width: 28px;
+		height: 28px;
+		font-size: 13px;
 	}
 
 	.dialogHint {
