@@ -188,6 +188,40 @@
 		"sign_in": "Đăng nhập",
 		"community": "Cộng đồng"
 	},
+	"geode_mods": {
+		"title": "GDVN Geode Mod",
+		"kicker": "Geometry Dash VN trong game",
+		"description": "Cài mod GDVN để xem thông tin list, tham gia sự kiện, Arena và Battle Pass ngay trong Geometry Dash.",
+		"download": "Tải nampe.gdvn.geode",
+		"geode": "Cài Geode",
+		"version_note": "Luôn tải bản phát hành mới nhất",
+		"features_title": "Tính năng chính",
+		"install_title": "Cách cài đặt",
+		"install_hint": "Hãy khởi động lại Geometry Dash sau khi cài nếu GDVN chưa xuất hiện ngay.",
+		"release_link": "Xem trang phát hành",
+		"popup_title": "Cài GDVN Geode Mod",
+		"popup_description": "Quá trình tải đã bắt đầu. Hãy cài file vừa tải từ Geode bên trong Geometry Dash.",
+		"close": "Đóng",
+		"features": {
+			"list": {
+				"title": "Thông tin list trong game",
+				"description": "Xem trạng thái level, xếp hạng và dữ liệu GDVN mà không cần rời game."
+			},
+			"activities": {
+				"title": "Sự kiện, Arena, Battle Pass",
+				"description": "Tham gia hoạt động cộng đồng và nhận tiến trình trực tiếp khi chơi."
+			},
+			"otp": {
+				"title": "Đăng nhập bằng OTP",
+				"description": "Liên kết tài khoản GDVN an toàn bằng mã 6 số trong mod."
+			}
+		},
+		"steps": {
+			"1": "Sau khi tải nampe.gdvn.geode, mở Geometry Dash, vào cài đặt Geode và bấm Install from file.",
+			"2": "Tìm file bạn vừa tải xuống.",
+			"3": "Xong."
+		}
+	},
 	"pvp": {
 		"arena": "Đấu trường",
 		"lobby_title": "Đấu trường Challenge 1v1",

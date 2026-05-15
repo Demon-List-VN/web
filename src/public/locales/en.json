@@ -188,6 +188,40 @@
 		"sign_in": "Sign In",
 		"community": "Community"
 	},
+	"geode_mods": {
+		"title": "GDVN Geode Mod",
+		"kicker": "Geometry Dash VN in-game",
+		"description": "Install the GDVN mod to view list info, join events, play Arena, and use Battle Pass directly inside Geometry Dash.",
+		"download": "Download nampe.gdvn.geode",
+		"geode": "Install Geode",
+		"version_note": "Always downloads the latest release",
+		"features_title": "Feature Summary",
+		"install_title": "Install Instructions",
+		"install_hint": "Restart Geometry Dash after installing if GDVN does not appear immediately.",
+		"release_link": "View release page",
+		"popup_title": "Install GDVN Geode Mod",
+		"popup_description": "Your download has started. Install the downloaded file from Geode inside Geometry Dash.",
+		"close": "Close",
+		"features": {
+			"list": {
+				"title": "In-game list info",
+				"description": "See level status, rankings, and GDVN data without leaving the game."
+			},
+			"activities": {
+				"title": "Events, Arena, Battle Pass",
+				"description": "Join community activities and keep progress connected while playing."
+			},
+			"otp": {
+				"title": "OTP account link",
+				"description": "Connect your GDVN account safely with a 6-digit code from the mod."
+			}
+		},
+		"steps": {
+			"1": "After downloading nampe.gdvn.geode, open Geometry Dash, go to Geode settings, and click Install from file.",
+			"2": "Find the file you just downloaded.",
+			"3": "Done."
+		}
+	},
 	"pvp": {
 		"arena": "Arena",
 		"lobby_title": "1v1 Challenge Arena",

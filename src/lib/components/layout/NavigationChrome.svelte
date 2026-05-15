@@ -49,7 +49,7 @@
 			]
 		},
 		{
-			route: 'https://github.com/NamPE286/DemonListVN-geode-mod/releases',
+			route: '/geode-mods',
 			name: $locale === 'en' ? 'Mod' : 'Mod',
 			icon: Download
 		},
