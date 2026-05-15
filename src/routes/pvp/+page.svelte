@@ -368,6 +368,10 @@
 			outgoingInvites: updateInviteMatches(lobby.outgoingInvites, nextMatch)
 		};
 		handleLobbyMatchSounds(previousActiveMatch, lobby.activeMatch);
+		if (nextActiveMatch && isPvpMatchConfirmedByBoth(nextActiveMatch)) {
+			matchDialogOpen = false;
+			autoRedirectToActiveMatch(nextActiveMatch);
+		}
 		if (getPvpStatus(nextMatch, '') === 'completed' && isPvpMatchRanked(nextMatch)) {
 			upsertMatchHistory(nextMatch);
 		}
@@ -785,6 +789,10 @@
 		try {
 			const response = await acceptPvpMatch(await $user.token(), pendingMatchId);
 			applyMatch(response);
+			if (isPvpMatchConfirmedByBoth(response)) {
+				matchDialogOpen = false;
+				autoRedirectToActiveMatch(response);
+			}
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.accept_match_failed'));
 		} finally {
