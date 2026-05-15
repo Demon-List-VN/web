@@ -88,9 +88,11 @@
 	$: selectedList = data.selectedList;
 	$: selectedListRecords = data.selectedListRecords?.data || [];
 	$: playerRecords = data.playerRecords?.data || [];
-	$: acceptedPlayerRecords = playerRecords.filter((record) => isAcceptedRecord(record));
-	$: uniqueAcceptedRecords = uniqueRecords(acceptedPlayerRecords);
-	$: recentRecords = [...uniqueAcceptedRecords]
+	$: manuallyAcceptedPlayerRecords = playerRecords.filter((record) =>
+		isManuallyAcceptedRecord(record)
+	);
+	$: uniqueManuallyAcceptedRecords = uniqueRecords(manuallyAcceptedPlayerRecords);
+	$: recentRecords = [...uniqueManuallyAcceptedRecords]
 		.sort((left, right) => getRecordTime(right) - getRecordTime(left))
 		.slice(0, 5);
 	$: selectedListOption = selectedList
@@ -213,8 +215,8 @@
 		return result;
 	}
 
-	function isAcceptedRecord(record: PlayerListRecordEntry) {
-		return Boolean(record.acceptedManually || record.acceptedAuto);
+	function isManuallyAcceptedRecord(record: PlayerListRecordEntry) {
+		return Boolean(record.acceptedManually);
 	}
 
 	async function handleListChange(option: { value?: string } | undefined) {
