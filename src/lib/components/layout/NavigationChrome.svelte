@@ -32,9 +32,9 @@
 
 	$: linkGroup = [
 		{ route: '/lists', name: 'Lists', icon: LayoutList },
+		{ route: '/pvp', name: $locale === 'en' ? 'Arena' : 'Đấu trường', icon: Swords },
 		{ route: '/battlepass', name: 'Pass', icon: Ticket },
 		{ route: '/events', name: $locale === 'en' ? 'Event' : 'Sự kiện', icon: Calendar },
-		{ route: '/pvp', name: $locale === 'en' ? 'Arena' : 'Đấu trường', icon: Swords },
 		{
 			name: $locale === 'en' ? 'Community' : 'Cộng đồng',
 			icon: Users,
