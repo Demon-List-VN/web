@@ -309,6 +309,13 @@
 		"challenge_level": "Challenge level",
 		"open_level": "Mở level",
 		"live_progress": "Tiến độ trực tiếp",
+		"progress_graph": {
+			"title": "Biểu đồ tiến độ",
+			"description": "Tạo từ tin nhắn tiến độ của hệ thống Arena.",
+			"empty": "Chưa có tin nhắn tiến độ từ hệ thống.",
+			"time_axis": "Thời gian",
+			"progress_axis": "Tiến độ"
+		},
 		"level_pending": "Đang chờ level",
 		"opponent": "Đối thủ",
 		"waiting_opponent": "Đang chờ đối thủ",

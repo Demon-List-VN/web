@@ -309,6 +309,13 @@
 		"challenge_level": "Challenge level",
 		"open_level": "Open level",
 		"live_progress": "Live progress",
+		"progress_graph": {
+			"title": "Progress graph",
+			"description": "Built from Arena system progress messages.",
+			"empty": "No system progress messages yet.",
+			"time_axis": "Time",
+			"progress_axis": "Progress"
+		},
 		"level_pending": "Level pending",
 		"opponent": "Opponent",
 		"waiting_opponent": "Waiting for opponent",

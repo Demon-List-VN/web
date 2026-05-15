@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import PlayerLink from '$lib/components/playerLink.svelte';
@@ -11,6 +12,7 @@
 	import * as Alert from '$lib/components/ui/alert';
 	import * as Card from '$lib/components/ui/card';
 	import * as Drawer from '$lib/components/ui/drawer';
+	import * as Tabs from '$lib/components/ui/tabs';
 	import { isActive as isSupporterActive } from '$lib/client/isSupporterActive';
 	import {
 		acceptPvpMatch,
@@ -21,6 +23,7 @@
 		getPvpMatch,
 		getPvpMatchEndMs,
 		getPvpMatchId,
+		getPvpMatchStartMs,
 		getPvpMessageSenderIsAnonymous,
 		getPvpOpponent,
 		getPvpParticipants,
@@ -49,6 +52,7 @@
 	} from '$lib/client/pvp';
 	import { setPvpRealtimeAuth, subscribeToPvpMatchDetail } from '$lib/client/pvpRealtime';
 	import { playPvpBell } from '$lib/client/pvpSound';
+	import Chart from 'chart.js/auto';
 	import { onDestroy, onMount, tick } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { _ } from 'svelte-i18n';
@@ -79,6 +83,26 @@
 	const POST_MATCH_CHAT_GRACE_MS = 3 * 60 * 1000;
 	const REALTIME_COALESCE_MS = 200;
 	const MESSAGE_FETCH_LIMIT = 100;
+	const PROGRESS_MESSAGE_PATTERN = /^(.+?)\s+reached\s+(\d+(?:\.\d+)?)%\s+progress\.$/i;
+
+	type ProgressGraphPoint = {
+		x: number;
+		y: number;
+		timeMs: number;
+	};
+
+	type ProgressGraphSeries = {
+		label: string;
+		color: string;
+		points: ProgressGraphPoint[];
+	};
+
+	type ProgressGraphData = {
+		series: ProgressGraphSeries[];
+		hasPoints: boolean;
+		minX: number;
+		maxX: number;
+	};
 
 	let match: PvpMatch | null = null;
 	let loading = false;
@@ -99,6 +123,7 @@
 	let hideOpponentInfo = false;
 	let chatMuted = false;
 	let preferencesReady = false;
+	let desktopActivityTab = 'chat';
 
 	$: matchId = $page.params.id;
 	$: currentUid = $user.data?.uid;
@@ -152,6 +177,7 @@
 						values: { time: formatDuration(postMatchChatRemainingMs) }
 					})
 				: $_('pvp.chat_during_match');
+	$: progressGraphData = getProgressGraphData(messages, orderedParticipants);
 
 	$: if (
 		$user.checked &&
@@ -567,6 +593,95 @@
 		return getPvpParticipantUid(participant) === viewerUid ? $_('pvp.you') : $_('pvp.rival');
 	}
 
+	function normalizedProgressName(value: unknown) {
+		return String(value || '')
+			.trim()
+			.toLowerCase()
+			.replace(/\s+/g, ' ');
+	}
+
+	function participantProgressAliases(
+		participant: PvpParticipant,
+		viewerUid: string | null | undefined = currentUid
+	) {
+		const player = getPvpParticipantPlayer(participant);
+		const aliases = [
+			player?.name,
+			player?.uid,
+			getPvpParticipantUid(participant),
+			participantName(participant, false, viewerUid),
+			participantLabel(participant, viewerUid)
+		];
+
+		return aliases.map(normalizedProgressName).filter(Boolean);
+	}
+
+	function parseProgressMessage(message: PvpMatchMessage) {
+		if (message.type !== 'system') return null;
+
+		const match = String(message.content || '').match(PROGRESS_MESSAGE_PATTERN);
+		if (!match) return null;
+
+		const timeMs = getTimeMs(message.created_at);
+		const progress = Number(match[2]);
+		if (!timeMs || !Number.isFinite(progress)) return null;
+
+		return {
+			playerName: normalizedProgressName(match[1]),
+			progress: Math.max(0, Math.min(100, progress)),
+			timeMs
+		};
+	}
+
+	function getProgressGraphData(
+		sourceMessages: PvpMatchMessage[],
+		items: PvpParticipant[] = orderedParticipants
+	): ProgressGraphData {
+		const series = items.slice(0, 2).map((participant, index) => ({
+			label: participantName(participant, hideOpponentInfo, currentUid),
+			color:
+				index === 0 ? chartColor('--primary', '#2563eb') : chartColor('--destructive', '#dc2626'),
+			points: [] as ProgressGraphPoint[],
+			aliases: participantProgressAliases(participant, currentUid)
+		}));
+
+		const parsed = sourceMessages
+			.map(parseProgressMessage)
+			.filter((entry): entry is NonNullable<ReturnType<typeof parseProgressMessage>> =>
+				Boolean(entry)
+			)
+			.sort((a, b) => a.timeMs - b.timeMs);
+
+		const origin =
+			getPvpMatchStartMs(match) ??
+			parsed.reduce<number | null>(
+				(earliest, entry) =>
+					earliest === null || entry.timeMs < earliest ? entry.timeMs : earliest,
+				null
+			) ??
+			0;
+
+		for (const entry of parsed) {
+			const target = series.find((item) => item.aliases.includes(entry.playerName));
+			if (!target) continue;
+
+			target.points.push({
+				x: Math.max(0, Math.round((entry.timeMs - origin) / 1000)),
+				y: entry.progress,
+				timeMs: entry.timeMs
+			});
+		}
+
+		const maxX = Math.max(60, ...series.flatMap((item) => item.points.map((point) => point.x)));
+
+		return {
+			series: series.map(({ aliases, ...item }) => item),
+			hasPoints: series.some((item) => item.points.length > 0),
+			minX: 0,
+			maxX
+		};
+	}
+
 	function messageSenderName(
 		message: PvpMatchMessage,
 		hideInfo: boolean = hideOpponentInfo,
@@ -651,6 +766,131 @@
 	function chatPlaceholder() {
 		if (chatMuted) return $_('pvp.chat_muted_placeholder');
 		return chatDisabled ? $_('pvp.chat_closed_placeholder') : $_('pvp.chat_placeholder');
+	}
+
+	function chartColor(cssVariable: string, fallback: string) {
+		if (!browser) return fallback;
+		const value = getComputedStyle(document.documentElement).getPropertyValue(cssVariable).trim();
+		return value ? `hsl(${value})` : fallback;
+	}
+
+	function chartAlphaColor(cssVariable: string, alpha: number, fallback: string) {
+		if (!browser) return fallback;
+		const value = getComputedStyle(document.documentElement).getPropertyValue(cssVariable).trim();
+		return value ? `hsl(${value} / ${alpha})` : fallback;
+	}
+
+	function createProgressChart(node: HTMLCanvasElement, data: ProgressGraphData) {
+		let chart: Chart<'line', ProgressGraphPoint[], unknown> | null = buildProgressChart(node, data);
+
+		return {
+			update(nextData: ProgressGraphData) {
+				if (!chart) {
+					chart = buildProgressChart(node, nextData);
+					return;
+				}
+
+				chart.data.datasets = getProgressChartDatasets(nextData);
+				chart.options.scales!.x!.min = nextData.minX;
+				chart.options.scales!.x!.max = nextData.maxX;
+				chart.update();
+			},
+			destroy() {
+				chart?.destroy();
+				chart = null;
+			}
+		};
+	}
+
+	function buildProgressChart(node: HTMLCanvasElement, data: ProgressGraphData) {
+		return new Chart(node, {
+			type: 'line',
+			data: {
+				datasets: getProgressChartDatasets(data)
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				animation: false,
+				interaction: {
+					mode: 'nearest',
+					intersect: false
+				},
+				scales: {
+					x: {
+						type: 'linear',
+						min: data.minX,
+						max: data.maxX,
+						title: {
+							display: true,
+							text: $_('pvp.progress_graph.time_axis'),
+							color: chartColor('--muted-foreground', '#71717a')
+						},
+						grid: {
+							display: false
+						},
+						ticks: {
+							color: chartColor('--muted-foreground', '#71717a'),
+							callback: (value) => formatDuration(Number(value) * 1000),
+							maxTicksLimit: 6
+						}
+					},
+					y: {
+						min: 0,
+						max: 100,
+						title: {
+							display: true,
+							text: $_('pvp.progress_graph.progress_axis'),
+							color: chartColor('--muted-foreground', '#71717a')
+						},
+						border: {
+							display: false
+						},
+						grid: {
+							color: chartAlphaColor('--border', 0.85, 'rgba(161, 161, 170, 0.4)')
+						},
+						ticks: {
+							color: chartColor('--muted-foreground', '#71717a'),
+							callback: (value) => `${value}%`,
+							precision: 0
+						}
+					}
+				},
+				plugins: {
+					legend: {
+						labels: {
+							color: chartColor('--foreground', '#18181b'),
+							usePointStyle: true,
+							boxWidth: 8,
+							boxHeight: 8
+						}
+					},
+					tooltip: {
+						callbacks: {
+							title: (context) => formatDuration(Number(context[0]?.parsed.x ?? 0) * 1000),
+							label: (context) => `${context.dataset.label}: ${context.parsed.y}%`
+						}
+					}
+				}
+			}
+		});
+	}
+
+	function getProgressChartDatasets(data: ProgressGraphData) {
+		return data.series.map((item) => ({
+			label: item.label,
+			data: item.points,
+			borderColor: item.color,
+			backgroundColor: item.color,
+			borderWidth: 2,
+			fill: false,
+			tension: 0.2,
+			pointBackgroundColor: chartColor('--background', '#ffffff'),
+			pointBorderColor: item.color,
+			pointBorderWidth: 2,
+			pointRadius: 3,
+			pointHoverRadius: 6
+		}));
 	}
 
 	function dismissGeodeAlert() {
@@ -907,10 +1147,13 @@
 													{/if}
 													{#if participantRating !== null}
 														<span class="participant-rating">
-															{$_('pvp.pvp_rating_short', { values: { rating: participantRating } })}
+															{$_('pvp.pvp_rating_short', {
+																values: { rating: participantRating }
+															})}
 															{#if ranked && participantRatingDiff}
 																<strong
-																	class:positive={Number(getPvpParticipantRatingDiff(participant)) > 0}
+																	class:positive={Number(getPvpParticipantRatingDiff(participant)) >
+																		0}
 																>
 																	{participantRatingDiff}
 																</strong>
@@ -1026,86 +1269,116 @@
 
 			<aside class="desktop-chat-panel">
 				<Card.Root class="desktop-chat-card">
-					<Card.Header>
-						<div class="chat-header">
-							<div>
-								<Card.Title>{$_('pvp.match_chat')}</Card.Title>
-								<Card.Description>{chatDescription}</Card.Description>
-							</div>
-							<div class="chat-actions">
-								{#if chatLoading}
-									<Loader2 class="h-4 w-4 animate-spin text-muted-foreground" />
-								{/if}
-								<Button variant="outline" size="sm" on:click={() => (chatMuted = !chatMuted)}>
-									{#if chatMuted}
-										<Volume2 class="mr-2 h-4 w-4" />
-										{$_('pvp.unmute_chat')}
-									{:else}
-										<VolumeX class="mr-2 h-4 w-4" />
-										{$_('pvp.mute_chat')}
+					<Tabs.Root bind:value={desktopActivityTab} class="desktop-activity-tabs">
+						<Card.Header class="activity-tabs-header">
+							<Tabs.List class="activity-tabs-list">
+								<Tabs.Trigger value="chat">{$_('pvp.match_chat')}</Tabs.Trigger>
+								<Tabs.Trigger value="progress">{$_('pvp.progress_graph.title')}</Tabs.Trigger>
+							</Tabs.List>
+						</Card.Header>
+						<Tabs.Content value="chat" class="desktop-tab-content">
+							<div class="chat-header">
+								<div>
+									<Card.Title>{$_('pvp.match_chat')}</Card.Title>
+									<Card.Description>{chatDescription}</Card.Description>
+								</div>
+								<div class="chat-actions">
+									{#if chatLoading}
+										<Loader2 class="h-4 w-4 animate-spin text-muted-foreground" />
 									{/if}
-								</Button>
+									<Button variant="outline" size="sm" on:click={() => (chatMuted = !chatMuted)}>
+										{#if chatMuted}
+											<Volume2 class="mr-2 h-4 w-4" />
+											{$_('pvp.unmute_chat')}
+										{:else}
+											<VolumeX class="mr-2 h-4 w-4" />
+											{$_('pvp.mute_chat')}
+										{/if}
+									</Button>
+								</div>
 							</div>
-						</div>
-					</Card.Header>
-					<Card.Content class="chat-content">
-						<div class="chat-messages" bind:this={desktopChatScrollEl}>
-							{#if chatMuted}
-								<div class="empty-state">{$_('pvp.chat_muted_state')}</div>
-							{:else if messages.length === 0}
-								<div class="empty-state">{$_('pvp.no_messages')}</div>
-							{:else}
-								{#each messages as message}
-									{@const senderUid = messageSenderUid(message)}
-									{@const senderName = messageSenderName(
-										message,
-										hideOpponentInfo,
-										currentUid,
-										participants,
-										senderUid
-									)}
-									<div
-										class:own-message={senderUid === currentUid}
-										class:system-message={message.type === 'system'}
-										class="chat-message"
-									>
-										<div class="chat-message-meta">
-											<strong>{senderName}</strong>
-											<span>{messageTime(message)}</span>
-										</div>
-										<p>{message.content}</p>
-									</div>
-								{/each}
-							{/if}
-						</div>
+							<div class="chat-content">
+								<div class="chat-messages" bind:this={desktopChatScrollEl}>
+									{#if chatMuted}
+										<div class="empty-state">{$_('pvp.chat_muted_state')}</div>
+									{:else if messages.length === 0}
+										<div class="empty-state">{$_('pvp.no_messages')}</div>
+									{:else}
+										{#each messages as message}
+											{@const senderUid = messageSenderUid(message)}
+											{@const senderName = messageSenderName(
+												message,
+												hideOpponentInfo,
+												currentUid,
+												participants,
+												senderUid
+											)}
+											<div
+												class:own-message={senderUid === currentUid}
+												class:system-message={message.type === 'system'}
+												class="chat-message"
+											>
+												<div class="chat-message-meta">
+													<strong>{senderName}</strong>
+													<span>{messageTime(message)}</span>
+												</div>
+												<p>{message.content}</p>
+											</div>
+										{/each}
+									{/if}
+								</div>
 
-						<form class="chat-form" on:submit|preventDefault={sendChatMessage}>
-							<Textarea
-								bind:value={chatDraft}
-								rows={2}
-								maxlength={500}
-								disabled={chatInputDisabled || actionLoading === 'send-chat'}
-								placeholder={chatPlaceholder()}
-								on:keydown={(event) => {
-									if (event.key === 'Enter' && !event.shiftKey) {
-										event.preventDefault();
-										sendChatMessage();
-									}
-								}}
-							/>
-							<Button
-								type="submit"
-								disabled={chatInputDisabled || !chatDraft.trim() || actionLoading === 'send-chat'}
-								aria-label={$_('pvp.send_message')}
-							>
-								{#if actionLoading === 'send-chat'}
-									<Loader2 class="h-4 w-4 animate-spin" />
+								<form class="chat-form" on:submit|preventDefault={sendChatMessage}>
+									<Textarea
+										bind:value={chatDraft}
+										rows={2}
+										maxlength={500}
+										disabled={chatInputDisabled || actionLoading === 'send-chat'}
+										placeholder={chatPlaceholder()}
+										on:keydown={(event) => {
+											if (event.key === 'Enter' && !event.shiftKey) {
+												event.preventDefault();
+												sendChatMessage();
+											}
+										}}
+									/>
+									<Button
+										type="submit"
+										disabled={chatInputDisabled ||
+											!chatDraft.trim() ||
+											actionLoading === 'send-chat'}
+										aria-label={$_('pvp.send_message')}
+									>
+										{#if actionLoading === 'send-chat'}
+											<Loader2 class="h-4 w-4 animate-spin" />
+										{:else}
+											<Send class="h-4 w-4" />
+										{/if}
+									</Button>
+								</form>
+							</div>
+						</Tabs.Content>
+						<Tabs.Content value="progress" class="desktop-tab-content progress-tab-content">
+							<div class="progress-graph-panel">
+								<div class="progress-graph-header">
+									<div>
+										<Card.Title>{$_('pvp.progress_graph.title')}</Card.Title>
+										<Card.Description>{$_('pvp.progress_graph.description')}</Card.Description>
+									</div>
+								</div>
+								{#if progressGraphData.hasPoints && desktopActivityTab === 'progress'}
+									<div class="progress-graph-canvas">
+										<canvas
+											use:createProgressChart={progressGraphData}
+											aria-label={$_('pvp.progress_graph.title')}
+										/>
+									</div>
 								{:else}
-									<Send class="h-4 w-4" />
+									<div class="empty-state">{$_('pvp.progress_graph.empty')}</div>
 								{/if}
-							</Button>
-						</form>
-					</Card.Content>
+							</div>
+						</Tabs.Content>
+					</Tabs.Root>
 				</Card.Root>
 			</aside>
 		</div>
@@ -1348,6 +1621,40 @@
 		flex-direction: column;
 	}
 
+	:global(.desktop-activity-tabs) {
+		display: flex;
+		flex: 1;
+		min-height: 0;
+		flex-direction: column;
+	}
+
+	:global(.activity-tabs-header) {
+		padding-bottom: 12px;
+	}
+
+	:global(.activity-tabs-list) {
+		display: grid;
+		width: 100%;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	:global(.activity-tabs-list button) {
+		width: 100%;
+	}
+
+	:global(.desktop-tab-content) {
+		flex: 1;
+		min-height: 0;
+		margin-top: 0;
+		padding: 0 24px 24px;
+	}
+
+	:global(.desktop-tab-content[data-state='active']) {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
 	:global(.desktop-chat-card .chat-content) {
 		display: grid;
 		flex: 1;
@@ -1535,6 +1842,44 @@
 		border-radius: inherit;
 		background: hsl(var(--primary));
 		transition: width 180ms ease;
+	}
+
+	.progress-graph-panel {
+		display: grid;
+		gap: 12px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		padding: 14px;
+	}
+
+	:global(.progress-tab-content) .progress-graph-panel {
+		flex: 1;
+		min-height: 0;
+		grid-template-rows: auto minmax(0, 1fr);
+		border: 0;
+		padding: 0;
+	}
+
+	.progress-graph-header {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 12px;
+	}
+
+	.progress-graph-canvas {
+		position: relative;
+		height: 260px;
+		min-height: 260px;
+	}
+
+	:global(.progress-tab-content) .progress-graph-canvas {
+		height: auto;
+		min-height: 0;
+	}
+
+	.progress-graph-canvas canvas {
+		display: block;
 	}
 
 	:global(.chat-content) {
