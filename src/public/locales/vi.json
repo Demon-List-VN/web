@@ -1288,6 +1288,7 @@
 			"cards": "Bộ sưu tập thẻ",
 			"created_challenges": "Challenge đã tạo",
 			"community_posts": "Bài viết",
+			"pvp_matches": "Trận PvP",
 			"convictions": "Án tích",
 			"records": "Bản ghi",
 			"verified_records": "Bản ghi đã xác minh",
@@ -1335,11 +1336,17 @@
 			"time": "Thời gian",
 			"progress": "Tiến độ",
 			"total_created_challenges": "Tổng số challenge đã tạo",
-			"total_convictions": "Tổng số án tích"
+			"total_convictions": "Tổng số án tích",
+			"total_pvp_matches": "Tổng số trận PvP",
+			"match": "Trận",
+			"elo_before": "ELO trước",
+			"elo_diff": "Chênh lệch ELO",
+			"current_elo": "ELO hiện tại"
 		},
 		"no_events": "Chưa tham gia sự kiện nào",
 		"no_created_challenges": "Chưa tạo challenge nào",
 		"no_community_posts": "Chưa có bài viết nào",
+		"no_pvp_matches": "Chưa có trận PvP xếp hạng",
 		"no_convictions": "Chưa có án tích nào",
 		"convictions": {
 			"content": "Nội dung",

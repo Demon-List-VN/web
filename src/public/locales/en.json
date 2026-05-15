@@ -1289,6 +1289,7 @@
 			"cards": "Card collection",
 			"created_challenges": "Created Challenges",
 			"community_posts": "Posts",
+			"pvp_matches": "PvP Matches",
 			"convictions": "Convictions",
 			"records": "Records",
 			"verified_records": "Verified records",
@@ -1336,11 +1337,17 @@
 			"time": "Time",
 			"progress": "Progress",
 			"total_created_challenges": "Total created challenges",
-			"total_convictions": "Total convictions"
+			"total_convictions": "Total convictions",
+			"total_pvp_matches": "Total PvP matches",
+			"match": "Match",
+			"elo_before": "ELO before",
+			"elo_diff": "ELO diff",
+			"current_elo": "Current ELO"
 		},
 		"no_events": "No events participated yet",
 		"no_created_challenges": "No created challenges yet",
 		"no_community_posts": "No community posts yet",
+		"no_pvp_matches": "No ranked PvP matches yet",
 		"no_convictions": "No convictions yet",
 		"convictions": {
 			"content": "Content",

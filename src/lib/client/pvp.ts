@@ -400,6 +400,13 @@ export async function getPvpMatches(token?: string | null) {
 	return normalizePvpMatches(await pvpRequest('/pvp/matches', { token }));
 }
 
+export async function getPublicPvpMatchesForPlayer(uid: string, limit = 25) {
+	const params = new URLSearchParams({ limit: String(limit) });
+	return normalizePvpMatches(
+		await pvpRequest(`/pvp/players/${encodeURIComponent(uid)}/matches?${params}`)
+	);
+}
+
 export async function getPvpMatch(token: string | null | undefined, id: number | string) {
 	return pvpRequest<PvpMatch>(`/pvp/matches/${id}`, { token });
 }
