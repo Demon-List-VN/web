@@ -2,6 +2,7 @@
 	import { buttonVariants } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { cn } from '$lib/utils';
+	import { tick } from 'svelte';
 	import { _ } from 'svelte-i18n';
 	import {
 		ArrowUpRight,
@@ -20,6 +21,27 @@
 	const releaseUrl = 'https://github.com/Demon-List-VN/geode-mod/releases/latest';
 
 	let installDialogOpen = false;
+	let shouldResetDialogScroll = false;
+
+	function resetInstallDialogScroll() {
+		if (!shouldResetDialogScroll) return;
+
+		document.querySelector<HTMLElement>('.installDialog')?.scrollTo({ top: 0 });
+	}
+
+	async function showInstallDialog() {
+		shouldResetDialogScroll = true;
+		installDialogOpen = true;
+
+		await tick();
+		resetInstallDialogScroll();
+		requestAnimationFrame(resetInstallDialogScroll);
+		window.setTimeout(resetInstallDialogScroll, 250);
+		window.setTimeout(resetInstallDialogScroll, 750);
+		window.setTimeout(() => {
+			shouldResetDialogScroll = false;
+		}, 1200);
+	}
 
 	function downloadMod() {
 		const iframe = document.createElement('iframe');
@@ -31,7 +53,7 @@
 			iframe.remove();
 		}, 30_000);
 
-		installDialogOpen = true;
+		showInstallDialog();
 	}
 
 	const features = [
@@ -53,6 +75,7 @@
 	];
 
 	const steps = ['geode_mods.steps.1', 'geode_mods.steps.2', 'geode_mods.steps.3'];
+	const stepOneImages = ['/mod-guide/1.png', '/mod-guide/2.png'];
 </script>
 
 <svelte:head>
@@ -133,7 +156,21 @@
 			{#each steps as step, index}
 				<li>
 					<span class="stepNumber">{index + 1}</span>
-					<span>{$_(step)}</span>
+					<div class="stepBody">
+						<span>{$_(step)}</span>
+						{#if index === 0}
+							<div class="guideImages">
+								{#each stepOneImages as image, imageIndex}
+									<img
+										src={image}
+										alt={`${$_('geode_mods.step_1_image_alt')} ${imageIndex + 1}`}
+										loading="lazy"
+										on:load={resetInstallDialogScroll}
+									/>
+								{/each}
+							</div>
+						{/if}
+					</div>
 				</li>
 			{/each}
 		</ol>
@@ -152,7 +189,21 @@
 			{#each steps as step, index}
 				<li>
 					<span class="stepNumber">{index + 1}</span>
-					<span>{$_(step)}</span>
+					<div class="stepBody">
+						<span>{$_(step)}</span>
+						{#if index === 0}
+							<div class="guideImages">
+								{#each stepOneImages as image, imageIndex}
+									<img
+										src={image}
+										alt={`${$_('geode_mods.step_1_image_alt')} ${imageIndex + 1}`}
+										loading="lazy"
+										on:load={resetInstallDialogScroll}
+									/>
+								{/each}
+							</div>
+						{/if}
+					</div>
 				</li>
 			{/each}
 		</ol>
@@ -371,8 +422,33 @@
 		line-height: 1;
 	}
 
+	.stepBody {
+		display: grid;
+		gap: 12px;
+		min-width: 0;
+	}
+
+	.guideImages {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 12px;
+	}
+
+	.guideImages img {
+		width: 100%;
+		border: 1px solid var(--border1);
+		border-radius: 8px;
+		background: hsl(var(--background));
+		object-fit: contain;
+	}
+
 	:global(.installDialog) {
 		max-width: 560px;
+		top: 16px;
+		z-index: 100;
+		max-height: calc(100vh - 32px);
+		overflow-y: auto;
+		transform: translateX(-50%);
 	}
 
 	.dialogSteps {
@@ -389,6 +465,11 @@
 		width: 28px;
 		height: 28px;
 		font-size: 13px;
+	}
+
+	.dialogSteps .guideImages {
+		grid-template-columns: 1fr;
+		gap: 8px;
 	}
 
 	.dialogHint {

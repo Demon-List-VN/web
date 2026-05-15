@@ -202,6 +202,7 @@
 		"popup_title": "Cài GDVN Geode Mod",
 		"popup_description": "Quá trình tải đã bắt đầu. Hãy cài file vừa tải từ Geode bên trong Geometry Dash.",
 		"close": "Đóng",
+		"step_1_image_alt": "Ảnh hướng dẫn cài từ file trong Geode",
 		"features": {
 			"list": {
 				"title": "Thông tin list trong game",
