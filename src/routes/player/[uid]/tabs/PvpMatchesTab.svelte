@@ -2,13 +2,21 @@
 	import { onMount } from 'svelte';
 	import { _ } from 'svelte-i18n';
 	import * as Table from '$lib/components/ui/table';
+	import { buttonVariants } from '$lib/components/ui/button';
+	import PlayerLink from '$lib/components/playerLink.svelte';
+	import { cn } from '$lib/utils';
+	import { ArrowRight } from 'lucide-svelte';
 	import {
 		getPublicPvpMatchesForPlayer,
 		getPvpMatchId,
 		getPvpParticipants,
+		getPvpParticipantIsAnonymous,
+		getPvpParticipantPlayer,
 		getPvpParticipantRatingAfter,
 		getPvpParticipantRatingBefore,
 		getPvpParticipantRatingDiff,
+		getPvpParticipantUid,
+		type PvpParticipant,
 		type PvpMatch
 	} from '$lib/client/pvp';
 
@@ -29,7 +37,11 @@
 	});
 
 	function playerParticipant(match: PvpMatch) {
-		return getPvpParticipants(match).find((participant) => participant.uid === userID) ?? null;
+		return (
+			getPvpParticipants(match).find(
+				(participant) => getPvpParticipantUid(participant) === userID
+			) ?? null
+		);
 	}
 
 	function ratingBefore(match: PvpMatch) {
@@ -64,6 +76,14 @@
 			match.ratingAppliedAt ?? match.endedAt ?? match.endsAt ?? match.startedAt ?? match.created_at
 		);
 	}
+
+	function participantText(participant: PvpParticipant | null | undefined, fallback: string) {
+		if (!participant) return fallback;
+		if (getPvpParticipantIsAnonymous(participant)) return $_('pvp.anonymous_player');
+
+		const player = getPvpParticipantPlayer(participant);
+		return player?.name || fallback;
+	}
 </script>
 
 {#if loading}
@@ -79,18 +99,39 @@
 		<Table.Caption>{$_('player.table.total_pvp_matches')}: {matches.length}</Table.Caption>
 		<Table.Header>
 			<Table.Row>
-				<Table.Head class="w-[100px] text-center">{$_('player.table.match')}</Table.Head>
+				<Table.Head class="min-w-[220px]">{$_('player.table.match')}</Table.Head>
 				<Table.Head class="w-[180px] text-center">{$_('player.table.time')}</Table.Head>
 				<Table.Head class="w-[120px] text-center">{$_('player.table.elo_before')}</Table.Head>
 				<Table.Head class="w-[120px] text-center">{$_('player.table.elo_diff')}</Table.Head>
 				<Table.Head class="w-[120px] text-center">{$_('player.table.current_elo')}</Table.Head>
+				<Table.Head class="w-[120px] text-right"></Table.Head>
 			</Table.Row>
 		</Table.Header>
 		<Table.Body>
 			{#each matches as match}
 				{@const diff = ratingDiff(match)}
+				{@const matchId = getPvpMatchId(match)}
+				{@const participants = getPvpParticipants(match)}
+				{@const playerA = participants[0]}
+				{@const playerB = participants[1]}
+				{@const playerAData = getPvpParticipantPlayer(playerA)}
+				{@const playerBData = getPvpParticipantPlayer(playerB)}
 				<Table.Row>
-					<Table.Cell class="text-center font-medium">#{getPvpMatchId(match)}</Table.Cell>
+					<Table.Cell class="font-medium">
+						<div class="flex min-w-0 items-center gap-2">
+							{#if playerAData?.uid}
+								<PlayerLink player={playerAData} truncate={18} />
+							{:else}
+								<span>{participantText(playerA, 'Player A')}</span>
+							{/if}
+							<span class="text-muted-foreground">vs</span>
+							{#if playerBData?.uid}
+								<PlayerLink player={playerBData} truncate={18} />
+							{:else}
+								<span>{participantText(playerB, 'Player B')}</span>
+							{/if}
+						</div>
+					</Table.Cell>
 					<Table.Cell class="text-center">{formatDate(matchDate(match))}</Table.Cell>
 					<Table.Cell class="text-center">{formatRating(ratingBefore(match))}</Table.Cell>
 					<Table.Cell
@@ -103,6 +144,17 @@
 					<Table.Cell class="text-center font-semibold"
 						>{formatRating(ratingAfter(match))}</Table.Cell
 					>
+					<Table.Cell class="text-right">
+						{#if matchId}
+							<a
+								href={`/pvp/matches/${matchId}`}
+								class={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'gap-1')}
+							>
+								{$_('pvp.view_match')}
+								<ArrowRight class="h-4 w-4" />
+							</a>
+						{/if}
+					</Table.Cell>
 				</Table.Row>
 			{/each}
 		</Table.Body>
