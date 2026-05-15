@@ -426,6 +426,7 @@
 		display: grid;
 		gap: 12px;
 		min-width: 0;
+		padding-top: 4px;
 	}
 
 	.guideImages {
@@ -465,6 +466,10 @@
 		width: 28px;
 		height: 28px;
 		font-size: 13px;
+	}
+
+	.dialogSteps .stepBody {
+		padding-top: 3px;
 	}
 
 	.dialogSteps .guideImages {
