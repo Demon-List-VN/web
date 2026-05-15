@@ -884,7 +884,7 @@
 			backgroundColor: item.color,
 			borderWidth: 2,
 			fill: false,
-			tension: 0.2,
+			tension: 0,
 			pointBackgroundColor: chartColor('--background', '#ffffff'),
 			pointBorderColor: item.color,
 			pointBorderWidth: 2,
@@ -1869,13 +1869,13 @@
 
 	.progress-graph-canvas {
 		position: relative;
-		height: 260px;
-		min-height: 260px;
+		height: 500px;
+		min-height: 500px;
 	}
 
 	:global(.progress-tab-content) .progress-graph-canvas {
-		height: auto;
-		min-height: 0;
+		height: 500px;
+		min-height: 500px;
 	}
 
 	.progress-graph-canvas canvas {
