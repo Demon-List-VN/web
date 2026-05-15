@@ -2,9 +2,9 @@
 	import {
 		getSupporterTierColor,
 		getSupporterTierInfo,
-		getSupporterTierLabel,
 		getSupporterTierStyle
 	} from '$lib/client/supporterTier';
+	import { _ } from 'svelte-i18n';
 
 	export let supporterUntil: string | null | undefined = null;
 	export let preview = false;
@@ -13,20 +13,38 @@
 	$: tierInfo = getSupporterTierInfo(supporterUntil);
 	$: previewTier = 1;
 	$: activeTier = tierInfo?.tier ?? previewTier;
-	$: label = tierInfo?.label ?? getSupporterTierLabel(previewTier);
+	$: label = $_(getTierNameKey(activeTier), { values: { tier: activeTier } });
 	$: daysLeft = tierInfo?.daysLeft ?? 0;
 	$: progress = tierInfo?.progress ?? 0;
 	$: nextTierDays = tierInfo?.nextTierDays ?? 30;
-	$: nextTierLabel = getSupporterTierLabel(activeTier + 1);
+	$: nextTierLabel = $_(getTierNameKey(activeTier + 1), { values: { tier: activeTier + 1 } });
 	$: tierStyle = getSupporterTierStyle(activeTier);
 	$: fillStyle = `width: ${Math.max(0, Math.min(100, progress))}%; --supporter-tier-color: ${getSupporterTierColor(activeTier)};`;
+	$: daysLeftText = $_(
+		daysLeft === 1 ? 'supporter.tiers.day_left' : 'supporter.tiers.days_left',
+		{ values: { days: daysLeft } }
+	);
+
+	function getTierNameKey(tier: number) {
+		if (tier <= 5) {
+			return `supporter.tiers.names.tier_${tier}`;
+		}
+
+		return 'supporter.tiers.names.tier_6_plus';
+	}
 </script>
 
 {#if tierInfo || preview}
-	<div class:compact class="supporter-tier-card" style={tierStyle}>
+	<a
+		href="/supporter"
+		class:compact
+		class="supporter-tier-card"
+		style={tierStyle}
+		aria-label={$_('supporter.tiers.open_supporter_page')}
+	>
 		<div class="tier-header">
 			<div>
-				<div class="tier-kicker">Supporter tier</div>
+				<div class="tier-kicker">{$_('supporter.tiers.title')}</div>
 				<div class="tier-name supporter-tier-text">{label}</div>
 			</div>
 			<div class="tier-pill">T{activeTier}</div>
@@ -38,14 +56,18 @@
 
 		<div class="tier-footer">
 			{#if tierInfo}
-				<span>{daysLeft} day{daysLeft === 1 ? '' : 's'} left</span>
-				<span>{nextTierDays} days for {nextTierLabel}</span>
+				<span>{daysLeftText}</span>
+				<span
+					>{$_('supporter.tiers.next_tier_at', {
+						values: { days: nextTierDays, tier: nextTierLabel }
+					})}</span
+				>
 			{:else}
-				<span>Starts at 1 day</span>
-				<span>30 days to complete Tier 1</span>
+				<span>{$_('supporter.tiers.preview_start')}</span>
+				<span>{$_('supporter.tiers.preview_complete')}</span>
 			{/if}
 		</div>
-	</div>
+	</a>
 {/if}
 
 <style lang="scss">
@@ -53,8 +75,22 @@
 		border: 1px solid hsl(var(--border));
 		border-radius: 8px;
 		background: hsl(var(--card) / 0.78);
+		color: inherit;
+		cursor: pointer;
+		display: block;
 		padding: 12px;
+		text-decoration: none;
+		transition:
+			border-color 0.15s ease,
+			background-color 0.15s ease,
+			transform 0.15s ease;
 		width: 100%;
+	}
+
+	.supporter-tier-card:hover {
+		background: hsl(var(--accent) / 0.5);
+		border-color: hsl(var(--ring) / 0.45);
+		transform: translateY(-1px);
 	}
 
 	.supporter-tier-card.compact {

@@ -1506,6 +1506,23 @@
 			"server_cost": "Server cost",
 			"minecraft_server": "Minecraft server"
 		},
+		"tiers": {
+			"title": "Supporter tier",
+			"open_supporter_page": "Open supporter page",
+			"day_left": "{days} day left",
+			"days_left": "{days} days left",
+			"next_tier_at": "{days} days for {tier}",
+			"preview_start": "Starts at 1 day",
+			"preview_complete": "30 days to complete Tier 1",
+			"names": {
+				"tier_1": "Supporter",
+				"tier_2": "Supporter+",
+				"tier_3": "Supporter++",
+				"tier_4": "Supporter+++",
+				"tier_5": "Legendary Supporter",
+				"tier_6_plus": "Ascendant Supporter T{tier}"
+			}
+		},
 		"notes": {
 			"title": "Note:",
 			"non_recurring": "Geometry Dash Việt Nam Supporter roles are non-recurring payments.",
