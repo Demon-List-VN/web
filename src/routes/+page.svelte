@@ -86,8 +86,8 @@
 <div class="wrapper">
 	<!-- Top promos -->
 	<div class="promoRow">
-		<RecordCardPromo />
 		<PvpOneVsOnePromo />
+		<RecordCardPromo />
 	</div>
 
 	<!-- Onboarding progress banner (new users only) -->
