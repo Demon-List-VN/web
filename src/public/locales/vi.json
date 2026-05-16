@@ -243,6 +243,10 @@
 		"refresh": "Tải lại",
 		"rematch": "Tái đấu",
 		"resign": "Đầu hàng",
+		"request_level_change": "Đổi level",
+		"agree_level_change": "Đồng ý đổi level",
+		"level_change_waiting": "Đang chờ đổi level",
+		"level_change_used": "Đã đổi level",
 		"resign_confirm": "Đầu hàng trận này? Đối thủ của bạn sẽ được tính thắng.",
 		"sign_in_title": "Đăng nhập để vào Arena",
 		"sign_in_hint": "Ghép trận và lời mời Arena dùng tài khoản GDVN của bạn.",
@@ -399,6 +403,9 @@
 			"decline_failed": "Từ chối lời mời thất bại.",
 			"rematch_sent": "Đã gửi lời mời tái đấu.",
 			"rematch_failed": "Gửi lời mời tái đấu thất bại.",
+			"level_change_requested": "Đã gửi yêu cầu đổi level.",
+			"level_change_success": "Đã đổi level.",
+			"level_change_failed": "Yêu cầu đổi level thất bại.",
 			"resign_success": "Bạn đã đầu hàng trận đấu.",
 			"resign_failed": "Đầu hàng trận đấu thất bại."
 		}

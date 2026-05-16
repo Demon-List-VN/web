@@ -243,6 +243,10 @@
 		"refresh": "Refresh",
 		"rematch": "Rematch",
 		"resign": "Resign",
+		"request_level_change": "Change level",
+		"agree_level_change": "Agree level change",
+		"level_change_waiting": "Waiting for level change",
+		"level_change_used": "Level changed",
 		"resign_confirm": "Resign this match? Your opponent will receive the win.",
 		"sign_in_title": "Sign in to enter Arena",
 		"sign_in_hint": "Arena matchmaking and invites are tied to your GDVN player account.",
@@ -399,6 +403,9 @@
 			"decline_failed": "Failed to decline invite.",
 			"rematch_sent": "Rematch invite sent.",
 			"rematch_failed": "Failed to send rematch invite.",
+			"level_change_requested": "Level change requested.",
+			"level_change_success": "Level changed.",
+			"level_change_failed": "Failed to request level change.",
 			"resign_success": "You resigned from the match.",
 			"resign_failed": "Failed to resign match."
 		}

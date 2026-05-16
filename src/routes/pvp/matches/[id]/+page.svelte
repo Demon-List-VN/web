@@ -43,6 +43,7 @@
 		isPvpMatchRanked,
 		isActivePvpMatch,
 		isPvpMatchConfirmedByBoth,
+		requestPvpMatchLevelChange,
 		resignPvpMatch,
 		sendPvpInvite,
 		sendPvpMatchMessage,
@@ -68,6 +69,7 @@
 		LogIn,
 		MessageCircle,
 		RefreshCw,
+		Shuffle,
 		Trophy,
 		Copy,
 		Send,
@@ -164,6 +166,22 @@
 		['in_progress', 'waiting_result'].includes(status) &&
 		remainingMs > 0 &&
 		Boolean(selfParticipant);
+	$: levelChangeRequestedByUid = getPvpLevelChangeRequestedByUid(match);
+	$: levelChangeUsed = Boolean(match?.levelChangedAt ?? match?.level_changed_at);
+	$: levelChangeRequestedBySelf =
+		Boolean(currentUid) && String(levelChangeRequestedByUid || '') === String(currentUid);
+	$: canRequestLevelChange =
+		['in_progress', 'waiting_result'].includes(status) &&
+		remainingMs > 0 &&
+		Boolean(selfParticipant) &&
+		!levelChangeUsed;
+	$: levelChangeButtonLabel = levelChangeUsed
+		? $_('pvp.level_change_used')
+		: levelChangeRequestedBySelf
+			? $_('pvp.level_change_waiting')
+			: levelChangeRequestedByUid
+				? $_('pvp.agree_level_change')
+				: $_('pvp.request_level_change');
 	$: chatOpenDuringMatch = ['in_progress', 'waiting_result'].includes(status) && remainingMs > 0;
 	$: chatOpenAfterMatch = status === 'completed' && postMatchChatRemainingMs > 0;
 	$: chatDisabled = !chatOpenDuringMatch && !chatOpenAfterMatch;
@@ -386,6 +404,26 @@
 			toast.success($_('pvp.toast.resign_success'));
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.resign_failed'));
+		} finally {
+			actionLoading = '';
+		}
+	}
+
+	async function requestLevelChange() {
+		if (!matchId || !canRequestLevelChange || actionLoading) return;
+
+		actionLoading = 'level-change';
+		try {
+			const response = await requestPvpMatchLevelChange(await $user.token(), matchId);
+			match = response;
+			await refreshMessages({ incremental: true });
+			toast.success(
+				response.levelChangedAt || response.level_changed_at
+					? $_('pvp.toast.level_change_success')
+					: $_('pvp.toast.level_change_requested')
+			);
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : $_('pvp.toast.level_change_failed'));
 		} finally {
 			actionLoading = '';
 		}
@@ -918,6 +956,12 @@
 			}
 		}
 	}
+
+	function getPvpLevelChangeRequestedByUid(currentMatch: PvpMatch | null | undefined) {
+		return (
+			currentMatch?.levelChangeRequestedByUid ?? currentMatch?.level_change_requested_by_uid ?? null
+		);
+	}
 </script>
 
 <svelte:head>
@@ -984,6 +1028,23 @@
 							<Send class="mr-2 h-4 w-4" />
 						{/if}
 						{$_('pvp.rematch')}
+					</Button>
+				{/if}
+				{#if canRequestLevelChange || levelChangeUsed}
+					<Button
+						variant="outline"
+						disabled={Boolean(actionLoading) ||
+							loading ||
+							levelChangeUsed ||
+							levelChangeRequestedBySelf}
+						on:click={requestLevelChange}
+					>
+						{#if actionLoading === 'level-change'}
+							<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+						{:else}
+							<Shuffle class="mr-2 h-4 w-4" />
+						{/if}
+						{levelChangeButtonLabel}
 					</Button>
 				{/if}
 				{#if canResign}

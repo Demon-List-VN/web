@@ -119,6 +119,10 @@ export type PvpMatch = {
 	rating_target?: number | null;
 	ratingOffset?: number | null;
 	rating_offset?: number | null;
+	levelChangeRequestedByUid?: string | null;
+	level_change_requested_by_uid?: string | null;
+	levelChangedAt?: string | null;
+	level_changed_at?: string | null;
 	ratingAppliedAt?: string | null;
 	rating_applied_at?: string | null;
 	startedAt?: string | null;
@@ -326,10 +330,7 @@ export async function getPvpMe(token?: string | null) {
 	return normalizePvpMe(await pvpRequest('/pvp/me', { token }));
 }
 
-export async function startPvpMatchmaking(
-	token: string | null | undefined,
-	anonymous = false
-) {
+export async function startPvpMatchmaking(token: string | null | undefined, anonymous = false) {
 	return pvpRequest<PvpMatchmakingRequest | PvpMe>('/pvp/matchmaking', {
 		method: 'POST',
 		token,
@@ -420,6 +421,16 @@ export async function acceptPvpMatch(token: string | null | undefined, id: numbe
 
 export async function resignPvpMatch(token: string | null | undefined, id: number | string) {
 	return pvpRequest<PvpMatch>(`/pvp/matches/${id}/resign`, {
+		method: 'POST',
+		token
+	});
+}
+
+export async function requestPvpMatchLevelChange(
+	token: string | null | undefined,
+	id: number | string
+) {
+	return pvpRequest<PvpMatch>(`/pvp/matches/${id}/level-change`, {
 		method: 'POST',
 		token
 	});
@@ -623,38 +634,26 @@ export function isPvpMatchRanked(match: PvpMatch | null | undefined) {
 export function getPvpLevelRating(match: PvpMatch | null | undefined) {
 	const level = getPvpLevel(match);
 	const value =
-		match?.levelRating ??
-		match?.level_rating ??
-		level?.listRating ??
-		level?.rating ??
-		null;
+		match?.levelRating ?? match?.level_rating ?? level?.listRating ?? level?.rating ?? null;
 	return getFinitePvpNumber(value);
 }
 
-export function getPvpParticipantRatingBefore(
-	participant: PvpParticipant | null | undefined
-) {
+export function getPvpParticipantRatingBefore(participant: PvpParticipant | null | undefined) {
 	const value = participant?.pvpRatingBefore ?? participant?.pvp_rating_before ?? null;
 	return getFinitePvpNumber(value);
 }
 
-export function getPvpParticipantRatingAfter(
-	participant: PvpParticipant | null | undefined
-) {
+export function getPvpParticipantRatingAfter(participant: PvpParticipant | null | undefined) {
 	const value = participant?.pvpRatingAfter ?? participant?.pvp_rating_after ?? null;
 	return getFinitePvpNumber(value);
 }
 
-export function getPvpParticipantRatingDiff(
-	participant: PvpParticipant | null | undefined
-) {
+export function getPvpParticipantRatingDiff(participant: PvpParticipant | null | undefined) {
 	const value = participant?.pvpRatingDiff ?? participant?.pvp_rating_diff ?? null;
 	return getFinitePvpNumber(value);
 }
 
-export function getPvpVisibleParticipantRating(
-	participant: PvpParticipant | null | undefined
-) {
+export function getPvpVisibleParticipantRating(participant: PvpParticipant | null | undefined) {
 	const player = getPvpParticipantPlayer(participant);
 	const value =
 		getPvpParticipantRatingAfter(participant) ??
