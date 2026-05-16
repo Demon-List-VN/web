@@ -19,6 +19,52 @@ const SUPPORTER_TIER_COLORS: Record<number, string> = {
 	5: 'var(--supporter-tier-5)',
 	6: 'var(--supporter-tier-6)'
 };
+const ZENITH_GRADIENT_START = '#5900ff';
+const ZENITH_GRADIENT_END_HUE = 286;
+const ZENITH_GRADIENT_HUE_STEP = 8;
+
+function hslToHex(hue: number, saturation: number, lightness: number): string {
+	const chroma = (1 - Math.abs(2 * lightness - 1)) * saturation;
+	const x = chroma * (1 - Math.abs((hue / 60) % 2 - 1));
+	const m = lightness - chroma / 2;
+	let r = 0;
+	let g = 0;
+	let b = 0;
+
+	if (hue < 60) {
+		r = chroma;
+		g = x;
+	} else if (hue < 120) {
+		r = x;
+		g = chroma;
+	} else if (hue < 180) {
+		g = chroma;
+		b = x;
+	} else if (hue < 240) {
+		g = x;
+		b = chroma;
+	} else if (hue < 300) {
+		r = x;
+		b = chroma;
+	} else {
+		r = chroma;
+		b = x;
+	}
+
+	return `#${[r, g, b]
+		.map((channel) =>
+			Math.round((channel + m) * 255)
+				.toString(16)
+				.padStart(2, '0')
+		)
+		.join('')}`;
+}
+
+function getZenithGradientEnd(tier: number): string {
+	const hue = Math.min(360, ZENITH_GRADIENT_END_HUE + Math.max(0, tier - 8) * ZENITH_GRADIENT_HUE_STEP);
+
+	return hslToHex(hue, 1, 0.5);
+}
 
 export function getSupporterDaysLeft(supporterUntil?: string | null, now = new Date()): number {
 	if (!supporterUntil) {
@@ -78,6 +124,10 @@ export function getSupporterTierLabel(tier: number | null): string {
 export function getSupporterTierColor(tier: number | null): string {
 	if (!tier) {
 		return SUPPORTER_TIER_COLORS[1];
+	}
+
+	if (tier > 7) {
+		return `linear-gradient(90deg, ${ZENITH_GRADIENT_START}, ${getZenithGradientEnd(tier)})`;
 	}
 
 	return SUPPORTER_TIER_COLORS[Math.min(tier, 6)] ?? SUPPORTER_TIER_COLORS[6];
