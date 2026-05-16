@@ -58,15 +58,19 @@ export function getSupporterTierLabel(tier: number | null): string {
 		case 1:
 			return 'Supporter';
 		case 2:
-			return 'Supporter+';
+			return 'Elite Supporter';
 		case 3:
-			return 'Supporter++';
+			return 'Vanguard Supporter';
 		case 4:
-			return 'Supporter+++';
-		case 5:
 			return 'Legendary Supporter';
+		case 5:
+			return 'Ascendant Supporter';
+		case 6:
+			return 'Transcendent Supporter';
+		case 7:
+			return 'Zenith Supporter';
 		default:
-			return tier && tier >= 6 ? `Ascendant Supporter T${tier}` : 'Supporter';
+			return tier && tier > 7 ? `Zenith Supporter T${tier}` : 'Supporter';
 	}
 }
 

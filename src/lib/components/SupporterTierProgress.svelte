@@ -26,11 +26,11 @@
 	);
 
 	function getTierNameKey(tier: number) {
-		if (tier <= 5) {
+		if (tier <= 7) {
 			return `supporter.tiers.names.tier_${tier}`;
 		}
 
-		return 'supporter.tiers.names.tier_6_plus';
+		return 'supporter.tiers.names.tier_8_plus';
 	}
 </script>
 

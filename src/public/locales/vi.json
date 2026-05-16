@@ -1536,11 +1536,13 @@
 			"preview_complete": "30 ngày để hoàn thành Hạng 1",
 			"names": {
 				"tier_1": "Supporter",
-				"tier_2": "Supporter+",
-				"tier_3": "Supporter++",
-				"tier_4": "Supporter+++",
-				"tier_5": "Legendary Supporter",
-				"tier_6_plus": "Ascendant Supporter T{tier}"
+				"tier_2": "Elite Supporter",
+				"tier_3": "Vanguard Supporter",
+				"tier_4": "Legendary Supporter",
+				"tier_5": "Ascendant Supporter",
+				"tier_6": "Transcendent Supporter",
+				"tier_7": "Zenith Supporter",
+				"tier_8_plus": "Zenith Supporter T{tier}"
 			}
 		},
 		"notes": {
