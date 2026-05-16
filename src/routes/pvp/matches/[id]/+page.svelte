@@ -671,10 +671,34 @@
 		};
 	}
 
+	function messageMetadataKind(message: PvpMatchMessage) {
+		return String(message.metadata?.kind || '').trim();
+	}
+
+	function isLevelChangedMessage(message: PvpMatchMessage) {
+		return (
+			message.type === 'system' &&
+			(messageMetadataKind(message) === 'level_changed' ||
+				String(message.content || '').includes('Progress and timer were reset'))
+		);
+	}
+
+	function messagesAfterLatestLevelChange(sourceMessages: PvpMatchMessage[]) {
+		const latestLevelChangeIndex = sourceMessages.reduce(
+			(latest, message, index) => (isLevelChangedMessage(message) ? index : latest),
+			-1
+		);
+
+		return latestLevelChangeIndex >= 0
+			? sourceMessages.slice(latestLevelChangeIndex + 1)
+			: sourceMessages;
+	}
+
 	function getProgressGraphData(
 		sourceMessages: PvpMatchMessage[],
 		items: PvpParticipant[] = orderedParticipants
 	): ProgressGraphData {
+		const progressMessages = messagesAfterLatestLevelChange(sourceMessages);
 		const series = items.slice(0, 2).map((participant, index) => ({
 			label: participantName(participant, hideOpponentInfo, currentUid),
 			color:
@@ -683,7 +707,7 @@
 			aliases: participantProgressAliases(participant, currentUid)
 		}));
 
-		const parsed = sourceMessages
+		const parsed = progressMessages
 			.map(parseProgressMessage)
 			.filter((entry): entry is NonNullable<ReturnType<typeof parseProgressMessage>> =>
 				Boolean(entry)
