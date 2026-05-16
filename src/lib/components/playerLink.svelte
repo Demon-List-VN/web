@@ -72,7 +72,7 @@
 
 <div class="wrapper">
 	{#if showAvatar}
-		<Avatar.Root class='h-[30px] w-[30px]'>
+		<Avatar.Root class="h-[30px] w-[30px]">
 			<Avatar.Image
 				class="playerAvatar"
 				src={`https://cdn.gdvn.net/avatars/${player.uid}${isActive(player.supporterUntil) && player.isAvatarGif ? '.gif' : '.jpg'}?version=${player.avatarVersion}`}
@@ -109,10 +109,10 @@
 					class="rounded-sm underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-8 focus-visible:outline-black"
 				>
 					<div class="flex items-center gap-[5px]">
-							<span
-								class={isActive(player.supporterUntil) ? 'supporter-tier-text' : ''}
-								style={supporterTierStyle}
-							>
+						<span
+							class={isActive(player.supporterUntil) ? 'supporter-tier-text' : ''}
+							style={supporterTierStyle}
+						>
 							{truncateText(
 								player.clan && !isActive(player.clans.boostedUntil)
 									? `[${player.clans.tag}] ${player.name}`
@@ -130,10 +130,10 @@
 				</a>
 			{:else}
 				<div class="flex items-center gap-[5px]">
-						<span
-							class={isActive(player.supporterUntil) ? 'supporter-tier-text' : ''}
-							style={supporterTierStyle}
-						>
+					<span
+						class={isActive(player.supporterUntil) ? 'supporter-tier-text' : ''}
+						style={supporterTierStyle}
+					>
 						{truncateText(
 							player.clan && !isActive(player.clans.boostedUntil)
 								? `[${player.clans.tag}] ${player.name}`
@@ -150,7 +150,7 @@
 				</div>
 			{/if}
 		</Popover.Trigger>
-		<Popover.Content class="w-80 p-0 border-transparent">
+		<Popover.Content class="w-80 border-transparent p-0">
 			<PlayerCard {player} active={isPopoverOpen} />
 		</Popover.Content>
 	</Popover.Root>
@@ -213,5 +213,4 @@
 		border-radius: 5px;
 		font-weight: 600;
 	}
-
 </style>

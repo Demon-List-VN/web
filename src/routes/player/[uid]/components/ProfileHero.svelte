@@ -38,7 +38,9 @@
 	<div class="banner-area relative h-[200px] sm:h-[250px] lg:h-[280px]">
 		{#if isSupporter && !isBannerFailedToLoad}
 			<img
-				on:error={() => { isBannerFailedToLoad = true; }}
+				on:error={() => {
+					isBannerFailedToLoad = true;
+				}}
 				class="banner-image absolute inset-0 h-full w-full object-cover"
 				src={bannerSrc}
 				alt=""
@@ -52,7 +54,10 @@
 
 	<!-- Profile Info Overlay -->
 	<div class="profile-info relative z-10 mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8">
-		<div class="flex flex-col items-center gap-4 sm:flex-row sm:items-end sm:gap-6" style="margin-top: -72px;">
+		<div
+			class="flex flex-col items-center gap-4 sm:flex-row sm:items-end sm:gap-6"
+			style="margin-top: -72px;"
+		>
 			<!-- Avatar -->
 			<div class="avatar-wrapper flex-shrink-0" class:supporter-ring={isSupporter}>
 				<Avatar.Root class="h-36 w-36 border-4 border-background lg:h-44 lg:w-44">
@@ -80,10 +85,10 @@
 							toast.success($_('player.copy_uid'));
 						}}
 					>
-							<h2
-								class={`text-2xl font-bold sm:text-3xl ${isSupporter ? 'supporter-tier-text' : ''}`}
-								style={supporterTierStyle}
-							>
+						<h2
+							class={`text-2xl font-bold sm:text-3xl ${isSupporter ? 'supporter-tier-text' : ''}`}
+							style={supporterTierStyle}
+						>
 							{#if player.clan && !isActive(player.clans.boostedUntil)}
 								[{player.clans.tag}]
 							{/if}
@@ -114,12 +119,20 @@
 				<!-- Social Links -->
 				<div class="flex items-center gap-3">
 					{#if player.youtube}
-						<a href={player.youtube} target="_blank" class="transition-opacity hover:opacity-100 opacity-60">
+						<a
+							href={player.youtube}
+							target="_blank"
+							class="opacity-60 transition-opacity hover:opacity-100"
+						>
 							<img src="/youtube.svg" alt="YouTube" class="h-5 w-5" />
 						</a>
 					{/if}
 					{#if player.facebook}
-						<a href={player.facebook} target="_blank" class="transition-opacity hover:opacity-100 opacity-60">
+						<a
+							href={player.facebook}
+							target="_blank"
+							class="opacity-60 transition-opacity hover:opacity-100"
+						>
 							<img src="/facebook.svg" alt="Facebook" class="h-5 w-5" />
 						</a>
 					{/if}
@@ -131,7 +144,11 @@
 								toast($_('player.copy_discord'));
 							}}
 						>
-							<img src="/discord.svg" alt="Discord" class="h-5 w-5 opacity-60 transition-opacity hover:opacity-100" />
+							<img
+								src="/discord.svg"
+								alt="Discord"
+								class="h-5 w-5 opacity-60 transition-opacity hover:opacity-100"
+							/>
 						</button>
 					{/if}
 				</div>
@@ -158,5 +175,4 @@
 			border-color: #eab308;
 		}
 	}
-
 </style>

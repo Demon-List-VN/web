@@ -283,10 +283,10 @@
 			>
 		{/if}
 		<h4 class="playerName font-semibold">
-				<span
-					class={isActive(cardPlayer.supporterUntil) ? 'supporter-tier-text' : ''}
-					style={supporterTierStyle}
-				>
+			<span
+				class={isActive(cardPlayer.supporterUntil) ? 'supporter-tier-text' : ''}
+				style={supporterTierStyle}
+			>
 				{#if cardPlayer.clan && !isActive(cardPlayer.clans.boostedUntil)}
 					<a href={`/clan/${cardPlayer.clan}`}>[{cardPlayer.clans.tag}]</a>
 				{/if}
@@ -496,5 +496,4 @@
 		border-radius: 5px;
 		font-weight: 600;
 	}
-
 </style>
