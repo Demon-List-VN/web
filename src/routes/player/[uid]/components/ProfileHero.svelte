@@ -80,10 +80,10 @@
 							toast.success($_('player.copy_uid'));
 						}}
 					>
-						<h2
-							class={`text-2xl font-bold sm:text-3xl ${isSupporter ? 'supporter-tier-text supporter-tier-text--animated' : ''}`}
-							style={supporterTierStyle}
-						>
+							<h2
+								class={`text-2xl font-bold sm:text-3xl ${isSupporter ? 'supporter-tier-text' : ''}`}
+								style={supporterTierStyle}
+							>
 							{#if player.clan && !isActive(player.clans.boostedUntil)}
 								[{player.clans.tag}]
 							{/if}

@@ -109,12 +109,10 @@
 					class="rounded-sm underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-8 focus-visible:outline-black"
 				>
 					<div class="flex items-center gap-[5px]">
-						<span
-							class={isActive(player.supporterUntil)
-								? 'supporter-tier-text supporter-tier-text--animated'
-								: ''}
-							style={supporterTierStyle}
-						>
+							<span
+								class={isActive(player.supporterUntil) ? 'supporter-tier-text' : ''}
+								style={supporterTierStyle}
+							>
 							{truncateText(
 								player.clan && !isActive(player.clans.boostedUntil)
 									? `[${player.clans.tag}] ${player.name}`
@@ -132,12 +130,10 @@
 				</a>
 			{:else}
 				<div class="flex items-center gap-[5px]">
-					<span
-						class={isActive(player.supporterUntil)
-							? 'supporter-tier-text supporter-tier-text--animated'
-							: ''}
-						style={supporterTierStyle}
-					>
+						<span
+							class={isActive(player.supporterUntil) ? 'supporter-tier-text' : ''}
+							style={supporterTierStyle}
+						>
 						{truncateText(
 							player.clan && !isActive(player.clans.boostedUntil)
 								? `[${player.clans.tag}] ${player.name}`

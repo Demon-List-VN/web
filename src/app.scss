@@ -225,29 +225,9 @@
 
   .supporter-tier-text {
     background: var(--supporter-tier-color);
-    background-size: 200%;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-  }
-
-  .supporter-tier-text--animated {
-    animation: supporter-tier-shimmer 3s ease infinite;
-  }
-
-  @keyframes supporter-tier-shimmer {
-    0% {
-      background-position: 0% 50%;
-    }
-    100% {
-      background-position: 200% 50%;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .supporter-tier-text--animated {
-      animation: none;
-    }
   }
 }
 
