@@ -1512,8 +1512,10 @@
 			"day_left": "{days} day left",
 			"days_left": "{days} days left",
 			"next_tier_at": "{days} days for {tier}",
+			"next_tier_in_day": "{days} more day to become {tier}",
+			"next_tier_in_days": "{days} more days to become {tier}",
 			"preview_start": "Starts at 1 day",
-			"preview_complete": "30 days to complete Tier 1",
+			"preview_complete": "31 days to become Elite Supporter",
 			"names": {
 				"tier_1": "Supporter",
 				"tier_2": "Elite Supporter",

@@ -1532,8 +1532,10 @@
 			"day_left": "Còn {days} ngày",
 			"days_left": "Còn {days} ngày",
 			"next_tier_at": "{days} ngày để đạt {tier}",
+			"next_tier_in_day": "Cần thêm {days} ngày để đạt {tier}",
+			"next_tier_in_days": "Cần thêm {days} ngày để đạt {tier}",
 			"preview_start": "Bắt đầu từ 1 ngày",
-			"preview_complete": "30 ngày để hoàn thành Hạng 1",
+			"preview_complete": "31 ngày để đạt Elite Supporter",
 			"names": {
 				"tier_1": "Supporter",
 				"tier_2": "Elite Supporter",

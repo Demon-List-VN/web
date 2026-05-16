@@ -6,6 +6,7 @@ export interface SupporterTierInfo {
 	daysLeft: number;
 	currentTierStart: number;
 	nextTierDays: number;
+	daysToNextTier: number;
 	progress: number;
 	color: string;
 }
@@ -119,6 +120,7 @@ export function getSupporterTierInfo(
 
 	const { start, end } = getSupporterTierBounds(tier);
 	const progress = Math.max(0, Math.min(100, ((daysLeft - start) / (end - start)) * 100));
+	const daysToNextTier = Math.max(1, end - daysLeft + 1);
 
 	return {
 		tier,
@@ -126,6 +128,7 @@ export function getSupporterTierInfo(
 		daysLeft,
 		currentTierStart: start,
 		nextTierDays: end,
+		daysToNextTier,
 		progress,
 		color: getSupporterTierColor(tier)
 	};

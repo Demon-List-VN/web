@@ -16,8 +16,10 @@
 	$: label = $_(getTierNameKey(activeTier), { values: { tier: activeTier } });
 	$: daysLeft = tierInfo?.daysLeft ?? 0;
 	$: progress = tierInfo?.progress ?? 0;
-	$: nextTierDays = tierInfo?.nextTierDays ?? 30;
+	$: daysToNextTier = tierInfo?.daysToNextTier ?? 31;
 	$: nextTierLabel = $_(getTierNameKey(activeTier + 1), { values: { tier: activeTier + 1 } });
+	$: nextTierMessageKey =
+		daysToNextTier === 1 ? 'supporter.tiers.next_tier_in_day' : 'supporter.tiers.next_tier_in_days';
 	$: tierStyle = getSupporterTierStyle(activeTier);
 	$: fillStyle = `width: ${Math.max(0, Math.min(100, progress))}%; --supporter-tier-color: ${getSupporterTierColor(activeTier)};`;
 	$: daysLeftText = $_(
@@ -58,8 +60,8 @@
 			{#if tierInfo}
 				<span>{daysLeftText}</span>
 				<span
-					>{$_('supporter.tiers.next_tier_at', {
-						values: { days: nextTierDays, tier: nextTierLabel }
+					>{$_(nextTierMessageKey, {
+						values: { days: daysToNextTier, tier: nextTierLabel }
 					})}</span
 				>
 			{:else}
