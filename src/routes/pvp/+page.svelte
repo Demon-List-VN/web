@@ -14,6 +14,7 @@
 	import { Switch } from '$lib/components/ui/switch/index.js';
 	import * as Alert from '$lib/components/ui/alert';
 	import * as Card from '$lib/components/ui/card';
+	import * as Collapsible from '$lib/components/ui/collapsible';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import Chart from 'chart.js/auto';
 	import {
@@ -25,6 +26,7 @@
 		getPvpInviteExpiresMs,
 		getPvpInvite,
 		getPvpMatchAcceptanceExpiresMs,
+		getPvpMatchEndMs,
 		getPvpInviteId,
 		getPvpMatchedMatchId,
 		getPvpMatchId,
@@ -36,9 +38,11 @@
 		getPvpParticipantRatingAfter,
 		getPvpParticipantRatingBefore,
 		getPvpParticipantRatingDiff,
+		getPvpResultReason,
 		getPvpMe,
 		getPvpStatus,
 		getPvpSelfParticipant,
+		getPvpWinnerUid,
 		hasPvpParticipantAccepted,
 		isActivePvpMatch,
 		isPvpMatchConfirmedByBoth,
@@ -67,12 +71,12 @@
 	import {
 		ArrowRight,
 		CalendarDays,
+		ChevronRight,
 		Clock,
 		Loader2,
 		LogIn,
 		RefreshCw,
 		Send,
-		ShieldCheck,
 		Swords,
 		Trophy,
 		UserCheck,
@@ -111,6 +115,7 @@
 	};
 	let activePvpTab = 'lobby';
 	let eloGraphFilter: (typeof ELO_GRAPH_FILTERS)[number]['key'] = '25';
+	let summaryOpen = false;
 	let loading = false;
 	let leaderboardLoading = true;
 	let leaderboardError = '';
@@ -162,6 +167,7 @@
 	$: eloGraphDelta =
 		eloGraphStart !== null && eloGraphEnd !== null ? Math.round(eloGraphEnd - eloGraphStart) : null;
 	$: eloGraphMatchCount = Math.max(0, eloGraphPoints.length - 1);
+	$: currentWeeklyRacePoints = getCurrentWeeklyRacePoints(weeklyRace, currentUid, matches);
 	$: leaderboardMatchesNeeded = Math.max(0, 50 - Number(pvpRatedMatchCount || 0));
 	$: hasRecentLeaderboardMatch = hasRecentRatedPvpMatch(matches);
 	$: showLeaderboardMatchCountNotice = pvpRatedMatchCount >= 5 && pvpRatedMatchCount < 50;
@@ -1061,6 +1067,50 @@
 		};
 	}
 
+	function getCurrentWeeklyRacePoints(
+		race: PvpWeeklyRace,
+		uid: string | null | undefined,
+		sourceMatches: PvpMatch[]
+	) {
+		if (!uid) return 0;
+
+		const row = race.leaderboard.find((entry) => {
+			const player = entry.player ?? entry.players;
+			return entry.uid === uid || player?.uid === uid || player?.id === uid;
+		});
+
+		if (row) return Number(row.points ?? 0);
+
+		const week = race.currentWeek ?? race.week;
+		const weekStartMs = week?.weekStartAt ?? week?.week_start_at;
+		const weekEndMs = week?.weekEndAt ?? week?.week_end_at;
+		const startMs = weekStartMs ? new Date(weekStartMs).getTime() : null;
+		const endMs = weekEndMs ? new Date(weekEndMs).getTime() : null;
+		if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) return 0;
+
+		const scoringReasons = new Set([
+			'completion',
+			'progress',
+			'time_reached',
+			'resignation',
+			'forfeit'
+		]);
+
+		return sourceMatches.filter((match) => {
+			const endedMs = getPvpMatchEndMs(match);
+			const reason = getPvpResultReason(match) ?? '';
+			return (
+				getPvpStatus(match, '') === 'completed' &&
+				isPvpMatchRanked(match) &&
+				getPvpWinnerUid(match) === uid &&
+				endedMs !== null &&
+				endedMs >= startMs! &&
+				endedMs < endMs! &&
+				scoringReasons.has(reason)
+			);
+		}).length;
+	}
+
 	function getEloGraphChartData(points: EloGraphPoint[]): EloGraphChartData {
 		const ratings = points.map((point) => Math.round(point.rating));
 		const bounds = ratings.length ? getRatingBounds(ratings) : { min: 0, max: 0 };
@@ -1358,79 +1408,103 @@
 
 		{#if pvpRatingInitialized}
 			<section class="rating-start-section">
-				<Card.Root>
-					<Card.Header>
-						<Card.Title>{$_('pvp.pvp_rating')}</Card.Title>
-						<Card.Description>
-							{$_('pvp.pvp_rating_summary', {
-								values: {
-									rating: pvpRating,
-									count: pvpRatedMatchCount
-								}
-							})}
-						</Card.Description>
-					</Card.Header>
-					<Card.Content>
-						<div class="rating-summary">
-							<ShieldCheck class="h-5 w-5" />
-							<strong>{pvpRating}</strong>
-							<span>
-								{pvpRatedMatchCount < 5
-									? $_('pvp.provisional_matches_left', {
-											values: {
-												count: Math.max(0, 5 - Number(pvpRatedMatchCount || 0))
-											}
-										})
-									: $_('pvp.rating_established')}
-							</span>
-						</div>
-						<div class="elo-graph-panel">
-							<div class="elo-graph-toolbar">
+				<Collapsible.Root bind:open={summaryOpen}>
+					<Card.Root
+						class={`summary-card ${summaryOpen ? 'is-open' : 'is-collapsed'}`}
+						on:click={() => {
+							if (!summaryOpen) summaryOpen = true;
+						}}
+					>
+						<Card.Header>
+							<Button
+								type="button"
+								variant="ghost"
+								class="summary-trigger !h-auto !w-full !justify-between !p-0 !text-left hover:!bg-transparent hover:!text-current focus-visible:!ring-0 focus-visible:!ring-offset-0"
+								aria-expanded={summaryOpen}
+								aria-controls="pvp-summary-panel"
+								on:click={(event) => {
+									event.stopPropagation();
+									summaryOpen = !summaryOpen;
+								}}
+							>
+								<div class="summary-trigger-main">
+									<Card.Title>{$_('pvp.summary')}</Card.Title>
+									<Card.Description>
+										{pvpRatedMatchCount < 5
+											? $_('pvp.provisional_matches_left', {
+													values: {
+														count: Math.max(0, 5 - Number(pvpRatedMatchCount || 0))
+													}
+												})
+											: $_('pvp.rating_established')}
+									</Card.Description>
+								</div>
+								<span class="summary-indicator" aria-hidden="true" class:isOpen={summaryOpen}>
+									<ChevronRight class="h-4 w-4" />
+								</span>
+							</Button>
+						</Card.Header>
+						<Card.Content>
+							<div class="summary-stats">
 								<div>
-									<strong>{$_('pvp.elo_graph.title')}</strong>
-									<span>
-										{$_('pvp.elo_graph.summary', {
-											values: {
-												count: eloGraphMatchCount,
-												delta: eloDeltaLabel(eloGraphDelta)
-											}
-										})}
-									</span>
+									<span>{$_('pvp.current_elo')}</span>
+									<strong>{pvpRating ?? '--'}</strong>
 								</div>
-								<Tabs.Root bind:value={eloGraphFilter}>
-									<Tabs.List class="elo-filter-group" aria-label={$_('pvp.elo_graph.filter')}>
-										{#each ELO_GRAPH_FILTERS as filter}
-											<Tabs.Trigger value={filter.key} class="elo-filter-trigger">
-												{$_(`pvp.elo_graph.filters.${filter.key}`)}
-											</Tabs.Trigger>
-										{/each}
-									</Tabs.List>
-								</Tabs.Root>
+								<div>
+									<span>{$_('pvp.weekly_race_points')}</span>
+									<strong>{currentWeeklyRacePoints}</strong>
+								</div>
 							</div>
-							{#if showLeaderboardMatchCountNotice}
-								<div class="leaderboard-requirement-notice">
-									{$_('pvp.leaderboard.need_more_matches', {
-										values: { count: leaderboardMatchesNeeded }
-									})}
+							<Collapsible.Content id="pvp-summary-panel">
+								<div class="elo-graph-panel">
+									<div class="elo-graph-toolbar">
+										<div>
+											<strong>{$_('pvp.elo_graph.title')}</strong>
+											<span>
+												{$_('pvp.elo_graph.summary', {
+													values: {
+														count: eloGraphMatchCount,
+														delta: eloDeltaLabel(eloGraphDelta)
+													}
+												})}
+											</span>
+										</div>
+										<Tabs.Root bind:value={eloGraphFilter}>
+											<Tabs.List class="elo-filter-group" aria-label={$_('pvp.elo_graph.filter')}>
+												{#each ELO_GRAPH_FILTERS as filter}
+													<Tabs.Trigger value={filter.key} class="elo-filter-trigger">
+														{$_(`pvp.elo_graph.filters.${filter.key}`)}
+													</Tabs.Trigger>
+												{/each}
+											</Tabs.List>
+										</Tabs.Root>
+									</div>
+									{#if showLeaderboardMatchCountNotice}
+										<div class="leaderboard-requirement-notice">
+											{$_('pvp.leaderboard.need_more_matches', {
+												values: { count: leaderboardMatchesNeeded }
+											})}
+										</div>
+									{:else if showLeaderboardActivityNotice}
+										<div class="leaderboard-requirement-notice">
+											{$_('pvp.leaderboard.need_recent_match')}
+										</div>
+									{/if}
+									{#if eloGraphPoints.length > 1}
+										<div class="elo-chart-wrapper">
+											<canvas
+												use:createEloChart={eloGraphChartData}
+												aria-label={$_('pvp.elo_graph.title')}
+											/>
+										</div>
+									{:else}
+										<div class="elo-graph-empty">{$_('pvp.elo_graph.empty')}</div>
+									{/if}
 								</div>
-							{:else if showLeaderboardActivityNotice}
-								<div class="leaderboard-requirement-notice">
-									{$_('pvp.leaderboard.need_recent_match')}
-								</div>
-							{/if}
-							{#if eloGraphPoints.length > 1}
-								<div class="elo-chart-wrapper">
-									<canvas
-										use:createEloChart={eloGraphChartData}
-										aria-label={$_('pvp.elo_graph.title')}
-									/>
-								</div>
-							{:else}
-								<div class="elo-graph-empty">{$_('pvp.elo_graph.empty')}</div>
-							{/if}
-						</div>
-					</Card.Content>
-				</Card.Root>
+							</Collapsible.Content>
+						</Card.Content>
+					</Card.Root>
+				</Collapsible.Root>
 			</section>
 		{/if}
 
@@ -1773,17 +1847,64 @@
 		margin-top: 16px;
 	}
 
-	.rating-summary {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 10px;
-		color: hsl(var(--muted-foreground));
+	:global(.summary-card.is-collapsed) {
+		cursor: pointer;
 	}
 
-	.rating-summary strong {
+	:global(.summary-trigger) {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		width: 100%;
+		height: auto;
+		padding: 0;
+		text-align: left;
+	}
+
+	.summary-trigger-main {
+		display: grid;
+		gap: 6px;
+	}
+
+	.summary-indicator {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		color: hsl(var(--muted-foreground));
+		transition: transform 150ms ease;
+	}
+
+	.summary-indicator.isOpen {
+		transform: rotate(90deg);
+	}
+
+	.summary-stats {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 12px;
+	}
+
+	.summary-stats > div {
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		padding: 12px 14px;
+	}
+
+	.summary-stats span,
+	.summary-stats strong {
+		display: block;
+	}
+
+	.summary-stats span {
+		color: hsl(var(--muted-foreground));
+		font-size: 13px;
+	}
+
+	.summary-stats strong {
+		margin-top: 4px;
 		color: hsl(var(--foreground));
 		font-size: 1.4rem;
+		line-height: 1;
 	}
 
 	.leaderboard-requirement-notice {
@@ -2020,6 +2141,10 @@
 		.elo-graph-toolbar {
 			align-items: stretch;
 			flex-direction: column;
+		}
+
+		.summary-stats {
+			grid-template-columns: 1fr;
 		}
 
 		:global(.elo-filter-group) {
