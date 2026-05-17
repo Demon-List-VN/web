@@ -2,9 +2,11 @@
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import Ads from '$lib/components/ads.svelte';
-	import PlayerLink from '$lib/components/playerLink.svelte';
 	import PlayerSelector from '$lib/components/playerSelector.svelte';
 	import MatchCard from '$lib/components/pvp/MatchCard.svelte';
+	import PvpDialogs from './PvpDialogs.svelte';
+	import PvpLeaderboardTab from './PvpLeaderboardTab.svelte';
+	import WeeklyRaceTab from './WeeklyRaceTab.svelte';
 	import { user } from '$lib/client';
 	import supabase from '$lib/client/supabase';
 	import { Badge } from '$lib/components/ui/badge';
@@ -12,7 +14,6 @@
 	import { Switch } from '$lib/components/ui/switch/index.js';
 	import * as Alert from '$lib/components/ui/alert';
 	import * as Card from '$lib/components/ui/card';
-	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import Chart from 'chart.js/auto';
 	import {
@@ -62,11 +63,9 @@
 	import { playPvpBell } from '$lib/client/pvpSound';
 	import { onDestroy, onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import { _, locale } from 'svelte-i18n';
+	import { _ } from 'svelte-i18n';
 	import {
 		ArrowRight,
-		BellRing,
-		BookOpen,
 		CalendarDays,
 		Clock,
 		Loader2,
@@ -91,12 +90,6 @@
 		{ key: '100', limit: 100 },
 		{ key: 'all', limit: null }
 	] as const;
-	const STARTING_RATING_OPTIONS = [
-		{ rating: 800 as const, key: 'beginner' },
-		{ rating: 1500 as const, key: 'intermediate' },
-		{ rating: 2500 as const, key: 'expert' }
-	];
-
 	let selectedPlayer: any = null;
 	let anonymousMode = false;
 	let hideOpponentInfo = false;
@@ -117,7 +110,6 @@
 		previousLeaderboard: []
 	};
 	let activePvpTab = 'lobby';
-	let activeWeeklyRaceTab = 'standings';
 	let eloGraphFilter: (typeof ELO_GRAPH_FILTERS)[number]['key'] = '25';
 	let loading = false;
 	let leaderboardLoading = true;
@@ -182,10 +174,6 @@
 		lobby.matchmaking?.created_at;
 	$: queueElapsedMs = getElapsedMs(queueStartedAt, now);
 	$: showSlowSearchAlert = isSearching && queueElapsedMs >= 90 * 1000;
-	$: weeklyRaceEndsAt = getWeeklyRaceWeekEndMs(weeklyRace.week);
-	$: weeklyRaceRange = formatWeeklyRaceRange(weeklyRace.week);
-	$: weeklyRaceResetCountdown = remainingLongLabel(weeklyRaceEndsAt, now);
-	$: previousWeeklyRaceRange = formatWeeklyRaceRange(weeklyRace.previousWeek);
 	$: incomingPending = lobby.incomingInvites.filter((invite) => getPvpStatus(invite) === 'pending');
 	$: outgoingVisible = lobby.outgoingInvites.filter((invite) => getPvpStatus(invite) === 'pending');
 	$: checkingLobby = $user.checked && $user.loggedIn && !lobbyReady;
@@ -988,52 +976,6 @@
 		return `${minutes}:${String(seconds).padStart(2, '0')}`;
 	}
 
-	function remainingLongLabel(targetMs: number | null, currentNow: number) {
-		if (!targetMs) return '--';
-
-		const totalMinutes = Math.max(0, Math.floor((targetMs - currentNow) / 60_000));
-		const days = Math.floor(totalMinutes / (24 * 60));
-		const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
-		const minutes = totalMinutes % 60;
-
-		if (days > 0) return `${days}d ${hours}h`;
-		if (hours > 0) return `${hours}h ${minutes}m`;
-		return `${minutes}m`;
-	}
-
-	function getWeeklyRaceWeekEndMs(week: PvpWeeklyRace['week']) {
-		const value = week?.weekEndAt ?? week?.week_end_at;
-		if (!value) return null;
-
-		const ms = new Date(value).getTime();
-		return Number.isFinite(ms) ? ms : null;
-	}
-
-	function formatWeeklyRaceRange(week: PvpWeeklyRace['week']) {
-		const start = week?.weekStartAt ?? week?.week_start_at;
-		const end = week?.weekEndAt ?? week?.week_end_at;
-		if (!start || !end) return '--';
-
-		return `${formatWeeklyRaceDate(start)} - ${formatWeeklyRaceDate(
-			new Date(new Date(end).getTime() - 1).toISOString()
-		)}`;
-	}
-
-	function formatWeeklyRaceDate(value: string) {
-		const date = new Date(value);
-		if (!Number.isFinite(date.getTime())) return '--';
-
-		return new Intl.DateTimeFormat($locale || 'en', {
-			month: 'short',
-			day: 'numeric',
-			timeZone: 'Asia/Ho_Chi_Minh'
-		}).format(date);
-	}
-
-	function weeklyRacePlayer(row: PvpWeeklyRace['leaderboard'][number]) {
-		return row.player ?? row.players ?? { uid: row.uid, name: row.uid };
-	}
-
 	function elapsedLabel(startValue: unknown, currentNow: number) {
 		const totalSeconds = Math.max(0, Math.floor(getElapsedMs(startValue, currentNow) / 1000));
 		const minutes = Math.floor(totalSeconds / 60);
@@ -1344,283 +1286,38 @@
 		</Tabs.List>
 
 		<Tabs.Content value="weekly-race">
-			<section class="leaderboard-section">
-				<Card.Root>
-					<Card.Header>
-						<div class="section-heading inside">
-							<div>
-								<Card.Title class="leaderboard-title">
-									<CalendarDays class="h-5 w-5" />
-									{$_('pvp.weekly_race.title')}
-								</Card.Title>
-								<Card.Description>{$_('pvp.weekly_race.description')}</Card.Description>
-							</div>
-							<Button
-								variant="ghost"
-								size="icon"
-								disabled={weeklyRaceLoading}
-								on:click={refreshWeeklyRace}
-								aria-label={$_('pvp.refresh')}
-							>
-								<RefreshCw class={`h-4 w-4 ${weeklyRaceLoading ? 'animate-spin' : ''}`} />
-							</Button>
-						</div>
-					</Card.Header>
-						<Card.Content>
-							<Tabs.Root bind:value={activeWeeklyRaceTab}>
-								<Tabs.List class="weekly-race-tab-list py-[20px]" aria-label={$_('pvp.weekly_race.tabs.label')}>
-									<Tabs.Trigger value="standings" class="weekly-race-tab-trigger">
-										<Trophy class="h-4 w-4" />
-										{$_('pvp.weekly_race.tabs.standings')}
-									</Tabs.Trigger>
-									<Tabs.Trigger value="tutorial" class="weekly-race-tab-trigger">
-										<BookOpen class="h-4 w-4" />
-										{$_('pvp.weekly_race.tabs.tutorial')}
-									</Tabs.Trigger>
-								</Tabs.List>
-
-								<Tabs.Content value="standings">
-									<div class="weekly-race-meta">
-										<div>
-											<span>{$_('pvp.weekly_race.current_week')}</span>
-											<strong>{weeklyRaceRange}</strong>
-										</div>
-										<div>
-											<span>{$_('pvp.weekly_race.reset_in')}</span>
-											<strong>{weeklyRaceResetCountdown}</strong>
-										</div>
-									</div>
-
-									{#if weeklyRaceLoading}
-										<div class="leaderboard-skeleton" aria-label={$_('general.loading')}>
-											<div></div>
-											<div></div>
-											<div></div>
-										</div>
-									{:else if weeklyRaceError}
-										<div class="empty-state">{weeklyRaceError}</div>
-									{:else if weeklyRace.leaderboard.length === 0}
-										<div class="empty-state">{$_('pvp.weekly_race.empty')}</div>
-									{:else}
-										<div class="leaderboard-table" role="table" aria-label={$_('pvp.weekly_race.title')}>
-											<div class="leaderboard-row weekly-race-row leaderboard-head" role="row">
-												<span role="columnheader">{$_('pvp.leaderboard.rank')}</span>
-												<span role="columnheader">{$_('pvp.leaderboard.player')}</span>
-												<span role="columnheader">{$_('pvp.weekly_race.points')}</span>
-												<span role="columnheader">{$_('pvp.weekly_race.wins')}</span>
-											</div>
-											{#each weeklyRace.leaderboard as row}
-												{@const player = weeklyRacePlayer(row)}
-												<div class="leaderboard-row weekly-race-row" role="row">
-													<span class="leaderboard-rank" role="cell">#{row.rank}</span>
-													<span class="leaderboard-player" role="cell">
-														<PlayerLink {player} showAvatar truncate={28} />
-													</span>
-													<span class="leaderboard-rating" role="cell">{row.points}</span>
-													<span role="cell">{row.wins}</span>
-												</div>
-											{/each}
-										</div>
-									{/if}
-
-									{#if !weeklyRaceLoading && weeklyRace.previousWeek}
-										<div class="weekly-race-history">
-											<div class="section-heading inside">
-												<div>
-													<strong>{$_('pvp.weekly_race.history_title')}</strong>
-													<span>{previousWeeklyRaceRange}</span>
-												</div>
-											</div>
-											{#if weeklyRace.previousLeaderboard.length === 0}
-												<div class="empty-state compact">{$_('pvp.weekly_race.history_empty')}</div>
-											{:else}
-												<div class="weekly-race-history-list">
-													{#each weeklyRace.previousLeaderboard.slice(0, 3) as row}
-														{@const player = weeklyRacePlayer(row)}
-														<div>
-															<span class="leaderboard-rank">#{row.rank}</span>
-															<PlayerLink {player} showAvatar truncate={24} />
-															<strong>{row.points}</strong>
-														</div>
-													{/each}
-												</div>
-											{/if}
-										</div>
-									{/if}
-								</Tabs.Content>
-
-								<Tabs.Content value="tutorial">
-									<div class="weekly-race-tutorial">
-										<div>
-											<span>1</span>
-											<strong>{$_('pvp.weekly_race.tutorial.queue_title')}</strong>
-											<p>{$_('pvp.weekly_race.tutorial.queue_description')}</p>
-										</div>
-										<div>
-											<span>2</span>
-											<strong>{$_('pvp.weekly_race.tutorial.score_title')}</strong>
-											<p>{$_('pvp.weekly_race.tutorial.score_description')}</p>
-										</div>
-										<div>
-											<span>3</span>
-											<strong>{$_('pvp.weekly_race.tutorial.reset_title')}</strong>
-											<p>{$_('pvp.weekly_race.tutorial.reset_description')}</p>
-										</div>
-									</div>
-								</Tabs.Content>
-							</Tabs.Root>
-						</Card.Content>
-				</Card.Root>
-			</section>
+			<WeeklyRaceTab
+				{weeklyRace}
+				loading={weeklyRaceLoading}
+				error={weeklyRaceError}
+				{now}
+				onRefresh={refreshWeeklyRace}
+			/>
 		</Tabs.Content>
 
 		<Tabs.Content value="leaderboard">
-			<section class="leaderboard-section">
-				<Card.Root>
-					<Card.Header>
-						<div class="section-heading inside">
-							<div>
-								<Card.Title class="leaderboard-title">
-									<Trophy class="h-5 w-5" />
-									{$_('pvp.leaderboard.title')}
-								</Card.Title>
-								<Card.Description>{$_('pvp.leaderboard.description')}</Card.Description>
-							</div>
-							<Button
-								variant="ghost"
-								size="icon"
-								disabled={leaderboardLoading}
-								on:click={refreshLeaderboard}
-								aria-label={$_('pvp.refresh')}
-							>
-								<RefreshCw class={`h-4 w-4 ${leaderboardLoading ? 'animate-spin' : ''}`} />
-							</Button>
-						</div>
-					</Card.Header>
-					<Card.Content>
-						{#if leaderboardLoading}
-							<div class="leaderboard-skeleton" aria-label={$_('general.loading')}>
-								<div></div>
-								<div></div>
-								<div></div>
-							</div>
-						{:else if leaderboardError}
-							<div class="empty-state">{leaderboardError}</div>
-						{:else if leaderboard.length === 0}
-							<div class="empty-state">{$_('pvp.leaderboard.empty')}</div>
-						{:else}
-							<div class="leaderboard-table" role="table" aria-label={$_('pvp.leaderboard.title')}>
-								<div class="leaderboard-row leaderboard-head" role="row">
-									<span role="columnheader">{$_('pvp.leaderboard.rank')}</span>
-									<span role="columnheader">{$_('pvp.leaderboard.player')}</span>
-									<span role="columnheader">{$_('pvp.leaderboard.rating')}</span>
-									<span role="columnheader">{$_('pvp.leaderboard.matches')}</span>
-								</div>
-								{#each leaderboard as player}
-									<div class="leaderboard-row" role="row">
-										<span class="leaderboard-rank" role="cell">#{player.rank}</span>
-										<span class="leaderboard-player" role="cell">
-											<PlayerLink {player} showAvatar truncate={28} />
-										</span>
-										<span class="leaderboard-rating" role="cell">{player.pvpRating}</span>
-										<span role="cell">{player.pvpRatedMatchCount}</span>
-									</div>
-								{/each}
-							</div>
-						{/if}
-					</Card.Content>
-				</Card.Root>
-			</section>
+			<PvpLeaderboardTab
+				{leaderboard}
+				loading={leaderboardLoading}
+				error={leaderboardError}
+				onRefresh={refreshLeaderboard}
+			/>
 		</Tabs.Content>
 
 		<Tabs.Content value="lobby">
-
-	<Dialog.Root
-		bind:open={matchDialogOpen}
-		on:openChange={(e) => {
-			if (e?.detail === false && pendingMatch) {
-				matchDialogOpen = true;
-			}
-		}}
-	>
-		<Dialog.Content class="sm:max-w-[440px]">
-			<Dialog.Header>
-				<div class="match-found-icon">
-					<BellRing class="h-5 w-5" />
-				</div>
-				<Dialog.Title>{$_('pvp.match_found_title')}</Dialog.Title>
-				<Dialog.Description>
-					{$_('pvp.match_found_hint')}
-				</Dialog.Description>
-			</Dialog.Header>
-
-			<div class="match-found-body">
-				<div class="match-found-row">
-					<span>{$_('pvp.match_type')}</span>
-					<strong>{$_('pvp.ranked')}</strong>
-				</div>
-				<div class="match-found-row">
-					<span>{$_('pvp.acceptance_timer')}</span>
-					<strong>{remainingLabel(getPvpMatchAcceptanceExpiresMs(pendingMatch), now)}</strong>
-				</div>
-			</div>
-
-			<Dialog.Footer>
-				{#if pendingSelfAccepted}
-					<Button disabled class="w-full">
-						<Loader2 class="mr-2 h-4 w-4 animate-spin" />
-						{$_('pvp.waiting_for_acceptance')}
-					</Button>
-				{:else}
-					<Button class="w-full" disabled={Boolean(actionLoading)} on:click={acceptPendingMatch}>
-						{#if actionLoading === `accept-match-${pendingMatchId}`}
-							<Loader2 class="mr-2 h-4 w-4 animate-spin" />
-						{:else}
-							<UserCheck class="mr-2 h-4 w-4" />
-						{/if}
-						{$_('pvp.accept_match')}
-					</Button>
-				{/if}
-			</Dialog.Footer>
-		</Dialog.Content>
-	</Dialog.Root>
-
-	<Dialog.Root
-		bind:open={ratingDialogOpen}
-		on:openChange={(e) => {
-			if (e?.detail === false && shouldForceStartingRating) {
-				ratingDialogOpen = true;
-			}
-		}}
-	>
-		<Dialog.Content showClose={false} class="sm:max-w-[520px]">
-			<Dialog.Header>
-				<div class="match-found-icon">
-					<ShieldCheck class="h-5 w-5" />
-				</div>
-				<Dialog.Title>{$_('pvp.pvp_rating')}</Dialog.Title>
-				<Dialog.Description>
-					{$_('pvp.starting_rating_hint')}
-				</Dialog.Description>
-			</Dialog.Header>
-
-			<div class="starting-rating-grid">
-				{#each STARTING_RATING_OPTIONS as option}
-					<Button
-						variant="outline"
-						disabled={Boolean(actionLoading || checkingLobby)}
-						on:click={() => chooseStartingRating(option.rating)}
-					>
-						{#if actionLoading === `start-rating-${option.rating}`}
-							<Loader2 class="mr-2 h-4 w-4 animate-spin" />
-						{/if}
-						<span>{$_(`pvp.starting_rating.${option.key}`)}</span>
-						<strong>{option.rating}</strong>
-					</Button>
-				{/each}
-			</div>
-		</Dialog.Content>
-	</Dialog.Root>
+		<PvpDialogs
+			bind:matchDialogOpen
+			bind:ratingDialogOpen
+			{pendingMatch}
+			{pendingMatchId}
+			{pendingSelfAccepted}
+			{shouldForceStartingRating}
+			{actionLoading}
+			{checkingLobby}
+			{now}
+			onAcceptPendingMatch={acceptPendingMatch}
+			onChooseStartingRating={chooseStartingRating}
+		/>
 
 	{#if !$user.checked}
 		<Card.Root class="state-panel">
@@ -1997,38 +1694,6 @@
 		text-transform: uppercase;
 	}
 
-	.match-found-icon {
-		display: inline-flex;
-		width: 40px;
-		height: 40px;
-		align-items: center;
-		justify-content: center;
-		border-radius: 8px;
-		background: hsl(var(--primary) / 0.12);
-		color: hsl(var(--primary));
-	}
-
-	.match-found-body {
-		display: grid;
-		gap: 10px;
-		margin: 18px 0;
-	}
-
-	.match-found-row {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 14px;
-		border-radius: 8px;
-		background: hsl(var(--muted) / 0.55);
-		padding: 10px 12px;
-		font-size: 14px;
-	}
-
-	.match-found-row span {
-		color: hsl(var(--muted-foreground));
-	}
-
 	.topbar-link,
 	.inline-link,
 	.section-heading a {
@@ -2047,7 +1712,6 @@
 	:global(.state-panel),
 	.active-section,
 	.rating-start-section,
-	.leaderboard-section,
 	.pvp-ad-slot {
 		margin-bottom: 20px;
 	}
@@ -2109,24 +1773,6 @@
 		margin-top: 16px;
 	}
 
-	.starting-rating-grid {
-		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		gap: 10px;
-	}
-
-	.starting-rating-grid :global(button) {
-		display: flex;
-		min-height: 78px;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-	}
-
-	.starting-rating-grid strong {
-		font-size: 1.2rem;
-	}
-
 	.rating-summary {
 		display: flex;
 		flex-wrap: wrap;
@@ -2138,188 +1784,6 @@
 	.rating-summary strong {
 		color: hsl(var(--foreground));
 		font-size: 1.4rem;
-	}
-
-	:global(.leaderboard-title) {
-		display: inline-flex;
-		align-items: center;
-		gap: 8px;
-	}
-
-	.leaderboard-table {
-		display: grid;
-		overflow: hidden;
-		border: 1px solid hsl(var(--border));
-		border-radius: 8px;
-	}
-
-	.leaderboard-row {
-		display: grid;
-		grid-template-columns: 80px minmax(0, 1fr) 110px 120px;
-		align-items: center;
-		gap: 12px;
-		min-height: 50px;
-		border-top: 1px solid hsl(var(--border));
-		padding: 10px 14px;
-	}
-
-	.leaderboard-row:first-child {
-		border-top: 0;
-	}
-
-	.leaderboard-head {
-		min-height: 38px;
-		background: hsl(var(--muted) / 0.35);
-		color: hsl(var(--muted-foreground));
-		font-size: 12px;
-		font-weight: 750;
-		text-transform: uppercase;
-	}
-
-	.leaderboard-rank {
-		color: hsl(var(--muted-foreground));
-		font-weight: 750;
-	}
-
-	.leaderboard-player {
-		min-width: 0;
-	}
-
-	.leaderboard-rating {
-		color: hsl(var(--foreground));
-		font-size: 1rem;
-		font-weight: 750;
-	}
-
-	.weekly-race-meta {
-		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 12px;
-		margin-bottom: 16px;
-	}
-
-	:global(.weekly-race-tab-list) {
-		display: inline-flex;
-		width: auto;
-		height: auto;
-		margin-bottom: 16px;
-		gap: 4px;
-		border: 1px solid hsl(var(--border));
-		border-radius: 8px;
-		background: hsl(var(--muted) / 0.28);
-		padding: 4px;
-	}
-
-	:global(.weekly-race-tab-trigger) {
-		display: inline-flex;
-		align-items: center;
-		gap: 8px;
-		min-height: 34px;
-		padding-inline: 12px;
-	}
-
-	.weekly-race-meta > div {
-		border: 1px solid hsl(var(--border));
-		border-radius: 8px;
-		padding: 12px 14px;
-	}
-
-	.weekly-race-meta span,
-	.weekly-race-history span {
-		display: block;
-		color: hsl(var(--muted-foreground));
-		font-size: 13px;
-	}
-
-	.weekly-race-meta strong {
-		display: block;
-		margin-top: 4px;
-		font-size: 1rem;
-	}
-
-	.weekly-race-history {
-		display: grid;
-		gap: 12px;
-		margin-top: 18px;
-		border-top: 1px solid hsl(var(--border));
-		padding-top: 16px;
-	}
-
-	.weekly-race-history-list {
-		display: grid;
-		gap: 8px;
-	}
-
-	.weekly-race-history-list > div {
-		display: grid;
-		grid-template-columns: 56px minmax(0, 1fr) 56px;
-		align-items: center;
-		gap: 10px;
-		min-height: 42px;
-		border: 1px solid hsl(var(--border));
-		border-radius: 8px;
-		padding: 8px 10px;
-	}
-
-	.weekly-race-history-list strong {
-		text-align: right;
-	}
-
-	.weekly-race-tutorial {
-		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		gap: 12px;
-	}
-
-	.weekly-race-tutorial > div {
-		display: grid;
-		align-content: start;
-		gap: 8px;
-		min-height: 150px;
-		border: 1px solid hsl(var(--border));
-		border-radius: 8px;
-		padding: 14px;
-	}
-
-	.weekly-race-tutorial span {
-		display: inline-flex;
-		width: 28px;
-		height: 28px;
-		align-items: center;
-		justify-content: center;
-		border-radius: 999px;
-		background: hsl(var(--primary) / 0.12);
-		color: hsl(var(--primary));
-		font-weight: 800;
-	}
-
-	.weekly-race-tutorial strong {
-		font-size: 15px;
-	}
-
-	.weekly-race-tutorial p {
-		margin: 0;
-		color: hsl(var(--muted-foreground));
-		font-size: 13px;
-		line-height: 1.45;
-	}
-
-	.leaderboard-skeleton {
-		display: grid;
-		gap: 10px;
-	}
-
-	.leaderboard-skeleton div {
-		height: 50px;
-		border-radius: 8px;
-		background: linear-gradient(
-			90deg,
-			hsl(var(--muted) / 0.45),
-			hsl(var(--muted) / 0.22),
-			hsl(var(--muted) / 0.45)
-		);
-		background-size: 200% 100%;
-		animation: pvp-skeleton 1.2s ease-in-out infinite;
 	}
 
 	.leaderboard-requirement-notice {
@@ -2553,10 +2017,6 @@
 			flex-direction: column;
 		}
 
-		.starting-rating-grid {
-			grid-template-columns: 1fr;
-		}
-
 		.elo-graph-toolbar {
 			align-items: stretch;
 			flex-direction: column;
@@ -2567,21 +2027,6 @@
 			min-width: 0;
 		}
 
-		.weekly-race-meta {
-			grid-template-columns: 1fr;
-		}
-
-		.weekly-race-tutorial {
-			grid-template-columns: 1fr;
-		}
-
-		.leaderboard-row {
-			grid-template-columns: 54px minmax(0, 1fr) 76px;
-		}
-
-		.leaderboard-row > :nth-child(4) {
-			display: none;
-		}
 	}
 
 	.pvp-top-alert {
