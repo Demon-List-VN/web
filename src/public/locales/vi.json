@@ -331,10 +331,21 @@
 		"live_progress": "Tiến độ trực tiếp",
 		"progress_graph": {
 			"title": "Biểu đồ tiến độ",
-			"description": "Tạo từ tin nhắn tiến độ của hệ thống Arena.",
-			"empty": "Chưa có tin nhắn tiến độ từ hệ thống.",
+			"description": "Tạo từ sự kiện tiến độ Arena.",
+			"empty": "Chưa có sự kiện tiến độ.",
 			"time_axis": "Thời gian",
 			"progress_axis": "Tiến độ"
+		},
+		"system_sender": "Arena",
+		"system_message": {
+			"progress": "{player} đã đạt {progress}% tiến độ.",
+			"match_end_win": "{winner} đã thắng trận. Chat sẽ mở thêm {minutes} phút rồi bị tắt.",
+			"match_end_draw": "Trận đấu kết thúc với kết quả hòa. Chat sẽ mở thêm {minutes} phút rồi bị tắt.",
+			"resignation_win": "{resigning} đã đầu hàng. {winner} đã thắng trận. Chat sẽ mở thêm {minutes} phút rồi bị tắt.",
+			"resignation_end": "{resigning} đã đầu hàng. Trận đấu kết thúc. Chat sẽ mở thêm {minutes} phút rồi bị tắt.",
+			"level_change_requested": "{requester} đã yêu cầu đổi level. Level sẽ đổi nếu đối thủ đồng ý.",
+			"level_changed": "{accepter} đã đồng ý yêu cầu đổi level của {requester}. Level trận đấu đã đổi thành #{levelId}. Tiến độ và đồng hồ đã được đặt lại.",
+			"unknown": "Sự kiện Arena"
 		},
 		"level_pending": "Đang chờ level",
 		"opponent": "Đối thủ",

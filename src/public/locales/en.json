@@ -331,10 +331,21 @@
 		"live_progress": "Live progress",
 		"progress_graph": {
 			"title": "Progress graph",
-			"description": "Built from Arena system progress messages.",
-			"empty": "No system progress messages yet.",
+			"description": "Built from Arena progress events.",
+			"empty": "No progress events yet.",
 			"time_axis": "Time",
 			"progress_axis": "Progress"
+		},
+		"system_sender": "Arena",
+		"system_message": {
+			"progress": "{player} reached {progress}% progress.",
+			"match_end_win": "{winner} won the match. Chat will remain open for {minutes} minutes, then it will be disabled.",
+			"match_end_draw": "The match ended in a draw. Chat will remain open for {minutes} minutes, then it will be disabled.",
+			"resignation_win": "{resigning} resigned. {winner} won the match. Chat will remain open for {minutes} minutes, then it will be disabled.",
+			"resignation_end": "{resigning} resigned. The match ended. Chat will remain open for {minutes} minutes, then it will be disabled.",
+			"level_change_requested": "{requester} requested a level change. The level will change if the opponent agrees.",
+			"level_changed": "{accepter} agreed to {requester}'s level change request. The match level changed to #{levelId}. Progress and timer were reset.",
+			"unknown": "Arena event"
 		},
 		"level_pending": "Level pending",
 		"opponent": "Opponent",

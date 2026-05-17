@@ -86,7 +86,6 @@
 	const POST_MATCH_CHAT_GRACE_MS = 3 * 60 * 1000;
 	const REALTIME_COALESCE_MS = 200;
 	const MESSAGE_FETCH_LIMIT = 100;
-	const PROGRESS_MESSAGE_PATTERN = /^(.+?)\s+reached\s+(\d+(?:\.\d+)?)%\s+progress\.$/i;
 
 	type ProgressGraphPoint = {
 		x: number;
@@ -632,56 +631,43 @@
 		return getPvpParticipantUid(participant) === viewerUid ? $_('pvp.you') : $_('pvp.rival');
 	}
 
-	function normalizedProgressName(value: unknown) {
-		return String(value || '')
-			.trim()
-			.toLowerCase()
-			.replace(/\s+/g, ' ');
+	function messageMetadata(message: PvpMatchMessage): Record<string, unknown> {
+		const metadata = message.metadata;
+		return metadata && typeof metadata === 'object' && !Array.isArray(metadata) ? metadata : {};
 	}
 
-	function participantProgressAliases(
-		participant: PvpParticipant,
-		viewerUid: string | null | undefined = currentUid
-	) {
-		const player = getPvpParticipantPlayer(participant);
-		const aliases = [
-			player?.name,
-			player?.uid,
-			getPvpParticipantUid(participant),
-			participantName(participant, false, viewerUid),
-			participantLabel(participant, viewerUid)
-		];
-
-		return aliases.map(normalizedProgressName).filter(Boolean);
+	function metadataText(metadata: Record<string, unknown>, key: string) {
+		const value = metadata[key];
+		return value === undefined || value === null ? '' : String(value).trim();
 	}
 
-	function parseProgressMessage(message: PvpMatchMessage) {
-		if (message.type !== 'system') return null;
+	function metadataNumber(metadata: Record<string, unknown>, key: string) {
+		const value = Number(metadata[key]);
+		return Number.isFinite(value) ? value : null;
+	}
 
-		const match = String(message.content || '').match(PROGRESS_MESSAGE_PATTERN);
-		if (!match) return null;
+	function messageMetadataKind(message: PvpMatchMessage) {
+		return metadataText(messageMetadata(message), 'kind');
+	}
 
+	function progressMessageEvent(message: PvpMatchMessage) {
+		if (message.type !== 'system' || messageMetadataKind(message) !== 'progress') return null;
+
+		const metadata = messageMetadata(message);
+		const uid = metadataText(metadata, 'uid');
+		const progress = metadataNumber(metadata, 'progress');
 		const timeMs = getTimeMs(message.created_at);
-		const progress = Number(match[2]);
-		if (!timeMs || !Number.isFinite(progress)) return null;
+		if (!uid || progress === null || !timeMs) return null;
 
 		return {
-			playerName: normalizedProgressName(match[1]),
+			uid,
 			progress: Math.max(0, Math.min(100, progress)),
 			timeMs
 		};
 	}
 
-	function messageMetadataKind(message: PvpMatchMessage) {
-		return String(message.metadata?.kind || '').trim();
-	}
-
 	function isLevelChangedMessage(message: PvpMatchMessage) {
-		return (
-			message.type === 'system' &&
-			(messageMetadataKind(message) === 'level_changed' ||
-				String(message.content || '').includes('Progress and timer were reset'))
-		);
+		return message.type === 'system' && messageMetadataKind(message) === 'level_changed';
 	}
 
 	function messagesAfterLatestLevelChange(sourceMessages: PvpMatchMessage[]) {
@@ -701,16 +687,16 @@
 	): ProgressGraphData {
 		const progressMessages = messagesAfterLatestLevelChange(sourceMessages);
 		const series = items.slice(0, 2).map((participant, index) => ({
+			uid: getPvpParticipantUid(participant) ? String(getPvpParticipantUid(participant)) : null,
 			label: participantName(participant, hideOpponentInfo, currentUid),
 			color:
 				index === 0 ? chartColor('--primary', '#2563eb') : chartColor('--destructive', '#dc2626'),
-			points: [] as ProgressGraphPoint[],
-			aliases: participantProgressAliases(participant, currentUid)
+			points: [] as ProgressGraphPoint[]
 		}));
 
 		const parsed = progressMessages
-			.map(parseProgressMessage)
-			.filter((entry): entry is NonNullable<ReturnType<typeof parseProgressMessage>> =>
+			.map(progressMessageEvent)
+			.filter((entry): entry is NonNullable<ReturnType<typeof progressMessageEvent>> =>
 				Boolean(entry)
 			)
 			.sort((a, b) => a.timeMs - b.timeMs);
@@ -725,7 +711,7 @@
 			0;
 
 		for (const entry of parsed) {
-			const target = series.find((item) => item.aliases.includes(entry.playerName));
+			const target = series.find((item) => item.uid === entry.uid);
 			if (!target) continue;
 
 			target.points.push({
@@ -738,7 +724,7 @@
 		const maxX = Math.max(60, ...series.flatMap((item) => item.points.map((point) => point.x)));
 
 		return {
-			series: series.map(({ aliases, ...item }) => item),
+			series: series.map(({ uid, ...item }) => item),
 			hasPoints: series.some((item) => item.points.length > 0),
 			minX: 0,
 			maxX
@@ -752,7 +738,7 @@
 		items: PvpParticipant[] = participants,
 		senderUid: string | null | undefined = messageSenderUid(message)
 	) {
-		if (message.type === 'system') return 'Arena';
+		if (message.type === 'system') return $_('pvp.system_sender');
 		if (senderUid === viewerUid) return $_('pvp.you');
 		if (
 			getPvpMessageSenderIsAnonymous(message) ||
@@ -768,6 +754,83 @@
 
 	function messageSenderUid(message: PvpMatchMessage) {
 		return message.senderUid || message.sender?.uid || message.player?.uid || null;
+	}
+
+	function compactNumber(value: number) {
+		return Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/\.?0+$/, '');
+	}
+
+	function systemParticipantName(uid: unknown) {
+		const value = String(uid || '').trim();
+		if (!value) return $_('pvp.rival');
+
+		const participant = participants.find(
+			(item) => String(getPvpParticipantUid(item) || '') === value
+		);
+		return participant ? participantName(participant, hideOpponentInfo, currentUid) : value;
+	}
+
+	function systemChatGraceMinutes(metadata: Record<string, unknown>) {
+		return compactNumber(
+			metadataNumber(metadata, 'chatGraceMinutes') ?? POST_MATCH_CHAT_GRACE_MS / 60000
+		);
+	}
+
+	function systemMessageContent(message: PvpMatchMessage) {
+		if (message.type !== 'system') return String(message.content || '');
+
+		const metadata = messageMetadata(message);
+		const kind = messageMetadataKind(message);
+		const minutes = systemChatGraceMinutes(metadata);
+
+		if (kind === 'progress') {
+			const progress = metadataNumber(metadata, 'progress');
+			if (progress !== null) {
+				return $_('pvp.system_message.progress', {
+					values: {
+						player: systemParticipantName(metadataText(metadata, 'uid')),
+						progress: compactNumber(progress)
+					}
+				});
+			}
+		}
+
+		if (kind === 'match_end') {
+			const winnerUid = metadataText(metadata, 'winnerUid');
+			return winnerUid
+				? $_('pvp.system_message.match_end_win', {
+						values: { winner: systemParticipantName(winnerUid), minutes }
+					})
+				: $_('pvp.system_message.match_end_draw', { values: { minutes } });
+		}
+
+		if (kind === 'resignation') {
+			const winnerUid = metadataText(metadata, 'winnerUid');
+			const resigning = systemParticipantName(metadataText(metadata, 'resigningUid'));
+			return winnerUid
+				? $_('pvp.system_message.resignation_win', {
+						values: { resigning, winner: systemParticipantName(winnerUid), minutes }
+					})
+				: $_('pvp.system_message.resignation_end', { values: { resigning, minutes } });
+		}
+
+		if (kind === 'level_change_requested') {
+			return $_('pvp.system_message.level_change_requested', {
+				values: { requester: systemParticipantName(metadataText(metadata, 'requesterUid')) }
+			});
+		}
+
+		if (kind === 'level_changed') {
+			return $_('pvp.system_message.level_changed', {
+				values: {
+					accepter: systemParticipantName(metadataText(metadata, 'accepterUid')),
+					requester: systemParticipantName(metadataText(metadata, 'requesterUid')),
+					levelId: metadataText(metadata, 'nextLevelId') || '--'
+				}
+			});
+		}
+
+		return String(message.content || '') || $_('pvp.system_message.unknown');
 	}
 
 	function messageSenderParticipantIsAnonymous(
@@ -1412,7 +1475,7 @@
 													<strong>{senderName}</strong>
 													<span>{messageTime(message)}</span>
 												</div>
-												<p>{message.content}</p>
+												<p>{systemMessageContent(message)}</p>
 											</div>
 										{/each}
 									{/if}
@@ -1528,7 +1591,7 @@
 										<strong>{senderName}</strong>
 										<span>{messageTime(message)}</span>
 									</div>
-									<p>{message.content}</p>
+									<p>{systemMessageContent(message)}</p>
 								</div>
 							{/each}
 						{/if}
