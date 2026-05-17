@@ -2,6 +2,7 @@
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import Ads from '$lib/components/ads.svelte';
+	import PlayerLink from '$lib/components/playerLink.svelte';
 	import PlayerSelector from '$lib/components/playerSelector.svelte';
 	import MatchCard from '$lib/components/pvp/MatchCard.svelte';
 	import { user } from '$lib/client';
@@ -28,6 +29,7 @@
 		getPvpMatchId,
 		getPvpMatch,
 		getPvpMatches,
+		getPvpLeaderboard,
 		getPvpMatchStartMs,
 		getPvpParticipantRatingAfter,
 		getPvpParticipantRatingBefore,
@@ -43,6 +45,7 @@
 		startPvpMatchmaking,
 		startPvpRating,
 		type PvpInvite,
+		type PvpLeaderboardPlayer,
 		type PvpMatch,
 		type PvpMatchmakingRequest,
 		type PvpMe
@@ -68,6 +71,7 @@
 		Send,
 		ShieldCheck,
 		Swords,
+		Trophy,
 		UserCheck,
 		Users,
 		X
@@ -100,8 +104,11 @@
 		outgoingInvites: []
 	};
 	let matches: PvpMatch[] = [];
+	let leaderboard: PvpLeaderboardPlayer[] = [];
 	let eloGraphFilter: (typeof ELO_GRAPH_FILTERS)[number]['key'] = '25';
 	let loading = false;
+	let leaderboardLoading = true;
+	let leaderboardError = '';
 	let actionLoading = '';
 	let initializedForUid = '';
 	let cleanupRealtime: (() => Promise<void>) | null = null;
@@ -204,6 +211,7 @@
 		};
 
 		window.addEventListener('keydown', keydownHandler);
+		refreshLeaderboard();
 	});
 
 	$: if (anonymousModeReady) {
@@ -263,6 +271,20 @@
 			matches = await getPvpMatches(await $user.token());
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.load_failed'));
+		}
+	}
+
+	async function refreshLeaderboard() {
+		leaderboardLoading = true;
+		leaderboardError = '';
+
+		try {
+			leaderboard = await getPvpLeaderboard(50);
+		} catch (error) {
+			leaderboard = [];
+			leaderboardError = error instanceof Error ? error.message : $_('pvp.toast.leaderboard_failed');
+		} finally {
+			leaderboardLoading = false;
 		}
 	}
 
@@ -1188,6 +1210,63 @@
 		<Ads dataAdFormat="auto" />
 	</div>
 
+	<section class="leaderboard-section">
+		<Card.Root>
+			<Card.Header>
+				<div class="section-heading inside">
+					<div>
+						<Card.Title class="leaderboard-title">
+							<Trophy class="h-5 w-5" />
+							{$_('pvp.leaderboard.title')}
+						</Card.Title>
+						<Card.Description>{$_('pvp.leaderboard.description')}</Card.Description>
+					</div>
+					<Button
+						variant="ghost"
+						size="icon"
+						disabled={leaderboardLoading}
+						on:click={refreshLeaderboard}
+						aria-label={$_('pvp.refresh')}
+					>
+						<RefreshCw class={`h-4 w-4 ${leaderboardLoading ? 'animate-spin' : ''}`} />
+					</Button>
+				</div>
+			</Card.Header>
+			<Card.Content>
+				{#if leaderboardLoading}
+					<div class="leaderboard-skeleton" aria-label={$_('general.loading')}>
+						<div></div>
+						<div></div>
+						<div></div>
+					</div>
+				{:else if leaderboardError}
+					<div class="empty-state">{leaderboardError}</div>
+				{:else if leaderboard.length === 0}
+					<div class="empty-state">{$_('pvp.leaderboard.empty')}</div>
+				{:else}
+					<div class="leaderboard-table" role="table" aria-label={$_('pvp.leaderboard.title')}>
+						<div class="leaderboard-row leaderboard-head" role="row">
+							<span role="columnheader">{$_('pvp.leaderboard.rank')}</span>
+							<span role="columnheader">{$_('pvp.leaderboard.player')}</span>
+							<span role="columnheader">{$_('pvp.leaderboard.rating')}</span>
+							<span role="columnheader">{$_('pvp.leaderboard.matches')}</span>
+						</div>
+						{#each leaderboard as player}
+							<div class="leaderboard-row" role="row">
+								<span class="leaderboard-rank" role="cell">#{player.rank}</span>
+								<span class="leaderboard-player" role="cell">
+									<PlayerLink {player} showAvatar truncate={28} />
+								</span>
+								<span class="leaderboard-rating" role="cell">{player.pvpRating}</span>
+								<span role="cell">{player.pvpRatedMatchCount}</span>
+							</div>
+						{/each}
+					</div>
+				{/if}
+			</Card.Content>
+		</Card.Root>
+	</section>
+
 	<Dialog.Root
 		bind:open={matchDialogOpen}
 		on:openChange={(e) => {
@@ -1687,6 +1766,7 @@
 	:global(.state-panel),
 	.active-section,
 	.rating-start-section,
+	.leaderboard-section,
 	.pvp-ad-slot {
 		margin-bottom: 20px;
 	}
@@ -1757,6 +1837,75 @@
 	.rating-summary strong {
 		color: hsl(var(--foreground));
 		font-size: 1.4rem;
+	}
+
+	:global(.leaderboard-title) {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.leaderboard-table {
+		display: grid;
+		overflow: hidden;
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+	}
+
+	.leaderboard-row {
+		display: grid;
+		grid-template-columns: 80px minmax(0, 1fr) 110px 120px;
+		align-items: center;
+		gap: 12px;
+		min-height: 50px;
+		border-top: 1px solid hsl(var(--border));
+		padding: 10px 14px;
+	}
+
+	.leaderboard-row:first-child {
+		border-top: 0;
+	}
+
+	.leaderboard-head {
+		min-height: 38px;
+		background: hsl(var(--muted) / 0.35);
+		color: hsl(var(--muted-foreground));
+		font-size: 12px;
+		font-weight: 750;
+		text-transform: uppercase;
+	}
+
+	.leaderboard-rank {
+		color: hsl(var(--muted-foreground));
+		font-weight: 750;
+	}
+
+	.leaderboard-player {
+		min-width: 0;
+	}
+
+	.leaderboard-rating {
+		color: hsl(var(--foreground));
+		font-size: 1rem;
+		font-weight: 750;
+	}
+
+	.leaderboard-skeleton {
+		display: grid;
+		gap: 10px;
+	}
+
+	.leaderboard-skeleton div {
+		height: 50px;
+		border-radius: 8px;
+		background: linear-gradient(
+			90deg,
+			hsl(var(--muted) / 0.45),
+			hsl(var(--muted) / 0.22),
+			hsl(var(--muted) / 0.45)
+		);
+		background-size: 200% 100%;
+		animation: pvp-skeleton 1.2s ease-in-out infinite;
 	}
 
 	.elo-graph-panel {
@@ -1991,6 +2140,14 @@
 		:global(.elo-filter-group) {
 			width: 100%;
 			min-width: 0;
+		}
+
+		.leaderboard-row {
+			grid-template-columns: 54px minmax(0, 1fr) 76px;
+		}
+
+		.leaderboard-row > :nth-child(4) {
+			display: none;
 		}
 	}
 

@@ -254,6 +254,15 @@
 		"pvp_rating": "PvP rating",
 		"pvp_rating_short": "{rating}",
 		"pvp_rating_summary": "Current rating {rating}, {count} ranked matches played.",
+		"leaderboard": {
+			"title": "PvP leaderboard",
+			"description": "Only players with at least 50 ranked matches are listed.",
+			"empty": "No player has reached 50 ranked matches yet.",
+			"rank": "Rank",
+			"player": "Player",
+			"rating": "Rating",
+			"matches": "Rated matches"
+		},
 		"elo_graph": {
 			"title": "Elo graph",
 			"summary": "{count} matches, {delta} Elo",
@@ -387,6 +396,7 @@
 		},
 		"toast": {
 			"load_failed": "Failed to load Arena data.",
+			"leaderboard_failed": "Failed to load PvP leaderboard.",
 			"select_starting_rating": "Choose your starting PvP rating first.",
 			"select_difficulty": "Choose a difficulty first.",
 			"select_player": "Choose a player first.",

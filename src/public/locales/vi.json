@@ -254,6 +254,15 @@
 		"pvp_rating": "Elo PvP",
 		"pvp_rating_short": "{rating}",
 		"pvp_rating_summary": "Elo hiện tại {rating}, đã chơi {count} trận xếp hạng.",
+		"leaderboard": {
+			"title": "Bảng xếp hạng PvP",
+			"description": "Chỉ hiển thị người chơi có ít nhất 50 trận xếp hạng.",
+			"empty": "Chưa có người chơi nào đạt 50 trận xếp hạng.",
+			"rank": "Hạng",
+			"player": "Người chơi",
+			"rating": "Elo",
+			"matches": "Trận xếp hạng"
+		},
 		"elo_graph": {
 			"title": "Biểu đồ Elo",
 			"summary": "{count} trận, {delta} Elo",
@@ -387,6 +396,7 @@
 		},
 		"toast": {
 			"load_failed": "Tải dữ liệu Arena thất bại.",
+			"leaderboard_failed": "Tải bảng xếp hạng PvP thất bại.",
 			"select_starting_rating": "Hãy chọn Elo PvP khởi điểm trước.",
 			"select_difficulty": "Hãy chọn độ khó trước.",
 			"select_player": "Hãy chọn người chơi trước.",

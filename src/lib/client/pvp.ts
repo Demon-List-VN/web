@@ -228,6 +228,12 @@ export type PvpMe = {
 	outgoingInvites: PvpInvite[];
 };
 
+export type PvpLeaderboardPlayer = PvpPlayer & {
+	rank?: number;
+	pvpRating: number;
+	pvpRatedMatchCount: number;
+};
+
 export const PVP_ACTIVE_MATCH_STATUSES = ['pending', 'in_progress', 'waiting_result'];
 export const PVP_FINISHED_MATCH_STATUSES = ['completed', 'cancelled', 'disputed'];
 export const PVP_DIFFICULTIES: PvpDifficulty[] = ['easy', 'medium', 'hard'];
@@ -406,6 +412,17 @@ export async function getPvpInvite(token: string | null | undefined, id: number 
 
 export async function getPvpMatches(token?: string | null) {
 	return normalizePvpMatches(await pvpRequest('/pvp/matches', { token }));
+}
+
+export async function getPvpLeaderboard(limit = 50) {
+	const params = new URLSearchParams({ limit: String(limit) });
+	const payload = await pvpRequest<PvpLeaderboardPlayer[] | { data?: PvpLeaderboardPlayer[] }>(
+		`/pvp/leaderboard?${params}`
+	);
+
+	if (Array.isArray(payload)) return payload;
+	if (Array.isArray(payload?.data)) return payload.data;
+	return [];
 }
 
 export async function getPublicPvpMatchesForPlayer(uid: string, limit = 25) {
