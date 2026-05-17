@@ -156,6 +156,8 @@
 	$: eloGraphDelta =
 		eloGraphStart !== null && eloGraphEnd !== null ? Math.round(eloGraphEnd - eloGraphStart) : null;
 	$: eloGraphMatchCount = Math.max(0, eloGraphPoints.length - 1);
+	$: leaderboardMatchesNeeded = Math.max(0, 50 - Number(pvpRatedMatchCount || 0));
+	$: showLeaderboardRequirementNotice = pvpRatedMatchCount >= 5 && pvpRatedMatchCount < 50;
 	$: currentSearchRange =
 		lobby.matchmaking?.currentSearchRange ?? lobby.matchmaking?.current_search_range ?? null;
 	$: queueStartedAt =
@@ -1459,6 +1461,13 @@
 									</Tabs.List>
 								</Tabs.Root>
 							</div>
+							{#if showLeaderboardRequirementNotice}
+								<div class="leaderboard-requirement-notice">
+									{$_('pvp.leaderboard.need_more_matches', {
+										values: { count: leaderboardMatchesNeeded }
+									})}
+								</div>
+							{/if}
 							{#if eloGraphPoints.length > 1}
 								<div class="elo-chart-wrapper">
 									<canvas
@@ -1945,6 +1954,17 @@
 		);
 		background-size: 200% 100%;
 		animation: pvp-skeleton 1.2s ease-in-out infinite;
+	}
+
+	.leaderboard-requirement-notice {
+		border: 1px solid hsl(var(--primary) / 0.25);
+		border-radius: 8px;
+		background: hsl(var(--primary) / 0.08);
+		padding: 10px 12px;
+		color: hsl(var(--foreground));
+		font-size: 13px;
+		font-weight: 650;
+		line-height: 1.4;
 	}
 
 	.elo-graph-panel {

@@ -263,6 +263,7 @@
 			"title": "Bảng xếp hạng PvP",
 			"description": "Chỉ hiển thị người chơi có ít nhất 50 trận xếp hạng.",
 			"empty": "Chưa có người chơi nào đạt 50 trận xếp hạng.",
+			"need_more_matches": "Cần thêm {count} trận để lên bảng xếp hạng.",
 			"rank": "Hạng",
 			"player": "Người chơi",
 			"rating": "Elo",
