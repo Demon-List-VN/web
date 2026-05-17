@@ -257,6 +257,7 @@
 		"tabs": {
 			"label": "Mục Arena",
 			"lobby": "Sảnh",
+			"weekly_race": "Đua tuần",
 			"leaderboard": "Bảng xếp hạng"
 		},
 		"leaderboard": {
@@ -269,6 +270,17 @@
 			"player": "Người chơi",
 			"rating": "Elo",
 			"matches": "Trận xếp hạng"
+		},
+		"weekly_race": {
+			"title": "Đua PvP hằng tuần",
+			"description": "Thắng trận ghép xếp hạng để nhận điểm tuần. Bảng sẽ reset vào mỗi thứ Hai theo giờ Việt Nam.",
+			"current_week": "Tuần hiện tại",
+			"reset_in": "Reset sau",
+			"empty": "Tuần này chưa có trận thắng xếp hạng nào.",
+			"points": "Điểm",
+			"wins": "Thắng",
+			"history_title": "Tuần trước",
+			"history_empty": "Chưa có kết quả tuần trước."
 		},
 		"elo_graph": {
 			"title": "Biểu đồ Elo",
@@ -415,6 +427,7 @@
 		"toast": {
 			"load_failed": "Tải dữ liệu Arena thất bại.",
 			"leaderboard_failed": "Tải bảng xếp hạng PvP thất bại.",
+			"weekly_race_failed": "Tải đua PvP hằng tuần thất bại.",
 			"select_starting_rating": "Hãy chọn Elo PvP khởi điểm trước.",
 			"select_difficulty": "Hãy chọn độ khó trước.",
 			"select_player": "Hãy chọn người chơi trước.",

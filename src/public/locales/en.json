@@ -257,6 +257,7 @@
 		"tabs": {
 			"label": "Arena sections",
 			"lobby": "Lobby",
+			"weekly_race": "Weekly Race",
 			"leaderboard": "Leaderboard"
 		},
 		"leaderboard": {
@@ -269,6 +270,17 @@
 			"player": "Player",
 			"rating": "Rating",
 			"matches": "Rated matches"
+		},
+		"weekly_race": {
+			"title": "Weekly PvP Race",
+			"description": "Win ranked matchmaking matches to earn weekly points. The race resets every Monday in Vietnam time.",
+			"current_week": "Current week",
+			"reset_in": "Resets in",
+			"empty": "No ranked wins this week yet.",
+			"points": "Points",
+			"wins": "Wins",
+			"history_title": "Previous week",
+			"history_empty": "No previous weekly result yet."
 		},
 		"elo_graph": {
 			"title": "Elo graph",
@@ -415,6 +427,7 @@
 		"toast": {
 			"load_failed": "Failed to load Arena data.",
 			"leaderboard_failed": "Failed to load PvP leaderboard.",
+			"weekly_race_failed": "Failed to load weekly PvP race.",
 			"select_starting_rating": "Choose your starting PvP rating first.",
 			"select_difficulty": "Choose a difficulty first.",
 			"select_player": "Choose a player first.",

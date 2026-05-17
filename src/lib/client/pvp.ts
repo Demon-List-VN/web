@@ -234,6 +234,35 @@ export type PvpLeaderboardPlayer = PvpPlayer & {
 	pvpRatedMatchCount: number;
 };
 
+export type PvpWeeklyRaceWeek = {
+	id?: number;
+	weekStartAt?: string | null;
+	week_start_at?: string | null;
+	weekEndAt?: string | null;
+	week_end_at?: string | null;
+	status?: 'active' | 'finalized' | string;
+	finalizedAt?: string | null;
+	finalized_at?: string | null;
+};
+
+export type PvpWeeklyRacePlayer = {
+	rank?: number;
+	uid?: string;
+	points: number;
+	wins: number;
+	updated_at?: string | null;
+	player?: PvpPlayer | null;
+	players?: PvpPlayer | null;
+};
+
+export type PvpWeeklyRace = {
+	week: PvpWeeklyRaceWeek | null;
+	currentWeek: PvpWeeklyRaceWeek | null;
+	previousWeek: PvpWeeklyRaceWeek | null;
+	leaderboard: PvpWeeklyRacePlayer[];
+	previousLeaderboard: PvpWeeklyRacePlayer[];
+};
+
 export const PVP_ACTIVE_MATCH_STATUSES = ['pending', 'in_progress', 'waiting_result'];
 export const PVP_FINISHED_MATCH_STATUSES = ['completed', 'cancelled', 'disputed'];
 export const PVP_DIFFICULTIES: PvpDifficulty[] = ['easy', 'medium', 'hard'];
@@ -423,6 +452,22 @@ export async function getPvpLeaderboard(limit = 50) {
 	if (Array.isArray(payload)) return payload;
 	if (Array.isArray(payload?.data)) return payload.data;
 	return [];
+}
+
+export async function getPvpWeeklyRace(week: 'current' | 'previous' | string = 'current', limit = 50) {
+	const params = new URLSearchParams({ week, limit: String(limit) });
+	const payload = await pvpRequest<PvpWeeklyRace | { data?: PvpWeeklyRace }>(
+		`/pvp/weekly-race?${params}`
+	);
+
+	const race = ('data' in payload && payload.data ? payload.data : payload) as PvpWeeklyRace;
+	return {
+		week: race.week ?? null,
+		currentWeek: race.currentWeek ?? null,
+		previousWeek: race.previousWeek ?? null,
+		leaderboard: Array.isArray(race.leaderboard) ? race.leaderboard : [],
+		previousLeaderboard: Array.isArray(race.previousLeaderboard) ? race.previousLeaderboard : []
+	};
 }
 
 export async function getPublicPvpMatchesForPlayer(uid: string, limit = 25) {
