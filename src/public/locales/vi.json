@@ -261,9 +261,10 @@
 		},
 		"leaderboard": {
 			"title": "Bảng xếp hạng PvP",
-			"description": "Chỉ hiển thị người chơi có ít nhất 50 trận xếp hạng.",
+			"description": "Chỉ hiển thị người chơi có ít nhất 50 trận xếp hạng và 1 trận xếp hạng trong 7 ngày gần nhất.",
 			"empty": "Chưa có người chơi nào đạt 50 trận xếp hạng.",
-			"need_more_matches": "Cần thêm {count} trận để lên bảng xếp hạng.",
+			"need_more_matches": "Cần thêm {count} trận xếp hạng để lên bảng xếp hạng. Bạn cũng cần 1 trận xếp hạng trong 7 ngày gần nhất.",
+			"need_recent_match": "Hãy chơi 1 trận xếp hạng trong 7 ngày gần nhất để lên bảng xếp hạng.",
 			"rank": "Hạng",
 			"player": "Người chơi",
 			"rating": "Elo",

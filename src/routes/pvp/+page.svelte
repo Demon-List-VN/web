@@ -157,7 +157,9 @@
 		eloGraphStart !== null && eloGraphEnd !== null ? Math.round(eloGraphEnd - eloGraphStart) : null;
 	$: eloGraphMatchCount = Math.max(0, eloGraphPoints.length - 1);
 	$: leaderboardMatchesNeeded = Math.max(0, 50 - Number(pvpRatedMatchCount || 0));
-	$: showLeaderboardRequirementNotice = pvpRatedMatchCount >= 5 && pvpRatedMatchCount < 50;
+	$: hasRecentLeaderboardMatch = hasRecentRatedPvpMatch(matches);
+	$: showLeaderboardMatchCountNotice = pvpRatedMatchCount >= 5 && pvpRatedMatchCount < 50;
+	$: showLeaderboardActivityNotice = pvpRatedMatchCount >= 50 && !hasRecentLeaderboardMatch;
 	$: currentSearchRange =
 		lobby.matchmaking?.currentSearchRange ?? lobby.matchmaking?.current_search_range ?? null;
 	$: queueStartedAt =
@@ -447,6 +449,31 @@
 		).getTime();
 
 		return getPvpMatchStartMs(match) ?? (Number.isFinite(fallbackMs) ? fallbackMs : 0);
+	}
+
+	function getRatedMatchActivityMs(match: PvpMatch) {
+		const ms = new Date(
+			match.ratingAppliedAt ??
+				match.rating_applied_at ??
+				match.endedAt ??
+				match.endAt ??
+				match.endsAt ??
+				match.created_at ??
+				0
+		).getTime();
+
+		return Number.isFinite(ms) ? ms : 0;
+	}
+
+	function hasRecentRatedPvpMatch(sourceMatches: PvpMatch[]) {
+		const activeSince = Date.now() - 7 * 24 * 60 * 60 * 1000;
+
+		return sourceMatches.some(
+			(match) =>
+				getPvpStatus(match, '') === 'completed' &&
+				isPvpMatchRanked(match) &&
+				getRatedMatchActivityMs(match) >= activeSince
+		);
 	}
 
 	function updateInviteMatches(invites: PvpInvite[], nextMatch: PvpMatch) {
@@ -1461,11 +1488,15 @@
 									</Tabs.List>
 								</Tabs.Root>
 							</div>
-							{#if showLeaderboardRequirementNotice}
+							{#if showLeaderboardMatchCountNotice}
 								<div class="leaderboard-requirement-notice">
 									{$_('pvp.leaderboard.need_more_matches', {
 										values: { count: leaderboardMatchesNeeded }
 									})}
+								</div>
+							{:else if showLeaderboardActivityNotice}
+								<div class="leaderboard-requirement-notice">
+									{$_('pvp.leaderboard.need_recent_match')}
 								</div>
 							{/if}
 							{#if eloGraphPoints.length > 1}

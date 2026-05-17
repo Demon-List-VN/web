@@ -261,9 +261,10 @@
 		},
 		"leaderboard": {
 			"title": "PvP leaderboard",
-			"description": "Only players with at least 50 ranked matches are listed.",
+			"description": "Only players with at least 50 ranked matches and 1 rated match in the last 7 days are listed.",
 			"empty": "No player has reached 50 ranked matches yet.",
-			"need_more_matches": "Need {count} more matches to be on the leaderboard.",
+			"need_more_matches": "Need {count} more rated matches to be on the leaderboard. You also need 1 rated match in the last 7 days.",
+			"need_recent_match": "Play 1 rated match in the last 7 days to be on the leaderboard.",
 			"rank": "Rank",
 			"player": "Player",
 			"rating": "Rating",
