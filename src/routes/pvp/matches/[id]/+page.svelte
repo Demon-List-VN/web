@@ -2,6 +2,7 @@
 	import { browser } from '$app/environment';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
+	import Ads from '$lib/components/ads.svelte';
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import { user } from '$lib/client';
 	import supabase from '$lib/client/supabase';
@@ -1093,6 +1094,10 @@
 		{/if}
 	</section>
 
+	<div class="pvp-match-ad-slot">
+		<Ads dataAdFormat="auto" />
+	</div>
+
 	{#if !$user.checked}
 		<Card.Root>
 			<Card.Content class="state-content">
@@ -1608,6 +1613,11 @@
 
 	.match-topbar {
 		margin-bottom: 24px;
+	}
+
+	.pvp-match-ad-slot {
+		min-height: 90px;
+		margin-bottom: 20px;
 	}
 
 	.topbar-actions {
