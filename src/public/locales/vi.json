@@ -274,13 +274,26 @@
 		"weekly_race": {
 			"title": "Đua PvP hằng tuần",
 			"description": "Thắng trận ghép xếp hạng để nhận điểm tuần. Bảng sẽ reset vào mỗi thứ Hai theo giờ Việt Nam.",
+			"tabs": {
+				"label": "Mục đua tuần",
+				"standings": "Bảng điểm",
+				"tutorial": "Hướng dẫn"
+			},
 			"current_week": "Tuần hiện tại",
 			"reset_in": "Reset sau",
 			"empty": "Tuần này chưa có trận thắng xếp hạng nào.",
 			"points": "Điểm",
 			"wins": "Thắng",
 			"history_title": "Tuần trước",
-			"history_empty": "Chưa có kết quả tuần trước."
+			"history_empty": "Chưa có kết quả tuần trước.",
+			"tutorial": {
+				"queue_title": "Chơi ghép trận xếp hạng",
+				"queue_description": "Chỉ trận ghép xếp hạng được tính cho đua tuần. Lời mời riêng và trận không xếp hạng không cộng điểm.",
+				"score_title": "Thắng được một điểm",
+				"score_description": "Một trận thắng cộng +1 điểm. Nếu người chơi đầu hàng hoặc bỏ cuộc, đối thủ nhận điểm. Thua và hòa được 0 điểm.",
+				"reset_title": "Reset mỗi tuần",
+				"reset_description": "Bảng chốt vào cuối Chủ nhật và cuộc đua mới bắt đầu lúc 00:00 thứ Hai theo giờ Việt Nam."
+			}
 		},
 		"elo_graph": {
 			"title": "Biểu đồ Elo",
