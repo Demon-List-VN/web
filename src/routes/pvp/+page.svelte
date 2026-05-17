@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
+	import Ads from '$lib/components/ads.svelte';
 	import PlayerSelector from '$lib/components/playerSelector.svelte';
 	import MatchCard from '$lib/components/pvp/MatchCard.svelte';
 	import { user } from '$lib/client';
@@ -1183,6 +1184,10 @@
 		</a>
 	</section>
 
+	<div class="pvp-ad-slot">
+		<Ads dataAdFormat="auto" />
+	</div>
+
 	<Dialog.Root
 		bind:open={matchDialogOpen}
 		on:openChange={(e) => {
@@ -1681,8 +1686,13 @@
 
 	:global(.state-panel),
 	.active-section,
-	.rating-start-section {
+	.rating-start-section,
+	.pvp-ad-slot {
 		margin-bottom: 20px;
+	}
+
+	.pvp-ad-slot {
+		min-height: 90px;
 	}
 
 	:global(.state-content) {
