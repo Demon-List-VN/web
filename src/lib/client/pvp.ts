@@ -142,6 +142,13 @@ export type PvpMatch = {
 	[key: string]: unknown;
 };
 
+export type PvpMatchesPage = {
+	data: PvpMatch[];
+	total: number;
+	page: number;
+	limit: number;
+};
+
 export type PvpMatchMessage = {
 	id?: number | string;
 	matchId?: number | string;
@@ -406,6 +413,29 @@ export async function getPublicPvpMatchesForPlayer(uid: string, limit = 25) {
 	return normalizePvpMatches(
 		await pvpRequest(`/pvp/players/${encodeURIComponent(uid)}/matches?${params}`)
 	);
+}
+
+export async function getPublicPvpMatchesPageForPlayer(uid: string, page = 1, limit = 25) {
+	const params = new URLSearchParams({ limit: String(limit), page: String(page) });
+	const payload = await pvpRequest<PvpMatchesPage | PvpMatch[]>(
+		`/pvp/players/${encodeURIComponent(uid)}/matches?${params}`
+	);
+
+	if (Array.isArray(payload)) {
+		return {
+			data: normalizePvpMatches(payload),
+			total: payload.length,
+			page,
+			limit
+		};
+	}
+
+	return {
+		data: normalizePvpMatches(payload?.data ?? []),
+		total: Number.isFinite(Number(payload?.total)) ? Number(payload.total) : 0,
+		page: Number.isFinite(Number(payload?.page)) ? Number(payload.page) : page,
+		limit: Number.isFinite(Number(payload?.limit)) ? Number(payload.limit) : limit
+	};
 }
 
 export async function getPvpMatch(token: string | null | undefined, id: number | string) {
