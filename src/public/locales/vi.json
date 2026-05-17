@@ -254,6 +254,11 @@
 		"pvp_rating": "Elo PvP",
 		"pvp_rating_short": "{rating}",
 		"pvp_rating_summary": "Elo hiện tại {rating}, đã chơi {count} trận xếp hạng.",
+		"tabs": {
+			"label": "Mục Arena",
+			"lobby": "Sảnh",
+			"leaderboard": "Bảng xếp hạng"
+		},
 		"leaderboard": {
 			"title": "Bảng xếp hạng PvP",
 			"description": "Chỉ hiển thị người chơi có ít nhất 50 trận xếp hạng.",

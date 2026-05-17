@@ -105,6 +105,7 @@
 	};
 	let matches: PvpMatch[] = [];
 	let leaderboard: PvpLeaderboardPlayer[] = [];
+	let activePvpTab = 'lobby';
 	let eloGraphFilter: (typeof ELO_GRAPH_FILTERS)[number]['key'] = '25';
 	let loading = false;
 	let leaderboardLoading = true;
@@ -1210,62 +1211,78 @@
 		<Ads dataAdFormat="auto" />
 	</div>
 
-	<section class="leaderboard-section">
-		<Card.Root>
-			<Card.Header>
-				<div class="section-heading inside">
-					<div>
-						<Card.Title class="leaderboard-title">
-							<Trophy class="h-5 w-5" />
-							{$_('pvp.leaderboard.title')}
-						</Card.Title>
-						<Card.Description>{$_('pvp.leaderboard.description')}</Card.Description>
-					</div>
-					<Button
-						variant="ghost"
-						size="icon"
-						disabled={leaderboardLoading}
-						on:click={refreshLeaderboard}
-						aria-label={$_('pvp.refresh')}
-					>
-						<RefreshCw class={`h-4 w-4 ${leaderboardLoading ? 'animate-spin' : ''}`} />
-					</Button>
-				</div>
-			</Card.Header>
-			<Card.Content>
-				{#if leaderboardLoading}
-					<div class="leaderboard-skeleton" aria-label={$_('general.loading')}>
-						<div></div>
-						<div></div>
-						<div></div>
-					</div>
-				{:else if leaderboardError}
-					<div class="empty-state">{leaderboardError}</div>
-				{:else if leaderboard.length === 0}
-					<div class="empty-state">{$_('pvp.leaderboard.empty')}</div>
-				{:else}
-					<div class="leaderboard-table" role="table" aria-label={$_('pvp.leaderboard.title')}>
-						<div class="leaderboard-row leaderboard-head" role="row">
-							<span role="columnheader">{$_('pvp.leaderboard.rank')}</span>
-							<span role="columnheader">{$_('pvp.leaderboard.player')}</span>
-							<span role="columnheader">{$_('pvp.leaderboard.rating')}</span>
-							<span role="columnheader">{$_('pvp.leaderboard.matches')}</span>
-						</div>
-						{#each leaderboard as player}
-							<div class="leaderboard-row" role="row">
-								<span class="leaderboard-rank" role="cell">#{player.rank}</span>
-								<span class="leaderboard-player" role="cell">
-									<PlayerLink {player} showAvatar truncate={28} />
-								</span>
-								<span class="leaderboard-rating" role="cell">{player.pvpRating}</span>
-								<span role="cell">{player.pvpRatedMatchCount}</span>
+	<Tabs.Root bind:value={activePvpTab}>
+		<Tabs.List class="pvp-tab-list py-[20px]" aria-label={$_('pvp.tabs.label')}>
+			<Tabs.Trigger value="lobby" class="pvp-tab-trigger">
+				<Swords class="h-4 w-4" />
+				{$_('pvp.tabs.lobby')}
+			</Tabs.Trigger>
+			<Tabs.Trigger value="leaderboard" class="pvp-tab-trigger">
+				<Trophy class="h-4 w-4" />
+				{$_('pvp.tabs.leaderboard')}
+			</Tabs.Trigger>
+		</Tabs.List>
+
+		<Tabs.Content value="leaderboard">
+			<section class="leaderboard-section">
+				<Card.Root>
+					<Card.Header>
+						<div class="section-heading inside">
+							<div>
+								<Card.Title class="leaderboard-title">
+									<Trophy class="h-5 w-5" />
+									{$_('pvp.leaderboard.title')}
+								</Card.Title>
+								<Card.Description>{$_('pvp.leaderboard.description')}</Card.Description>
 							</div>
-						{/each}
-					</div>
-				{/if}
-			</Card.Content>
-		</Card.Root>
-	</section>
+							<Button
+								variant="ghost"
+								size="icon"
+								disabled={leaderboardLoading}
+								on:click={refreshLeaderboard}
+								aria-label={$_('pvp.refresh')}
+							>
+								<RefreshCw class={`h-4 w-4 ${leaderboardLoading ? 'animate-spin' : ''}`} />
+							</Button>
+						</div>
+					</Card.Header>
+					<Card.Content>
+						{#if leaderboardLoading}
+							<div class="leaderboard-skeleton" aria-label={$_('general.loading')}>
+								<div></div>
+								<div></div>
+								<div></div>
+							</div>
+						{:else if leaderboardError}
+							<div class="empty-state">{leaderboardError}</div>
+						{:else if leaderboard.length === 0}
+							<div class="empty-state">{$_('pvp.leaderboard.empty')}</div>
+						{:else}
+							<div class="leaderboard-table" role="table" aria-label={$_('pvp.leaderboard.title')}>
+								<div class="leaderboard-row leaderboard-head" role="row">
+									<span role="columnheader">{$_('pvp.leaderboard.rank')}</span>
+									<span role="columnheader">{$_('pvp.leaderboard.player')}</span>
+									<span role="columnheader">{$_('pvp.leaderboard.rating')}</span>
+									<span role="columnheader">{$_('pvp.leaderboard.matches')}</span>
+								</div>
+								{#each leaderboard as player}
+									<div class="leaderboard-row" role="row">
+										<span class="leaderboard-rank" role="cell">#{player.rank}</span>
+										<span class="leaderboard-player" role="cell">
+											<PlayerLink {player} showAvatar truncate={28} />
+										</span>
+										<span class="leaderboard-rating" role="cell">{player.pvpRating}</span>
+										<span role="cell">{player.pvpRatedMatchCount}</span>
+									</div>
+								{/each}
+							</div>
+						{/if}
+					</Card.Content>
+				</Card.Root>
+			</section>
+		</Tabs.Content>
+
+		<Tabs.Content value="lobby">
 
 	<Dialog.Root
 		bind:open={matchDialogOpen}
@@ -1669,6 +1686,8 @@
 			</Card.Root>
 		</section>
 	{/if}
+		</Tabs.Content>
+	</Tabs.Root>
 </main>
 
 <style>
@@ -1781,6 +1800,26 @@
 		justify-content: center;
 		gap: 10px;
 		min-height: 160px;
+	}
+
+	:global(.pvp-tab-list) {
+		display: inline-flex;
+		width: auto;
+		height: auto;
+		margin-bottom: 20px;
+		gap: 4px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		background: hsl(var(--muted) / 0.28);
+		padding: 4px;
+	}
+
+	:global(.pvp-tab-trigger) {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		min-height: 36px;
+		padding-inline: 14px;
 	}
 
 	:global(.auth-content) h2 {

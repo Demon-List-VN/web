@@ -254,6 +254,11 @@
 		"pvp_rating": "PvP rating",
 		"pvp_rating_short": "{rating}",
 		"pvp_rating_summary": "Current rating {rating}, {count} ranked matches played.",
+		"tabs": {
+			"label": "Arena sections",
+			"lobby": "Lobby",
+			"leaderboard": "Leaderboard"
+		},
 		"leaderboard": {
 			"title": "PvP leaderboard",
 			"description": "Only players with at least 50 ranked matches are listed.",
