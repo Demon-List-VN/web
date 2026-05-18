@@ -624,7 +624,10 @@
 		"clear_all": "Clear all",
 		"no_noti": "Empty",
 		"navigate": "Click to navigate",
-		"ago": "ago"
+		"ago": "ago",
+		"unread": "unread",
+		"loading": "Loading...",
+		"close": "Close notification"
 	},
 	"payment": {
 		"recipent": {

@@ -623,7 +623,10 @@
 		"clear_all": "Xoá toàn bộ",
 		"no_noti": "Trống",
 		"navigate": "Bấm để chuyển hướng",
-		"ago": "trước"
+		"ago": "trước",
+		"unread": "chưa đọc",
+		"loading": "Đang tải...",
+		"close": "Đóng thông báo"
 	},
 	"payment": {
 		"recipent": {
