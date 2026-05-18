@@ -470,10 +470,10 @@
 
 	.notificationPopups {
 		position: fixed;
-		top: 62px;
-		left: 16px;
+		top: calc(48px + 12px);
+		right: 16px;
 		z-index: 100000;
-		width: min(360px, calc(100vw - 32px));
+		width: min(380px, calc(100vw - 32px));
 		display: grid;
 		gap: 10px;
 		pointer-events: none;
@@ -484,12 +484,17 @@
 		grid-template-columns: 32px 1fr 26px;
 		align-items: start;
 		gap: 10px;
-		padding: 12px;
+		min-height: 76px;
+		padding: 12px 12px 12px 10px;
 		border: 1px solid var(--border1);
+		border-left: 3px solid #38bdf8;
 		border-radius: 8px;
-		background: hsl(var(--popover));
+		background-color: hsl(var(--popover));
+		background-image: linear-gradient(135deg, rgb(56 189 248 / 12%), transparent 58%);
 		color: var(--textColor);
-		box-shadow: 0 18px 50px rgb(0 0 0 / 35%);
+		box-shadow:
+			0 18px 50px rgb(0 0 0 / 35%),
+			0 0 0 1px rgb(255 255 255 / 4%) inset;
 		pointer-events: auto;
 		animation: popupIn 0.18s ease-out;
 	}
