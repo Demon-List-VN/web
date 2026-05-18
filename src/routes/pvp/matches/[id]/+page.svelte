@@ -776,17 +776,61 @@
 		);
 	}
 
+	function escapeRegExp(value: string) {
+		return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+	}
+
+	function hiddenOpponentRedactionValues(
+		items: PvpParticipant[] = participants,
+		hideInfo: boolean = hideOpponentInfo,
+		viewerUid: string | null | undefined = currentUid
+	) {
+		if (!hideInfo) return [];
+
+		const values = new Set<string>();
+		const addValue = (value: unknown) => {
+			const text = String(value || '').trim();
+			if (text) values.add(text);
+		};
+
+		for (const participant of items) {
+			if (!shouldHideParticipantInfo(participant, hideInfo, viewerUid)) continue;
+
+			const player = getPvpParticipantPlayer(participant);
+			addValue(getPvpParticipantUid(participant));
+			addValue(participant.userId);
+			addValue(participant.playerId);
+			addValue(player?.uid);
+			addValue(player?.id);
+			addValue(player?.name);
+		}
+
+		return [...values].sort((left, right) => right.length - left.length);
+	}
+
+	function redactHiddenOpponentInfo(content: string) {
+		const replacement = $_('pvp.hidden_opponent');
+		return hiddenOpponentRedactionValues().reduce((text, value) => {
+			const pattern = new RegExp(
+				`(^|[^\\p{L}\\p{N}_])(${escapeRegExp(value)})(?=$|[^\\p{L}\\p{N}_])`,
+				'gu'
+			);
+			return text.replace(pattern, `$1${replacement}`);
+		}, content);
+	}
+
 	function systemMessageContent(message: PvpMatchMessage) {
 		if (message.type !== 'system') return String(message.content || '');
 
 		const metadata = messageMetadata(message);
 		const kind = messageMetadataKind(message);
 		const minutes = systemChatGraceMinutes(metadata);
+		let content = '';
 
 		if (kind === 'progress') {
 			const progress = metadataNumber(metadata, 'progress');
 			if (progress !== null) {
-				return $_('pvp.system_message.progress', {
+				content = $_('pvp.system_message.progress', {
 					values: {
 						player: systemParticipantName(metadataText(metadata, 'uid')),
 						progress: compactNumber(progress)
@@ -797,7 +841,7 @@
 
 		if (kind === 'match_end') {
 			const winnerUid = metadataText(metadata, 'winnerUid');
-			return winnerUid
+			content = winnerUid
 				? $_('pvp.system_message.match_end_win', {
 						values: { winner: systemParticipantName(winnerUid), minutes }
 					})
@@ -807,7 +851,7 @@
 		if (kind === 'resignation') {
 			const winnerUid = metadataText(metadata, 'winnerUid');
 			const resigning = systemParticipantName(metadataText(metadata, 'resigningUid'));
-			return winnerUid
+			content = winnerUid
 				? $_('pvp.system_message.resignation_win', {
 						values: { resigning, winner: systemParticipantName(winnerUid), minutes }
 					})
@@ -815,13 +859,13 @@
 		}
 
 		if (kind === 'level_change_requested') {
-			return $_('pvp.system_message.level_change_requested', {
+			content = $_('pvp.system_message.level_change_requested', {
 				values: { requester: systemParticipantName(metadataText(metadata, 'requesterUid')) }
 			});
 		}
 
 		if (kind === 'level_changed') {
-			return $_('pvp.system_message.level_changed', {
+			content = $_('pvp.system_message.level_changed', {
 				values: {
 					accepter: systemParticipantName(metadataText(metadata, 'accepterUid')),
 					requester: systemParticipantName(metadataText(metadata, 'requesterUid')),
@@ -830,7 +874,9 @@
 			});
 		}
 
-		return String(message.content || '') || $_('pvp.system_message.unknown');
+		return redactHiddenOpponentInfo(
+			content || String(message.content || '') || $_('pvp.system_message.unknown')
+		);
 	}
 
 	function messageSenderParticipantIsAnonymous(
@@ -1294,7 +1340,7 @@
 												</Avatar.Root>
 												<div class="participant-name">
 													{#if !participantMasked && participantPlayer?.uid}
-														<PlayerLink player={participantPlayer} truncate={26} />
+														<PlayerLink player={participantPlayer} truncate={26} showAvatar />
 													{:else}
 														<strong>{participantDisplayName}</strong>
 													{/if}
