@@ -168,6 +168,7 @@
 	$: eloGraphDelta =
 		eloGraphStart !== null && eloGraphEnd !== null ? Math.round(eloGraphEnd - eloGraphStart) : null;
 	$: eloGraphMatchCount = Math.max(0, eloGraphPoints.length - 1);
+	$: pvpWinLossStats = getPvpWinLossStats(matches, currentUid);
 	$: currentWeeklyRacePoints = getCurrentWeeklyRacePoints(weeklyRace, currentUid, matches);
 	$: leaderboardMatchesNeeded = Math.max(0, 50 - Number(pvpRatedMatchCount || 0));
 	$: hasRecentLeaderboardMatch = hasRecentRatedPvpMatch(matches);
@@ -510,6 +511,30 @@
 				getPvpStatus(match, '') === 'completed' &&
 				isPvpMatchRanked(match) &&
 				getRatedMatchActivityMs(match) >= activeSince
+		);
+	}
+
+	function getPvpWinLossStats(sourceMatches: PvpMatch[], uid: string | null | undefined) {
+		if (!uid) return { wins: 0, losses: 0 };
+
+		return sourceMatches.reduce<{ wins: number; losses: number }>(
+			(stats, match) => {
+				if (getPvpStatus(match, '') !== 'completed' || !isPvpMatchRanked(match)) {
+					return stats;
+				}
+
+				const winnerUid = getPvpWinnerUid(match);
+				if (!winnerUid) return stats;
+
+				if (String(winnerUid) === String(uid)) {
+					stats.wins += 1;
+				} else if (getPvpSelfParticipant(match, uid)) {
+					stats.losses += 1;
+				}
+
+				return stats;
+			},
+			{ wins: 0, losses: 0 }
 		);
 	}
 
@@ -1453,6 +1478,10 @@
 											<strong>{pvpRating ?? '--'}</strong>
 										</div>
 										<div>
+											<span>{$_('pvp.result.win')} / {$_('pvp.result.loss')}</span>
+											<strong>{pvpWinLossStats.wins} / {pvpWinLossStats.losses}</strong>
+										</div>
+										<div>
 											<span>{$_('pvp.weekly_race_points')}</span>
 											<strong>{currentWeeklyRacePoints}</strong>
 										</div>
@@ -1893,7 +1922,7 @@
 
 	.summary-stats {
 		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
+		grid-template-columns: repeat(3, minmax(0, 1fr));
 		gap: 12px;
 	}
 
