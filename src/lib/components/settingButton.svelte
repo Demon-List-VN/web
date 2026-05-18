@@ -124,8 +124,13 @@
 
 <Dialog.Root bind:open={settingsOpen}>
 	<Dialog.Trigger let:builder>
-		<Button builders={[builder]} variant="outline" size="icon">
-			<Gear class="h-[1.2rem] w-[1.2rem]" />
+		<Button
+			builders={[builder]}
+			variant="ghost"
+			size="icon"
+			class="rounded-full text-[var(--textColor2)] hover:text-[var(--textColor1)]"
+		>
+			<Gear class="h-[18px] w-[18px]" />
 			<span class="sr-only">{$_('settings.title')}</span>
 		</Button>
 	</Dialog.Trigger>

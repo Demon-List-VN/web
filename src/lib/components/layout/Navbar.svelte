@@ -2,7 +2,7 @@
 	import HamburgerMenu from 'svelte-radix/HamburgerMenu.svelte';
 	import MagnifyingGlass from 'svelte-radix/MagnifyingGlass.svelte';
 	import X from 'svelte-radix/Cross2.svelte';
-	import { PanelLeftClose, PanelLeftOpen } from 'lucide-svelte';
+	import { CirclePlus, PanelLeftClose, PanelLeftOpen } from 'lucide-svelte';
 
 	import { Button, buttonVariants } from '$lib/components/ui/button/index.js';
 	import NotificationButton from '$lib/components/notificationButton.svelte';
@@ -82,7 +82,14 @@
 		{#if !$user.loggedIn}
 			<Button variant="outline" on:click={signIn}>{$_('nav.sign_in')}</Button>
 		{:else}
-			<a href="/submit" class={buttonVariants({ variant: 'outline' })}>{$_('submit.button')}</a>
+			<a
+				href="/submit"
+				class={`${buttonVariants({ variant: 'ghost', size: 'icon' })} submitIconButton`}
+				aria-label={$_('submit.button')}
+				title={$_('submit.button')}
+			>
+				<CirclePlus size={18} />
+			</a>
 			<NotificationButton />
 			<UserPopover {signOut} />
 		{/if}
@@ -188,7 +195,7 @@
 	.topbar-right {
 		display: flex;
 		align-items: center;
-		gap: 8px;
+		gap: 4px;
 	}
 
 	.topbar-icon-btn {
@@ -207,6 +214,15 @@
 
 		&:hover {
 			background-color: hsl(var(--accent));
+			color: var(--textColor1);
+		}
+	}
+
+	.submitIconButton {
+		border-radius: 999px;
+		color: var(--textColor2);
+
+		&:hover {
 			color: var(--textColor1);
 		}
 	}

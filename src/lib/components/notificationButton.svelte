@@ -264,7 +264,7 @@
 			class="notificationTrigger"
 			aria-label={$_('notifications.title')}
 		>
-			<Bell size={19} />
+			<Bell size={18} />
 			{#if notifications.length != 0}
 				<span class="notificationBadge"
 					>{notifications.length > 9 ? '9+' : notifications.length}</span
@@ -332,7 +332,7 @@
 		border: 0;
 		border-radius: 999px;
 		background: transparent;
-		color: var(--textColor);
+		color: var(--textColor2);
 		cursor: pointer;
 		transition:
 			background-color 0.12s ease,
