@@ -64,6 +64,15 @@
 	function rowPlayer(row: PvpWeeklyRace['leaderboard'][number]) {
 		return row.player ?? row.players ?? { uid: row.uid, name: row.uid };
 	}
+
+	function formatWinrate(value: number | null | undefined) {
+		const winrate = Number(value);
+		if (!Number.isFinite(winrate)) return '0%';
+
+		return `${winrate.toLocaleString($locale || 'en', {
+			maximumFractionDigits: winrate % 1 === 0 ? 0 : 1
+		})}%`;
+	}
 </script>
 
 <section class="weekly-race-section">
@@ -90,7 +99,10 @@
 		</Card.Header>
 		<Card.Content>
 			<Tabs.Root bind:value={activeTab}>
-				<Tabs.List class="weekly-race-tab-list py-[20px]" aria-label={$_('pvp.weekly_race.tabs.label')}>
+				<Tabs.List
+					class="weekly-race-tab-list py-[20px]"
+					aria-label={$_('pvp.weekly_race.tabs.label')}
+				>
 					<Tabs.Trigger value="standings" class="weekly-race-tab-trigger">
 						<Trophy class="h-4 w-4" />
 						{$_('pvp.weekly_race.tabs.standings')}
@@ -129,7 +141,7 @@
 								<span role="columnheader">{$_('pvp.leaderboard.rank')}</span>
 								<span role="columnheader">{$_('pvp.leaderboard.player')}</span>
 								<span role="columnheader">{$_('pvp.weekly_race.points')}</span>
-								<span role="columnheader">{$_('pvp.weekly_race.wins')}</span>
+								<span role="columnheader">{$_('pvp.weekly_race.winrate')}</span>
 							</div>
 							{#each weeklyRace.leaderboard as row}
 								{@const player = rowPlayer(row)}
@@ -139,7 +151,7 @@
 										<PlayerLink {player} showAvatar truncate={28} />
 									</span>
 									<span class="leaderboard-rating" role="cell">{row.points}</span>
-									<span role="cell">{row.wins}</span>
+									<span role="cell">{formatWinrate(row.winrate)}</span>
 								</div>
 							{/each}
 						</div>

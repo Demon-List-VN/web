@@ -287,6 +287,7 @@
 			"empty": "No ranked wins this week yet.",
 			"points": "Points",
 			"wins": "Wins",
+			"winrate": "Winrate",
 			"history_title": "Previous week",
 			"history_empty": "No previous weekly result yet.",
 			"tutorial": {

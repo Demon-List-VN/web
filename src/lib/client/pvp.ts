@@ -250,6 +250,8 @@ export type PvpWeeklyRacePlayer = {
 	uid?: string;
 	points: number;
 	wins: number;
+	matches?: number;
+	winrate: number;
 	updated_at?: string | null;
 	player?: PvpPlayer | null;
 	players?: PvpPlayer | null;
@@ -454,7 +456,10 @@ export async function getPvpLeaderboard(limit = 50) {
 	return [];
 }
 
-export async function getPvpWeeklyRace(week: 'current' | 'previous' | string = 'current', limit = 50) {
+export async function getPvpWeeklyRace(
+	week: 'current' | 'previous' | string = 'current',
+	limit = 50
+) {
 	const params = new URLSearchParams({ week, limit: String(limit) });
 	const payload = await pvpRequest<PvpWeeklyRace | { data?: PvpWeeklyRace }>(
 		`/pvp/weekly-race?${params}`
