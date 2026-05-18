@@ -111,7 +111,8 @@
 		currentWeek: null,
 		previousWeek: null,
 		leaderboard: [],
-		previousLeaderboard: []
+		previousLeaderboard: [],
+		currentPlayer: null
 	};
 	let activePvpTab = 'lobby';
 	let eloGraphFilter: (typeof ELO_GRAPH_FILTERS)[number]['key'] = '25';
@@ -256,7 +257,7 @@
 		try {
 			const token = await $user.token();
 			setPvpRealtimeAuth(token);
-			await Promise.all([refreshLobby(), refreshMatchHistory()]);
+			await Promise.all([refreshLobby(), refreshMatchHistory(), refreshWeeklyRace()]);
 			lobbyReady = true;
 
 			cleanupRealtime = subscribeToPvpLobby(uid, handleLobbyRealtimeEvent);
@@ -300,7 +301,8 @@
 			leaderboard = await getPvpLeaderboard(50);
 		} catch (error) {
 			leaderboard = [];
-			leaderboardError = error instanceof Error ? error.message : $_('pvp.toast.leaderboard_failed');
+			leaderboardError =
+				error instanceof Error ? error.message : $_('pvp.toast.leaderboard_failed');
 		} finally {
 			leaderboardLoading = false;
 		}
@@ -311,17 +313,17 @@
 		weeklyRaceError = '';
 
 		try {
-			weeklyRace = await getPvpWeeklyRace('current', 50);
+			weeklyRace = await getPvpWeeklyRace('current', 50, currentUid);
 		} catch (error) {
 			weeklyRace = {
 				week: null,
 				currentWeek: null,
 				previousWeek: null,
 				leaderboard: [],
-				previousLeaderboard: []
+				previousLeaderboard: [],
+				currentPlayer: null
 			};
-			weeklyRaceError =
-				error instanceof Error ? error.message : $_('pvp.toast.weekly_race_failed');
+			weeklyRaceError = error instanceof Error ? error.message : $_('pvp.toast.weekly_race_failed');
 		} finally {
 			weeklyRaceLoading = false;
 		}
@@ -597,10 +599,7 @@
 		);
 	}
 
-	function updatePendingConfirmRealtime(
-		loggedIn: boolean,
-		matchId: number | string | null
-	) {
+	function updatePendingConfirmRealtime(loggedIn: boolean, matchId: number | string | null) {
 		const key = loggedIn && currentUid && matchId ? String(matchId) : '';
 		if (key === pendingConfirmRealtimeKey) return;
 
@@ -1080,6 +1079,7 @@
 		});
 
 		if (row) return Number(row.points ?? 0);
+		if (race.currentPlayer) return Number(race.currentPlayer.points ?? 0);
 
 		const week = race.currentWeek ?? race.week;
 		const weekStartMs = week?.weekStartAt ?? week?.week_start_at;
@@ -1338,6 +1338,8 @@
 		<Tabs.Content value="weekly-race">
 			<WeeklyRaceTab
 				{weeklyRace}
+				currentUid={currentUid ?? null}
+				currentPlayer={$user.data ?? null}
 				loading={weeklyRaceLoading}
 				error={weeklyRaceError}
 				{now}
@@ -1355,370 +1357,381 @@
 		</Tabs.Content>
 
 		<Tabs.Content value="lobby">
-		<PvpDialogs
-			bind:matchDialogOpen
-			bind:ratingDialogOpen
-			{pendingMatch}
-			{pendingMatchId}
-			{pendingSelfAccepted}
-			{shouldForceStartingRating}
-			{actionLoading}
-			{checkingLobby}
-			{now}
-			onAcceptPendingMatch={acceptPendingMatch}
-			onChooseStartingRating={chooseStartingRating}
-		/>
+			<PvpDialogs
+				bind:matchDialogOpen
+				bind:ratingDialogOpen
+				{pendingMatch}
+				{pendingMatchId}
+				{pendingSelfAccepted}
+				{shouldForceStartingRating}
+				{actionLoading}
+				{checkingLobby}
+				{now}
+				onAcceptPendingMatch={acceptPendingMatch}
+				onChooseStartingRating={chooseStartingRating}
+			/>
 
-	{#if !$user.checked}
-		<Card.Root class="state-panel">
-			<Card.Content class="state-content">
-				<Loader2 class="h-5 w-5 animate-spin" />
-				<span>{$_('general.loading')}</span>
-			</Card.Content>
-		</Card.Root>
-	{:else if !$user.loggedIn}
-		<Card.Root class="state-panel">
-			<Card.Content class="auth-content">
-				<div>
-					<h2>{$_('pvp.sign_in_title')}</h2>
-					<p>{$_('pvp.sign_in_hint')}</p>
-				</div>
-				<Button on:click={signIn}>
-					<LogIn class="mr-2 h-4 w-4" />
-					{$_('nav.sign_in')}
-				</Button>
-			</Card.Content>
-		</Card.Root>
-	{:else}
-		{#if activeMatch}
-			<section class="active-section">
-				<div class="section-heading">
-					<h2>{$_('pvp.active_match')}</h2>
-					<a href={`/pvp/matches/${getPvpMatchId(activeMatch)}`}>{$_('pvp.enter_match')}</a>
-				</div>
-				<MatchCard
-					match={activeMatch}
-					{currentUid}
-					{now}
-					{hideOpponentInfo}
-					href={`/pvp/matches/${getPvpMatchId(activeMatch)}`}
-				/>
-			</section>
-		{/if}
+			{#if !$user.checked}
+				<Card.Root class="state-panel">
+					<Card.Content class="state-content">
+						<Loader2 class="h-5 w-5 animate-spin" />
+						<span>{$_('general.loading')}</span>
+					</Card.Content>
+				</Card.Root>
+			{:else if !$user.loggedIn}
+				<Card.Root class="state-panel">
+					<Card.Content class="auth-content">
+						<div>
+							<h2>{$_('pvp.sign_in_title')}</h2>
+							<p>{$_('pvp.sign_in_hint')}</p>
+						</div>
+						<Button on:click={signIn}>
+							<LogIn class="mr-2 h-4 w-4" />
+							{$_('nav.sign_in')}
+						</Button>
+					</Card.Content>
+				</Card.Root>
+			{:else}
+				{#if activeMatch}
+					<section class="active-section">
+						<div class="section-heading">
+							<h2>{$_('pvp.active_match')}</h2>
+							<a href={`/pvp/matches/${getPvpMatchId(activeMatch)}`}>{$_('pvp.enter_match')}</a>
+						</div>
+						<MatchCard
+							match={activeMatch}
+							{currentUid}
+							{now}
+							{hideOpponentInfo}
+							href={`/pvp/matches/${getPvpMatchId(activeMatch)}`}
+						/>
+					</section>
+				{/if}
 
-		{#if pvpRatingInitialized}
-			<section class="rating-start-section">
-				<Collapsible.Root bind:open={summaryOpen}>
-					<Card.Root
-						class={`summary-card ${summaryOpen ? 'is-open' : 'is-collapsed'}`}
-						on:click={() => {
-							if (!summaryOpen) summaryOpen = true;
-						}}
-					>
-						<Card.Header>
-							<Button
-								type="button"
-								variant="ghost"
-								class="summary-trigger !h-auto !w-full !justify-between !p-0 !text-left hover:!bg-transparent hover:!text-current focus-visible:!ring-0 focus-visible:!ring-offset-0"
-								aria-expanded={summaryOpen}
-								aria-controls="pvp-summary-panel"
-								on:click={(event) => {
-									event.stopPropagation();
-									summaryOpen = !summaryOpen;
+				{#if pvpRatingInitialized}
+					<section class="rating-start-section">
+						<Collapsible.Root bind:open={summaryOpen}>
+							<Card.Root
+								class={`summary-card ${summaryOpen ? 'is-open' : 'is-collapsed'}`}
+								on:click={() => {
+									if (!summaryOpen) summaryOpen = true;
 								}}
 							>
-								<div class="summary-trigger-main">
-									<Card.Title>{$_('pvp.summary')}</Card.Title>
-									<Card.Description>
-										{pvpRatedMatchCount < 5
-											? $_('pvp.provisional_matches_left', {
-													values: {
-														count: Math.max(0, 5 - Number(pvpRatedMatchCount || 0))
-													}
-												})
-											: $_('pvp.rating_established')}
-									</Card.Description>
-								</div>
-								<span class="summary-indicator" aria-hidden="true" class:isOpen={summaryOpen}>
-									<ChevronRight class="h-4 w-4" />
-								</span>
-							</Button>
+								<Card.Header>
+									<Button
+										type="button"
+										variant="ghost"
+										class="summary-trigger !h-auto !w-full !justify-between !p-0 !text-left hover:!bg-transparent hover:!text-current focus-visible:!ring-0 focus-visible:!ring-offset-0"
+										aria-expanded={summaryOpen}
+										aria-controls="pvp-summary-panel"
+										on:click={(event) => {
+											event.stopPropagation();
+											summaryOpen = !summaryOpen;
+										}}
+									>
+										<div class="summary-trigger-main">
+											<Card.Title>{$_('pvp.summary')}</Card.Title>
+											<Card.Description>
+												{pvpRatedMatchCount < 5
+													? $_('pvp.provisional_matches_left', {
+															values: {
+																count: Math.max(0, 5 - Number(pvpRatedMatchCount || 0))
+															}
+														})
+													: $_('pvp.rating_established')}
+											</Card.Description>
+										</div>
+										<span class="summary-indicator" aria-hidden="true" class:isOpen={summaryOpen}>
+											<ChevronRight class="h-4 w-4" />
+										</span>
+									</Button>
+								</Card.Header>
+								<Card.Content>
+									<div class="summary-stats">
+										<div>
+											<span>{$_('pvp.current_elo')}</span>
+											<strong>{pvpRating ?? '--'}</strong>
+										</div>
+										<div>
+											<span>{$_('pvp.weekly_race_points')}</span>
+											<strong>{currentWeeklyRacePoints}</strong>
+										</div>
+									</div>
+									<Collapsible.Content id="pvp-summary-panel">
+										<div class="elo-graph-panel">
+											<div class="elo-graph-toolbar">
+												<div>
+													<strong>{$_('pvp.elo_graph.title')}</strong>
+													<span>
+														{$_('pvp.elo_graph.summary', {
+															values: {
+																count: eloGraphMatchCount,
+																delta: eloDeltaLabel(eloGraphDelta)
+															}
+														})}
+													</span>
+												</div>
+												<Tabs.Root bind:value={eloGraphFilter}>
+													<Tabs.List
+														class="elo-filter-group"
+														aria-label={$_('pvp.elo_graph.filter')}
+													>
+														{#each ELO_GRAPH_FILTERS as filter}
+															<Tabs.Trigger value={filter.key} class="elo-filter-trigger">
+																{$_(`pvp.elo_graph.filters.${filter.key}`)}
+															</Tabs.Trigger>
+														{/each}
+													</Tabs.List>
+												</Tabs.Root>
+											</div>
+											{#if showLeaderboardMatchCountNotice}
+												<div class="leaderboard-requirement-notice">
+													{$_('pvp.leaderboard.need_more_matches', {
+														values: { count: leaderboardMatchesNeeded }
+													})}
+												</div>
+											{:else if showLeaderboardActivityNotice}
+												<div class="leaderboard-requirement-notice">
+													{$_('pvp.leaderboard.need_recent_match')}
+												</div>
+											{/if}
+											{#if eloGraphPoints.length > 1}
+												<div class="elo-chart-wrapper">
+													<canvas
+														use:createEloChart={eloGraphChartData}
+														aria-label={$_('pvp.elo_graph.title')}
+													/>
+												</div>
+											{:else}
+												<div class="elo-graph-empty">{$_('pvp.elo_graph.empty')}</div>
+											{/if}
+										</div>
+									</Collapsible.Content>
+								</Card.Content>
+							</Card.Root>
+						</Collapsible.Root>
+					</section>
+				{/if}
+
+				<section class="control-grid">
+					<Card.Root>
+						<Card.Header>
+							<Card.Title>{$_('pvp.options')}</Card.Title>
 						</Card.Header>
 						<Card.Content>
-							<div class="summary-stats">
+							<div class="anonymous-row">
 								<div>
-									<span>{$_('pvp.current_elo')}</span>
-									<strong>{pvpRating ?? '--'}</strong>
+									<strong>{$_('pvp.anonymous_mode')}</strong>
+									<span>{$_('pvp.anonymous_mode_hint')}</span>
 								</div>
-								<div>
-									<span>{$_('pvp.weekly_race_points')}</span>
-									<strong>{currentWeeklyRacePoints}</strong>
-								</div>
+								<Switch
+									id="pvp-anonymous-mode"
+									bind:checked={anonymousMode}
+									disabled={Boolean(actionLoading || activeMatch || isSearching)}
+									aria-label={$_('pvp.anonymous_mode')}
+								/>
 							</div>
-							<Collapsible.Content id="pvp-summary-panel">
-								<div class="elo-graph-panel">
-									<div class="elo-graph-toolbar">
-										<div>
-											<strong>{$_('pvp.elo_graph.title')}</strong>
-											<span>
-												{$_('pvp.elo_graph.summary', {
-													values: {
-														count: eloGraphMatchCount,
-														delta: eloDeltaLabel(eloGraphDelta)
-													}
-												})}
-											</span>
-										</div>
-										<Tabs.Root bind:value={eloGraphFilter}>
-											<Tabs.List class="elo-filter-group" aria-label={$_('pvp.elo_graph.filter')}>
-												{#each ELO_GRAPH_FILTERS as filter}
-													<Tabs.Trigger value={filter.key} class="elo-filter-trigger">
-														{$_(`pvp.elo_graph.filters.${filter.key}`)}
-													</Tabs.Trigger>
-												{/each}
-											</Tabs.List>
-										</Tabs.Root>
-									</div>
-									{#if showLeaderboardMatchCountNotice}
-										<div class="leaderboard-requirement-notice">
-											{$_('pvp.leaderboard.need_more_matches', {
-												values: { count: leaderboardMatchesNeeded }
-											})}
-										</div>
-									{:else if showLeaderboardActivityNotice}
-										<div class="leaderboard-requirement-notice">
-											{$_('pvp.leaderboard.need_recent_match')}
-										</div>
-									{/if}
-									{#if eloGraphPoints.length > 1}
-										<div class="elo-chart-wrapper">
-											<canvas
-												use:createEloChart={eloGraphChartData}
-												aria-label={$_('pvp.elo_graph.title')}
-											/>
-										</div>
-									{:else}
-										<div class="elo-graph-empty">{$_('pvp.elo_graph.empty')}</div>
-									{/if}
+							<div class="anonymous-row">
+								<div>
+									<strong>{$_('pvp.hide_opponent_info')}</strong>
+									<span>{$_('pvp.hide_opponent_info_hint')}</span>
 								</div>
-							</Collapsible.Content>
+								<Switch
+									id="pvp-hide-opponent-info"
+									bind:checked={hideOpponentInfo}
+									aria-label={$_('pvp.hide_opponent_info')}
+								/>
+							</div>
 						</Card.Content>
 					</Card.Root>
-				</Collapsible.Root>
-			</section>
-		{/if}
 
-		<section class="control-grid">
-			<Card.Root>
-				<Card.Header>
-					<Card.Title>{$_('pvp.options')}</Card.Title>
-				</Card.Header>
-				<Card.Content>
-					<div class="anonymous-row">
-						<div>
-							<strong>{$_('pvp.anonymous_mode')}</strong>
-							<span>{$_('pvp.anonymous_mode_hint')}</span>
-						</div>
-						<Switch
-							id="pvp-anonymous-mode"
-							bind:checked={anonymousMode}
-							disabled={Boolean(actionLoading || activeMatch || isSearching)}
-							aria-label={$_('pvp.anonymous_mode')}
-						/>
-					</div>
-					<div class="anonymous-row">
-						<div>
-							<strong>{$_('pvp.hide_opponent_info')}</strong>
-							<span>{$_('pvp.hide_opponent_info_hint')}</span>
-						</div>
-						<Switch
-							id="pvp-hide-opponent-info"
-							bind:checked={hideOpponentInfo}
-							aria-label={$_('pvp.hide_opponent_info')}
-						/>
-					</div>
-				</Card.Content>
-			</Card.Root>
-
-			<Card.Root>
-				<Card.Header>
-					<Card.Title>{$_('pvp.matchmaking')}</Card.Title>
-					<Card.Description>
-						{activeMatch
-							? $_('pvp.active_match')
-							: isSearching
-								? $_('pvp.searching_state')
-								: $_('pvp.queue_state_idle')}
-					</Card.Description>
-				</Card.Header>
-				<Card.Content class="action-panel">
-					{#if checkingLobby}
-						<div class="matchmaking-skeleton" aria-label={$_('general.loading')}>
-							<div></div>
-							<div></div>
-							<div></div>
-						</div>
-					{:else if activeMatch}
-						<Button on:click={() => navigateToMatch(getPvpMatchId(activeMatch))}>
-							<Swords class="mr-2 h-4 w-4" />
-							{$_('pvp.rejoin_ongoing_match')}
-						</Button>
-					{:else if isSearching}
-						<div class="queue-status">
-							<Badge>{statusLabel(queueStatus)}</Badge>
-							<span>
-								<Clock class="h-4 w-4" />
-								{elapsedLabel(queueStartedAt, now)}
-							</span>
-							{#if currentSearchRange !== null}
-								<span>
-									{$_('pvp.search_range', {
-										values: { range: currentSearchRange }
-									})}
-								</span>
-							{/if}
-						</div>
-						{#if showSlowSearchAlert}
-							<div class="queue-hint">
-								{$_('pvp.search_slow_hint')}
-							</div>
-						{/if}
-						<Button variant="outline" disabled={Boolean(actionLoading)} on:click={cancelQueue}>
-							{#if actionLoading === 'cancel-matchmaking'}
-								<Loader2 class="mr-2 h-4 w-4 animate-spin" />
-							{/if}
-							{$_('pvp.cancel_search')}
-						</Button>
-					{:else}
-						<Button disabled={controlsDisabled} on:click={startQueue}>
-							{#if actionLoading === 'matchmaking'}
-								<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+					<Card.Root>
+						<Card.Header>
+							<Card.Title>{$_('pvp.matchmaking')}</Card.Title>
+							<Card.Description>
+								{activeMatch
+									? $_('pvp.active_match')
+									: isSearching
+										? $_('pvp.searching_state')
+										: $_('pvp.queue_state_idle')}
+							</Card.Description>
+						</Card.Header>
+						<Card.Content class="action-panel">
+							{#if checkingLobby}
+								<div class="matchmaking-skeleton" aria-label={$_('general.loading')}>
+									<div></div>
+									<div></div>
+									<div></div>
+								</div>
+							{:else if activeMatch}
+								<Button on:click={() => navigateToMatch(getPvpMatchId(activeMatch))}>
+									<Swords class="mr-2 h-4 w-4" />
+									{$_('pvp.rejoin_ongoing_match')}
+								</Button>
+							{:else if isSearching}
+								<div class="queue-status">
+									<Badge>{statusLabel(queueStatus)}</Badge>
+									<span>
+										<Clock class="h-4 w-4" />
+										{elapsedLabel(queueStartedAt, now)}
+									</span>
+									{#if currentSearchRange !== null}
+										<span>
+											{$_('pvp.search_range', {
+												values: { range: currentSearchRange }
+											})}
+										</span>
+									{/if}
+								</div>
+								{#if showSlowSearchAlert}
+									<div class="queue-hint">
+										{$_('pvp.search_slow_hint')}
+									</div>
+								{/if}
+								<Button variant="outline" disabled={Boolean(actionLoading)} on:click={cancelQueue}>
+									{#if actionLoading === 'cancel-matchmaking'}
+										<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+									{/if}
+									{$_('pvp.cancel_search')}
+								</Button>
 							{:else}
-								<Users class="mr-2 h-4 w-4" />
+								<Button disabled={controlsDisabled} on:click={startQueue}>
+									{#if actionLoading === 'matchmaking'}
+										<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+									{:else}
+										<Users class="mr-2 h-4 w-4" />
+									{/if}
+									{$_('pvp.start_matchmaking')}
+								</Button>
 							{/if}
-							{$_('pvp.start_matchmaking')}
-						</Button>
-					{/if}
-				</Card.Content>
-			</Card.Root>
+						</Card.Content>
+					</Card.Root>
 
-			<Card.Root>
-				<Card.Header>
-					<Card.Title>{$_('pvp.invite_player')}</Card.Title>
-					<Card.Description>{$_('pvp.invite_state')}</Card.Description>
-				</Card.Header>
-				<Card.Content class="invite-form">
-					<PlayerSelector
-						bind:value={selectedPlayer}
-						disabled={controlsDisabled}
-						placeholder={$_('pvp.search_player')}
-					/>
-					<Button disabled={controlsDisabled || !selectedPlayer} on:click={invitePlayer}>
-						{#if actionLoading === 'invite'}
-							<Loader2 class="mr-2 h-4 w-4 animate-spin" />
-						{:else}
-							<Send class="mr-2 h-4 w-4" />
-						{/if}
-						{$_('pvp.send_invite')}
-					</Button>
-				</Card.Content>
-			</Card.Root>
-		</section>
+					<Card.Root>
+						<Card.Header>
+							<Card.Title>{$_('pvp.invite_player')}</Card.Title>
+							<Card.Description>{$_('pvp.invite_state')}</Card.Description>
+						</Card.Header>
+						<Card.Content class="invite-form">
+							<PlayerSelector
+								bind:value={selectedPlayer}
+								disabled={controlsDisabled}
+								placeholder={$_('pvp.search_player')}
+							/>
+							<Button disabled={controlsDisabled || !selectedPlayer} on:click={invitePlayer}>
+								{#if actionLoading === 'invite'}
+									<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+								{:else}
+									<Send class="mr-2 h-4 w-4" />
+								{/if}
+								{$_('pvp.send_invite')}
+							</Button>
+						</Card.Content>
+					</Card.Root>
+				</section>
 
-		<section class="invite-grid">
-			<Card.Root>
-				<Card.Header>
-					<Card.Title>{$_('pvp.incoming_invites')}</Card.Title>
-				</Card.Header>
-				<Card.Content>
-					{#if incomingPending.length === 0}
-						<div class="empty-state">{$_('pvp.no_incoming_invites')}</div>
-					{:else}
-						<div class="invite-list">
-							{#each incomingPending as invite}
-								<div class="invite-row">
-									<div>
-										<strong>{inviteName(invite, 'incoming')}</strong>
-										<span>{$_('pvp.unranked')}</span>
-									</div>
-									<div class="invite-actions">
-										<span class="timer">{remainingLabel(getPvpInviteExpiresMs(invite), now)}</span>
-										<Button
-											size="sm"
-											disabled={Boolean(actionLoading || !pvpRatingInitialized)}
-											on:click={() => acceptInvite(invite)}
-										>
-											{#if actionLoading === `accept-${getPvpInviteId(invite)}`}
-												<Loader2 class="mr-2 h-4 w-4 animate-spin" />
-											{:else}
-												<UserCheck class="mr-2 h-4 w-4" />
-											{/if}
-											{$_('general.accept')}
-										</Button>
-										<Button
-											size="sm"
-											variant="outline"
-											disabled={Boolean(actionLoading)}
-											on:click={() => declineInvite(invite)}
-										>
-											{$_('general.reject')}
-										</Button>
-									</div>
+				<section class="invite-grid">
+					<Card.Root>
+						<Card.Header>
+							<Card.Title>{$_('pvp.incoming_invites')}</Card.Title>
+						</Card.Header>
+						<Card.Content>
+							{#if incomingPending.length === 0}
+								<div class="empty-state">{$_('pvp.no_incoming_invites')}</div>
+							{:else}
+								<div class="invite-list">
+									{#each incomingPending as invite}
+										<div class="invite-row">
+											<div>
+												<strong>{inviteName(invite, 'incoming')}</strong>
+												<span>{$_('pvp.unranked')}</span>
+											</div>
+											<div class="invite-actions">
+												<span class="timer"
+													>{remainingLabel(getPvpInviteExpiresMs(invite), now)}</span
+												>
+												<Button
+													size="sm"
+													disabled={Boolean(actionLoading || !pvpRatingInitialized)}
+													on:click={() => acceptInvite(invite)}
+												>
+													{#if actionLoading === `accept-${getPvpInviteId(invite)}`}
+														<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+													{:else}
+														<UserCheck class="mr-2 h-4 w-4" />
+													{/if}
+													{$_('general.accept')}
+												</Button>
+												<Button
+													size="sm"
+													variant="outline"
+													disabled={Boolean(actionLoading)}
+													on:click={() => declineInvite(invite)}
+												>
+													{$_('general.reject')}
+												</Button>
+											</div>
+										</div>
+									{/each}
 								</div>
-							{/each}
-						</div>
-					{/if}
-				</Card.Content>
-			</Card.Root>
+							{/if}
+						</Card.Content>
+					</Card.Root>
 
-			<Card.Root>
-				<Card.Header>
-					<div class="section-heading inside">
-						<Card.Title>{$_('pvp.outgoing_invites')}</Card.Title>
-						<Button
-							variant="ghost"
-							size="icon"
-							disabled={loading}
-							on:click={refreshLobby}
-							aria-label={$_('pvp.refresh')}
-						>
-							<RefreshCw class={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-						</Button>
-					</div>
-				</Card.Header>
-				<Card.Content>
-					{#if outgoingVisible.length === 0}
-						<div class="empty-state">{$_('pvp.no_outgoing_invites')}</div>
-					{:else}
-						<div class="invite-list">
-							{#each outgoingVisible as invite}
-								<div class="invite-row">
-									<div>
-										<strong>{inviteName(invite, 'outgoing')}</strong>
-										<span>{$_('pvp.unranked')}</span>
-									</div>
-									<div class="invite-actions">
-										<Badge variant={getPvpStatus(invite) === 'pending' ? 'default' : 'secondary'}>
-											{statusLabel(getPvpStatus(invite))}
-										</Badge>
-										{#if getPvpStatus(invite) === 'pending'}
-											<span class="timer">{remainingLabel(getPvpInviteExpiresMs(invite), now)}</span
-											>
-										{/if}
-										{#if getPvpMatchedMatchId(invite)}
-											<a class="inline-link" href={`/pvp/matches/${getPvpMatchedMatchId(invite)}`}>
-												{$_('pvp.view_match')}
-											</a>
-										{/if}
-									</div>
+					<Card.Root>
+						<Card.Header>
+							<div class="section-heading inside">
+								<Card.Title>{$_('pvp.outgoing_invites')}</Card.Title>
+								<Button
+									variant="ghost"
+									size="icon"
+									disabled={loading}
+									on:click={refreshLobby}
+									aria-label={$_('pvp.refresh')}
+								>
+									<RefreshCw class={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+								</Button>
+							</div>
+						</Card.Header>
+						<Card.Content>
+							{#if outgoingVisible.length === 0}
+								<div class="empty-state">{$_('pvp.no_outgoing_invites')}</div>
+							{:else}
+								<div class="invite-list">
+									{#each outgoingVisible as invite}
+										<div class="invite-row">
+											<div>
+												<strong>{inviteName(invite, 'outgoing')}</strong>
+												<span>{$_('pvp.unranked')}</span>
+											</div>
+											<div class="invite-actions">
+												<Badge
+													variant={getPvpStatus(invite) === 'pending' ? 'default' : 'secondary'}
+												>
+													{statusLabel(getPvpStatus(invite))}
+												</Badge>
+												{#if getPvpStatus(invite) === 'pending'}
+													<span class="timer"
+														>{remainingLabel(getPvpInviteExpiresMs(invite), now)}</span
+													>
+												{/if}
+												{#if getPvpMatchedMatchId(invite)}
+													<a
+														class="inline-link"
+														href={`/pvp/matches/${getPvpMatchedMatchId(invite)}`}
+													>
+														{$_('pvp.view_match')}
+													</a>
+												{/if}
+											</div>
+										</div>
+									{/each}
 								</div>
-							{/each}
-						</div>
-					{/if}
-				</Card.Content>
-			</Card.Root>
-		</section>
-	{/if}
+							{/if}
+						</Card.Content>
+					</Card.Root>
+				</section>
+			{/if}
 		</Tabs.Content>
 	</Tabs.Root>
 </main>
@@ -2151,7 +2164,6 @@
 			width: 100%;
 			min-width: 0;
 		}
-
 	}
 
 	.pvp-top-alert {

@@ -3,11 +3,13 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
 	import * as Tabs from '$lib/components/ui/tabs';
-	import type { PvpWeeklyRace } from '$lib/client/pvp';
+	import type { PvpPlayer, PvpWeeklyRace } from '$lib/client/pvp';
 	import { _, locale } from 'svelte-i18n';
 	import { BookOpen, CalendarDays, RefreshCw, Trophy } from 'lucide-svelte';
 
 	export let weeklyRace: PvpWeeklyRace;
+	export let currentUid: string | null = null;
+	export let currentPlayer: PvpPlayer | null = null;
 	export let loading = false;
 	export let error = '';
 	export let now = Date.now();
@@ -18,6 +20,7 @@
 	$: weekRange = formatWeekRange(weeklyRace.week);
 	$: resetCountdown = remainingLongLabel(getWeekEndMs(weeklyRace.week), now);
 	$: previousWeekRange = formatWeekRange(weeklyRace.previousWeek);
+	$: userRaceRow = getUserRaceRow(weeklyRace, currentUid, currentPlayer);
 
 	function remainingLongLabel(targetMs: number | null, currentNow: number) {
 		if (!targetMs) return '--';
@@ -63,6 +66,32 @@
 
 	function rowPlayer(row: PvpWeeklyRace['leaderboard'][number]) {
 		return row.player ?? row.players ?? { uid: row.uid, name: row.uid };
+	}
+
+	function rowUid(row: PvpWeeklyRace['leaderboard'][number]) {
+		const player = row.player ?? row.players;
+		return row.uid ?? player?.uid ?? player?.id;
+	}
+
+	function getUserRaceRow(
+		race: PvpWeeklyRace,
+		uid: string | null,
+		player: PvpPlayer | null
+	): PvpWeeklyRace['leaderboard'][number] | null {
+		if (!uid) return null;
+
+		return (
+			race.leaderboard.find((row) => rowUid(row) === uid) ??
+			race.currentPlayer ??
+			({
+				uid,
+				points: 0,
+				wins: 0,
+				matches: 0,
+				winrate: 0,
+				player
+			} as PvpWeeklyRace['leaderboard'][number])
+		);
 	}
 
 	function formatWinrate(value: number | null | undefined) {
@@ -133,28 +162,47 @@
 						</div>
 					{:else if error}
 						<div class="empty-state">{error}</div>
-					{:else if weeklyRace.leaderboard.length === 0}
-						<div class="empty-state">{$_('pvp.weekly_race.empty')}</div>
 					{:else}
-						<div class="leaderboard-table" role="table" aria-label={$_('pvp.weekly_race.title')}>
-							<div class="leaderboard-row leaderboard-head" role="row">
-								<span role="columnheader">{$_('pvp.leaderboard.rank')}</span>
-								<span role="columnheader">{$_('pvp.leaderboard.player')}</span>
-								<span role="columnheader">{$_('pvp.weekly_race.points')}</span>
-								<span role="columnheader">{$_('pvp.weekly_race.winrate')}</span>
+						{#if userRaceRow}
+							{@const userPlayer = rowPlayer(userRaceRow)}
+							<div class="weekly-race-user-result" aria-label={$_('pvp.weekly_race.your_result')}>
+								<span>
+									{#if userRaceRow.rank}
+										#{userRaceRow.rank}
+									{:else}
+										{$_('pvp.weekly_race.your_result')}
+									{/if}
+								</span>
+								<span class="leaderboard-player">
+									<PlayerLink player={userPlayer} showAvatar truncate={28} />
+								</span>
+								<strong>{userRaceRow.points}</strong>
+								<strong>{formatWinrate(userRaceRow.winrate)}</strong>
 							</div>
-							{#each weeklyRace.leaderboard as row}
-								{@const player = rowPlayer(row)}
-								<div class="leaderboard-row" role="row">
-									<span class="leaderboard-rank" role="cell">#{row.rank}</span>
-									<span class="leaderboard-player" role="cell">
-										<PlayerLink {player} showAvatar truncate={28} />
-									</span>
-									<span class="leaderboard-rating" role="cell">{row.points}</span>
-									<span role="cell">{formatWinrate(row.winrate)}</span>
+						{/if}
+						{#if weeklyRace.leaderboard.length === 0}
+							<div class="empty-state">{$_('pvp.weekly_race.empty')}</div>
+						{:else}
+							<div class="leaderboard-table" role="table" aria-label={$_('pvp.weekly_race.title')}>
+								<div class="leaderboard-row leaderboard-head" role="row">
+									<span role="columnheader">{$_('pvp.leaderboard.rank')}</span>
+									<span role="columnheader">{$_('pvp.leaderboard.player')}</span>
+									<span role="columnheader">{$_('pvp.weekly_race.points')}</span>
+									<span role="columnheader">{$_('pvp.weekly_race.winrate')}</span>
 								</div>
-							{/each}
-						</div>
+								{#each weeklyRace.leaderboard as row}
+									{@const player = rowPlayer(row)}
+									<div class="leaderboard-row" role="row">
+										<span class="leaderboard-rank" role="cell">#{row.rank}</span>
+										<span class="leaderboard-player" role="cell">
+											<PlayerLink {player} showAvatar truncate={28} />
+										</span>
+										<span class="leaderboard-rating" role="cell">{row.points}</span>
+										<span role="cell">{formatWinrate(row.winrate)}</span>
+									</div>
+								{/each}
+							</div>
+						{/if}
 					{/if}
 
 					{#if !loading && weeklyRace.previousWeek}
@@ -280,6 +328,31 @@
 		overflow: hidden;
 		border: 1px solid hsl(var(--border));
 		border-radius: 8px;
+	}
+
+	.weekly-race-user-result {
+		display: grid;
+		grid-template-columns: 80px minmax(0, 1fr) 110px 120px;
+		align-items: center;
+		gap: 12px;
+		min-height: 50px;
+		margin-bottom: 10px;
+		border: 1px solid hsl(var(--primary) / 0.35);
+		border-radius: 8px;
+		background: hsl(var(--primary) / 0.08);
+		padding: 10px 14px;
+	}
+
+	.weekly-race-user-result > span:first-child {
+		color: hsl(var(--muted-foreground));
+		font-size: 12px;
+		font-weight: 750;
+		text-transform: uppercase;
+	}
+
+	.weekly-race-user-result strong {
+		font-size: 1rem;
+		font-weight: 750;
 	}
 
 	.leaderboard-row {
@@ -431,6 +504,14 @@
 
 		.leaderboard-row {
 			grid-template-columns: 54px minmax(0, 1fr) 76px;
+		}
+
+		.weekly-race-user-result {
+			grid-template-columns: minmax(0, 1fr) 76px 76px;
+		}
+
+		.weekly-race-user-result > span:first-child {
+			display: none;
 		}
 
 		.leaderboard-row > :nth-child(4) {

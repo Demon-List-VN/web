@@ -246,7 +246,7 @@ export type PvpWeeklyRaceWeek = {
 };
 
 export type PvpWeeklyRacePlayer = {
-	rank?: number;
+	rank?: number | null;
 	uid?: string;
 	points: number;
 	wins: number;
@@ -263,6 +263,7 @@ export type PvpWeeklyRace = {
 	previousWeek: PvpWeeklyRaceWeek | null;
 	leaderboard: PvpWeeklyRacePlayer[];
 	previousLeaderboard: PvpWeeklyRacePlayer[];
+	currentPlayer?: PvpWeeklyRacePlayer | null;
 };
 
 export const PVP_ACTIVE_MATCH_STATUSES = ['pending', 'in_progress', 'waiting_result'];
@@ -458,9 +459,11 @@ export async function getPvpLeaderboard(limit = 50) {
 
 export async function getPvpWeeklyRace(
 	week: 'current' | 'previous' | string = 'current',
-	limit = 50
+	limit = 50,
+	uid?: string | null
 ) {
 	const params = new URLSearchParams({ week, limit: String(limit) });
+	if (uid) params.set('uid', uid);
 	const payload = await pvpRequest<PvpWeeklyRace | { data?: PvpWeeklyRace }>(
 		`/pvp/weekly-race?${params}`
 	);
@@ -471,7 +474,8 @@ export async function getPvpWeeklyRace(
 		currentWeek: race.currentWeek ?? null,
 		previousWeek: race.previousWeek ?? null,
 		leaderboard: Array.isArray(race.leaderboard) ? race.leaderboard : [],
-		previousLeaderboard: Array.isArray(race.previousLeaderboard) ? race.previousLeaderboard : []
+		previousLeaderboard: Array.isArray(race.previousLeaderboard) ? race.previousLeaderboard : [],
+		currentPlayer: race.currentPlayer ?? null
 	};
 }
 
