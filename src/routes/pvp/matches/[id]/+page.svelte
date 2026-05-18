@@ -1725,8 +1725,7 @@
 	}
 
 	.pvp-match-ad-slot {
-		min-height: 90px;
-		margin-bottom: 20px;
+		margin-bottom: 0;
 	}
 
 	.topbar-actions {
