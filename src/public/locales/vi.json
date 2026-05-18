@@ -260,6 +260,7 @@
 		"tabs": {
 			"label": "Mục Arena",
 			"lobby": "Sảnh",
+			"history": "Lịch sử",
 			"weekly_race": "Đua tuần",
 			"leaderboard": "Bảng xếp hạng"
 		},

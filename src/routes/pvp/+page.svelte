@@ -69,10 +69,12 @@
 	import { toast } from 'svelte-sonner';
 	import { _ } from 'svelte-i18n';
 	import {
-		ArrowRight,
 		CalendarDays,
 		ChevronRight,
 		Clock,
+		Eye,
+		EyeOff,
+		History,
 		Loader2,
 		LogIn,
 		RefreshCw,
@@ -118,6 +120,7 @@
 	let eloGraphFilter: (typeof ELO_GRAPH_FILTERS)[number]['key'] = '25';
 	let summaryOpen = false;
 	let loading = false;
+	let matchHistoryLoading = false;
 	let leaderboardLoading = true;
 	let leaderboardError = '';
 	let weeklyRaceLoading = true;
@@ -147,6 +150,9 @@
 	$: currentUid = $user.data?.uid;
 	$: activeMatch =
 		lobby.activeMatch && isActivePvpMatch(lobby.activeMatch) ? lobby.activeMatch : null;
+	$: historyMatches = getHistoryMatches(activeMatch, matches);
+	$: ongoingHistoryMatches = historyMatches.filter((match) => isActivePvpMatch(match));
+	$: pastHistoryMatches = historyMatches.filter((match) => !isActivePvpMatch(match));
 	$: pendingMatch = activeMatch && getPvpStatus(activeMatch) === 'pending' ? activeMatch : null;
 	$: pendingMatchId = getPvpMatchId(pendingMatch);
 	$: pendingSelfAccepted = hasPvpParticipantAccepted(
@@ -209,6 +215,7 @@
 		matches = [];
 		initializedForUid = '';
 		lobbyReady = false;
+		matchHistoryLoading = false;
 		routedMatchId = null;
 	}
 
@@ -287,10 +294,13 @@
 	async function refreshMatchHistory() {
 		if (!$user.loggedIn) return;
 
+		matchHistoryLoading = true;
 		try {
 			matches = await getPvpMatches(await $user.token());
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.load_failed'));
+		} finally {
+			matchHistoryLoading = false;
 		}
 	}
 
@@ -479,6 +489,18 @@
 
 	function sortMatches(items: PvpMatch[]) {
 		return [...items].sort((a, b) => getMatchSortMs(b) - getMatchSortMs(a));
+	}
+
+	function getHistoryMatches(active: PvpMatch | null, history: PvpMatch[]) {
+		const byId = new Map<string, PvpMatch>();
+
+		for (const match of [active, ...history]) {
+			const matchId = getPvpMatchId(match);
+			if (!matchId || !match) continue;
+			byId.set(String(matchId), match);
+		}
+
+		return sortMatches([...byId.values()]);
 	}
 
 	function getMatchSortMs(match: PvpMatch) {
@@ -1334,10 +1356,6 @@
 			</div>
 			<h1>{$_('pvp.lobby_title')}</h1>
 		</div>
-		<a class="topbar-link" href="/pvp/matches">
-			{$_('pvp.matches_title')}
-			<ArrowRight class="h-4 w-4" />
-		</a>
 	</section>
 
 	<div class="pvp-ad-slot">
@@ -1345,10 +1363,14 @@
 	</div>
 
 	<Tabs.Root bind:value={activePvpTab}>
-		<Tabs.List class="pvp-tab-list" aria-label={$_('pvp.tabs.label')}>
+		<Tabs.List class="pvp-tab-list py-[20px]" aria-label={$_('pvp.tabs.label')}>
 			<Tabs.Trigger value="lobby" class="pvp-tab-trigger">
 				<Swords class="h-4 w-4" />
 				{$_('pvp.tabs.lobby')}
+			</Tabs.Trigger>
+			<Tabs.Trigger value="history" class="pvp-tab-trigger">
+				<History class="h-4 w-4" />
+				{$_('pvp.tabs.history')}
 			</Tabs.Trigger>
 			<Tabs.Trigger value="weekly-race" class="pvp-tab-trigger">
 				<CalendarDays class="h-4 w-4" />
@@ -1370,6 +1392,100 @@
 				{now}
 				onRefresh={refreshWeeklyRace}
 			/>
+		</Tabs.Content>
+
+		<Tabs.Content value="history">
+			{#if !$user.checked}
+				<Card.Root class="state-panel">
+					<Card.Content class="state-content">
+						<Loader2 class="h-5 w-5 animate-spin" />
+						<span>{$_('general.loading')}</span>
+					</Card.Content>
+				</Card.Root>
+			{:else if !$user.loggedIn}
+				<Card.Root class="state-panel">
+					<Card.Content class="auth-content">
+						<div>
+							<h2>{$_('pvp.sign_in_title')}</h2>
+							<p>{$_('pvp.sign_in_hint')}</p>
+						</div>
+						<Button on:click={signIn}>
+							<LogIn class="mr-2 h-4 w-4" />
+							{$_('nav.sign_in')}
+						</Button>
+					</Card.Content>
+				</Card.Root>
+			{:else}
+				<section class="history-toolbar">
+					<div>
+						<h2>{$_('pvp.matches_title')}</h2>
+					</div>
+					<div class="history-actions">
+						<Button
+							variant="outline"
+							aria-pressed={hideOpponentInfo}
+							on:click={() => (hideOpponentInfo = !hideOpponentInfo)}
+						>
+							{#if hideOpponentInfo}
+								<Eye class="mr-2 h-4 w-4" />
+								{$_('pvp.show_opponent_info')}
+							{:else}
+								<EyeOff class="mr-2 h-4 w-4" />
+								{$_('pvp.hide_opponent_info')}
+							{/if}
+						</Button>
+						<Button variant="outline" disabled={matchHistoryLoading} on:click={refreshMatchHistory}>
+							<RefreshCw class={`mr-2 h-4 w-4 ${matchHistoryLoading ? 'animate-spin' : ''}`} />
+							{$_('pvp.refresh')}
+						</Button>
+					</div>
+				</section>
+
+				<section class="match-section">
+					<div class="match-section-title">
+						<Swords class="h-5 w-5" />
+						<h2>{$_('pvp.ongoing_matches')}</h2>
+					</div>
+					{#if ongoingHistoryMatches.length === 0}
+						<div class="empty-state">{$_('pvp.no_ongoing_matches')}</div>
+					{:else}
+						<div class="match-grid">
+							{#each ongoingHistoryMatches as match}
+								<MatchCard
+									{match}
+									{currentUid}
+									{now}
+									{hideOpponentInfo}
+									hideLevelUntilConfirmed
+									href={`/pvp/matches/${getPvpMatchId(match)}`}
+								/>
+							{/each}
+						</div>
+					{/if}
+				</section>
+
+				<section class="match-section">
+					<div class="match-section-title">
+						<h2>{$_('pvp.past_matches')}</h2>
+					</div>
+					{#if pastHistoryMatches.length === 0}
+						<div class="empty-state">{$_('pvp.no_past_matches')}</div>
+					{:else}
+						<div class="match-grid">
+							{#each pastHistoryMatches as match}
+								<MatchCard
+									{match}
+									{currentUid}
+									{now}
+									{hideOpponentInfo}
+									hideLevelUntilConfirmed
+									href={`/pvp/matches/${getPvpMatchId(match)}`}
+								/>
+							{/each}
+						</div>
+					{/if}
+				</section>
+			{/if}
 		</Tabs.Content>
 
 		<Tabs.Content value="leaderboard">
@@ -1774,6 +1890,9 @@
 
 	.arena-topbar,
 	:global(.auth-content),
+	.history-toolbar,
+	.history-actions,
+	.match-section-title,
 	.section-heading,
 	.queue-status,
 	.invite-actions {
@@ -1795,7 +1914,6 @@
 	}
 
 	.eyebrow,
-	.topbar-link,
 	.inline-link,
 	.queue-status span {
 		display: inline-flex;
@@ -1810,7 +1928,6 @@
 		text-transform: uppercase;
 	}
 
-	.topbar-link,
 	.inline-link,
 	.section-heading a {
 		border-radius: 6px;
@@ -1819,7 +1936,6 @@
 		text-decoration: none;
 	}
 
-	.topbar-link:hover,
 	.inline-link:hover,
 	.section-heading a:hover {
 		text-decoration: underline;
@@ -1852,7 +1968,7 @@
 		border: 1px solid hsl(var(--border));
 		border-radius: 8px;
 		background: hsl(var(--muted) / 0.28);
-		padding: 4px;
+		padding: 20px 4px;
 	}
 
 	:global(.pvp-tab-trigger) {
@@ -1861,6 +1977,42 @@
 		gap: 8px;
 		min-height: 36px;
 		padding-inline: 14px;
+	}
+
+	.history-toolbar {
+		margin-bottom: 20px;
+	}
+
+	.history-toolbar h2 {
+		margin: 0;
+		font-size: 1.5rem;
+		font-weight: 750;
+	}
+
+	.history-actions {
+		flex-wrap: wrap;
+		justify-content: flex-end;
+	}
+
+	.match-section {
+		margin-top: 24px;
+	}
+
+	.match-section-title {
+		justify-content: flex-start;
+		margin-bottom: 12px;
+	}
+
+	.match-section-title h2 {
+		margin: 0;
+		font-size: 1.25rem;
+		font-weight: 750;
+	}
+
+	.match-grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 16px;
 	}
 
 	:global(.auth-content) h2 {
@@ -2160,7 +2312,8 @@
 
 	@media (max-width: 980px) {
 		.control-grid,
-		.invite-grid {
+		.invite-grid,
+		.match-grid {
 			grid-template-columns: 1fr;
 		}
 	}
@@ -2173,6 +2326,8 @@
 
 		.arena-topbar,
 		:global(.auth-content),
+		.history-toolbar,
+		.history-actions,
 		.invite-row,
 		.invite-actions {
 			align-items: stretch;

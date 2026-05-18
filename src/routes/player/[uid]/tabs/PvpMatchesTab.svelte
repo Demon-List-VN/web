@@ -17,6 +17,7 @@
 		getPvpParticipantRatingBefore,
 		getPvpParticipantRatingDiff,
 		getPvpParticipantUid,
+		getPvpWinnerUid,
 		type PvpParticipant,
 		type PvpMatch
 	} from '$lib/client/pvp';
@@ -74,6 +75,13 @@
 		return getPvpParticipantRatingDiff(playerParticipant(match));
 	}
 
+	function matchResult(match: PvpMatch) {
+		const winnerUid = getPvpWinnerUid(match);
+		if (!winnerUid || !playerParticipant(match)) return null;
+
+		return String(winnerUid) === String(userID) ? 'win' : 'lose';
+	}
+
 	function formatRating(value: number | null) {
 		return value === null ? '-' : Math.round(value);
 	}
@@ -120,6 +128,7 @@
 				<Table.Row>
 					<Table.Head class="min-w-[220px]">{$_('player.table.match')}</Table.Head>
 					<Table.Head class="w-[180px] text-center">{$_('player.table.time')}</Table.Head>
+					<Table.Head class="w-[100px] text-center">{$_('player.table.result')}</Table.Head>
 					<Table.Head class="w-[120px] text-center">{$_('player.table.elo_before')}</Table.Head>
 					<Table.Head class="w-[120px] text-center">{$_('player.table.elo_diff')}</Table.Head>
 					<Table.Head class="w-[120px] text-center">{$_('player.table.current_elo')}</Table.Head>
@@ -129,6 +138,7 @@
 			<Table.Body>
 				{#each matches as match}
 					{@const diff = ratingDiff(match)}
+					{@const result = matchResult(match)}
 					{@const matchId = getPvpMatchId(match)}
 					{@const participants = getPvpParticipants(match)}
 					{@const playerA = participants[0]}
@@ -152,6 +162,13 @@
 							</div>
 						</Table.Cell>
 						<Table.Cell class="text-center">{formatDate(matchDate(match))}</Table.Cell>
+						<Table.Cell
+							class={`text-center font-semibold ${
+								result === 'win' ? 'text-green-600' : result === 'lose' ? 'text-red-600' : ''
+							}`}
+						>
+							{result === 'win' ? 'Win' : result === 'lose' ? 'Lose' : '-'}
+						</Table.Cell>
 						<Table.Cell class="text-center">{formatRating(ratingBefore(match))}</Table.Cell>
 						<Table.Cell
 							class={`text-center font-semibold ${

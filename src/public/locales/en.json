@@ -260,6 +260,7 @@
 		"tabs": {
 			"label": "Arena sections",
 			"lobby": "Lobby",
+			"history": "History",
 			"weekly_race": "Weekly Race",
 			"leaderboard": "Leaderboard"
 		},
