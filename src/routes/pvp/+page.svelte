@@ -1318,9 +1318,7 @@
 			<Alert.Description class="pr-8">
 				{$_('pvp.geode_alert.description')}
 				<a
-					href="https://github.com/NamPE286/DemonListVN-geode-mod/releases"
-					target="_blank"
-					rel="noopener noreferrer"
+					href="/geode-mods"
 					class="ml-1 font-semibold underline"
 				>
 					{$_('pvp.geode_alert.release_page')}

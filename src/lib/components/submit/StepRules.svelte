@@ -89,9 +89,7 @@
 			</div>
 
 			<a
-				href="https://github.com/NamPE286/DemonListVN-geode-mod/releases"
-				target="_blank"
-				rel="noopener"
+				href="/geode-mods"
 				class="rule-card highlight"
 			>
 				<div class="rule-icon">

@@ -11,7 +11,7 @@
 	export let open = false;
 
 	const TOTAL = 9;
-	const GEODE_URL = 'https://github.com/NamPE286/DemonListVN-geode-mod/releases';
+	const GEODE_URL = '/geode-mods';
 
 	let step = 1;
 	let name = '';
@@ -410,7 +410,7 @@
 							</li>
 						{/each}
 					</ul>
-					<a href={GEODE_URL} target="_blank" rel="noopener noreferrer">
+					<a href={GEODE_URL}>
 						<Button class="w-full bg-green-600 text-white hover:bg-green-700">
 							{$_('onboarding.geode_download')}
 						</Button>
