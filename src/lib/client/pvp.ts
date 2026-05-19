@@ -735,7 +735,7 @@ export function getPvpProgress(participant: PvpParticipant | PvpResult | null | 
 
 export function formatPvpProgressValue(value: number, mode: PvpMode = 'classic') {
 	if (mode === 'platformer') {
-		return `${Math.max(0, Math.floor(value))} CP`;
+		return `${Math.max(0, Math.floor(value))} PT`;
 	}
 
 	const progress = Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/\.?0+$/, '');
@@ -743,7 +743,7 @@ export function formatPvpProgressValue(value: number, mode: PvpMode = 'classic')
 }
 
 export function getPvpProgressUnit(mode: PvpMode = 'classic') {
-	return mode === 'platformer' ? 'CP' : '%';
+	return mode === 'platformer' ? 'PT' : '%';
 }
 
 export function getPvpTimeReachedMs(participant: PvpParticipant | PvpResult | null | undefined) {
