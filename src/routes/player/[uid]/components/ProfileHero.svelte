@@ -1,18 +1,24 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
 	import * as Avatar from '$lib/components/ui/avatar';
 	import { badgeVariants } from '$lib/components/ui/badge';
+	import { Button } from '$lib/components/ui/button';
 	import { toast } from 'svelte-sonner';
 	import { user } from '$lib/client';
 	import { isActive } from '$lib/client/isSupporterActive';
+	import { getSocialStatus, sendFriendRequest, type SocialStatus } from '$lib/client/social';
 	import { getSupporterTier, getSupporterTierStyle } from '$lib/client/supporterTier';
 	import ProfileEditButton from '$lib/components/profileEditButton.svelte';
-	import { BadgeCheck, MapPin } from 'lucide-svelte';
+	import { BadgeCheck, Clock, MapPin, UserCheck, UserPlus } from 'lucide-svelte';
 	import { _ } from 'svelte-i18n';
 	import SupporterBadge from './SupporterBadge.svelte';
 
 	export let data: any;
 
 	let isBannerFailedToLoad = false;
+	let socialStatus: SocialStatus = 'none';
+	let socialStatusKey = '';
+	let addingFriend = false;
 
 	$: player = data.player;
 	$: isSupporter = isActive(player.supporterUntil);
@@ -24,12 +30,62 @@
 	$: bannerSrc = `https://cdn.gdvn.net/banners/${player.uid}${
 		player.isBannerGif ? '.gif' : '.jpg'
 	}?version=${player.bannerVersion}`;
+	$: showFriendButton =
+		browser && $user.loggedIn && player.uid && player.uid !== $user.data?.uid;
+	$: friendButtonDisabled =
+		addingFriend ||
+		!['none'].includes(socialStatus);
+	$: friendButtonLabel =
+		socialStatus === 'friend'
+			? 'Friends'
+			: socialStatus === 'outgoing_pending'
+				? 'Request sent'
+				: socialStatus === 'incoming_pending'
+					? 'Requested you'
+					: socialStatus === 'blocked_by_me'
+						? 'Blocked'
+						: socialStatus === 'blocked_me'
+							? 'Unavailable'
+							: 'Add friend';
+	$: if (showFriendButton) {
+		const nextKey = `${$user.data?.uid}:${player.uid}`;
+		if (nextKey !== socialStatusKey) {
+			socialStatusKey = nextKey;
+			loadSocialStatus();
+		}
+	} else if (!showFriendButton && socialStatusKey) {
+		socialStatusKey = '';
+		socialStatus = 'none';
+	}
 
 	function getBgColor() {
 		if (player.bgColor) {
 			return `background-color: ${player.bgColor}`;
 		}
 		return '';
+	}
+
+	async function loadSocialStatus() {
+		try {
+			socialStatus = await getSocialStatus(await $user.token(), player.uid);
+		} catch {
+			socialStatus = 'none';
+		}
+	}
+
+	async function addFriend() {
+		if (!showFriendButton || friendButtonDisabled) return;
+
+		addingFriend = true;
+		try {
+			await sendFriendRequest(await $user.token(), player.uid);
+			socialStatus = 'outgoing_pending';
+			toast.success('Friend request sent');
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : 'Failed to send friend request');
+		} finally {
+			addingFriend = false;
+		}
 	}
 </script>
 
@@ -101,6 +157,24 @@
 					<SupporterBadge supporterUntil={player.supporterUntil} uid={player.uid} />
 					{#if $user.loggedIn && player.uid == $user.data.uid && !$user.data.isBanned}
 						<ProfileEditButton bind:data={data.player} />
+					{/if}
+					{#if showFriendButton}
+						<Button
+							size="sm"
+							variant="outline"
+							class="friend-action"
+							disabled={friendButtonDisabled}
+							on:click={addFriend}
+						>
+							{#if socialStatus === 'friend'}
+								<UserCheck class="h-4 w-4" />
+							{:else if socialStatus === 'outgoing_pending' || socialStatus === 'incoming_pending'}
+								<Clock class="h-4 w-4" />
+							{:else}
+								<UserPlus class="h-4 w-4" />
+							{/if}
+							{friendButtonLabel}
+						</Button>
 					{/if}
 				</div>
 
@@ -174,5 +248,11 @@
 		:global(.h-44) {
 			border-color: #eab308;
 		}
+	}
+
+	:global(.friend-action) {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
 	}
 </style>

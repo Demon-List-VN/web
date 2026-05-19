@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
-	import { Bell, ExternalLink, Inbox, Trash2, X } from 'lucide-svelte';
+	import { Bell, Check, ExternalLink, Inbox, Loader2, Trash2, X } from 'lucide-svelte';
 	import * as Popover from '$lib/components/ui/popover';
 	import { Button } from '$lib/components/ui/button';
 	import { user } from '$lib/client';
 	import supabase from '$lib/client/supabase';
 	import { _, locale } from 'svelte-i18n';
+	import { toast } from 'svelte-sonner';
 
 	type Notification = {
 		id?: number | string;
@@ -13,6 +14,15 @@
 		redirect?: string | null;
 		timestamp?: string | null;
 		to?: string | null;
+		metadata?: {
+			type?: string;
+			actionEndpoints?: {
+				accept?: string;
+				reject?: string;
+				decline?: string;
+			};
+			[key: string]: unknown;
+		} | null;
 	};
 
 	type PopupNotification = Notification & {
@@ -26,6 +36,7 @@
 	let activeUid = '';
 	let loading = false;
 	let clearing = false;
+	let actionLoading = '';
 	let cleanupRealtime: (() => Promise<void>) | null = null;
 	const popupTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
 
@@ -64,6 +75,65 @@
 		const normalized = normalizeNotification(notification);
 		const key = notificationKey(normalized);
 		notifications = [normalized, ...notifications.filter((item) => notificationKey(item) !== key)];
+	}
+
+	function actionEndpoint(notification: Notification, action: 'accept' | 'reject') {
+		const endpoints = notification.metadata?.actionEndpoints;
+		if (!endpoints) return null;
+		return action === 'accept' ? endpoints.accept : endpoints.reject || endpoints.decline || null;
+	}
+
+	function isActionable(notification: Notification) {
+		const type = notification.metadata?.type;
+		return (
+			(type === 'friend_request' || type === 'pvp_invite') &&
+			Boolean(actionEndpoint(notification, 'accept')) &&
+			Boolean(actionEndpoint(notification, 'reject'))
+		);
+	}
+
+	async function handleNotificationAction(
+		event: MouseEvent,
+		notification: Notification,
+		action: 'accept' | 'reject'
+	) {
+		event.preventDefault();
+		event.stopPropagation();
+
+		const endpoint = actionEndpoint(notification, action);
+		if (!endpoint || actionLoading) return;
+
+		const key = `${notificationKey(notification)}:${action}`;
+		actionLoading = key;
+
+		try {
+			const response = await fetch(`${import.meta.env.VITE_API_URL}${endpoint}`, {
+				method: 'POST',
+				headers: {
+					Authorization: 'Bearer ' + (await $user.token())!
+				}
+			});
+
+			if (!response.ok) {
+				let message = `Action failed: ${response.status}`;
+				try {
+					const payload = await response.json();
+					message = payload?.error || payload?.message || message;
+				} catch {
+					// Keep status fallback.
+				}
+				throw new Error(message);
+			}
+
+			notifications = notifications.filter(
+				(item) => notificationKey(item) !== notificationKey(notification)
+			);
+			toast.success(action === 'accept' ? $_('general.accept') : $_('general.reject'));
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : 'Notification action failed');
+		} finally {
+			actionLoading = '';
+		}
 	}
 
 	function addUnlockReminder() {
@@ -302,19 +372,64 @@
 		{:else}
 			<div class="notificationList">
 				{#each notifications as notification (notificationKey(notification))}
-					<a class="notificationItem" href={notification.redirect || '#!'}>
-						<span class="itemDot"></span>
-						<span class="itemContent">
-							<span class="message">{notification.content}</span>
-							<span class="meta">
-								{timeSince(notification.timestamp)}
-								{$_('notifications.ago')}
-								{#if notification.redirect}
-									<ExternalLink size={13} />
-								{/if}
+					{#if isActionable(notification)}
+						<div class="notificationItem actionableNotification">
+							<span class="itemDot"></span>
+							<span class="itemContent">
+								<a class="messageLink" href={notification.redirect || '#!'}>
+									<span class="message">{notification.content}</span>
+									<span class="meta">
+										{timeSince(notification.timestamp)}
+										{$_('notifications.ago')}
+										{#if notification.redirect}
+											<ExternalLink size={13} />
+										{/if}
+									</span>
+								</a>
+								<span class="notificationActions">
+									<Button
+										size="sm"
+										on:click={(event) => handleNotificationAction(event, notification, 'accept')}
+										disabled={Boolean(actionLoading)}
+									>
+										{#if actionLoading === `${notificationKey(notification)}:accept`}
+											<Loader2 class="h-4 w-4 animate-spin" />
+										{:else}
+											<Check class="h-4 w-4" />
+										{/if}
+										{$_('general.accept')}
+									</Button>
+									<Button
+										size="sm"
+										variant="outline"
+										on:click={(event) => handleNotificationAction(event, notification, 'reject')}
+										disabled={Boolean(actionLoading)}
+									>
+										{#if actionLoading === `${notificationKey(notification)}:reject`}
+											<Loader2 class="h-4 w-4 animate-spin" />
+										{:else}
+											<X size={14} />
+										{/if}
+										{$_('general.reject')}
+									</Button>
+								</span>
 							</span>
-						</span>
-					</a>
+						</div>
+					{:else}
+						<a class="notificationItem" href={notification.redirect || '#!'}>
+							<span class="itemDot"></span>
+							<span class="itemContent">
+								<span class="message">{notification.content}</span>
+								<span class="meta">
+									{timeSince(notification.timestamp)}
+									{$_('notifications.ago')}
+									{#if notification.redirect}
+										<ExternalLink size={13} />
+									{/if}
+								</span>
+							</span>
+						</a>
+					{/if}
 				{/each}
 			</div>
 		{/if}
@@ -421,6 +536,24 @@
 		&:hover {
 			background: hsl(var(--accent));
 		}
+	}
+
+	.actionableNotification:hover {
+		background: transparent;
+	}
+
+	.messageLink {
+		display: grid;
+		gap: 6px;
+		color: inherit;
+		text-decoration: none;
+	}
+
+	.notificationActions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+		margin-top: 4px;
 	}
 
 	.itemDot {

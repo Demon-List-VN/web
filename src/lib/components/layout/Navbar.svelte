@@ -6,6 +6,7 @@
 
 	import { Button, buttonVariants } from '$lib/components/ui/button/index.js';
 	import NotificationButton from '$lib/components/notificationButton.svelte';
+	import SocialButton from '$lib/components/SocialButton.svelte';
 	import SettingButton from '$lib/components/settingButton.svelte';
 	import UserPopover from '$lib/components/userPopover.svelte';
 	import { user } from '$lib/client';
@@ -90,6 +91,7 @@
 			>
 				<CirclePlus size={18} />
 			</a>
+			<SocialButton />
 			<NotificationButton />
 			<UserPopover {signOut} />
 		{/if}
