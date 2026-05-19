@@ -31,6 +31,14 @@ export type SocialConversation = {
 	participants?: SocialPlayer[];
 	latestMessage?: SocialMessage | null;
 	lastMessageAt?: string | null;
+	unreadCount?: number;
+	readStatus?: {
+		conversationId?: number | string;
+		uid?: string;
+		lastReadMessageId?: number | string | null;
+		lastReadAt?: string | null;
+		[key: string]: unknown;
+	} | null;
 	[key: string]: unknown;
 };
 
@@ -165,6 +173,21 @@ export async function sendSocialMessage(
 		token,
 		body: { content }
 	});
+}
+
+export async function markSocialConversationRead(
+	token: string | null | undefined,
+	conversationId: number | string,
+	messageId?: number | string | null
+) {
+	return socialRequest<SocialConversation['readStatus']>(
+		`/social/conversations/${conversationId}/read`,
+		{
+			method: 'POST',
+			token,
+			body: { messageId }
+		}
+	);
 }
 
 export async function blockSocialPlayer(token: string | null | undefined, blockedUid: string) {

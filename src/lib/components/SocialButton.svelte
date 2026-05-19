@@ -44,6 +44,7 @@
 		getConversationMessageStore,
 		hydrateConversationMessages,
 		hydrateSocialCache,
+		markCachedConversationRead,
 		refreshSocialConversations,
 		refreshSocialFriends,
 		removeConversationsWithPlayerFromCache,
@@ -51,6 +52,7 @@
 		replaceCachedMessage,
 		resetSocialCacheState,
 		setSocialCacheUser,
+		syncCachedConversationNewMessages,
 		updateCachedMessage,
 		updateCachedConversationWithMessage,
 		upsertCachedConversation
@@ -77,6 +79,8 @@
 	let pendingConversationFocusId: string | null = null;
 	let initializedSocialUid = '';
 	let activeMessageUnsubscribe: (() => void) | null = null;
+	let readMarkTimer: ReturnType<typeof setTimeout> | null = null;
+	let lastMarkedReadKey = '';
 
 	const unsubscribeFriends = friendsStore.subscribe((value) => {
 		friends = value;
@@ -108,6 +112,10 @@
 	);
 	$: pendingConversations = conversations.filter(
 		(conversation) => conversation.conversationStatus !== 'active'
+	);
+	$: unreadMessageCount = conversations.reduce(
+		(total, conversation) => total + Math.max(0, Number(conversation.unreadCount || 0)),
+		0
 	);
 	$: if (browser && $user.checked) {
 		const uid = $user.loggedIn ? ($user.data?.uid ?? '') : '';
@@ -166,6 +174,19 @@
 		return `local-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 	}
 
+	function isServerMessage(message: SocialMessage | null | undefined) {
+		return (
+			Boolean(message) &&
+			message?.status !== 'pending' &&
+			message?.status !== 'failed' &&
+			!String(message?.id).startsWith('local-')
+		);
+	}
+
+	function latestServerMessage(items: SocialMessage[]) {
+		return [...items].reverse().find(isServerMessage) || null;
+	}
+
 	function canAddFriend(player: SocialPlayer) {
 		return !['self', 'friend', 'outgoing_pending', 'blocked_by_me', 'blocked_me'].includes(
 			String(player.socialStatus || 'none')
@@ -192,10 +213,11 @@
 
 		try {
 			const tokenValue = await token();
-			await Promise.all([
+			const [, refreshedConversations] = await Promise.all([
 				refreshSocialFriends(uid, tokenValue),
 				refreshSocialConversations(uid, tokenValue)
 			]);
+			await syncCachedConversationNewMessages(uid, tokenValue, refreshedConversations);
 		} catch (error) {
 			toast.error(
 				error instanceof Error
@@ -378,6 +400,7 @@
 			...conversation,
 			latestMessage: message,
 			lastMessageAt: message.createdAt,
+			unreadCount: message.senderUid === uid ? 0 : conversation.unreadCount,
 			conversationStatus: shouldPromote ? 'active' : conversation.conversationStatus,
 			pendingForUid: shouldPromote ? null : conversation.pendingForUid
 		};
@@ -478,7 +501,32 @@
 		activeMessageUnsubscribe?.();
 		activeMessageUnsubscribe = getConversationMessageStore(conversationId).subscribe((value) => {
 			messages = value;
+			if (String(selectedConversation?.id) === String(conversationId)) {
+				scheduleMarkConversationRead(conversationId, value);
+			}
 		});
+	}
+
+	function scheduleMarkConversationRead(
+		conversationId: number | string,
+		value: SocialMessage[] = messages
+	) {
+		const uid = $user.data?.uid;
+		const latest = latestServerMessage(value);
+		if (!uid || !latest?.id) return;
+
+		const key = `${uid}:${conversationId}:${latest.id}`;
+		if (lastMarkedReadKey === key) return;
+
+		if (readMarkTimer) clearTimeout(readMarkTimer);
+		readMarkTimer = setTimeout(async () => {
+			try {
+				await markCachedConversationRead(uid, await token(), conversationId, latest.id);
+				lastMarkedReadKey = key;
+			} catch (error) {
+				console.warn('Failed to mark conversation read', error);
+			}
+		}, 250);
 	}
 
 	function clearSelectedConversation() {
@@ -487,11 +535,16 @@
 		loadingMessages = false;
 		activeMessageUnsubscribe?.();
 		activeMessageUnsubscribe = null;
+		if (readMarkTimer) {
+			clearTimeout(readMarkTimer);
+			readMarkTimer = null;
+		}
 	}
 
 	onDestroy(() => {
 		if (friendSearchTimer) clearTimeout(friendSearchTimer);
 		if (messageSearchTimer) clearTimeout(messageSearchTimer);
+		if (readMarkTimer) clearTimeout(readMarkTimer);
 		activeMessageUnsubscribe?.();
 		unsubscribeFriends();
 		unsubscribeConversations();
@@ -508,6 +561,9 @@
 			on:click={refreshAll}
 		>
 			<Users size={18} />
+			{#if unreadMessageCount > 0}
+				<span class="socialBadge">{unreadMessageCount > 99 ? '99+' : unreadMessageCount}</span>
+			{/if}
 		</button>
 	</Popover.Trigger>
 
@@ -534,7 +590,7 @@
 					/>
 				</div>
 
-				<div class="scrollRegion">
+				<div class="scrollRegion pb-[10px]">
 					{#if friendQuery.trim().length >= 2}
 						<div class="sectionTitle">{text('Search results', 'Kết quả tìm kiếm')}</div>
 						{#if friendResults.length === 0}
@@ -699,11 +755,27 @@
 									<button
 										type="button"
 										class:selectedConversation={String(selectedConversation?.id) === String(conversation.id)}
+										class:hasUnread={Number(conversation.unreadCount || 0) > 0}
 										class="conversationItem"
 										on:click={() => selectConversation(conversation)}
 									>
-										<strong>{conversation.otherPlayer?.name || text('Player', 'Người chơi')}</strong>
-										<span>{conversation.latestMessage?.content || text('No messages yet', 'Chưa có tin nhắn')}</span>
+										<Avatar.Root class="h-8 w-8">
+											{#if conversation.otherPlayer}
+												<Avatar.Image
+													class="object-cover"
+													src={playerAvatar(conversation.otherPlayer)}
+													alt={conversation.otherPlayer.name}
+												/>
+											{/if}
+											<Avatar.Fallback>{conversation.otherPlayer?.name?.[0] || '?'}</Avatar.Fallback>
+										</Avatar.Root>
+										<span class="conversationSummary">
+											<strong>{conversation.otherPlayer?.name || text('Player', 'Người chơi')}</strong>
+											<span>{conversation.latestMessage?.content || text('No messages yet', 'Chưa có tin nhắn')}</span>
+										</span>
+										{#if Number(conversation.unreadCount || 0) > 0}
+											<span class="conversationUnread">{Number(conversation.unreadCount) > 99 ? '99+' : conversation.unreadCount}</span>
+										{/if}
 									</button>
 								{/each}
 							{/if}
@@ -713,11 +785,27 @@
 								<button
 									type="button"
 									class:selectedConversation={String(selectedConversation?.id) === String(conversation.id)}
+									class:hasUnread={Number(conversation.unreadCount || 0) > 0}
 									class="conversationItem"
 									on:click={() => selectConversation(conversation)}
 								>
-									<strong>{conversation.otherPlayer?.name || text('Player', 'Người chơi')}</strong>
-									<span>{conversation.latestMessage?.content || text('No messages yet', 'Chưa có tin nhắn')}</span>
+									<Avatar.Root class="h-8 w-8">
+										{#if conversation.otherPlayer}
+											<Avatar.Image
+												class="object-cover"
+												src={playerAvatar(conversation.otherPlayer)}
+												alt={conversation.otherPlayer.name}
+											/>
+										{/if}
+										<Avatar.Fallback>{conversation.otherPlayer?.name?.[0] || '?'}</Avatar.Fallback>
+									</Avatar.Root>
+									<span class="conversationSummary">
+										<strong>{conversation.otherPlayer?.name || text('Player', 'Người chơi')}</strong>
+										<span>{conversation.latestMessage?.content || text('No messages yet', 'Chưa có tin nhắn')}</span>
+									</span>
+									{#if Number(conversation.unreadCount || 0) > 0}
+										<span class="conversationUnread">{Number(conversation.unreadCount) > 99 ? '99+' : conversation.unreadCount}</span>
+									{/if}
 								</button>
 							{/each}
 						{/if}
@@ -810,6 +898,7 @@
 
 <style lang="scss">
 	.socialTrigger {
+		position: relative;
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
@@ -828,6 +917,25 @@
 			background: hsl(var(--accent));
 			color: var(--textColor1);
 		}
+	}
+
+	.socialBadge {
+		position: absolute;
+		top: -2px;
+		right: -3px;
+		min-width: 17px;
+		height: 17px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0 4px;
+		border: 2px solid hsl(var(--background));
+		border-radius: 999px;
+		background: #ef4444;
+		color: #fff;
+		font-size: 10px;
+		font-weight: 800;
+		line-height: 1;
 	}
 
 	:global(.socialCenter) {
@@ -899,6 +1007,7 @@
 		max-height: min(530px, calc(100vh - 190px));
 		overflow-y: auto;
 		padding-right: 2px;
+		padding-bottom: 10px;
 	}
 
 	.sectionTitle {
@@ -1022,8 +1131,9 @@
 
 	.conversationItem {
 		width: 100%;
-		display: grid;
-		gap: 4px;
+		display: flex;
+		align-items: center;
+		gap: 8px;
 		padding: 9px 8px;
 		border: 0;
 		border-radius: 6px;
@@ -1037,6 +1147,25 @@
 			background: hsl(var(--accent));
 		}
 
+		&.hasUnread {
+			strong {
+				color: var(--textColor);
+				font-weight: 800;
+			}
+		}
+
+		:global(.avatar-root),
+		:global([data-avatar-root]) {
+			flex-shrink: 0;
+		}
+	}
+
+	.conversationSummary {
+		min-width: 0;
+		display: grid;
+		gap: 4px;
+		flex: 1;
+
 		strong {
 			font-size: 13px;
 		}
@@ -1048,6 +1177,22 @@
 			text-overflow: ellipsis;
 			white-space: nowrap;
 		}
+	}
+
+	.conversationUnread {
+		min-width: 18px;
+		height: 18px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0 5px;
+		border-radius: 999px;
+		background: hsl(var(--primary));
+		color: hsl(var(--primary-foreground));
+		font-size: 10px;
+		font-weight: 800;
+		line-height: 1;
+		flex-shrink: 0;
 	}
 
 	.messagePane {

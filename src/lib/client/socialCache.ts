@@ -4,6 +4,7 @@ import {
 	getSocialConversations,
 	getSocialFriends,
 	getSocialMessages,
+	markSocialConversationRead,
 	type SocialConversation,
 	type SocialMessage,
 	type SocialPlayer
@@ -342,6 +343,14 @@ function lastSyncedMessage(messages: SocialMessage[]) {
 	return [...messages].reverse().find(isSyncedMessage) || null;
 }
 
+async function readCachedLastSyncedMessage(uid: string, conversationId: number | string) {
+	const existingRecord = await readMessageRecord(uid, conversationId);
+	const existing = existingRecord?.data?.length
+		? existingRecord.data
+		: get(getConversationMessageStore(conversationId));
+	return lastSyncedMessage(existing);
+}
+
 async function setCachedMessages(
 	uid: string,
 	conversationId: number | string,
@@ -416,6 +425,43 @@ export async function syncConversationMessagesAfter(
 		await updateCachedConversationWithMessage(uid, conversationId, latest);
 	}
 	return messages;
+}
+
+export async function syncCachedConversationNewMessages(
+	uid: string,
+	token: string | null | undefined,
+	conversations: SocialConversation[] = conversationStoreValue()
+) {
+	const results = await Promise.allSettled(
+		conversations.map(async (conversation) => {
+			const lastSynced = await readCachedLastSyncedMessage(uid, conversation.id);
+			if (!lastSynced?.id) return [];
+			return syncConversationMessagesAfter(uid, token, conversation.id, lastSynced.id);
+		})
+	);
+
+	return results.flatMap((result) => (result.status === 'fulfilled' ? result.value : []));
+}
+
+export async function markCachedConversationRead(
+	uid: string,
+	token: string | null | undefined,
+	conversationId: number | string,
+	messageId?: number | string | null
+) {
+	const readStatus = await markSocialConversationRead(token, conversationId, messageId);
+	const conversationIdString = String(conversationId);
+	const next = conversationStoreValue().map((conversation) =>
+		String(conversation.id) === conversationIdString
+			? {
+					...conversation,
+					unreadCount: 0,
+					readStatus
+				}
+			: conversation
+	);
+	await persistConversations(uid, next);
+	return readStatus;
 }
 
 export async function handleSocialMessageNotification(
