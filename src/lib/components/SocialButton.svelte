@@ -9,6 +9,7 @@
 		Inbox,
 		Loader2,
 		MessageCircle,
+		RefreshCw,
 		Search,
 		Send,
 		Swords,
@@ -47,8 +48,10 @@
 		refreshSocialFriends,
 		removeConversationsWithPlayerFromCache,
 		removeFriendFromCache,
+		replaceCachedMessage,
 		resetSocialCacheState,
 		setSocialCacheUser,
+		updateCachedMessage,
 		updateCachedConversationWithMessage,
 		upsertCachedConversation
 	} from '$lib/client/socialCache';
@@ -146,6 +149,21 @@
 			default:
 				return '';
 		}
+	}
+
+	function formatMessageTime(value?: string | null) {
+		const date = value ? new Date(value) : new Date();
+		if (!Number.isFinite(date.getTime())) return '';
+
+		return date.toLocaleTimeString('en-GB', {
+			hour: '2-digit',
+			minute: '2-digit',
+			hour12: false
+		});
+	}
+
+	function createLocalMessageId() {
+		return `local-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 	}
 
 	function canAddFriend(player: SocialPlayer) {
@@ -349,40 +367,111 @@
 		}
 	}
 
-	async function sendMessage() {
-		if (!selectedConversation || !messageDraft.trim() || actionLoading) return;
+	function conversationWithMessage(conversation: SocialConversation, message: SocialMessage) {
+		const uid = $user.data?.uid;
+		const shouldPromote =
+			conversation.pendingForUid === uid &&
+			message.status !== 'pending' &&
+			message.status !== 'failed';
 
-		actionLoading = `send-${selectedConversation.id}`;
+		return {
+			...conversation,
+			latestMessage: message,
+			lastMessageAt: message.createdAt,
+			conversationStatus: shouldPromote ? 'active' : conversation.conversationStatus,
+			pendingForUid: shouldPromote ? null : conversation.pendingForUid
+		};
+	}
+
+	async function sendPendingMessage(
+		localMessage: SocialMessage,
+		conversationSnapshot: SocialConversation | null = selectedConversation
+	) {
+		const uid = $user.data?.uid;
+		if (!uid) return;
+
 		try {
-			const conversationId = selectedConversation.id;
-			const message = await sendSocialMessage(await token(), selectedConversation.id, messageDraft);
-			messageDraft = '';
-			await appendCachedMessages($user.data.uid, conversationId, [message]);
-			const nextConversation = {
-				...selectedConversation,
-				latestMessage: message,
-				lastMessageAt: message.createdAt,
-				conversationStatus:
-					selectedConversation.pendingForUid === $user.data.uid
-						? 'active'
-						: selectedConversation.conversationStatus,
-				pendingForUid:
-					selectedConversation.pendingForUid === $user.data.uid
-						? null
-						: selectedConversation.pendingForUid
+			const sentMessage = {
+				...(await sendSocialMessage(await token(), localMessage.conversationId, localMessage.content)),
+				status: 'sent' as const
 			};
+			await replaceCachedMessage(uid, localMessage.conversationId, localMessage.id, sentMessage);
+
+			const currentConversation =
+				String(selectedConversation?.id) === String(localMessage.conversationId)
+					? selectedConversation
+					: conversations.find(
+							(conversation) => String(conversation.id) === String(localMessage.conversationId)
+						) || conversationSnapshot;
+			const nextConversation = currentConversation
+				? conversationWithMessage(currentConversation, sentMessage)
+				: null;
+
 			await updateCachedConversationWithMessage(
-				$user.data.uid,
-				conversationId,
-				message,
+				uid,
+				localMessage.conversationId,
+				sentMessage,
 				nextConversation
 			);
-			selectedConversation = nextConversation;
+			if (nextConversation && String(selectedConversation?.id) === String(localMessage.conversationId)) {
+				selectedConversation = nextConversation;
+			}
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : text('Failed to send message', 'Không gửi được tin nhắn'));
-		} finally {
-			actionLoading = '';
+			const message =
+				error instanceof Error
+					? error.message
+					: text('Failed to send message', 'Không gửi được tin nhắn');
+			await updateCachedMessage(uid, localMessage.conversationId, localMessage.id, {
+				status: 'failed',
+				error: message
+			});
+			toast.error(message);
 		}
+	}
+
+	async function sendMessage() {
+		if (
+			!selectedConversation ||
+			!messageDraft.trim() ||
+			actionLoading ||
+			String(selectedConversation.id).startsWith('pending-')
+		) {
+			return;
+		}
+
+		const uid = $user.data?.uid;
+		if (!uid) return;
+
+		const conversation = selectedConversation;
+		const content = messageDraft.trim();
+		const optimisticMessage: SocialMessage = {
+			id: createLocalMessageId(),
+			conversationId: conversation.id,
+			senderUid: uid,
+			content,
+			createdAt: new Date().toISOString(),
+			status: 'pending'
+		};
+		messageDraft = '';
+
+		await appendCachedMessages(uid, conversation.id, [optimisticMessage]);
+		const nextConversation = conversationWithMessage(conversation, optimisticMessage);
+		await updateCachedConversationWithMessage(uid, conversation.id, optimisticMessage, nextConversation);
+		selectedConversation = nextConversation;
+		void sendPendingMessage(optimisticMessage, nextConversation);
+	}
+
+	async function retryMessage(message: SocialMessage) {
+		const uid = $user.data?.uid;
+		if (!uid || message.status === 'pending') return;
+
+		const pendingMessage = {
+			...message,
+			status: 'pending' as const,
+			error: undefined
+		};
+		await updateCachedMessage(uid, message.conversationId, message.id, pendingMessage);
+		void sendPendingMessage(pendingMessage, selectedConversation);
 	}
 
 	function watchConversationMessages(conversationId: number | string) {
@@ -667,8 +756,29 @@
 									</div>
 								{:else}
 									{#each messages as message (message.id)}
-										<div class:selfMessage={message.senderUid === $user.data?.uid} class="messageBubble">
-											{message.content}
+										<div
+											class:selfMessage={message.senderUid === $user.data?.uid}
+											class:pendingMessage={message.status === 'pending'}
+											class:failedMessage={message.status === 'failed'}
+											class="messageBubble"
+										>
+											<span class="messageText">{message.content}</span>
+											<span class="messageMeta">
+												<span>{formatMessageTime(message.createdAt)}</span>
+												{#if message.status === 'pending'}
+													<span>{text('Sending', 'Đang gửi')}</span>
+												{:else if message.status === 'failed'}
+													<button
+														type="button"
+														class="retryMessageButton"
+														on:click={() => retryMessage(message)}
+														title={message.error || text('Retry', 'Gửi lại')}
+													>
+														<RefreshCw size={12} />
+														<span>{text('Retry', 'Gửi lại')}</span>
+													</button>
+												{/if}
+											</span>
 										</div>
 									{/each}
 								{/if}
@@ -991,7 +1101,10 @@
 	.messageBubble {
 		max-width: 82%;
 		align-self: flex-start;
+		display: grid;
+		gap: 4px;
 		padding: 8px 10px;
+		border: 1px solid transparent;
 		border-radius: 7px;
 		background: hsl(var(--muted));
 		color: var(--textColor);
@@ -1003,6 +1116,46 @@
 			align-self: flex-end;
 			background: hsl(var(--primary));
 			color: hsl(var(--primary-foreground));
+		}
+
+		&.pendingMessage {
+			opacity: 0.58;
+		}
+
+		&.failedMessage {
+			border-color: #ef4444;
+			opacity: 1;
+		}
+	}
+
+	.messageText {
+		white-space: pre-wrap;
+	}
+
+	.messageMeta {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 7px;
+		font-size: 11px;
+		line-height: 1;
+		opacity: 0.72;
+	}
+
+	.retryMessageButton {
+		display: inline-flex;
+		align-items: center;
+		gap: 3px;
+		padding: 0;
+		border: 0;
+		background: transparent;
+		color: inherit;
+		font: inherit;
+		font-weight: 700;
+		cursor: pointer;
+
+		&:hover {
+			text-decoration: underline;
 		}
 	}
 

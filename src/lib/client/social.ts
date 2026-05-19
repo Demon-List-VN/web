@@ -40,6 +40,8 @@ export type SocialMessage = {
 	senderUid: string;
 	content: string;
 	createdAt: string;
+	status?: 'pending' | 'failed' | 'sent';
+	error?: string;
 	[key: string]: unknown;
 };
 

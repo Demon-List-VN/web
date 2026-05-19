@@ -289,8 +289,57 @@ function mergeMessages(left: SocialMessage[], right: SocialMessage[]) {
 	return sortMessages([...byId.values()]);
 }
 
+function isSyncedMessage(message: SocialMessage) {
+	return (
+		message.status !== 'pending' &&
+		message.status !== 'failed' &&
+		!String(message.id).startsWith('local-')
+	);
+}
+
+export async function replaceCachedMessage(
+	uid: string,
+	conversationId: number | string,
+	localId: number | string,
+	nextMessage: SocialMessage
+) {
+	const existingRecord = await readMessageRecord(uid, conversationId);
+	const existing = existingRecord?.data?.length
+		? existingRecord.data
+		: get(getConversationMessageStore(conversationId));
+	const replaced = existing.some((message) => String(message.id) === String(localId));
+	const next = replaced
+		? existing.map((message) =>
+				String(message.id) === String(localId) ? nextMessage : message
+			)
+		: mergeMessages(existing, [nextMessage]);
+	await setCachedMessages(uid, conversationId, next, Boolean(existingRecord?.complete));
+	return next;
+}
+
+export async function updateCachedMessage(
+	uid: string,
+	conversationId: number | string,
+	messageId: number | string,
+	patch: Partial<SocialMessage>
+) {
+	const existingRecord = await readMessageRecord(uid, conversationId);
+	const existing = existingRecord?.data?.length
+		? existingRecord.data
+		: get(getConversationMessageStore(conversationId));
+	const next = existing.map((message) =>
+		String(message.id) === String(messageId) ? { ...message, ...patch } : message
+	);
+	await setCachedMessages(uid, conversationId, next, Boolean(existingRecord?.complete));
+	return next;
+}
+
 function lastMessage(messages: SocialMessage[]) {
 	return messages[messages.length - 1] || null;
+}
+
+function lastSyncedMessage(messages: SocialMessage[]) {
+	return [...messages].reverse().find(isSyncedMessage) || null;
 }
 
 async function setCachedMessages(
@@ -384,7 +433,7 @@ export async function handleSocialMessageNotification(
 	const existingMessages = existingRecord?.data?.length
 		? existingRecord.data
 		: get(getConversationMessageStore(conversationId));
-	const previousLast = lastMessage(existingMessages);
+	const previousLast = lastSyncedMessage(existingMessages);
 
 	await appendCachedMessages(uid, conversationId, [message], {
 		complete: Boolean(existingRecord?.complete)
