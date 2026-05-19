@@ -288,6 +288,8 @@ export const PVP_ACTIVE_MATCH_STATUSES = ['pending', 'in_progress', 'waiting_res
 export const PVP_FINISHED_MATCH_STATUSES = ['completed', 'cancelled', 'disputed'];
 export const PVP_DIFFICULTIES: PvpDifficulty[] = ['easy', 'medium', 'hard'];
 export const PVP_PROVISIONAL_MATCHES = 5;
+export const PVP_CLASSIC_MATCH_DURATION_MS = 15 * 60 * 1000;
+export const PVP_PLATFORMER_MATCH_DURATION_MS = 60 * 60 * 1000;
 
 type PvpRequestInit = Omit<RequestInit, 'body'> & {
 	token?: string | null;
@@ -775,7 +777,11 @@ export function getPvpMatchEndMs(match: PvpMatch | null | undefined) {
 	if (explicit) return explicit;
 
 	const started = getPvpMatchStartMs(match);
-	return started ? started + 15 * 60 * 1000 : null;
+	const duration =
+		getPvpMode(match) === 'platformer'
+			? PVP_PLATFORMER_MATCH_DURATION_MS
+			: PVP_CLASSIC_MATCH_DURATION_MS;
+	return started ? started + duration : null;
 }
 
 export function getPvpMatchAcceptanceExpiresMs(match: PvpMatch | null | undefined) {
