@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
-	import { onDestroy } from 'svelte';
+	import { onDestroy, tick } from 'svelte';
 	import { get } from 'svelte/store';
 	import {
 		Ban,
@@ -81,6 +81,8 @@
 	let activeMessageUnsubscribe: (() => void) | null = null;
 	let readMarkTimer: ReturnType<typeof setTimeout> | null = null;
 	let lastMarkedReadKey = '';
+	let messageListElement: HTMLDivElement | null = null;
+	let lastScrolledMessageKey = '';
 
 	const unsubscribeFriends = friendsStore.subscribe((value) => {
 		friends = value;
@@ -185,6 +187,29 @@
 
 	function latestServerMessage(items: SocialMessage[]) {
 		return [...items].reverse().find(isServerMessage) || null;
+	}
+
+	async function scrollMessagesToBottom() {
+		if (!browser) return;
+
+		await tick();
+		requestAnimationFrame(() => {
+			if (!messageListElement) return;
+			messageListElement.scrollTop = messageListElement.scrollHeight;
+		});
+	}
+
+	function maybeScrollMessagesToBottom(
+		conversationId: number | string,
+		value: SocialMessage[],
+		force = false
+	) {
+		const latest = value[value.length - 1];
+		const key = `${conversationId}:${latest?.id ?? 'empty'}:${value.length}`;
+		if (!force && key === lastScrolledMessageKey) return;
+
+		lastScrolledMessageKey = key;
+		void scrollMessagesToBottom();
 	}
 
 	function canAddFriend(player: SocialPlayer) {
@@ -478,6 +503,7 @@
 		messageDraft = '';
 
 		await appendCachedMessages(uid, conversation.id, [optimisticMessage]);
+		maybeScrollMessagesToBottom(conversation.id, [...messages, optimisticMessage], true);
 		const nextConversation = conversationWithMessage(conversation, optimisticMessage);
 		await updateCachedConversationWithMessage(uid, conversation.id, optimisticMessage, nextConversation);
 		selectedConversation = nextConversation;
@@ -503,6 +529,7 @@
 			messages = value;
 			if (String(selectedConversation?.id) === String(conversationId)) {
 				scheduleMarkConversationRead(conversationId, value);
+				maybeScrollMessagesToBottom(conversationId, value);
 			}
 		});
 	}
@@ -533,6 +560,7 @@
 		selectedConversation = null;
 		messages = [];
 		loadingMessages = false;
+		lastScrolledMessageKey = '';
 		activeMessageUnsubscribe?.();
 		activeMessageUnsubscribe = null;
 		if (readMarkTimer) {
@@ -837,7 +865,7 @@
 									<span>{text('Pending', 'Đang chờ')}</span>
 								{/if}
 							</div>
-							<div class="messageList">
+							<div class="messageList" bind:this={messageListElement}>
 								{#if loadingMessages}
 									<div class="emptyState compact">
 										<Loader2 class="h-4 w-4 animate-spin" />

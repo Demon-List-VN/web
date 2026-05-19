@@ -1361,7 +1361,7 @@
 	</div>
 
 	<Tabs.Root bind:value={activePvpTab}>
-		<Tabs.List class="pvp-tab-list py-[20px]" aria-label={$_('pvp.tabs.label')}>
+		<Tabs.List class="pvp-tab-list" aria-label={$_('pvp.tabs.label')}>
 			<Tabs.Trigger value="lobby" class="pvp-tab-trigger">
 				<Swords class="h-4 w-4" />
 				{$_('pvp.tabs.lobby')}
@@ -1966,7 +1966,8 @@
 		border: 1px solid hsl(var(--border));
 		border-radius: 8px;
 		background: hsl(var(--muted) / 0.28);
-		padding: 20px 4px;
+		padding-block: 20px !important;
+		padding-inline: 4px;
 	}
 
 	:global(.pvp-tab-trigger) {
