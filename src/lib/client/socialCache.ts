@@ -316,7 +316,7 @@ export async function hydrateConversationMessages(uid: string, conversationId: n
 	const record = await readMessageRecord(uid, conversationId);
 	const messages = record?.data || [];
 	getConversationMessageStore(conversationId).set(messages);
-	return { messages, complete: Boolean(record?.complete) };
+	return { messages, complete: Boolean(record?.complete), cached: Boolean(record) };
 }
 
 export async function ensureConversationMessages(
@@ -325,7 +325,7 @@ export async function ensureConversationMessages(
 	conversationId: number | string
 ) {
 	const cached = await hydrateConversationMessages(uid, conversationId);
-	if (cached.messages.length > 0 && cached.complete) {
+	if (cached.complete) {
 		return cached.messages;
 	}
 

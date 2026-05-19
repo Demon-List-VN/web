@@ -19,7 +19,7 @@
 	import * as Avatar from '$lib/components/ui/avatar';
 	import * as Popover from '$lib/components/ui/popover';
 	import * as Tabs from '$lib/components/ui/tabs';
-	import { Button } from '$lib/components/ui/button';
+	import { Button, buttonVariants } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { user } from '$lib/client';
 	import { isActive } from '$lib/client/isSupporterActive';
@@ -41,6 +41,7 @@
 		ensureConversationMessages,
 		friendsStore,
 		getConversationMessageStore,
+		hydrateConversationMessages,
 		hydrateSocialCache,
 		refreshSocialConversations,
 		refreshSocialFriends,
@@ -269,13 +270,26 @@
 		}
 	}
 
-	async function startMessage(player: SocialPlayer) {
+	async function startMessage(player: SocialPlayer, event?: Event) {
+		event?.preventDefault();
+		event?.stopPropagation();
+
 		if (actionLoading || player.uid === $user.data?.uid) return;
 
-		actionLoading = `message-${player.uid}`;
 		activeTab = 'conversations';
 		messageQuery = '';
 		messageResults = [];
+		const cachedConversation = conversations.find((conversation) => {
+			if (conversation.otherPlayer?.uid === player.uid) return true;
+			return conversation.participants?.some((participant) => participant.uid === player.uid);
+		});
+
+		if (cachedConversation) {
+			await selectConversation(cachedConversation);
+			return;
+		}
+
+		actionLoading = `message-${player.uid}`;
 		selectedConversation = {
 			id: `pending-${player.uid}`,
 			otherPlayer: player,
@@ -322,9 +336,11 @@
 	async function selectConversation(conversation: SocialConversation) {
 		selectedConversation = conversation;
 		watchConversationMessages(conversation.id);
-		loadingMessages = get(getConversationMessageStore(conversation.id)).length === 0;
 
 		try {
+			const cached = await hydrateConversationMessages($user.data.uid, conversation.id);
+			loadingMessages = !cached.cached;
+			if (cached.complete) return;
 			await ensureConversationMessages($user.data.uid, await token(), conversation.id);
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : text('Failed to load messages', 'Không tải được tin nhắn'));
@@ -477,15 +493,15 @@
 										>
 											<Swords class="h-4 w-4" />
 										</Button>
-										<Button
-											size="icon"
-											variant="ghost"
+										<button
+											type="button"
+											class={`${buttonVariants({ variant: 'ghost', size: 'icon' })} messageActionButton`}
 											disabled={['self', 'blocked_by_me', 'blocked_me'].includes(String(player.socialStatus)) || Boolean(actionLoading)}
-											on:click={() => startMessage(player)}
+											on:click|preventDefault|stopPropagation={() => startMessage(player)}
 											title={text('Message', 'Nhắn tin')}
 										>
 											<MessageCircle class="h-4 w-4" />
-										</Button>
+										</button>
 										<Button
 											size="icon"
 											variant="ghost"
@@ -529,9 +545,14 @@
 									<Button size="icon" variant="ghost" on:click={() => invitePlayer(player)} title={text('Invite 1v1', 'Mời 1v1')}>
 										<Swords class="h-4 w-4" />
 									</Button>
-									<Button size="icon" variant="ghost" on:click={() => startMessage(player)} title={text('Message', 'Nhắn tin')}>
+									<button
+										type="button"
+										class={`${buttonVariants({ variant: 'ghost', size: 'icon' })} messageActionButton`}
+										on:click|preventDefault|stopPropagation={() => startMessage(player)}
+										title={text('Message', 'Nhắn tin')}
+									>
 										<MessageCircle class="h-4 w-4" />
-									</Button>
+									</button>
 									<Button size="icon" variant="ghost" on:click={() => blockPlayer(player)} title={text('Block', 'Chặn')}>
 										<Ban class="h-4 w-4" />
 									</Button>
@@ -555,7 +576,11 @@
 				{#if messageQuery.trim().length >= 2 && messageResults.length > 0}
 					<div class="messageSearchResults">
 						{#each messageResults as player (player.uid)}
-							<button class="messageSearchItem" type="button" on:click={() => startMessage(player)}>
+							<button
+								class="messageSearchItem"
+								type="button"
+								on:click|preventDefault|stopPropagation={() => startMessage(player)}
+							>
 								<Avatar.Root class="h-7 w-7">
 									<Avatar.Image class="object-cover" src={playerAvatar(player)} alt={player.name} />
 									<Avatar.Fallback>{player.name?.[0] || '?'}</Avatar.Fallback>
@@ -814,6 +839,10 @@
 		align-items: center;
 		gap: 2px;
 		flex-shrink: 0;
+	}
+
+	.messageActionButton {
+		border: 0;
 	}
 
 	.emptyState {
