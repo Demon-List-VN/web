@@ -24,6 +24,7 @@
 		getPvpMatch,
 		getPvpMatchEndMs,
 		getPvpMatchId,
+		getPvpMode,
 		getPvpMatchStartMs,
 		getPvpMessageSenderIsAnonymous,
 		getPvpOpponent,
@@ -40,6 +41,7 @@
 		getPvpParticipantRatingDiff,
 		getPvpWinnerUid,
 		getTimeMs,
+		formatPvpProgressValue,
 		hasPvpParticipantAccepted,
 		isPvpMatchRanked,
 		isActivePvpMatch,
@@ -50,6 +52,7 @@
 		sendPvpMatchMessage,
 		type PvpMatch,
 		type PvpMatchMessage,
+		type PvpMode,
 		type PvpParticipant
 	} from '$lib/client/pvp';
 	import { setPvpRealtimeAuth, subscribeToPvpMatchDetail } from '$lib/client/pvpRealtime';
@@ -104,6 +107,8 @@
 		hasPoints: boolean;
 		minX: number;
 		maxX: number;
+		maxY: number;
+		mode: PvpMode;
 	};
 
 	let match: PvpMatch | null = null;
@@ -130,6 +135,7 @@
 	$: matchId = $page.params.id;
 	$: currentUid = $user.data?.uid;
 	$: status = getPvpStatus(match);
+	$: matchMode = getPvpMode(match);
 	$: level = getPvpLevel(match);
 	$: levelConfirmed = isPvpMatchConfirmedByBoth(match);
 	$: visibleLevel = levelConfirmed ? level : null;
@@ -195,7 +201,7 @@
 						values: { time: formatDuration(postMatchChatRemainingMs) }
 					})
 				: $_('pvp.chat_during_match');
-	$: progressGraphData = getProgressGraphData(messages, orderedParticipants);
+	$: progressGraphData = getProgressGraphData(messages, orderedParticipants, matchMode);
 
 	$: if (
 		$user.checked &&
@@ -443,7 +449,8 @@
 		try {
 			await sendPvpInvite(await $user.token(), {
 				inviteeUid,
-				anonymous: getPvpParticipantIsAnonymous(selfParticipant)
+				anonymous: getPvpParticipantIsAnonymous(selfParticipant),
+				mode: matchMode
 			});
 			toast.success($_('pvp.toast.rematch_sent'));
 			await goto('/pvp');
@@ -650,7 +657,7 @@
 		return metadataText(messageMetadata(message), 'kind');
 	}
 
-	function progressMessageEvent(message: PvpMatchMessage) {
+	function progressMessageEvent(message: PvpMatchMessage, mode: PvpMode = matchMode) {
 		if (message.type !== 'system' || messageMetadataKind(message) !== 'progress') return null;
 
 		const metadata = messageMetadata(message);
@@ -661,7 +668,10 @@
 
 		return {
 			uid,
-			progress: Math.max(0, Math.min(100, progress)),
+			progress:
+				mode === 'platformer'
+					? Math.max(0, Math.floor(progress))
+					: Math.max(0, Math.min(100, progress)),
 			timeMs
 		};
 	}
@@ -683,7 +693,8 @@
 
 	function getProgressGraphData(
 		sourceMessages: PvpMatchMessage[],
-		items: PvpParticipant[] = orderedParticipants
+		items: PvpParticipant[] = orderedParticipants,
+		mode: PvpMode = matchMode
 	): ProgressGraphData {
 		const progressMessages = messagesAfterLatestLevelChange(sourceMessages);
 		const series = items.slice(0, 2).map((participant, index) => ({
@@ -695,7 +706,7 @@
 		}));
 
 		const parsed = progressMessages
-			.map(progressMessageEvent)
+			.map((message) => progressMessageEvent(message, mode))
 			.filter((entry): entry is NonNullable<ReturnType<typeof progressMessageEvent>> =>
 				Boolean(entry)
 			)
@@ -722,13 +733,27 @@
 		}
 
 		const maxX = Math.max(60, ...series.flatMap((item) => item.points.map((point) => point.x)));
+		const maxProgress = Math.max(0, ...series.flatMap((item) => item.points.map((point) => point.y)));
+		const maxY = mode === 'platformer' ? Math.max(1, maxProgress) : 100;
 
 		return {
 			series: series.map(({ uid, ...item }) => item),
 			hasPoints: series.some((item) => item.points.length > 0),
 			minX: 0,
-			maxX
+			maxX,
+			maxY,
+			mode
 		};
+	}
+
+	function participantProgressBarWidth(participant: PvpParticipant) {
+		const progress = getPvpProgress(participant);
+		if (matchMode === 'platformer') {
+			const maxProgress = Math.max(1, ...orderedParticipants.map((item) => getPvpProgress(item)));
+			return Math.max(0, Math.min(100, (progress / maxProgress) * 100));
+		}
+
+		return Math.max(0, Math.min(100, progress));
 	}
 
 	function messageSenderName(
@@ -830,12 +855,18 @@
 		if (kind === 'progress') {
 			const progress = metadataNumber(metadata, 'progress');
 			if (progress !== null) {
-				content = $_('pvp.system_message.progress', {
-					values: {
-						player: systemParticipantName(metadataText(metadata, 'uid')),
-						progress: compactNumber(progress)
+				const mode = metadataText(metadata, 'mode') === 'platformer' ? 'platformer' : matchMode;
+				content = $_(
+					mode === 'platformer'
+						? 'pvp.system_message.progress_platformer'
+						: 'pvp.system_message.progress',
+					{
+						values: {
+							player: systemParticipantName(metadataText(metadata, 'uid')),
+							progress: compactNumber(progress)
+						}
 					}
-				});
+				);
 			}
 		}
 
@@ -965,6 +996,14 @@
 				chart.data.datasets = getProgressChartDatasets(nextData);
 				chart.options.scales!.x!.min = nextData.minX;
 				chart.options.scales!.x!.max = nextData.maxX;
+				chart.options.scales!.y!.max = nextData.maxY;
+				chart.options.scales!.y!.title!.text =
+					nextData.mode === 'platformer'
+						? $_('pvp.progress_graph.checkpoints_axis')
+						: $_('pvp.progress_graph.progress_axis');
+				chart.options.scales!.y!.ticks!.callback = (value) =>
+					nextData.mode === 'platformer' ? String(value) : `${value}%`;
+				chart.options.plugins!.tooltip!.callbacks!.label = getProgressTooltipLabel(nextData);
 				chart.update();
 			},
 			destroy() {
@@ -1009,10 +1048,13 @@
 					},
 					y: {
 						min: 0,
-						max: 100,
+						max: data.maxY,
 						title: {
 							display: true,
-							text: $_('pvp.progress_graph.progress_axis'),
+							text:
+								data.mode === 'platformer'
+									? $_('pvp.progress_graph.checkpoints_axis')
+									: $_('pvp.progress_graph.progress_axis'),
 							color: chartColor('--muted-foreground', '#71717a')
 						},
 						border: {
@@ -1023,7 +1065,7 @@
 						},
 						ticks: {
 							color: chartColor('--muted-foreground', '#71717a'),
-							callback: (value) => `${value}%`,
+							callback: (value) => (data.mode === 'platformer' ? String(value) : `${value}%`),
 							precision: 0
 						}
 					}
@@ -1040,7 +1082,7 @@
 					tooltip: {
 						callbacks: {
 							title: (context) => formatDuration(Number(context[0]?.parsed.x ?? 0) * 1000),
-							label: (context) => `${context.dataset.label}: ${context.parsed.y}%`
+							label: getProgressTooltipLabel(data)
 						}
 					}
 				}
@@ -1063,6 +1105,11 @@
 			pointRadius: 3,
 			pointHoverRadius: 6
 		}));
+	}
+
+	function getProgressTooltipLabel(data: ProgressGraphData) {
+		return (context: { dataset: { label?: string }; parsed: { y: number } }) =>
+			`${context.dataset.label}: ${formatPvpProgressValue(context.parsed.y, data.mode)}`;
 	}
 
 	function dismissGeodeAlert() {
@@ -1362,7 +1409,7 @@
 
 											<div class="participant-progress">
 												<div class="progress-label">
-													<span>{getPvpProgress(participant)}%</span>
+													<span>{formatPvpProgressValue(getPvpProgress(participant), matchMode)}</span>
 													<span>
 														<Gauge class="h-3.5 w-3.5" />
 														{formatDuration(getPvpTimeReachedMs(participant))}
@@ -1371,7 +1418,7 @@
 												<div class="progress-track">
 													<div
 														class="progress-bar"
-														style={`width: ${Math.min(100, getPvpProgress(participant))}%;`}
+														style={`width: ${participantProgressBarWidth(participant)}%;`}
 													/>
 												</div>
 											</div>

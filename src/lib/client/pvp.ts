@@ -1,4 +1,5 @@
 export type PvpDifficulty = 'easy' | 'medium' | 'hard';
+export type PvpMode = 'classic' | 'platformer';
 
 export type PvpMatchStatus =
 	| 'pending'
@@ -28,6 +29,10 @@ export type PvpPlayer = {
 	pvp_rated_match_count?: number | null;
 	pvpStartingRating?: number | null;
 	pvpRatingInitializedAt?: string | null;
+	pvpPlatformerRating?: number | null;
+	pvpPlatformerRatedMatchCount?: number | null;
+	pvpPlatformerStartingRating?: number | null;
+	pvpPlatformerRatingInitializedAt?: string | null;
 	anonymous?: boolean;
 	isAnonymous?: boolean;
 	avatarVersion?: number;
@@ -104,6 +109,7 @@ export type PvpMatch = {
 	id?: number | string;
 	matchId?: number | string;
 	status?: PvpMatchStatus;
+	mode?: PvpMode | string;
 	difficulty?: PvpDifficulty | string;
 	levelId?: number;
 	winnerUid?: string | null;
@@ -168,6 +174,7 @@ export type PvpInvite = {
 	id?: number | string;
 	inviteId?: number | string;
 	status?: PvpInviteStatus;
+	mode?: PvpMode | string;
 	difficulty?: PvpDifficulty | string;
 	inviterUid?: string;
 	inviteeUid?: string;
@@ -190,6 +197,7 @@ export type PvpInvite = {
 export type PvpMatchmakingRequest = {
 	id?: number | string;
 	status?: PvpQueueStatus;
+	mode?: PvpMode | string;
 	difficulty?: PvpDifficulty | string;
 	uid?: string;
 	userId?: string;
@@ -209,6 +217,7 @@ export type PvpMatchmakingRequest = {
 };
 
 export type PvpRatingState = {
+	mode?: PvpMode | string;
 	pvpRating?: number | null;
 	pvpRatedMatchCount?: number | null;
 	pvpStartingRating?: number | null;
@@ -219,9 +228,17 @@ export type PvpRatingState = {
 
 export type PvpMe = {
 	rating?: PvpRatingState | null;
+	ratings?: {
+		classic?: PvpRatingState | null;
+		platformer?: PvpRatingState | null;
+	};
+	platformerRating?: PvpRatingState | null;
 	pvpRating?: number | null;
 	pvpRatedMatchCount?: number | null;
 	pvpRatingInitialized?: boolean;
+	pvpPlatformerRating?: number | null;
+	pvpPlatformerRatedMatchCount?: number | null;
+	pvpPlatformerRatingInitialized?: boolean;
 	activeMatch: PvpMatch | null;
 	matchmaking: PvpMatchmakingRequest | null;
 	incomingInvites: PvpInvite[];
@@ -258,6 +275,7 @@ export type PvpWeeklyRacePlayer = {
 };
 
 export type PvpWeeklyRace = {
+	mode?: PvpMode | string;
 	week: PvpWeeklyRaceWeek | null;
 	currentWeek: PvpWeeklyRaceWeek | null;
 	previousWeek: PvpWeeklyRaceWeek | null;
@@ -322,8 +340,16 @@ async function pvpRequest<T>(path: string, options: PvpRequestInit = {}): Promis
 }
 
 export function normalizePvpMe(payload: any): PvpMe {
+	const platformerRating =
+		payload?.platformerRating ?? payload?.ratings?.platformer ?? payload?.platformer_rating ?? null;
+
 	return {
 		rating: payload?.rating ?? null,
+		ratings: payload?.ratings ?? {
+			classic: payload?.rating ?? null,
+			platformer: platformerRating
+		},
+		platformerRating,
 		pvpRating: payload?.pvpRating ?? payload?.pvp_rating ?? payload?.rating?.pvpRating ?? null,
 		pvpRatedMatchCount:
 			payload?.pvpRatedMatchCount ??
@@ -334,6 +360,21 @@ export function normalizePvpMe(payload: any): PvpMe {
 			payload?.pvpRatingInitialized ??
 			payload?.pvp_rating_initialized ??
 			payload?.rating?.pvpRatingInitialized ??
+			false,
+		pvpPlatformerRating:
+			payload?.pvpPlatformerRating ??
+			payload?.pvp_platformer_rating ??
+			platformerRating?.pvpRating ??
+			null,
+		pvpPlatformerRatedMatchCount:
+			payload?.pvpPlatformerRatedMatchCount ??
+			payload?.pvp_platformer_rated_match_count ??
+			platformerRating?.pvpRatedMatchCount ??
+			null,
+		pvpPlatformerRatingInitialized:
+			payload?.pvpPlatformerRatingInitialized ??
+			payload?.pvp_platformer_rating_initialized ??
+			platformerRating?.pvpRatingInitialized ??
 			false,
 		activeMatch:
 			payload?.activeMatch ??
@@ -375,11 +416,15 @@ export async function getPvpMe(token?: string | null) {
 	return normalizePvpMe(await pvpRequest('/pvp/me', { token }));
 }
 
-export async function startPvpMatchmaking(token: string | null | undefined, anonymous = false) {
+export async function startPvpMatchmaking(
+	token: string | null | undefined,
+	anonymous = false,
+	mode: PvpMode = 'classic'
+) {
 	return pvpRequest<PvpMatchmakingRequest | PvpMe>('/pvp/matchmaking', {
 		method: 'POST',
 		token,
-		body: { anonymous }
+		body: { anonymous, mode }
 	});
 }
 
@@ -399,7 +444,7 @@ export async function cancelPvpMatchmaking(token?: string | null) {
 
 export async function sendPvpInvite(
 	token: string | null | undefined,
-	payload: { inviteeUid: string; anonymous?: boolean }
+	payload: { inviteeUid: string; anonymous?: boolean; mode?: PvpMode }
 ) {
 	return pvpRequest<PvpInvite>('/pvp/invites', {
 		method: 'POST',
@@ -410,12 +455,13 @@ export async function sendPvpInvite(
 
 export async function startPvpRating(
 	token: string | null | undefined,
-	startingRating: 800 | 1500 | 2500
+	startingRating: 800 | 1500 | 2500,
+	mode: PvpMode = 'classic'
 ) {
 	return pvpRequest<PvpRatingState>('/pvp/rating/start', {
 		method: 'POST',
 		token,
-		body: { startingRating }
+		body: { startingRating, mode }
 	});
 }
 
@@ -446,8 +492,8 @@ export async function getPvpMatches(token?: string | null) {
 	return normalizePvpMatches(await pvpRequest('/pvp/matches', { token }));
 }
 
-export async function getPvpLeaderboard(limit = 50) {
-	const params = new URLSearchParams({ limit: String(limit) });
+export async function getPvpLeaderboard(limit = 50, mode: PvpMode = 'classic') {
+	const params = new URLSearchParams({ limit: String(limit), mode });
 	const payload = await pvpRequest<PvpLeaderboardPlayer[] | { data?: PvpLeaderboardPlayer[] }>(
 		`/pvp/leaderboard?${params}`
 	);
@@ -460,9 +506,10 @@ export async function getPvpLeaderboard(limit = 50) {
 export async function getPvpWeeklyRace(
 	week: 'current' | 'previous' | string = 'current',
 	limit = 50,
-	uid?: string | null
+	uid?: string | null,
+	mode: PvpMode = 'classic'
 ) {
-	const params = new URLSearchParams({ week, limit: String(limit) });
+	const params = new URLSearchParams({ week, limit: String(limit), mode });
 	if (uid) params.set('uid', uid);
 	const payload = await pvpRequest<PvpWeeklyRace | { data?: PvpWeeklyRace }>(
 		`/pvp/weekly-race?${params}`
@@ -584,6 +631,14 @@ export function getPvpStatus(value: { status?: string } | null | undefined, fall
 	return String(value?.status || fallback).toLowerCase();
 }
 
+export function getPvpMode(match: PvpMatch | PvpInvite | PvpMatchmakingRequest | null | undefined): PvpMode {
+	return match?.mode === 'platformer' ? 'platformer' : 'classic';
+}
+
+export function isPvpPlatformerMatch(match: PvpMatch | null | undefined) {
+	return getPvpMode(match) === 'platformer';
+}
+
 export function isActivePvpMatch(match: PvpMatch | null | undefined) {
 	return PVP_ACTIVE_MATCH_STATUSES.includes(getPvpStatus(match));
 }
@@ -676,6 +731,19 @@ export function getPvpProgress(participant: PvpParticipant | PvpResult | null | 
 		result?.bestProgress ??
 		0;
 	return Number.isFinite(Number(value)) ? Number(value) : 0;
+}
+
+export function formatPvpProgressValue(value: number, mode: PvpMode = 'classic') {
+	if (mode === 'platformer') {
+		return `${Math.max(0, Math.floor(value))} CP`;
+	}
+
+	const progress = Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/\.?0+$/, '');
+	return `${progress}%`;
+}
+
+export function getPvpProgressUnit(mode: PvpMode = 'classic') {
+	return mode === 'platformer' ? 'CP' : '%';
 }
 
 export function getPvpTimeReachedMs(participant: PvpParticipant | PvpResult | null | undefined) {

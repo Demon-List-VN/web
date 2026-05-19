@@ -29,6 +29,7 @@
 		getPvpMatchEndMs,
 		getPvpInviteId,
 		getPvpMatchedMatchId,
+		getPvpMode,
 		getPvpMatchId,
 		getPvpMatch,
 		getPvpMatches,
@@ -55,6 +56,7 @@
 		type PvpMatch,
 		type PvpMatchmakingRequest,
 		type PvpMe,
+		type PvpMode,
 		type PvpWeeklyRace
 	} from '$lib/client/pvp';
 	import {
@@ -88,6 +90,7 @@
 
 	const PVP_GEODE_ALERT_DISMISSED_KEY = 'gdvn:pvp-geode-alert-dismissed';
 	const PVP_ANONYMOUS_MODE_KEY = 'gdvn:pvp-anonymous-mode';
+	const PVP_SELECTED_MODE_KEY = 'gdvn:pvp-selected-mode';
 	const PVP_HIDE_OPPONENT_INFO_KEY = 'gdvn:pvp-hide-opponent-info';
 	const PVP_LAST_AUTO_REDIRECTED_MATCH_KEY = 'gdvn:pvp-last-auto-redirected-match-id';
 	const REALTIME_COALESCE_MS = 200;
@@ -97,6 +100,7 @@
 		{ key: 'all', limit: null }
 	] as const;
 	let selectedPlayer: any = null;
+	let selectedMode: PvpMode = 'classic';
 	let anonymousMode = false;
 	let hideOpponentInfo = false;
 	let anonymousModeReady = false;
@@ -146,6 +150,7 @@
 	let pendingExpirationCheckMatchId: string | null = null;
 	let keydownHandler: ((e: KeyboardEvent) => void) | null = null;
 	let matchmakingCheckTimer: ReturnType<typeof setInterval> | null = null;
+	let loadedMode: PvpMode | '' = '';
 
 	$: currentUid = $user.data?.uid;
 	$: activeMatch =
@@ -160,24 +165,38 @@
 	);
 	$: queueStatus = getPvpStatus(lobby.matchmaking, 'idle');
 	$: isSearching = queueStatus === 'searching';
-	$: pvpRating = lobby.rating?.pvpRating ?? lobby.pvpRating ?? null;
-	$: pvpRatedMatchCount = lobby.rating?.pvpRatedMatchCount ?? lobby.pvpRatedMatchCount ?? 0;
+	$: selectedRatingState = getSelectedRatingState(lobby, selectedMode);
+	$: pvpRating = selectedRatingState?.pvpRating ?? null;
+	$: pvpRatedMatchCount = selectedRatingState?.pvpRatedMatchCount ?? 0;
 	$: pvpRatingInitialized = Boolean(
-		lobby.rating?.pvpRatingInitialized ?? lobby.pvpRatingInitialized ?? pvpRating !== null
+		selectedRatingState?.pvpRatingInitialized ?? pvpRating !== null
 	);
 	$: selectedEloFilter =
 		ELO_GRAPH_FILTERS.find((filter) => filter.key === eloGraphFilter) ?? ELO_GRAPH_FILTERS[0];
-	$: eloGraphPoints = getEloGraphPoints(matches, currentUid, selectedEloFilter.limit);
+	$: eloGraphPoints = getEloGraphPoints(
+		matches.filter((match) => getPvpMode(match) === selectedMode),
+		currentUid,
+		selectedEloFilter.limit
+	);
 	$: eloGraphChartData = getEloGraphChartData(eloGraphPoints);
 	$: eloGraphStart = eloGraphPoints[0]?.rating ?? pvpRating ?? null;
 	$: eloGraphEnd = eloGraphPoints[eloGraphPoints.length - 1]?.rating ?? pvpRating ?? null;
 	$: eloGraphDelta =
 		eloGraphStart !== null && eloGraphEnd !== null ? Math.round(eloGraphEnd - eloGraphStart) : null;
 	$: eloGraphMatchCount = Math.max(0, eloGraphPoints.length - 1);
-	$: pvpWinLossStats = getPvpWinLossStats(matches, currentUid);
-	$: currentWeeklyRacePoints = getCurrentWeeklyRacePoints(weeklyRace, currentUid, matches);
+	$: pvpWinLossStats = getPvpWinLossStats(
+		matches.filter((match) => getPvpMode(match) === selectedMode),
+		currentUid
+	);
+	$: currentWeeklyRacePoints = getCurrentWeeklyRacePoints(
+		weeklyRace,
+		currentUid,
+		matches.filter((match) => getPvpMode(match) === selectedMode)
+	);
 	$: leaderboardMatchesNeeded = Math.max(0, 50 - Number(pvpRatedMatchCount || 0));
-	$: hasRecentLeaderboardMatch = hasRecentRatedPvpMatch(matches);
+	$: hasRecentLeaderboardMatch = hasRecentRatedPvpMatch(
+		matches.filter((match) => getPvpMode(match) === selectedMode)
+	);
 	$: showLeaderboardMatchCountNotice = pvpRatedMatchCount >= 5 && pvpRatedMatchCount < 50;
 	$: showLeaderboardActivityNotice = pvpRatedMatchCount >= 50 && !hasRecentLeaderboardMatch;
 	$: currentSearchRange =
@@ -188,8 +207,12 @@
 		lobby.matchmaking?.created_at;
 	$: queueElapsedMs = getElapsedMs(queueStartedAt, now);
 	$: showSlowSearchAlert = isSearching && queueElapsedMs >= 90 * 1000;
-	$: incomingPending = lobby.incomingInvites.filter((invite) => getPvpStatus(invite) === 'pending');
-	$: outgoingVisible = lobby.outgoingInvites.filter((invite) => getPvpStatus(invite) === 'pending');
+	$: incomingPending = lobby.incomingInvites.filter(
+		(invite) => getPvpStatus(invite) === 'pending' && getPvpMode(invite) === selectedMode
+	);
+	$: outgoingVisible = lobby.outgoingInvites.filter(
+		(invite) => getPvpStatus(invite) === 'pending' && getPvpMode(invite) === selectedMode
+	);
 	$: checkingLobby = $user.checked && $user.loggedIn && !lobbyReady;
 	$: shouldForceStartingRating =
 		$user.checked && $user.loggedIn && lobbyReady && !pvpRatingInitialized;
@@ -222,6 +245,8 @@
 	onMount(() => {
 		showGeodeAlert = localStorage.getItem(PVP_GEODE_ALERT_DISMISSED_KEY) !== 'true';
 		anonymousMode = localStorage.getItem(PVP_ANONYMOUS_MODE_KEY) === 'true';
+		selectedMode =
+			localStorage.getItem(PVP_SELECTED_MODE_KEY) === 'platformer' ? 'platformer' : 'classic';
 		hideOpponentInfo = localStorage.getItem(PVP_HIDE_OPPONENT_INFO_KEY) === 'true';
 		anonymousModeReady = true;
 
@@ -243,7 +268,14 @@
 
 	$: if (anonymousModeReady) {
 		localStorage.setItem(PVP_ANONYMOUS_MODE_KEY, String(anonymousMode));
+		localStorage.setItem(PVP_SELECTED_MODE_KEY, selectedMode);
 		localStorage.setItem(PVP_HIDE_OPPONENT_INFO_KEY, String(hideOpponentInfo));
+	}
+
+	$: if (browser && loadedMode !== selectedMode) {
+		loadedMode = selectedMode;
+		refreshLeaderboard();
+		refreshWeeklyRace();
 	}
 
 	onDestroy(() => {
@@ -309,7 +341,7 @@
 		leaderboardError = '';
 
 		try {
-			leaderboard = await getPvpLeaderboard(50);
+			leaderboard = await getPvpLeaderboard(50, selectedMode);
 		} catch (error) {
 			leaderboard = [];
 			leaderboardError =
@@ -324,7 +356,7 @@
 		weeklyRaceError = '';
 
 		try {
-			weeklyRace = await getPvpWeeklyRace('current', 50, currentUid);
+			weeklyRace = await getPvpWeeklyRace('current', 50, currentUid, selectedMode);
 		} catch (error) {
 			weeklyRace = {
 				week: null,
@@ -361,6 +393,30 @@
 			clearTimeout(timeout);
 		}
 		scheduledRealtimeTasks.clear();
+	}
+
+	function getSelectedRatingState(currentLobby: PvpMe, mode: PvpMode) {
+		if (mode === 'platformer') {
+			return (
+				currentLobby.ratings?.platformer ??
+				currentLobby.platformerRating ?? {
+					mode,
+					pvpRating: currentLobby.pvpPlatformerRating ?? null,
+					pvpRatedMatchCount: currentLobby.pvpPlatformerRatedMatchCount ?? 0,
+					pvpRatingInitialized: currentLobby.pvpPlatformerRatingInitialized ?? false
+				}
+			);
+		}
+
+		return (
+			currentLobby.ratings?.classic ??
+			currentLobby.rating ?? {
+				mode,
+				pvpRating: currentLobby.pvpRating ?? null,
+				pvpRatedMatchCount: currentLobby.pvpRatedMatchCount ?? 0,
+				pvpRatingInitialized: currentLobby.pvpRatingInitialized ?? false
+			}
+		);
 	}
 
 	function realtimeRow(event: PvpRealtimeEvent) {
@@ -821,7 +877,7 @@
 						String(getPvpMatchedMatchId(lobby.matchmaking)) === matchKey ? null : lobby.matchmaking
 				};
 
-				const response = await startPvpMatchmaking(token, anonymousMode);
+				const response = await startPvpMatchmaking(token, anonymousMode, getPvpMode(latestMatch));
 				applyMatchmakingResponse(response);
 			}
 		} catch (error) {
@@ -864,13 +920,33 @@
 	async function chooseStartingRating(startingRating: 800 | 1500 | 2500) {
 		actionLoading = `start-rating-${startingRating}`;
 		try {
-			const rating = await startPvpRating(await $user.token(), startingRating);
+			const rating = await startPvpRating(await $user.token(), startingRating, selectedMode);
+			const nextRatings = {
+				...(lobby.ratings ?? {}),
+				[selectedMode]: rating
+			};
 			lobby = {
 				...lobby,
-				rating,
-				pvpRating: rating.pvpRating ?? null,
-				pvpRatedMatchCount: rating.pvpRatedMatchCount ?? 0,
-				pvpRatingInitialized: true
+				rating: selectedMode === 'classic' ? rating : lobby.rating,
+				platformerRating: selectedMode === 'platformer' ? rating : lobby.platformerRating,
+				ratings: nextRatings,
+				pvpRating: selectedMode === 'classic' ? (rating.pvpRating ?? null) : lobby.pvpRating,
+				pvpRatedMatchCount:
+					selectedMode === 'classic'
+						? (rating.pvpRatedMatchCount ?? 0)
+						: lobby.pvpRatedMatchCount,
+				pvpRatingInitialized:
+					selectedMode === 'classic' ? true : lobby.pvpRatingInitialized,
+				pvpPlatformerRating:
+					selectedMode === 'platformer'
+						? (rating.pvpRating ?? null)
+						: lobby.pvpPlatformerRating,
+				pvpPlatformerRatedMatchCount:
+					selectedMode === 'platformer'
+						? (rating.pvpRatedMatchCount ?? 0)
+						: lobby.pvpPlatformerRatedMatchCount,
+				pvpPlatformerRatingInitialized:
+					selectedMode === 'platformer' ? true : lobby.pvpPlatformerRatingInitialized
 			};
 			toast.success($_('pvp.toast.starting_rating_saved'));
 		} catch (error) {
@@ -888,7 +964,7 @@
 
 		actionLoading = 'matchmaking';
 		try {
-			const response = await startPvpMatchmaking(await $user.token(), anonymousMode);
+			const response = await startPvpMatchmaking(await $user.token(), anonymousMode, selectedMode);
 			applyMatchmakingResponse(response);
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.matchmaking_failed'));
@@ -929,7 +1005,8 @@
 		try {
 			const invite = await sendPvpInvite(await $user.token(), {
 				inviteeUid: selectedPlayer.uid,
-				anonymous: anonymousMode
+				anonymous: anonymousMode,
+				mode: selectedMode
 			});
 			selectedPlayer = null;
 			applyInvite(invite, 'outgoingInvite');
@@ -997,6 +1074,11 @@
 	function statusLabel(value: unknown) {
 		const status = String(value || 'pending');
 		return $_(`pvp.status.${status}`);
+	}
+
+	function selectMode(mode: PvpMode) {
+		if (actionLoading || activeMatch || isSearching) return;
+		selectedMode = mode;
 	}
 
 	function inviteName(invite: PvpInvite, direction: 'incoming' | 'outgoing') {
@@ -1664,6 +1746,29 @@
 						<Card.Content>
 							<div class="anonymous-row">
 								<div>
+									<strong>{$_('pvp.mode_label')}</strong>
+								</div>
+								<div class="mode-toggle-group" aria-label={$_('pvp.mode_label')}>
+									<button
+										type="button"
+										class:active={selectedMode === 'classic'}
+										disabled={Boolean(actionLoading || activeMatch || isSearching)}
+										on:click={() => selectMode('classic')}
+									>
+										{$_('pvp.mode.classic')}
+									</button>
+									<button
+										type="button"
+										class:active={selectedMode === 'platformer'}
+										disabled={Boolean(actionLoading || activeMatch || isSearching)}
+										on:click={() => selectMode('platformer')}
+									>
+										{$_('pvp.mode.platformer')}
+									</button>
+								</div>
+							</div>
+							<div class="anonymous-row">
+								<div>
 									<strong>{$_('pvp.anonymous_mode')}</strong>
 									<span>{$_('pvp.anonymous_mode_hint')}</span>
 								</div>
@@ -2201,6 +2306,40 @@
 		color: hsl(var(--muted-foreground));
 		font-size: 13px;
 		line-height: 1.35;
+	}
+
+	.mode-toggle-group {
+		display: inline-grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		min-width: 190px;
+		overflow: hidden;
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		background: hsl(var(--muted) / 0.35);
+		padding: 3px;
+	}
+
+	.mode-toggle-group button {
+		min-height: 32px;
+		border: 0;
+		border-radius: 6px;
+		background: transparent;
+		padding: 0 10px;
+		color: hsl(var(--muted-foreground));
+		font-size: 13px;
+		font-weight: 700;
+		cursor: pointer;
+	}
+
+	.mode-toggle-group button.active {
+		background: hsl(var(--background));
+		color: hsl(var(--foreground));
+		box-shadow: 0 1px 2px hsl(var(--foreground) / 0.08);
+	}
+
+	.mode-toggle-group button:disabled {
+		cursor: not-allowed;
+		opacity: 0.65;
 	}
 
 	:global(.action-panel),

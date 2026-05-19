@@ -2,7 +2,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import type { PvpMatch } from '$lib/client/pvp';
-	import { getPvpMatchAcceptanceExpiresMs } from '$lib/client/pvp';
+	import { getPvpMatchAcceptanceExpiresMs, getPvpMode } from '$lib/client/pvp';
 	import { _ } from 'svelte-i18n';
 	import { BellRing, Loader2, ShieldCheck, UserCheck } from 'lucide-svelte';
 
@@ -23,6 +23,8 @@
 		{ rating: 1500 as const, key: 'intermediate' },
 		{ rating: 2500 as const, key: 'expert' }
 	];
+
+	$: pendingMatchMode = getPvpMode(pendingMatch);
 
 	function remainingLabel(targetMs: number | null, currentNow: number) {
 		if (!targetMs) return '--:--';
@@ -58,6 +60,10 @@
 			<div class="match-found-row">
 				<span>{$_('pvp.match_type')}</span>
 				<strong>{$_('pvp.ranked')}</strong>
+			</div>
+			<div class="match-found-row">
+				<span>{$_('pvp.mode_label')}</span>
+				<strong>{$_(`pvp.mode.${pendingMatchMode}`)}</strong>
 			</div>
 			<div class="match-found-row">
 				<span>{$_('pvp.acceptance_timer')}</span>

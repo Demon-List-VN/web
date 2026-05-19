@@ -257,6 +257,12 @@
 		"pvp_rating": "Elo PvP",
 		"pvp_rating_short": "{rating}",
 		"pvp_rating_summary": "Elo hiện tại {rating}, đã chơi {count} trận xếp hạng.",
+		"mode_label": "Chế độ",
+		"mode_hint": "Classic dùng phần trăm tiến độ. Platformer dùng số checkpoint và Elo riêng.",
+		"mode": {
+			"classic": "Classic",
+			"platformer": "Platformer"
+		},
 		"tabs": {
 			"label": "Mục Arena",
 			"lobby": "Sảnh",
@@ -365,11 +371,13 @@
 			"description": "Tạo từ sự kiện tiến độ Arena.",
 			"empty": "Chưa có sự kiện tiến độ.",
 			"time_axis": "Thời gian",
-			"progress_axis": "Tiến độ"
+			"progress_axis": "Tiến độ",
+			"checkpoints_axis": "Checkpoint"
 		},
 		"system_sender": "Arena",
 		"system_message": {
 			"progress": "{player} đã đạt {progress}% tiến độ.",
+			"progress_platformer": "{player} đã đạt {progress} checkpoint.",
 			"match_end_win": "{winner} đã thắng trận. Chat sẽ mở thêm {minutes} phút rồi bị tắt.",
 			"match_end_draw": "Trận đấu kết thúc với kết quả hòa. Chat sẽ mở thêm {minutes} phút rồi bị tắt.",
 			"resignation_win": "{resigning} đã đầu hàng. {winner} đã thắng trận. Chat sẽ mở thêm {minutes} phút rồi bị tắt.",

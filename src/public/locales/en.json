@@ -257,6 +257,12 @@
 		"pvp_rating": "PvP rating",
 		"pvp_rating_short": "{rating}",
 		"pvp_rating_summary": "Current rating {rating}, {count} ranked matches played.",
+		"mode_label": "Mode",
+		"mode_hint": "Classic uses percent progress. Platformer uses checkpoint count and a separate Elo.",
+		"mode": {
+			"classic": "Classic",
+			"platformer": "Platformer"
+		},
 		"tabs": {
 			"label": "Arena sections",
 			"lobby": "Lobby",
@@ -365,11 +371,13 @@
 			"description": "Built from Arena progress events.",
 			"empty": "No progress events yet.",
 			"time_axis": "Time",
-			"progress_axis": "Progress"
+			"progress_axis": "Progress",
+			"checkpoints_axis": "Checkpoints"
 		},
 		"system_sender": "Arena",
 		"system_message": {
 			"progress": "{player} reached {progress}% progress.",
+			"progress_platformer": "{player} reached {progress} checkpoints.",
 			"match_end_win": "{winner} won the match. Chat will remain open for {minutes} minutes, then it will be disabled.",
 			"match_end_draw": "The match ended in a draw. Chat will remain open for {minutes} minutes, then it will be disabled.",
 			"resignation_win": "{resigning} resigned. {winner} won the match. Chat will remain open for {minutes} minutes, then it will be disabled.",
