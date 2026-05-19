@@ -576,7 +576,12 @@
 				</div>
 				<Tabs.List class="socialTabList">
 					<Tabs.Trigger value="friends">{text('Friends', 'Bạn bè')}</Tabs.Trigger>
-					<Tabs.Trigger value="conversations">{text('Conversations', 'Hội thoại')}</Tabs.Trigger>
+					<Tabs.Trigger value="conversations" class="socialTabTrigger">
+						<span>{text('Conversations', 'Hội thoại')}</span>
+						{#if unreadMessageCount > 0}
+							<span class="tabUnreadBadge">{unreadMessageCount > 99 ? '99+' : unreadMessageCount}</span>
+						{/if}
+					</Tabs.Trigger>
 				</Tabs.List>
 			</div>
 
@@ -980,6 +985,27 @@
 
 	:global(.socialTabList) {
 		width: auto;
+	}
+
+	:global(.socialTabTrigger) {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.tabUnreadBadge {
+		min-width: 17px;
+		height: 17px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0 5px;
+		border-radius: 999px;
+		background: hsl(var(--primary));
+		color: hsl(var(--primary-foreground));
+		font-size: 10px;
+		font-weight: 800;
+		line-height: 1;
 	}
 
 	.socialPanel {

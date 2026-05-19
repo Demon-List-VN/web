@@ -73,6 +73,8 @@
 	}
 
 	function mergeNotification(notification: Notification) {
+		if (notification.metadata?.type === 'social_message') return;
+
 		const normalized = normalizeNotification(notification);
 		const key = notificationKey(normalized);
 		notifications = [normalized, ...notifications.filter((item) => notificationKey(item) !== key)];
@@ -208,7 +210,11 @@
 			}
 
 			const data = await response.json();
-			notifications = Array.isArray(data) ? data.map(normalizeNotification) : [];
+			notifications = Array.isArray(data)
+				? data
+						.map(normalizeNotification)
+						.filter((notification) => notification.metadata?.type !== 'social_message')
+				: [];
 		} catch {
 			notifications = [];
 		} finally {
@@ -257,8 +263,10 @@
 				},
 				(payload) => {
 					const notification = normalizeNotification(payload.new as Notification);
-					mergeNotification(notification);
 					void handleSocialNotification(uid, notification);
+					if (notification.metadata?.type === 'social_message') return;
+
+					mergeNotification(notification);
 					showPopup(notification);
 				}
 			)
