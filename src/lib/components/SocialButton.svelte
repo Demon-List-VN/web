@@ -1,5 +1,7 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
 	import { onDestroy } from 'svelte';
+	import { get } from 'svelte/store';
 	import {
 		Ban,
 		Clock,
@@ -25,9 +27,6 @@
 	import {
 		blockSocialPlayer,
 		createSocialConversation,
-		getSocialConversations,
-		getSocialFriends,
-		getSocialMessages,
 		searchSocialPlayers,
 		sendFriendRequest,
 		sendSocialMessage,
@@ -36,6 +35,22 @@
 		type SocialPlayer,
 		type SocialStatus
 	} from '$lib/client/social';
+	import {
+		appendCachedMessages,
+		conversationsStore,
+		ensureConversationMessages,
+		friendsStore,
+		getConversationMessageStore,
+		hydrateSocialCache,
+		refreshSocialConversations,
+		refreshSocialFriends,
+		removeConversationsWithPlayerFromCache,
+		removeFriendFromCache,
+		resetSocialCacheState,
+		setSocialCacheUser,
+		updateCachedConversationWithMessage,
+		upsertCachedConversation
+	} from '$lib/client/socialCache';
 	import { locale } from 'svelte-i18n';
 	import { toast } from 'svelte-sonner';
 
@@ -56,6 +71,33 @@
 	let friendSearchTimer: ReturnType<typeof setTimeout> | null = null;
 	let messageSearchTimer: ReturnType<typeof setTimeout> | null = null;
 	let pendingConversationFocusId: string | null = null;
+	let initializedSocialUid = '';
+	let activeMessageUnsubscribe: (() => void) | null = null;
+
+	const unsubscribeFriends = friendsStore.subscribe((value) => {
+		friends = value;
+	});
+	const unsubscribeConversations = conversationsStore.subscribe((value) => {
+		conversations = value;
+
+		if (pendingConversationFocusId) {
+			const focused = value.find(
+				(conversation) => String(conversation.id) === pendingConversationFocusId
+			);
+			if (focused) {
+				selectedConversation = focused;
+			}
+			pendingConversationFocusId = null;
+		}
+
+		if (
+			selectedConversation &&
+			!String(selectedConversation.id).startsWith('pending-') &&
+			!value.some((conversation) => String(conversation.id) === String(selectedConversation?.id))
+		) {
+			clearSelectedConversation();
+		}
+	});
 
 	$: activeConversations = conversations.filter(
 		(conversation) => conversation.conversationStatus === 'active'
@@ -63,6 +105,18 @@
 	$: pendingConversations = conversations.filter(
 		(conversation) => conversation.conversationStatus !== 'active'
 	);
+	$: if (browser && $user.checked) {
+		const uid = $user.loggedIn ? ($user.data?.uid ?? '') : '';
+		if (uid !== initializedSocialUid) {
+			initializedSocialUid = uid;
+			if (uid) {
+				initializeSocialCache(uid);
+			} else {
+				resetSocialCacheState();
+				clearSelectedConversation();
+			}
+		}
+	}
 
 	function text(en: string, vi: string) {
 		return $locale === 'vi' ? vi : en;
@@ -103,54 +157,41 @@
 		return $user.token();
 	}
 
-	async function loadFriends() {
-		if (!$user.loggedIn || loadingFriends) return;
-
+	async function initializeSocialCache(uid: string) {
+		setSocialCacheUser(uid);
 		loadingFriends = true;
-		try {
-			friends = await getSocialFriends(await token());
-		} catch (error) {
-			toast.error(error instanceof Error ? error.message : text('Failed to load friends', 'Không tải được bạn bè'));
-		} finally {
-			loadingFriends = false;
-		}
-	}
-
-	async function loadConversations() {
-		if (!$user.loggedIn || loadingConversations) return;
-
 		loadingConversations = true;
+
 		try {
-			conversations = await getSocialConversations(await token());
-			if (pendingConversationFocusId) {
-				const focused = conversations.find(
-					(conversation) => String(conversation.id) === pendingConversationFocusId
-				);
-				if (focused) {
-					selectedConversation = focused;
-				}
-				pendingConversationFocusId = null;
-			}
-			if (
-				selectedConversation &&
-				!conversations.some((conversation) => String(conversation.id) === String(selectedConversation?.id))
-			) {
-				selectedConversation = null;
-				messages = [];
-			}
+			await hydrateSocialCache(uid);
+		} catch (error) {
+			console.warn('Failed to hydrate social cache', error);
+		} finally {
+			loadingFriends = get(friendsStore).length === 0;
+			loadingConversations = get(conversationsStore).length === 0;
+		}
+
+		try {
+			const tokenValue = await token();
+			await Promise.all([
+				refreshSocialFriends(uid, tokenValue),
+				refreshSocialConversations(uid, tokenValue)
+			]);
 		} catch (error) {
 			toast.error(
 				error instanceof Error
 					? error.message
-					: text('Failed to load conversations', 'Không tải được hội thoại')
+					: text('Failed to refresh social cache', 'Không làm mới được dữ liệu xã hội')
 			);
 		} finally {
+			loadingFriends = false;
 			loadingConversations = false;
 		}
 	}
 
 	async function refreshAll() {
-		await Promise.all([loadFriends(), loadConversations()]);
+		if (!$user.loggedIn || !$user.data?.uid) return;
+		await hydrateSocialCache($user.data.uid);
 	}
 
 	function scheduleFriendSearch() {
@@ -247,11 +288,10 @@
 			const conversation = await createSocialConversation(await token(), player.uid);
 			selectedConversation = conversation;
 			pendingConversationFocusId = String(conversation.id);
-			void loadConversations();
+			await upsertCachedConversation($user.data.uid, conversation);
 			await selectConversation(selectedConversation || conversation);
 		} catch (error) {
-			selectedConversation = null;
-			loadingMessages = false;
+			clearSelectedConversation();
 			toast.error(error instanceof Error ? error.message : text('Failed to open message', 'Không mở được tin nhắn'));
 		} finally {
 			actionLoading = '';
@@ -266,13 +306,10 @@
 		try {
 			await blockSocialPlayer(await token(), player.uid);
 			updatePlayerStatus(player.uid, 'blocked_by_me');
-			friends = friends.filter((friend) => friend.uid !== player.uid);
-			conversations = conversations.filter(
-				(conversation) => conversation.otherPlayer?.uid !== player.uid
-			);
+			await removeFriendFromCache($user.data.uid, player.uid);
+			await removeConversationsWithPlayerFromCache($user.data.uid, player.uid);
 			if (selectedConversation?.otherPlayer?.uid === player.uid) {
-				selectedConversation = null;
-				messages = [];
+				clearSelectedConversation();
 			}
 			toast.success(text('Player blocked', 'Đã chặn người chơi'));
 		} catch (error) {
@@ -284,11 +321,12 @@
 
 	async function selectConversation(conversation: SocialConversation) {
 		selectedConversation = conversation;
-		loadingMessages = true;
+		watchConversationMessages(conversation.id);
+		loadingMessages = get(getConversationMessageStore(conversation.id)).length === 0;
+
 		try {
-			messages = await getSocialMessages(await token(), conversation.id);
+			await ensureConversationMessages($user.data.uid, await token(), conversation.id);
 		} catch (error) {
-			messages = [];
 			toast.error(error instanceof Error ? error.message : text('Failed to load messages', 'Không tải được tin nhắn'));
 		} finally {
 			loadingMessages = false;
@@ -300,13 +338,29 @@
 
 		actionLoading = `send-${selectedConversation.id}`;
 		try {
+			const conversationId = selectedConversation.id;
 			const message = await sendSocialMessage(await token(), selectedConversation.id, messageDraft);
 			messageDraft = '';
-			messages = [...messages, message];
-			await loadConversations();
-			const nextConversation =
-				conversations.find((conversation) => String(conversation.id) === String(selectedConversation?.id)) ||
-				selectedConversation;
+			await appendCachedMessages($user.data.uid, conversationId, [message]);
+			const nextConversation = {
+				...selectedConversation,
+				latestMessage: message,
+				lastMessageAt: message.createdAt,
+				conversationStatus:
+					selectedConversation.pendingForUid === $user.data.uid
+						? 'active'
+						: selectedConversation.conversationStatus,
+				pendingForUid:
+					selectedConversation.pendingForUid === $user.data.uid
+						? null
+						: selectedConversation.pendingForUid
+			};
+			await updateCachedConversationWithMessage(
+				$user.data.uid,
+				conversationId,
+				message,
+				nextConversation
+			);
 			selectedConversation = nextConversation;
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : text('Failed to send message', 'Không gửi được tin nhắn'));
@@ -315,9 +369,27 @@
 		}
 	}
 
+	function watchConversationMessages(conversationId: number | string) {
+		activeMessageUnsubscribe?.();
+		activeMessageUnsubscribe = getConversationMessageStore(conversationId).subscribe((value) => {
+			messages = value;
+		});
+	}
+
+	function clearSelectedConversation() {
+		selectedConversation = null;
+		messages = [];
+		loadingMessages = false;
+		activeMessageUnsubscribe?.();
+		activeMessageUnsubscribe = null;
+	}
+
 	onDestroy(() => {
 		if (friendSearchTimer) clearTimeout(friendSearchTimer);
 		if (messageSearchTimer) clearTimeout(messageSearchTimer);
+		activeMessageUnsubscribe?.();
+		unsubscribeFriends();
+		unsubscribeConversations();
 	});
 </script>
 
@@ -548,10 +620,7 @@
 								<button
 									type="button"
 									class="conversationBack"
-									on:click={() => {
-										selectedConversation = null;
-										messages = [];
-									}}
+									on:click={clearSelectedConversation}
 									aria-label={text('Back to conversations', 'Quay lại hội thoại')}
 								>
 									<ChevronLeft size={17} />

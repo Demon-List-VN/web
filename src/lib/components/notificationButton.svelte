@@ -4,6 +4,7 @@
 	import * as Popover from '$lib/components/ui/popover';
 	import { Button } from '$lib/components/ui/button';
 	import { user } from '$lib/client';
+	import { handleSocialMessageNotification } from '$lib/client/socialCache';
 	import supabase from '$lib/client/supabase';
 	import { _, locale } from 'svelte-i18n';
 	import { toast } from 'svelte-sonner';
@@ -75,6 +76,16 @@
 		const normalized = normalizeNotification(notification);
 		const key = notificationKey(normalized);
 		notifications = [normalized, ...notifications.filter((item) => notificationKey(item) !== key)];
+	}
+
+	async function handleSocialNotification(uid: string, notification: Notification) {
+		if (notification.metadata?.type !== 'social_message') return;
+
+		try {
+			await handleSocialMessageNotification(uid, await $user.token(), notification.metadata);
+		} catch (error) {
+			console.warn('Failed to sync social message notification', error);
+		}
 	}
 
 	function actionEndpoint(notification: Notification, action: 'accept' | 'reject') {
@@ -247,6 +258,7 @@
 				(payload) => {
 					const notification = normalizeNotification(payload.new as Notification);
 					mergeNotification(notification);
+					void handleSocialNotification(uid, notification);
 					showPopup(notification);
 				}
 			)

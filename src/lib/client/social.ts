@@ -139,9 +139,18 @@ export async function createSocialConversation(
 
 export async function getSocialMessages(
 	token: string | null | undefined,
-	conversationId: number | string
+	conversationId: number | string,
+	options: { afterId?: number | string | null } = {}
 ) {
-	return socialRequest<SocialMessage[]>(`/social/conversations/${conversationId}/messages`, { token });
+	const params = new URLSearchParams();
+	if (options.afterId !== undefined && options.afterId !== null && options.afterId !== '') {
+		params.set('afterId', String(options.afterId));
+	}
+	const query = params.toString();
+	return socialRequest<SocialMessage[]>(
+		`/social/conversations/${conversationId}/messages${query ? `?${query}` : ''}`,
+		{ token }
+	);
 }
 
 export async function sendSocialMessage(
