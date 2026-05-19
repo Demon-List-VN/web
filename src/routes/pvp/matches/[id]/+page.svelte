@@ -1415,12 +1415,14 @@
 														{formatDuration(getPvpTimeReachedMs(participant))}
 													</span>
 												</div>
-												<div class="progress-track">
-													<div
-														class="progress-bar"
-														style={`width: ${participantProgressBarWidth(participant)}%;`}
-													/>
-												</div>
+												{#if matchMode !== 'platformer'}
+													<div class="progress-track">
+														<div
+															class="progress-bar"
+															style={`width: ${participantProgressBarWidth(participant)}%;`}
+														/>
+													</div>
+												{/if}
 											</div>
 										</div>
 									{/each}
