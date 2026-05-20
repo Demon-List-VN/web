@@ -247,6 +247,11 @@
 		"agree_level_change": "Đồng ý đổi level",
 		"level_change_waiting": "Đang chờ đổi level",
 		"level_change_used": "Đã đổi level",
+		"request_ban_pick_abort": "Hủy trận",
+		"agree_ban_pick_abort": "Đồng ý hủy",
+		"ban_pick_abort_waiting": "Đang chờ hủy trận",
+		"ban_pick_abort_request_confirm": "Yêu cầu hủy trận này? Trận chỉ bị hủy nếu đối thủ đồng ý.",
+		"ban_pick_abort_agree_confirm": "Đồng ý hủy trận này? Trận sẽ bị hủy.",
 		"resign_confirm": "Đầu hàng trận này? Đối thủ của bạn sẽ được tính thắng.",
 		"sign_in_title": "Đăng nhập để vào Arena",
 		"sign_in_hint": "Ghép trận và lời mời Arena dùng tài khoản GDVN của bạn.",
@@ -384,6 +389,8 @@
 			"resignation_end": "{resigning} đã đầu hàng. Trận đấu kết thúc. Chat sẽ mở thêm {minutes} phút rồi bị tắt.",
 			"level_change_requested": "{requester} đã yêu cầu đổi level. Level sẽ đổi nếu đối thủ đồng ý.",
 			"level_changed": "{accepter} đã đồng ý yêu cầu đổi level của {requester}. Level trận đấu đã đổi thành #{levelId}. Tiến độ và đồng hồ đã được đặt lại.",
+			"ban_pick_abort_requested": "{requester} đã yêu cầu hủy ban-pick. Trận sẽ bị hủy nếu đối thủ đồng ý.",
+			"ban_pick_aborted": "{accepter} đã đồng ý yêu cầu hủy trận của {requester}. Trận đã bị hủy.",
 			"ban_pick_started": "Ban-pick platformer bắt đầu. {player} ban trước.",
 			"ban_pick_ban": "{player} đã ban #{levelId}.",
 			"ban_pick_auto_ban": "{player} đã hết giờ. Arena tự ban #{levelId}.",
@@ -403,6 +410,7 @@
 			"selected_progress": "Đã chọn {current}/{total}",
 			"select": "Chọn",
 			"selected": "Đã chọn",
+			"unselect": "Bỏ chọn",
 			"banned": "Đã ban",
 			"auto_banned": "Tự ban",
 			"banned_by": "Bị ban bởi {player}",
@@ -473,6 +481,7 @@
 			"draw": "Hòa",
 			"resignation": "Đầu hàng",
 			"forfeit": "Bỏ cuộc",
+			"ban_pick_abort": "Cùng hủy trận",
 			"acceptance_timeout": "Hết giờ xác nhận"
 		},
 		"toast": {
@@ -499,6 +508,9 @@
 			"level_change_requested": "Đã gửi yêu cầu đổi level.",
 			"level_change_success": "Đã đổi level.",
 			"level_change_failed": "Yêu cầu đổi level thất bại.",
+			"ban_pick_abort_requested": "Đã gửi yêu cầu hủy trận.",
+			"ban_pick_abort_success": "Đã hủy trận.",
+			"ban_pick_abort_failed": "Yêu cầu hủy trận thất bại.",
 			"resign_success": "Bạn đã đầu hàng trận đấu.",
 			"resign_failed": "Đầu hàng trận đấu thất bại."
 		}

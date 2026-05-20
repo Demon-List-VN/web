@@ -47,6 +47,9 @@ export type PvpPlayer = {
 export type PvpLevel = {
 	id?: number;
 	levelId?: number;
+	levelID?: number;
+	level_id?: number;
+	ID?: number;
 	name?: string | null;
 	creator?: string | null;
 	author?: string | null;
@@ -124,6 +127,7 @@ export type PvpBanPick = {
 	actions?: PvpBanPickAction[];
 	firstUid?: string | null;
 	currentUid?: string | null;
+	current_uid?: string | null;
 	turnIndex?: number;
 	turnStartsAt?: string | null;
 	turnEndsAt?: string | null;
@@ -158,6 +162,8 @@ export type PvpMatch = {
 	level_change_requested_by_uid?: string | null;
 	levelChangedAt?: string | null;
 	level_changed_at?: string | null;
+	banPickAbortRequestedByUid?: string | null;
+	ban_pick_abort_requested_by_uid?: string | null;
 	ratingAppliedAt?: string | null;
 	rating_applied_at?: string | null;
 	startedAt?: string | null;
@@ -619,6 +625,16 @@ export async function resignPvpMatch(token: string | null | undefined, id: numbe
 	});
 }
 
+export async function requestPvpBanPickAbort(
+	token: string | null | undefined,
+	id: number | string
+) {
+	return pvpRequest<PvpMatch>(`/pvp/matches/${id}/ban-pick/abort`, {
+		method: 'POST',
+		token
+	});
+}
+
 export async function requestPvpMatchLevelChange(
 	token: string | null | undefined,
 	id: number | string
@@ -676,7 +692,9 @@ export function getPvpStatus(value: { status?: string } | null | undefined, fall
 	return String(value?.status || fallback).toLowerCase();
 }
 
-export function getPvpMode(match: PvpMatch | PvpInvite | PvpMatchmakingRequest | null | undefined): PvpMode {
+export function getPvpMode(
+	match: PvpMatch | PvpInvite | PvpMatchmakingRequest | null | undefined
+): PvpMode {
 	return match?.mode === 'platformer' ? 'platformer' : 'classic';
 }
 

@@ -247,6 +247,11 @@
 		"agree_level_change": "Agree level change",
 		"level_change_waiting": "Waiting for level change",
 		"level_change_used": "Level changed",
+		"request_ban_pick_abort": "Abort match",
+		"agree_ban_pick_abort": "Agree abort",
+		"ban_pick_abort_waiting": "Waiting for abort",
+		"ban_pick_abort_request_confirm": "Request to abort this match? The match will be cancelled only if your opponent agrees.",
+		"ban_pick_abort_agree_confirm": "Agree to abort this match? This will cancel the match.",
 		"resign_confirm": "Resign this match? Your opponent will receive the win.",
 		"sign_in_title": "Sign in to enter Arena",
 		"sign_in_hint": "Arena matchmaking and invites are tied to your GDVN player account.",
@@ -384,6 +389,8 @@
 			"resignation_end": "{resigning} resigned. The match ended. Chat will remain open for {minutes} minutes, then it will be disabled.",
 			"level_change_requested": "{requester} requested a level change. The level will change if the opponent agrees.",
 			"level_changed": "{accepter} agreed to {requester}'s level change request. The match level changed to #{levelId}. Progress and timer were reset.",
+			"ban_pick_abort_requested": "{requester} requested to abort ban-pick. The match will be cancelled if the opponent agrees.",
+			"ban_pick_aborted": "{accepter} agreed to {requester}'s abort request. The match was cancelled.",
 			"ban_pick_started": "Platformer ban-pick started. {player} bans first.",
 			"ban_pick_ban": "{player} banned #{levelId}.",
 			"ban_pick_auto_ban": "{player} ran out of time. Arena banned #{levelId}.",
@@ -403,6 +410,7 @@
 			"selected_progress": "Selected {current}/{total}",
 			"select": "Select",
 			"selected": "Selected",
+			"unselect": "Unselect",
 			"banned": "Banned",
 			"auto_banned": "Auto-banned",
 			"banned_by": "Banned by {player}",
@@ -473,6 +481,7 @@
 			"draw": "Draw",
 			"resignation": "Resignation",
 			"forfeit": "Forfeit",
+			"ban_pick_abort": "Mutual abort",
 			"acceptance_timeout": "Acceptance timeout"
 		},
 		"toast": {
@@ -499,6 +508,9 @@
 			"level_change_requested": "Level change requested.",
 			"level_change_success": "Level changed.",
 			"level_change_failed": "Failed to request level change.",
+			"ban_pick_abort_requested": "Abort request sent.",
+			"ban_pick_abort_success": "Match cancelled.",
+			"ban_pick_abort_failed": "Failed to request match abort.",
 			"resign_success": "You resigned from the match.",
 			"resign_failed": "Failed to resign match."
 		}

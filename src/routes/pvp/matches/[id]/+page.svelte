@@ -4,6 +4,8 @@
 	import { goto } from '$app/navigation';
 	import Ads from '$lib/components/ads.svelte';
 	import PlayerLink from '$lib/components/playerLink.svelte';
+	import BanPickPanel from './components/BanPickPanel.svelte';
+	import MatchTopbar from './components/MatchTopbar.svelte';
 	import { user } from '$lib/client';
 	import supabase from '$lib/client/supabase';
 	import { Badge } from '$lib/components/ui/badge';
@@ -48,12 +50,12 @@
 		isPvpMatchRanked,
 		isActivePvpMatch,
 		isPvpMatchConfirmedByBoth,
+		requestPvpBanPickAbort,
 		requestPvpMatchLevelChange,
 		resignPvpMatch,
 		sendPvpInvite,
 		sendPvpMatchMessage,
 		type PvpBanPickAction,
-		type PvpLevel,
 		type PvpMatch,
 		type PvpMatchMessage,
 		type PvpMode,
@@ -66,20 +68,12 @@
 	import { toast } from 'svelte-sonner';
 	import { _ } from 'svelte-i18n';
 	import {
-		ArrowLeft,
-		Ban,
 		Clock,
 		ExternalLink,
-		Eye,
-		EyeOff,
-		Flag,
 		Gauge,
 		Loader2,
 		LogIn,
 		MessageCircle,
-		RefreshCw,
-		Shuffle,
-		ShieldX,
 		Trophy,
 		Copy,
 		Send,
@@ -96,6 +90,7 @@
 	const REALTIME_COALESCE_MS = 200;
 	const MESSAGE_FETCH_LIMIT = 100;
 	const BAN_PICK_SETTLE_MS = 5000;
+	const BAN_PICK_DEADLINE_SUBMIT_GRACE_MS = 1000;
 
 	type ProgressGraphPoint = {
 		x: number;
@@ -150,8 +145,7 @@
 	$: level = getPvpLevel(match);
 	$: banPick = getPvpBanPick(match);
 	$: banPickActions = Array.isArray(banPick?.actions) ? banPick.actions : [];
-	$: banPickPoolLevels = Array.isArray(banPick?.poolLevels) ? banPick.poolLevels : [];
-	$: banPickCurrentUid = banPick?.currentUid ?? null;
+	$: banPickCurrentUid = banPick?.currentUid ?? banPick?.current_uid ?? null;
 	$: banPickTurnIndex = Number(banPick?.turnIndex ?? 0);
 	$: banPickRequiredCount = Number(banPick?.requiredCount ?? [3, 2, 1][banPickTurnIndex] ?? 0);
 	$: banPickTurnStartsMs = getTimeMs(banPick?.turnStartsAt);
@@ -166,6 +160,7 @@
 	);
 	$: banPickTurnSubmitted = banPickCurrentTurnActions.length > 0;
 	$: isBanPick = status === 'ban_pick';
+	$: banPickIsViewerTurn = sameUid(banPickCurrentUid, currentUid);
 	$: levelConfirmed = isPvpMatchConfirmedByBoth(match);
 	$: visibleLevel = levelConfirmed && !isBanPick ? level : null;
 	$: levelVideoId = getYouTubeVideoId(visibleLevel?.videoID);
@@ -217,6 +212,15 @@
 			: levelChangeRequestedByUid
 				? $_('pvp.agree_level_change')
 				: $_('pvp.request_level_change');
+	$: banPickAbortRequestedByUid = getPvpBanPickAbortRequestedByUid(match);
+	$: banPickAbortRequestedBySelf =
+		Boolean(currentUid) && String(banPickAbortRequestedByUid || '') === String(currentUid);
+	$: canRequestBanPickAbort = isBanPick && Boolean(selfParticipant);
+	$: banPickAbortButtonLabel = banPickAbortRequestedBySelf
+		? $_('pvp.ban_pick_abort_waiting')
+		: banPickAbortRequestedByUid
+			? $_('pvp.agree_ban_pick_abort')
+			: $_('pvp.request_ban_pick_abort');
 	$: chatOpenDuringMatch = ['in_progress', 'waiting_result'].includes(status) && remainingMs > 0;
 	$: chatOpenDuringBanPick = isBanPick;
 	$: chatOpenAfterMatch = status === 'completed' && postMatchChatRemainingMs > 0;
@@ -370,8 +374,7 @@
 		turnSubmitted: boolean
 	) {
 		const endsMs = getTimeMs(turnEndsAt);
-		const shouldSubmit =
-			active && currentTurnUid === viewerUid && selectedCount > 0 && !turnSubmitted;
+		const shouldSubmit = active && sameUid(currentTurnUid, viewerUid) && !turnSubmitted;
 		const key =
 			active && endsMs
 				? `${matchId}:${turnEndsAt}:${shouldSubmit ? 'submit' : 'refresh'}:${selectedCount}`
@@ -386,16 +389,13 @@
 
 		if (!key) return;
 
-		const targetMs = (endsMs ?? Date.now()) + (shouldSubmit ? 250 : BAN_PICK_SETTLE_MS + 250);
+		const targetMs =
+			(endsMs ?? Date.now()) +
+			(shouldSubmit ? BAN_PICK_DEADLINE_SUBMIT_GRACE_MS : BAN_PICK_SETTLE_MS + 250);
 		const delay = Math.max(0, targetMs - Date.now());
 		banPickDeadlineTimeout = setTimeout(() => {
 			banPickDeadlineTimeout = null;
-			if (
-				isBanPick &&
-				banPickCurrentUid === currentUid &&
-				selectedBanLevelIds.length > 0 &&
-				!banPickTurnSubmitted
-			) {
+			if (isBanPick && banPickIsViewerTurn && !banPickTurnSubmitted) {
 				void submitBanSelection({ fromTimer: true });
 			} else {
 				void refreshMatch();
@@ -488,9 +488,8 @@
 		}
 	}
 
-	function toggleBanSelection(level: PvpLevel) {
-		const levelId = getLevelId(level);
-		if (!levelId || !canSelectBanLevel(level)) return;
+	function toggleBanSelection(levelId: number | null) {
+		if (!levelId || !banPickIsViewerTurn || getBanPickActionForLevel(levelId)) return;
 
 		if (selectedBanLevelIds.includes(levelId)) {
 			selectedBanLevelIds = selectedBanLevelIds.filter((id) => id !== levelId);
@@ -502,12 +501,8 @@
 	}
 
 	async function submitBanSelection(options: { fromTimer?: boolean } = {}) {
-		if (!matchId || actionLoading || banPickCurrentUid !== currentUid || banPickTurnSubmitted) return;
+		if (!matchId || actionLoading || !banPickIsViewerTurn || banPickTurnSubmitted) return;
 		if (!options.fromTimer && selectedBanLevelIds.length !== banPickRequiredCount) return;
-		if (options.fromTimer && selectedBanLevelIds.length === 0) {
-			await refreshMatch();
-			return;
-		}
 
 		actionLoading = 'ban-pick-submit';
 		try {
@@ -555,6 +550,36 @@
 			);
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.level_change_failed'));
+		} finally {
+			actionLoading = '';
+		}
+	}
+
+	async function requestBanPickAbort() {
+		if (!matchId || !canRequestBanPickAbort || actionLoading || banPickAbortRequestedBySelf) return;
+		if (
+			!confirm(
+				$_(
+					banPickAbortRequestedByUid
+						? 'pvp.ban_pick_abort_agree_confirm'
+						: 'pvp.ban_pick_abort_request_confirm'
+				)
+			)
+		)
+			return;
+
+		actionLoading = 'ban-pick-abort';
+		try {
+			const response = await requestPvpBanPickAbort(await $user.token(), matchId);
+			match = response;
+			await refreshMessages({ incremental: true });
+			toast.success(
+				response.status === 'cancelled'
+					? $_('pvp.toast.ban_pick_abort_success')
+					: $_('pvp.toast.ban_pick_abort_requested')
+			);
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : $_('pvp.toast.ban_pick_abort_failed'));
 		} finally {
 			actionLoading = '';
 		}
@@ -859,7 +884,10 @@
 		}
 
 		const maxX = Math.max(60, ...series.flatMap((item) => item.points.map((point) => point.x)));
-		const maxProgress = Math.max(0, ...series.flatMap((item) => item.points.map((point) => point.y)));
+		const maxProgress = Math.max(
+			0,
+			...series.flatMap((item) => item.points.map((point) => point.y))
+		);
 		const maxY = mode === 'platformer' ? Math.max(1, maxProgress) : 100;
 
 		return {
@@ -927,31 +955,15 @@
 		);
 	}
 
-	function getLevelId(level: PvpLevel | null | undefined) {
-		const id = Number(level?.id ?? level?.levelId);
-		return Number.isInteger(id) && id > 0 ? id : null;
+	function sameUid(a: unknown, b: unknown) {
+		return Boolean(a && b && String(a) === String(b));
 	}
 
-	function getBanPickActionForLevel(level: PvpLevel | null | undefined) {
-		const levelId = getLevelId(level);
+	function getBanPickActionForLevel(levelId: number | null | undefined) {
 		if (!levelId) return null;
 
 		return (
-			banPickActions.find((action: PvpBanPickAction) => Number(action.levelId) === levelId) ??
-			null
-		);
-	}
-
-	function canSelectBanLevel(level: PvpLevel | null | undefined) {
-		const levelId = getLevelId(level);
-		return Boolean(
-			levelId &&
-				isBanPick &&
-				currentUid &&
-				banPickCurrentUid === currentUid &&
-				!banPickWaitingToStart &&
-				!banPickTurnSubmitted &&
-				!getBanPickActionForLevel(level)
+			banPickActions.find((action: PvpBanPickAction) => Number(action.levelId) === levelId) ?? null
 		);
 	}
 
@@ -960,7 +972,9 @@
 			(item) => String(getPvpParticipantUid(item) || '') === String(banPickCurrentUid || '')
 		);
 
-		return participant ? participantName(participant, hideOpponentInfo, currentUid) : $_('pvp.rival');
+		return participant
+			? participantName(participant, hideOpponentInfo, currentUid)
+			: $_('pvp.rival');
 	}
 
 	function banPickActionPlayerName(action: PvpBanPickAction) {
@@ -969,7 +983,9 @@
 			(item) => String(getPvpParticipantUid(item) || '') === uid
 		);
 
-		return participant ? participantName(participant, hideOpponentInfo, currentUid) : $_('pvp.rival');
+		return participant
+			? participantName(participant, hideOpponentInfo, currentUid)
+			: $_('pvp.rival');
 	}
 
 	function escapeRegExp(value: string) {
@@ -1072,6 +1088,21 @@
 					accepter: systemParticipantName(metadataText(metadata, 'accepterUid')),
 					requester: systemParticipantName(metadataText(metadata, 'requesterUid')),
 					levelId: metadataText(metadata, 'nextLevelId') || '--'
+				}
+			});
+		}
+
+		if (kind === 'ban_pick_abort_requested') {
+			content = $_('pvp.system_message.ban_pick_abort_requested', {
+				values: { requester: systemParticipantName(metadataText(metadata, 'requesterUid')) }
+			});
+		}
+
+		if (kind === 'ban_pick_aborted') {
+			content = $_('pvp.system_message.ban_pick_aborted', {
+				values: {
+					accepter: systemParticipantName(metadataText(metadata, 'accepterUid')),
+					requester: systemParticipantName(metadataText(metadata, 'requesterUid'))
 				}
 			});
 		}
@@ -1335,6 +1366,14 @@
 			currentMatch?.levelChangeRequestedByUid ?? currentMatch?.level_change_requested_by_uid ?? null
 		);
 	}
+
+	function getPvpBanPickAbortRequestedByUid(currentMatch: PvpMatch | null | undefined) {
+		return (
+			currentMatch?.banPickAbortRequestedByUid ??
+			currentMatch?.ban_pick_abort_requested_by_uid ??
+			null
+		);
+	}
 </script>
 
 <svelte:head>
@@ -1349,10 +1388,7 @@
 			<Alert.Title class="pr-8">{$_('pvp.geode_alert.title')}</Alert.Title>
 			<Alert.Description class="pr-8">
 				{$_('pvp.geode_alert.description')}
-				<a
-					href="/geode-mods"
-					class="ml-1 font-semibold underline"
-				>
+				<a href="/geode-mods" class="ml-1 font-semibold underline">
 					{$_('pvp.geode_alert.release_page')}
 				</a>
 			</Alert.Description>
@@ -1367,78 +1403,28 @@
 		</Alert.Root>
 	{/if}
 
-	<section class="match-topbar">
-		<div>
-			<a class="back-link" href="/pvp">
-				<ArrowLeft class="h-4 w-4" />
-				{$_('pvp.matches_title')}
-			</a>
-			<h1>{matchTitle}</h1>
-		</div>
-
-		{#if $user.loggedIn}
-			<div class="topbar-actions">
-				<Button
-					variant="outline"
-					aria-pressed={hideOpponentInfo}
-					on:click={() => (hideOpponentInfo = !hideOpponentInfo)}
-				>
-					{#if hideOpponentInfo}
-						<Eye class="mr-2 h-4 w-4" />
-						{$_('pvp.show_opponent_info')}
-					{:else}
-						<EyeOff class="mr-2 h-4 w-4" />
-						{$_('pvp.hide_opponent_info')}
-					{/if}
-				</Button>
-				{#if canRematch}
-					<Button disabled={Boolean(actionLoading) || loading} on:click={requestRematch}>
-						{#if actionLoading === 'rematch'}
-							<Loader2 class="mr-2 h-4 w-4 animate-spin" />
-						{:else}
-							<Send class="mr-2 h-4 w-4" />
-						{/if}
-						{$_('pvp.rematch')}
-					</Button>
-				{/if}
-				{#if canRequestLevelChange || levelChangeUsed}
-					<Button
-						variant="outline"
-						disabled={Boolean(actionLoading) ||
-							loading ||
-							levelChangeUsed ||
-							levelChangeRequestedBySelf}
-						on:click={requestLevelChange}
-					>
-						{#if actionLoading === 'level-change'}
-							<Loader2 class="mr-2 h-4 w-4 animate-spin" />
-						{:else}
-							<Shuffle class="mr-2 h-4 w-4" />
-						{/if}
-						{levelChangeButtonLabel}
-					</Button>
-				{/if}
-				{#if canResign}
-					<Button
-						variant="destructive"
-						disabled={Boolean(actionLoading) || loading}
-						on:click={resignMatch}
-					>
-						{#if actionLoading === 'resign-match'}
-							<Loader2 class="mr-2 h-4 w-4 animate-spin" />
-						{:else}
-							<Flag class="mr-2 h-4 w-4" />
-						{/if}
-						{$_('pvp.resign')}
-					</Button>
-				{/if}
-				<Button variant="outline" disabled={loading} on:click={refreshMatch}>
-					<RefreshCw class={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-					{$_('pvp.refresh')}
-				</Button>
-			</div>
-		{/if}
-	</section>
+	<MatchTopbar
+		title={matchTitle}
+		loggedIn={$user.loggedIn}
+		{loading}
+		{actionLoading}
+		{hideOpponentInfo}
+		{canRematch}
+		{canRequestLevelChange}
+		{levelChangeUsed}
+		{levelChangeRequestedBySelf}
+		{levelChangeButtonLabel}
+		{canRequestBanPickAbort}
+		{banPickAbortRequestedBySelf}
+		{banPickAbortButtonLabel}
+		{canResign}
+		onToggleOpponentInfo={() => (hideOpponentInfo = !hideOpponentInfo)}
+		onRequestRematch={requestRematch}
+		onRequestLevelChange={requestLevelChange}
+		onRequestBanPickAbort={requestBanPickAbort}
+		onResign={resignMatch}
+		onRefresh={refreshMatch}
+	/>
 
 	<div class="pvp-match-ad-slot">
 		<Ads dataAdFormat="auto" />
@@ -1601,7 +1587,9 @@
 
 											<div class="participant-progress">
 												<div class="progress-label">
-													<span>{formatPvpProgressValue(getPvpProgress(participant), matchMode)}</span>
+													<span
+														>{formatPvpProgressValue(getPvpProgress(participant), matchMode)}</span
+													>
 													<span>
 														<Gauge class="h-3.5 w-3.5" />
 														{formatDuration(getPvpTimeReachedMs(participant))}
@@ -1644,124 +1632,19 @@
 				</div>
 
 				{#if isBanPick}
-					<section class="ban-pick-section">
-						<Card.Root>
-							<Card.Header>
-								<div class="ban-pick-header">
-									<div>
-										<Card.Title>{$_('pvp.ban_pick.title')}</Card.Title>
-										<Card.Description>
-											{$_('pvp.ban_pick.description')}
-										</Card.Description>
-									</div>
-									<div class="ban-pick-turn">
-										<Clock class="h-4 w-4" />
-										<strong>{formatDuration(banPickRemainingMs)}</strong>
-										<span>
-											{banPickWaitingToStart
-												? $_('pvp.ban_pick.starts_in')
-												: $_('pvp.ban_pick.ends_in')}
-										</span>
-									</div>
-								</div>
-							</Card.Header>
-							<Card.Content class="ban-pick-content">
-								<div class="ban-pick-status">
-									<Badge variant={banPickCurrentUid === currentUid ? 'default' : 'secondary'}>
-										{banPickTurnSubmitted
-											? $_('pvp.ban_pick.turn_submitted')
-											: banPickWaitingToStart
-												? $_('pvp.ban_pick.turn_starts_soon')
-												: banPickCurrentUid === currentUid
-											? $_('pvp.ban_pick.your_turn')
-											: $_('pvp.ban_pick.waiting_turn', {
-													values: { player: banPickTurnPlayerName() }
-												})}
-									</Badge>
-									<span>
-										{$_('pvp.ban_pick.bans_progress', {
-											values: {
-												current: banPickActions.length,
-												total: Number(banPick?.totalBans ?? 6)
-											}
-										})}
-									</span>
-									{#if banPickCurrentUid === currentUid && !banPickTurnSubmitted}
-										<span>
-											{$_('pvp.ban_pick.selected_progress', {
-												values: {
-													current: selectedBanLevelIds.length,
-													total: banPickRequiredCount
-												}
-											})}
-										</span>
-									{/if}
-								</div>
-
-								<div class="ban-pick-grid">
-									{#each banPickPoolLevels as poolLevel}
-										{@const levelId = getLevelId(poolLevel)}
-										{@const banAction = getBanPickActionForLevel(poolLevel)}
-										{@const selectedForBan = levelId ? selectedBanLevelIds.includes(levelId) : false}
-										<div
-											class:banned={Boolean(banAction)}
-											class:selected={selectedForBan}
-											class="ban-pick-level"
-										>
-											<div class="ban-pick-level-main">
-												<div>
-													<strong>{poolLevel.name || `#${levelId}`}</strong>
-													<p>
-														{#if poolLevel.creator || poolLevel.author}
-															{$_('head.labels.by')} {poolLevel.creator || poolLevel.author}
-														{:else}
-															ID: {levelId}
-														{/if}
-													</p>
-												</div>
-												{#if banAction}
-													<Badge variant="destructive">
-														<ShieldX class="mr-1 h-3.5 w-3.5" />
-														{banAction.auto
-															? $_('pvp.ban_pick.auto_banned')
-															: $_('pvp.ban_pick.banned')}
-													</Badge>
-												{/if}
-											</div>
-
-											<div class="ban-pick-level-footer">
-												{#if banAction}
-													<span>
-														{banAction.auto
-															? $_('pvp.ban_pick.auto_banned_by', {
-																	values: { player: banPickActionPlayerName(banAction) }
-																})
-															: $_('pvp.ban_pick.banned_by', {
-																	values: { player: banPickActionPlayerName(banAction) }
-																})}
-													</span>
-												{:else}
-													<Button
-														variant={selectedForBan ? 'default' : 'outline'}
-														size="sm"
-														disabled={!canSelectBanLevel(poolLevel) ||
-															(!selectedForBan &&
-																selectedBanLevelIds.length >= banPickRequiredCount)}
-														on:click={() => toggleBanSelection(poolLevel)}
-													>
-														<Ban class="mr-2 h-4 w-4" />
-														{selectedForBan
-															? $_('pvp.ban_pick.selected')
-															: $_('pvp.ban_pick.select')}
-													</Button>
-												{/if}
-											</div>
-										</div>
-									{/each}
-								</div>
-							</Card.Content>
-						</Card.Root>
-					</section>
+					<BanPickPanel
+						{banPick}
+						{currentUid}
+						selectedLevelIds={selectedBanLevelIds}
+						remainingMs={banPickRemainingMs}
+						waitingToStart={banPickWaitingToStart}
+						turnSubmitted={banPickTurnSubmitted}
+						requiredCount={banPickRequiredCount}
+						{formatDuration}
+						turnPlayerName={banPickTurnPlayerName()}
+						actionPlayerName={banPickActionPlayerName}
+						onToggleBan={toggleBanSelection}
+					/>
 				{/if}
 
 				<section class="detail-grid">
@@ -2057,7 +1940,6 @@
 		min-width: 0;
 	}
 
-	.match-topbar,
 	:global(.auth-content),
 	.match-panel-header,
 	.chat-header,
@@ -2074,35 +1956,15 @@
 		gap: 8px;
 	}
 
-	.match-topbar,
 	:global(.auth-content) {
 		justify-content: space-between;
 		gap: 16px;
-	}
-
-	.match-topbar {
-		margin-bottom: 24px;
 	}
 
 	.pvp-match-ad-slot {
 		margin-bottom: 0;
 	}
 
-	.topbar-actions {
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: flex-end;
-		gap: 10px;
-	}
-
-	h1 {
-		margin: 6px 0 0;
-		font-size: clamp(2rem, 4vw, 3.25rem);
-		font-weight: 800;
-		letter-spacing: 0;
-	}
-
-	.back-link,
 	.level-link {
 		display: inline-flex;
 		align-items: center;
@@ -2113,7 +1975,6 @@
 		text-decoration: none;
 	}
 
-	.back-link:hover,
 	.level-link:hover {
 		text-decoration: underline;
 	}
@@ -2280,98 +2141,6 @@
 		margin: 0;
 		color: hsl(var(--muted-foreground));
 		font-size: 14px;
-	}
-
-	.ban-pick-section {
-		margin-top: 16px;
-	}
-
-	.ban-pick-header,
-	.ban-pick-status,
-	.ban-pick-level-main,
-	.ban-pick-level-footer {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-	}
-
-	.ban-pick-header,
-	.ban-pick-level-main,
-	.ban-pick-level-footer {
-		justify-content: space-between;
-	}
-
-	.ban-pick-turn {
-		display: inline-flex;
-		min-width: 78px;
-		align-items: center;
-		justify-content: center;
-		gap: 6px;
-		border: 1px solid hsl(var(--border));
-		border-radius: 8px;
-		padding: 8px 10px;
-	}
-
-	.ban-pick-turn span {
-		color: hsl(var(--muted-foreground));
-		font-size: 12px;
-	}
-
-	:global(.ban-pick-content) {
-		display: grid;
-		gap: 14px;
-	}
-
-	.ban-pick-status {
-		flex-wrap: wrap;
-		color: hsl(var(--muted-foreground));
-		font-size: 14px;
-	}
-
-	.ban-pick-grid {
-		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 10px;
-	}
-
-	.ban-pick-level {
-		display: grid;
-		gap: 12px;
-		min-height: 118px;
-		border: 1px solid hsl(var(--border));
-		border-radius: 8px;
-		padding: 12px;
-		transition:
-			border-color 0.2s ease,
-			opacity 0.2s ease,
-			background 0.2s ease;
-	}
-
-	.ban-pick-level.banned {
-		border-color: hsl(var(--destructive) / 0.45);
-		background: hsl(var(--destructive) / 0.08);
-		opacity: 0.72;
-	}
-
-	.ban-pick-level.selected {
-		border-color: hsl(var(--primary));
-		background: hsl(var(--primary) / 0.08);
-	}
-
-	.ban-pick-level-main {
-		align-items: flex-start;
-	}
-
-	.ban-pick-level-main strong {
-		display: block;
-		font-size: 0.98rem;
-	}
-
-	.ban-pick-level-main p,
-	.ban-pick-level-footer span {
-		margin: 3px 0 0;
-		color: hsl(var(--muted-foreground));
-		font-size: 13px;
 	}
 
 	:global(.level-content) h2 {
@@ -2653,10 +2422,6 @@
 			grid-template-columns: 1fr;
 		}
 
-		.ban-pick-grid {
-			grid-template-columns: 1fr;
-		}
-
 		:global(.mobile-chat-trigger) {
 			position: fixed;
 			right: 16px;
@@ -2680,21 +2445,11 @@
 			padding-bottom: 88px;
 		}
 
-		.match-topbar,
 		:global(.auth-content),
 		.match-panel-header,
-		.ban-pick-header,
 		.chat-header {
 			align-items: stretch;
 			flex-direction: column;
-		}
-
-		.topbar-actions {
-			justify-content: stretch;
-		}
-
-		.topbar-actions :global(button) {
-			width: 100%;
 		}
 
 		.result-line {
