@@ -73,7 +73,7 @@
 			</div>
 			<div class="preview-level">
 				<span>{$_('pvp.landing.preview_level')}</span>
-				<strong>Neon Circuit</strong>
+				<strong>Challenge level</strong>
 			</div>
 			<div class="preview-progress">
 				<span style="width: 72%"></span>

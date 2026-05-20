@@ -14,15 +14,8 @@
 
 	const LEVEL_POOL = [
 		'Aerial Gleam',
-		'Neon Harbor',
-		'Clockwork Tide',
-		'Midnight Relay',
-		'Crystal Axis',
-		'Pixel Bloom',
-		'Nova Garden',
-		'Prism Circuit',
-		'Aurora Flux',
-		'Gravity Echo'
+		'Zodiac',
+		'Angelicide'
 	];
 
 	const DEFAULT_PREVIEW_LEVELS: PreviewLevel[] = [

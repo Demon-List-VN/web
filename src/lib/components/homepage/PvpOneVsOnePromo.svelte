@@ -69,7 +69,7 @@
 			<div class="level-strip">
 				<div>
 					<span>Level chung</span>
-					<strong>Neon Circuit</strong>
+					<strong>Challenge level</strong>
 				</div>
 				<small>03:00</small>
 			</div>
