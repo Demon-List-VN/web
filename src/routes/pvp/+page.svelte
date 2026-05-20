@@ -1854,7 +1854,7 @@
 							{/if}
 							{#if selectedMode === 'platformer'}
 								<div class="platformer-pool-link" style="margin-top:8px;">
-									<Button href="/i/lists/159" variant="outline" size="sm" class="w-full">
+									<Button href="/lists/159" variant="outline" size="sm" class="w-full">
 										{$_('pvp.view_platformer_pool')}
 									</Button>
 								</div>
