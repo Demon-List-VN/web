@@ -8,6 +8,7 @@
 	import supabase from '$lib/client/supabase';
 	import { _, locale } from 'svelte-i18n';
 	import { toast } from 'svelte-sonner';
+	import { goto } from '$app/navigation';
 
 	type Notification = {
 		id?: number | string;
@@ -105,6 +106,34 @@
 		);
 	}
 
+	function removeNotification(notification: Notification) {
+		const key = notificationKey(notification);
+		notifications = notifications.filter((item) => notificationKey(item) !== key);
+		popups = popups.filter((popup) => notificationKey(popup) !== key);
+	}
+
+	async function deleteNotification(notification: Notification) {
+		const uid = notification.to ?? activeUid;
+		if (!notification.id || !uid) return;
+
+		const token = await $user.token();
+		if (!token) return;
+
+		const response = await fetch(
+			`${import.meta.env.VITE_API_URL}/notifications/${encodeURIComponent(uid)}/${encodeURIComponent(String(notification.id))}`,
+			{
+				method: 'DELETE',
+				headers: {
+					Authorization: 'Bearer ' + token
+				}
+			}
+		);
+
+		if (!response.ok) {
+			throw new Error(`Failed to delete notification: ${response.status}`);
+		}
+	}
+
 	async function handleNotificationAction(
 		event: MouseEvent,
 		notification: Notification,
@@ -138,10 +167,17 @@
 				throw new Error(message);
 			}
 
-			notifications = notifications.filter(
-				(item) => notificationKey(item) !== notificationKey(notification)
-			);
+			removeNotification(notification);
+			try {
+				await deleteNotification(notification);
+			} catch (error) {
+				console.warn('Failed to delete notification after action', error);
+			}
 			toast.success(action === 'accept' ? $_('general.accept') : $_('general.reject'));
+
+			if (action === 'accept' && notification.metadata?.type === 'pvp_invite') {
+				await goto('/pvp');
+			}
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : 'Notification action failed');
 		} finally {
