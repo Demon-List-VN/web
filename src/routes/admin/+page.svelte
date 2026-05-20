@@ -41,6 +41,30 @@
 		);
 	}
 
+	async function testDiscordGeneralMessage() {
+		const token = await $user.token();
+
+		toast.promise(
+			fetch(`${import.meta.env.VITE_API_URL}/notifications/discord/general-test`, {
+				method: 'POST',
+				headers: {
+					Authorization: 'Bearer ' + token
+				}
+			}).then((response) => {
+				if (!response.ok) {
+					throw new Error('Failed to send Discord message.');
+				}
+
+				return response;
+			}),
+			{
+				success: 'Sent test message to Discord general!',
+				loading: 'Sending Discord test message...',
+				error: 'Failed to send Discord test message.'
+			}
+		);
+	}
+
 	$: visibleCategories = $user.data?.isAdmin
 		? categories
 		: categories.filter((c) => c.title === 'Store & Revenue');
@@ -52,6 +76,7 @@
 			items: [
 				{ name: 'Refresh', action: refresh, type: 'button' },
 				{ name: 'Copy Token', action: copyToken, type: 'button' },
+				{ name: 'Test Discord General Message', action: testDiscordGeneralMessage, type: 'button' },
 				{ name: 'API Tester', href: '/admin/api' },
 				{ name: 'Send Notification', href: '/admin/notification' }
 			]
