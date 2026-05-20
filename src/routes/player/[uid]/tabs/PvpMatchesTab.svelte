@@ -183,7 +183,7 @@
 						<Table.Cell class="text-right">
 							{#if matchId}
 								<a
-									href={`/pvp/matches/${matchId}`}
+									href={`/versus/matches/${matchId}`}
 									class={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'gap-1')}
 								>
 									{$_('pvp.view_match')}

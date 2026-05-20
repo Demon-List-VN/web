@@ -191,7 +191,7 @@
 	"geode_mods": {
 		"title": "GDVN Geode Mod",
 		"kicker": "Geometry Dash VN trong game",
-		"description": "Cài mod GDVN để xem thông tin list, tham gia sự kiện, Arena và Battle Pass ngay trong Geometry Dash.",
+		"description": "Cài mod GDVN để xem thông tin list, tham gia sự kiện, chơi 1v1 Versus và dùng Battle Pass ngay trong Geometry Dash.",
 		"download": "Tải nampe.gdvn.geode",
 		"geode": "Cài Geode",
 		"version_note": "Luôn tải bản phát hành mới nhất",
@@ -209,7 +209,7 @@
 				"description": "Xem trạng thái level, xếp hạng và dữ liệu GDVN mà không cần rời game."
 			},
 			"activities": {
-				"title": "Sự kiện, Arena, Battle Pass",
+				"title": "Sự kiện, 1v1 Versus, Battle Pass",
 				"description": "Tham gia hoạt động cộng đồng và nhận tiến trình trực tiếp khi chơi."
 			},
 			"otp": {
@@ -224,15 +224,71 @@
 		}
 	},
 	"pvp": {
-		"arena": "Đấu trường",
-		"lobby_title": "Đấu trường Challenge 1v1",
-		"matches_title": "Trận đấu Arena",
+		"arena": "1v1 Versus",
+		"lobby_title": "Sảnh 1v1 Versus",
+		"matches_title": "Trận 1v1 Versus",
+		"play_meta_description": "Vào sảnh GDVN 1v1 Versus để ghép trận PvP Geometry Dash, mời riêng, đấu xếp hạng Elo và xem trận trực tiếp.",
+		"matches_meta_description": "Xem lịch sử trận GDVN 1v1 Versus PvP, các trận Geometry Dash đang diễn ra, kết quả xếp hạng và trang trận 1v1.",
+		"match_meta_description": "Theo dõi trận GDVN 1v1 Versus với tiến độ PvP Geometry Dash trực tiếp, chat, thông tin level và kết quả xếp hạng.",
+		"landing": {
+			"meta_title": "1v1 Versus - Đấu PvP Geometry Dash | GDVN",
+			"meta_description": "Chơi GDVN 1v1 Versus cho PvP Geometry Dash: ghép trận 1v1 xếp hạng, lời mời riêng, tiến độ trực tiếp, Elo và đua tuần.",
+			"eyebrow": "PvP Geometry Dash 1v1",
+			"title": "1v1 Versus",
+			"description": "Ghép trận PvP Geometry Dash 1v1 xếp hạng, mời đối thủ trực tiếp, đấu trên cùng một challenge level và leo bảng Elo GDVN Versus.",
+			"primary_cta": "Chơi 1v1 Versus",
+			"secondary_cta": "Xem xếp hạng",
+			"preview_you": "Bạn",
+			"preview_rival": "Đối thủ",
+			"preview_level": "Level chung",
+			"features_label": "Tính năng 1v1 Versus",
+			"features": {
+				"matchmaking": {
+					"title": "PvP 1v1 xếp hạng",
+					"description": "Tìm đối thủ Geometry Dash gần Elo của bạn và đấu versus công bằng trên cùng một challenge."
+				},
+				"elo": {
+					"title": "Elo riêng từng chế độ",
+					"description": "Classic và Platformer có rating PvP, lịch sử và biểu đồ tiến độ trực tiếp riêng."
+				},
+				"invites": {
+					"title": "Lời mời versus riêng",
+					"description": "Thách đấu một người chơi cụ thể, ẩn thông tin đối thủ, chơi ẩn danh và tái đấu sau trận."
+				},
+				"weekly": {
+					"title": "Bảng xếp hạng và đua tuần",
+					"description": "Thắng trận 1v1 xếp hạng để leo bảng PvP và nhận điểm đua hằng tuần."
+				}
+			},
+			"rank_eyebrow": "PvP xếp hạng",
+			"rank_title": "Leo bảng xếp hạng 1v1 Versus",
+			"rank_description": "Thắng thua xếp hạng, thay đổi Elo và điểm đua tuần đều nằm trong sảnh Versus, kèm trang riêng cho mọi trận đang diễn ra hoặc đã hoàn tất.",
+			"rank_cta": "Mở sảnh",
+			"how_eyebrow": "Cách chơi",
+			"how_title": "Bắt đầu một trận versus Geometry Dash trong vài phút",
+			"steps": {
+				"install": {
+					"title": "Cài GDVN Geode mod",
+					"description": "Mod kết nối tiến độ Geometry Dash của bạn với GDVN để 1v1 Versus theo dõi trận trực tiếp."
+				},
+				"queue": {
+					"title": "Ghép xếp hạng hoặc gửi lời mời",
+					"description": "Dùng ghép trận để đấu PvP xếp hạng, hoặc gửi lời mời 1v1 riêng tới người chơi bạn muốn thách đấu."
+				},
+				"play": {
+					"title": "Đua cùng một level",
+					"description": "Hai người chơi vào cùng một challenge, tiến độ cập nhật trực tiếp và kết quả được lưu vào lịch sử Versus."
+				}
+			},
+			"mod_title": "Cần cài GDVN Geode mod",
+			"mod_description": "Hãy cài GDVN Geode mod mới nhất trước khi chơi 1v1 Versus trong Geometry Dash."
+		},
 		"match": "Trận",
 		"winner": "Người thắng",
 		"winner_named": "Người thắng: {name}",
 		"geode_alert": {
 			"title": "Cần cài GDVN Geode mod",
-			"description": "Để chơi Arena, hãy cài GDVN Geode mod phiên bản 5.0.3 trở lên.",
+			"description": "Để chơi 1v1 Versus, hãy cài GDVN Geode mod phiên bản 5.0.3 trở lên.",
 			"release_page": "Trang phát hành",
 			"dismiss": "Đóng"
 		},
@@ -253,8 +309,8 @@
 		"ban_pick_abort_request_confirm": "Yêu cầu hủy trận này? Trận chỉ bị hủy nếu đối thủ đồng ý.",
 		"ban_pick_abort_agree_confirm": "Đồng ý hủy trận này? Trận sẽ bị hủy.",
 		"resign_confirm": "Đầu hàng trận này? Đối thủ của bạn sẽ được tính thắng.",
-		"sign_in_title": "Đăng nhập để vào Arena",
-		"sign_in_hint": "Ghép trận và lời mời Arena dùng tài khoản GDVN của bạn.",
+		"sign_in_title": "Đăng nhập để vào 1v1 Versus",
+		"sign_in_hint": "Ghép trận và lời mời 1v1 Versus dùng tài khoản GDVN của bạn.",
 		"options": "Tùy chọn",
 		"summary": "Tổng quan",
 		"current_elo": "Elo hiện tại",
@@ -270,7 +326,7 @@
 		},
 		"view_platformer_pool": "Xem danh sách Platformer",
 		"tabs": {
-			"label": "Mục Arena",
+			"label": "Mục 1v1 Versus",
 			"lobby": "Sảnh",
 			"history": "Lịch sử",
 			"weekly_race": "Đua tuần",
@@ -325,7 +381,7 @@
 				"all": "Tất cả"
 			}
 		},
-		"starting_rating_hint": "Chọn Elo PvP khởi điểm trước khi chơi Arena. Bạn chỉ được chọn một lần.",
+		"starting_rating_hint": "Chọn Elo PvP khởi điểm trước khi chơi 1v1 Versus. Bạn chỉ được chọn một lần.",
 		"starting_rating": {
 			"beginner": "Mới chơi",
 			"intermediate": "Trung cấp",
@@ -374,13 +430,13 @@
 		"live_progress": "Tiến độ trực tiếp",
 		"progress_graph": {
 			"title": "Biểu đồ tiến độ",
-			"description": "Tạo từ sự kiện tiến độ Arena.",
+			"description": "Tạo từ sự kiện tiến độ 1v1 Versus.",
 			"empty": "Chưa có sự kiện tiến độ.",
 			"time_axis": "Thời gian",
 			"progress_axis": "Tiến độ",
 			"checkpoints_axis": "Checkpoint"
 		},
-		"system_sender": "Arena",
+		"system_sender": "Versus",
 		"system_message": {
 			"progress": "{player} đã đạt {progress}% tiến độ.",
 			"progress_platformer": "{player} đã đạt {progress} checkpoint.",
@@ -394,9 +450,9 @@
 			"ban_pick_aborted": "{accepter} đã đồng ý yêu cầu hủy trận của {requester}. Trận đã bị hủy.",
 			"ban_pick_started": "Ban-pick platformer bắt đầu. {player} ban trước.",
 			"ban_pick_ban": "{player} đã ban #{levelId}.",
-			"ban_pick_auto_ban": "{player} đã hết giờ. Arena tự ban #{levelId}.",
+			"ban_pick_auto_ban": "{player} đã hết giờ. 1v1 Versus tự ban #{levelId}.",
 			"ban_pick_completed": "Ban-pick hoàn tất. Level trận đấu là #{levelId}.",
-			"unknown": "Sự kiện Arena"
+			"unknown": "Sự kiện Versus"
 		},
 		"ban_pick": {
 			"title": "Ban-pick",
@@ -486,7 +542,7 @@
 			"acceptance_timeout": "Hết giờ xác nhận"
 		},
 		"toast": {
-			"load_failed": "Tải dữ liệu Arena thất bại.",
+			"load_failed": "Tải dữ liệu 1v1 Versus thất bại.",
 			"leaderboard_failed": "Tải bảng xếp hạng PvP thất bại.",
 			"weekly_race_failed": "Tải đua PvP hằng tuần thất bại.",
 			"select_starting_rating": "Hãy chọn Elo PvP khởi điểm trước.",

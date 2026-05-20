@@ -94,6 +94,8 @@
 	const PVP_HIDE_OPPONENT_INFO_KEY = 'gdvn:pvp-hide-opponent-info';
 	const PVP_LAST_AUTO_REDIRECTED_MATCH_KEY = 'gdvn:pvp-last-auto-redirected-match-id';
 	const REALTIME_COALESCE_MS = 200;
+	const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://gdvn.net').replace(/\/$/, '');
+	const playUrl = `${siteUrl}/versus/play`;
 	const ELO_GRAPH_FILTERS = [
 		{ key: '25', limit: 25 },
 		{ key: '100', limit: 100 },
@@ -823,7 +825,7 @@
 
 		localStorage.setItem(PVP_LAST_AUTO_REDIRECTED_MATCH_KEY, redirectKey);
 		routedMatchId = matchId;
-		goto(`/pvp/matches/${matchId}`);
+		goto(`/versus/matches/${matchId}`);
 	}
 
 	// Control dialog open state and auto-close when acceptance expires
@@ -901,7 +903,7 @@
 	function navigateToMatch(matchId: number | string | null) {
 		if (!matchId || (routedMatchId !== null && String(routedMatchId) === String(matchId))) return;
 		routedMatchId = matchId;
-		goto(`/pvp/matches/${matchId}`);
+		goto(`/versus/matches/${matchId}`);
 	}
 
 	async function signIn() {
@@ -932,15 +934,10 @@
 				ratings: nextRatings,
 				pvpRating: selectedMode === 'classic' ? (rating.pvpRating ?? null) : lobby.pvpRating,
 				pvpRatedMatchCount:
-					selectedMode === 'classic'
-						? (rating.pvpRatedMatchCount ?? 0)
-						: lobby.pvpRatedMatchCount,
-				pvpRatingInitialized:
-					selectedMode === 'classic' ? true : lobby.pvpRatingInitialized,
+					selectedMode === 'classic' ? (rating.pvpRatedMatchCount ?? 0) : lobby.pvpRatedMatchCount,
+				pvpRatingInitialized: selectedMode === 'classic' ? true : lobby.pvpRatingInitialized,
 				pvpPlatformerRating:
-					selectedMode === 'platformer'
-						? (rating.pvpRating ?? null)
-						: lobby.pvpPlatformerRating,
+					selectedMode === 'platformer' ? (rating.pvpRating ?? null) : lobby.pvpPlatformerRating,
 				pvpPlatformerRatedMatchCount:
 					selectedMode === 'platformer'
 						? (rating.pvpRatedMatchCount ?? 0)
@@ -1389,6 +1386,8 @@
 
 <svelte:head>
 	<title>{$_('pvp.lobby_title')} - {$_('head.site_name')}</title>
+	<meta name="description" content={$_('pvp.play_meta_description')} />
+	<link rel="canonical" href={playUrl} />
 </svelte:head>
 
 <main class="arena-page">
@@ -1399,10 +1398,7 @@
 			<Alert.Title class="pr-8">{$_('pvp.geode_alert.title')}</Alert.Title>
 			<Alert.Description class="pr-8">
 				{$_('pvp.geode_alert.description')}
-				<a
-					href="/geode-mods"
-					class="ml-1 font-semibold underline"
-				>
+				<a href="/geode-mods" class="ml-1 font-semibold underline">
 					{$_('pvp.geode_alert.release_page')}
 				</a>
 			</Alert.Description>
@@ -1421,7 +1417,7 @@
 		<div class="pvp-top-alert">
 			<div class="pvp-top-alert-inner">
 				<strong>{$_('pvp.active_match')}</strong>
-				<a class="inline-link" href={`/pvp/matches/${getPvpMatchId(activeMatch)}`}
+				<a class="inline-link" href={`/versus/matches/${getPvpMatchId(activeMatch)}`}
 					>{$_('pvp.enter_match')}</a
 				>
 			</div>
@@ -1537,7 +1533,7 @@
 									{now}
 									{hideOpponentInfo}
 									hideLevelUntilConfirmed
-									href={`/pvp/matches/${getPvpMatchId(match)}`}
+									href={`/versus/matches/${getPvpMatchId(match)}`}
 								/>
 							{/each}
 						</div>
@@ -1559,7 +1555,7 @@
 									{now}
 									{hideOpponentInfo}
 									hideLevelUntilConfirmed
-									href={`/pvp/matches/${getPvpMatchId(match)}`}
+									href={`/versus/matches/${getPvpMatchId(match)}`}
 								/>
 							{/each}
 						</div>
@@ -1617,14 +1613,14 @@
 					<section class="active-section">
 						<div class="section-heading">
 							<h2>{$_('pvp.active_match')}</h2>
-							<a href={`/pvp/matches/${getPvpMatchId(activeMatch)}`}>{$_('pvp.enter_match')}</a>
+							<a href={`/versus/matches/${getPvpMatchId(activeMatch)}`}>{$_('pvp.enter_match')}</a>
 						</div>
 						<MatchCard
 							match={activeMatch}
 							{currentUid}
 							{now}
 							{hideOpponentInfo}
-							href={`/pvp/matches/${getPvpMatchId(activeMatch)}`}
+							href={`/versus/matches/${getPvpMatchId(activeMatch)}`}
 						/>
 					</section>
 				{/if}
@@ -1973,7 +1969,7 @@
 												{#if getPvpMatchedMatchId(invite)}
 													<a
 														class="inline-link"
-														href={`/pvp/matches/${getPvpMatchedMatchId(invite)}`}
+														href={`/versus/matches/${getPvpMatchedMatchId(invite)}`}
 													>
 														{$_('pvp.view_match')}
 													</a>
@@ -2325,7 +2321,6 @@
 		background: hsl(var(--muted) / 0.35);
 		padding: 3px;
 	}
-
 
 	.mode-toggle-group button {
 		min-height: 32px;

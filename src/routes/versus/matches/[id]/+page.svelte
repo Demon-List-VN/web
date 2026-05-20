@@ -91,6 +91,7 @@
 	const MESSAGE_FETCH_LIMIT = 100;
 	const BAN_PICK_SETTLE_MS = 5000;
 	const BAN_PICK_DEADLINE_SUBMIT_GRACE_MS = 1000;
+	const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://gdvn.net').replace(/\/$/, '');
 
 	type ProgressGraphPoint = {
 		x: number;
@@ -139,6 +140,7 @@
 	let selectedBanTurnKey = '';
 
 	$: matchId = $page.params.id;
+	$: matchUrl = `${siteUrl}/versus/matches/${matchId}`;
 	$: currentUid = $user.data?.uid;
 	$: status = getPvpStatus(match);
 	$: matchMode = getPvpMode(match);
@@ -608,7 +610,7 @@
 				mode: matchMode
 			});
 			toast.success($_('pvp.toast.rematch_sent'));
-			await goto('/pvp');
+			await goto('/versus/play');
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.rematch_failed'));
 		} finally {
@@ -1383,6 +1385,8 @@
 
 <svelte:head>
 	<title>{matchTitle} - {$_('head.site_name')}</title>
+	<meta name="description" content={$_('pvp.match_meta_description')} />
+	<link rel="canonical" href={matchUrl} />
 </svelte:head>
 
 <main class="match-page">

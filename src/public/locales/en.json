@@ -191,7 +191,7 @@
 	"geode_mods": {
 		"title": "GDVN Geode Mod",
 		"kicker": "Geometry Dash VN in-game",
-		"description": "Install the GDVN mod to view list info, join events, play Arena, and use Battle Pass directly inside Geometry Dash.",
+		"description": "Install the GDVN mod to view list info, join events, play 1v1 Versus, and use Battle Pass directly inside Geometry Dash.",
 		"download": "Download nampe.gdvn.geode",
 		"geode": "Install Geode",
 		"version_note": "Always downloads the latest release",
@@ -209,7 +209,7 @@
 				"description": "See level status, rankings, and GDVN data without leaving the game."
 			},
 			"activities": {
-				"title": "Events, Arena, Battle Pass",
+				"title": "Events, 1v1 Versus, Battle Pass",
 				"description": "Join community activities and keep progress connected while playing."
 			},
 			"otp": {
@@ -224,15 +224,71 @@
 		}
 	},
 	"pvp": {
-		"arena": "Arena",
-		"lobby_title": "1v1 Challenge Arena",
-		"matches_title": "Arena Matches",
+		"arena": "1v1 Versus",
+		"lobby_title": "1v1 Versus Lobby",
+		"matches_title": "1v1 Versus Matches",
+		"play_meta_description": "Enter the GDVN 1v1 Versus lobby for Geometry Dash PvP matchmaking, private invites, ranked Elo, and live matches.",
+		"matches_meta_description": "Review GDVN 1v1 Versus PvP match history, ongoing Geometry Dash duels, ranked results, and live 1v1 match pages.",
+		"match_meta_description": "Watch a GDVN 1v1 Versus match with live Geometry Dash PvP progress, chat, level details, and ranked results.",
+		"landing": {
+			"meta_title": "1v1 Versus - Geometry Dash PvP Arena | GDVN",
+			"meta_description": "Play GDVN 1v1 Versus for Geometry Dash PvP: ranked 1v1 matchmaking, private invites, live progress, Elo ratings, and weekly races.",
+			"eyebrow": "Geometry Dash PvP 1v1",
+			"title": "1v1 Versus",
+			"description": "Queue into ranked Geometry Dash 1v1 PvP, invite a rival directly, race on the same challenge level, and climb the GDVN Versus Elo leaderboard.",
+			"primary_cta": "Play 1v1 Versus",
+			"secondary_cta": "See rankings",
+			"preview_you": "You",
+			"preview_rival": "Rival",
+			"preview_level": "Shared level",
+			"features_label": "1v1 Versus features",
+			"features": {
+				"matchmaking": {
+					"title": "Ranked 1v1 PvP",
+					"description": "Find Geometry Dash opponents near your Elo and play a fair versus match on one shared challenge."
+				},
+				"elo": {
+					"title": "Separate Elo ratings",
+					"description": "Classic and Platformer modes track their own PvP ratings, histories, and live progress graphs."
+				},
+				"invites": {
+					"title": "Private versus invites",
+					"description": "Challenge a specific player, hide opponent info, play anonymously, and rematch after the duel."
+				},
+				"weekly": {
+					"title": "Leaderboard and weekly race",
+					"description": "Win ranked 1v1 matches to climb the PvP leaderboard and score weekly race points."
+				}
+			},
+			"rank_eyebrow": "Ranked PvP",
+			"rank_title": "Climb the 1v1 Versus leaderboard",
+			"rank_description": "Your ranked wins, losses, Elo movement, and weekly race points all live in the Versus lobby, with match pages for every live or completed duel.",
+			"rank_cta": "Open lobby",
+			"how_eyebrow": "How it works",
+			"how_title": "Start a Geometry Dash versus match in minutes",
+			"steps": {
+				"install": {
+					"title": "Install the GDVN Geode mod",
+					"description": "The mod connects your Geometry Dash progress to GDVN so 1v1 Versus can track live match progress."
+				},
+				"queue": {
+					"title": "Queue ranked or send an invite",
+					"description": "Use matchmaking for a ranked PvP duel, or send a private 1v1 invite to a player you want to challenge."
+				},
+				"play": {
+					"title": "Race the same level",
+					"description": "Both players enter the same challenge, progress updates live, and the result updates your Versus history."
+				}
+			},
+			"mod_title": "GDVN Geode mod required",
+			"mod_description": "Install the latest GDVN Geode mod before playing 1v1 Versus inside Geometry Dash."
+		},
 		"match": "Match",
 		"winner": "Winner",
 		"winner_named": "Winner: {name}",
 		"geode_alert": {
 			"title": "GDVN Geode mod required",
-			"description": "To play Arena, install GDVN Geode mod version 5.0.3 or newer.",
+			"description": "To play 1v1 Versus, install GDVN Geode mod version 5.0.3 or newer.",
 			"release_page": "Release page",
 			"dismiss": "Dismiss"
 		},
@@ -253,8 +309,8 @@
 		"ban_pick_abort_request_confirm": "Request to abort this match? The match will be cancelled only if your opponent agrees.",
 		"ban_pick_abort_agree_confirm": "Agree to abort this match? This will cancel the match.",
 		"resign_confirm": "Resign this match? Your opponent will receive the win.",
-		"sign_in_title": "Sign in to enter Arena",
-		"sign_in_hint": "Arena matchmaking and invites are tied to your GDVN player account.",
+		"sign_in_title": "Sign in to enter 1v1 Versus",
+		"sign_in_hint": "1v1 Versus matchmaking and invites are tied to your GDVN player account.",
 		"options": "Options",
 		"summary": "Summary",
 		"current_elo": "Current Elo",
@@ -270,7 +326,7 @@
 		},
 		"view_platformer_pool": "View level pool",
 		"tabs": {
-			"label": "Arena sections",
+			"label": "1v1 Versus sections",
 			"lobby": "Lobby",
 			"history": "History",
 			"weekly_race": "Weekly Race",
@@ -325,7 +381,7 @@
 				"all": "All time"
 			}
 		},
-		"starting_rating_hint": "Choose your starting PvP rating before playing Arena. This can only be selected once.",
+		"starting_rating_hint": "Choose your starting PvP rating before playing 1v1 Versus. This can only be selected once.",
 		"starting_rating": {
 			"beginner": "Beginner",
 			"intermediate": "Intermediate",
@@ -374,13 +430,13 @@
 		"live_progress": "Live progress",
 		"progress_graph": {
 			"title": "Progress graph",
-			"description": "Built from Arena progress events.",
+			"description": "Built from 1v1 Versus progress events.",
 			"empty": "No progress events yet.",
 			"time_axis": "Time",
 			"progress_axis": "Progress",
 			"checkpoints_axis": "Checkpoints"
 		},
-		"system_sender": "Arena",
+		"system_sender": "Versus",
 		"system_message": {
 			"progress": "{player} reached {progress}% progress.",
 			"progress_platformer": "{player} reached {progress} checkpoints.",
@@ -394,9 +450,9 @@
 			"ban_pick_aborted": "{accepter} agreed to {requester}'s abort request. The match was cancelled.",
 			"ban_pick_started": "Platformer ban-pick started. {player} bans first.",
 			"ban_pick_ban": "{player} banned #{levelId}.",
-			"ban_pick_auto_ban": "{player} ran out of time. Arena banned #{levelId}.",
+			"ban_pick_auto_ban": "{player} ran out of time. 1v1 Versus banned #{levelId}.",
 			"ban_pick_completed": "Ban-pick completed. The match level is #{levelId}.",
-			"unknown": "Arena event"
+			"unknown": "Versus event"
 		},
 		"ban_pick": {
 			"title": "Ban-pick",
@@ -486,7 +542,7 @@
 			"acceptance_timeout": "Acceptance timeout"
 		},
 		"toast": {
-			"load_failed": "Failed to load Arena data.",
+			"load_failed": "Failed to load 1v1 Versus data.",
 			"leaderboard_failed": "Failed to load PvP leaderboard.",
 			"weekly_race_failed": "Failed to load weekly PvP race.",
 			"select_starting_rating": "Choose your starting PvP rating first.",

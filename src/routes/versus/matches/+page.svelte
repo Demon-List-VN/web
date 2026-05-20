@@ -26,6 +26,8 @@
 
 	const PVP_HIDE_OPPONENT_INFO_KEY = 'gdvn:pvp-hide-opponent-info';
 	const REALTIME_COALESCE_MS = 200;
+	const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://gdvn.net').replace(/\/$/, '');
+	const matchesUrl = `${siteUrl}/versus/matches`;
 
 	let matches: PvpMatch[] = [];
 	let loading = false;
@@ -227,12 +229,14 @@
 
 <svelte:head>
 	<title>{$_('pvp.matches_title')} - {$_('head.site_name')}</title>
+	<meta name="description" content={$_('pvp.matches_meta_description')} />
+	<link rel="canonical" href={matchesUrl} />
 </svelte:head>
 
 <main class="matches-page">
 	<section class="matches-topbar">
 		<div>
-			<a class="back-link" href="/pvp">
+			<a class="back-link" href="/versus/play">
 				<ArrowLeft class="h-4 w-4" />
 				{$_('pvp.lobby_title')}
 			</a>
@@ -299,7 +303,7 @@
 							{now}
 							{hideOpponentInfo}
 							hideLevelUntilConfirmed
-							href={`/pvp/matches/${match.id ?? match.matchId}`}
+							href={`/versus/matches/${match.id ?? match.matchId}`}
 						/>
 					{/each}
 				</div>
@@ -321,7 +325,7 @@
 							{now}
 							{hideOpponentInfo}
 							hideLevelUntilConfirmed
-							href={`/pvp/matches/${match.id ?? match.matchId}`}
+							href={`/versus/matches/${match.id ?? match.matchId}`}
 						/>
 					{/each}
 				</div>

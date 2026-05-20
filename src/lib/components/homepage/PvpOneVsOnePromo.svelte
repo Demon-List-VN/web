@@ -22,22 +22,23 @@
 	<div class="promo-content">
 		<div class="promo-header">
 			<Swords size={20} color="#0ea5e9" />
-			<h3>PvP 1v1</h3>
+			<h3>1v1 Versus</h3>
 			<span class="badge">Realtime</span>
 		</div>
 
 		<p class="promo-desc">
-			Đấu 1v1 trên cùng một level, ghép trận theo độ khó hoặc mời thẳng người chơi bạn muốn thử sức.
+			Đấu versus 1v1 PvP trên cùng một level, ghép trận xếp hạng hoặc mời thẳng người chơi bạn muốn
+			thử sức.
 		</p>
 
 		<ul class="feature-list">
-			<li>✓ Ghép trận nhanh theo Easy đến Extreme</li>
+			<li>✓ Ghép trận PvP theo Elo</li>
 			<li>✓ Mời người chơi và nhận lời realtime</li>
 			<li>✓ Ẩn danh, chat và rematch sau trận</li>
 		</ul>
 
-		<a href="/pvp" class="promo-cta">
-			Vào đấu trường
+		<a href="/versus" class="promo-cta">
+			Vào 1v1 Versus
 			<ArrowRight size={15} />
 		</a>
 	</div>
@@ -46,7 +47,7 @@
 		<div class="arena-surface">
 			<div class="arena-top">
 				<span class="arena-chip">1v1</span>
-				<span class="arena-chip arena-chip-muted">Challenge</span>
+				<span class="arena-chip arena-chip-muted">Versus</span>
 			</div>
 
 			<div class="versus-grid">

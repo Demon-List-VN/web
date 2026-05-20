@@ -176,7 +176,7 @@
 			toast.success(action === 'accept' ? $_('general.accept') : $_('general.reject'));
 
 			if (action === 'accept' && notification.metadata?.type === 'pvp_invite') {
-				await goto('/pvp');
+				await goto('/versus/play');
 			}
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : 'Notification action failed');
