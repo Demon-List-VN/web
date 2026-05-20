@@ -1852,6 +1852,13 @@
 									{$_('pvp.start_matchmaking')}
 								</Button>
 							{/if}
+							{#if selectedMode === 'platformer'}
+								<div class="platformer-pool-link" style="margin-top:8px;">
+									<Button href="/i/lists/159" variant="outline" size="sm" class="w-full">
+										{$_('pvp.view_platformer_pool')}
+									</Button>
+								</div>
+							{/if}
 						</Card.Content>
 					</Card.Root>
 
@@ -2318,6 +2325,7 @@
 		background: hsl(var(--muted) / 0.35);
 		padding: 3px;
 	}
+
 
 	.mode-toggle-group button {
 		min-height: 32px;
