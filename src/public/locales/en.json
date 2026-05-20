@@ -2631,7 +2631,19 @@
 				"min_progress_edit_hint": "Click to set a custom minimum progress. Leave blank to use the level default.",
 				"video_id_edit_hint": "Click to set a custom video ID. Leave blank to use the level default.",
 				"save_button": "Save",
-				"cancel_button": "Cancel"
+				"cancel_button": "Cancel",
+				"filter_title": "Filter levels",
+				"filter_clear": "Clear",
+				"filter_shown": "{count} shown",
+				"filter_level_label": "Level or ID",
+				"filter_level_placeholder": "Search levels",
+				"filter_creator_label": "Creator",
+				"filter_creator_placeholder": "Search creators",
+				"filter_min_rating_label": "Minimum rating",
+				"filter_max_rating_label": "Maximum rating",
+				"filter_pending_only": "Pending changes only",
+				"filter_empty_title": "No matching levels",
+				"filter_empty_desc": "Try a different name, creator, ID, rating, or pending-change filter."
 			}
 		},
 		"new": {

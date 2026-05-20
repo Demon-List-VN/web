@@ -8,7 +8,18 @@
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { tick } from 'svelte';
 	import { toast } from 'svelte-sonner';
-	import { ChevronRight, GripVertical, ListOrdered, Plus, Save, Star, Trash2 } from 'lucide-svelte';
+	import {
+		ChevronRight,
+		Filter,
+		GripVertical,
+		ListOrdered,
+		Plus,
+		Save,
+		Search,
+		Star,
+		Trash2,
+		X
+	} from 'lucide-svelte';
 	import { _ } from 'svelte-i18n';
 
 	type BatchAddLevelInput = {
@@ -65,6 +76,7 @@
 	export let canEditLevels = false;
 	export let levelDrafts: Record<number, LevelItemPatch> = {};
 	export let levelDeletionDraftIds: number[] = [];
+	export let pendingLevelAdditions: any[] = [];
 	export let addingLevel = false;
 	export let loadingMoreLevels = false;
 	export let levelsLoadingError = '';
@@ -90,9 +102,15 @@
 	export let reorderLevels: (levelIds: number[]) => void | Promise<void> = async () => {};
 
 	let levelsSectionElement: HTMLDivElement | null = null;
+	let allDisplayedItems: any[] = [];
 	let displayedItems: any[] = [];
 	let levelIdInput = '';
 	let csvInput = '';
+	let filterQuery = '';
+	let filterCreator = '';
+	let filterMinRating = '';
+	let filterMaxRating = '';
+	let filterPendingOnly = false;
 	let quickLevelId: number | null = null;
 	let draggedIndex: number | null = null;
 	let dragOverIndex: number | null = null;
@@ -110,6 +128,7 @@
 	let csvFileInput: HTMLInputElement | null = null;
 	let csvAddSummary: (BatchAddLevelsResult & { invalidRows: number }) | null = null;
 	let addToolsOpen = false;
+	let hasActiveLevelFilters = false;
 	const levelsPageSize = 50;
 	const csvExampleColumns = ['levelId', 'createdAt', 'top', 'rating', 'minProgress', 'videoId'];
 	const csvExampleRows = [
@@ -118,9 +137,17 @@
 		['65742217', '2024-03-01T00:00:00Z', '1', '7', '22', 'rYEDA3JcQqw']
 	];
 
-	$: displayedItems = list
-		? getDisplayedItems(list, levelDrafts, levelDeletionDraftIds)
+	$: allDisplayedItems = list
+		? getDisplayedItems(list, pendingLevelAdditions, levelDrafts, levelDeletionDraftIds)
 		: [];
+	$: hasActiveLevelFilters = Boolean(
+		filterQuery.trim()
+		|| filterCreator.trim()
+		|| filterMinRating.trim()
+		|| filterMaxRating.trim()
+		|| filterPendingOnly
+	);
+	$: displayedItems = filterDisplayedItems(allDisplayedItems);
 	$: canDragReorder = canEditLevels
 		&& allLevelsLoaded
 		&& list?.mode === 'top'
@@ -227,6 +254,61 @@
 		return patch ? Object.prototype.hasOwnProperty.call(patch, key) : false;
 	}
 
+	function normalizeFilterText(value: unknown) {
+		return String(value ?? '').trim().toLowerCase();
+	}
+
+	function parseOptionalFilterNumber(value: string) {
+		const normalizedValue = value.trim();
+		if (!normalizedValue.length) return null;
+
+		const parsedValue = Number(normalizedValue);
+		return Number.isFinite(parsedValue) ? parsedValue : Number.NaN;
+	}
+
+	function matchesTextFilter(value: unknown, query: string) {
+		const normalizedQuery = normalizeFilterText(query);
+		return !normalizedQuery || normalizeFilterText(value).includes(normalizedQuery);
+	}
+
+	function filterDisplayedItems(items: any[]) {
+		const normalizedQuery = normalizeFilterText(filterQuery);
+		const normalizedCreator = normalizeFilterText(filterCreator);
+		const minRating = parseOptionalFilterNumber(filterMinRating);
+		const maxRating = parseOptionalFilterNumber(filterMaxRating);
+
+		if (
+			Number.isNaN(minRating)
+			|| Number.isNaN(maxRating)
+			|| (minRating != null && maxRating != null && minRating > maxRating)
+		) {
+			return [];
+		}
+
+		return items.filter((item) => {
+			const rating = item.rating ?? 5;
+			const nameMatches = Boolean(
+				matchesTextFilter(item.level?.name, normalizedQuery)
+				|| (normalizedQuery && String(item.levelId).includes(normalizedQuery))
+			);
+			const creatorMatches = matchesTextFilter(item.level?.creator, normalizedCreator);
+			const ratingMatches =
+				(minRating == null || rating >= minRating)
+				&& (maxRating == null || rating <= maxRating);
+			const pendingMatches = !filterPendingOnly || hasPendingDraft(item.levelId);
+
+			return nameMatches && creatorMatches && ratingMatches && pendingMatches;
+		});
+	}
+
+	function clearLevelFilters() {
+		filterQuery = '';
+		filterCreator = '';
+		filterMinRating = '';
+		filterMaxRating = '';
+		filterPendingOnly = false;
+	}
+
 	function applyDraftToItem(item: any, drafts: Record<number, LevelItemPatch> = levelDrafts) {
 		const patch = drafts[item.levelId];
 		if (!patch) return item;
@@ -292,19 +374,35 @@
 		});
 	}
 
-	function getPendingAdditionCount(currentList: any) {
-		return currentList?.items?.filter((item: any) => item?.isPendingAddition).length ?? 0;
+	function getCombinedLevelItems(currentList: any, additions: any[] = pendingLevelAdditions) {
+		const combinedItems: any[] = [];
+		const seenLevelIds = new Set<number>();
+
+		for (const item of [...(currentList?.items ?? []), ...(additions ?? [])]) {
+			if (!item || seenLevelIds.has(item.levelId)) continue;
+
+			seenLevelIds.add(item.levelId);
+			combinedItems.push(item);
+		}
+
+		return combinedItems;
+	}
+
+	function getPendingAdditionCount(currentList: any, additions: any[] = pendingLevelAdditions) {
+		return getCombinedLevelItems(currentList, additions).filter((item: any) => item?.isPendingAddition)
+			.length;
 	}
 
 	function getDisplayedItems(
 		currentList: any,
+		additions: any[],
 		drafts: Record<number, LevelItemPatch>,
 		deletionDraftIds: number[]
 	) {
 		const deletedLevelIds = new Set(deletionDraftIds);
 
 		return sortItemsForDisplay(
-			(currentList?.items ?? [])
+			getCombinedLevelItems(currentList, additions)
 				.filter((item: any) => !deletedLevelIds.has(item.levelId))
 				.map((item: any) => applyDraftToItem(item, drafts)),
 			currentList
@@ -312,7 +410,12 @@
 	}
 
 	function hasPendingDraft(levelId: number) {
-		return Boolean(levelDrafts[levelId] || list?.items?.some((item: any) => item.levelId === levelId && item.isPendingAddition));
+		return Boolean(
+			levelDrafts[levelId]
+			|| getCombinedLevelItems(list).some(
+				(item: any) => item.levelId === levelId && item.isPendingAddition
+			)
+		);
 	}
 
 	export function scrollToPendingChanges() {
@@ -1188,7 +1291,80 @@
 						{$_('custom_lists.detail.edit.mode_top')}
 					</Badge>
 				{/if}
-				<Badge variant="outline">{list?.levelCount ?? displayedItems.length}</Badge>
+				<Badge variant="outline">
+					{(list?.levelCount ?? allDisplayedItems.length) + getPendingAdditionCount(list)}
+				</Badge>
+				{#if hasActiveLevelFilters}
+					<Badge variant="secondary">
+						{$_('custom_lists.detail.levels.filter_shown', { values: { count: displayedItems.length } })}
+					</Badge>
+				{/if}
+			</div>
+		</div>
+
+		<div class="toolCard filterCard">
+			<div class="filterHeader">
+				<div class="filterTitle">
+					<Filter class="h-4 w-4" />
+					<span>{$_('custom_lists.detail.levels.filter_title')}</span>
+				</div>
+				{#if hasActiveLevelFilters}
+					<Button type="button" variant="ghost" size="sm" on:click={clearLevelFilters}>
+						<X class="mr-1.5 h-3.5 w-3.5" />
+						{$_('custom_lists.detail.levels.filter_clear')}
+					</Button>
+				{/if}
+			</div>
+			<div class="filterGrid">
+				<div class="filterField">
+					<label for="manage-level-name-filter">{$_('custom_lists.detail.levels.filter_level_label')}</label>
+					<div class="filterInputWrap">
+						<Search class="h-4 w-4" />
+						<Input
+							id="manage-level-name-filter"
+							type="search"
+							bind:value={filterQuery}
+							placeholder={$_('custom_lists.detail.levels.filter_level_placeholder')}
+						/>
+					</div>
+				</div>
+				<div class="filterField">
+					<label for="manage-level-creator-filter">{$_('custom_lists.detail.levels.filter_creator_label')}</label>
+					<Input
+						id="manage-level-creator-filter"
+						type="search"
+						bind:value={filterCreator}
+						placeholder={$_('custom_lists.detail.levels.filter_creator_placeholder')}
+					/>
+				</div>
+				{#if list?.mode === 'rating'}
+					<fieldset class="filterField rangeField">
+						<legend>{$_('custom_lists.detail.levels.rating_label')}</legend>
+						<div class="rangeInputs">
+							<Input
+								type="number"
+								min="0"
+								step="any"
+								bind:value={filterMinRating}
+								placeholder={$_('list_filter.min')}
+								aria-label={$_('custom_lists.detail.levels.filter_min_rating_label')}
+							/>
+							<span class="rangeSeparator">-</span>
+							<Input
+								type="number"
+								min="0"
+								step="any"
+								bind:value={filterMaxRating}
+								placeholder={$_('list_filter.max')}
+								aria-label={$_('custom_lists.detail.levels.filter_max_rating_label')}
+							/>
+						</div>
+					</fieldset>
+				{/if}
+				<label class="pendingFilterToggle">
+					<input type="checkbox" bind:checked={filterPendingOnly} />
+					<span>{$_('custom_lists.detail.levels.filter_pending_only')}</span>
+				</label>
 			</div>
 		</div>
 
@@ -1261,14 +1437,19 @@
 
 		{#if displayedItems.length === 0}
 			<div class="emptyState slim">
-				<h3>{$_('custom_lists.detail.levels.empty_title')}</h3>
-				<p>
-					{levelDeletionDraftIds.length > 0
-						? $_('custom_lists.detail.levels.empty_pending_delete')
-						: canEditLevels
-							? $_('custom_lists.detail.levels.empty_owner')
-							: $_('custom_lists.detail.levels.empty_visitor')}
-				</p>
+				{#if hasActiveLevelFilters && allDisplayedItems.length > 0}
+					<h3>{$_('custom_lists.detail.levels.filter_empty_title')}</h3>
+					<p>{$_('custom_lists.detail.levels.filter_empty_desc')}</p>
+				{:else}
+					<h3>{$_('custom_lists.detail.levels.empty_title')}</h3>
+					<p>
+						{levelDeletionDraftIds.length > 0
+							? $_('custom_lists.detail.levels.empty_pending_delete')
+							: canEditLevels
+								? $_('custom_lists.detail.levels.empty_owner')
+								: $_('custom_lists.detail.levels.empty_visitor')}
+					</p>
+				{/if}
 			</div>
 		{:else}
 			<div class="levelList">
@@ -1866,6 +2047,102 @@
 		flex-wrap: wrap;
 	}
 
+	.filterCard {
+		padding: 14px 16px;
+		gap: 12px;
+	}
+
+	.filterHeader {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+	}
+
+	.filterTitle {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 0.95rem;
+		font-weight: 600;
+	}
+
+	.filterTitle :global(svg) {
+		color: hsl(var(--muted-foreground));
+	}
+
+	.filterGrid {
+		display: grid;
+		grid-template-columns: minmax(180px, 1.2fr) minmax(160px, 1fr) minmax(180px, 1fr) auto;
+		gap: 12px;
+		align-items: end;
+	}
+
+	.filterField {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		min-width: 0;
+	}
+
+	.rangeField {
+		margin: 0;
+		padding: 0;
+		border: 0;
+	}
+
+	.rangeField legend {
+		padding: 0;
+		font-size: 0.9rem;
+		font-weight: 500;
+	}
+
+	.filterInputWrap {
+		position: relative;
+		display: flex;
+		align-items: center;
+	}
+
+	.filterInputWrap :global(svg) {
+		position: absolute;
+		left: 10px;
+		color: hsl(var(--muted-foreground));
+		pointer-events: none;
+	}
+
+	.filterInputWrap :global(input) {
+		padding-left: 34px;
+	}
+
+	.rangeInputs {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.rangeInputs :global(input) {
+		min-width: 0;
+	}
+
+	.rangeSeparator {
+		color: hsl(var(--muted-foreground));
+		font-weight: 600;
+	}
+
+	.pendingFilterToggle {
+		min-height: 40px;
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		white-space: nowrap;
+	}
+
+	.pendingFilterToggle input {
+		width: 16px;
+		height: 16px;
+		accent-color: hsl(var(--primary));
+	}
+
 	.selectionPanel {
 		display: flex;
 		flex-direction: column;
@@ -2181,6 +2458,10 @@
 	}
 
 	@media (max-width: 760px) {
+		.filterGrid {
+			grid-template-columns: 1fr;
+		}
+
 		.levelRow {
 			flex-direction: column;
 			align-items: flex-start;

@@ -2630,7 +2630,19 @@
 				"min_progress_edit_hint": "Nhấn để đặt mốc tối thiểu tuỳ chỉnh. Để trống để dùng giá trị mặc định của level.",
 				"video_id_edit_hint": "Nhấn để đặt Video ID tuỳ chỉnh. Để trống để dùng giá trị mặc định của level.",
 				"save_button": "Lưu",
-				"cancel_button": "Huỷ"
+				"cancel_button": "Huỷ",
+				"filter_title": "Lọc level",
+				"filter_clear": "Xoá lọc",
+				"filter_shown": "Hiển thị {count}",
+				"filter_level_label": "Level hoặc ID",
+				"filter_level_placeholder": "Tìm level",
+				"filter_creator_label": "Creator",
+				"filter_creator_placeholder": "Tìm creator",
+				"filter_min_rating_label": "Điểm tối thiểu",
+				"filter_max_rating_label": "Điểm tối đa",
+				"filter_pending_only": "Chỉ thay đổi đang chờ",
+				"filter_empty_title": "Không có level phù hợp",
+				"filter_empty_desc": "Thử tên, creator, ID, điểm hoặc bộ lọc thay đổi đang chờ khác."
 			}
 		},
 		"new": {

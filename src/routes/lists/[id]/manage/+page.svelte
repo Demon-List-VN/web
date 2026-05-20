@@ -4206,6 +4206,7 @@
 					{canEditLevels}
 					{levelDrafts}
 					{levelDeletionDraftIds}
+					{pendingLevelAdditions}
 					{addingLevel}
 					loadingMoreLevels={listLevelsLoading}
 					levelsLoadingError={listLevelsError}
