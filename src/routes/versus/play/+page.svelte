@@ -1439,7 +1439,7 @@
 	</div>
 
 	<Tabs.Root bind:value={activePvpTab}>
-		<Tabs.List class="pvp-tab-list" aria-label={$_('pvp.tabs.label')}>
+		<Tabs.List class="py-[22px]" aria-label={$_('pvp.tabs.label')}>
 			<Tabs.Trigger value="lobby" class="pvp-tab-trigger">
 				<Swords class="h-4 w-4" />
 				{$_('pvp.tabs.lobby')}
