@@ -2,13 +2,18 @@
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
-	import type { PvpLeaderboardPlayer } from '$lib/client/pvp';
+	import * as Tabs from '$lib/components/ui/tabs';
+	import type { PvpLeaderboardPlayer, PvpMode } from '$lib/client/pvp';
 	import { _ } from 'svelte-i18n';
 	import { RefreshCw, Trophy } from 'lucide-svelte';
 
+	const PVP_MODES: PvpMode[] = ['classic', 'platformer'];
+
 	export let leaderboard: PvpLeaderboardPlayer[] = [];
+	export let mode: PvpMode = 'classic';
 	export let loading = false;
 	export let error = '';
+	export let onModeChange: (mode: PvpMode) => void | Promise<void>;
 	export let onRefresh: () => void | Promise<void>;
 </script>
 
@@ -35,6 +40,19 @@
 			</div>
 		</Card.Header>
 		<Card.Content>
+			<Tabs.Root value={mode}>
+				<Tabs.List class="mode-filter-list" aria-label={$_('pvp.mode_label')}>
+					{#each PVP_MODES as nextMode}
+						<Tabs.Trigger
+							value={nextMode}
+							class="mode-filter-trigger"
+							on:click={() => onModeChange?.(nextMode)}
+						>
+							{$_(`pvp.mode.${nextMode}`)}
+						</Tabs.Trigger>
+					{/each}
+				</Tabs.List>
+			</Tabs.Root>
 			{#if loading}
 				<div class="leaderboard-skeleton" aria-label={$_('general.loading')}>
 					<div></div>
@@ -89,6 +107,24 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 8px;
+	}
+
+	:global(.mode-filter-list) {
+		display: inline-grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		width: auto;
+		height: auto;
+		min-width: 220px;
+		margin-bottom: 16px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		background: hsl(var(--muted) / 0.28);
+		padding: 3px;
+	}
+
+	:global(.mode-filter-trigger) {
+		min-height: 32px;
+		padding-inline: 12px;
 	}
 
 	.leaderboard-table {

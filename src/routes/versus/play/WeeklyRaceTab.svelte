@@ -3,16 +3,20 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
 	import * as Tabs from '$lib/components/ui/tabs';
-	import type { PvpPlayer, PvpWeeklyRace } from '$lib/client/pvp';
+	import type { PvpMode, PvpPlayer, PvpWeeklyRace } from '$lib/client/pvp';
 	import { _, locale } from 'svelte-i18n';
 	import { BookOpen, CalendarDays, RefreshCw, Trophy } from 'lucide-svelte';
 
+	const PVP_MODES: PvpMode[] = ['classic', 'platformer'];
+
 	export let weeklyRace: PvpWeeklyRace;
+	export let mode: PvpMode = 'classic';
 	export let currentUid: string | null = null;
 	export let currentPlayer: PvpPlayer | null = null;
 	export let loading = false;
 	export let error = '';
 	export let now = Date.now();
+	export let onModeChange: (mode: PvpMode) => void | Promise<void>;
 	export let onRefresh: () => void | Promise<void>;
 
 	let activeTab = 'standings';
@@ -141,8 +145,20 @@
 						{$_('pvp.weekly_race.tabs.tutorial')}
 					</Tabs.Trigger>
 				</Tabs.List>
-
 				<Tabs.Content value="standings">
+					<Tabs.Root value={mode}>
+						<Tabs.List class="mode-filter-list" aria-label={$_('pvp.mode_label')}>
+							{#each PVP_MODES as nextMode}
+								<Tabs.Trigger
+									value={nextMode}
+									class="mode-filter-trigger"
+									on:click={() => onModeChange?.(nextMode)}
+								>
+									{$_(`pvp.mode.${nextMode}`)}
+								</Tabs.Trigger>
+							{/each}
+						</Tabs.List>
+					</Tabs.Root>
 					<div class="weekly-race-meta">
 						<div>
 							<span>{$_('pvp.weekly_race.current_week')}</span>
@@ -275,6 +291,24 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 8px;
+	}
+
+	:global(.mode-filter-list) {
+		display: inline-grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		width: auto;
+		height: auto;
+		min-width: 220px;
+		margin-bottom: 12px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		background: hsl(var(--muted) / 0.28);
+		padding: 3px;
+	}
+
+	:global(.mode-filter-trigger) {
+		min-height: 32px;
+		padding-inline: 12px;
 	}
 
 	:global(.weekly-race-tab-list) {

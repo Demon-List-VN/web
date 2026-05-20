@@ -94,6 +94,7 @@
 	const PVP_HIDE_OPPONENT_INFO_KEY = 'gdvn:pvp-hide-opponent-info';
 	const PVP_LAST_AUTO_REDIRECTED_MATCH_KEY = 'gdvn:pvp-last-auto-redirected-match-id';
 	const REALTIME_COALESCE_MS = 200;
+	const PVP_MODES: PvpMode[] = ['classic', 'platformer'];
 	const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://gdvn.net').replace(/\/$/, '');
 	const playUrl = `${siteUrl}/versus/play`;
 	const ELO_GRAPH_FILTERS = [
@@ -103,6 +104,9 @@
 	] as const;
 	let selectedPlayer: any = null;
 	let selectedMode: PvpMode = 'classic';
+	let historyMode: PvpMode = 'classic';
+	let weeklyRaceMode: PvpMode = 'classic';
+	let leaderboardMode: PvpMode = 'classic';
 	let anonymousMode = false;
 	let hideOpponentInfo = false;
 	let anonymousModeReady = false;
@@ -152,14 +156,16 @@
 	let pendingExpirationCheckMatchId: string | null = null;
 	let keydownHandler: ((e: KeyboardEvent) => void) | null = null;
 	let matchmakingCheckTimer: ReturnType<typeof setInterval> | null = null;
-	let loadedMode: PvpMode | '' = '';
+	let loadedWeeklyRaceMode: PvpMode | '' = '';
+	let loadedLeaderboardMode: PvpMode | '' = '';
 
 	$: currentUid = $user.data?.uid;
 	$: activeMatch =
 		lobby.activeMatch && isActivePvpMatch(lobby.activeMatch) ? lobby.activeMatch : null;
 	$: historyMatches = getHistoryMatches(activeMatch, matches);
-	$: ongoingHistoryMatches = historyMatches.filter((match) => isActivePvpMatch(match));
-	$: pastHistoryMatches = historyMatches.filter((match) => !isActivePvpMatch(match));
+	$: visibleHistoryMatches = historyMatches.filter((match) => getPvpMode(match) === historyMode);
+	$: ongoingHistoryMatches = visibleHistoryMatches.filter((match) => isActivePvpMatch(match));
+	$: pastHistoryMatches = visibleHistoryMatches.filter((match) => !isActivePvpMatch(match));
 	$: pendingMatch = activeMatch && getPvpStatus(activeMatch) === 'pending' ? activeMatch : null;
 	$: pendingMatchId = getPvpMatchId(pendingMatch);
 	$: pendingSelfAccepted = hasPvpParticipantAccepted(
@@ -274,10 +280,14 @@
 		localStorage.setItem(PVP_HIDE_OPPONENT_INFO_KEY, String(hideOpponentInfo));
 	}
 
-	$: if (browser && loadedMode !== selectedMode) {
-		loadedMode = selectedMode;
-		refreshLeaderboard();
-		refreshWeeklyRace();
+	$: if (browser && loadedLeaderboardMode !== leaderboardMode) {
+		loadedLeaderboardMode = leaderboardMode;
+		refreshLeaderboard(leaderboardMode);
+	}
+
+	$: if (browser && loadedWeeklyRaceMode !== weeklyRaceMode) {
+		loadedWeeklyRaceMode = weeklyRaceMode;
+		refreshWeeklyRace(weeklyRaceMode);
 	}
 
 	onDestroy(() => {
@@ -338,28 +348,34 @@
 		}
 	}
 
-	async function refreshLeaderboard() {
+	async function refreshLeaderboard(mode: PvpMode = leaderboardMode) {
 		leaderboardLoading = true;
 		leaderboardError = '';
 
 		try {
-			leaderboard = await getPvpLeaderboard(50, selectedMode);
+			const nextLeaderboard = await getPvpLeaderboard(50, mode);
+			if (mode !== leaderboardMode) return;
+			leaderboard = nextLeaderboard;
 		} catch (error) {
+			if (mode !== leaderboardMode) return;
 			leaderboard = [];
 			leaderboardError =
 				error instanceof Error ? error.message : $_('pvp.toast.leaderboard_failed');
 		} finally {
-			leaderboardLoading = false;
+			if (mode === leaderboardMode) leaderboardLoading = false;
 		}
 	}
 
-	async function refreshWeeklyRace() {
+	async function refreshWeeklyRace(mode: PvpMode = weeklyRaceMode) {
 		weeklyRaceLoading = true;
 		weeklyRaceError = '';
 
 		try {
-			weeklyRace = await getPvpWeeklyRace('current', 50, currentUid, selectedMode);
+			const nextWeeklyRace = await getPvpWeeklyRace('current', 50, currentUid, mode);
+			if (mode !== weeklyRaceMode) return;
+			weeklyRace = nextWeeklyRace;
 		} catch (error) {
+			if (mode !== weeklyRaceMode) return;
 			weeklyRace = {
 				week: null,
 				currentWeek: null,
@@ -370,7 +386,7 @@
 			};
 			weeklyRaceError = error instanceof Error ? error.message : $_('pvp.toast.weekly_race_failed');
 		} finally {
-			weeklyRaceLoading = false;
+			if (mode === weeklyRaceMode) weeklyRaceLoading = false;
 		}
 	}
 
@@ -1461,11 +1477,15 @@
 		<Tabs.Content value="weekly-race">
 			<WeeklyRaceTab
 				{weeklyRace}
+				mode={weeklyRaceMode}
 				currentUid={currentUid ?? null}
 				currentPlayer={$user.data ?? null}
 				loading={weeklyRaceLoading}
 				error={weeklyRaceError}
 				{now}
+				onModeChange={(mode) => {
+					weeklyRaceMode = mode;
+				}}
 				onRefresh={refreshWeeklyRace}
 			/>
 		</Tabs.Content>
@@ -1497,6 +1517,15 @@
 						<h2>{$_('pvp.matches_title')}</h2>
 					</div>
 					<div class="history-actions">
+						<Tabs.Root bind:value={historyMode}>
+							<Tabs.List class="mode-filter-list" aria-label={$_('pvp.mode_label')}>
+								{#each PVP_MODES as mode}
+									<Tabs.Trigger value={mode} class="mode-filter-trigger">
+										{$_(`pvp.mode.${mode}`)}
+									</Tabs.Trigger>
+								{/each}
+							</Tabs.List>
+						</Tabs.Root>
 						<Button
 							variant="outline"
 							aria-pressed={hideOpponentInfo}
@@ -1567,8 +1596,12 @@
 		<Tabs.Content value="leaderboard">
 			<PvpLeaderboardTab
 				{leaderboard}
+				mode={leaderboardMode}
 				loading={leaderboardLoading}
 				error={leaderboardError}
+				onModeChange={(mode) => {
+					leaderboardMode = mode;
+				}}
 				onRefresh={refreshLeaderboard}
 			/>
 		</Tabs.Content>
@@ -2086,6 +2119,23 @@
 		padding-inline: 14px;
 	}
 
+	:global(.mode-filter-list) {
+		display: inline-grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		width: auto;
+		height: auto;
+		min-width: 220px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		background: hsl(var(--muted) / 0.28);
+		padding: 3px;
+	}
+
+	:global(.mode-filter-trigger) {
+		min-height: 32px;
+		padding-inline: 12px;
+	}
+
 	.history-toolbar {
 		margin-bottom: 20px;
 	}
@@ -2485,6 +2535,11 @@
 		}
 
 		:global(.elo-filter-group) {
+			width: 100%;
+			min-width: 0;
+		}
+
+		:global(.mode-filter-list) {
 			width: 100%;
 			min-width: 0;
 		}
