@@ -23,7 +23,8 @@
 		"yes": "Yes",
 		"no": "No",
 		"previous": "Previous",
-		"loading": "Loading"
+		"loading": "Loading",
+		"refresh": "Refresh"
 	},
 	"list_selector": {
 		"search_placeholder": "Search lists...",

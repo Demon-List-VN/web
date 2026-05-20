@@ -23,7 +23,8 @@
 		"yes": "Có",
 		"no": "Không",
 		"previous": "Trước",
-		"loading": "Đang tải"
+		"loading": "Đang tải",
+		"refresh": "Làm mới"
 	},
 	"list_selector": {
 		"search_placeholder": "Tìm danh sách...",
