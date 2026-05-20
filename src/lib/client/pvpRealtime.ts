@@ -7,7 +7,8 @@ export type PvpRealtimeScope =
 	| 'participant'
 	| 'result'
 	| 'match'
-	| 'message';
+	| 'message'
+	| 'banPick';
 
 export type PvpRealtimeEvent = {
 	scope: PvpRealtimeScope;
@@ -210,6 +211,14 @@ export function subscribeToPvpMatchDetail(matchId: number | string, callback: Re
 			'pvpMatchMessages',
 			`matchId=eq.${matchId}`,
 			'message',
+			callback,
+			'INSERT'
+		),
+		subscribeToTable(
+			`pvp-match-detail-ban-pick-${matchId}`,
+			'pvpMatchBanPicks',
+			`matchId=eq.${matchId}`,
+			'banPick',
 			callback,
 			'INSERT'
 		)

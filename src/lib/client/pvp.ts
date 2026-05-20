@@ -3,6 +3,7 @@ export type PvpMode = 'classic' | 'platformer';
 
 export type PvpMatchStatus =
 	| 'pending'
+	| 'ban_pick'
 	| 'in_progress'
 	| 'waiting_result'
 	| 'completed'
@@ -105,6 +106,34 @@ export type PvpParticipant = {
 	[key: string]: unknown;
 };
 
+export type PvpBanPickAction = {
+	id?: number | string;
+	matchId?: number | string;
+	uid?: string | null;
+	levelId?: number;
+	turnIndex?: number;
+	auto?: boolean;
+	created_at?: string;
+	level?: PvpLevel | null;
+	[key: string]: unknown;
+};
+
+export type PvpBanPick = {
+	poolLevelIds?: number[];
+	poolLevels?: PvpLevel[];
+	actions?: PvpBanPickAction[];
+	firstUid?: string | null;
+	currentUid?: string | null;
+	turnIndex?: number;
+	turnStartsAt?: string | null;
+	turnEndsAt?: string | null;
+	completedAt?: string | null;
+	remainingLevelIds?: number[];
+	requiredCount?: number;
+	totalBans?: number;
+	[key: string]: unknown;
+};
+
 export type PvpMatch = {
 	id?: number | string;
 	matchId?: number | string;
@@ -143,6 +172,8 @@ export type PvpMatch = {
 	level?: PvpLevel | null;
 	levels?: PvpLevel | null;
 	selectedLevel?: PvpLevel | null;
+	banPick?: PvpBanPick | null;
+	ban_pick?: PvpBanPick | null;
 	participants?: PvpParticipant[];
 	results?: PvpResult[];
 	[key: string]: unknown;
@@ -284,7 +315,7 @@ export type PvpWeeklyRace = {
 	currentPlayer?: PvpWeeklyRacePlayer | null;
 };
 
-export const PVP_ACTIVE_MATCH_STATUSES = ['pending', 'in_progress', 'waiting_result'];
+export const PVP_ACTIVE_MATCH_STATUSES = ['pending', 'ban_pick', 'in_progress', 'waiting_result'];
 export const PVP_FINISHED_MATCH_STATUSES = ['completed', 'cancelled', 'disputed'];
 export const PVP_DIFFICULTIES: PvpDifficulty[] = ['easy', 'medium', 'hard'];
 export const PVP_PROVISIONAL_MATCHES = 5;
@@ -569,6 +600,18 @@ export async function acceptPvpMatch(token: string | null | undefined, id: numbe
 	});
 }
 
+export async function banPvpMatchLevel(
+	token: string | null | undefined,
+	id: number | string,
+	levelIds: number | string | Array<number | string>
+) {
+	return pvpRequest<PvpMatch>(`/pvp/matches/${id}/ban-pick/ban`, {
+		method: 'POST',
+		token,
+		body: { levelIds: Array.isArray(levelIds) ? levelIds : [levelIds] }
+	});
+}
+
 export async function resignPvpMatch(token: string | null | undefined, id: number | string) {
 	return pvpRequest<PvpMatch>(`/pvp/matches/${id}/resign`, {
 		method: 'POST',
@@ -653,6 +696,10 @@ export function getPvpLevel(match: PvpMatch | null | undefined): PvpLevel | null
 	return (
 		match?.level ?? match?.levels ?? match?.selectedLevel ?? (match?.matchLevel as PvpLevel) ?? null
 	);
+}
+
+export function getPvpBanPick(match: PvpMatch | null | undefined): PvpBanPick | null {
+	return match?.banPick ?? match?.ban_pick ?? null;
 }
 
 export function getPvpParticipants(match: PvpMatch | null | undefined): PvpParticipant[] {

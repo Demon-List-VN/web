@@ -39,7 +39,8 @@
 
 	$: status = getPvpStatus(match);
 	$: level = getPvpLevel(match);
-	$: shouldShowLevel = !hideLevelUntilConfirmed || isPvpMatchConfirmedByBoth(match);
+	$: shouldShowLevel =
+		status !== 'ban_pick' && (!hideLevelUntilConfirmed || isPvpMatchConfirmedByBoth(match));
 	$: participants = getPvpParticipants(match);
 	$: self = getPvpSelfParticipant(match, currentUid);
 	$: opponent = getPvpOpponent(match, currentUid);
@@ -95,6 +96,7 @@
 		if (status === 'disputed') return $_('pvp.result.disputed');
 		if (status === 'pending')
 			return `${$_('pvp.awaiting_acceptance_short')} ${formatDuration(acceptanceRemainingMs)}`;
+		if (status === 'ban_pick') return $_('pvp.ban_pick.title');
 		return formatDuration(remainingMs);
 	}
 
