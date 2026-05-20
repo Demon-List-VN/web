@@ -51,6 +51,8 @@
 
 	const LEVELS_PAGE_SIZE = 50;
 	const LEVELS_AD_FREQUENCY = 6;
+	const OFFICIAL_LIST_SLUGS = new Set(['dl', 'cl', 'pl', 'fl']);
+	const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://gdvn.net').replace(/\/$/, '');
 
 	type CustomListItem = {
 		id: number;
@@ -224,6 +226,14 @@
 		ascending: true,
 		tagIds: null
 	};
+	$: listSlug = list?.slug || (list?.id ? String(list.id) : $page.params.id);
+	$: canonicalUrl = `${siteUrl}/lists/${listSlug}`;
+	$: listTitle = list
+		? `${list.title} - ${$_('head.site_name')}`
+		: `${$_('head.titles.lists')} - ${$_('head.site_name')}`;
+	$: listDescription = getMetaDescription(list);
+	$: listImage = getMetaImage(list);
+	$: structuredData = getStructuredData(list, canonicalUrl, listDescription, listImage);
 
 	function formatVisibility(visibility: string) {
 		if (visibility === 'public') return $_('custom_lists.visibility.public');
@@ -247,6 +257,78 @@
 
 	function getListTypeLabel(isPlatformer: boolean) {
 		return isPlatformer ? $_('custom_lists.type.platformer') : $_('custom_lists.type.classic');
+	}
+
+	function getAbsoluteUrl(value: string | null | undefined) {
+		const normalized = typeof value === 'string' ? value.trim() : '';
+
+		if (!normalized) {
+			return null;
+		}
+
+		if (/^https?:\/\//i.test(normalized)) {
+			return normalized;
+		}
+
+		return `${siteUrl}${normalized.startsWith('/') ? '' : '/'}${normalized}`;
+	}
+
+	function getMetaImage(currentList: CustomList | null) {
+		return (
+			getAbsoluteUrl(currentList?.bannerUrl) ||
+			getAbsoluteUrl(currentList?.logoUrl) ||
+			`${siteUrl}/logo.png`
+		);
+	}
+
+	function getMetaDescription(currentList: CustomList | null) {
+		if (!currentList) {
+			return $_('head.descriptions.lists');
+		}
+
+		const slug = currentList.slug || '';
+		if (currentList.isOfficial && OFFICIAL_LIST_SLUGS.has(slug)) {
+			return $_(`head.list_seo.official_descriptions.${slug}`);
+		}
+
+		const description = currentList.description?.trim();
+		if (description) {
+			return description.length > 160 ? `${description.slice(0, 157).trim()}...` : description;
+		}
+
+		return $_('head.list_seo.detail_description', {
+			values: {
+				title: currentList.title,
+				count: currentList.levelCount ?? currentList.items?.length ?? 0
+			}
+		});
+	}
+
+	function getStructuredData(
+		currentList: CustomList | null,
+		url: string,
+		description: string,
+		image: string
+	) {
+		if (!currentList || currentList.visibility !== 'public') {
+			return '';
+		}
+
+		return JSON.stringify({
+			'@context': 'https://schema.org',
+			'@type': 'ItemList',
+			name: currentList.title,
+			description,
+			url,
+			image,
+			numberOfItems: currentList.levelCount ?? currentList.items?.length ?? 0,
+			itemListElement: (currentList.items ?? []).slice(0, 50).map((item, index) => ({
+				'@type': 'ListItem',
+				position: item.position ?? index + 1,
+				url: `${siteUrl}/level/${item.levelId}`,
+				name: item.level?.name || `Level ${item.levelId}`
+			}))
+		});
 	}
 
 	function getLevelDetailHref(item: CustomListItem) {
@@ -1216,13 +1298,24 @@
 </script>
 
 <svelte:head>
-	<title
-		>{list
-			? `${list.title} - ${$_('head.titles.lists')} - ${$_('head.site_name')}`
-			: `${$_('head.titles.lists')} - ${$_('head.site_name')}`}</title
-	>
-	{#if list?.description}
-		<meta name="description" content={list.description} />
+	<title>{listTitle}</title>
+	<meta name="description" content={listDescription} />
+	<link rel="canonical" href={canonicalUrl} />
+	{#if list && (list.visibility !== 'public' || list.isBanned)}
+		<meta name="robots" content="noindex,nofollow" />
+	{/if}
+	<meta property="og:title" content={listTitle} />
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content={canonicalUrl} />
+	<meta property="og:description" content={listDescription} />
+	<meta property="og:site_name" content={$_('head.site_name')} />
+	<meta property="og:image" content={listImage} />
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:title" content={listTitle} />
+	<meta name="twitter:description" content={listDescription} />
+	<meta name="twitter:image" content={listImage} />
+	{#if structuredData}
+		<script type="application/ld+json">{structuredData}</script>
 	{/if}
 </svelte:head>
 

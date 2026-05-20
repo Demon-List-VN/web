@@ -79,6 +79,27 @@
 			"fl": "Featured List",
 			"fallback": "Danh sách"
 		},
+		"list_seo": {
+			"index_titles": {
+				"official": "Danh sách Geometry Dash chính thức",
+				"verified": "Danh sách Geometry Dash đã xác minh",
+				"mirror": "Danh sách Geometry Dash mirror",
+				"custom": "Danh sách Geometry Dash cộng đồng"
+			},
+			"index_descriptions": {
+				"official": "Xem các danh sách Geometry Dash chính thức của GDVN gồm Classic, Challenge, Platformer và Featured.",
+				"verified": "Xem các danh sách Geometry Dash đã được đội ngũ GDVN xác minh cho cộng đồng.",
+				"mirror": "Xem các danh sách level Geometry Dash được mirror và lưu trữ trên GDVN.",
+				"custom": "Xem các danh sách Geometry Dash và bộ sưu tập level do cộng đồng tạo trên GDVN."
+			},
+			"official_descriptions": {
+				"dl": "Xem GDVN Classic List chính thức cho các demon Geometry Dash được xếp hạng, record, điểm và tiến độ người chơi.",
+				"pl": "Xem GDVN Platformer List chính thức cho các level platformer Geometry Dash được xếp hạng, record, điểm và tiến độ người chơi.",
+				"cl": "Xem GDVN Challenge List chính thức cho các challenge Geometry Dash, thứ hạng, record và tiến độ người chơi.",
+				"fl": "Xem GDVN Featured List chính thức cho các level Geometry Dash nổi bật, record, điểm và tiến độ người chơi."
+			},
+			"detail_description": "{title} trên GDVN với {count} level Geometry Dash, record, thứ hạng và tiến độ người chơi."
+		},
 		"descriptions": {
 			"homepage": "Website dành cho cộng đồng Geometry Dash Việt Nam",
 			"discord": "Tham gia Discord Geometry Dash Việt Nam, thêm GDVN bot vào server của bạn và dùng dữ liệu list mới nhất ngay trong chat.",

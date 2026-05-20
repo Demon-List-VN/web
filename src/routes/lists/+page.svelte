@@ -32,6 +32,7 @@
 	type PublicListSection = 'official' | 'verified' | 'mirror' | 'browse';
 	type ListTab = PublicListTab | 'mine' | 'starred';
 	type CustomListResolvedRole = 'viewer' | 'owner' | 'admin' | 'helper' | 'moderator';
+	const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://gdvn.net').replace(/\/$/, '');
 	const PUBLIC_TAB_SECTIONS: Record<PublicListTab, PublicListSection> = {
 		official: 'official',
 		verified: 'verified',
@@ -74,6 +75,9 @@
 	$: publicTab = (isPublicListTab(data?.tab) ? data.tab : 'official') as PublicListTab;
 	$: totalPages = Math.max(1, Math.ceil(total / pageSize));
 	let activeTab: ListTab = publicTab;
+	$: pageTitle = `${$_(`head.list_seo.index_titles.${publicTab}`)} - ${$_('head.site_name')}`;
+	$: pageDescription = $_(`head.list_seo.index_descriptions.${publicTab}`);
+	$: canonicalUrl = `${siteUrl}/lists${publicTab === 'official' ? '' : `?tab=${publicTab}`}`;
 
 	// Own lists (client-only, requires auth)
 	let ownLists: ListSummary[] = [];
@@ -397,8 +401,20 @@
 </script>
 
 <svelte:head>
-	<title>{$_('head.titles.lists')} - {$_('head.site_name')}</title>
-	<meta name="description" content={$_('head.descriptions.lists')} />
+	<title>{pageTitle}</title>
+	<meta name="description" content={pageDescription} />
+	<link rel="canonical" href={canonicalUrl} />
+	{#if searchQuery || currentPage > 1 || quickLevelId}
+		<meta name="robots" content="noindex,follow" />
+	{/if}
+	<meta property="og:title" content={pageTitle} />
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content={canonicalUrl} />
+	<meta property="og:description" content={pageDescription} />
+	<meta property="og:site_name" content={$_('head.site_name')} />
+	<meta name="twitter:card" content="summary" />
+	<meta name="twitter:title" content={pageTitle} />
+	<meta name="twitter:description" content={pageDescription} />
 </svelte:head>
 
 <div class="page">

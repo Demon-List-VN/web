@@ -79,6 +79,27 @@
 			"fl": "Featured List",
 			"fallback": "List"
 		},
+		"list_seo": {
+			"index_titles": {
+				"official": "Official Geometry Dash Lists",
+				"verified": "Verified Geometry Dash Lists",
+				"mirror": "Mirror Geometry Dash Lists",
+				"custom": "Community Geometry Dash Lists"
+			},
+			"index_descriptions": {
+				"official": "Browse official GDVN Geometry Dash lists including Classic, Challenge, Platformer, and Featured rankings.",
+				"verified": "Browse GDVN-verified Geometry Dash lists reviewed for the community.",
+				"mirror": "Browse mirrored Geometry Dash level lists preserved on GDVN.",
+				"custom": "Browse community-made Geometry Dash lists and level collections on GDVN."
+			},
+			"official_descriptions": {
+				"dl": "Browse the official GDVN Classic List for ranked Geometry Dash demon levels, records, ratings, and player progress.",
+				"pl": "Browse the official GDVN Platformer List for ranked Geometry Dash platformer levels, records, ratings, and player progress.",
+				"cl": "Browse the official GDVN Challenge List for Geometry Dash challenge levels, rankings, records, and player progress.",
+				"fl": "Browse the official GDVN Featured List for featured Geometry Dash levels, records, ratings, and player progress."
+			},
+			"detail_description": "{title} on GDVN with {count} Geometry Dash levels, records, rankings, and player progress."
+		},
 		"descriptions": {
 			"homepage": "A website for the Geometry Dash Việt Nam community",
 			"discord": "Join the Geometry Dash Viet Nam Discord, add the GDVN bot to your server, and use current list data right in chat.",
