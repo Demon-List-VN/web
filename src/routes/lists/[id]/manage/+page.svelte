@@ -5,7 +5,8 @@
 	import * as Tabs from '$lib/components/ui/tabs';
 	import AppearanceTab from './AppearanceTab.svelte';
 	import BasicTab from './BasicTab.svelte';
-	import CollaborationTab from './CollaborationTab.svelte';
+	import ChangelogTab from './ChangelogTab.svelte';
+	import CollaborationTab from './AdvancedTab.svelte';
 	import DangerTab from './DangerTab.svelte';
 	import FormulaTab from './FormulaTab.svelte';
 	import LevelsTab from './LevelsTab.svelte';
@@ -42,8 +43,9 @@
 		Award,
 		ListOrdered,
 		Inbox,
-		Users,
-		ShieldAlert
+		ShieldAlert,
+		History,
+		SlidersHorizontal
 	} from 'lucide-svelte';
 	import { _ } from 'svelte-i18n';
 
@@ -199,6 +201,7 @@
 		pendingInvitations?: CustomListInvitation[];
 		pendingInvitation?: CustomListInvitation | null;
 		auditLog?: CustomListAuditLogEntry[];
+		createdAuditLogIds?: number[];
 		rankBadges?: CustomListRankBadge[];
 		recordScoreFormula?: string;
 		weightFormula?: string;
@@ -370,7 +373,8 @@
 		| 'danger'
 		| 'levels'
 		| 'submissions'
-		| 'collaboration';
+		| 'collaboration'
+		| 'changelog';
 
 	const defaultPermissions: CustomListPermissionFlags = {
 		canEditSettings: false,
@@ -427,6 +431,8 @@
 	let savingSubmissionId: number | null = null;
 	let levelsTabList: (CustomList & { items: CustomListItem[] }) | null = null;
 	let showPendingLevelChangesDialog = false;
+	let addSavedChangesToChangelog = false;
+	let changelogRefreshKey = 0;
 	let nextPendingLevelItemId = -1;
 
 	const CUSTOM_LIST_CDN_BASE_URL = 'https://cdn.gdvn.net';
@@ -659,6 +665,7 @@
 			requestedTab === 'record-filter' ||
 			requestedTab === 'rank' ||
 			requestedTab === 'collaboration' ||
+			requestedTab === 'changelog' ||
 			requestedTab === 'danger'
 		) {
 			return requestedTab;
@@ -1278,7 +1285,10 @@
 		}
 	}
 
-	async function updateCollaborationSettings(adminsCanManageHelpers: boolean) {
+	async function updateCollaborationSettings(
+		adminsCanManageHelpers: boolean,
+		options: { silent?: boolean } = {}
+	) {
 		if (!list || !canConfigureCollaboration) return;
 
 		savingCollaboration = true;
@@ -1296,8 +1306,13 @@
 			if (!res.ok)
 				throw new Error(payload.error || $_('custom_lists.toast.failed_collaboration_update'));
 			applyPagedListPayload(payload);
-			toast.success($_('custom_lists.toast.collaboration_updated'));
+			if (!options.silent) {
+				toast.success($_('custom_lists.toast.collaboration_updated'));
+			}
 		} catch (error) {
+			if (options.silent) {
+				throw error;
+			}
 			toast.error(
 				error instanceof Error
 					? error.message
@@ -1462,6 +1477,7 @@
 		if (tab === 'submissions') return canReviewSubmissions;
 		if (tab === 'danger') return canBan || canDelete;
 		if (tab === 'collaboration') return canShowCollaboration;
+		if (tab === 'changelog') return canViewAudit;
 		return canEditSettings;
 	}
 
@@ -3481,6 +3497,27 @@
 		}
 
 		discardLevelDrafts();
+		addSavedChangesToChangelog = false;
+	}
+
+	async function createChangelogDraftFromAuditIds(auditLogIds: number[]) {
+		if (!list || !canEditLevels || !auditLogIds.length || !$user.loggedIn) return;
+
+		const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/changelogs`, {
+			method: 'POST',
+			headers: {
+				Authorization: `Bearer ${await $user.token()}`,
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({ auditLogIds })
+		});
+		const payload = await res.json().catch(() => null);
+
+		if (!res.ok) {
+			throw new Error(payload?.error || 'Failed to stage changelog');
+		}
+
+		changelogRefreshKey += 1;
 	}
 
 	async function saveStagedManageChanges() {
@@ -3586,10 +3623,30 @@
 			const payload = await saveCustomListBatchPayload(list.id, batchPayload);
 
 			applyPagedListPayload(payload);
+			const createdAuditLogIds = Array.isArray(payload.createdAuditLogIds)
+				? payload.createdAuditLogIds.filter((id: unknown): id is number => typeof id === 'number')
+				: [];
+			const shouldStageChangelog =
+				addSavedChangesToChangelog && currentHasUnsavedLevelEdits && createdAuditLogIds.length;
 			pendingLevelAdditions = [];
 			levelDrafts = {};
 			levelDeletionDraftIds = [];
 			pendingLevelOrderDrafts = {};
+			addSavedChangesToChangelog = false;
+
+			if (shouldStageChangelog) {
+				try {
+					await createChangelogDraftFromAuditIds(createdAuditLogIds);
+					toast.success($_('custom_lists.manage.changelog.staged'));
+				} catch (error) {
+					toast.error(
+						error instanceof Error
+							? error.message
+							: $_('custom_lists.manage.changelog.stage_failed')
+					);
+				}
+			}
+
 			toast.dismiss(savingToast);
 			toast.success(
 				currentHasUnsavedLevelEdits && !currentHasUnsavedSettings
@@ -3764,6 +3821,7 @@
 		canViewMembers,
 		canManageMembers,
 		canTransferOwnership,
+		canEditLevels,
 		canViewAudit,
 		canViewPendingInvitations,
 		pendingInvitationCount: list?.pendingInvitations?.length ?? 0,
@@ -3775,6 +3833,7 @@
 		removeCollaborator,
 		revokePendingInvitation,
 		preferredSection: getInitialCollaborationSection(),
+		onChangelogUpdated: () => (changelogRefreshKey += 1),
 		getRoleLabel,
 		formatDate,
 		formatDateTime
@@ -4068,14 +4127,20 @@
 							{/if}
 						</Tabs.Trigger>
 					{/if}
+					{#if canViewAudit}
+						<Tabs.Trigger value="changelog" class="manageTab">
+							<History class="h-4 w-4" />
+							<span>{$_('custom_lists.manage.tabs.changelog')}</span>
+						</Tabs.Trigger>
+					{/if}
+
 					{#if canShowCollaboration}
 						<Tabs.Trigger value="collaboration" class="manageTab">
-							<Users class="h-4 w-4" />
-							<span>{$_('custom_lists.manage.tabs.collaboration')}</span>
+							<SlidersHorizontal class="h-4 w-4" />
+							<span>{$_('custom_lists.manage.tabs.advanced')}</span>
 						</Tabs.Trigger>
 					{/if}
 					{#if canBan || canDelete}
-						<span class="tabSpacer" aria-hidden="true"></span>
 						<Tabs.Trigger value="danger" class="manageTab dangerTabTrigger">
 							<ShieldAlert class="h-4 w-4" />
 							<span>{$_('custom_lists.manage.tabs.danger')}</span>
@@ -4192,6 +4257,18 @@
 				</Tabs.Content>
 			{/if}
 
+			{#if canViewAudit}
+				<Tabs.Content value="changelog">
+					<ChangelogTab
+						{list}
+						{canViewAudit}
+						{canEditLevels}
+						refreshKey={changelogRefreshKey}
+						{formatDateTime}
+					/>
+				</Tabs.Content>
+			{/if}
+
 			{#if canBan || canDelete}
 				<Tabs.Content value="danger">
 					<DangerTab {list} {canBan} {canDelete} {savingBanState} {setBanState} {deleteList} />
@@ -4276,6 +4353,13 @@
 							</Badge>
 						{/if}
 					</div>
+
+					{#if canEditLevels && pendingLevelAuditEntries.length}
+						<label class="changelogSaveCheck">
+							<input type="checkbox" bind:checked={addSavedChangesToChangelog} />
+							<span>{$_('custom_lists.manage.changelog.add_after_save')}</span>
+						</label>
+					{/if}
 
 					{#if pendingManageAuditEntries.length}
 						<div class="pendingChangesList">
@@ -4426,6 +4510,12 @@
 						</div>
 					</div>
 					<div class="unsavedBarActions">
+						{#if canEditLevels && pendingLevelAuditEntries.length}
+							<label class="unsavedBarCheck">
+								<input type="checkbox" bind:checked={addSavedChangesToChangelog} />
+								<span>{$_('custom_lists.manage.changelog.add_after_save_short')}</span>
+							</label>
+						{/if}
 						{#if pendingManageAuditEntries.length}
 							<Button
 								variant="ghost"
@@ -4917,6 +5007,22 @@
 		align-items: center;
 		gap: 6px;
 		flex-shrink: 0;
+	}
+
+	.unsavedBarCheck,
+	.changelogSaveCheck {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		color: hsl(var(--muted-foreground));
+		font-size: 0.84rem;
+	}
+
+	.unsavedBarCheck input,
+	.changelogSaveCheck input {
+		width: 16px;
+		height: 16px;
+		accent-color: hsl(var(--primary));
 	}
 
 	/* Pending changes dialog */

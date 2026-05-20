@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { user } from '$lib/client';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
@@ -10,6 +11,7 @@
 	import PendingInvitationsTab from './PendingInvitationsTab.svelte';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import { ArrowUpDown, Crown, Plus, Save, Search, Trash2, UserPlus, X } from 'lucide-svelte';
+	import { toast } from 'svelte-sonner';
 	import { _ } from 'svelte-i18n';
 
 	type CollaboratorRole = 'admin' | 'helper';
@@ -20,12 +22,15 @@
 	export let canViewMembers = false;
 	export let canManageMembers = false;
 	export let canTransferOwnership = false;
+	export let canEditLevels = false;
 	export let canViewAudit = false;
 	export let canViewPendingInvitations = false;
 	export let pendingInvitationCount = 0;
+	export let onChangelogUpdated: () => void = () => {};
 
 	export let updateCollaborationSettings: (
-		adminsCanManageHelpers: boolean
+		adminsCanManageHelpers: boolean,
+		options?: { silent?: boolean }
 	) => void | Promise<void> = async () => {};
 	export let searchPlayersForCollaboration: (
 		query: string
@@ -65,6 +70,17 @@
 	// Audit detail dialog state
 	let auditDetailEntry: any = null;
 	let showAuditDetailDialog = false;
+	let changelogDiscordChannelId = '';
+	let changelogSettingsLoading = false;
+	let changelogSettingsSaving = false;
+	let changelogSettingsKey = '';
+	let addingAuditToChangelog = false;
+	const changelogAuditActions = new Set([
+		'level_added',
+		'level_updated',
+		'level_removed',
+		'levels_reordered'
+	]);
 
 	$: {
 		const nextSyncedKey = list ? `${list.id}:${Boolean(list.adminsCanManageHelpers)}` : '';
@@ -87,6 +103,12 @@
 	$: addDialogExistingMember = addSelectedPlayer?.uid
 		? getMemberByUid(addSelectedPlayer.uid)
 		: null;
+	$: if (list && canViewAudit && $user.loggedIn) {
+		const nextKey = `${list.id}:${$user.data?.uid ?? ''}`;
+		if (nextKey !== changelogSettingsKey && !changelogSettingsLoading) {
+			void loadChangelogSettings(nextKey);
+		}
+	}
 
 	function filterMembers(members: any[], query: string) {
 		const q = query.trim().toLowerCase();
@@ -117,10 +139,6 @@
 	function getAvatarFallback(player: any) {
 		const label = getPlayerName(player, player?.uid).trim();
 		return label ? label[0].toUpperCase() : '?';
-	}
-
-	async function saveCollaborationSettings() {
-		await updateCollaborationSettings(adminsCanManageHelpers);
 	}
 
 	function toggleAdminsCanManageHelpers() {
@@ -185,6 +203,122 @@
 	function openAuditDetail(entry: any) {
 		auditDetailEntry = entry;
 		showAuditDetailDialog = true;
+	}
+
+	async function getAuthHeaders() {
+		return {
+			Authorization: `Bearer ${await $user.token()}`
+		};
+	}
+
+	async function readPayload(response: Response) {
+		const payload = await response.json().catch(() => null);
+		if (!response.ok) {
+			throw new Error(payload?.error || 'Failed to update changelog');
+		}
+		return payload;
+	}
+
+	async function loadChangelogSettings(key: string) {
+		if (!list || !$user.loggedIn) return;
+		changelogSettingsKey = key;
+		changelogSettingsLoading = true;
+
+		try {
+			const response = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/changelogs`, {
+				headers: await getAuthHeaders()
+			});
+			const payload = await readPayload(response);
+			if (key !== changelogSettingsKey) return;
+			changelogDiscordChannelId = payload.settings?.discordChannelId ?? '';
+		} catch {
+			changelogDiscordChannelId = '';
+		} finally {
+			changelogSettingsLoading = false;
+		}
+	}
+
+	async function saveChangelogDiscordSettings(options: { silent?: boolean } = {}) {
+		if (!list || !canEditLevels || !$user.loggedIn) return false;
+		changelogSettingsSaving = true;
+
+		try {
+			const response = await fetch(
+				`${import.meta.env.VITE_API_URL}/lists/${list.id}/changelogs/settings`,
+				{
+					method: 'PATCH',
+					headers: {
+						...(await getAuthHeaders()),
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({ discordChannelId: changelogDiscordChannelId })
+				}
+			);
+			const payload = await readPayload(response);
+			changelogDiscordChannelId = payload?.discordChannelId ?? '';
+			onChangelogUpdated();
+			if (!options.silent) {
+				toast.success($_('custom_lists.manage.changelog.discord_saved'));
+			}
+			return true;
+		} catch (error) {
+			if (options.silent) {
+				throw error;
+			}
+			toast.error(error instanceof Error ? error.message : 'Failed to save Discord channel');
+			return false;
+		} finally {
+			changelogSettingsSaving = false;
+		}
+	}
+
+	async function saveAdvancedSettings() {
+		try {
+			let saved = false;
+
+			if (canConfigureCollaboration) {
+				await updateCollaborationSettings(adminsCanManageHelpers, { silent: true });
+				saved = true;
+			}
+
+			if (canEditLevels) {
+				const savedDiscord = await saveChangelogDiscordSettings({ silent: true });
+				saved = saved || savedDiscord;
+			}
+
+			if (saved) {
+				toast.success($_('custom_lists.manage.advanced.settings_saved'));
+			}
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : 'Failed to save advanced settings');
+		}
+	}
+
+	function canAddAuditEntryToChangelog(entry: any) {
+		return Boolean(entry?.id && changelogAuditActions.has(entry.action));
+	}
+
+	async function addAuditEntryToChangelog(entry: any) {
+		if (!list || !canEditLevels || !$user.loggedIn || !canAddAuditEntryToChangelog(entry)) return;
+		addingAuditToChangelog = true;
+
+		try {
+			const response = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/changelogs`, {
+				method: 'POST',
+				headers: {
+					...(await getAuthHeaders()),
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ auditLogIds: [entry.id] })
+			});
+			await readPayload(response);
+			onChangelogUpdated();
+			toast.success($_('custom_lists.manage.changelog.staged'));
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : 'Failed to stage changelog');
+		} finally {
+			addingAuditToChangelog = false;
+		}
 	}
 
 	function getAuditChangeFields(entry: any): string[] {
@@ -509,39 +643,69 @@
 </script>
 
 <div class="tabContent">
-	{#if canConfigureCollaboration}
-		<section class="card">
+	{#if canEditLevels || canConfigureCollaboration}
+		<section class="card advancedSettingsCard">
 			<header class="cardHead">
-				<h2 class="cardTitle">{$_('custom_lists.manage.collaboration.settings_title')}</h2>
+				<h2 class="cardTitle">{$_('custom_lists.manage.advanced.settings_title')}</h2>
 			</header>
-			<div class="switchRow">
-				<div class="switchCopy">
-					<button
-						type="button"
-						class="switchCopyButton"
-						on:click={toggleAdminsCanManageHelpers}
-						aria-controls="admins-can-manage-helpers"
-						aria-pressed={adminsCanManageHelpers}
-					>
-						<span class="switchCopyTitle"
-							>{$_('custom_lists.manage.collaboration.admin_helper_toggle_label')}</span
-						>
-						<span class="hint"
-							>{$_('custom_lists.manage.collaboration.admin_helper_toggle_hint')}</span
-						>
-					</button>
-				</div>
-				<div class="switchControl">
-					<span class="switchLabel"
-						>{adminsCanManageHelpers ? $_('general.yes') : $_('general.no')}</span
-					>
-					<Switch id="admins-can-manage-helpers" bind:checked={adminsCanManageHelpers} />
-				</div>
+			<div class="advancedSettingsList">
+				{#if canEditLevels}
+					<div class="advancedSettingRow">
+						<div class="advancedSettingCopy">
+							<h3>{$_('custom_lists.manage.changelog.discord_title')}</h3>
+							<p class="hint">{$_('custom_lists.manage.changelog.discord_hint')}</p>
+						</div>
+						<div class="advancedSettingControl">
+							<Input
+								id="advanced-changelog-discord-channel"
+								bind:value={changelogDiscordChannelId}
+								placeholder={$_('custom_lists.manage.changelog.discord_placeholder')}
+								disabled={changelogSettingsLoading ||
+									changelogSettingsSaving ||
+									savingCollaboration}
+							/>
+						</div>
+					</div>
+				{/if}
+
+				{#if canConfigureCollaboration}
+					<div class="advancedSettingRow">
+						<div class="advancedSettingCopy">
+							<button
+								type="button"
+								class="switchCopyButton"
+								on:click={toggleAdminsCanManageHelpers}
+								aria-controls="admins-can-manage-helpers"
+								aria-pressed={adminsCanManageHelpers}
+							>
+								<span class="switchCopyTitle"
+									>{$_('custom_lists.manage.collaboration.admin_helper_toggle_label')}</span
+								>
+								<span class="hint"
+									>{$_('custom_lists.manage.collaboration.admin_helper_toggle_hint')}</span
+								>
+							</button>
+						</div>
+						<div class="advancedSettingControl switchControl">
+							<span class="switchLabel"
+								>{adminsCanManageHelpers ? $_('general.yes') : $_('general.no')}</span
+							>
+							<Switch id="admins-can-manage-helpers" bind:checked={adminsCanManageHelpers} />
+						</div>
+					</div>
+				{/if}
 			</div>
+
 			<div class="formActions">
-				<Button on:click={saveCollaborationSettings} disabled={savingCollaboration}>
+				<Button
+					class="ml-auto"
+					on:click={saveAdvancedSettings}
+					disabled={savingCollaboration || changelogSettingsSaving || changelogSettingsLoading}
+				>
 					<Save class="mr-2 h-4 w-4" />
-					{$_('custom_lists.detail.edit.save')}
+					{savingCollaboration || changelogSettingsSaving
+						? `${$_('general.loading')}...`
+						: $_('custom_lists.detail.edit.save')}
 				</Button>
 			</div>
 		</section>
@@ -986,6 +1150,17 @@
 				</details>
 
 				<Dialog.Footer>
+					{#if canEditLevels && canAddAuditEntryToChangelog(auditDetailEntry)}
+						<Button
+							on:click={() => addAuditEntryToChangelog(auditDetailEntry)}
+							disabled={addingAuditToChangelog}
+						>
+							<Plus class="mr-2 h-4 w-4" />
+							{addingAuditToChangelog
+								? `${$_('general.loading')}...`
+								: $_('custom_lists.manage.changelog.add_audit_button')}
+						</Button>
+					{/if}
 					<Button variant="outline" on:click={() => (showAuditDetailDialog = false)}>
 						{$_('general.close')}
 					</Button>
@@ -1057,23 +1232,41 @@
 		gap: 6px;
 	}
 
-	.switchRow {
+	.advancedSettingsList {
 		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+
+	.advancedSettingRow {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(240px, 340px);
+		gap: 18px;
 		align-items: center;
-		justify-content: space-between;
-		gap: 16px;
-		flex-wrap: wrap;
 		padding: 14px;
 		border: 1px solid hsl(var(--border));
 		border-radius: 10px;
 		background: hsl(var(--muted) / 0.12);
 	}
 
-	.switchCopy {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
+	.advancedSettingCopy {
 		min-width: 0;
+	}
+
+	.advancedSettingCopy h3 {
+		margin: 0 0 4px;
+		font-size: 0.95rem;
+		font-weight: 600;
+	}
+
+	.advancedSettingControl {
+		display: flex;
+		justify-content: flex-end;
+		min-width: 0;
+	}
+
+	.advancedSettingControl :global(input) {
+		width: 100%;
 	}
 
 	.switchCopyButton {
@@ -1423,6 +1616,14 @@
 	@media (max-width: 760px) {
 		.card {
 			padding: 16px;
+		}
+
+		.advancedSettingRow {
+			grid-template-columns: 1fr;
+		}
+
+		.advancedSettingControl {
+			justify-content: flex-start;
 		}
 
 		.memberRow {

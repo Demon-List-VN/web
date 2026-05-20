@@ -2696,6 +2696,8 @@
 				"danger": "Nguy hiểm",
 				"levels": "Levels",
 				"collaboration": "Cộng tác",
+				"advanced": "Nâng cao",
+				"changelog": "Cập nhật",
 				"pending_invitations": "Lời mời chờ",
 				"submissions": "Nộp level"
 			},
@@ -2769,6 +2771,39 @@
 				"audit_title": "Nhật ký kiểm tra",
 				"audit_hint": "Các thay đổi gần đây về cộng tác viên, thông tin và level của danh sách này.",
 				"audit_empty": "Chưa có mục nhật ký nào."
+			},
+			"changelog": {
+				"heading": "Cập nhật",
+				"hint": "Tạo changelog công khai từ các mục audit liên quan tới level, chỉnh nội dung rồi sao chép hoặc gửi lên Discord.",
+				"discord_title": "Kênh Discord",
+				"discord_hint": "Đặt kênh Discord dùng khi publish changelog của danh sách này.",
+				"discord_placeholder": "Discord channel ID",
+				"discord_save": "Lưu kênh",
+				"discord_saved": "Đã lưu kênh Discord.",
+				"add_audit_button": "Thêm vào changelog",
+				"audit_picker": "Mục audit",
+				"stage_selected": "Thêm mục đã chọn",
+				"staged": "Đã tạo bản nháp changelog.",
+				"stage_failed": "Đã lưu thay đổi nhưng không thể thêm vào changelog.",
+				"title_label": "Tiêu đề",
+				"body_label": "Nội dung",
+				"save": "Lưu changelog",
+				"saved": "Đã lưu changelog.",
+				"regenerate": "Tạo lại nội dung",
+				"regenerate_confirm": "Tạo lại nội dung từ các mục audit đã chọn? Nội dung chỉnh tay sẽ bị thay thế.",
+				"copy_publish": "Sao chép và publish",
+				"discord_publish": "Gửi Discord",
+				"copied": "Đã sao chép và đánh dấu đã publish.",
+				"sent_discord": "Đã gửi Discord và đánh dấu đã publish.",
+				"delete_confirm": "Xóa changelog này?",
+				"deleted": "Đã xóa changelog.",
+				"empty": "Chọn mục audit để tạo bản nháp changelog.",
+				"add_after_save": "Thêm thay đổi level đã lưu vào changelog",
+				"add_after_save_short": "Thêm vào changelog"
+			},
+			"advanced": {
+				"settings_title": "Thiết lập nâng cao",
+				"settings_saved": "Đã lưu thiết lập nâng cao."
 			},
 			"audit": {
 				"list_created": "Đã tạo danh sách",

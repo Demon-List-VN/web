@@ -2697,6 +2697,8 @@
 				"danger": "Dangerous",
 				"levels": "Levels",
 				"collaboration": "Collaboration",
+				"advanced": "Advanced",
+				"changelog": "Changelog",
 				"pending_invitations": "Pending invites",
 				"submissions": "Submissions"
 			},
@@ -2770,6 +2772,39 @@
 				"audit_title": "Audit log",
 				"audit_hint": "Recent collaborator, metadata, and level changes for this list.",
 				"audit_empty": "No audit entries yet."
+			},
+			"changelog": {
+				"heading": "Changelog",
+				"hint": "Build a public changelog from level-related audit entries, edit the text, then copy it or send it to Discord.",
+				"discord_title": "Discord channel",
+				"discord_hint": "Set the Discord channel used when changelogs are published from this list.",
+				"discord_placeholder": "Discord channel ID",
+				"discord_save": "Save channel",
+				"discord_saved": "Discord channel saved.",
+				"add_audit_button": "Add to changelog",
+				"audit_picker": "Audit entries",
+				"stage_selected": "Stage selected",
+				"staged": "Changelog draft staged.",
+				"stage_failed": "Saved changes, but failed to stage changelog.",
+				"title_label": "Title",
+				"body_label": "Body",
+				"save": "Save changelog",
+				"saved": "Changelog saved.",
+				"regenerate": "Regenerate",
+				"regenerate_confirm": "Regenerate the body from selected audit entries? Manual body edits will be replaced.",
+				"copy_publish": "Copy and publish",
+				"discord_publish": "Send to Discord",
+				"copied": "Copied and marked as published.",
+				"sent_discord": "Sent to Discord and marked as published.",
+				"delete_confirm": "Delete this changelog?",
+				"deleted": "Changelog deleted.",
+				"empty": "Select audit entries to create a changelog draft.",
+				"add_after_save": "Add saved level changes to changelog",
+				"add_after_save_short": "Add to changelog"
+			},
+			"advanced": {
+				"settings_title": "Advanced settings",
+				"settings_saved": "Advanced settings saved."
 			},
 			"audit": {
 				"list_created": "List created",
