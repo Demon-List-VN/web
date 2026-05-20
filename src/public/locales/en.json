@@ -405,7 +405,7 @@
 			"turn_starts_soon": "Turn starts soon",
 			"turn_submitted": "Turn submitted",
 			"your_turn": "Your ban",
-			"waiting_turn": "Waiting for {player}",
+			"waiting_turn": "Waiting for opponent",
 			"bans_progress": "{current}/{total} bans locked",
 			"selected_progress": "Selected {current}/{total}",
 			"select": "Select",

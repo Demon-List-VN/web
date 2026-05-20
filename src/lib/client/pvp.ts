@@ -840,6 +840,7 @@ export function getPvpMatchStartMs(match: PvpMatch | null | undefined) {
 export function getPvpMatchEndMs(match: PvpMatch | null | undefined) {
 	const explicit = getTimeMs(match?.endAt ?? match?.endsAt ?? match?.endedAt);
 	if (explicit) return explicit;
+	if (['pending', 'ban_pick'].includes(getPvpStatus(match))) return null;
 
 	const started = getPvpMatchStartMs(match);
 	const duration =

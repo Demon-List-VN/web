@@ -405,7 +405,7 @@
 			"turn_starts_soon": "Lượt sắp bắt đầu",
 			"turn_submitted": "Đã gửi lượt ban",
 			"your_turn": "Lượt ban của bạn",
-			"waiting_turn": "Đang chờ {player}",
+			"waiting_turn": "Đang chờ đối thủ",
 			"bans_progress": "Đã khóa {current}/{total} lượt ban",
 			"selected_progress": "Đã chọn {current}/{total}",
 			"select": "Chọn",

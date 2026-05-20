@@ -2,7 +2,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
-	import { Ban, Clock, ShieldX } from 'lucide-svelte';
+	import { Ban, Clock, Loader2, ShieldX } from 'lucide-svelte';
 	import { _ } from 'svelte-i18n';
 	import type { PvpBanPick, PvpBanPickAction, PvpLevel } from '$lib/client/pvp';
 
@@ -30,7 +30,17 @@
 		: poolLevelIds.map((levelId) => ({ id: levelId, levelId }) as PvpLevel);
 	$: currentTurnUid = banPick?.currentUid ?? banPick?.current_uid ?? null;
 	$: isViewerTurn = sameUid(currentTurnUid, currentUid);
+	$: turnExpired = !waitingToStart && remainingMs <= 0;
+	$: turnLoading = waitingToStart || turnExpired;
+	$: turnOpen = isViewerTurn && !waitingToStart && remainingMs > 0 && !turnSubmitted;
 	$: totalBans = Number(banPick?.totalBans ?? 6);
+	$: isYourTurn = turnSubmitted
+		? false
+		: waitingToStart
+			? false
+			: turnExpired
+				? false
+				: isViewerTurn;
 
 	function sameUid(a: unknown, b: unknown) {
 		return Boolean(a && b && String(a) === String(b));
@@ -56,16 +66,6 @@
 		if (!levelId) return null;
 		return actions.find((action) => Number(action.levelId) === levelId) ?? null;
 	}
-
-	function canToggleLevel(
-		levelId: number | null,
-		banAction: PvpBanPickAction | null,
-		selected: boolean
-	) {
-		if (!levelId || !isViewerTurn || banAction) return false;
-		if (!selected && selectedLevelIds.length >= requiredCount) return false;
-		return true;
-	}
 </script>
 
 <section class="ban-pick-section">
@@ -78,11 +78,18 @@
 						{$_('pvp.ban_pick.description')}
 					</Card.Description>
 				</div>
-				<div class="ban-pick-turn">
-					<Clock class="h-4 w-4" />
-					<strong>{formatDuration(remainingMs)}</strong>
-					<span>{waitingToStart ? $_('pvp.ban_pick.starts_in') : $_('pvp.ban_pick.ends_in')}</span>
-				</div>
+				{#if turnLoading}
+					<div class="ban-pick-turn ban-pick-turn-loading" aria-live="polite">
+						<Loader2 class="h-4 w-4 animate-spin" />
+						<span>{$_('general.loading')}</span>
+					</div>
+				{:else}
+					<div class="ban-pick-turn">
+						<Clock class="h-4 w-4" />
+						<strong>{formatDuration(remainingMs)}</strong>
+						<span>{$_('pvp.ban_pick.ends_in')}</span>
+					</div>
+				{/if}
 			</div>
 		</Card.Header>
 
@@ -93,9 +100,11 @@
 						? $_('pvp.ban_pick.turn_submitted')
 						: waitingToStart
 							? $_('pvp.ban_pick.turn_starts_soon')
-							: isViewerTurn
-								? $_('pvp.ban_pick.your_turn')
-								: $_('pvp.ban_pick.waiting_turn', { values: { player: turnPlayerName } })}
+							: turnExpired
+								? $_('general.loading')
+								: isViewerTurn
+									? $_('pvp.ban_pick.your_turn')
+									: $_('pvp.ban_pick.waiting_turn')}
 				</Badge>
 				<span>
 					{$_('pvp.ban_pick.bans_progress', {
@@ -122,7 +131,6 @@
 					{@const levelId = levelIdFor(poolLevel, poolIndex)}
 					{@const banAction = actionForLevel(levelId)}
 					{@const selectedForBan = levelId ? selectedLevelIds.includes(levelId) : false}
-					{@const canToggle = canToggleLevel(levelId, banAction, selectedForBan)}
 					<div
 						class:banned={Boolean(banAction)}
 						class:selected={selectedForBan}
@@ -162,7 +170,7 @@
 								<Button
 									variant={selectedForBan ? 'default' : 'outline'}
 									size="sm"
-									disabled={!canToggle}
+									disabled={!isYourTurn || (!selectedForBan && selectedLevelIds.length >= requiredCount)}
 									on:click={() => levelId && onToggleBan(levelId)}
 								>
 									<Ban class="mr-2 h-4 w-4" />
@@ -211,6 +219,10 @@
 	.ban-pick-turn span {
 		color: hsl(var(--muted-foreground));
 		font-size: 12px;
+	}
+
+	.ban-pick-turn-loading {
+		color: hsl(var(--muted-foreground));
 	}
 
 	:global(.ban-pick-content) {

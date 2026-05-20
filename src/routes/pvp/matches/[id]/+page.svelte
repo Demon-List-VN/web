@@ -161,6 +161,11 @@
 	$: banPickTurnSubmitted = banPickCurrentTurnActions.length > 0;
 	$: isBanPick = status === 'ban_pick';
 	$: banPickIsViewerTurn = sameUid(banPickCurrentUid, currentUid);
+	$: banPickTurnOpen =
+		banPickIsViewerTurn &&
+		!banPickWaitingToStart &&
+		banPickRemainingMs > 0 &&
+		!banPickTurnSubmitted;
 	$: levelConfirmed = isPvpMatchConfirmedByBoth(match);
 	$: visibleLevel = levelConfirmed && !isBanPick ? level : null;
 	$: levelVideoId = getYouTubeVideoId(visibleLevel?.videoID);
@@ -489,7 +494,7 @@
 	}
 
 	function toggleBanSelection(levelId: number | null) {
-		if (!levelId || !banPickIsViewerTurn || getBanPickActionForLevel(levelId)) return;
+		if (!levelId || !banPickTurnOpen || getBanPickActionForLevel(levelId)) return;
 
 		if (selectedBanLevelIds.includes(levelId)) {
 			selectedBanLevelIds = selectedBanLevelIds.filter((id) => id !== levelId);
