@@ -2,8 +2,8 @@
 	import { user } from '$lib/client';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
 	import { Textarea } from '$lib/components/ui/textarea';
+	import Markdown from '$lib/components/markdown.svelte';
 	import { Check, Copy, Megaphone, RefreshCw, Save, Trash2 } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 	import { _ } from 'svelte-i18n';
@@ -33,6 +33,7 @@
 	};
 
 	type ChangelogDiffMode = 'top' | 'rating';
+	type ChangelogEditorMode = 'edit' | 'preview';
 
 	let loading = false;
 	let saving = false;
@@ -41,10 +42,10 @@
 	let auditEntries: any[] = [];
 	let activeChangelogId: number | null = null;
 	let selectedAuditIds: number[] = [];
-	let editorTitle = '';
-	let editorBody = '';
+	let editorContent = '';
 	let changelogMode: ChangelogDiffMode = 'top';
 	let changelogModeListId: number | null = null;
+	let editorMode: ChangelogEditorMode = 'edit';
 	let lastLoadedKey = '';
 
 	$: loadKey = list ? `${list.id}:${refreshKey}:${$user.data?.uid ?? ''}` : '';
@@ -56,7 +57,7 @@
 		void loadBundle();
 	}
 	$: activeChangelog = changelogs.find((entry) => entry.id === activeChangelogId) ?? null;
-	$: publishText = [editorTitle, editorBody].filter((value) => value.trim().length).join('\n\n');
+	$: publishText = editorContent.trim();
 	$: selectedAuditSet = new Set(selectedAuditIds);
 
 	async function getAuthHeaders() {
@@ -74,11 +75,57 @@
 	}
 
 	function syncEditor(changelog: Changelog | null) {
-		editorTitle = changelog?.title ?? '';
-		editorBody = changelog?.body ?? '';
+		editorContent = [formatChangelogTitle(changelog?.title ?? ''), changelog?.body ?? '']
+			.filter((value) => value.trim().length)
+			.join('\n\n');
+		editorMode = 'edit';
 		selectedAuditIds = (changelog?.entries ?? [])
 			.map((entry) => entry.auditLogId)
 			.filter((auditLogId): auditLogId is number => typeof auditLogId === 'number');
+	}
+
+	function formatChangelogTitle(title: string) {
+		const trimmedTitle = title.trim();
+		return trimmedTitle ? `### ${trimmedTitle.replace(/^#{1,6}\s*/, '')}` : '';
+	}
+
+	function getEditorDraft() {
+		const trimmedContent = editorContent.trim();
+		const [rawTitle = '', ...bodyLines] = trimmedContent.split(/\r?\n/);
+		const title =
+			rawTitle.replace(/^#{1,6}\s*/, '').trim() || activeChangelog?.title || 'Changelog';
+		const body = bodyLines.join('\n').replace(/^\s+/, '').trim();
+
+		return { title, body };
+	}
+
+	function getLocalChangelogEntries(auditLogIds: number[]) {
+		const auditEntryById = new Map(auditEntries.map((entry) => [entry.id, entry]));
+
+		return auditLogIds.map((auditLogId, index) => ({
+			id: -auditLogId,
+			auditLogId,
+			sortOrder: index,
+			snapshot: auditEntryById.get(auditLogId) ?? { id: auditLogId }
+		}));
+	}
+
+	function upsertLocalChangelog(saved: Changelog, auditLogIds: number[]) {
+		const entries = getLocalChangelogEntries(auditLogIds);
+		const next = {
+			...saved,
+			entries
+		};
+		const existingIndex = changelogs.findIndex((entry) => entry.id === saved.id);
+
+		if (existingIndex >= 0) {
+			changelogs = changelogs.map((entry) => (entry.id === saved.id ? next : entry));
+		} else {
+			changelogs = [next, ...changelogs];
+		}
+
+		activeChangelogId = saved.id;
+		syncEditor(next);
 	}
 
 	async function loadBundle() {
@@ -193,10 +240,7 @@
 			});
 			const saved = await readPayload(response);
 			toast.success($_('custom_lists.manage.changelog.staged'));
-			await loadBundle();
-			activeChangelogId = saved.id;
-			const next = changelogs.find((entry) => entry.id === saved.id) ?? saved;
-			syncEditor(next);
+			upsertLocalChangelog(saved, selectedAuditIds);
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : 'Failed to stage changelog');
 		} finally {
@@ -211,6 +255,7 @@
 		saving = true;
 
 		try {
+			const draft = getEditorDraft();
 			const response = await fetch(
 				`${import.meta.env.VITE_API_URL}/lists/${list.id}/changelogs/${activeChangelog.id}`,
 				{
@@ -220,8 +265,8 @@
 						'Content-Type': 'application/json'
 					},
 					body: JSON.stringify({
-						title: editorTitle,
-						body: editorBody,
+						title: draft.title,
+						body: draft.body,
 						auditLogIds: selectedAuditIds,
 						regenerate: options.regenerate,
 						mode: changelogMode
@@ -229,10 +274,7 @@
 				}
 			);
 			const saved = await readPayload(response);
-			await loadBundle();
-			activeChangelogId = saved.id;
-			const next = changelogs.find((entry) => entry.id === saved.id) ?? saved;
-			syncEditor(next);
+			upsertLocalChangelog(saved, selectedAuditIds);
 			toast.success($_('custom_lists.manage.changelog.saved'));
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : 'Failed to save changelog');
@@ -399,23 +441,42 @@
 					{#if activeChangelog}
 						<div class="editorFields">
 							<div class="editorField">
-								<label for="changelog-title"
-									>{$_('custom_lists.manage.changelog.title_label')}</label
-								>
-								<Input
-									id="changelog-title"
-									bind:value={editorTitle}
-									disabled={!canEditLevels || saving}
-								/>
-							</div>
-							<div class="editorField">
-								<label for="changelog-body">{$_('custom_lists.manage.changelog.body_label')}</label>
-								<Textarea
-									id="changelog-body"
-									bind:value={editorBody}
-									rows={16}
-									disabled={!canEditLevels || saving}
-								/>
+								<div class="editorFieldHeader">
+									<label for="changelog-content">Changelog</label>
+									<div class="editorModeTabs" role="tablist" aria-label="Changelog body mode">
+										<button
+											type="button"
+											role="tab"
+											aria-selected={editorMode === 'edit'}
+											class:selected={editorMode === 'edit'}
+											on:click={() => (editorMode = 'edit')}
+										>
+											Edit
+										</button>
+										<button
+											type="button"
+											role="tab"
+											aria-selected={editorMode === 'preview'}
+											class:selected={editorMode === 'preview'}
+											on:click={() => (editorMode = 'preview')}
+											disabled={!editorContent.trim()}
+										>
+											Preview
+										</button>
+									</div>
+								</div>
+								{#if editorMode === 'preview'}
+									<div class="markdownPreview">
+										<Markdown content={editorContent} />
+									</div>
+								{:else}
+									<Textarea
+										id="changelog-content"
+										bind:value={editorContent}
+										rows={16}
+										disabled={!canEditLevels || saving}
+									/>
+								{/if}
 							</div>
 						</div>
 
@@ -658,9 +719,68 @@
 		gap: 6px;
 	}
 
+	.editorFieldHeader {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
+	}
+
+	.editorModeTabs {
+		display: inline-flex;
+		align-items: center;
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		background: hsl(var(--muted) / 0.24);
+		padding: 2px;
+	}
+
+	.editorModeTabs button {
+		border: 0;
+		border-radius: 6px;
+		background: transparent;
+		color: hsl(var(--muted-foreground));
+		cursor: pointer;
+		font-size: 0.8rem;
+		font-weight: 600;
+		min-height: 30px;
+		padding: 5px 10px;
+	}
+
+	.editorModeTabs button.selected {
+		background: hsl(var(--background));
+		color: hsl(var(--foreground));
+		box-shadow: 0 1px 2px hsl(var(--foreground) / 0.08);
+	}
+
+	.editorModeTabs button:disabled {
+		cursor: not-allowed;
+		opacity: 0.45;
+	}
+
 	.editorField label {
 		font-size: 0.9rem;
 		font-weight: 500;
+	}
+
+	.markdownPreview {
+		min-height: 320px;
+		max-height: 520px;
+		overflow: auto;
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		background: hsl(var(--background));
+		padding: 12px 14px;
+	}
+
+	.markdownPreview :global(.markdown ol) {
+		margin: 0 0 12px;
+		padding-left: 1.5rem;
+	}
+
+	.markdownPreview :global(.markdown p:last-child),
+	.markdownPreview :global(.markdown ol:last-child) {
+		margin-bottom: 0;
 	}
 
 	.entryList {
