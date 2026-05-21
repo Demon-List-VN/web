@@ -32,6 +32,8 @@
 		entries: ChangelogEntry[];
 	};
 
+	type ChangelogDiffMode = 'top' | 'rating';
+
 	let loading = false;
 	let saving = false;
 	let settings: any = null;
@@ -41,9 +43,15 @@
 	let selectedAuditIds: number[] = [];
 	let editorTitle = '';
 	let editorBody = '';
+	let changelogMode: ChangelogDiffMode = 'top';
+	let changelogModeListId: number | null = null;
 	let lastLoadedKey = '';
 
 	$: loadKey = list ? `${list.id}:${refreshKey}:${$user.data?.uid ?? ''}` : '';
+	$: if (list && changelogModeListId !== list.id) {
+		changelogMode = list.mode === 'rating' ? 'rating' : 'top';
+		changelogModeListId = list.id;
+	}
 	$: if (canViewAudit && loadKey && loadKey !== lastLoadedKey && !loading) {
 		void loadBundle();
 	}
@@ -90,7 +98,8 @@
 			settings = payload.settings ?? null;
 			changelogs = payload.changelogs ?? [];
 			auditEntries = payload.auditEntries ?? [];
-			const preferred = changelogs.find((entry) => entry.status === 'draft') ?? changelogs[0] ?? null;
+			const preferred =
+				changelogs.find((entry) => entry.status === 'draft') ?? changelogs[0] ?? null;
 			activeChangelogId = preferred?.id ?? null;
 			syncEditor(preferred);
 		} catch (error) {
@@ -105,7 +114,11 @@
 	}
 
 	function getActorName(entry: any) {
-		return entry.actorData?.name || entry.actorUid || $_('custom_lists.manage.collaboration.unknown_player');
+		return (
+			entry.actorData?.name ||
+			entry.actorUid ||
+			$_('custom_lists.manage.collaboration.unknown_player')
+		);
 	}
 
 	function getActionLabel(action: string) {
@@ -174,7 +187,8 @@
 				},
 				body: JSON.stringify({
 					changelogId: activeChangelog?.status === 'draft' ? activeChangelog.id : undefined,
-					auditLogIds: selectedAuditIds
+					auditLogIds: selectedAuditIds,
+					mode: changelogMode
 				})
 			});
 			const saved = await readPayload(response);
@@ -192,7 +206,8 @@
 
 	async function saveActiveChangelog(options: { regenerate?: boolean } = {}) {
 		if (!list || !activeChangelog || !canEditLevels) return;
-		if (options.regenerate && !confirm($_('custom_lists.manage.changelog.regenerate_confirm'))) return;
+		if (options.regenerate && !confirm($_('custom_lists.manage.changelog.regenerate_confirm')))
+			return;
 		saving = true;
 
 		try {
@@ -208,7 +223,8 @@
 						title: editorTitle,
 						body: editorBody,
 						auditLogIds: selectedAuditIds,
-						regenerate: options.regenerate
+						regenerate: options.regenerate,
+						mode: changelogMode
 					})
 				}
 			);
@@ -278,9 +294,11 @@
 				}
 			);
 			const saved = await readPayload(response);
-			toast.success(method === 'copy'
-				? $_('custom_lists.manage.changelog.copied')
-				: $_('custom_lists.manage.changelog.sent_discord'));
+			toast.success(
+				method === 'copy'
+					? $_('custom_lists.manage.changelog.copied')
+					: $_('custom_lists.manage.changelog.sent_discord')
+			);
 			await loadBundle();
 			activeChangelogId = saved.id;
 		} catch (error) {
@@ -311,6 +329,24 @@
 				<div class="sidePanel">
 					<div class="panelBlock">
 						<h3>{$_('custom_lists.manage.changelog.audit_picker')}</h3>
+						<div class="modePicker" aria-label="Changelog mode">
+							<button
+								type="button"
+								class:selected={changelogMode === 'top'}
+								on:click={() => (changelogMode = 'top')}
+								disabled={saving}
+							>
+								Thay đổi top
+							</button>
+							<button
+								type="button"
+								class:selected={changelogMode === 'rating'}
+								on:click={() => (changelogMode = 'rating')}
+								disabled={saving}
+							>
+								Thay đổi rating
+							</button>
+						</div>
 						{#if auditEntries.length}
 							<div class="auditList">
 								{#each auditEntries as entry}
@@ -363,12 +399,23 @@
 					{#if activeChangelog}
 						<div class="editorFields">
 							<div class="editorField">
-								<label for="changelog-title">{$_('custom_lists.manage.changelog.title_label')}</label>
-								<Input id="changelog-title" bind:value={editorTitle} disabled={!canEditLevels || saving} />
+								<label for="changelog-title"
+									>{$_('custom_lists.manage.changelog.title_label')}</label
+								>
+								<Input
+									id="changelog-title"
+									bind:value={editorTitle}
+									disabled={!canEditLevels || saving}
+								/>
 							</div>
 							<div class="editorField">
 								<label for="changelog-body">{$_('custom_lists.manage.changelog.body_label')}</label>
-								<Textarea id="changelog-body" bind:value={editorBody} rows={16} disabled={!canEditLevels || saving} />
+								<Textarea
+									id="changelog-body"
+									bind:value={editorBody}
+									rows={16}
+									disabled={!canEditLevels || saving}
+								/>
 							</div>
 						</div>
 
@@ -391,23 +438,45 @@
 						{/if}
 
 						<div class="actionRow">
-							<Button variant="outline" on:click={() => saveActiveChangelog()} disabled={!canEditLevels || saving}>
+							<Button
+								variant="outline"
+								on:click={() => saveActiveChangelog()}
+								disabled={!canEditLevels || saving}
+							>
 								<Save class="mr-2 h-4 w-4" />
 								{$_('custom_lists.manage.changelog.save')}
 							</Button>
-							<Button variant="outline" on:click={() => saveActiveChangelog({ regenerate: true })} disabled={!canEditLevels || saving}>
+							<Button
+								variant="outline"
+								on:click={() => saveActiveChangelog({ regenerate: true })}
+								disabled={!canEditLevels || saving}
+							>
 								<RefreshCw class="mr-2 h-4 w-4" />
 								{$_('custom_lists.manage.changelog.regenerate')}
 							</Button>
-							<Button variant="outline" on:click={() => publish('copy')} disabled={!canEditLevels || saving || !publishText.trim()}>
+							<Button
+								variant="outline"
+								on:click={() => publish('copy')}
+								disabled={!canEditLevels || saving || !publishText.trim()}
+							>
 								<Copy class="mr-2 h-4 w-4" />
 								{$_('custom_lists.manage.changelog.copy_publish')}
 							</Button>
-							<Button on:click={() => publish('discord')} disabled={!canEditLevels || saving || !settings?.discordChannelId || !publishText.trim()}>
+							<Button
+								on:click={() => publish('discord')}
+								disabled={!canEditLevels ||
+									saving ||
+									!settings?.discordChannelId ||
+									!publishText.trim()}
+							>
 								<Megaphone class="mr-2 h-4 w-4" />
 								{$_('custom_lists.manage.changelog.discord_publish')}
 							</Button>
-							<Button variant="destructive" on:click={deleteActiveChangelog} disabled={!canEditLevels || saving}>
+							<Button
+								variant="destructive"
+								on:click={deleteActiveChangelog}
+								disabled={!canEditLevels || saving}
+							>
 								<Trash2 class="mr-2 h-4 w-4" />
 								{$_('general.delete')}
 							</Button>
@@ -485,6 +554,30 @@
 		margin: 0;
 		font-size: 0.95rem;
 		font-weight: 600;
+	}
+
+	.modePicker {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 6px;
+	}
+
+	.modePicker button {
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		background: transparent;
+		color: hsl(var(--foreground));
+		cursor: pointer;
+		font-size: 0.82rem;
+		font-weight: 600;
+		min-height: 36px;
+		padding: 7px 9px;
+	}
+
+	.modePicker button.selected {
+		border-color: hsl(var(--primary));
+		background: hsl(var(--primary) / 0.1);
+		color: hsl(var(--primary));
 	}
 
 	.auditList {

@@ -432,6 +432,7 @@
 	let levelsTabList: (CustomList & { items: CustomListItem[] }) | null = null;
 	let showPendingLevelChangesDialog = false;
 	let addSavedChangesToChangelog = false;
+	let savedChangesChangelogMode: 'top' | 'rating' = 'top';
 	let changelogRefreshKey = 0;
 	let nextPendingLevelItemId = -1;
 
@@ -3498,9 +3499,13 @@
 
 		discardLevelDrafts();
 		addSavedChangesToChangelog = false;
+		savedChangesChangelogMode = list?.mode === 'rating' ? 'rating' : 'top';
 	}
 
-	async function createChangelogDraftFromAuditIds(auditLogIds: number[]) {
+	async function createChangelogDraftFromAuditIds(
+		auditLogIds: number[],
+		mode: 'top' | 'rating' = list?.mode === 'rating' ? 'rating' : 'top'
+	) {
 		if (!list || !canEditLevels || !auditLogIds.length || !$user.loggedIn) return;
 
 		const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/changelogs`, {
@@ -3509,7 +3514,7 @@
 				Authorization: `Bearer ${await $user.token()}`,
 				'Content-Type': 'application/json'
 			},
-			body: JSON.stringify({ auditLogIds })
+			body: JSON.stringify({ auditLogIds, mode })
 		});
 		const payload = await res.json().catch(() => null);
 
@@ -3636,7 +3641,7 @@
 
 			if (shouldStageChangelog) {
 				try {
-					await createChangelogDraftFromAuditIds(createdAuditLogIds);
+					await createChangelogDraftFromAuditIds(createdAuditLogIds, savedChangesChangelogMode);
 					toast.success($_('custom_lists.manage.changelog.staged'));
 				} catch (error) {
 					toast.error(
@@ -3849,6 +3854,9 @@
 		pendingSettingsAuditEntry,
 		pendingLevelAuditEntries
 	);
+	$: if (list && !addSavedChangesToChangelog) {
+		savedChangesChangelogMode = list.mode === 'rating' ? 'rating' : 'top';
+	}
 	$: pendingSettingsAuditFieldCount = pendingSettingsAuditEntry?.fields.length ?? 0;
 	$: pendingLevelAuditAddedCount = pendingLevelAuditEntries.filter(
 		(entry) => entry.action === 'level_added'
@@ -4359,6 +4367,24 @@
 							<input type="checkbox" bind:checked={addSavedChangesToChangelog} />
 							<span>{$_('custom_lists.manage.changelog.add_after_save')}</span>
 						</label>
+						{#if addSavedChangesToChangelog}
+							<div class="changelogModePicker" aria-label="Changelog mode">
+								<button
+									type="button"
+									class:selected={savedChangesChangelogMode === 'top'}
+									on:click={() => (savedChangesChangelogMode = 'top')}
+								>
+									Thay đổi top
+								</button>
+								<button
+									type="button"
+									class:selected={savedChangesChangelogMode === 'rating'}
+									on:click={() => (savedChangesChangelogMode = 'rating')}
+								>
+									Thay đổi rating
+								</button>
+							</div>
+						{/if}
 					{/if}
 
 					{#if pendingManageAuditEntries.length}
@@ -4515,6 +4541,24 @@
 								<input type="checkbox" bind:checked={addSavedChangesToChangelog} />
 								<span>{$_('custom_lists.manage.changelog.add_after_save_short')}</span>
 							</label>
+							{#if addSavedChangesToChangelog}
+								<div class="changelogModePicker compact" aria-label="Changelog mode">
+									<button
+										type="button"
+										class:selected={savedChangesChangelogMode === 'top'}
+										on:click={() => (savedChangesChangelogMode = 'top')}
+									>
+										Top
+									</button>
+									<button
+										type="button"
+										class:selected={savedChangesChangelogMode === 'rating'}
+										on:click={() => (savedChangesChangelogMode = 'rating')}
+									>
+										Rating
+									</button>
+								</div>
+							{/if}
 						{/if}
 						{#if pendingManageAuditEntries.length}
 							<Button
@@ -5023,6 +5067,36 @@
 		width: 16px;
 		height: 16px;
 		accent-color: hsl(var(--primary));
+	}
+
+	.changelogModePicker {
+		display: inline-grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 6px;
+		max-width: 360px;
+	}
+
+	.changelogModePicker button {
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		background: transparent;
+		color: hsl(var(--foreground));
+		cursor: pointer;
+		font-size: 0.82rem;
+		font-weight: 600;
+		min-height: 36px;
+		padding: 7px 10px;
+	}
+
+	.changelogModePicker.compact button {
+		min-height: 32px;
+		padding: 5px 9px;
+	}
+
+	.changelogModePicker button.selected {
+		border-color: hsl(var(--primary));
+		background: hsl(var(--primary) / 0.1);
+		color: hsl(var(--primary));
 	}
 
 	/* Pending changes dialog */
