@@ -120,6 +120,13 @@
 
 	type CustomListResolvedRole = 'viewer' | 'owner' | 'admin' | 'helper' | 'moderator';
 	type RecordFilterAcceptanceStatus = 'manual' | 'auto' | 'any';
+	type LevelsFilterState = {
+		nameSearch: string;
+		creatorSearch: string;
+		ratingMin: string | null;
+		ratingMax: string | null;
+		pendingOnly: boolean;
+	};
 
 	type CustomListPermissionFlags = {
 		canEditSettings: boolean;
@@ -428,6 +435,13 @@
 	let listLevelsLoading = false;
 	let listLevelsError = '';
 	let listLevelsFetchKey = '';
+	let levelsFilters: LevelsFilterState = {
+		nameSearch: '',
+		creatorSearch: '',
+		ratingMin: null,
+		ratingMax: null,
+		pendingOnly: false
+	};
 	let savingSubmissionId: number | null = null;
 	let levelsTabList: (CustomList & { items: CustomListItem[] }) | null = null;
 	let showPendingLevelChangesDialog = false;
@@ -494,11 +508,29 @@
 	let initialManageTabSettled = false;
 	let collaborationTabProps: any = {};
 
-	function buildListRequestUrl(start: number = 0, end: number = LEVELS_PAGE_SIZE - 1) {
+	function hasActiveApiLevelFilters(filters: LevelsFilterState = levelsFilters) {
+		return Boolean(
+			filters.nameSearch
+			|| filters.creatorSearch
+			|| filters.ratingMin
+			|| filters.ratingMax
+		);
+	}
+
+	function buildListRequestUrl(
+		start: number = 0,
+		end: number = LEVELS_PAGE_SIZE - 1,
+		filters: LevelsFilterState = levelsFilters
+	) {
 		const params = new URLSearchParams({
 			start: String(start),
 			end: String(end)
 		});
+
+		if (filters.nameSearch) params.set('nameSearch', filters.nameSearch);
+		if (filters.creatorSearch) params.set('creatorSearch', filters.creatorSearch);
+		if (filters.ratingMin) params.set('ratingMin', filters.ratingMin);
+		if (filters.ratingMax) params.set('ratingMax', filters.ratingMax);
 
 		return `${import.meta.env.VITE_API_URL}/lists/${$page.params.id}?${params.toString()}`;
 	}
@@ -523,7 +555,7 @@
 	}
 
 	function hasSingleLevelsPage(currentList: CustomList | null = list) {
-		return getLevelsPageCount(currentList) === 1;
+		return !hasActiveApiLevelFilters() && getLevelsPageCount(currentList) === 1;
 	}
 
 	function applyFetchedLevelsPage(
@@ -568,8 +600,13 @@
 		return list;
 	}
 
-	async function fetchListDetail(start: number, end: number, headers?: HeadersInit) {
-		const res = await fetch(buildListRequestUrl(start, end), headers ? { headers } : undefined);
+	async function fetchListDetail(
+		start: number,
+		end: number,
+		headers?: HeadersInit,
+		filters: LevelsFilterState = levelsFilters
+	) {
+		const res = await fetch(buildListRequestUrl(start, end, filters), headers ? { headers } : undefined);
 		const payload = await res.json().catch(() => null);
 
 		if (!res.ok || !payload) {
@@ -596,7 +633,7 @@
 		}
 
 		const { start, end } = getLevelsPageRange(nextPage);
-		const fetchKey = `${$page.params.id}:${$user.loggedIn ? $user.data?.uid || 'authed' : 'anon'}:${nextPage}`;
+		const fetchKey = `${$page.params.id}:${$user.loggedIn ? $user.data?.uid || 'authed' : 'anon'}:${nextPage}:${JSON.stringify(levelsFilters)}`;
 		const headers = $user.loggedIn
 			? {
 					Authorization: `Bearer ${await $user.token()}`
@@ -633,6 +670,78 @@
 
 	function handleLevelsPageRequest(pageNumber?: number) {
 		return pageNumber == null ? retryLevelsPage() : setLevelsPage(pageNumber);
+	}
+
+	function parseLevelFilterNumber(value: string | null) {
+		if (value == null || !value.trim()) return null;
+
+		const parsed = Number(value);
+		return Number.isFinite(parsed) ? parsed : Number.NaN;
+	}
+
+	async function applyLevelsFilterRequest(filters: LevelsFilterState) {
+		if (!list) {
+			return false;
+		}
+
+		if (hasUnsavedLevelEdits) {
+			toast.error('Save or discard level changes before filtering levels');
+			return false;
+		}
+
+		const ratingMin = parseLevelFilterNumber(filters.ratingMin);
+		const ratingMax = parseLevelFilterNumber(filters.ratingMax);
+
+		if (
+			Number.isNaN(ratingMin)
+			|| Number.isNaN(ratingMax)
+			|| (ratingMin != null && ratingMax != null && ratingMin > ratingMax)
+		) {
+			toast.error('Enter a valid rating filter range');
+			return false;
+		}
+
+		const nextFilters: LevelsFilterState = {
+			nameSearch: filters.nameSearch.trim(),
+			creatorSearch: filters.creatorSearch.trim(),
+			ratingMin: ratingMin == null ? null : String(ratingMin),
+			ratingMax: ratingMax == null ? null : String(ratingMax),
+			pendingOnly: filters.pendingOnly
+		};
+		const previousFilters = levelsFilters;
+		const fetchKey = `${$page.params.id}:${$user.loggedIn ? $user.data?.uid || 'authed' : 'anon'}:filter:${JSON.stringify(nextFilters)}`;
+		const headers = $user.loggedIn
+			? {
+					Authorization: `Bearer ${await $user.token()}`
+				}
+			: undefined;
+
+		levelsFilters = nextFilters;
+		levelsRequestedPage = 1;
+		listLevelsFetchKey = fetchKey;
+		listLevelsLoading = true;
+		listLevelsError = '';
+
+		try {
+			const payload = await fetchListDetail(0, LEVELS_PAGE_SIZE - 1, headers, nextFilters);
+
+			if (fetchKey !== listLevelsFetchKey) {
+				return false;
+			}
+
+			applyFetchedLevelsPage(payload, 1, { syncForm: false });
+			return true;
+		} catch (error) {
+			if (fetchKey === listLevelsFetchKey) {
+				levelsFilters = previousFilters;
+				listLevelsError = error instanceof Error ? error.message : 'Failed to load list';
+			}
+			return false;
+		} finally {
+			if (fetchKey === listLevelsFetchKey) {
+				listLevelsLoading = false;
+			}
+		}
 	}
 
 	function getRecordFilterAcceptanceStatus(source: {
@@ -4309,6 +4418,7 @@
 					{stageLevelDeletion}
 					{stageMultipleLevelDeletions}
 					{reorderLevels}
+					applyLevelFilters={applyLevelsFilterRequest}
 				/>
 			</Tabs.Content>
 

@@ -1572,7 +1572,7 @@
 												</Avatar.Root>
 												<div class="participant-name">
 													{#if !participantMasked && participantPlayer?.uid}
-														<PlayerLink player={participantPlayer} truncate={26} showAvatar />
+														<PlayerLink player={participantPlayer} truncate={26} />
 													{:else}
 														<strong>{participantDisplayName}</strong>
 													{/if}

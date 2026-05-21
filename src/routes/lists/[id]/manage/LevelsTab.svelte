@@ -70,6 +70,14 @@
 		videoID?: string | null;
 	};
 
+	type LevelFilters = {
+		nameSearch: string;
+		creatorSearch: string;
+		ratingMin: string | null;
+		ratingMax: string | null;
+		pendingOnly: boolean;
+	};
+
 	export let list: any = null;
 	export let loadedLevelCount = 1;
 	export let allLevelsLoaded = false;
@@ -100,6 +108,7 @@
 	export let stageLevelDeletion: (levelId: number) => void | Promise<void> = async () => {};
 	export let stageMultipleLevelDeletions: (levelIds: number[]) => void | Promise<void> = async () => {};
 	export let reorderLevels: (levelIds: number[]) => void | Promise<void> = async () => {};
+	export let applyLevelFilters: (filters: LevelFilters) => boolean | Promise<boolean> = async () => true;
 
 	let levelsSectionElement: HTMLDivElement | null = null;
 	let allDisplayedItems: any[] = [];
@@ -111,6 +120,11 @@
 	let filterMinRating = '';
 	let filterMaxRating = '';
 	let filterPendingOnly = false;
+	let appliedFilterQuery = '';
+	let appliedFilterCreator = '';
+	let appliedFilterMinRating = '';
+	let appliedFilterMaxRating = '';
+	let appliedFilterPendingOnly = false;
 	let quickLevelId: number | null = null;
 	let draggedIndex: number | null = null;
 	let dragOverIndex: number | null = null;
@@ -129,6 +143,8 @@
 	let csvAddSummary: (BatchAddLevelsResult & { invalidRows: number }) | null = null;
 	let addToolsOpen = false;
 	let hasActiveLevelFilters = false;
+	let hasLevelFilterInput = false;
+	let hasPendingLevelFilterChanges = false;
 	const levelsPageSize = 50;
 	const csvExampleColumns = ['levelId', 'createdAt', 'top', 'rating', 'minProgress', 'videoId'];
 	const csvExampleRows = [
@@ -141,12 +157,24 @@
 		? getDisplayedItems(list, pendingLevelAdditions, levelDrafts, levelDeletionDraftIds)
 		: [];
 	$: hasActiveLevelFilters = Boolean(
+		appliedFilterQuery.trim()
+		|| appliedFilterCreator.trim()
+		|| appliedFilterMinRating.trim()
+		|| appliedFilterMaxRating.trim()
+		|| appliedFilterPendingOnly
+	);
+	$: hasLevelFilterInput = Boolean(
 		filterQuery.trim()
 		|| filterCreator.trim()
 		|| filterMinRating.trim()
 		|| filterMaxRating.trim()
 		|| filterPendingOnly
 	);
+	$: hasPendingLevelFilterChanges = filterQuery !== appliedFilterQuery
+		|| filterCreator !== appliedFilterCreator
+		|| filterMinRating !== appliedFilterMinRating
+		|| filterMaxRating !== appliedFilterMaxRating
+		|| filterPendingOnly !== appliedFilterPendingOnly;
 	$: displayedItems = filterDisplayedItems(allDisplayedItems);
 	$: canDragReorder = canEditLevels
 		&& allLevelsLoaded
@@ -254,59 +282,105 @@
 		return patch ? Object.prototype.hasOwnProperty.call(patch, key) : false;
 	}
 
-	function normalizeFilterText(value: unknown) {
-		return String(value ?? '').trim().toLowerCase();
-	}
-
-	function parseOptionalFilterNumber(value: string) {
-		const normalizedValue = value.trim();
-		if (!normalizedValue.length) return null;
-
-		const parsedValue = Number(normalizedValue);
-		return Number.isFinite(parsedValue) ? parsedValue : Number.NaN;
-	}
-
-	function matchesTextFilter(value: unknown, query: string) {
-		const normalizedQuery = normalizeFilterText(query);
-		return !normalizedQuery || normalizeFilterText(value).includes(normalizedQuery);
-	}
-
 	function filterDisplayedItems(items: any[]) {
-		const normalizedQuery = normalizeFilterText(filterQuery);
-		const normalizedCreator = normalizeFilterText(filterCreator);
-		const minRating = parseOptionalFilterNumber(filterMinRating);
-		const maxRating = parseOptionalFilterNumber(filterMaxRating);
+		return items.filter((item) => {
+			const pendingMatches = !appliedFilterPendingOnly || hasPendingDraft(item.levelId);
+
+			if (!pendingMatches) return false;
+			if (!item.isPendingAddition) return true;
+
+			return pendingAdditionMatchesAppliedFilters(item);
+		});
+	}
+
+	function pendingAdditionMatchesAppliedFilters(item: any) {
+		const normalizedQuery = appliedFilterQuery.trim().toLowerCase();
+		const normalizedCreator = appliedFilterCreator.trim().toLowerCase();
+		const minRating = appliedFilterMinRating.trim() ? Number(appliedFilterMinRating) : null;
+		const maxRating = appliedFilterMaxRating.trim() ? Number(appliedFilterMaxRating) : null;
+		const rating = item.rating ?? 5;
 
 		if (
 			Number.isNaN(minRating)
 			|| Number.isNaN(maxRating)
 			|| (minRating != null && maxRating != null && minRating > maxRating)
 		) {
-			return [];
+			return false;
 		}
 
-		return items.filter((item) => {
-			const rating = item.rating ?? 5;
-			const nameMatches = Boolean(
-				matchesTextFilter(item.level?.name, normalizedQuery)
-				|| (normalizedQuery && String(item.levelId).includes(normalizedQuery))
-			);
-			const creatorMatches = matchesTextFilter(item.level?.creator, normalizedCreator);
-			const ratingMatches =
-				(minRating == null || rating >= minRating)
-				&& (maxRating == null || rating <= maxRating);
-			const pendingMatches = !filterPendingOnly || hasPendingDraft(item.levelId);
+		if (
+			normalizedQuery
+			&& !String(item.level?.name ?? '').toLowerCase().includes(normalizedQuery)
+			&& !String(item.levelId).includes(normalizedQuery)
+		) {
+			return false;
+		}
 
-			return nameMatches && creatorMatches && ratingMatches && pendingMatches;
-		});
+		if (
+			normalizedCreator
+			&& !String(item.level?.creator ?? '').toLowerCase().includes(normalizedCreator)
+		) {
+			return false;
+		}
+
+		return (minRating == null || rating >= minRating) && (maxRating == null || rating <= maxRating);
 	}
 
-	function clearLevelFilters() {
+	function getDraftLevelFilters(): LevelFilters {
+		filterQuery = filterQuery.trim();
+		filterCreator = filterCreator.trim();
+		filterMinRating = filterMinRating.trim();
+		filterMaxRating = filterMaxRating.trim();
+
+		return {
+			nameSearch: filterQuery,
+			creatorSearch: filterCreator,
+			ratingMin: filterMinRating || null,
+			ratingMax: filterMaxRating || null,
+			pendingOnly: filterPendingOnly
+		};
+	}
+
+	async function commitLevelFilters() {
+		const filters = getDraftLevelFilters();
+		const applied = await applyLevelFilters(filters);
+		if (!applied) return;
+
+		appliedFilterQuery = filterQuery;
+		appliedFilterCreator = filterCreator;
+		appliedFilterMinRating = filterMinRating;
+		appliedFilterMaxRating = filterMaxRating;
+		appliedFilterPendingOnly = filterPendingOnly;
+	}
+
+	function handleFilterKeydown(event: KeyboardEvent) {
+		if (event.key !== 'Enter') return;
+
+		event.preventDefault();
+		void commitLevelFilters();
+	}
+
+	async function clearLevelFilters() {
 		filterQuery = '';
 		filterCreator = '';
 		filterMinRating = '';
 		filterMaxRating = '';
 		filterPendingOnly = false;
+
+		const applied = await applyLevelFilters({
+			nameSearch: '',
+			creatorSearch: '',
+			ratingMin: null,
+			ratingMax: null,
+			pendingOnly: false
+		});
+		if (!applied) return;
+
+		appliedFilterQuery = '';
+		appliedFilterCreator = '';
+		appliedFilterMinRating = '';
+		appliedFilterMaxRating = '';
+		appliedFilterPendingOnly = false;
 	}
 
 	function applyDraftToItem(item: any, drafts: Record<number, LevelItemPatch> = levelDrafts) {
@@ -1308,7 +1382,7 @@
 					<Filter class="h-4 w-4" />
 					<span>{$_('custom_lists.detail.levels.filter_title')}</span>
 				</div>
-				{#if hasActiveLevelFilters}
+				{#if hasActiveLevelFilters || hasLevelFilterInput}
 					<Button type="button" variant="ghost" size="sm" on:click={clearLevelFilters}>
 						<X class="mr-1.5 h-3.5 w-3.5" />
 						{$_('custom_lists.detail.levels.filter_clear')}
@@ -1325,6 +1399,7 @@
 							type="search"
 							bind:value={filterQuery}
 							placeholder={$_('custom_lists.detail.levels.filter_level_placeholder')}
+							on:keydown={handleFilterKeydown}
 						/>
 					</div>
 				</div>
@@ -1335,6 +1410,7 @@
 						type="search"
 						bind:value={filterCreator}
 						placeholder={$_('custom_lists.detail.levels.filter_creator_placeholder')}
+						on:keydown={handleFilterKeydown}
 					/>
 				</div>
 				{#if list?.mode === 'rating'}
@@ -1348,6 +1424,7 @@
 								bind:value={filterMinRating}
 								placeholder={$_('list_filter.min')}
 								aria-label={$_('custom_lists.detail.levels.filter_min_rating_label')}
+								on:keydown={handleFilterKeydown}
 							/>
 							<span class="rangeSeparator">-</span>
 							<Input
@@ -1357,6 +1434,7 @@
 								bind:value={filterMaxRating}
 								placeholder={$_('list_filter.max')}
 								aria-label={$_('custom_lists.detail.levels.filter_max_rating_label')}
+								on:keydown={handleFilterKeydown}
 							/>
 						</div>
 					</fieldset>
@@ -1365,6 +1443,17 @@
 					<input type="checkbox" bind:checked={filterPendingOnly} />
 					<span>{$_('custom_lists.detail.levels.filter_pending_only')}</span>
 				</label>
+			</div>
+			<div class="filterActions">
+				<Button
+					type="button"
+					size="sm"
+					on:click={commitLevelFilters}
+					disabled={loadingMoreLevels || !hasPendingLevelFilterChanges}
+				>
+					<Filter class="mr-1.5 h-3.5 w-3.5" />
+					{$_('list_filter.apply')}
+				</Button>
 			</div>
 		</div>
 
@@ -2143,6 +2232,11 @@
 		accent-color: hsl(var(--primary));
 	}
 
+	.filterActions {
+		display: flex;
+		justify-content: flex-end;
+	}
+
 	.selectionPanel {
 		display: flex;
 		flex-direction: column;
@@ -2460,6 +2554,14 @@
 	@media (max-width: 760px) {
 		.filterGrid {
 			grid-template-columns: 1fr;
+		}
+
+		.filterActions {
+			justify-content: stretch;
+		}
+
+		.filterActions :global(button) {
+			width: 100%;
 		}
 
 		.levelRow {
