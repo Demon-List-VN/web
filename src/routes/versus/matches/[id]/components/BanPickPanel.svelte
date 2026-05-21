@@ -33,7 +33,7 @@
 	$: turnExpired = !waitingToStart && remainingMs <= 0;
 	$: turnLoading = waitingToStart || turnExpired;
 	$: turnOpen = isViewerTurn && !waitingToStart && remainingMs > 0 && !turnSubmitted;
-	$: totalBans = Number(banPick?.totalBans ?? 6);
+	$: totalBans = Number(banPick?.totalBans ?? 7);
 	$: isYourTurn = turnSubmitted
 		? false
 		: waitingToStart

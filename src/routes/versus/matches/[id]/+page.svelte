@@ -149,7 +149,7 @@
 	$: banPickActions = Array.isArray(banPick?.actions) ? banPick.actions : [];
 	$: banPickCurrentUid = banPick?.currentUid ?? banPick?.current_uid ?? null;
 	$: banPickTurnIndex = Number(banPick?.turnIndex ?? 0);
-	$: banPickRequiredCount = Number(banPick?.requiredCount ?? [3, 2, 1][banPickTurnIndex] ?? 0);
+	$: banPickRequiredCount = Number(banPick?.requiredCount ?? [3, 2, 1, 1][banPickTurnIndex] ?? 0);
 	$: banPickTurnStartsMs = getTimeMs(banPick?.turnStartsAt);
 	$: banPickTurnEndsMs = getTimeMs(banPick?.turnEndsAt);
 	$: banPickWaitingToStart = Boolean(banPickTurnStartsMs && banPickTurnStartsMs > now);
@@ -209,6 +209,7 @@
 		Boolean(currentUid) && String(levelChangeRequestedByUid || '') === String(currentUid);
 	$: canRequestLevelChange =
 		['in_progress', 'waiting_result'].includes(status) &&
+		matchMode !== 'platformer' &&
 		remainingMs > 0 &&
 		Boolean(selfParticipant) &&
 		!levelChangeUsed;
