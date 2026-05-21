@@ -352,6 +352,7 @@
 			"lobby": "Sảnh",
 			"history": "Lịch sử",
 			"weekly_race": "Đua tuần",
+			"clan_race": "Đua hội",
 			"leaderboard": "Bảng xếp hạng"
 		},
 		"leaderboard": {
@@ -389,6 +390,33 @@
 				"score_description": "Một trận thắng cộng +1 điểm. Nếu người chơi đầu hàng hoặc bỏ cuộc, đối thủ nhận điểm. Thua và hòa được 0 điểm.",
 				"reset_title": "Reset mỗi tuần",
 				"reset_description": "Bảng chốt vào cuối Chủ nhật và cuộc đua mới bắt đầu lúc 00:00 thứ Hai theo giờ Việt Nam."
+			}
+		},
+		"clan_race": {
+			"title": "Đua PvP theo hội",
+			"description": "Mọi trận xếp hạng của thành viên đều cộng vào đua hội. Điểm hội được chốt khi trận kết thúc.",
+			"tabs": {
+				"label": "Mục đua hội",
+				"standings": "Bảng điểm",
+				"tutorial": "Hướng dẫn"
+			},
+			"current_week": "Tuần hiện tại",
+			"reset_in": "Reset sau",
+			"empty": "Tuần này chưa có hội nào ghi điểm PvP xếp hạng.",
+			"points": "Điểm",
+			"wins": "Thắng",
+			"winrate": "Tỉ lệ thắng",
+			"your_result": "Hội của bạn",
+			"unknown_clan": "Hội không xác định",
+			"history_title": "Tuần trước",
+			"history_empty": "Chưa có kết quả hội tuần trước.",
+			"tutorial": {
+				"queue_title": "Chơi ghép trận xếp hạng",
+				"queue_description": "Trận ghép xếp hạng được tính cho hội nếu bạn đang ở trong hội khi trận kết thúc.",
+				"score_title": "Thành viên cùng cộng điểm",
+				"score_description": "Một trận thắng cộng +1 điểm cho hội của người thắng. Mỗi thành viên trong trận cộng một lượt đấu.",
+				"snapshot_title": "Điểm hội được chốt",
+				"snapshot_description": "Đổi hội sau đó không chuyển điểm hoặc số trận cũ sang hội mới."
 			}
 		},
 		"elo_graph": {
@@ -568,6 +596,7 @@
 			"load_failed": "Tải dữ liệu 1v1 Versus thất bại.",
 			"leaderboard_failed": "Tải bảng xếp hạng PvP thất bại.",
 			"weekly_race_failed": "Tải đua PvP hằng tuần thất bại.",
+			"clan_race_failed": "Tải đua PvP hằng tuần theo hội thất bại.",
 			"select_starting_rating": "Hãy chọn Elo PvP khởi điểm trước.",
 			"select_difficulty": "Hãy chọn độ khó trước.",
 			"select_player": "Hãy chọn người chơi trước.",

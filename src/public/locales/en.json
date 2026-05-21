@@ -352,6 +352,7 @@
 			"lobby": "Lobby",
 			"history": "History",
 			"weekly_race": "Weekly Race",
+			"clan_race": "Clan Race",
 			"leaderboard": "Leaderboard"
 		},
 		"leaderboard": {
@@ -389,6 +390,33 @@
 				"score_description": "A win gives +1 point. If a player resigns or forfeits, the opponent receives the point. Losses and draws give 0.",
 				"reset_title": "Race resets weekly",
 				"reset_description": "The leaderboard finalizes at the end of Sunday and a new race starts Monday at 00:00 Vietnam time."
+			}
+		},
+		"clan_race": {
+			"title": "Clan PvP Race",
+			"description": "Every ranked match from clan members adds to the clan race. Clan credit is locked when the match ends.",
+			"tabs": {
+				"label": "Clan race sections",
+				"standings": "Standings",
+				"tutorial": "Tutorial"
+			},
+			"current_week": "Current week",
+			"reset_in": "Resets in",
+			"empty": "No clan has scored ranked PvP points this week yet.",
+			"points": "Points",
+			"wins": "Wins",
+			"winrate": "Winrate",
+			"your_result": "Your clan",
+			"unknown_clan": "Unknown clan",
+			"history_title": "Previous week",
+			"history_empty": "No previous clan result yet.",
+			"tutorial": {
+				"queue_title": "Play ranked matchmaking",
+				"queue_description": "Ranked matchmaking matches count for your clan when you are in a clan at match end.",
+				"score_title": "Members add up",
+				"score_description": "A win gives the winner's clan +1 point. Every clan member in the match adds one match played.",
+				"snapshot_title": "Clan credit is locked",
+				"snapshot_description": "Changing clans later does not move old race points or match counts."
 			}
 		},
 		"elo_graph": {
@@ -568,6 +596,7 @@
 			"load_failed": "Failed to load 1v1 Versus data.",
 			"leaderboard_failed": "Failed to load PvP leaderboard.",
 			"weekly_race_failed": "Failed to load weekly PvP race.",
+			"clan_race_failed": "Failed to load weekly clan PvP race.",
 			"select_starting_rating": "Choose your starting PvP rating first.",
 			"select_difficulty": "Choose a difficulty first.",
 			"select_player": "Choose a player first.",

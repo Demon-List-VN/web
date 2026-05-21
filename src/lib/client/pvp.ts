@@ -321,6 +321,40 @@ export type PvpWeeklyRace = {
 	currentPlayer?: PvpWeeklyRacePlayer | null;
 };
 
+export type PvpClan = {
+	id?: number;
+	name?: string | null;
+	tag?: string | null;
+	tagBgColor?: string | null;
+	tagTextColor?: string | null;
+	boostedUntil?: string | null;
+	memberCount?: number | null;
+	imageVersion?: number | null;
+	players?: PvpPlayer | null;
+	[key: string]: unknown;
+};
+
+export type PvpClanWeeklyRaceClan = {
+	rank?: number | null;
+	clanId?: number;
+	points: number;
+	wins: number;
+	matches?: number;
+	winrate: number;
+	updated_at?: string | null;
+	clan?: PvpClan | null;
+	clans?: PvpClan | null;
+};
+
+export type PvpClanWeeklyRace = {
+	week: PvpWeeklyRaceWeek | null;
+	currentWeek: PvpWeeklyRaceWeek | null;
+	previousWeek: PvpWeeklyRaceWeek | null;
+	leaderboard: PvpClanWeeklyRaceClan[];
+	previousLeaderboard: PvpClanWeeklyRaceClan[];
+	currentClan?: PvpClanWeeklyRaceClan | null;
+};
+
 export const PVP_ACTIVE_MATCH_STATUSES = ['pending', 'ban_pick', 'in_progress', 'waiting_result'];
 export const PVP_FINISHED_MATCH_STATUSES = ['completed', 'cancelled', 'disputed'];
 export const PVP_DIFFICULTIES: PvpDifficulty[] = ['easy', 'medium', 'hard'];
@@ -561,6 +595,28 @@ export async function getPvpWeeklyRace(
 		leaderboard: Array.isArray(race.leaderboard) ? race.leaderboard : [],
 		previousLeaderboard: Array.isArray(race.previousLeaderboard) ? race.previousLeaderboard : [],
 		currentPlayer: race.currentPlayer ?? null
+	};
+}
+
+export async function getPvpClanWeeklyRace(
+	week: 'current' | 'previous' | string = 'current',
+	limit = 50,
+	clanId?: number | string | null
+) {
+	const params = new URLSearchParams({ week, limit: String(limit) });
+	if (clanId) params.set('clanId', String(clanId));
+	const payload = await pvpRequest<PvpClanWeeklyRace | { data?: PvpClanWeeklyRace }>(
+		`/pvp/clan-weekly-race?${params}`
+	);
+
+	const race = ('data' in payload && payload.data ? payload.data : payload) as PvpClanWeeklyRace;
+	return {
+		week: race.week ?? null,
+		currentWeek: race.currentWeek ?? null,
+		previousWeek: race.previousWeek ?? null,
+		leaderboard: Array.isArray(race.leaderboard) ? race.leaderboard : [],
+		previousLeaderboard: Array.isArray(race.previousLeaderboard) ? race.previousLeaderboard : [],
+		currentClan: race.currentClan ?? null
 	};
 }
 

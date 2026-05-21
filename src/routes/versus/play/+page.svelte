@@ -4,6 +4,7 @@
 	import Ads from '$lib/components/ads.svelte';
 	import PlayerSelector from '$lib/components/playerSelector.svelte';
 	import MatchCard from '$lib/components/pvp/MatchCard.svelte';
+	import ClanWeeklyRaceTab from './ClanWeeklyRaceTab.svelte';
 	import PvpDialogs from './PvpDialogs.svelte';
 	import PvpLeaderboardTab from './PvpLeaderboardTab.svelte';
 	import WeeklyRaceTab from './WeeklyRaceTab.svelte';
@@ -23,6 +24,7 @@
 		cancelPvpMatchmaking,
 		checkPvpMatchmaking,
 		declinePvpInvite,
+		getPvpClanWeeklyRace,
 		getPvpInviteExpiresMs,
 		getPvpInvite,
 		getPvpMatchAcceptanceExpiresMs,
@@ -51,7 +53,9 @@
 		sendPvpInvite,
 		startPvpMatchmaking,
 		startPvpRating,
+		type PvpClan,
 		type PvpInvite,
+		type PvpClanWeeklyRace,
 		type PvpLeaderboardPlayer,
 		type PvpMatch,
 		type PvpMatchmakingRequest,
@@ -125,6 +129,14 @@
 		previousLeaderboard: [],
 		currentPlayer: null
 	};
+	let clanRace: PvpClanWeeklyRace = {
+		week: null,
+		currentWeek: null,
+		previousWeek: null,
+		leaderboard: [],
+		previousLeaderboard: [],
+		currentClan: null
+	};
 	let activePvpTab = 'lobby';
 	let eloGraphFilter: (typeof ELO_GRAPH_FILTERS)[number]['key'] = '25';
 	let summaryOpen = false;
@@ -134,6 +146,8 @@
 	let leaderboardError = '';
 	let weeklyRaceLoading = true;
 	let weeklyRaceError = '';
+	let clanRaceLoading = true;
+	let clanRaceError = '';
 	let actionLoading = '';
 	let initializedForUid = '';
 	let cleanupRealtime: (() => Promise<void>) | null = null;
@@ -150,6 +164,7 @@
 	let matchDialogOpen = false;
 	let ratingDialogOpen = false;
 	let showGeodeAlert = true;
+	let currentUserClan: PvpClan | null = null;
 	let lobbyReady = false;
 	let pendingDialogTimeout: ReturnType<typeof setTimeout> | null = null;
 	let pendingExpirationCheckMatchId: string | null = null;
@@ -270,7 +285,13 @@
 		window.addEventListener('keydown', keydownHandler);
 		refreshLeaderboard();
 		refreshWeeklyRace();
+		refreshClanRace();
 	});
+
+	$: currentUserClan =
+		$user.data?.clan && $user.data?.clans
+			? ({ ...($user.data.clans as Record<string, unknown>), id: $user.data.clan } as PvpClan)
+			: null;
 
 	$: if (anonymousModeReady) {
 		localStorage.setItem(PVP_ANONYMOUS_MODE_KEY, String(anonymousMode));
@@ -302,7 +323,7 @@
 		try {
 			const token = await $user.token();
 			setPvpRealtimeAuth(token);
-			await Promise.all([refreshLobby(), refreshMatchHistory(), refreshWeeklyRace()]);
+			await Promise.all([refreshLobby(), refreshMatchHistory(), refreshWeeklyRace(), refreshClanRace()]);
 			lobbyReady = true;
 
 			cleanupRealtime = subscribeToPvpLobby(uid, handleLobbyRealtimeEvent);
@@ -378,6 +399,28 @@
 			weeklyRaceError = error instanceof Error ? error.message : $_('pvp.toast.weekly_race_failed');
 		} finally {
 			weeklyRaceLoading = false;
+		}
+	}
+
+	async function refreshClanRace() {
+		clanRaceLoading = true;
+		clanRaceError = '';
+
+		try {
+			const nextClanRace = await getPvpClanWeeklyRace('current', 50, $user.data?.clan ?? null);
+			clanRace = nextClanRace;
+		} catch (error) {
+			clanRace = {
+				week: null,
+				currentWeek: null,
+				previousWeek: null,
+				leaderboard: [],
+				previousLeaderboard: [],
+				currentClan: null
+			};
+			clanRaceError = error instanceof Error ? error.message : $_('pvp.toast.clan_race_failed');
+		} finally {
+			clanRaceLoading = false;
 		}
 	}
 
@@ -534,6 +577,7 @@
 		if (getPvpStatus(nextMatch, '') === 'completed' && isPvpMatchRanked(nextMatch)) {
 			upsertMatchHistory(nextMatch);
 			void refreshWeeklyRace();
+			void refreshClanRace();
 		}
 	}
 
@@ -1459,6 +1503,10 @@
 				<CalendarDays class="h-4 w-4" />
 				{$_('pvp.tabs.weekly_race')}
 			</Tabs.Trigger>
+			<Tabs.Trigger value="clan-race" class="pvp-tab-trigger">
+				<Users class="h-4 w-4" />
+				{$_('pvp.tabs.clan_race')}
+			</Tabs.Trigger>
 			<Tabs.Trigger value="leaderboard" class="pvp-tab-trigger">
 				<Trophy class="h-4 w-4" />
 				{$_('pvp.tabs.leaderboard')}
@@ -1474,6 +1522,17 @@
 				error={weeklyRaceError}
 				{now}
 				onRefresh={refreshWeeklyRace}
+			/>
+		</Tabs.Content>
+
+		<Tabs.Content value="clan-race">
+			<ClanWeeklyRaceTab
+				{clanRace}
+				currentClan={currentUserClan}
+				loading={clanRaceLoading}
+				error={clanRaceError}
+				{now}
+				onRefresh={refreshClanRace}
 			/>
 		</Tabs.Content>
 
