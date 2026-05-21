@@ -545,10 +545,9 @@ export async function getPvpLeaderboard(limit = 50, mode: PvpMode = 'classic') {
 export async function getPvpWeeklyRace(
 	week: 'current' | 'previous' | string = 'current',
 	limit = 50,
-	uid?: string | null,
-	mode: PvpMode = 'classic'
+	uid?: string | null
 ) {
-	const params = new URLSearchParams({ week, limit: String(limit), mode });
+	const params = new URLSearchParams({ week, limit: String(limit) });
 	if (uid) params.set('uid', uid);
 	const payload = await pvpRequest<PvpWeeklyRace | { data?: PvpWeeklyRace }>(
 		`/pvp/weekly-race?${params}`

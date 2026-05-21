@@ -105,7 +105,6 @@
 	let selectedPlayer: any = null;
 	let selectedMode: PvpMode = 'classic';
 	let historyMode: PvpMode = 'classic';
-	let weeklyRaceMode: PvpMode = 'classic';
 	let leaderboardMode: PvpMode = 'classic';
 	let anonymousMode = false;
 	let hideOpponentInfo = false;
@@ -156,7 +155,6 @@
 	let pendingExpirationCheckMatchId: string | null = null;
 	let keydownHandler: ((e: KeyboardEvent) => void) | null = null;
 	let matchmakingCheckTimer: ReturnType<typeof setInterval> | null = null;
-	let loadedWeeklyRaceMode: PvpMode | '' = '';
 	let loadedLeaderboardMode: PvpMode | '' = '';
 
 	$: currentUid = $user.data?.uid;
@@ -285,11 +283,6 @@
 		refreshLeaderboard(leaderboardMode);
 	}
 
-	$: if (browser && loadedWeeklyRaceMode !== weeklyRaceMode) {
-		loadedWeeklyRaceMode = weeklyRaceMode;
-		refreshWeeklyRace(weeklyRaceMode);
-	}
-
 	onDestroy(() => {
 		if (ticker) clearInterval(ticker);
 		cleanupRealtime?.();
@@ -366,16 +359,14 @@
 		}
 	}
 
-	async function refreshWeeklyRace(mode: PvpMode = weeklyRaceMode) {
+	async function refreshWeeklyRace() {
 		weeklyRaceLoading = true;
 		weeklyRaceError = '';
 
 		try {
-			const nextWeeklyRace = await getPvpWeeklyRace('current', 50, currentUid, mode);
-			if (mode !== weeklyRaceMode) return;
+			const nextWeeklyRace = await getPvpWeeklyRace('current', 50, currentUid);
 			weeklyRace = nextWeeklyRace;
 		} catch (error) {
-			if (mode !== weeklyRaceMode) return;
 			weeklyRace = {
 				week: null,
 				currentWeek: null,
@@ -386,7 +377,7 @@
 			};
 			weeklyRaceError = error instanceof Error ? error.message : $_('pvp.toast.weekly_race_failed');
 		} finally {
-			if (mode === weeklyRaceMode) weeklyRaceLoading = false;
+			weeklyRaceLoading = false;
 		}
 	}
 
@@ -1477,15 +1468,11 @@
 		<Tabs.Content value="weekly-race">
 			<WeeklyRaceTab
 				{weeklyRace}
-				mode={weeklyRaceMode}
 				currentUid={currentUid ?? null}
 				currentPlayer={$user.data ?? null}
 				loading={weeklyRaceLoading}
 				error={weeklyRaceError}
 				{now}
-				onModeChange={(mode) => {
-					weeklyRaceMode = mode;
-				}}
 				onRefresh={refreshWeeklyRace}
 			/>
 		</Tabs.Content>
