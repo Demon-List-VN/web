@@ -168,7 +168,8 @@
 		!banPickWaitingToStart &&
 		banPickRemainingMs > 0 &&
 		!banPickTurnSubmitted;
-	$: levelConfirmed = isPvpMatchConfirmedByBoth(match);
+	$: playerInfoConfirmed = isPvpMatchConfirmedByBoth(match);
+	$: levelConfirmed = playerInfoConfirmed;
 	$: visibleLevel = levelConfirmed && !isBanPick ? level : null;
 	$: levelVideoId = getYouTubeVideoId(visibleLevel?.videoID);
 	$: participants = getPvpParticipants(match);
@@ -710,8 +711,10 @@
 	function participantName(
 		participant: PvpParticipant | null | undefined,
 		hideInfo: boolean = hideOpponentInfo,
-		viewerUid: string | null | undefined = currentUid
+		viewerUid: string | null | undefined = currentUid,
+		infoConfirmed: boolean = playerInfoConfirmed
 	) {
+		if (participant && !infoConfirmed) return $_('pvp.hidden_player');
 		if (participantIsAnonymousToViewer(participant, viewerUid)) return $_('pvp.anonymous_player');
 		if (shouldHideParticipantInfo(participant, hideInfo, viewerUid))
 			return $_('pvp.hidden_opponent');
@@ -731,20 +734,24 @@
 	function shouldHideParticipantInfo(
 		participant: PvpParticipant | null | undefined,
 		hideInfo: boolean = hideOpponentInfo,
-		viewerUid: string | null | undefined = currentUid
+		viewerUid: string | null | undefined = currentUid,
+		infoConfirmed: boolean = playerInfoConfirmed
 	) {
 		const uid = getPvpParticipantUid(participant);
+		if (participant && !infoConfirmed) return true;
 		return Boolean(hideInfo && uid && uid !== viewerUid);
 	}
 
 	function shouldMaskParticipant(
 		participant: PvpParticipant | null | undefined,
 		hideInfo: boolean = hideOpponentInfo,
-		viewerUid: string | null | undefined = currentUid
+		viewerUid: string | null | undefined = currentUid,
+		infoConfirmed: boolean = playerInfoConfirmed
 	) {
 		return (
+			Boolean(participant && !infoConfirmed) ||
 			participantIsAnonymousToViewer(participant, viewerUid) ||
-			shouldHideParticipantInfo(participant, hideInfo, viewerUid)
+			shouldHideParticipantInfo(participant, hideInfo, viewerUid, infoConfirmed)
 		);
 	}
 
@@ -927,6 +934,7 @@
 	) {
 		if (message.type === 'system') return $_('pvp.system_sender');
 		if (senderUid === viewerUid) return $_('pvp.you');
+		if (!playerInfoConfirmed) return $_('pvp.hidden_player');
 		if (
 			getPvpMessageSenderIsAnonymous(message) ||
 			messageSenderParticipantIsAnonymous(message, items, senderUid)
@@ -1003,9 +1011,10 @@
 	function hiddenOpponentRedactionValues(
 		items: PvpParticipant[] = participants,
 		hideInfo: boolean = hideOpponentInfo,
-		viewerUid: string | null | undefined = currentUid
+		viewerUid: string | null | undefined = currentUid,
+		infoConfirmed: boolean = playerInfoConfirmed
 	) {
-		if (!hideInfo) return [];
+		if (infoConfirmed && !hideInfo) return [];
 
 		const values = new Set<string>();
 		const addValue = (value: unknown) => {
@@ -1014,7 +1023,7 @@
 		};
 
 		for (const participant of items) {
-			if (!shouldHideParticipantInfo(participant, hideInfo, viewerUid)) continue;
+			if (!shouldHideParticipantInfo(participant, hideInfo, viewerUid, infoConfirmed)) continue;
 
 			const player = getPvpParticipantPlayer(participant);
 			addValue(getPvpParticipantUid(participant));
@@ -1029,7 +1038,7 @@
 	}
 
 	function redactHiddenOpponentInfo(content: string) {
-		const replacement = $_('pvp.hidden_opponent');
+		const replacement = playerInfoConfirmed ? $_('pvp.hidden_opponent') : $_('pvp.hidden_player');
 		return hiddenOpponentRedactionValues().reduce((text, value) => {
 			const pattern = new RegExp(
 				`(^|[^\\p{L}\\p{N}_])(${escapeRegExp(value)})(?=$|[^\\p{L}\\p{N}_])`,

@@ -507,6 +507,7 @@
 		"hide_opponent_info": "Hide opponent info",
 		"hide_opponent_info_hint": "Mask opponent names, avatars, clans, and profile links on this device.",
 		"show_opponent_info": "Show opponent info",
+		"hidden_player": "Hidden player",
 		"hidden_opponent": "Hidden opponent",
 		"match_chat": "Match chat",
 		"mute_chat": "Mute chat",
