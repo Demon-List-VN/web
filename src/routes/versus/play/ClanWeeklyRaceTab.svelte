@@ -105,6 +105,19 @@
 		if (!clan?.id) return '';
 		return `https://cdn.gdvn.net/clan-photos/${clan.id}.jpg?version=${clan.imageVersion ?? 0}`;
 	}
+
+	function isBoostActive(clan: PvpClan | null) {
+		const boostedUntil = clan?.boostedUntil;
+		if (!boostedUntil) return false;
+
+		const boostedUntilMs = new Date(boostedUntil).getTime();
+		return Number.isFinite(boostedUntilMs) && boostedUntilMs > Date.now();
+	}
+
+	function clanTagStyle(clan: PvpClan | null) {
+		if (!clan || !isBoostActive(clan) || !clan.tagBgColor) return '';
+		return `background-color: ${clan.tagBgColor}; color: ${clan.tagTextColor || '#ffffff'};`;
+	}
 </script>
 
 <section class="clan-race-section">
@@ -176,9 +189,18 @@
 									{#if clan}
 										<a href={`/clan/${clan.id}`} class="clan-link">
 											<img src={clanImageUrl(clan)} alt="" loading="lazy" />
-											<span>{clan.name}</span>
+											<span class:boosted={isBoostActive(clan)}>{clan.name}</span>
 											{#if clan.tag}
-												<small>[{clan.tag}]</small>
+												<small
+													class:colored={isBoostActive(clan) && Boolean(clan.tagBgColor)}
+													style={clanTagStyle(clan)}
+												>
+													{#if isBoostActive(clan) && clan.tagBgColor}
+														{clan.tag}
+													{:else}
+														[{clan.tag}]
+													{/if}
+												</small>
 											{/if}
 										</a>
 									{:else}
@@ -207,9 +229,18 @@
 											{#if clan}
 												<a href={`/clan/${clan.id}`} class="clan-link">
 													<img src={clanImageUrl(clan)} alt="" loading="lazy" />
-													<span>{clan.name}</span>
+													<span class:boosted={isBoostActive(clan)}>{clan.name}</span>
 													{#if clan.tag}
-														<small>[{clan.tag}]</small>
+														<small
+															class:colored={isBoostActive(clan) && Boolean(clan.tagBgColor)}
+															style={clanTagStyle(clan)}
+														>
+															{#if isBoostActive(clan) && clan.tagBgColor}
+																{clan.tag}
+															{:else}
+																[{clan.tag}]
+															{/if}
+														</small>
 													{/if}
 												</a>
 											{:else}
@@ -243,7 +274,7 @@
 											{#if clan}
 												<a href={`/clan/${clan.id}`} class="clan-link compact">
 													<img src={clanImageUrl(clan)} alt="" loading="lazy" />
-													<span>{clan.name}</span>
+													<span class:boosted={isBoostActive(clan)}>{clan.name}</span>
 												</a>
 											{:else}
 												<span>{$_('pvp.clan_race.unknown_clan')}</span>
@@ -437,10 +468,21 @@
 		white-space: nowrap;
 	}
 
+	.clan-link span.boosted {
+		color: #eab308;
+	}
+
 	.clan-link small {
 		flex: 0 0 auto;
 		color: hsl(var(--muted-foreground));
 		font-size: 12px;
+	}
+
+	.clan-link small.colored {
+		border-radius: 4px;
+		padding: 2px 6px;
+		font-weight: 800;
+		line-height: 1.2;
 	}
 
 	.clan-link.compact img {
