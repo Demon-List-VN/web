@@ -488,7 +488,13 @@
 		}
 
 		:global(ul) {
-			list-style: initial;
+			list-style: disc;
+			margin: initial;
+			padding: 0 0 0 40px;
+		}
+
+		:global(ol) {
+			list-style: decimal;
 			margin: initial;
 			padding: 0 0 0 40px;
 		}

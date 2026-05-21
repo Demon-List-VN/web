@@ -51,8 +51,15 @@
 		margin-bottom: 1em;
 		padding-left: 2em;
 	}
+	.markdown :global(ul) {
+		list-style: disc;
+	}
+	.markdown :global(ol) {
+		list-style: decimal;
+	}
 	.markdown :global(li) {
 		margin-bottom: 0.5em;
+		display: list-item;
 	}
 	.markdown :global(a) {
 		text-decoration: underline;
