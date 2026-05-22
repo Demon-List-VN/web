@@ -34,6 +34,7 @@
 		getPvpOpponent,
 		getPvpParticipants,
 		getPvpDeathCount,
+		getPvpDeathCountArray,
 		getPvpParticipantIsAnonymous,
 		getPvpParticipantPlayer,
 		getPvpParticipantUid,
@@ -113,6 +114,18 @@
 		maxX: number;
 		maxY: number;
 		mode: PvpMode;
+	};
+
+	type DeathCountChartData = {
+		labels: string[];
+		datasets: Array<{
+			label: string;
+			data: number[];
+			backgroundColor: string;
+			borderColor: string;
+		}>;
+		hasPoints: boolean;
+		maxY: number;
 	};
 
 	let match: PvpMatch | null = null;
@@ -249,6 +262,7 @@
 					? $_('pvp.chat_during_ban_pick')
 					: $_('pvp.chat_during_match');
 	$: progressGraphData = getProgressGraphData(messages, orderedParticipants, matchMode);
+	$: deathCountChartData = getDeathCountChartData(orderedParticipants);
 	$: updateBanPickDeadlineCheck(
 		isBanPick,
 		banPick?.turnEndsAt,
@@ -1354,6 +1368,135 @@
 			`${context.dataset.label}: ${formatPvpProgressValue(context.parsed.y, data.mode)}`;
 	}
 
+	function getDeathCountChartData(items: PvpParticipant[] = orderedParticipants): DeathCountChartData {
+		const labels = Array.from({ length: 100 }, (_, index) => `${index}%`);
+		const series = items.slice(0, 2).map((participant, index) => {
+			const color =
+				index === 0 ? chartColor('--primary', '#2563eb') : chartColor('--destructive', '#dc2626');
+			return {
+				label: participantName(participant, hideOpponentInfo, currentUid),
+				data: getPvpDeathCountArray(participant),
+				backgroundColor: color,
+				borderColor: color
+			};
+		});
+		const maxY = Math.max(1, ...series.flatMap((item) => item.data));
+
+		return {
+			labels,
+			datasets: series,
+			hasPoints: series.some((item) => item.data.some((count) => count > 0)),
+			maxY
+		};
+	}
+
+	function createDeathCountChart(node: HTMLCanvasElement, data: DeathCountChartData) {
+		let chart: Chart<'bar', number[], string> | null = buildDeathCountChart(node, data);
+
+		return {
+			update(nextData: DeathCountChartData) {
+				if (!chart) {
+					chart = buildDeathCountChart(node, nextData);
+					return;
+				}
+
+				chart.data.labels = nextData.labels;
+				chart.data.datasets = getDeathCountChartDatasets(nextData);
+				chart.options.scales!.y!.max = nextData.maxY;
+				chart.update();
+			},
+			destroy() {
+				chart?.destroy();
+				chart = null;
+			}
+		};
+	}
+
+	function buildDeathCountChart(node: HTMLCanvasElement, data: DeathCountChartData) {
+		return new Chart(node, {
+			type: 'bar',
+			data: {
+				labels: data.labels,
+				datasets: getDeathCountChartDatasets(data)
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				animation: false,
+				interaction: {
+					mode: 'index',
+					intersect: false
+				},
+				scales: {
+					x: {
+						title: {
+							display: true,
+							text: $_('pvp.death_count.percent_axis'),
+							color: chartColor('--muted-foreground', '#71717a')
+						},
+						grid: {
+							display: false
+						},
+						ticks: {
+							color: chartColor('--muted-foreground', '#71717a'),
+							maxRotation: 0,
+							autoSkip: true,
+							maxTicksLimit: 10
+						}
+					},
+					y: {
+						min: 0,
+						max: data.maxY,
+						title: {
+							display: true,
+							text: $_('pvp.death_count.deaths_axis'),
+							color: chartColor('--muted-foreground', '#71717a')
+						},
+						border: {
+							display: false
+						},
+						grid: {
+							color: chartAlphaColor('--border', 0.85, 'rgba(161, 161, 170, 0.4)')
+						},
+						ticks: {
+							color: chartColor('--muted-foreground', '#71717a'),
+							precision: 0
+						}
+					}
+				},
+				plugins: {
+					legend: {
+						labels: {
+							color: chartColor('--foreground', '#18181b'),
+							usePointStyle: true,
+							boxWidth: 8,
+							boxHeight: 8
+						}
+					},
+					tooltip: {
+						callbacks: {
+							label: (context) =>
+								`${context.dataset.label}: ${context.parsed.y} ${$_('pvp.death_count.count_label')}`
+						}
+					}
+				}
+			}
+		});
+	}
+
+	function getDeathCountChartDatasets(data: DeathCountChartData) {
+		return data.datasets.map((item) => ({
+			label: item.label,
+			data: item.data,
+			backgroundColor: item.backgroundColor,
+			borderColor: item.borderColor,
+			borderWidth: 1,
+			borderRadius: 3,
+			barPercentage: 0.9,
+			categoryPercentage: 0.85
+		}));
+	}
+
 	function dismissGeodeAlert() {
 		showGeodeAlert = false;
 		localStorage.setItem(PVP_GEODE_ALERT_DISMISSED_KEY, 'true');
@@ -1855,7 +1998,7 @@
 								{:else if orderedParticipants.length === 0}
 									<div class="empty-state">{$_('pvp.death_count.empty')}</div>
 								{:else}
-									<div class="death-count-grid">
+									<div class="death-count-summary">
 										{#each orderedParticipants as participant}
 											{@const participantPlayer = getPvpParticipantPlayer(participant)}
 											{@const participantMasked = shouldMaskParticipant(
@@ -1900,13 +2043,23 @@
 														{/if}
 													</div>
 												</div>
-												<div class="death-count-value">
-													<strong>{getPvpDeathCount(participant)}</strong>
-													<span>{$_('pvp.death_count.count_label')}</span>
+													<div class="death-count-value">
+														<strong>{getPvpDeathCount(participant)}</strong>
+														<span>{$_('pvp.death_count.count_label')}</span>
+													</div>
 												</div>
-											</div>
-										{/each}
+											{/each}
 									</div>
+									{#if deathCountChartData.hasPoints && desktopActivityTab === 'deaths'}
+										<div class="death-count-chart-canvas">
+											<canvas
+												use:createDeathCountChart={deathCountChartData}
+												aria-label={$_('pvp.death_count.title')}
+											/>
+										</div>
+									{:else}
+										<div class="empty-state">{$_('pvp.death_count.empty')}</div>
+									{/if}
 								{/if}
 							</div>
 						</Tabs.Content>
@@ -2047,7 +2200,7 @@
 								{:else if orderedParticipants.length === 0}
 									<div class="empty-state">{$_('pvp.death_count.empty')}</div>
 								{:else}
-									<div class="death-count-grid">
+									<div class="death-count-summary">
 										{#each orderedParticipants as participant}
 											{@const participantPlayer = getPvpParticipantPlayer(participant)}
 											{@const participantMasked = shouldMaskParticipant(
@@ -2099,6 +2252,16 @@
 											</div>
 										{/each}
 									</div>
+									{#if deathCountChartData.hasPoints && mobileActivityTab === 'deaths'}
+										<div class="death-count-chart-canvas mobile-death-count-chart-canvas">
+											<canvas
+												use:createDeathCountChart={deathCountChartData}
+												aria-label={$_('pvp.death_count.title')}
+											/>
+										</div>
+									{:else}
+										<div class="empty-state">{$_('pvp.death_count.empty')}</div>
+									{/if}
 								{/if}
 							</div>
 						</div>
@@ -2520,8 +2683,9 @@
 		gap: 12px;
 	}
 
-	.death-count-grid {
+	.death-count-summary {
 		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: 12px;
 	}
 
@@ -2551,6 +2715,16 @@
 		color: hsl(var(--muted-foreground));
 		font-size: 13px;
 		font-weight: 650;
+	}
+
+	.death-count-chart-canvas {
+		position: relative;
+		height: 420px;
+		min-height: 420px;
+	}
+
+	.death-count-chart-canvas canvas {
+		display: block;
 	}
 
 	:global(.chat-content) {
@@ -2689,6 +2863,11 @@
 		min-height: 360px;
 	}
 
+	.mobile-death-count-chart-canvas {
+		height: 52vh;
+		min-height: 320px;
+	}
+
 	.empty-state {
 		display: flex;
 		align-items: center;
@@ -2705,6 +2884,10 @@
 		}
 
 		.side-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.death-count-summary {
 			grid-template-columns: 1fr;
 		}
 

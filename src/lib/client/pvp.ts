@@ -67,8 +67,8 @@ export type PvpResult = {
 	playerId?: string;
 	progress?: number | null;
 	bestProgress?: number | null;
-	deathCount?: number | null;
-	death_count?: number | null;
+	deathCount?: number[] | number | null;
+	death_count?: number[] | number | null;
 	timeReachedMs?: number | null;
 	timeReachedProgress?: number | null;
 	time_reached_progress?: number | null;
@@ -94,8 +94,8 @@ export type PvpParticipant = {
 	result?: PvpResult | null;
 	progress?: number | null;
 	bestProgress?: number | null;
-	deathCount?: number | null;
-	death_count?: number | null;
+	deathCount?: number[] | number | null;
+	death_count?: number[] | number | null;
 	timeReachedMs?: number | null;
 	timeReachedProgress?: number | null;
 	acceptedAt?: string | null;
@@ -860,10 +860,31 @@ export function getPvpProgress(participant: PvpParticipant | PvpResult | null | 
 }
 
 export function getPvpDeathCount(participant: PvpParticipant | PvpResult | null | undefined) {
+	return getPvpDeathCountArray(participant).reduce((total, count) => total + count, 0);
+}
+
+export function getPvpDeathCountArray(participant: PvpParticipant | PvpResult | null | undefined) {
 	const result = (participant as PvpParticipant | undefined)?.result;
 	const value = participant?.deathCount ?? participant?.death_count ?? result?.deathCount ?? result?.death_count ?? 0;
-	const deathCount = Number(value);
-	return Number.isInteger(deathCount) && deathCount >= 0 ? deathCount : 0;
+	if (Array.isArray(value)) {
+		return Array.from({ length: 100 }, (_, index) => {
+			const count = Number(value[index]);
+			return Number.isInteger(count) && count > 0 ? count : 0;
+		});
+	}
+
+	const legacyTotal = Number(value);
+	const deathCount = Array(100).fill(0);
+	if (Number.isInteger(legacyTotal) && legacyTotal > 0) {
+		deathCount[0] = legacyTotal;
+	}
+	return deathCount;
+}
+
+export function getPvpDeathCountEntries(participant: PvpParticipant | PvpResult | null | undefined) {
+	return getPvpDeathCountArray(participant)
+		.map((count, percent) => ({ percent, count }))
+		.filter((entry) => entry.count > 0);
 }
 
 export function formatPvpProgressValue(value: number, mode: PvpMode = 'classic') {

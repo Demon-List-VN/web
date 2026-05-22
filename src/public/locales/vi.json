@@ -491,7 +491,9 @@
 			"description": "Số lần chết classic 1v1 được ghi trong trận này.",
 			"empty": "Chưa có dữ liệu số lần chết.",
 			"platformer_empty": "Số lần chết chỉ được ghi cho trận classic.",
-			"count_label": "lần chết"
+			"count_label": "lần chết",
+			"percent_axis": "Phần trăm",
+			"deaths_axis": "Số lần chết"
 		},
 		"system_sender": "Versus",
 		"system_message": {

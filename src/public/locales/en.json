@@ -491,7 +491,9 @@
 			"description": "Classic 1v1 deaths recorded during this match.",
 			"empty": "No death count data yet.",
 			"platformer_empty": "Death count is only tracked for classic matches.",
-			"count_label": "deaths"
+			"count_label": "deaths",
+			"percent_axis": "Percent",
+			"deaths_axis": "Deaths"
 		},
 		"system_sender": "Versus",
 		"system_message": {
