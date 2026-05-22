@@ -88,9 +88,10 @@
 	$: selectedList = data.selectedList;
 	$: selectedListRecords = data.selectedListRecords?.data || [];
 	$: playerRecords = data.playerRecords?.data || [];
-	$: manuallyAcceptedPlayerRecords = playerRecords.filter((record) =>
-		isManuallyAcceptedRecord(record)
-	);
+	$: rankedListRecords = data.allListRecords?.data || [];
+	$: manuallyAcceptedPlayerRecords = rankedListRecords.length
+		? rankedListRecords
+		: playerRecords.filter((record) => isManuallyAcceptedRecord(record));
 	$: uniqueManuallyAcceptedRecords = uniqueRecords(manuallyAcceptedPlayerRecords);
 	$: recentRecords = [...uniqueManuallyAcceptedRecords]
 		.sort((left, right) => getRecordTime(right) - getRecordTime(left))
@@ -106,9 +107,9 @@
 		: null;
 	$: selectedListScoreLabel = getPlayerRankedListScoreLabel(selectedList);
 	$: selectedListTotalRecords =
-		data.selectedListRecords?.total ??
-		selectedListRecords.length ??
 		selectedList?.completedCount ??
+		selectedListRecords.filter(hasListLeaderboardRecordEntry).length ??
+		data.selectedListRecords?.total ??
 		0;
 	$: selectedListTotalLevels = Array.isArray(data.selectedListRecords?.list?.items)
 		? data.selectedListRecords.list.items.length
@@ -217,6 +218,10 @@
 
 	function isManuallyAcceptedRecord(record: PlayerListRecordEntry) {
 		return Boolean(record.acceptedManually);
+	}
+
+	function hasListLeaderboardRecordEntry(record: PlayerListRecordEntry) {
+		return Number.isFinite(Number(record.point)) && Number.isFinite(Number(record.no));
 	}
 
 	async function handleListChange(option: { value?: string } | undefined) {

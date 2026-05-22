@@ -15,11 +15,14 @@ function normalizePlayerListRecordsResponse(
 	}
 
 	const response = value as Partial<PlayerListRecordsResponse>;
+	const data = Array.isArray(response.data)
+		? response.data.filter(hasListLeaderboardRecordEntry)
+		: fallback.data;
 
 	return {
 		list: response.list ?? fallback.list,
-		data: Array.isArray(response.data) ? response.data : fallback.data,
-		total: typeof response.total === 'number' ? response.total : fallback.total,
+		data,
+		total: data.length,
 		lastRefreshedAt:
 			typeof response.lastRefreshedAt === 'string' || response.lastRefreshedAt === null
 				? response.lastRefreshedAt
@@ -27,10 +30,11 @@ function normalizePlayerListRecordsResponse(
 	};
 }
 
-function normalizePlayerRecords(
-	value: unknown,
-	uid: string
-): PlayerListRecordEntry[] {
+function hasListLeaderboardRecordEntry(record: PlayerListRecordEntry) {
+	return Number.isFinite(Number(record.point)) && Number.isFinite(Number(record.no));
+}
+
+function normalizePlayerRecords(value: unknown, uid: string): PlayerListRecordEntry[] {
 	if (!Array.isArray(value)) {
 		return [];
 	}

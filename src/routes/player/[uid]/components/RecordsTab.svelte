@@ -92,8 +92,7 @@
 	);
 	$: matchingRecords = tabbedRecords.filter(
 		(record: PlayerListRecordEntry) =>
-			matchesLevelIdFilter(record, appliedLevelId) &&
-			matchesPlatformFilter(record, appliedPlatform)
+			matchesLevelIdFilter(record, appliedLevelId) && matchesPlatformFilter(record, appliedPlatform)
 	);
 	$: filteredRecords = sortRecords(
 		matchingRecords,
@@ -102,8 +101,7 @@
 		appliedListId !== null
 	);
 	$: tabbedRecordTotal = tabbedRecords.length;
-	$: showRecordControls =
-		tabbedRecordTotal > 0 || appliedListId !== null || baseRecords.length > 0;
+	$: showRecordControls = tabbedRecordTotal > 0 || appliedListId !== null || baseRecords.length > 0;
 	$: isLoadingAppliedListRecords =
 		appliedListId !== null &&
 		isLoadingSelectedListRecords &&
@@ -143,10 +141,7 @@
 		return Boolean(record?.acceptedAuto) && !record?.acceptedManually;
 	}
 
-	function matchesRecordAcceptanceTab(
-		record: PlayerListRecordEntry,
-		tab: RecordAcceptanceTab
-	) {
+	function matchesRecordAcceptanceTab(record: PlayerListRecordEntry, tab: RecordAcceptanceTab) {
 		return tab === 'verified' ? isVerifiedRecord(record) : isUnverifiedRecord(record);
 	}
 
@@ -260,10 +255,12 @@
 		const response = payload && typeof payload === 'object' ? (payload as any) : {};
 		const listReference = getPayloadListReference(response.list, listId);
 		const records = Array.isArray(response.data)
-			? response.data.map((record: PlayerListRecordEntry) => ({
-					...record,
-					rankedList: record.rankedList ?? listReference
-				}))
+			? response.data
+					.filter(hasListLeaderboardRecordEntry)
+					.map((record: PlayerListRecordEntry) => ({
+						...record,
+						rankedList: record.rankedList ?? listReference
+					}))
 			: [];
 
 		return {
@@ -283,6 +280,10 @@
 		}
 
 		return `level:${record.uid}:${record.levelId}:${record.rankedList?.id ?? ''}`;
+	}
+
+	function hasListLeaderboardRecordEntry(record: PlayerListRecordEntry) {
+		return Number.isFinite(Number(record.point)) && Number.isFinite(Number(record.no));
 	}
 
 	function getDisplayRecords(
@@ -573,6 +574,7 @@
 		});
 	}
 </script>
+
 {#if showRecordControls}
 	<Tabs.Root bind:value={selectedRecordTab}>
 		<div class="filterBar">
@@ -650,10 +652,7 @@
 						</Select.Trigger>
 						<Select.Content>
 							{#each sortDirectionOptions as sortDirectionOption}
-								<Select.Item
-									value={sortDirectionOption.value}
-									label={sortDirectionOption.label}
-								>
+								<Select.Item value={sortDirectionOption.value} label={sortDirectionOption.label}>
 									{sortDirectionOption.label}
 								</Select.Item>
 							{/each}
