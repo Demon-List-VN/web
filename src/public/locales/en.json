@@ -486,6 +486,13 @@
 			"progress_axis": "Progress",
 			"checkpoints_axis": "Checkpoints"
 		},
+		"death_count": {
+			"title": "Deaths",
+			"description": "Classic 1v1 deaths recorded during this match.",
+			"empty": "No death count data yet.",
+			"platformer_empty": "Death count is only tracked for classic matches.",
+			"count_label": "deaths"
+		},
 		"system_sender": "Versus",
 		"system_message": {
 			"progress": "{player} reached {progress}% progress.",
@@ -537,6 +544,7 @@
 		"show_opponent_info": "Show opponent info",
 		"hidden_player": "Hidden player",
 		"hidden_opponent": "Hidden opponent",
+		"match_activity": "Match activity",
 		"match_chat": "Match chat",
 		"mute_chat": "Mute chat",
 		"unmute_chat": "Unmute chat",

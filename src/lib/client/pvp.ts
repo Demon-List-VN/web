@@ -67,6 +67,8 @@ export type PvpResult = {
 	playerId?: string;
 	progress?: number | null;
 	bestProgress?: number | null;
+	deathCount?: number | null;
+	death_count?: number | null;
 	timeReachedMs?: number | null;
 	timeReachedProgress?: number | null;
 	time_reached_progress?: number | null;
@@ -92,6 +94,8 @@ export type PvpParticipant = {
 	result?: PvpResult | null;
 	progress?: number | null;
 	bestProgress?: number | null;
+	deathCount?: number | null;
+	death_count?: number | null;
 	timeReachedMs?: number | null;
 	timeReachedProgress?: number | null;
 	acceptedAt?: string | null;
@@ -853,6 +857,13 @@ export function getPvpProgress(participant: PvpParticipant | PvpResult | null | 
 		result?.bestProgress ??
 		0;
 	return Number.isFinite(Number(value)) ? Number(value) : 0;
+}
+
+export function getPvpDeathCount(participant: PvpParticipant | PvpResult | null | undefined) {
+	const result = (participant as PvpParticipant | undefined)?.result;
+	const value = participant?.deathCount ?? participant?.death_count ?? result?.deathCount ?? result?.death_count ?? 0;
+	const deathCount = Number(value);
+	return Number.isInteger(deathCount) && deathCount >= 0 ? deathCount : 0;
 }
 
 export function formatPvpProgressValue(value: number, mode: PvpMode = 'classic') {

@@ -33,6 +33,7 @@
 		getPvpMessageSenderIsAnonymous,
 		getPvpOpponent,
 		getPvpParticipants,
+		getPvpDeathCount,
 		getPvpParticipantIsAnonymous,
 		getPvpParticipantPlayer,
 		getPvpParticipantUid,
@@ -134,6 +135,7 @@
 	let chatMuted = false;
 	let preferencesReady = false;
 	let desktopActivityTab = 'chat';
+	let mobileActivityTab = 'chat';
 	let banPickDeadlineTimeout: ReturnType<typeof setTimeout> | null = null;
 	let banPickDeadlineKey = '';
 	let selectedBanLevelIds: number[] = [];
@@ -1735,6 +1737,7 @@
 							<Tabs.List class="activity-tabs-list">
 								<Tabs.Trigger value="chat">{$_('pvp.match_chat')}</Tabs.Trigger>
 								<Tabs.Trigger value="progress">{$_('pvp.progress_graph.title')}</Tabs.Trigger>
+								<Tabs.Trigger value="deaths">{$_('pvp.death_count.title')}</Tabs.Trigger>
 							</Tabs.List>
 						</Card.Header>
 						<Tabs.Content value="chat" class="desktop-tab-content">
@@ -1839,6 +1842,74 @@
 								{/if}
 							</div>
 						</Tabs.Content>
+						<Tabs.Content value="deaths" class="desktop-tab-content deaths-tab-content">
+							<div class="death-count-panel">
+								<div class="death-count-header">
+									<div>
+										<Card.Title>{$_('pvp.death_count.title')}</Card.Title>
+										<Card.Description>{$_('pvp.death_count.description')}</Card.Description>
+									</div>
+								</div>
+								{#if matchMode === 'platformer'}
+									<div class="empty-state">{$_('pvp.death_count.platformer_empty')}</div>
+								{:else if orderedParticipants.length === 0}
+									<div class="empty-state">{$_('pvp.death_count.empty')}</div>
+								{:else}
+									<div class="death-count-grid">
+										{#each orderedParticipants as participant}
+											{@const participantPlayer = getPvpParticipantPlayer(participant)}
+											{@const participantMasked = shouldMaskParticipant(
+												participant,
+												hideOpponentInfo,
+												currentUid
+											)}
+											{@const participantDisplayName = participantName(
+												participant,
+												hideOpponentInfo,
+												currentUid
+											)}
+											<div class="death-count-card">
+												<div class="participant-identity">
+													<Avatar.Root class="participant-avatar">
+														{#if !participantMasked && participantPlayer?.uid}
+															<Avatar.Image
+																src={participantAvatarUrl(participantPlayer)}
+																alt={participantPlayer.name || participantDisplayName}
+															/>
+															<Avatar.Fallback>
+																{participantAvatarFallback(participantPlayer)}
+															</Avatar.Fallback>
+														{:else}
+															<Avatar.Fallback class="participant-avatar-placeholder">
+																<UserRound class="h-5 w-5" />
+															</Avatar.Fallback>
+														{/if}
+													</Avatar.Root>
+													<div class="participant-name">
+														<Badge
+															variant={getPvpParticipantUid(participant) === currentUid
+																? 'default'
+																: 'outline'}
+														>
+															{participantLabel(participant, currentUid)}
+														</Badge>
+														{#if !participantMasked && participantPlayer?.uid}
+															<PlayerLink player={participantPlayer} truncate={22} />
+														{:else}
+															<strong>{participantDisplayName}</strong>
+														{/if}
+													</div>
+												</div>
+												<div class="death-count-value">
+													<strong>{getPvpDeathCount(participant)}</strong>
+													<span>{$_('pvp.death_count.count_label')}</span>
+												</div>
+											</div>
+										{/each}
+									</div>
+								{/if}
+							</div>
+						</Tabs.Content>
 					</Tabs.Root>
 				</Card.Root>
 			</aside>
@@ -1848,90 +1919,191 @@
 			<Drawer.Trigger asChild let:builder>
 				<Button builders={[builder]} class="mobile-chat-trigger" type="button">
 					<MessageCircle class="h-4 w-4" />
-					{$_('pvp.match_chat')}
+					{$_('pvp.match_activity')}
 				</Button>
 			</Drawer.Trigger>
 			<Drawer.Content class="mobile-chat-drawer">
-				<Drawer.Header>
-					<div class="chat-header">
-						<div>
-							<Drawer.Title>{$_('pvp.match_chat')}</Drawer.Title>
-							<Drawer.Description>{chatDescription}</Drawer.Description>
-						</div>
-						<div class="chat-actions">
-							{#if chatLoading}
-								<Loader2 class="h-4 w-4 animate-spin text-muted-foreground" />
-							{/if}
-							<Button variant="outline" size="sm" on:click={() => (chatMuted = !chatMuted)}>
-								{#if chatMuted}
-									<Volume2 class="mr-2 h-4 w-4" />
-									{$_('pvp.unmute_chat')}
-								{:else}
-									<VolumeX class="mr-2 h-4 w-4" />
-									{$_('pvp.mute_chat')}
-								{/if}
-							</Button>
-						</div>
-					</div>
-				</Drawer.Header>
-				<div class="mobile-chat-body">
-					<div class="chat-messages" bind:this={mobileChatScrollEl}>
-						{#if chatMuted}
-							<div class="empty-state">{$_('pvp.chat_muted_state')}</div>
-						{:else if messages.length === 0}
-							<div class="empty-state">{$_('pvp.no_messages')}</div>
-						{:else}
-							{#each messages as message}
-								{@const senderUid = messageSenderUid(message)}
-								{@const senderName = messageSenderName(
-									message,
-									hideOpponentInfo,
-									currentUid,
-									participants,
-									senderUid
-								)}
-								<div
-									class:own-message={senderUid === currentUid}
-									class:system-message={message.type === 'system'}
-									class="chat-message"
-								>
-									<div class="chat-message-meta">
-										<strong>{senderName}</strong>
-										<span>{messageTime(message)}</span>
-									</div>
-									<p>{systemMessageContent(message)}</p>
+				<Tabs.Root bind:value={mobileActivityTab} class="mobile-activity-tabs">
+					<Drawer.Header>
+						<div class="chat-header">
+							<div>
+								<Drawer.Title>{$_('pvp.match_activity')}</Drawer.Title>
+								<Drawer.Description>
+									{#if mobileActivityTab === 'chat'}
+										{chatDescription}
+									{:else if mobileActivityTab === 'progress'}
+										{$_('pvp.progress_graph.description')}
+									{:else}
+										{$_('pvp.death_count.description')}
+									{/if}
+								</Drawer.Description>
+							</div>
+							{#if mobileActivityTab === 'chat'}
+								<div class="chat-actions">
+									{#if chatLoading}
+										<Loader2 class="h-4 w-4 animate-spin text-muted-foreground" />
+									{/if}
+									<Button variant="outline" size="sm" on:click={() => (chatMuted = !chatMuted)}>
+										{#if chatMuted}
+											<Volume2 class="mr-2 h-4 w-4" />
+											{$_('pvp.unmute_chat')}
+										{:else}
+											<VolumeX class="mr-2 h-4 w-4" />
+											{$_('pvp.mute_chat')}
+										{/if}
+									</Button>
 								</div>
-							{/each}
-						{/if}
-					</div>
-
-					<form class="chat-form" on:submit|preventDefault={sendChatMessage}>
-						<Textarea
-							bind:value={chatDraft}
-							rows={2}
-							maxlength={500}
-							disabled={chatInputDisabled || actionLoading === 'send-chat'}
-							placeholder={chatPlaceholder()}
-							on:keydown={(event) => {
-								if (event.key === 'Enter' && !event.shiftKey) {
-									event.preventDefault();
-									sendChatMessage();
-								}
-							}}
-						/>
-						<Button
-							type="submit"
-							disabled={chatInputDisabled || !chatDraft.trim() || actionLoading === 'send-chat'}
-							aria-label={$_('pvp.send_message')}
-						>
-							{#if actionLoading === 'send-chat'}
-								<Loader2 class="h-4 w-4 animate-spin" />
-							{:else}
-								<Send class="h-4 w-4" />
 							{/if}
-						</Button>
-					</form>
-				</div>
+						</div>
+						<Tabs.List class="activity-tabs-list mobile-tabs-list">
+							<Tabs.Trigger value="chat">{$_('pvp.match_chat')}</Tabs.Trigger>
+							<Tabs.Trigger value="progress">{$_('pvp.progress_graph.title')}</Tabs.Trigger>
+							<Tabs.Trigger value="deaths">{$_('pvp.death_count.title')}</Tabs.Trigger>
+						</Tabs.List>
+					</Drawer.Header>
+					<Tabs.Content value="chat" class="mobile-tab-content">
+						<div class="mobile-chat-body">
+							<div class="chat-messages" bind:this={mobileChatScrollEl}>
+								{#if chatMuted}
+									<div class="empty-state">{$_('pvp.chat_muted_state')}</div>
+								{:else if messages.length === 0}
+									<div class="empty-state">{$_('pvp.no_messages')}</div>
+								{:else}
+									{#each messages as message}
+										{@const senderUid = messageSenderUid(message)}
+										{@const senderName = messageSenderName(
+											message,
+											hideOpponentInfo,
+											currentUid,
+											participants,
+											senderUid
+										)}
+										<div
+											class:own-message={senderUid === currentUid}
+											class:system-message={message.type === 'system'}
+											class="chat-message"
+										>
+											<div class="chat-message-meta">
+												<strong>{senderName}</strong>
+												<span>{messageTime(message)}</span>
+											</div>
+											<p>{systemMessageContent(message)}</p>
+										</div>
+									{/each}
+								{/if}
+							</div>
+
+							<form class="chat-form" on:submit|preventDefault={sendChatMessage}>
+								<Textarea
+									bind:value={chatDraft}
+									rows={2}
+									maxlength={500}
+									disabled={chatInputDisabled || actionLoading === 'send-chat'}
+									placeholder={chatPlaceholder()}
+									on:keydown={(event) => {
+										if (event.key === 'Enter' && !event.shiftKey) {
+											event.preventDefault();
+											sendChatMessage();
+										}
+									}}
+								/>
+								<Button
+									type="submit"
+									disabled={chatInputDisabled ||
+										!chatDraft.trim() ||
+										actionLoading === 'send-chat'}
+									aria-label={$_('pvp.send_message')}
+								>
+									{#if actionLoading === 'send-chat'}
+										<Loader2 class="h-4 w-4 animate-spin" />
+									{:else}
+										<Send class="h-4 w-4" />
+									{/if}
+								</Button>
+							</form>
+						</div>
+					</Tabs.Content>
+					<Tabs.Content value="progress" class="mobile-tab-content">
+						<div class="mobile-activity-body">
+							<div class="progress-graph-panel">
+								{#if progressGraphData.hasPoints && mobileActivityTab === 'progress'}
+									<div class="progress-graph-canvas mobile-progress-graph-canvas">
+										<canvas
+											use:createProgressChart={progressGraphData}
+											aria-label={$_('pvp.progress_graph.title')}
+										/>
+									</div>
+								{:else}
+									<div class="empty-state">{$_('pvp.progress_graph.empty')}</div>
+								{/if}
+							</div>
+						</div>
+					</Tabs.Content>
+					<Tabs.Content value="deaths" class="mobile-tab-content">
+						<div class="mobile-activity-body">
+							<div class="death-count-panel">
+								{#if matchMode === 'platformer'}
+									<div class="empty-state">{$_('pvp.death_count.platformer_empty')}</div>
+								{:else if orderedParticipants.length === 0}
+									<div class="empty-state">{$_('pvp.death_count.empty')}</div>
+								{:else}
+									<div class="death-count-grid">
+										{#each orderedParticipants as participant}
+											{@const participantPlayer = getPvpParticipantPlayer(participant)}
+											{@const participantMasked = shouldMaskParticipant(
+												participant,
+												hideOpponentInfo,
+												currentUid
+											)}
+											{@const participantDisplayName = participantName(
+												participant,
+												hideOpponentInfo,
+												currentUid
+											)}
+											<div class="death-count-card">
+												<div class="participant-identity">
+													<Avatar.Root class="participant-avatar">
+														{#if !participantMasked && participantPlayer?.uid}
+															<Avatar.Image
+																src={participantAvatarUrl(participantPlayer)}
+																alt={participantPlayer.name || participantDisplayName}
+															/>
+															<Avatar.Fallback>
+																{participantAvatarFallback(participantPlayer)}
+															</Avatar.Fallback>
+														{:else}
+															<Avatar.Fallback class="participant-avatar-placeholder">
+																<UserRound class="h-5 w-5" />
+															</Avatar.Fallback>
+														{/if}
+													</Avatar.Root>
+													<div class="participant-name">
+														<Badge
+															variant={getPvpParticipantUid(participant) === currentUid
+																? 'default'
+																: 'outline'}
+														>
+															{participantLabel(participant, currentUid)}
+														</Badge>
+														{#if !participantMasked && participantPlayer?.uid}
+															<PlayerLink player={participantPlayer} truncate={22} />
+														{:else}
+															<strong>{participantDisplayName}</strong>
+														{/if}
+													</div>
+												</div>
+												<div class="death-count-value">
+													<strong>{getPvpDeathCount(participant)}</strong>
+													<span>{$_('pvp.death_count.count_label')}</span>
+												</div>
+											</div>
+										{/each}
+									</div>
+								{/if}
+							</div>
+						</div>
+					</Tabs.Content>
+				</Tabs.Root>
 			</Drawer.Content>
 		</Drawer.Root>
 	{:else}
@@ -2078,7 +2250,7 @@
 	:global(.activity-tabs-list) {
 		display: grid;
 		width: 100%;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
+		grid-template-columns: repeat(3, minmax(0, 1fr));
 	}
 
 	:global(.activity-tabs-list button) {
@@ -2325,6 +2497,62 @@
 		display: block;
 	}
 
+	.death-count-panel {
+		display: grid;
+		gap: 12px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		padding: 14px;
+	}
+
+	:global(.deaths-tab-content) .death-count-panel {
+		flex: 1;
+		min-height: 0;
+		align-content: start;
+		border: 0;
+		padding: 0;
+	}
+
+	.death-count-header {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 12px;
+	}
+
+	.death-count-grid {
+		display: grid;
+		gap: 12px;
+	}
+
+	.death-count-card {
+		display: grid;
+		gap: 14px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		background: hsl(var(--muted) / 0.25);
+		padding: 14px;
+	}
+
+	.death-count-value {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 12px;
+	}
+
+	.death-count-value strong {
+		font-size: 2rem;
+		font-weight: 800;
+		line-height: 1;
+	}
+
+	.death-count-value span {
+		color: hsl(var(--muted-foreground));
+		font-size: 13px;
+		font-weight: 650;
+	}
+
 	:global(.chat-content) {
 		display: grid;
 		gap: 12px;
@@ -2412,6 +2640,29 @@
 		max-height: 86vh;
 	}
 
+	:global(.mobile-activity-tabs) {
+		display: flex;
+		height: 100%;
+		min-height: 0;
+		flex-direction: column;
+	}
+
+	:global(.mobile-tabs-list) {
+		margin-top: 14px;
+	}
+
+	:global(.mobile-tab-content) {
+		flex: 1;
+		min-height: 0;
+		margin-top: 0;
+	}
+
+	:global(.mobile-tab-content[data-state='active']) {
+		display: flex;
+		min-height: 0;
+		flex-direction: column;
+	}
+
 	.mobile-chat-body {
 		display: grid;
 		flex: 1;
@@ -2420,6 +2671,22 @@
 		min-height: 0;
 		overflow: hidden;
 		padding: 0 16px 16px;
+	}
+
+	.mobile-activity-body {
+		min-height: 0;
+		overflow-y: auto;
+		padding: 0 16px 16px;
+	}
+
+	.mobile-activity-body .progress-graph-panel,
+	.mobile-activity-body .death-count-panel {
+		min-height: 100%;
+	}
+
+	.mobile-progress-graph-canvas {
+		height: 58vh;
+		min-height: 360px;
 	}
 
 	.empty-state {

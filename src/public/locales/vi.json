@@ -486,6 +486,13 @@
 			"progress_axis": "Tiến độ",
 			"checkpoints_axis": "Checkpoint"
 		},
+		"death_count": {
+			"title": "Số lần chết",
+			"description": "Số lần chết classic 1v1 được ghi trong trận này.",
+			"empty": "Chưa có dữ liệu số lần chết.",
+			"platformer_empty": "Số lần chết chỉ được ghi cho trận classic.",
+			"count_label": "lần chết"
+		},
 		"system_sender": "Versus",
 		"system_message": {
 			"progress": "{player} đã đạt {progress}% tiến độ.",
@@ -537,6 +544,7 @@
 		"show_opponent_info": "Hiện thông tin đối thủ",
 		"hidden_player": "Người chơi đã ẩn",
 		"hidden_opponent": "Đối thủ đã ẩn",
+		"match_activity": "Hoạt động trận",
 		"match_chat": "Chat trận đấu",
 		"mute_chat": "Tắt chat",
 		"unmute_chat": "Bật chat",
