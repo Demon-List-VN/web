@@ -285,31 +285,6 @@
 		return `level:${record.uid}:${record.levelId}:${record.rankedList?.id ?? ''}`;
 	}
 
-	function getRecordLevelKey(record: PlayerListRecordEntry) {
-		return `${record.uid}:${record.levelId}`;
-	}
-
-	function mergeWithListRecord(
-		record: PlayerListRecordEntry,
-		listRecord: PlayerListRecordEntry | undefined,
-		listReference: PlayerListRecordEntry['rankedList']
-	) {
-		if (!listRecord) {
-			return {
-				...record,
-				rankedList: record.rankedList ?? listReference
-			};
-		}
-
-		return {
-			...record,
-			point: listRecord.point,
-			no: listRecord.no,
-			formulaScope: listRecord.formulaScope ?? record.formulaScope,
-			rankedList: listRecord.rankedList ?? record.rankedList ?? listReference
-		};
-	}
-
 	function getDisplayRecords(
 		playerRecords: PlayerListRecordEntry[],
 		allListRecords: PlayerListRecordEntry[],
@@ -333,31 +308,13 @@
 				...record,
 				rankedList: record.rankedList ?? listReference
 			}));
-		const listRecordById = new Map(
-			listMatches
-				.filter((record) => record.id !== null && record.id !== undefined)
-				.map((record) => [record.id, record])
-		);
-		const listRecordByLevel = new Map(
-			listMatches.map((record) => [getRecordLevelKey(record), record])
-		);
-		const mergedPlayerRecords = playerRecords
-			.filter((record) => record.rankedList?.id === listId)
-			.map((record) =>
-				mergeWithListRecord(
-					record,
-					record.id !== null && record.id !== undefined
-						? listRecordById.get(record.id)
-						: listRecordByLevel.get(getRecordLevelKey(record)),
-					listReference
-				)
-			);
-		const mergedRecordKeys = new Set(mergedPlayerRecords.map(getRecordIdentityKey));
-		const remainingListRecords = listMatches.filter(
-			(record) => !mergedRecordKeys.has(getRecordIdentityKey(record))
-		);
+		const recordsByKey = new Map<string, PlayerListRecordEntry>();
 
-		return [...mergedPlayerRecords, ...remainingListRecords];
+		for (const record of listMatches) {
+			recordsByKey.set(getRecordIdentityKey(record), record);
+		}
+
+		return Array.from(recordsByKey.values());
 	}
 
 	function matchesLevelIdFilter(record: PlayerListRecordEntry, levelIdFilter: string) {

@@ -27,22 +27,8 @@ function normalizePlayerListRecordsResponse(
 	};
 }
 
-function getRecordPoint(record: any) {
-	return Math.max(record.dlPt ?? 0, record.flPt ?? 0, record.plPt ?? 0, record.clPt ?? 0);
-}
-
-function getRecordListIdentifier(record: any) {
-	if (record.dlPt != null) return 'dl';
-	if (record.flPt != null) return 'fl';
-	if (record.plPt != null) return 'pl';
-	if (record.clPt != null) return 'cl';
-
-	return null;
-}
-
 function normalizePlayerRecords(
 	value: unknown,
-	listSummaries: PlayerRankedListSummary[],
 	uid: string
 ): PlayerListRecordEntry[] {
 	if (!Array.isArray(value)) {
@@ -50,19 +36,14 @@ function normalizePlayerRecords(
 	}
 
 	return value.map((record: any) => {
-		const listIdentifier = getRecordListIdentifier(record);
-		const rankedList = listIdentifier
-			? (listSummaries.find((list) => list.identifier === listIdentifier) ?? null)
-			: null;
-
 		return {
 			id: Number.isFinite(Number(record.id)) ? Number(record.id) : null,
 			uid: record.userid ?? record.uid ?? uid,
 			levelId: Number(
 				record.levelid ?? record.levelId ?? record.levels?.id ?? record.level?.id ?? 0
 			),
-			point: getRecordPoint(record),
-			no: Number(record.no ?? 0),
+			point: typeof record.point === 'number' ? record.point : null,
+			no: Number.isFinite(Number(record.no)) ? Number(record.no) : null,
 			createdAt: record.createdAt ?? null,
 			progress: Number(record.progress ?? 0),
 			timestamp: Number.isFinite(Number(record.timestamp)) ? Number(record.timestamp) : null,
@@ -70,14 +51,7 @@ function normalizePlayerRecords(
 			acceptedAuto: Boolean(record.acceptedAuto),
 			mobile: record.mobile ?? null,
 			refreshRate: record.refreshRate ?? null,
-			rankedList: rankedList
-				? {
-						id: rankedList.id,
-						identifier: rankedList.identifier,
-						title: rankedList.title,
-						isPlatformer: rankedList.isPlatformer
-					}
-				: null,
+			rankedList: record.rankedList ?? null,
 			level: record.levels ?? record.level ?? null,
 			player: record.players ?? record.player ?? null,
 			formulaScope: record.formulaScope ?? null
@@ -110,7 +84,7 @@ export async function getPlayerData(player: any, fetch: any, url: URL) {
 			.catch(() => [])
 	]);
 
-	const playerRecordData = normalizePlayerRecords(rawPlayerRecords, listSummaries, player.uid);
+	const playerRecordData = normalizePlayerRecords(rawPlayerRecords, player.uid);
 	const playerRecords: PlayerListRecordsResponse = {
 		list: null,
 		data: playerRecordData,
