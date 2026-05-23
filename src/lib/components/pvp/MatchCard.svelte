@@ -102,16 +102,15 @@
 	}
 
 	function participantName(participant: typeof titleLeft) {
-		if (participantIsAnonymousToViewer(participant)) return $_('pvp.anonymous_player');
+		if (participantIsAnonymous(participant)) return $_('pvp.anonymous_player');
 		if (shouldHideParticipantInfo(participant)) return $_('pvp.hidden_opponent');
 
 		const player = getPvpParticipantPlayer(participant);
-		return player?.name || getPvpParticipantUid(participant) || $_('pvp.waiting_opponent');
+		return player?.name || (participant ? null : $_('pvp.waiting_opponent'));
 	}
 
-	function participantIsAnonymousToViewer(participant: typeof titleLeft) {
-		const uid = getPvpParticipantUid(participant);
-		return Boolean(getPvpParticipantIsAnonymous(participant) && (!uid || uid !== currentUid));
+	function participantIsAnonymous(participant: typeof titleLeft) {
+		return getPvpParticipantIsAnonymous(participant);
 	}
 
 	function shouldHideParticipantInfo(participant: typeof titleLeft) {
@@ -120,7 +119,7 @@
 	}
 
 	function shouldMaskParticipant(participant: typeof titleLeft) {
-		return participantIsAnonymousToViewer(participant) || shouldHideParticipantInfo(participant);
+		return participantIsAnonymous(participant) || shouldHideParticipantInfo(participant);
 	}
 
 	function winnerName() {

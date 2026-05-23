@@ -731,20 +731,16 @@
 		infoConfirmed: boolean = playerInfoConfirmed
 	) {
 		if (participant && !infoConfirmed) return $_('pvp.hidden_player');
-		if (participantIsAnonymousToViewer(participant, viewerUid)) return $_('pvp.anonymous_player');
+		if (participantIsAnonymous(participant)) return $_('pvp.anonymous_player');
 		if (shouldHideParticipantInfo(participant, hideInfo, viewerUid))
 			return $_('pvp.hidden_opponent');
 
 		const player = getPvpParticipantPlayer(participant);
-		return player?.name || getPvpParticipantUid(participant) || '--';
+		return player?.name || null;
 	}
 
-	function participantIsAnonymousToViewer(
-		participant: PvpParticipant | null | undefined,
-		viewerUid: string | null | undefined = currentUid
-	) {
-		const uid = getPvpParticipantUid(participant);
-		return Boolean(getPvpParticipantIsAnonymous(participant) && (!uid || uid !== viewerUid));
+	function participantIsAnonymous(participant: PvpParticipant | null | undefined) {
+		return getPvpParticipantIsAnonymous(participant);
 	}
 
 	function shouldHideParticipantInfo(
@@ -766,7 +762,7 @@
 	) {
 		return (
 			Boolean(participant && !infoConfirmed) ||
-			participantIsAnonymousToViewer(participant, viewerUid) ||
+			participantIsAnonymous(participant) ||
 			shouldHideParticipantInfo(participant, hideInfo, viewerUid, infoConfirmed)
 		);
 	}
@@ -881,7 +877,7 @@
 		const progressMessages = messagesAfterLatestLevelChange(sourceMessages);
 		const series = items.slice(0, 2).map((participant, index) => ({
 			uid: getPvpParticipantUid(participant) ? String(getPvpParticipantUid(participant)) : null,
-			label: participantName(participant, hideOpponentInfo, currentUid),
+			label: participantName(participant, hideOpponentInfo, currentUid) ?? '',
 			color:
 				index === 0 ? chartColor('--primary', '#2563eb') : chartColor('--destructive', '#dc2626'),
 			points: [] as ProgressGraphPoint[]
@@ -978,7 +974,9 @@
 		const participant = participants.find(
 			(item) => String(getPvpParticipantUid(item) || '') === value
 		);
-		return participant ? participantName(participant, hideOpponentInfo, currentUid) : value;
+		return participant
+			? (participantName(participant, hideOpponentInfo, currentUid) ?? '')
+			: $_('pvp.rival');
 	}
 
 	function systemChatGraceMinutes(metadata: Record<string, unknown>) {
@@ -1005,7 +1003,7 @@
 		);
 
 		return participant
-			? participantName(participant, hideOpponentInfo, currentUid)
+			? (participantName(participant, hideOpponentInfo, currentUid) ?? '')
 			: $_('pvp.rival');
 	}
 
@@ -1016,7 +1014,7 @@
 		);
 
 		return participant
-			? participantName(participant, hideOpponentInfo, currentUid)
+			? (participantName(participant, hideOpponentInfo, currentUid) ?? '')
 			: $_('pvp.rival');
 	}
 
@@ -1376,7 +1374,7 @@
 			const color =
 				index === 0 ? chartColor('--primary', '#2563eb') : chartColor('--destructive', '#dc2626');
 			return {
-				label: participantName(participant, hideOpponentInfo, currentUid),
+				label: participantName(participant, hideOpponentInfo, currentUid) ?? '',
 				data: getPvpDeathCountArray(participant),
 				backgroundColor: color,
 				borderColor: color
