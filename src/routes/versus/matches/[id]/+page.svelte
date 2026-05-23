@@ -2845,12 +2845,15 @@
 		min-height: 0;
 		overflow: hidden;
 		padding: 0 16px 16px;
+		max-height: 60vh;
+		overflow-y: scroll;
 	}
 
 	.mobile-activity-body {
 		min-height: 0;
 		overflow-y: auto;
 		padding: 0 16px 16px;
+		max-height: 60vh;
 	}
 
 	.mobile-activity-body .progress-graph-panel,
