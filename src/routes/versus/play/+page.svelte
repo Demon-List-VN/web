@@ -52,7 +52,6 @@
 		isPvpMatchRanked,
 		sendPvpInvite,
 		startPvpMatchmaking,
-		startPvpRating,
 		type PvpClan,
 		type PvpInvite,
 		type PvpClanWeeklyRace,
@@ -162,7 +161,6 @@
 	let announcedMatchIds = new Set<string>();
 	let endedMatchBellIds = new Set<string>();
 	let matchDialogOpen = false;
-	let ratingDialogOpen = false;
 	let showGeodeAlert = true;
 	let currentUserClan: PvpClan | null = null;
 	let lobbyReady = false;
@@ -235,11 +233,7 @@
 		(invite) => getPvpStatus(invite) === 'pending' && getPvpMode(invite) === selectedMode
 	);
 	$: checkingLobby = $user.checked && $user.loggedIn && !lobbyReady;
-	$: shouldForceStartingRating =
-		$user.checked && $user.loggedIn && lobbyReady && !pvpRatingInitialized;
-	$: controlsDisabled = Boolean(
-		checkingLobby || !pvpRatingInitialized || activeMatch || isSearching || actionLoading
-	);
+	$: controlsDisabled = Boolean(checkingLobby || activeMatch || isSearching || actionLoading);
 	$: updateActiveMatchRealtime($user.loggedIn, getLobbyRealtimeMatchIds());
 	$: updatePendingConfirmRealtime($user.loggedIn, pendingMatchId);
 	$: updateMatchmakingCheckPolling($user.loggedIn, isSearching);
@@ -276,7 +270,7 @@
 		}, 1000);
 
 		keydownHandler = (e: KeyboardEvent) => {
-			if (e.key === 'Escape' && (pendingMatch || shouldForceStartingRating)) {
+			if (e.key === 'Escape' && pendingMatch) {
 				e.preventDefault();
 				e.stopPropagation();
 			}
@@ -323,7 +317,12 @@
 		try {
 			const token = await $user.token();
 			setPvpRealtimeAuth(token);
-			await Promise.all([refreshLobby(), refreshMatchHistory(), refreshWeeklyRace(), refreshClanRace()]);
+			await Promise.all([
+				refreshLobby(),
+				refreshMatchHistory(),
+				refreshWeeklyRace(),
+				refreshClanRace()
+			]);
 			lobbyReady = true;
 
 			cleanupRealtime = subscribeToPvpLobby(uid, handleLobbyRealtimeEvent);
@@ -538,7 +537,48 @@
 		const matchmaking = ['searching', 'matched'].includes(status)
 			? (nextMatchmaking ?? null)
 			: null;
-		lobby = { ...lobby, matchmaking };
+		const queuedRating = Number(nextMatchmaking?.pvpRating ?? nextMatchmaking?.pvp_rating ?? NaN);
+
+		if (!Number.isFinite(queuedRating)) {
+			lobby = { ...lobby, matchmaking };
+			return;
+		}
+
+		const mode = getPvpMode(nextMatchmaking);
+		const rating = {
+			mode,
+			pvpRating: Math.round(queuedRating),
+			pvpRatedMatchCount:
+				getSelectedRatingState(lobby, mode)?.pvpRatedMatchCount ??
+				(mode === 'platformer'
+					? (lobby.pvpPlatformerRatedMatchCount ?? 0)
+					: (lobby.pvpRatedMatchCount ?? 0)),
+			pvpStartingRating: getSelectedRatingState(lobby, mode)?.pvpStartingRating ?? 1500,
+			pvpRatingInitialized: true
+		};
+		const ratings = {
+			...(lobby.ratings ?? {}),
+			[mode]: {
+				...(lobby.ratings?.[mode] ?? {}),
+				...rating
+			}
+		};
+
+		lobby = {
+			...lobby,
+			matchmaking,
+			ratings,
+			rating: mode === 'classic' ? ratings.classic : lobby.rating,
+			platformerRating: mode === 'platformer' ? ratings.platformer : lobby.platformerRating,
+			pvpRating: mode === 'classic' ? rating.pvpRating : lobby.pvpRating,
+			pvpRatedMatchCount: mode === 'classic' ? rating.pvpRatedMatchCount : lobby.pvpRatedMatchCount,
+			pvpRatingInitialized: mode === 'classic' ? true : lobby.pvpRatingInitialized,
+			pvpPlatformerRating: mode === 'platformer' ? rating.pvpRating : lobby.pvpPlatformerRating,
+			pvpPlatformerRatedMatchCount:
+				mode === 'platformer' ? rating.pvpRatedMatchCount : lobby.pvpPlatformerRatedMatchCount,
+			pvpPlatformerRatingInitialized:
+				mode === 'platformer' ? true : lobby.pvpPlatformerRatingInitialized
+		};
 	}
 
 	function applyMatch(nextMatch: PvpMatch | null | undefined) {
@@ -943,14 +983,6 @@
 		}
 	}
 
-	$: if (shouldForceStartingRating && !ratingDialogOpen) {
-		ratingDialogOpen = true;
-	}
-
-	$: if (!shouldForceStartingRating && ratingDialogOpen) {
-		ratingDialogOpen = false;
-	}
-
 	function navigateToMatch(matchId: number | string | null) {
 		if (!matchId || (routedMatchId !== null && String(routedMatchId) === String(matchId))) return;
 		routedMatchId = matchId;
@@ -970,46 +1002,7 @@
 		});
 	}
 
-	async function chooseStartingRating(startingRating: 800 | 1500 | 2500) {
-		actionLoading = `start-rating-${startingRating}`;
-		try {
-			const rating = await startPvpRating(await $user.token(), startingRating, selectedMode);
-			const nextRatings = {
-				...(lobby.ratings ?? {}),
-				[selectedMode]: rating
-			};
-			lobby = {
-				...lobby,
-				rating: selectedMode === 'classic' ? rating : lobby.rating,
-				platformerRating: selectedMode === 'platformer' ? rating : lobby.platformerRating,
-				ratings: nextRatings,
-				pvpRating: selectedMode === 'classic' ? (rating.pvpRating ?? null) : lobby.pvpRating,
-				pvpRatedMatchCount:
-					selectedMode === 'classic' ? (rating.pvpRatedMatchCount ?? 0) : lobby.pvpRatedMatchCount,
-				pvpRatingInitialized: selectedMode === 'classic' ? true : lobby.pvpRatingInitialized,
-				pvpPlatformerRating:
-					selectedMode === 'platformer' ? (rating.pvpRating ?? null) : lobby.pvpPlatformerRating,
-				pvpPlatformerRatedMatchCount:
-					selectedMode === 'platformer'
-						? (rating.pvpRatedMatchCount ?? 0)
-						: lobby.pvpPlatformerRatedMatchCount,
-				pvpPlatformerRatingInitialized:
-					selectedMode === 'platformer' ? true : lobby.pvpPlatformerRatingInitialized
-			};
-			toast.success($_('pvp.toast.starting_rating_saved'));
-		} catch (error) {
-			toast.error(error instanceof Error ? error.message : $_('pvp.toast.starting_rating_failed'));
-		} finally {
-			actionLoading = '';
-		}
-	}
-
 	async function startQueue() {
-		if (!pvpRatingInitialized) {
-			toast.error($_('pvp.toast.select_starting_rating'));
-			return;
-		}
-
 		actionLoading = 'matchmaking';
 		try {
 			const response = await startPvpMatchmaking(await $user.token(), anonymousMode, selectedMode);
@@ -1034,11 +1027,6 @@
 	}
 
 	async function invitePlayer() {
-		if (!pvpRatingInitialized) {
-			toast.error($_('pvp.toast.select_starting_rating'));
-			return;
-		}
-
 		if (!selectedPlayer?.uid) {
 			toast.error($_('pvp.toast.select_player'));
 			return;
@@ -1069,10 +1057,6 @@
 	async function acceptInvite(invite: PvpInvite) {
 		const inviteId = getPvpInviteId(invite);
 		if (!inviteId) return;
-		if (!pvpRatingInitialized) {
-			toast.error($_('pvp.toast.select_starting_rating'));
-			return;
-		}
 
 		actionLoading = `accept-${inviteId}`;
 		try {
@@ -1655,16 +1639,12 @@
 		<Tabs.Content value="lobby">
 			<PvpDialogs
 				bind:matchDialogOpen
-				bind:ratingDialogOpen
 				{pendingMatch}
 				{pendingMatchId}
 				{pendingSelfAccepted}
-				{shouldForceStartingRating}
 				{actionLoading}
-				{checkingLobby}
 				{now}
 				onAcceptPendingMatch={acceptPendingMatch}
-				onChooseStartingRating={chooseStartingRating}
 			/>
 
 			{#if !$user.checked}
@@ -1982,7 +1962,7 @@
 												>
 												<Button
 													size="sm"
-													disabled={Boolean(actionLoading || !pvpRatingInitialized)}
+													disabled={Boolean(actionLoading)}
 													on:click={() => acceptInvite(invite)}
 												>
 													{#if actionLoading === `accept-${getPvpInviteId(invite)}`}

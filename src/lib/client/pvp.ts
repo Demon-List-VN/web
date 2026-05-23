@@ -264,6 +264,8 @@ export type PvpRatingState = {
 	pvpStartingRating?: number | null;
 	pvpRatingInitializedAt?: string | null;
 	pvpRatingInitialized?: boolean;
+	pvpRatingDeviation?: number | null;
+	pvpRatingVolatility?: number | null;
 	[key: string]: unknown;
 };
 
@@ -527,18 +529,6 @@ export async function sendPvpInvite(
 		method: 'POST',
 		token,
 		body: payload
-	});
-}
-
-export async function startPvpRating(
-	token: string | null | undefined,
-	startingRating: 800 | 1500 | 2500,
-	mode: PvpMode = 'classic'
-) {
-	return pvpRequest<PvpRatingState>('/pvp/rating/start', {
-		method: 'POST',
-		token,
-		body: { startingRating, mode }
 	});
 }
 
@@ -865,7 +855,12 @@ export function getPvpDeathCount(participant: PvpParticipant | PvpResult | null 
 
 export function getPvpDeathCountArray(participant: PvpParticipant | PvpResult | null | undefined) {
 	const result = (participant as PvpParticipant | undefined)?.result;
-	const value = participant?.deathCount ?? participant?.death_count ?? result?.deathCount ?? result?.death_count ?? 0;
+	const value =
+		participant?.deathCount ??
+		participant?.death_count ??
+		result?.deathCount ??
+		result?.death_count ??
+		0;
 	if (Array.isArray(value)) {
 		return Array.from({ length: 100 }, (_, index) => {
 			const count = Number(value[index]);
@@ -881,7 +876,9 @@ export function getPvpDeathCountArray(participant: PvpParticipant | PvpResult | 
 	return deathCount;
 }
 
-export function getPvpDeathCountEntries(participant: PvpParticipant | PvpResult | null | undefined) {
+export function getPvpDeathCountEntries(
+	participant: PvpParticipant | PvpResult | null | undefined
+) {
 	return getPvpDeathCountArray(participant)
 		.map((count, percent) => ({ percent, count }))
 		.filter((entry) => entry.count > 0);

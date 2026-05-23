@@ -431,12 +431,6 @@
 				"all": "Tất cả"
 			}
 		},
-		"starting_rating_hint": "Chọn Elo PvP khởi điểm trước khi chơi 1v1 Versus. Bạn chỉ được chọn một lần.",
-		"starting_rating": {
-			"beginner": "Mới chơi",
-			"intermediate": "Trung cấp",
-			"expert": "Chuyên gia"
-		},
 		"provisional_matches_left": "Còn {count} trận phân hạng",
 		"rating_established": "Elo đã ổn định",
 		"ranked": "Xếp hạng",
@@ -607,15 +601,12 @@
 			"leaderboard_failed": "Tải bảng xếp hạng PvP thất bại.",
 			"weekly_race_failed": "Tải đua PvP hằng tuần thất bại.",
 			"clan_race_failed": "Tải đua PvP hằng tuần theo hội thất bại.",
-			"select_starting_rating": "Hãy chọn Elo PvP khởi điểm trước.",
 			"select_difficulty": "Hãy chọn độ khó trước.",
 			"select_player": "Hãy chọn người chơi trước.",
 			"self_invite": "Bạn không thể tự mời chính mình.",
 			"matchmaking_failed": "Ghép trận thất bại.",
 			"matchmaking_check_failed": "Kiểm tra ghép trận thất bại.",
 			"cancel_failed": "Hủy ghép trận thất bại.",
-			"starting_rating_saved": "Đã lưu Elo PvP khởi điểm.",
-			"starting_rating_failed": "Lưu Elo PvP khởi điểm thất bại.",
 			"invite_sent": "Đã gửi lời mời.",
 			"invite_failed": "Gửi lời mời thất bại.",
 			"accept_failed": "Chấp nhận lời mời thất bại.",

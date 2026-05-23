@@ -4,25 +4,15 @@
 	import type { PvpMatch } from '$lib/client/pvp';
 	import { getPvpMatchAcceptanceExpiresMs, getPvpMode } from '$lib/client/pvp';
 	import { _ } from 'svelte-i18n';
-	import { BellRing, Loader2, ShieldCheck, UserCheck } from 'lucide-svelte';
+	import { BellRing, Loader2, UserCheck } from 'lucide-svelte';
 
 	export let matchDialogOpen = false;
-	export let ratingDialogOpen = false;
 	export let pendingMatch: PvpMatch | null = null;
 	export let pendingMatchId: number | string | null | undefined = null;
 	export let pendingSelfAccepted = false;
-	export let shouldForceStartingRating = false;
 	export let actionLoading = '';
-	export let checkingLobby = false;
 	export let now = Date.now();
 	export let onAcceptPendingMatch: () => void | Promise<void>;
-	export let onChooseStartingRating: (rating: 800 | 1500 | 2500) => void | Promise<void>;
-
-	const STARTING_RATING_OPTIONS = [
-		{ rating: 800 as const, key: 'beginner' },
-		{ rating: 1500 as const, key: 'intermediate' },
-		{ rating: 2500 as const, key: 'expert' }
-	];
 
 	$: pendingMatchMode = getPvpMode(pendingMatch);
 
@@ -78,7 +68,11 @@
 					{$_('pvp.waiting_for_acceptance')}
 				</Button>
 			{:else}
-				<Button class="w-full" disabled={Boolean(actionLoading)} on:click={() => onAcceptPendingMatch?.()}>
+				<Button
+					class="w-full"
+					disabled={Boolean(actionLoading)}
+					on:click={() => onAcceptPendingMatch?.()}
+				>
 					{#if actionLoading === `accept-match-${pendingMatchId}`}
 						<Loader2 class="mr-2 h-4 w-4 animate-spin" />
 					{:else}
@@ -88,43 +82,6 @@
 				</Button>
 			{/if}
 		</Dialog.Footer>
-	</Dialog.Content>
-</Dialog.Root>
-
-<Dialog.Root
-	bind:open={ratingDialogOpen}
-	on:openChange={(e) => {
-		if (e?.detail === false && shouldForceStartingRating) {
-			ratingDialogOpen = true;
-		}
-	}}
->
-	<Dialog.Content showClose={false} class="sm:max-w-[520px]">
-		<Dialog.Header>
-			<div class="match-found-icon">
-				<ShieldCheck class="h-5 w-5" />
-			</div>
-			<Dialog.Title>{$_('pvp.pvp_rating')}</Dialog.Title>
-			<Dialog.Description>
-				{$_('pvp.starting_rating_hint')}
-			</Dialog.Description>
-		</Dialog.Header>
-
-		<div class="starting-rating-grid">
-			{#each STARTING_RATING_OPTIONS as option}
-				<Button
-					variant="outline"
-					disabled={Boolean(actionLoading || checkingLobby)}
-					on:click={() => onChooseStartingRating?.(option.rating)}
-				>
-					{#if actionLoading === `start-rating-${option.rating}`}
-						<Loader2 class="mr-2 h-4 w-4 animate-spin" />
-					{/if}
-					<span>{$_(`pvp.starting_rating.${option.key}`)}</span>
-					<strong>{option.rating}</strong>
-				</Button>
-			{/each}
-		</div>
 	</Dialog.Content>
 </Dialog.Root>
 
@@ -159,29 +116,5 @@
 
 	.match-found-row span {
 		color: hsl(var(--muted-foreground));
-	}
-
-	.starting-rating-grid {
-		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		gap: 10px;
-	}
-
-	.starting-rating-grid :global(button) {
-		display: flex;
-		min-height: 78px;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-	}
-
-	.starting-rating-grid strong {
-		font-size: 1.2rem;
-	}
-
-	@media (max-width: 640px) {
-		.starting-rating-grid {
-			grid-template-columns: 1fr;
-		}
 	}
 </style>

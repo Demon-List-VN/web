@@ -431,12 +431,6 @@
 				"all": "All time"
 			}
 		},
-		"starting_rating_hint": "Choose your starting PvP rating before playing 1v1 Versus. This can only be selected once.",
-		"starting_rating": {
-			"beginner": "Beginner",
-			"intermediate": "Intermediate",
-			"expert": "Expert"
-		},
 		"provisional_matches_left": "{count} provisional matches left",
 		"rating_established": "Rating established",
 		"ranked": "Ranked",
@@ -607,15 +601,12 @@
 			"leaderboard_failed": "Failed to load PvP leaderboard.",
 			"weekly_race_failed": "Failed to load weekly PvP race.",
 			"clan_race_failed": "Failed to load weekly clan PvP race.",
-			"select_starting_rating": "Choose your starting PvP rating first.",
 			"select_difficulty": "Choose a difficulty first.",
 			"select_player": "Choose a player first.",
 			"self_invite": "You cannot invite yourself.",
 			"matchmaking_failed": "Failed to start matchmaking.",
 			"matchmaking_check_failed": "Failed to check matchmaking.",
 			"cancel_failed": "Failed to cancel matchmaking.",
-			"starting_rating_saved": "Starting PvP rating saved.",
-			"starting_rating_failed": "Failed to save starting PvP rating.",
 			"invite_sent": "Invite sent.",
 			"invite_failed": "Failed to send invite.",
 			"accept_failed": "Failed to accept invite.",
