@@ -431,7 +431,7 @@
 				"all": "Tất cả"
 			}
 		},
-		"provisional_matches_left": "Còn {count} trận phân hạng",
+		"elo_matches_left": "Còn {count} trận để hiện Elo",
 		"rating_established": "Elo đã ổn định",
 		"ranked": "Xếp hạng",
 		"unranked": "Không xếp hạng",

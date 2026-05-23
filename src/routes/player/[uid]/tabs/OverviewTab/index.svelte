@@ -10,6 +10,8 @@
 		getPvpSelfParticipant,
 		getPvpStatus,
 		isPvpMatchRanked,
+		PVP_RATING_VISIBLE_MATCHES,
+		PVP_UNCERTAIN_RATING_DEVIATION,
 		type PvpMatch
 	} from '$lib/client/pvp';
 	import Heatmap from '$lib/components/heatmap.svelte';
@@ -123,6 +125,7 @@
 	$: contestTitle = getTitle('elo', player);
 	$: pvpRating = getPvpRatingValue(player);
 	$: pvpRatedMatchCount = getPvpRatedMatchCount(player);
+	$: pvpRatingDeviation = getPvpRatingDeviationValue(player);
 	$: pvpStartLabel = $_('player.overview.start');
 	$: pvpRatingHistory = getPvpRatingHistory(pvpMatches, player.uid, pvpStartLabel);
 	$: rankedEventHistory = getRankedEventHistory(data.events || []);
@@ -147,7 +150,9 @@
 
 	function formatPvpRating() {
 		if (pvpRating === null) return '-';
-		return `${pvpRating}${pvpRatedMatchCount !== null && pvpRatedMatchCount < 5 ? '?' : ''}`;
+		if (pvpRatedMatchCount !== null && pvpRatedMatchCount < PVP_RATING_VISIBLE_MATCHES) return '-';
+
+		return `${pvpRating}${pvpRatingDeviation !== null && pvpRatingDeviation > PVP_UNCERTAIN_RATING_DEVIATION ? '?' : ''}`;
 	}
 
 	function formatDate(record: PlayerListRecordEntry) {
@@ -176,6 +181,13 @@
 	function getPvpRatedMatchCount(value: any) {
 		const matchCount = Number(value?.pvpRatedMatchCount ?? value?.pvp_rated_match_count ?? null);
 		return Number.isFinite(matchCount) ? matchCount : null;
+	}
+
+	function getPvpRatingDeviationValue(value: any) {
+		const ratingDeviation = Number(
+			value?.pvpRatingDeviation ?? value?.pvp_rating_deviation ?? null
+		);
+		return Number.isFinite(ratingDeviation) ? ratingDeviation : null;
 	}
 
 	function getRecordTime(record: PlayerListRecordEntry) {

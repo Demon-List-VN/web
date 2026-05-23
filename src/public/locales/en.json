@@ -431,7 +431,7 @@
 				"all": "All time"
 			}
 		},
-		"provisional_matches_left": "{count} provisional matches left",
+		"elo_matches_left": "{count} matches left to show Elo",
 		"rating_established": "Rating established",
 		"ranked": "Ranked",
 		"unranked": "Unranked",

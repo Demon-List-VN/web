@@ -30,10 +30,18 @@ export type PvpPlayer = {
 	pvp_rated_match_count?: number | null;
 	pvpStartingRating?: number | null;
 	pvpRatingInitializedAt?: string | null;
+	pvpRatingDeviation?: number | null;
+	pvp_rating_deviation?: number | null;
+	pvpRatingVolatility?: number | null;
+	pvp_rating_volatility?: number | null;
 	pvpPlatformerRating?: number | null;
 	pvpPlatformerRatedMatchCount?: number | null;
 	pvpPlatformerStartingRating?: number | null;
 	pvpPlatformerRatingInitializedAt?: string | null;
+	pvpPlatformerRatingDeviation?: number | null;
+	pvp_platformer_rating_deviation?: number | null;
+	pvpPlatformerRatingVolatility?: number | null;
+	pvp_platformer_rating_volatility?: number | null;
 	anonymous?: boolean;
 	isAnonymous?: boolean;
 	avatarVersion?: number;
@@ -364,7 +372,8 @@ export type PvpClanWeeklyRace = {
 export const PVP_ACTIVE_MATCH_STATUSES = ['pending', 'ban_pick', 'in_progress', 'waiting_result'];
 export const PVP_FINISHED_MATCH_STATUSES = ['completed', 'cancelled', 'disputed'];
 export const PVP_DIFFICULTIES: PvpDifficulty[] = ['easy', 'medium', 'hard'];
-export const PVP_PROVISIONAL_MATCHES = 5;
+export const PVP_RATING_VISIBLE_MATCHES = 10;
+export const PVP_UNCERTAIN_RATING_DEVIATION = 100;
 export const PVP_CLASSIC_MATCH_DURATION_MS = 15 * 60 * 1000;
 export const PVP_PLATFORMER_MATCH_DURATION_MS = 60 * 60 * 1000;
 
@@ -1005,16 +1014,35 @@ export function getPvpVisibleParticipantRatedMatchCount(
 	return getFinitePvpNumber(value);
 }
 
+export function getPvpVisibleParticipantRatingDeviation(
+	participant: PvpParticipant | null | undefined
+) {
+	const player = getPvpParticipantPlayer(participant);
+	const value =
+		participant?.pvpRatingDeviation ??
+		participant?.pvp_rating_deviation ??
+		player?.pvpRatingDeviation ??
+		player?.pvp_rating_deviation ??
+		null;
+
+	return getFinitePvpNumber(value);
+}
+
 export function getPvpVisibleParticipantRatingLabel(
 	participant: PvpParticipant | null | undefined
 ) {
+	const ratedMatchCount = getPvpVisibleParticipantRatedMatchCount(participant);
+	if (ratedMatchCount !== null && ratedMatchCount < PVP_RATING_VISIBLE_MATCHES) return null;
+
 	const rating = getPvpVisibleParticipantRating(participant);
 	if (rating === null) return null;
 
 	const roundedRating = Math.round(rating);
-	const ratedMatchCount = getPvpVisibleParticipantRatedMatchCount(participant);
+	const ratingDeviation = getPvpVisibleParticipantRatingDeviation(participant);
+	const suffix =
+		ratingDeviation !== null && ratingDeviation > PVP_UNCERTAIN_RATING_DEVIATION ? '?' : '';
 
-	return `${roundedRating}${ratedMatchCount !== null && ratedMatchCount < PVP_PROVISIONAL_MATCHES ? '?' : ''}`;
+	return `${roundedRating}${suffix}`;
 }
 
 export function hasPvpParticipantAccepted(participant: PvpParticipant | null | undefined) {

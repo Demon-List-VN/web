@@ -8,6 +8,7 @@
 	import { cn } from '$lib/utils';
 	import { ArrowRight } from 'lucide-svelte';
 	import {
+		PVP_RATING_VISIBLE_MATCHES,
 		getPublicPvpMatchesPageForPlayer,
 		getPvpMatchId,
 		getPvpParticipants,
@@ -17,6 +18,8 @@
 		getPvpParticipantRatingBefore,
 		getPvpParticipantRatingDiff,
 		getPvpParticipantUid,
+		getPvpVisibleParticipantRatedMatchCount,
+		getPvpVisibleParticipantRatingLabel,
 		getPvpWinnerUid,
 		type PvpParticipant,
 		type PvpMatch
@@ -73,6 +76,15 @@
 
 	function ratingDiff(match: PvpMatch) {
 		return getPvpParticipantRatingDiff(playerParticipant(match));
+	}
+
+	function shouldHideRating(match: PvpMatch) {
+		const ratedMatchCount = getPvpVisibleParticipantRatedMatchCount(playerParticipant(match));
+		return ratedMatchCount !== null && ratedMatchCount < PVP_RATING_VISIBLE_MATCHES;
+	}
+
+	function ratingAfterLabel(match: PvpMatch) {
+		return getPvpVisibleParticipantRatingLabel(playerParticipant(match));
 	}
 
 	function matchResult(match: PvpMatch) {
@@ -169,16 +181,26 @@
 						>
 							{result === 'win' ? 'Win' : result === 'lose' ? 'Lose' : '-'}
 						</Table.Cell>
-						<Table.Cell class="text-center">{formatRating(ratingBefore(match))}</Table.Cell>
+						<Table.Cell class="text-center"
+							>{shouldHideRating(match) ? '-' : formatRating(ratingBefore(match))}</Table.Cell
+						>
 						<Table.Cell
 							class={`text-center font-semibold ${
-								diff === null ? '' : diff > 0 ? 'text-primary' : diff < 0 ? 'text-destructive' : ''
+								shouldHideRating(match) || diff === null
+									? ''
+									: diff > 0
+										? 'text-primary'
+										: diff < 0
+											? 'text-destructive'
+											: ''
 							}`}
 						>
-							{formatRatingDiff(diff)}
+							{shouldHideRating(match) ? '-' : formatRatingDiff(diff)}
 						</Table.Cell>
 						<Table.Cell class="text-center font-semibold"
-							>{formatRating(ratingAfter(match))}</Table.Cell
+							>{shouldHideRating(match)
+								? '-'
+								: (ratingAfterLabel(match) ?? formatRating(ratingAfter(match)))}</Table.Cell
 						>
 						<Table.Cell class="text-right">
 							{#if matchId}

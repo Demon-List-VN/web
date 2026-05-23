@@ -50,6 +50,8 @@
 		isActivePvpMatch,
 		isPvpMatchConfirmedByBoth,
 		isPvpMatchRanked,
+		PVP_RATING_VISIBLE_MATCHES,
+		PVP_UNCERTAIN_RATING_DEVIATION,
 		sendPvpInvite,
 		startPvpMatchmaking,
 		type PvpClan,
@@ -187,6 +189,16 @@
 	$: selectedRatingState = getSelectedRatingState(lobby, selectedMode);
 	$: pvpRating = selectedRatingState?.pvpRating ?? null;
 	$: pvpRatedMatchCount = selectedRatingState?.pvpRatedMatchCount ?? 0;
+	$: pvpRatingDeviation = getFiniteNumber(selectedRatingState?.pvpRatingDeviation);
+	$: pvpVisibleMatchesLeft = Math.max(
+		0,
+		PVP_RATING_VISIBLE_MATCHES - Number(pvpRatedMatchCount || 0)
+	);
+	$: pvpRatingVisible = pvpVisibleMatchesLeft === 0;
+	$: pvpRatingLabel =
+		pvpRatingVisible && pvpRating !== null
+			? `${Math.round(pvpRating)}${pvpRatingDeviation !== null && pvpRatingDeviation > PVP_UNCERTAIN_RATING_DEVIATION ? '?' : ''}`
+			: '--';
 	$: pvpRatingInitialized = Boolean(
 		selectedRatingState?.pvpRatingInitialized ?? pvpRating !== null
 	);
@@ -1142,6 +1154,11 @@
 		return `${minutes}:${String(seconds).padStart(2, '0')}`;
 	}
 
+	function getFiniteNumber(value: unknown) {
+		const numberValue = Number(value);
+		return Number.isFinite(numberValue) ? numberValue : null;
+	}
+
 	function elapsedLabel(startValue: unknown, currentNow: number) {
 		const totalSeconds = Math.max(0, Math.floor(getElapsedMs(startValue, currentNow) / 1000));
 		const minutes = Math.floor(totalSeconds / 60);
@@ -1684,114 +1701,109 @@
 					</section>
 				{/if}
 
-				{#if pvpRatingInitialized}
-					<section class="rating-start-section">
-						<Collapsible.Root bind:open={summaryOpen}>
-							<Card.Root
-								class={`summary-card ${summaryOpen ? 'is-open' : 'is-collapsed'}`}
-								on:click={() => {
-									if (!summaryOpen) summaryOpen = true;
-								}}
-							>
-								<Card.Header>
-									<Button
-										type="button"
-										variant="ghost"
-										class="summary-trigger !h-auto !w-full !justify-between !p-0 !text-left hover:!bg-transparent hover:!text-current focus-visible:!ring-0 focus-visible:!ring-offset-0"
-										aria-expanded={summaryOpen}
-										aria-controls="pvp-summary-panel"
-										on:click={(event) => {
-											event.stopPropagation();
-											summaryOpen = !summaryOpen;
-										}}
-									>
-										<div class="summary-trigger-main">
-											<Card.Title>{$_('pvp.summary')}</Card.Title>
-											<Card.Description>
-												{pvpRatedMatchCount < 5
-													? $_('pvp.provisional_matches_left', {
-															values: {
-																count: Math.max(0, 5 - Number(pvpRatedMatchCount || 0))
-															}
-														})
-													: $_('pvp.rating_established')}
-											</Card.Description>
-										</div>
-										<span class="summary-indicator" aria-hidden="true" class:isOpen={summaryOpen}>
-											<ChevronRight class="h-4 w-4" />
-										</span>
-									</Button>
-								</Card.Header>
-								<Card.Content>
-									<div class="summary-stats">
-										<div>
-											<span>{$_('pvp.current_elo')}</span>
-											<strong>{pvpRating ?? '--'}</strong>
-										</div>
-										<div>
-											<span>{$_('pvp.result.win')} / {$_('pvp.result.loss')}</span>
-											<strong>{pvpWinLossStats.wins} / {pvpWinLossStats.losses}</strong>
-										</div>
-										<div>
-											<span>{$_('pvp.weekly_race_points')}</span>
-											<strong>{currentWeeklyRacePoints}</strong>
-										</div>
+				<section class="rating-start-section">
+					<Collapsible.Root bind:open={summaryOpen}>
+						<Card.Root
+							class={`summary-card ${summaryOpen ? 'is-open' : 'is-collapsed'}`}
+							on:click={() => {
+								if (!summaryOpen) summaryOpen = true;
+							}}
+						>
+							<Card.Header>
+								<Button
+									type="button"
+									variant="ghost"
+									class="summary-trigger !h-auto !w-full !justify-between !p-0 !text-left hover:!bg-transparent hover:!text-current focus-visible:!ring-0 focus-visible:!ring-offset-0"
+									aria-expanded={summaryOpen}
+									aria-controls="pvp-summary-panel"
+									on:click={(event) => {
+										event.stopPropagation();
+										summaryOpen = !summaryOpen;
+									}}
+								>
+									<div class="summary-trigger-main">
+										<Card.Title>{$_('pvp.summary')}</Card.Title>
+										<Card.Description>
+											{!pvpRatingVisible
+												? $_('pvp.elo_matches_left', {
+														values: {
+															count: pvpVisibleMatchesLeft
+														}
+													})
+												: $_('pvp.rating_established')}
+										</Card.Description>
 									</div>
-									<Collapsible.Content id="pvp-summary-panel">
-										<div class="elo-graph-panel">
-											<div class="elo-graph-toolbar">
-												<div>
-													<strong>{$_('pvp.elo_graph.title')}</strong>
-													<span>
-														{$_('pvp.elo_graph.summary', {
-															values: {
-																count: eloGraphMatchCount,
-																delta: eloDeltaLabel(eloGraphDelta)
-															}
-														})}
-													</span>
-												</div>
-												<Tabs.Root bind:value={eloGraphFilter}>
-													<Tabs.List
-														class="elo-filter-group"
-														aria-label={$_('pvp.elo_graph.filter')}
-													>
-														{#each ELO_GRAPH_FILTERS as filter}
-															<Tabs.Trigger value={filter.key} class="elo-filter-trigger">
-																{$_(`pvp.elo_graph.filters.${filter.key}`)}
-															</Tabs.Trigger>
-														{/each}
-													</Tabs.List>
-												</Tabs.Root>
-											</div>
-											{#if showLeaderboardMatchCountNotice}
-												<div class="leaderboard-requirement-notice">
-													{$_('pvp.leaderboard.need_more_matches', {
-														values: { count: leaderboardMatchesNeeded }
+									<span class="summary-indicator" aria-hidden="true" class:isOpen={summaryOpen}>
+										<ChevronRight class="h-4 w-4" />
+									</span>
+								</Button>
+							</Card.Header>
+							<Card.Content>
+								<div class="summary-stats">
+									<div>
+										<span>{$_('pvp.current_elo')}</span>
+										<strong>{pvpRatingLabel}</strong>
+									</div>
+									<div>
+										<span>{$_('pvp.result.win')} / {$_('pvp.result.loss')}</span>
+										<strong>{pvpWinLossStats.wins} / {pvpWinLossStats.losses}</strong>
+									</div>
+									<div>
+										<span>{$_('pvp.weekly_race_points')}</span>
+										<strong>{currentWeeklyRacePoints}</strong>
+									</div>
+								</div>
+								<Collapsible.Content id="pvp-summary-panel">
+									<div class="elo-graph-panel">
+										<div class="elo-graph-toolbar">
+											<div>
+												<strong>{$_('pvp.elo_graph.title')}</strong>
+												<span>
+													{$_('pvp.elo_graph.summary', {
+														values: {
+															count: eloGraphMatchCount,
+															delta: eloDeltaLabel(eloGraphDelta)
+														}
 													})}
-												</div>
-											{:else if showLeaderboardActivityNotice}
-												<div class="leaderboard-requirement-notice">
-													{$_('pvp.leaderboard.need_recent_match')}
-												</div>
-											{/if}
-											{#if eloGraphPoints.length > 1}
-												<div class="elo-chart-wrapper">
-													<canvas
-														use:createEloChart={eloGraphChartData}
-														aria-label={$_('pvp.elo_graph.title')}
-													/>
-												</div>
-											{:else}
-												<div class="elo-graph-empty">{$_('pvp.elo_graph.empty')}</div>
-											{/if}
+												</span>
+											</div>
+											<Tabs.Root bind:value={eloGraphFilter}>
+												<Tabs.List class="elo-filter-group" aria-label={$_('pvp.elo_graph.filter')}>
+													{#each ELO_GRAPH_FILTERS as filter}
+														<Tabs.Trigger value={filter.key} class="elo-filter-trigger">
+															{$_(`pvp.elo_graph.filters.${filter.key}`)}
+														</Tabs.Trigger>
+													{/each}
+												</Tabs.List>
+											</Tabs.Root>
 										</div>
-									</Collapsible.Content>
-								</Card.Content>
-							</Card.Root>
-						</Collapsible.Root>
-					</section>
-				{/if}
+										{#if showLeaderboardMatchCountNotice}
+											<div class="leaderboard-requirement-notice">
+												{$_('pvp.leaderboard.need_more_matches', {
+													values: { count: leaderboardMatchesNeeded }
+												})}
+											</div>
+										{:else if showLeaderboardActivityNotice}
+											<div class="leaderboard-requirement-notice">
+												{$_('pvp.leaderboard.need_recent_match')}
+											</div>
+										{/if}
+										{#if eloGraphPoints.length > 1}
+											<div class="elo-chart-wrapper">
+												<canvas
+													use:createEloChart={eloGraphChartData}
+													aria-label={$_('pvp.elo_graph.title')}
+												/>
+											</div>
+										{:else}
+											<div class="elo-graph-empty">{$_('pvp.elo_graph.empty')}</div>
+										{/if}
+									</div>
+								</Collapsible.Content>
+							</Card.Content>
+						</Card.Root>
+					</Collapsible.Root>
+				</section>
 
 				<section class="control-grid">
 					<Card.Root>
