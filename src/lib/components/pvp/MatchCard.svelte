@@ -49,7 +49,8 @@
 	$: selfProgress = getPvpProgress(self);
 	$: opponentProgress = getPvpProgress(opponent);
 	$: matchMode = getPvpMode(match);
-	$: progressBarMax = matchMode === 'platformer' ? Math.max(1, selfProgress, opponentProgress) : 100;
+	$: progressBarMax =
+		matchMode === 'platformer' ? Math.max(1, selfProgress, opponentProgress) : 100;
 	$: opponentPlayer = getPvpParticipantPlayer(opponent);
 	$: winnerUid = getPvpWinnerUid(match);
 	$: resultReason = getPvpResultReason(match);
@@ -132,7 +133,7 @@
 	function ratingLabel(participant: typeof self) {
 		if (!participant || shouldMaskParticipant(participant)) return null;
 
-		return getPvpVisibleParticipantRatingLabel(participant);
+		return getPvpVisibleParticipantRatingLabel(participant, match);
 	}
 
 	function ratingDiffLabel(participant: typeof self) {
@@ -190,7 +191,9 @@
 			</Badge>
 			<Badge variant={isActive ? 'default' : 'secondary'}>{statusLabel(status)}</Badge>
 			{#if levelRating !== null}
-				<Badge variant="outline">{$_('pvp.level_rating', { values: { rating: levelRating } })}</Badge>
+				<Badge variant="outline"
+					>{$_('pvp.level_rating', { values: { rating: levelRating } })}</Badge
+				>
 			{:else if match.difficulty}
 				<Badge variant="outline">{difficultyLabel(match.difficulty)}</Badge>
 			{/if}
@@ -227,7 +230,10 @@
 					<Gauge class="h-3.5 w-3.5" />
 					{formatDuration(getPvpTimeReachedMs(self))}
 					{#if ranked && ratingDiffLabel(self)}
-						<strong class:positive={Number(getPvpParticipantRatingDiff(self)) > 0} class="rating-diff">
+						<strong
+							class:positive={Number(getPvpParticipantRatingDiff(self)) > 0}
+							class="rating-diff"
+						>
 							{ratingDiffLabel(self)}
 						</strong>
 					{/if}
@@ -239,13 +245,18 @@
 					<span>
 						{$_('pvp.rival')}
 						{#if ratingLabel(opponent) !== null}
-							<small>{$_('pvp.pvp_rating_short', { values: { rating: ratingLabel(opponent) } })}</small>
+							<small
+								>{$_('pvp.pvp_rating_short', { values: { rating: ratingLabel(opponent) } })}</small
+							>
 						{/if}
 					</span>
 					<strong>{formatPvpProgressValue(opponentProgress, matchMode)}</strong>
 				</div>
 				<div class="progress-track">
-					<div class="progress-bar rival" style={`width: ${progressBarWidth(opponentProgress)}%;`} />
+					<div
+						class="progress-bar rival"
+						style={`width: ${progressBarWidth(opponentProgress)}%;`}
+					/>
 				</div>
 				<span class="time-mark">
 					<Gauge class="h-3.5 w-3.5" />

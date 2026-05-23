@@ -374,6 +374,7 @@ export const PVP_FINISHED_MATCH_STATUSES = ['completed', 'cancelled', 'disputed'
 export const PVP_DIFFICULTIES: PvpDifficulty[] = ['easy', 'medium', 'hard'];
 export const PVP_RATING_VISIBLE_MATCHES = 10;
 export const PVP_UNCERTAIN_RATING_DEVIATION = 100;
+export const PVP_RATING_ACTIVITY_DAYS = 14;
 export const PVP_CLASSIC_MATCH_DURATION_MS = 15 * 60 * 1000;
 export const PVP_PLATFORMER_MATCH_DURATION_MS = 60 * 60 * 1000;
 
@@ -965,6 +966,29 @@ export function isPvpMatchRanked(match: PvpMatch | null | undefined) {
 	return Boolean(match?.ranked ?? match?.isRanked);
 }
 
+export function getPvpRatedMatchActivityMs(match: PvpMatch | null | undefined) {
+	const value =
+		match?.ratingAppliedAt ??
+		match?.rating_applied_at ??
+		match?.endedAt ??
+		match?.endAt ??
+		match?.endsAt ??
+		match?.startedAt ??
+		match?.started_at ??
+		match?.created_at ??
+		null;
+	return getTimeMs(value) ?? 0;
+}
+
+export function isPvpRatingActivityRecent(match: PvpMatch | null | undefined, nowMs = Date.now()) {
+	if (!match || getPvpStatus(match, '') !== 'completed' || !isPvpMatchRanked(match)) return true;
+
+	const activityMs = getPvpRatedMatchActivityMs(match);
+	if (!activityMs) return false;
+
+	return nowMs - activityMs <= PVP_RATING_ACTIVITY_DAYS * 24 * 60 * 60 * 1000;
+}
+
 export function getPvpLevelRating(match: PvpMatch | null | undefined) {
 	const level = getPvpLevel(match);
 	const value =
@@ -1029,10 +1053,12 @@ export function getPvpVisibleParticipantRatingDeviation(
 }
 
 export function getPvpVisibleParticipantRatingLabel(
-	participant: PvpParticipant | null | undefined
+	participant: PvpParticipant | null | undefined,
+	match?: PvpMatch | null | undefined
 ) {
 	const ratedMatchCount = getPvpVisibleParticipantRatedMatchCount(participant);
 	if (ratedMatchCount !== null && ratedMatchCount < PVP_RATING_VISIBLE_MATCHES) return null;
+	if (match && !isPvpRatingActivityRecent(match)) return null;
 
 	const rating = getPvpVisibleParticipantRating(participant);
 	if (rating === null) return null;

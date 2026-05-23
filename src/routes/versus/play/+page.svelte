@@ -50,6 +50,7 @@
 		isActivePvpMatch,
 		isPvpMatchConfirmedByBoth,
 		isPvpMatchRanked,
+		PVP_RATING_ACTIVITY_DAYS,
 		PVP_RATING_VISIBLE_MATCHES,
 		PVP_UNCERTAIN_RATING_DEVIATION,
 		sendPvpInvite,
@@ -194,7 +195,11 @@
 		0,
 		PVP_RATING_VISIBLE_MATCHES - Number(pvpRatedMatchCount || 0)
 	);
-	$: pvpRatingVisible = pvpVisibleMatchesLeft === 0;
+	$: hasRecentRatingMatch = hasRecentRatedPvpMatch(
+		matches.filter((match) => getPvpMode(match) === selectedMode),
+		PVP_RATING_ACTIVITY_DAYS
+	);
+	$: pvpRatingVisible = pvpVisibleMatchesLeft === 0 && hasRecentRatingMatch;
 	$: pvpRatingLabel =
 		pvpRatingVisible && pvpRating !== null
 			? `${Math.round(pvpRating)}${pvpRatingDeviation !== null && pvpRatingDeviation > PVP_UNCERTAIN_RATING_DEVIATION ? '?' : ''}`
@@ -226,7 +231,8 @@
 	);
 	$: leaderboardMatchesNeeded = Math.max(0, 50 - Number(pvpRatedMatchCount || 0));
 	$: hasRecentLeaderboardMatch = hasRecentRatedPvpMatch(
-		matches.filter((match) => getPvpMode(match) === selectedMode)
+		matches.filter((match) => getPvpMode(match) === selectedMode),
+		7
 	);
 	$: showLeaderboardMatchCountNotice = pvpRatedMatchCount >= 5 && pvpRatedMatchCount < 50;
 	$: showLeaderboardActivityNotice = pvpRatedMatchCount >= 50 && !hasRecentLeaderboardMatch;
@@ -686,8 +692,8 @@
 		return Number.isFinite(ms) ? ms : 0;
 	}
 
-	function hasRecentRatedPvpMatch(sourceMatches: PvpMatch[]) {
-		const activeSince = Date.now() - 7 * 24 * 60 * 60 * 1000;
+	function hasRecentRatedPvpMatch(sourceMatches: PvpMatch[], days: number) {
+		const activeSince = Date.now() - days * 24 * 60 * 60 * 1000;
 
 		return sourceMatches.some(
 			(match) =>
@@ -1724,13 +1730,15 @@
 									<div class="summary-trigger-main">
 										<Card.Title>{$_('pvp.summary')}</Card.Title>
 										<Card.Description>
-											{!pvpRatingVisible
+											{pvpVisibleMatchesLeft > 0
 												? $_('pvp.elo_matches_left', {
 														values: {
 															count: pvpVisibleMatchesLeft
 														}
 													})
-												: $_('pvp.rating_established')}
+												: !hasRecentRatingMatch
+													? $_('pvp.elo_needs_recent_match')
+													: $_('pvp.rating_established')}
 										</Card.Description>
 									</div>
 									<span class="summary-indicator" aria-hidden="true" class:isOpen={summaryOpen}>

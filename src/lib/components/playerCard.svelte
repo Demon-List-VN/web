@@ -237,13 +237,23 @@
 		return Number.isFinite(numberValue) ? numberValue : null;
 	}
 
+	function getPvpRatingDeviation(player: any) {
+		const value = player?.pvpRatingDeviation ?? player?.pvp_rating_deviation ?? null;
+		const numberValue = Number(value);
+
+		return Number.isFinite(numberValue) ? numberValue : null;
+	}
+
 	function formatPvpRating(player: any) {
 		const rating = getPvpRatingValue(player);
 
 		if (rating === null) return '-';
 
 		const matchCount = getPvpRatedMatchCount(player);
-		return `${rating}${matchCount !== null && matchCount < 5 ? '?' : ''}`;
+		if (matchCount !== null && matchCount < 10) return '-';
+
+		const ratingDeviation = getPvpRatingDeviation(player);
+		return `${rating}${ratingDeviation !== null && ratingDeviation > 100 ? '?' : ''}`;
 	}
 </script>
 

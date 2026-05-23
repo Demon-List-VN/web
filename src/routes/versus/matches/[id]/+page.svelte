@@ -1200,7 +1200,7 @@
 	function participantRatingLabel(participant: PvpParticipant | null | undefined) {
 		if (shouldMaskParticipant(participant)) return null;
 
-		return getPvpVisibleParticipantRatingLabel(participant);
+		return getPvpVisibleParticipantRatingLabel(participant, match);
 	}
 
 	function participantRatingDiffLabel(participant: PvpParticipant | null | undefined) {
@@ -1368,7 +1368,9 @@
 			`${context.dataset.label}: ${formatPvpProgressValue(context.parsed.y, data.mode)}`;
 	}
 
-	function getDeathCountChartData(items: PvpParticipant[] = orderedParticipants): DeathCountChartData {
+	function getDeathCountChartData(
+		items: PvpParticipant[] = orderedParticipants
+	): DeathCountChartData {
 		const labels = Array.from({ length: 100 }, (_, index) => `${index}%`);
 		const series = items.slice(0, 2).map((participant, index) => {
 			const color =
@@ -2043,12 +2045,12 @@
 														{/if}
 													</div>
 												</div>
-													<div class="death-count-value">
-														<strong>{getPvpDeathCount(participant)}</strong>
-														<span>{$_('pvp.death_count.count_label')}</span>
-													</div>
+												<div class="death-count-value">
+													<strong>{getPvpDeathCount(participant)}</strong>
+													<span>{$_('pvp.death_count.count_label')}</span>
 												</div>
-											{/each}
+											</div>
+										{/each}
 									</div>
 									{#if deathCountChartData.hasPoints && desktopActivityTab === 'deaths'}
 										<div class="death-count-chart-canvas">
@@ -2162,9 +2164,7 @@
 								/>
 								<Button
 									type="submit"
-									disabled={chatInputDisabled ||
-										!chatDraft.trim() ||
-										actionLoading === 'send-chat'}
+									disabled={chatInputDisabled || !chatDraft.trim() || actionLoading === 'send-chat'}
 									aria-label={$_('pvp.send_message')}
 								>
 									{#if actionLoading === 'send-chat'}

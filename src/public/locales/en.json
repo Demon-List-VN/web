@@ -432,6 +432,7 @@
 			}
 		},
 		"elo_matches_left": "{count} matches left to show Elo",
+		"elo_needs_recent_match": "Play a ranked match to show Elo",
 		"rating_established": "Rating established",
 		"ranked": "Ranked",
 		"unranked": "Unranked",

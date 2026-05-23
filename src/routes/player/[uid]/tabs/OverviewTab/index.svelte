@@ -7,9 +7,11 @@
 		getPvpParticipantRatingAfter,
 		getPvpParticipantRatingBefore,
 		getPvpParticipantRatingDiff,
+		getPvpRatedMatchActivityMs,
 		getPvpSelfParticipant,
 		getPvpStatus,
 		isPvpMatchRanked,
+		PVP_RATING_ACTIVITY_DAYS,
 		PVP_RATING_VISIBLE_MATCHES,
 		PVP_UNCERTAIN_RATING_DEVIATION,
 		type PvpMatch
@@ -126,6 +128,7 @@
 	$: pvpRating = getPvpRatingValue(player);
 	$: pvpRatedMatchCount = getPvpRatedMatchCount(player);
 	$: pvpRatingDeviation = getPvpRatingDeviationValue(player);
+	$: pvpRatingRecent = hasRecentPvpRatingMatch(pvpMatches);
 	$: pvpStartLabel = $_('player.overview.start');
 	$: pvpRatingHistory = getPvpRatingHistory(pvpMatches, player.uid, pvpStartLabel);
 	$: rankedEventHistory = getRankedEventHistory(data.events || []);
@@ -151,6 +154,7 @@
 	function formatPvpRating() {
 		if (pvpRating === null) return '-';
 		if (pvpRatedMatchCount !== null && pvpRatedMatchCount < PVP_RATING_VISIBLE_MATCHES) return '-';
+		if (!pvpRatingRecent) return '-';
 
 		return `${pvpRating}${pvpRatingDeviation !== null && pvpRatingDeviation > PVP_UNCERTAIN_RATING_DEVIATION ? '?' : ''}`;
 	}
@@ -188,6 +192,19 @@
 			value?.pvpRatingDeviation ?? value?.pvp_rating_deviation ?? null
 		);
 		return Number.isFinite(ratingDeviation) ? ratingDeviation : null;
+	}
+
+	function hasRecentPvpRatingMatch(matches: PvpMatch[]) {
+		const activeSince = Date.now() - PVP_RATING_ACTIVITY_DAYS * 24 * 60 * 60 * 1000;
+
+		return matches.some((match) => {
+			if (getPvpStatus(match, '') !== 'completed' || !isPvpMatchRanked(match)) return false;
+			const participant = getPvpSelfParticipant(match, player.uid);
+			return (
+				getPvpParticipantRatingAfter(participant) !== null &&
+				getPvpRatedMatchActivityMs(match) >= activeSince
+			);
+		});
 	}
 
 	function getRecordTime(record: PlayerListRecordEntry) {

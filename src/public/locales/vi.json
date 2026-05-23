@@ -432,6 +432,7 @@
 			}
 		},
 		"elo_matches_left": "Còn {count} trận để hiện Elo",
+		"elo_needs_recent_match": "Chơi một trận xếp hạng để hiện Elo",
 		"rating_established": "Elo đã ổn định",
 		"ranked": "Xếp hạng",
 		"unranked": "Không xếp hạng",

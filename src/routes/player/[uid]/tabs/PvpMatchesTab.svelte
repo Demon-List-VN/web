@@ -21,6 +21,7 @@
 		getPvpVisibleParticipantRatedMatchCount,
 		getPvpVisibleParticipantRatingLabel,
 		getPvpWinnerUid,
+		isPvpRatingActivityRecent,
 		type PvpParticipant,
 		type PvpMatch
 	} from '$lib/client/pvp';
@@ -80,11 +81,14 @@
 
 	function shouldHideRating(match: PvpMatch) {
 		const ratedMatchCount = getPvpVisibleParticipantRatedMatchCount(playerParticipant(match));
-		return ratedMatchCount !== null && ratedMatchCount < PVP_RATING_VISIBLE_MATCHES;
+		return (
+			(ratedMatchCount !== null && ratedMatchCount < PVP_RATING_VISIBLE_MATCHES) ||
+			!isPvpRatingActivityRecent(match)
+		);
 	}
 
 	function ratingAfterLabel(match: PvpMatch) {
-		return getPvpVisibleParticipantRatingLabel(playerParticipant(match));
+		return getPvpVisibleParticipantRatingLabel(playerParticipant(match), match);
 	}
 
 	function matchResult(match: PvpMatch) {
