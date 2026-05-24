@@ -522,6 +522,7 @@
 			"select": "Chọn",
 			"selected": "Đã chọn",
 			"unselect": "Bỏ chọn",
+			"confirm_bans": "Xác nhận ban",
 			"banned": "Đã ban",
 			"auto_banned": "Tự ban",
 			"banned_by": "Bị ban bởi {player}",

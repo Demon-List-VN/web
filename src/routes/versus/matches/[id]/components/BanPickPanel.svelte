@@ -2,7 +2,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
-	import { Ban, Clock, Loader2, ShieldX } from 'lucide-svelte';
+	import { Ban, Check, Clock, Loader2, ShieldX } from 'lucide-svelte';
 	import { _ } from 'svelte-i18n';
 	import type { PvpBanPick, PvpBanPickAction, PvpLevel } from '$lib/client/pvp';
 
@@ -13,10 +13,12 @@
 	export let waitingToStart = false;
 	export let turnSubmitted = false;
 	export let requiredCount = 0;
+	export let confirmLoading = false;
 	export let formatDuration: (ms: number) => string = (ms) => String(ms);
 	export let turnPlayerName = '';
 	export let actionPlayerName: (action: PvpBanPickAction) => string = () => '';
 	export let onToggleBan: (levelId: number) => void = () => {};
+	export let onConfirmBan: () => void = () => {};
 
 	$: actions = Array.isArray(banPick?.actions) ? banPick.actions : [];
 	$: poolLevelIds = Array.isArray(banPick?.poolLevelIds)
@@ -33,6 +35,7 @@
 	$: turnExpired = !waitingToStart && remainingMs <= 0;
 	$: turnLoading = waitingToStart || turnExpired;
 	$: turnOpen = isViewerTurn && !waitingToStart && remainingMs > 0 && !turnSubmitted;
+	$: canConfirmBan = turnOpen && selectedLevelIds.length === requiredCount;
 	$: totalBans = Number(banPick?.totalBans ?? 7);
 	$: isYourTurn = turnSubmitted
 		? false
@@ -181,6 +184,21 @@
 					</div>
 				{/each}
 			</div>
+
+			<div class="ban-pick-actions">
+				<Button
+					class="ban-pick-confirm"
+					disabled={!canConfirmBan || confirmLoading}
+					on:click={onConfirmBan}
+				>
+					{#if confirmLoading}
+						<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+					{:else}
+						<Check class="mr-2 h-4 w-4" />
+					{/if}
+					{$_('pvp.ban_pick.confirm_bans')}
+				</Button>
+			</div>
 		</Card.Content>
 	</Card.Root>
 </section>
@@ -242,6 +260,15 @@
 		gap: 10px;
 	}
 
+	.ban-pick-actions {
+		display: flex;
+		justify-content: flex-end;
+	}
+
+	:global(.ban-pick-confirm) {
+		min-width: 170px;
+	}
+
 	.ban-pick-level {
 		display: grid;
 		gap: 12px;
@@ -292,6 +319,11 @@
 		.ban-pick-header {
 			align-items: stretch;
 			flex-direction: column;
+		}
+
+		.ban-pick-actions,
+		:global(.ban-pick-confirm) {
+			width: 100%;
 		}
 	}
 </style>

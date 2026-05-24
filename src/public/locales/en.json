@@ -522,6 +522,7 @@
 			"select": "Select",
 			"selected": "Selected",
 			"unselect": "Unselect",
+			"confirm_bans": "Confirm bans",
 			"banned": "Banned",
 			"auto_banned": "Auto-banned",
 			"banned_by": "Banned by {player}",

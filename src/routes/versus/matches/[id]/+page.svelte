@@ -221,30 +221,16 @@
 		Boolean(selfParticipant);
 	$: levelChangeRequestedByUid = getPvpLevelChangeRequestedByUid(match);
 	$: levelChangeUsed = Boolean(match?.levelChangedAt ?? match?.level_changed_at);
-	$: levelChangeRequestedBySelf =
-		Boolean(currentUid) && String(levelChangeRequestedByUid || '') === String(currentUid);
 	$: canRequestLevelChange =
 		['in_progress', 'waiting_result'].includes(status) &&
 		matchMode !== 'platformer' &&
 		remainingMs > 0 &&
 		Boolean(selfParticipant) &&
 		!levelChangeUsed;
-	$: levelChangeButtonLabel = levelChangeUsed
-		? $_('pvp.level_change_used')
-		: levelChangeRequestedBySelf
-			? $_('pvp.level_change_waiting')
-			: levelChangeRequestedByUid
-				? $_('pvp.agree_level_change')
-				: $_('pvp.request_level_change');
 	$: banPickAbortRequestedByUid = getPvpBanPickAbortRequestedByUid(match);
 	$: banPickAbortRequestedBySelf =
 		Boolean(currentUid) && String(banPickAbortRequestedByUid || '') === String(currentUid);
 	$: canRequestBanPickAbort = isBanPick && Boolean(selfParticipant);
-	$: banPickAbortButtonLabel = banPickAbortRequestedBySelf
-		? $_('pvp.ban_pick_abort_waiting')
-		: banPickAbortRequestedByUid
-			? $_('pvp.agree_ban_pick_abort')
-			: $_('pvp.request_ban_pick_abort');
 	$: chatOpenDuringMatch = ['in_progress', 'waiting_result'].includes(status) && remainingMs > 0;
 	$: chatOpenDuringBanPick = isBanPick;
 	$: chatOpenAfterMatch = status === 'completed' && postMatchChatRemainingMs > 0;
@@ -317,6 +303,7 @@
 			cleanupRealtime = subscribeToPvpMatchDetail(id, async (event) => {
 				if (event.scope === 'message') {
 					scheduleRealtimeTask('messages', () => refreshMessages({ incremental: true }));
+					scheduleRealtimeTask('match', refreshMatch);
 					return;
 				}
 
@@ -833,6 +820,37 @@
 
 	function messageMetadataKind(message: PvpMatchMessage) {
 		return metadataText(messageMetadata(message), 'kind');
+	}
+
+	function systemMessageActionLabel(message: PvpMatchMessage) {
+		if (message.type !== 'system') return '';
+
+		const metadata = messageMetadata(message);
+		const requesterUid = metadataText(metadata, 'requesterUid');
+		if (!requesterUid || String(requesterUid) === String(currentUid || '')) return '';
+
+		const kind = messageMetadataKind(message);
+		if (kind === 'level_change_requested' && canRequestLevelChange && levelChangeRequestedByUid) {
+			return $_('pvp.agree_level_change');
+		}
+
+		if (kind === 'ban_pick_abort_requested' && canRequestBanPickAbort && banPickAbortRequestedByUid) {
+			return $_('pvp.agree_ban_pick_abort');
+		}
+
+		return '';
+	}
+
+	function handleSystemMessageAction(message: PvpMatchMessage) {
+		const kind = messageMetadataKind(message);
+		if (kind === 'level_change_requested') {
+			void requestLevelChange();
+			return;
+		}
+
+		if (kind === 'ban_pick_abort_requested') {
+			void requestBanPickAbort();
+		}
 	}
 
 	function progressMessageEvent(message: PvpMatchMessage, mode: PvpMode = matchMode) {
@@ -1574,18 +1592,9 @@
 		{actionLoading}
 		{hideOpponentInfo}
 		{canRematch}
-		{canRequestLevelChange}
-		{levelChangeUsed}
-		{levelChangeRequestedBySelf}
-		{levelChangeButtonLabel}
-		{canRequestBanPickAbort}
-		{banPickAbortRequestedBySelf}
-		{banPickAbortButtonLabel}
 		{canResign}
 		onToggleOpponentInfo={() => (hideOpponentInfo = !hideOpponentInfo)}
 		onRequestRematch={requestRematch}
-		onRequestLevelChange={requestLevelChange}
-		onRequestBanPickAbort={requestBanPickAbort}
 		onResign={resignMatch}
 		onRefresh={refreshMatch}
 	/>
@@ -1804,10 +1813,12 @@
 						waitingToStart={banPickWaitingToStart}
 						turnSubmitted={banPickTurnSubmitted}
 						requiredCount={banPickRequiredCount}
+						confirmLoading={actionLoading === 'ban-pick-submit'}
 						{formatDuration}
 						turnPlayerName={banPickTurnPlayerName()}
 						actionPlayerName={banPickActionPlayerName}
 						onToggleBan={toggleBanSelection}
+						onConfirmBan={() => submitBanSelection()}
 					/>
 				{/if}
 
@@ -1920,6 +1931,7 @@
 												participants,
 												senderUid
 											)}
+											{@const systemActionLabel = systemMessageActionLabel(message)}
 											<div
 												class:own-message={senderUid === currentUid}
 												class:system-message={message.type === 'system'}
@@ -1930,6 +1942,19 @@
 													<span>{messageTime(message)}</span>
 												</div>
 												<p>{systemMessageContent(message)}</p>
+												{#if systemActionLabel}
+													<Button
+														class="chat-message-action"
+														size="sm"
+														disabled={Boolean(actionLoading)}
+														on:click={() => handleSystemMessageAction(message)}
+													>
+														{#if actionLoading === 'level-change' || actionLoading === 'ban-pick-abort'}
+															<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+														{/if}
+														{systemActionLabel}
+													</Button>
+												{/if}
 											</div>
 										{/each}
 									{/if}
@@ -2131,6 +2156,7 @@
 											participants,
 											senderUid
 										)}
+										{@const systemActionLabel = systemMessageActionLabel(message)}
 										<div
 											class:own-message={senderUid === currentUid}
 											class:system-message={message.type === 'system'}
@@ -2141,6 +2167,19 @@
 												<span>{messageTime(message)}</span>
 											</div>
 											<p>{systemMessageContent(message)}</p>
+											{#if systemActionLabel}
+												<Button
+													class="chat-message-action"
+													size="sm"
+													disabled={Boolean(actionLoading)}
+													on:click={() => handleSystemMessageAction(message)}
+												>
+													{#if actionLoading === 'level-change' || actionLoading === 'ban-pick-abort'}
+														<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+													{/if}
+													{systemActionLabel}
+												</Button>
+											{/if}
 										</div>
 									{/each}
 								{/if}
@@ -2788,6 +2827,10 @@
 		white-space: pre-wrap;
 		font-size: 14px;
 		line-height: 1.45;
+	}
+
+	:global(.chat-message-action) {
+		margin-top: 8px;
 	}
 
 	.chat-form {
