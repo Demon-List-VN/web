@@ -762,10 +762,10 @@
 			},
 			"logout_all": {
 				"title": "Đăng xuất mọi nơi",
-				"description": "Xoá tất cả khoá API và thu hồi phiên Supabase trên mọi thiết bị.",
+				"description": "Xoá tất cả khoá API và thu hồi phiên trên mọi thiết bị.",
 				"button": "Đăng xuất mọi thiết bị",
 				"confirm_title": "Đăng xuất mọi thiết bị?",
-				"confirm_description": "Thao tác này xoá toàn bộ khoá API và đăng xuất tài khoản khỏi các phiên Supabase.",
+				"confirm_description": "Thao tác này xoá toàn bộ khoá API và đăng xuất tài khoản khỏi các phiên.",
 				"cancel": "Huỷ",
 				"continue": "Tiếp tục",
 				"success": "Đã đăng xuất mọi thiết bị.",
