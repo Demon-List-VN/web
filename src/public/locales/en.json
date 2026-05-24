@@ -750,7 +750,9 @@
 				"title": "Create a new API key?",
 				"description": "Anyone with this key can submit and make change to your account.",
 				"cancel": "Cancel",
-				"continue": "Continue"
+				"continue": "Continue",
+				"limit": "You can only have 3 Geode login API keys.",
+				"error": "Failed to create API key."
 			}
 		},
 		"auth": {
@@ -758,6 +760,17 @@
 				"title": "Grant OTP",
 				"description": "Open the Geode mod, copy the 6-digit OTP code, then enter it on the grant page.",
 				"button": "Grant OTP"
+			},
+			"logout_all": {
+				"title": "Log out everywhere",
+				"description": "Remove every API key and revoke Supabase sessions on all devices.",
+				"button": "Log out all devices",
+				"confirm_title": "Log out all devices?",
+				"confirm_description": "This removes all API keys and signs your account out across Supabase sessions.",
+				"cancel": "Cancel",
+				"continue": "Continue",
+				"success": "Logged out all devices.",
+				"error": "Failed to log out all devices."
 			}
 		},
 		"subscriptions": {

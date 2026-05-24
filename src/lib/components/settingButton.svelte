@@ -22,11 +22,13 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { DISCORD_OAUTH_URL } from '$lib/client/discord';
+	import supabase from '$lib/client/supabase';
 
 	let token = '';
 	let settingsOpen = false;
 	let open1 = false;
 	let APIKeys: any[] = [];
+	let loggingOutAll = false;
 
 	async function fetchAPIKeys() {
 		if (!$user.loggedIn) {
@@ -48,12 +50,23 @@
 	}
 
 	async function createNewKey() {
-		await fetch(`${import.meta.env.VITE_API_URL}/APIKey`, {
+		const response = await fetch(`${import.meta.env.VITE_API_URL}/APIKey`, {
 			method: 'POST',
 			headers: {
 				Authorization: 'Bearer ' + (await $user.token())!
 			}
 		});
+
+		if (response.status === 409) {
+			const data = await response.json().catch(() => null);
+			toast.error(data?.error ?? $_('settings.api.create.limit'));
+			return;
+		}
+
+		if (!response.ok) {
+			toast.error($_('settings.api.create.error'));
+			return;
+		}
 
 		toast.success('Created a new API key!');
 		fetchAPIKeys();
@@ -119,6 +132,36 @@
 	function openOtpGrantPage() {
 		settingsOpen = false;
 		goto('/auth/otp');
+	}
+
+	async function logoutAllDevices() {
+		if (loggingOutAll) {
+			return;
+		}
+
+		loggingOutAll = true;
+
+		try {
+			const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/logout-all`, {
+				method: 'POST',
+				headers: {
+					Authorization: 'Bearer ' + (await $user.token())!
+				}
+			});
+
+			if (!response.ok) {
+				throw new Error('Failed to log out all devices');
+			}
+
+			await supabase.auth.signOut();
+			toast.success($_('settings.auth.logout_all.success'));
+			settingsOpen = false;
+			goto('/');
+		} catch (error) {
+			toast.error($_('settings.auth.logout_all.error'));
+		} finally {
+			loggingOutAll = false;
+		}
 	}
 </script>
 
@@ -315,6 +358,33 @@
 					<Button variant="outline" on:click={openOtpGrantPage}>
 						{$_('settings.auth.otp.button')}
 					</Button>
+				</div>
+				<div class="otp-auth">
+					<div>
+						<p class="text-sm font-medium">{$_('settings.auth.logout_all.title')}</p>
+						<p class="text-sm text-muted-foreground">{$_('settings.auth.logout_all.description')}</p>
+					</div>
+					<AlertDialog.Root>
+						<AlertDialog.Trigger asChild let:builder>
+							<Button variant="destructive" builders={[builder]} disabled={loggingOutAll}>
+								{$_('settings.auth.logout_all.button')}
+							</Button>
+						</AlertDialog.Trigger>
+						<AlertDialog.Content>
+							<AlertDialog.Header>
+								<AlertDialog.Title>{$_('settings.auth.logout_all.confirm_title')}</AlertDialog.Title>
+								<AlertDialog.Description>
+									{$_('settings.auth.logout_all.confirm_description')}
+								</AlertDialog.Description>
+							</AlertDialog.Header>
+							<AlertDialog.Footer>
+								<AlertDialog.Cancel>{$_('settings.auth.logout_all.cancel')}</AlertDialog.Cancel>
+								<AlertDialog.Action on:click={logoutAllDevices}>
+									{$_('settings.auth.logout_all.continue')}
+								</AlertDialog.Action>
+							</AlertDialog.Footer>
+						</AlertDialog.Content>
+					</AlertDialog.Root>
 				</div>
 				<Table.Root>
 					<Table.Header>

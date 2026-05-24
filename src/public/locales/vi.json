@@ -749,7 +749,9 @@
 				"title": "Tạo khoá API mới?",
 				"description": "Bất cứ ai với khoá này có thể nộp và thay đổi tài khoản của bạn.",
 				"cancel": "Huỷ",
-				"continue": "Tiếp tục"
+				"continue": "Tiếp tục",
+				"limit": "Bạn chỉ có thể có tối đa 3 khoá API đăng nhập Geode.",
+				"error": "Không thể tạo khoá API."
 			}
 		},
 		"auth": {
@@ -757,6 +759,17 @@
 				"title": "Cấp quyền OTP",
 				"description": "Mở mod Geode, lấy mã OTP 6 số, rồi nhập mã trên trang cấp quyền.",
 				"button": "Cấp quyền OTP"
+			},
+			"logout_all": {
+				"title": "Đăng xuất mọi nơi",
+				"description": "Xoá tất cả khoá API và thu hồi phiên Supabase trên mọi thiết bị.",
+				"button": "Đăng xuất mọi thiết bị",
+				"confirm_title": "Đăng xuất mọi thiết bị?",
+				"confirm_description": "Thao tác này xoá toàn bộ khoá API và đăng xuất tài khoản khỏi các phiên Supabase.",
+				"cancel": "Huỷ",
+				"continue": "Tiếp tục",
+				"success": "Đã đăng xuất mọi thiết bị.",
+				"error": "Không thể đăng xuất mọi thiết bị."
 			}
 		},
 		"subscriptions": {
