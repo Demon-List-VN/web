@@ -763,10 +763,10 @@
 			},
 			"logout_all": {
 				"title": "Log out everywhere",
-				"description": "Remove every API key and revoke Supabase sessions on all devices.",
+				"description": "Remove every API key and revoke sessions on all devices.",
 				"button": "Log out all devices",
 				"confirm_title": "Log out all devices?",
-				"confirm_description": "This removes all API keys and signs your account out across Supabase sessions.",
+				"confirm_description": "This removes all API keys and signs your account out across sessions.",
 				"cancel": "Cancel",
 				"continue": "Continue",
 				"success": "Logged out all devices.",
