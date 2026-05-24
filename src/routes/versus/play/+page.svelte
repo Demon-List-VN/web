@@ -1729,17 +1729,6 @@
 								>
 									<div class="summary-trigger-main">
 										<Card.Title>{$_('pvp.summary')}</Card.Title>
-										<Card.Description>
-											{pvpVisibleMatchesLeft > 0
-												? $_('pvp.elo_matches_left', {
-														values: {
-															count: pvpVisibleMatchesLeft
-														}
-													})
-												: !hasRecentRatingMatch
-													? $_('pvp.elo_needs_recent_match')
-													: $_('pvp.rating_established')}
-										</Card.Description>
 									</div>
 									<span class="summary-indicator" aria-hidden="true" class:isOpen={summaryOpen}>
 										<ChevronRight class="h-4 w-4" />
