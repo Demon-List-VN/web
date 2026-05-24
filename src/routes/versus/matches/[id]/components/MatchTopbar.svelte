@@ -7,7 +7,9 @@
 		Flag,
 		Loader2,
 		RefreshCw,
-		Send
+		Send,
+		Shuffle,
+		X
 	} from 'lucide-svelte';
 	import { _ } from 'svelte-i18n';
 
@@ -17,10 +19,14 @@
 	export let actionLoading = '';
 	export let hideOpponentInfo = false;
 	export let canRematch = false;
+	export let canRequestLevelChange = false;
+	export let canRequestBanPickAbort = false;
 	export let canResign = false;
 
 	export let onToggleOpponentInfo: () => void = () => {};
 	export let onRequestRematch: () => void = () => {};
+	export let onRequestLevelChange: () => void = () => {};
+	export let onRequestBanPickAbort: () => void = () => {};
 	export let onResign: () => void = () => {};
 	export let onRefresh: () => void = () => {};
 </script>
@@ -54,6 +60,36 @@
 						<Send class="mr-2 h-4 w-4" />
 					{/if}
 					{$_('pvp.rematch')}
+				</Button>
+			{/if}
+
+			{#if canRequestLevelChange}
+				<Button
+					variant="outline"
+					disabled={Boolean(actionLoading) || loading}
+					on:click={onRequestLevelChange}
+				>
+					{#if actionLoading === 'level-change'}
+						<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+					{:else}
+						<Shuffle class="mr-2 h-4 w-4" />
+					{/if}
+					{$_('pvp.request_level_change')}
+				</Button>
+			{/if}
+
+			{#if canRequestBanPickAbort}
+				<Button
+					variant="destructive"
+					disabled={Boolean(actionLoading) || loading}
+					on:click={onRequestBanPickAbort}
+				>
+					{#if actionLoading === 'ban-pick-abort'}
+						<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+					{:else}
+						<X class="mr-2 h-4 w-4" />
+					{/if}
+					{$_('pvp.request_ban_pick_abort')}
 				</Button>
 			{/if}
 

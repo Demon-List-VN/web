@@ -91,7 +91,6 @@
 	const POST_MATCH_CHAT_GRACE_MS = 3 * 60 * 1000;
 	const REALTIME_COALESCE_MS = 200;
 	const MESSAGE_FETCH_LIMIT = 100;
-	const BAN_PICK_SETTLE_MS = 5000;
 	const BAN_PICK_DEADLINE_SUBMIT_GRACE_MS = 1000;
 	const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://gdvn.net').replace(/\/$/, '');
 
@@ -403,7 +402,7 @@
 
 		const targetMs =
 			(endsMs ?? Date.now()) +
-			(shouldSubmit ? BAN_PICK_DEADLINE_SUBMIT_GRACE_MS : BAN_PICK_SETTLE_MS + 250);
+			(shouldSubmit ? BAN_PICK_DEADLINE_SUBMIT_GRACE_MS : REALTIME_COALESCE_MS + 250);
 		const delay = Math.max(0, targetMs - Date.now());
 		banPickDeadlineTimeout = setTimeout(() => {
 			banPickDeadlineTimeout = null;
@@ -1592,9 +1591,13 @@
 		{actionLoading}
 		{hideOpponentInfo}
 		{canRematch}
+		canRequestLevelChange={canRequestLevelChange && !levelChangeRequestedByUid}
+		canRequestBanPickAbort={canRequestBanPickAbort && !banPickAbortRequestedByUid}
 		{canResign}
 		onToggleOpponentInfo={() => (hideOpponentInfo = !hideOpponentInfo)}
 		onRequestRematch={requestRematch}
+		onRequestLevelChange={requestLevelChange}
+		onRequestBanPickAbort={requestBanPickAbort}
 		onResign={resignMatch}
 		onRefresh={refreshMatch}
 	/>
