@@ -15,6 +15,11 @@
 	export let onAcceptPendingMatch: () => void | Promise<void>;
 
 	$: pendingMatchMode = getPvpMode(pendingMatch);
+	$: pendingAcceptanceRemainingMs = Math.max(
+		0,
+		(getPvpMatchAcceptanceExpiresMs(pendingMatch) ?? now) - now
+	);
+	$: pendingAcceptanceExpired = Boolean(pendingMatch) && pendingAcceptanceRemainingMs <= 0;
 
 	function remainingLabel(targetMs: number | null, currentNow: number) {
 		if (!targetMs) return '--:--';
@@ -70,7 +75,7 @@
 			{:else}
 				<Button
 					class="w-full"
-					disabled={Boolean(actionLoading)}
+					disabled={Boolean(actionLoading) || pendingAcceptanceExpired}
 					on:click={() => onAcceptPendingMatch?.()}
 				>
 					{#if actionLoading === `accept-match-${pendingMatchId}`}

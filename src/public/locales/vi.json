@@ -325,6 +325,8 @@
 		"agree_level_change": "Đồng ý đổi level",
 		"level_change_waiting": "Đang chờ đổi level",
 		"level_change_used": "Đã đổi level",
+		"request_expires_in": "Hết hạn sau {time}.",
+		"request_expired": "Hết hạn",
 		"request_ban_pick_abort": "Hủy trận",
 		"agree_ban_pick_abort": "Đồng ý hủy",
 		"ban_pick_abort_waiting": "Đang chờ hủy trận",

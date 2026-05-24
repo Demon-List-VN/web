@@ -325,6 +325,8 @@
 		"agree_level_change": "Agree level change",
 		"level_change_waiting": "Waiting for level change",
 		"level_change_used": "Level changed",
+		"request_expires_in": "Expires in {time}.",
+		"request_expired": "Expired",
 		"request_ban_pick_abort": "Abort match",
 		"agree_ban_pick_abort": "Agree abort",
 		"ban_pick_abort_waiting": "Waiting for abort",

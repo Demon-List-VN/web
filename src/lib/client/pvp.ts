@@ -172,10 +172,14 @@ export type PvpMatch = {
 	rating_offset?: number | null;
 	levelChangeRequestedByUid?: string | null;
 	level_change_requested_by_uid?: string | null;
+	levelChangeRequestExpiresAt?: string | null;
+	level_change_request_expires_at?: string | null;
 	levelChangedAt?: string | null;
 	level_changed_at?: string | null;
 	banPickAbortRequestedByUid?: string | null;
 	ban_pick_abort_requested_by_uid?: string | null;
+	banPickAbortRequestExpiresAt?: string | null;
+	ban_pick_abort_request_expires_at?: string | null;
 	ratingAppliedAt?: string | null;
 	rating_applied_at?: string | null;
 	startedAt?: string | null;
@@ -946,6 +950,14 @@ export function getPvpMatchEndMs(match: PvpMatch | null | undefined) {
 
 export function getPvpMatchAcceptanceExpiresMs(match: PvpMatch | null | undefined) {
 	return getTimeMs(match?.acceptanceExpiresAt ?? match?.acceptance_expires_at);
+}
+
+export function getPvpLevelChangeRequestExpiresMs(match: PvpMatch | null | undefined) {
+	return getTimeMs(match?.levelChangeRequestExpiresAt ?? match?.level_change_request_expires_at);
+}
+
+export function getPvpBanPickAbortRequestExpiresMs(match: PvpMatch | null | undefined) {
+	return getTimeMs(match?.banPickAbortRequestExpiresAt ?? match?.ban_pick_abort_request_expires_at);
 }
 
 export function getPvpInviteExpiresMs(

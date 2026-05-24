@@ -24,6 +24,8 @@
 		getPvpMatchMessages,
 		getPvpLevel,
 		getPvpLevelRating,
+		getPvpBanPickAbortRequestExpiresMs,
+		getPvpLevelChangeRequestExpiresMs,
 		getPvpMatchAcceptanceExpiresMs,
 		getPvpMatch,
 		getPvpMatchEndMs,
@@ -150,6 +152,8 @@
 	let mobileActivityTab = 'chat';
 	let banPickDeadlineTimeout: ReturnType<typeof setTimeout> | null = null;
 	let banPickDeadlineKey = '';
+	let mutualRequestExpiryTimeout: ReturnType<typeof setTimeout> | null = null;
+	let mutualRequestExpiryKey = '';
 	let selectedBanLevelIds: number[] = [];
 	let selectedBanTurnKey = '';
 
@@ -219,6 +223,10 @@
 		remainingMs > 0 &&
 		Boolean(selfParticipant);
 	$: levelChangeRequestedByUid = getPvpLevelChangeRequestedByUid(match);
+	$: levelChangeRequestExpiresMs = getPvpLevelChangeRequestExpiresMs(match);
+	$: levelChangeRequestRemainingMs = Math.max(0, (levelChangeRequestExpiresMs ?? now) - now);
+	$: levelChangeRequestActive =
+		Boolean(levelChangeRequestedByUid) && levelChangeRequestRemainingMs > 0;
 	$: levelChangeUsed = Boolean(match?.levelChangedAt ?? match?.level_changed_at);
 	$: canRequestLevelChange =
 		['in_progress', 'waiting_result'].includes(status) &&
@@ -227,6 +235,10 @@
 		Boolean(selfParticipant) &&
 		!levelChangeUsed;
 	$: banPickAbortRequestedByUid = getPvpBanPickAbortRequestedByUid(match);
+	$: banPickAbortRequestExpiresMs = getPvpBanPickAbortRequestExpiresMs(match);
+	$: banPickAbortRequestRemainingMs = Math.max(0, (banPickAbortRequestExpiresMs ?? now) - now);
+	$: banPickAbortRequestActive =
+		Boolean(banPickAbortRequestedByUid) && banPickAbortRequestRemainingMs > 0;
 	$: banPickAbortRequestedBySelf =
 		Boolean(currentUid) && String(banPickAbortRequestedByUid || '') === String(currentUid);
 	$: canRequestBanPickAbort = isBanPick && Boolean(selfParticipant);
@@ -257,6 +269,11 @@
 		banPickTurnSubmitted
 	);
 	$: resetBanPickSelection(`${matchId}:${banPickTurnIndex}:${banPickCurrentUid}`);
+	$: updateMutualRequestExpiryCheck(
+		matchId,
+		levelChangeRequestActive ? levelChangeRequestExpiresMs : null,
+		banPickAbortRequestActive ? banPickAbortRequestExpiresMs : null
+	);
 
 	$: if (
 		$user.checked &&
@@ -286,6 +303,7 @@
 	onDestroy(() => {
 		if (ticker) clearInterval(ticker);
 		if (banPickDeadlineTimeout) clearTimeout(banPickDeadlineTimeout);
+		if (mutualRequestExpiryTimeout) clearTimeout(mutualRequestExpiryTimeout);
 		cleanupRealtime?.();
 		clearScheduledRealtimeTasks();
 	});
@@ -418,6 +436,34 @@
 		if (key === selectedBanTurnKey) return;
 		selectedBanTurnKey = key;
 		selectedBanLevelIds = [];
+	}
+
+	function updateMutualRequestExpiryCheck(
+		id: string | null | undefined,
+		levelChangeExpiresMs: number | null,
+		banPickAbortExpiresMs: number | null
+	) {
+		const expiresMs = [levelChangeExpiresMs, banPickAbortExpiresMs]
+			.filter((value): value is number => Number.isFinite(Number(value)) && Number(value) > now)
+			.sort((left, right) => left - right)[0];
+		const key = id && expiresMs ? `${id}:${expiresMs}` : '';
+		if (key === mutualRequestExpiryKey) return;
+
+		if (mutualRequestExpiryTimeout) {
+			clearTimeout(mutualRequestExpiryTimeout);
+			mutualRequestExpiryTimeout = null;
+		}
+		mutualRequestExpiryKey = key;
+
+		if (!key || !expiresMs) return;
+
+		mutualRequestExpiryTimeout = setTimeout(
+			() => {
+				mutualRequestExpiryTimeout = null;
+				void refreshMatch();
+			},
+			Math.max(0, expiresMs - Date.now() + REALTIME_COALESCE_MS + 250)
+		);
 	}
 
 	function messageId(message: PvpMatchMessage) {
@@ -829,15 +875,36 @@
 		if (!requesterUid || String(requesterUid) === String(currentUid || '')) return '';
 
 		const kind = messageMetadataKind(message);
-		if (kind === 'level_change_requested' && canRequestLevelChange && levelChangeRequestedByUid) {
-			return $_('pvp.agree_level_change');
+		if (
+			kind === 'level_change_requested' &&
+			canRequestLevelChange &&
+			String(levelChangeRequestedByUid || '') === requesterUid
+		) {
+			return levelChangeRequestActive
+				? `${$_('pvp.agree_level_change')} (${formatDuration(levelChangeRequestRemainingMs)})`
+				: $_('pvp.request_expired');
 		}
 
-		if (kind === 'ban_pick_abort_requested' && canRequestBanPickAbort && banPickAbortRequestedByUid) {
-			return $_('pvp.agree_ban_pick_abort');
+		if (
+			kind === 'ban_pick_abort_requested' &&
+			canRequestBanPickAbort &&
+			String(banPickAbortRequestedByUid || '') === requesterUid
+		) {
+			return banPickAbortRequestActive
+				? `${$_('pvp.agree_ban_pick_abort')} (${formatDuration(banPickAbortRequestRemainingMs)})`
+				: $_('pvp.request_expired');
 		}
 
 		return '';
+	}
+
+	function systemMessageActionDisabled(message: PvpMatchMessage) {
+		if (Boolean(actionLoading)) return true;
+
+		const kind = messageMetadataKind(message);
+		if (kind === 'level_change_requested') return !levelChangeRequestActive;
+		if (kind === 'ban_pick_abort_requested') return !banPickAbortRequestActive;
+		return false;
 	}
 
 	function handleSystemMessageAction(message: PvpMatchMessage) {
@@ -1128,6 +1195,11 @@
 			content = $_('pvp.system_message.level_change_requested', {
 				values: { requester: systemParticipantName(metadataText(metadata, 'requesterUid')) }
 			});
+			if (levelChangeRequestActive) {
+				content += ` ${$_('pvp.request_expires_in', {
+					values: { time: formatDuration(levelChangeRequestRemainingMs) }
+				})}`;
+			}
 		}
 
 		if (kind === 'level_changed') {
@@ -1144,6 +1216,11 @@
 			content = $_('pvp.system_message.ban_pick_abort_requested', {
 				values: { requester: systemParticipantName(metadataText(metadata, 'requesterUid')) }
 			});
+			if (banPickAbortRequestActive) {
+				content += ` ${$_('pvp.request_expires_in', {
+					values: { time: formatDuration(banPickAbortRequestRemainingMs) }
+				})}`;
+			}
 		}
 
 		if (kind === 'ban_pick_aborted') {
@@ -1794,7 +1871,11 @@
 											{$_('pvp.waiting_for_acceptance')}
 										</Button>
 									{:else}
-										<Button disabled={Boolean(actionLoading)} class="w-full" on:click={acceptMatch}>
+										<Button
+											disabled={Boolean(actionLoading) || acceptanceRemainingMs <= 0}
+											class="w-full"
+											on:click={acceptMatch}
+										>
 											{#if actionLoading === 'accept-match'}
 												<Loader2 class="mr-2 h-4 w-4 animate-spin" />
 											{/if}
@@ -1949,7 +2030,7 @@
 													<Button
 														class="chat-message-action"
 														size="sm"
-														disabled={Boolean(actionLoading)}
+														disabled={systemMessageActionDisabled(message)}
 														on:click={() => handleSystemMessageAction(message)}
 													>
 														{#if actionLoading === 'level-change' || actionLoading === 'ban-pick-abort'}
@@ -2174,7 +2255,7 @@
 												<Button
 													class="chat-message-action"
 													size="sm"
-													disabled={Boolean(actionLoading)}
+													disabled={systemMessageActionDisabled(message)}
 													on:click={() => handleSystemMessageAction(message)}
 												>
 													{#if actionLoading === 'level-change' || actionLoading === 'ban-pick-abort'}
