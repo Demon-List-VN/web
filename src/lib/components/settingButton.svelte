@@ -53,8 +53,10 @@
 		const response = await fetch(`${import.meta.env.VITE_API_URL}/APIKey`, {
 			method: 'POST',
 			headers: {
+				'Content-Type': 'application/json',
 				Authorization: 'Bearer ' + (await $user.token())!
-			}
+			},
+			body: JSON.stringify({ flag: 'manual' })
 		});
 
 		if (response.status === 409) {
