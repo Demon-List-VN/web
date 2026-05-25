@@ -392,6 +392,7 @@
 					<Table.Header>
 						<Table.Row>
 							<Table.Head class="w-[70px]">{$_('settings.api.key')}</Table.Head>
+							<Table.Head>{$_('settings.api.flag')}</Table.Head>
 							<Table.Head>{$_('settings.api.created_at')}</Table.Head>
 							<Table.Head class="text-right"></Table.Head>
 						</Table.Row>
@@ -404,6 +405,7 @@
 										{key.key}
 									</button>
 								</Table.Cell>
+								<Table.Cell>{key.flag ?? 'manual'}</Table.Cell>
 								<Table.Cell>{new Date(key.created_at).toLocaleString('vi-VN')}</Table.Cell>
 								<Table.Cell class="text-right">
 									<AlertDialog.Root>

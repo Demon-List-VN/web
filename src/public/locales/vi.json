@@ -737,6 +737,7 @@
 		},
 		"api": {
 			"key": "Khoá",
+			"flag": "Loại",
 			"created_at": "Tạo lúc",
 			"delete": {
 				"title": "Bạn chắc không?",
@@ -750,7 +751,7 @@
 				"description": "Bất cứ ai với khoá này có thể nộp và thay đổi tài khoản của bạn.",
 				"cancel": "Huỷ",
 				"continue": "Tiếp tục",
-				"limit": "Bạn chỉ có thể có tối đa 3 khoá API đăng nhập Geode.",
+				"limit": "Bạn chỉ có thể có tối đa 1 khoá API thủ công.",
 				"error": "Không thể tạo khoá API."
 			}
 		},

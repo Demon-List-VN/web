@@ -738,6 +738,7 @@
 		},
 		"api": {
 			"key": "Key",
+			"flag": "Flag",
 			"created_at": "Created at",
 			"delete": {
 				"title": "Are you sure?",
@@ -751,7 +752,7 @@
 				"description": "Anyone with this key can submit and make change to your account.",
 				"cancel": "Cancel",
 				"continue": "Continue",
-				"limit": "You can only have 3 Geode login API keys.",
+				"limit": "You can only have 1 manual API key.",
 				"error": "Failed to create API key."
 			}
 		},
