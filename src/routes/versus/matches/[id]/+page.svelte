@@ -137,6 +137,8 @@
 	let now = Date.now();
 	let ticker: ReturnType<typeof setInterval> | null = null;
 	let actionLoading = '';
+	let acceptingMatchId: string | null = null;
+	let locallyAcceptedMatchIds = new Set<string>();
 	let endedBellPlayedFor: string | null = null;
 	let showGeodeAlert = true;
 	let messages: PvpMatchMessage[] = [];
@@ -214,7 +216,9 @@
 	$: acceptanceRemainingMs = Math.max(0, (getPvpMatchAcceptanceExpiresMs(match) ?? now) - now);
 	$: isActive = isActivePvpMatch(match);
 	$: selfParticipant = getPvpSelfParticipant(match, currentUid);
-	$: selfAccepted = hasPvpParticipantAccepted(selfParticipant);
+	$: selfAccepted =
+		hasPvpParticipantAccepted(selfParticipant) ||
+		(matchId ? locallyAcceptedMatchIds.has(String(matchId)) : false);
 	$: rematchOpponent = getPvpOpponent(match, currentUid);
 	$: rematchOpponentUid = getPvpParticipantUid(rematchOpponent);
 	$: canRematch = Boolean(match && !isActive && selfParticipant && rematchOpponentUid);
@@ -532,16 +536,30 @@
 	}
 
 	async function acceptMatch() {
-		if (!matchId) return;
+		if (!matchId || actionLoading || selfAccepted) return;
 
+		const currentMatchId = matchId;
+		const matchKey = String(currentMatchId);
+		if (acceptingMatchId === matchKey) return;
+
+		acceptingMatchId = matchKey;
 		actionLoading = 'accept-match';
 		try {
-			const response = await acceptPvpMatch(await $user.token(), matchId);
+			const response = await acceptPvpMatch(await $user.token(), currentMatchId);
+			locallyAcceptedMatchIds = new Set(locallyAcceptedMatchIds).add(matchKey);
 			match = response;
 		} catch (error) {
+			locallyAcceptedMatchIds = new Set(
+				[...locallyAcceptedMatchIds].filter((id) => id !== matchKey)
+			);
+			if (error instanceof Error && error.message.toLowerCase().includes('already in a match')) {
+				await refreshMatch();
+				return;
+			}
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.accept_match_failed'));
 		} finally {
-			actionLoading = '';
+			if (actionLoading === 'accept-match') actionLoading = '';
+			if (acceptingMatchId === matchKey) acceptingMatchId = null;
 		}
 	}
 
@@ -899,7 +917,7 @@
 	}
 
 	function systemMessageActionDisabled(message: PvpMatchMessage) {
-		if (Boolean(actionLoading)) return true;
+		if (actionLoading) return true;
 
 		const kind = messageMetadataKind(message);
 		if (kind === 'level_change_requested') return !levelChangeRequestActive;

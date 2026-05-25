@@ -169,6 +169,8 @@
 	let lobbyReady = false;
 	let pendingDialogTimeout: ReturnType<typeof setTimeout> | null = null;
 	let pendingExpirationCheckMatchId: string | null = null;
+	let acceptingPendingMatchId: string | null = null;
+	let locallyAcceptedPendingMatchIds = new Set<string>();
 	let keydownHandler: ((e: KeyboardEvent) => void) | null = null;
 	let matchmakingCheckTimer: ReturnType<typeof setInterval> | null = null;
 	let loadedLeaderboardMode: PvpMode | '' = '';
@@ -180,11 +182,17 @@
 	$: visibleHistoryMatches = historyMatches.filter((match) => getPvpMode(match) === historyMode);
 	$: ongoingHistoryMatches = visibleHistoryMatches.filter((match) => isActivePvpMatch(match));
 	$: pastHistoryMatches = visibleHistoryMatches.filter((match) => !isActivePvpMatch(match));
-	$: pendingMatch = activeMatch && getPvpStatus(activeMatch) === 'pending' ? activeMatch : null;
+	$: pendingMatch =
+		activeMatch &&
+		getPvpStatus(activeMatch) === 'pending' &&
+		!isPvpMatchConfirmedByBoth(activeMatch)
+			? activeMatch
+			: null;
 	$: pendingMatchId = getPvpMatchId(pendingMatch);
-	$: pendingSelfAccepted = hasPvpParticipantAccepted(
-		getPvpSelfParticipant(pendingMatch, currentUid)
-	);
+	$: pendingMatchKey = pendingMatchId ? String(pendingMatchId) : '';
+	$: pendingSelfAccepted =
+		hasPvpParticipantAccepted(getPvpSelfParticipant(pendingMatch, currentUid)) ||
+		(pendingMatchKey ? locallyAcceptedPendingMatchIds.has(pendingMatchKey) : false);
 	$: queueStatus = getPvpStatus(lobby.matchmaking, 'idle');
 	$: isSearching = queueStatus === 'searching';
 	$: selectedRatingState = getSelectedRatingState(lobby, selectedMode);
@@ -1089,20 +1097,38 @@
 	}
 
 	async function acceptPendingMatch() {
-		if (!pendingMatchId) return;
+		if (!pendingMatchId || actionLoading || pendingSelfAccepted) return;
 
-		actionLoading = `accept-match-${pendingMatchId}`;
+		const matchId = pendingMatchId;
+		const matchKey = String(matchId);
+		if (acceptingPendingMatchId === matchKey) return;
+
+		acceptingPendingMatchId = matchKey;
+		actionLoading = `accept-match-${matchId}`;
 		try {
-			const response = await acceptPvpMatch(await $user.token(), pendingMatchId);
+			const response = await acceptPvpMatch(await $user.token(), matchId);
+			locallyAcceptedPendingMatchIds = new Set(locallyAcceptedPendingMatchIds).add(matchKey);
 			applyMatch(response);
 			if (isPvpMatchConfirmedByBoth(response)) {
 				matchDialogOpen = false;
 				autoRedirectToActiveMatch(response);
 			}
 		} catch (error) {
+			locallyAcceptedPendingMatchIds = new Set(
+				[...locallyAcceptedPendingMatchIds].filter((id) => id !== matchKey)
+			);
+			if (error instanceof Error && error.message.toLowerCase().includes('already in a match')) {
+				await refreshLobby();
+				if (isPvpMatchConfirmedByBoth(lobby.activeMatch)) {
+					matchDialogOpen = false;
+					autoRedirectToActiveMatch(lobby.activeMatch);
+				}
+				return;
+			}
 			toast.error(error instanceof Error ? error.message : $_('pvp.toast.accept_match_failed'));
 		} finally {
-			actionLoading = '';
+			if (actionLoading === `accept-match-${matchId}`) actionLoading = '';
+			if (acceptingPendingMatchId === matchKey) acceptingPendingMatchId = null;
 		}
 	}
 
