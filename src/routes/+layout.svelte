@@ -23,6 +23,10 @@
 	import { closeSidebar } from '$lib/client/sidebar';
 	import OnboardingModal from '$lib/components/OnboardingModal.svelte';
 	import NavigationChrome from '$lib/components/layout/NavigationChrome.svelte';
+	import {
+		ownSocialPresenceUid,
+		socialPresenceVisible
+	} from '$lib/client/socialPresence';
 
 	export let data: LayoutData;
 
@@ -110,6 +114,10 @@
 	}
 
 	$: pathname = $page.url.pathname;
+	$: ownSocialPresenceUid.set($user.loggedIn ? ($user.data?.uid ?? '') : '');
+	$: socialPresenceVisible.set(
+		$user.loggedIn ? $user.data?.socialPresenceVisible !== false : false
+	);
 
 	function signIn() {
 		supabase.auth.signInWithOAuth({

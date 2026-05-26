@@ -7,25 +7,38 @@
 	import { user } from '$lib/client';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import {
+		getSocialActivity,
 		getSocialStatus,
 		sendFriendRequest,
+		type SocialActivity,
 		type SocialStatus
 	} from '$lib/client/social';
+	import {
+		socialPresenceLabel,
+		subscribeToSocialPresence,
+		type AggregatedSocialPresence
+	} from '$lib/client/socialPresence';
 	import {
 		getSupporterTier,
 		getSupporterTierStyle
 	} from '$lib/client/supporterTier';
 	import ProfileEditButton from '$lib/components/profileEditButton.svelte';
-	import { BadgeCheck, Clock, MapPin, UserCheck, UserPlus } from 'lucide-svelte';
-	import { _ } from 'svelte-i18n';
+	import { BadgeCheck, Clock, Eye, MapPin, UserCheck, UserPlus } from 'lucide-svelte';
+	import { _, locale } from 'svelte-i18n';
+	import { onDestroy } from 'svelte';
 	import SupporterBadge from './SupporterBadge.svelte';
 
 	export let data: any;
 
 	let isBannerFailedToLoad = false;
 	let socialStatus: SocialStatus = 'none';
+	let socialActivity: SocialActivity | null = null;
+	let socialPresence: AggregatedSocialPresence | null = null;
 	let socialStatusKey = '';
+	let socialActivityKey = '';
+	let presenceKey = '';
 	let addingFriend = false;
+	let cleanupPresence: (() => Promise<unknown>) | null = null;
 
 	$: player = data.player;
 	$: isSupporter = isActive(player.supporterUntil);
@@ -39,6 +52,7 @@
 	}?version=${player.bannerVersion}`;
 	$: showFriendButton = browser && $user.loggedIn && player.uid
 		&& player.uid !== $user.data?.uid;
+	$: showPresenceStatus = browser && player.uid && player.uid !== $user.data?.uid;
 	$: friendButtonDisabled = addingFriend
 		|| !['none'].includes(socialStatus);
 	$: friendButtonLabel = socialStatus === 'friend'
@@ -63,6 +77,35 @@
 		socialStatusKey = '';
 		socialStatus = 'none';
 	}
+	$: if (browser && player.uid && player.uid !== socialActivityKey) {
+		socialActivityKey = player.uid;
+		loadSocialActivity();
+	}
+	$: if (browser && player.uid && player.uid !== presenceKey) {
+		presenceKey = player.uid;
+		cleanupPresence?.();
+		cleanupPresence = subscribeToSocialPresence([player.uid], (value) => {
+			socialPresence = value[player.uid] ?? null;
+		});
+	}
+	$: showSpectate = socialStatus === 'friend'
+		&& Boolean(socialActivity?.canSpectate)
+		&& socialActivity?.presenceVisible !== false
+		&& Boolean(socialActivity?.activity?.matchId)
+		&& Boolean(socialPresence?.online);
+	$: socialLine = socialActivity?.presenceVisible === false
+		? text('Offline', 'Ngoại tuyến')
+		: socialActivity?.activity?.type === 'pvp_match' && socialPresence?.online
+		? `In match · ${socialPresenceLabel(socialPresence, text)}`
+		: socialPresenceLabel(socialPresence, text);
+
+	function text(en: string, vi: string) {
+		return $locale === 'vi' ? vi : en;
+	}
+
+	onDestroy(() => {
+		cleanupPresence?.();
+	});
 
 	function getBgColor() {
 		if (player.bgColor) {
@@ -74,9 +117,21 @@
 
 	async function loadSocialStatus() {
 		try {
-			socialStatus = await getSocialStatus(await $user.token(), player.uid);
+			const token = await $user.token();
+			socialStatus = await getSocialStatus(token, player.uid);
 		} catch {
 			socialStatus = 'none';
+		}
+	}
+
+	async function loadSocialActivity() {
+		try {
+			socialActivity = await getSocialActivity(
+				$user.loggedIn ? await $user.token() : null,
+				player.uid
+			);
+		} catch {
+			socialActivity = null;
 		}
 	}
 
@@ -206,6 +261,18 @@
               {friendButtonLabel}
             </Button>
           {/if}
+          {#if showPresenceStatus}
+            <span class="presence-status">{socialLine}</span>
+          {/if}
+          {#if showSpectate}
+            <a
+              class={`${badgeVariants({ variant: 'outline' })} friend-action`}
+              href={`/versus/matches/${socialActivity?.activity?.matchId}?spectate=1`}
+            >
+              <Eye class="h-4 w-4" />
+              {text('Spectate', 'Xem trận')}
+            </a>
+          {/if}
         </div>
 
         <!-- Location -->
@@ -288,5 +355,10 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+
+.presence-status {
+  color: var(--textColor2);
+  font-size: 13px;
 }
 </style>

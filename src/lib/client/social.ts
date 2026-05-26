@@ -11,6 +11,7 @@ export type SocialPlayer = {
     uid: string;
     name: string;
     socialStatus?: SocialStatus;
+    socialActivity?: SocialActivity | null;
     avatarVersion?: number;
     isAvatarGif?: boolean;
     supporterUntil?: string | null;
@@ -19,6 +20,21 @@ export type SocialPlayer = {
     clan?: number | null;
     clans?: Record<string, unknown> | null;
     [key: string]: unknown;
+};
+
+export type SocialActivity = {
+    presenceVisible?: boolean;
+    activity?: {
+        type?: 'pvp_match' | string;
+        status?: string;
+        matchId?: number | string;
+        mode?: string;
+        levelId?: number | string | null;
+        startedAt?: string | null;
+        endsAt?: string | null;
+        [key: string]: unknown;
+    } | null;
+    canSpectate?: boolean;
 };
 
 export type SocialConversation = {
@@ -126,6 +142,29 @@ export async function getSocialStatus(token: string | null | undefined, uid: str
     );
 
     return payload.status;
+}
+
+export async function getSocialActivity(token: string | null | undefined, uid: string) {
+    return socialRequest<SocialActivity>(`/social/players/${encodeURIComponent(uid)}/activity`, {
+        token
+    });
+}
+
+export async function getSocialPresenceSettings(token: string | null | undefined) {
+    return socialRequest<{ socialPresenceVisible: boolean; }>('/social/presence-settings', {
+        token
+    });
+}
+
+export async function updateSocialPresenceSettings(
+    token: string | null | undefined,
+    socialPresenceVisible: boolean
+) {
+    return socialRequest<{ socialPresenceVisible: boolean; }>('/social/presence-settings', {
+        method: 'PATCH',
+        token,
+        body: { socialPresenceVisible }
+    });
 }
 
 export async function sendFriendRequest(token: string | null | undefined, toUid: string) {

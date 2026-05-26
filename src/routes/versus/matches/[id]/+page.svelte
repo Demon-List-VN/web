@@ -29,6 +29,7 @@
 		getPvpLevelChangeRequestExpiresMs,
 		getPvpMatchAcceptanceExpiresMs,
 		getPvpMatch,
+		getSpectatablePvpMatch,
 		getPvpMatchEndMs,
 		getPvpMatchId,
 		getPvpMode,
@@ -172,6 +173,8 @@
 	let selectedBanTurnKey = '';
 
 	$: matchId = $page.params.id;
+	$: isSpectateRoute = $page.url.searchParams.get('spectate') === '1';
+	$: isSpectator = isSpectateRoute || match?.viewerRole === 'spectator';
 	$: matchUrl = `${siteUrl}/versus/matches/${matchId}`;
 	$: currentUid = $user.data?.uid;
 	$: status = getPvpStatus(match);
@@ -276,9 +279,11 @@
 	$: chatOpenAfterMatch = status === 'completed' && postMatchChatRemainingMs > 0;
 	$: chatDisabled = !chatOpenDuringBanPick && !chatOpenDuringMatch
 		&& !chatOpenAfterMatch;
-	$: chatInputDisabled = chatDisabled || chatMuted;
+	$: chatInputDisabled = chatDisabled || chatMuted || isSpectator;
 	$: chatDescription = chatMuted
 		? $_('pvp.chat_muted_description')
+		: isSpectator
+		? 'Spectating in read-only mode.'
 		: chatDisabled
 		? $_('pvp.chat_disabled')
 		: chatOpenAfterMatch
@@ -369,14 +374,20 @@
 		try {
 			const token = await $user.token();
 			setPvpRealtimeAuth(token);
-			await Promise.all([refreshMatch(), refreshMessages()]);
+			await Promise.all([
+				refreshMatch(),
+				isSpectator ? Promise.resolve() : refreshMessages()
+			]);
 
 			cleanupRealtime = subscribeToPvpMatchDetail(id, async (event) => {
 				if (event.scope === 'message') {
-					scheduleRealtimeTask(
-						'messages',
-						() => refreshMessages({ incremental: true })
-					);
+					if (!isSpectator) {
+						scheduleRealtimeTask(
+							'messages',
+							() => refreshMessages({ incremental: true })
+						);
+					}
+
 					scheduleRealtimeTask('match', refreshMatch);
 
 					return;
@@ -400,7 +411,9 @@
 
 		try {
 			const previousMatch = match;
-			const nextMatch = await getPvpMatch(await $user.token(), matchId);
+			const nextMatch = isSpectateRoute
+				? await getSpectatablePvpMatch(await $user.token(), matchId)
+				: await getPvpMatch(await $user.token(), matchId);
 			handleMatchSound(previousMatch, nextMatch);
 			match = nextMatch;
 		} catch (error) {
@@ -413,7 +426,7 @@
 	}
 
 	async function refreshMessages(options: { incremental?: boolean; } = {}) {
-		if (!$user.loggedIn || !matchId) {
+		if (!$user.loggedIn || !matchId || isSpectator) {
 			return;
 		}
 
@@ -694,7 +707,7 @@
 	}
 
 	async function acceptMatch() {
-		if (!matchId || actionLoading || selfAccepted) {
+		if (!matchId || actionLoading || selfAccepted || isSpectator) {
 			return;
 		}
 
@@ -775,6 +788,7 @@
 		if (
 			!matchId || actionLoading || !banPickIsViewerTurn
 			|| banPickTurnSubmitted
+			|| isSpectator
 		) {
 			return;
 		}
@@ -810,7 +824,7 @@
 	}
 
 	async function resignMatch() {
-		if (!matchId || !canResign || actionLoading) {
+		if (!matchId || !canResign || actionLoading || isSpectator) {
 			return;
 		}
 
@@ -837,7 +851,7 @@
 	}
 
 	async function requestLevelChange() {
-		if (!matchId || !canRequestLevelChange || actionLoading) {
+		if (!matchId || !canRequestLevelChange || actionLoading || isSpectator) {
 			return;
 		}
 
@@ -870,6 +884,7 @@
 		if (
 			!matchId || !canRequestBanPickAbort || actionLoading
 			|| banPickAbortRequestedBySelf
+			|| isSpectator
 		) {
 			return;
 		}
@@ -912,7 +927,7 @@
 	}
 
 	async function requestRematch() {
-		if (!match || actionLoading) {
+		if (!match || actionLoading || isSpectator) {
 			return;
 		}
 
@@ -946,7 +961,7 @@
 	}
 
 	async function sendChatMessage() {
-		if (!matchId || chatInputDisabled || actionLoading === 'send-chat') {
+		if (!matchId || chatInputDisabled || actionLoading === 'send-chat' || isSpectator) {
 			return;
 		}
 
@@ -2547,7 +2562,7 @@
                 </div>
               {/if}
 
-              {#if status === 'pending'}
+              {#if status === 'pending' && !isSpectator}
                 <div class="acceptance-panel">
                   <p>{$_('pvp.match_found_hint')}</p>
                   {#if selfAccepted}

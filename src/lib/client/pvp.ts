@@ -686,6 +686,13 @@ export async function getPvpMatch(token: string | null | undefined, id: number |
     return pvpRequest<PvpMatch>(`/pvp/matches/${id}`, { token });
 }
 
+export async function getSpectatablePvpMatch(
+    token: string | null | undefined,
+    id: number | string
+) {
+    return pvpRequest<PvpMatch>(`/pvp/matches/${id}/spectate`, { token });
+}
+
 export async function acceptPvpMatch(token: string | null | undefined, id: number | string) {
     return pvpRequest<PvpMatch>(`/pvp/matches/${id}/accept`, {
         method: 'POST',

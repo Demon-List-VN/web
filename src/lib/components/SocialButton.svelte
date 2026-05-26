@@ -6,6 +6,8 @@
 		Ban,
 		Clock,
 		ChevronLeft,
+		Eye,
+		EyeOff,
 		Inbox,
 		Loader2,
 		MessageCircle,
@@ -28,9 +30,11 @@
 	import {
 		blockSocialPlayer,
 		createSocialConversation,
+		getSocialPresenceSettings,
 		searchSocialPlayers,
 		sendFriendRequest,
 		sendSocialMessage,
+		updateSocialPresenceSettings,
 		type SocialConversation,
 		type SocialMessage,
 		type SocialPlayer,
@@ -57,6 +61,11 @@
 		updateCachedConversationWithMessage,
 		upsertCachedConversation
 	} from '$lib/client/socialCache';
+	import {
+		socialPresenceVisible,
+		subscribeToSocialPresence,
+		type AggregatedSocialPresence
+	} from '$lib/client/socialPresence';
 	import { locale } from 'svelte-i18n';
 	import { toast } from 'svelte-sonner';
 
@@ -78,6 +87,10 @@
 	let messageSearchTimer: ReturnType<typeof setTimeout> | null = null;
 	let pendingConversationFocusId: string | null = null;
 	let initializedSocialUid = '';
+	let visibleOnline = true;
+	let presenceByUid: Record<string, AggregatedSocialPresence> = {};
+	let presenceWatchKey = '';
+	let cleanupPresence: (() => Promise<unknown>) | null = null;
 	let activeMessageUnsubscribe: (() => void) | null = null;
 	let readMarkTimer: ReturnType<typeof setTimeout> | null = null;
 	let lastMarkedReadKey = '';
@@ -126,6 +139,11 @@
 			total + Math.max(0, Number(conversation.unreadCount || 0)),
 		0
 	);
+	$: watchSocialPresence([
+		...friends.map((friend) => friend.uid),
+		...friendResults.map((player) => player.uid),
+		...messageResults.map((player) => player.uid)
+	]);
 	$: if (browser && $user.checked) {
 		const uid = $user.loggedIn ? ($user.data?.uid ?? '') : '';
 
@@ -170,6 +188,65 @@
 			default:
 				return '';
 		}
+	}
+
+	function playerPresence(player: SocialPlayer) {
+		return presenceByUid[player.uid] ?? null;
+	}
+
+	function isPlayerOnline(player: SocialPlayer | null | undefined) {
+		return Boolean(
+			player
+			&& player.socialActivity?.presenceVisible !== false
+			&& playerPresence(player)?.online
+		);
+	}
+
+	function playerActivityLabel(player: SocialPlayer) {
+		if (
+			player.socialActivity?.presenceVisible !== false
+			&& player.socialActivity?.activity?.type === 'pvp_match'
+			&& playerPresence(player)?.online
+		) {
+			return text('In match', 'Đang trong trận');
+		}
+
+		return statusLabel(player.socialStatus);
+	}
+
+	function canSpectate(player: SocialPlayer) {
+		return player.socialStatus === 'friend'
+			&& Boolean(player.socialActivity?.canSpectate)
+			&& player.socialActivity?.presenceVisible !== false
+			&& Boolean(player.socialActivity?.activity?.matchId)
+			&& Boolean(playerPresence(player)?.online);
+	}
+
+	function spectateUrl(player: SocialPlayer) {
+		return `/versus/matches/${player.socialActivity?.activity?.matchId}?spectate=1`;
+	}
+
+	function watchSocialPresence(players: string[]) {
+		const nextKey = [...new Set(players.filter(Boolean))]
+			.sort()
+			.join(',');
+
+		if (nextKey === presenceWatchKey) {
+			return;
+		}
+
+		presenceWatchKey = nextKey;
+		cleanupPresence?.();
+		cleanupPresence = null;
+		presenceByUid = {};
+
+		if (!nextKey) {
+			return;
+		}
+
+		cleanupPresence = subscribeToSocialPresence(nextKey.split(','), (value) => {
+			presenceByUid = value;
+		});
 	}
 
 	function formatMessageTime(value?: string | null) {
@@ -270,6 +347,9 @@
 
 		try {
 			const tokenValue = await token();
+			const settings = await getSocialPresenceSettings(tokenValue);
+			visibleOnline = settings.socialPresenceVisible !== false;
+			socialPresenceVisible.set(visibleOnline);
 			const [, refreshedConversations] = await Promise.all([
 				refreshSocialFriends(uid, tokenValue),
 				refreshSocialConversations(uid, tokenValue)
@@ -294,12 +374,54 @@
 		}
 	}
 
+	async function togglePresenceVisible() {
+		if (actionLoading || !$user.loggedIn) {
+			return;
+		}
+
+		const nextVisible = !visibleOnline;
+		actionLoading = 'presence-visible';
+
+		try {
+			const settings = await updateSocialPresenceSettings(
+				await token(),
+				nextVisible
+			);
+			visibleOnline = settings.socialPresenceVisible !== false;
+			socialPresenceVisible.set(visibleOnline);
+			user.update((current) => ({
+				...current,
+				data: {
+					...current.data,
+					socialPresenceVisible: visibleOnline
+				}
+			}));
+			toast.success(
+				visibleOnline
+					? text('You are visible online', 'Bạn đang hiện online')
+					: text('You are invisible', 'Bạn đang ẩn')
+			);
+		} catch (error) {
+			toast.error(
+				error instanceof Error
+					? error.message
+					: text('Failed to update visibility', 'Không cập nhật được trạng thái')
+			);
+		} finally {
+			actionLoading = '';
+		}
+	}
+
 	async function refreshAll() {
 		if (!$user.loggedIn || !$user.data?.uid) {
 			return;
 		}
 
-		await hydrateSocialCache($user.data.uid);
+		const tokenValue = await token();
+		await Promise.all([
+			refreshSocialFriends($user.data.uid, tokenValue),
+			refreshSocialConversations($user.data.uid, tokenValue)
+		]);
 	}
 
 	function scheduleFriendSearch() {
@@ -766,6 +888,7 @@
 		}
 
 		activeMessageUnsubscribe?.();
+		cleanupPresence?.();
 		unsubscribeFriends();
 		unsubscribeConversations();
 	});
@@ -794,21 +917,44 @@
       <div class="socialHeader">
         <div>
           <h4>{text('Social', 'Xã hội')}</h4>
-          <p>{text('Friends and messages', 'Bạn bè và tin nhắn')}</p>
+          <p>{
+            visibleOnline
+              ? text('Friends and messages', 'Bạn bè và tin nhắn')
+              : text('Invisible mode', 'Chế độ ẩn')
+          }</p>
         </div>
-        <Tabs.List class="socialTabList">
-          <Tabs.Trigger value="friends">{
-            text('Friends', 'Bạn bè')
-          }</Tabs.Trigger>
-          <Tabs.Trigger value="conversations" class="socialTabTrigger">
-            <span>{text('Conversations', 'Hội thoại')}</span>
-            {#if unreadMessageCount > 0}
-              <span class="tabUnreadBadge">{
-                unreadMessageCount > 99 ? '99+' : unreadMessageCount
-              }</span>
+        <div class="socialHeaderActions">
+          <Button
+            size="icon"
+            variant="ghost"
+            disabled={actionLoading === 'presence-visible'}
+            on:click={togglePresenceVisible}
+            title={visibleOnline
+              ? text('Appear offline', 'Ẩn trạng thái')
+              : text('Appear online', 'Hiện online')}
+          >
+            {#if actionLoading === 'presence-visible'}
+              <Loader2 class="h-4 w-4 animate-spin" />
+            {:else if visibleOnline}
+              <Eye class="h-4 w-4" />
+            {:else}
+              <EyeOff class="h-4 w-4" />
             {/if}
-          </Tabs.Trigger>
-        </Tabs.List>
+          </Button>
+          <Tabs.List class="socialTabList">
+            <Tabs.Trigger value="friends">{
+              text('Friends', 'Bạn bè')
+            }</Tabs.Trigger>
+            <Tabs.Trigger value="conversations" class="socialTabTrigger">
+              <span>{text('Conversations', 'Hội thoại')}</span>
+              {#if unreadMessageCount > 0}
+                <span class="tabUnreadBadge">{
+                  unreadMessageCount > 99 ? '99+' : unreadMessageCount
+                }</span>
+              {/if}
+            </Tabs.Trigger>
+          </Tabs.List>
+        </div>
       </div>
 
       <Tabs.Content value="friends" class="socialPanel">
@@ -837,22 +983,37 @@
               {#each friendResults as player (player.uid)}
                 <div class="playerRow">
                   <div class="playerIdentity">
-                    <Avatar.Root class="h-9 w-9">
-                      <Avatar.Image
-                        class="object-cover"
-                        src={playerAvatar(player)}
-                        alt={player.name}
-                      />
-                      <Avatar.Fallback>{
-                        player.name?.[0] || '?'
-                      }</Avatar.Fallback>
-                    </Avatar.Root>
+                    <div class="presenceAvatar">
+                      <Avatar.Root class="h-9 w-9">
+                        <Avatar.Image
+                          class="object-cover"
+                          src={playerAvatar(player)}
+                          alt={player.name}
+                        />
+                        <Avatar.Fallback>{
+                          player.name?.[0] || '?'
+                        }</Avatar.Fallback>
+                      </Avatar.Root>
+                      <span
+                        class:online={isPlayerOnline(player)}
+                        class="presenceDot"
+                      ></span>
+                    </div>
                     <div>
                       <a href={`/player/${player.uid}`}>{player.name}</a>
-                      <span>{statusLabel(player.socialStatus)}</span>
+                      <span>{playerActivityLabel(player)}</span>
                     </div>
                   </div>
                   <div class="rowActions">
+                    {#if canSpectate(player)}
+                      <a
+                        class={`${buttonVariants({ variant: 'ghost', size: 'icon' })} messageActionButton`}
+                        href={spectateUrl(player)}
+                        title={text('Spectate match', 'Xem trận')}
+                      >
+                        <Eye class="h-4 w-4" />
+                      </a>
+                    {/if}
                     <Button
                       size="icon"
                       variant="ghost"
@@ -920,20 +1081,35 @@
             {#each friends as player (player.uid)}
               <div class="playerRow">
                 <div class="playerIdentity">
-                  <Avatar.Root class="h-9 w-9">
-                    <Avatar.Image
-                      class="object-cover"
-                      src={playerAvatar(player)}
-                      alt={player.name}
-                    />
-                    <Avatar.Fallback>{player.name?.[0] || '?'}</Avatar.Fallback>
-                  </Avatar.Root>
+                  <div class="presenceAvatar">
+                    <Avatar.Root class="h-9 w-9">
+                      <Avatar.Image
+                        class="object-cover"
+                        src={playerAvatar(player)}
+                        alt={player.name}
+                      />
+                      <Avatar.Fallback>{player.name?.[0] || '?'}</Avatar.Fallback>
+                    </Avatar.Root>
+                    <span
+                      class:online={isPlayerOnline(player)}
+                      class="presenceDot"
+                    ></span>
+                  </div>
                   <div>
                     <a href={`/player/${player.uid}`}>{player.name}</a>
-                    <span>{text('Friend', 'Bạn bè')}</span>
+                    <span>{playerActivityLabel(player)}</span>
                   </div>
                 </div>
                 <div class="rowActions">
+                  {#if canSpectate(player)}
+                    <a
+                      class={`${buttonVariants({ variant: 'ghost', size: 'icon' })} messageActionButton`}
+                      href={spectateUrl(player)}
+                      title={text('Spectate match', 'Xem trận')}
+                    >
+                      <Eye class="h-4 w-4" />
+                    </a>
+                  {/if}
                   <Button
                     size="icon"
                     variant="ghost"
@@ -983,14 +1159,20 @@
                 type="button"
                 on:click|preventDefault|stopPropagation={() => startMessage(player)}
               >
-                <Avatar.Root class="h-7 w-7">
-                  <Avatar.Image
-                    class="object-cover"
-                    src={playerAvatar(player)}
-                    alt={player.name}
-                  />
-                  <Avatar.Fallback>{player.name?.[0] || '?'}</Avatar.Fallback>
-                </Avatar.Root>
+                <div class="presenceAvatar small">
+                  <Avatar.Root class="h-7 w-7">
+                    <Avatar.Image
+                      class="object-cover"
+                      src={playerAvatar(player)}
+                      alt={player.name}
+                    />
+                    <Avatar.Fallback>{player.name?.[0] || '?'}</Avatar.Fallback>
+                  </Avatar.Root>
+                  <span
+                    class:online={isPlayerOnline(player)}
+                    class="presenceDot"
+                  ></span>
+                </div>
                 <span>{player.name}</span>
               </button>
             {/each}
@@ -1023,18 +1205,24 @@
                     class="conversationItem"
                     on:click={() => selectConversation(conversation)}
                   >
-                    <Avatar.Root class="h-8 w-8">
-                      {#if conversation.otherPlayer}
-                        <Avatar.Image
-                          class="object-cover"
-                          src={playerAvatar(conversation.otherPlayer)}
-                          alt={conversation.otherPlayer.name}
-                        />
-                      {/if}
-                      <Avatar.Fallback>{
-                        conversation.otherPlayer?.name?.[0] || '?'
-                      }</Avatar.Fallback>
-                    </Avatar.Root>
+                    <div class="presenceAvatar">
+                      <Avatar.Root class="h-8 w-8">
+                        {#if conversation.otherPlayer}
+                          <Avatar.Image
+                            class="object-cover"
+                            src={playerAvatar(conversation.otherPlayer)}
+                            alt={conversation.otherPlayer.name}
+                          />
+                        {/if}
+                        <Avatar.Fallback>{
+                          conversation.otherPlayer?.name?.[0] || '?'
+                        }</Avatar.Fallback>
+                      </Avatar.Root>
+                      <span
+                        class:online={isPlayerOnline(conversation.otherPlayer)}
+                        class="presenceDot"
+                      ></span>
+                    </div>
                     <span class="conversationSummary">
                       <strong>{
                         conversation.otherPlayer?.name || text('Player', 'Người chơi')
@@ -1064,18 +1252,24 @@
                   class="conversationItem"
                   on:click={() => selectConversation(conversation)}
                 >
-                  <Avatar.Root class="h-8 w-8">
-                    {#if conversation.otherPlayer}
-                      <Avatar.Image
-                        class="object-cover"
-                        src={playerAvatar(conversation.otherPlayer)}
-                        alt={conversation.otherPlayer.name}
-                      />
-                    {/if}
-                    <Avatar.Fallback>{
-                      conversation.otherPlayer?.name?.[0] || '?'
-                    }</Avatar.Fallback>
-                  </Avatar.Root>
+                  <div class="presenceAvatar">
+                    <Avatar.Root class="h-8 w-8">
+                      {#if conversation.otherPlayer}
+                        <Avatar.Image
+                          class="object-cover"
+                          src={playerAvatar(conversation.otherPlayer)}
+                          alt={conversation.otherPlayer.name}
+                        />
+                      {/if}
+                      <Avatar.Fallback>{
+                        conversation.otherPlayer?.name?.[0] || '?'
+                      }</Avatar.Fallback>
+                    </Avatar.Root>
+                    <span
+                      class:online={isPlayerOnline(conversation.otherPlayer)}
+                      class="presenceDot"
+                    ></span>
+                  </div>
                   <span class="conversationSummary">
                     <strong>{
                       conversation.otherPlayer?.name || text('Player', 'Người chơi')
@@ -1267,6 +1461,12 @@
   }
 }
 
+.socialHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 :global(.socialTabList) {
   width: auto;
 }
@@ -1360,6 +1560,40 @@
     min-height: 15px;
     color: var(--textColor2);
     font-size: 12px;
+  }
+}
+
+.presenceAvatar {
+  position: relative;
+  flex-shrink: 0;
+
+  &.small {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+.presenceAvatar .presenceDot {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  display: block;
+  width: 12px;
+  height: 12px;
+  min-width: 12px;
+  min-height: 12px;
+  padding: 0;
+  box-sizing: border-box;
+  border: 2px solid hsl(var(--popover));
+  border-radius: 50%;
+  background: #747f8d;
+  aspect-ratio: 1 / 1;
+  color: transparent;
+  font-size: 0;
+  line-height: 0;
+
+  &.online {
+    background: #23a55a;
   }
 }
 
