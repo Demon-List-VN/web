@@ -19,9 +19,9 @@
 	export let primaryColor: string = '#8b5cf6';
 
 	let loading = true;
-	let dailyWeeklyData: { daily: any; weekly: any } = { daily: null, weekly: null };
+	let dailyWeeklyData: { daily: any; weekly: any; } = { daily: null, weekly: null };
 	let mounted = false;
-	let checkinStatus: { claimed: boolean; xp: number } | null = null;
+	let checkinStatus: { claimed: boolean; xp: number; } | null = null;
 	let adLoading = false;
 	let adUnavailable = false; // true when Google returns no fill
 	const defaultLevel = {
@@ -37,32 +37,32 @@
 
 	$: dailyLevel = dailyWeeklyData.daily
 		? {
-				id: dailyWeeklyData.daily.id,
-				levelId: dailyWeeklyData.daily.levelID,
-				name: dailyWeeklyData.daily.levels?.name,
-				difficulty: dailyWeeklyData.daily.levels?.difficulty,
-				progress: dailyWeeklyData.daily.progress,
-				completed: dailyWeeklyData.daily.progress >= 100,
-				claimed: dailyWeeklyData.daily.completionClaimed,
-				xp: dailyWeeklyData.daily.xp
-			}
+			id: dailyWeeklyData.daily.id,
+			levelId: dailyWeeklyData.daily.levelID,
+			name: dailyWeeklyData.daily.levels?.name,
+			difficulty: dailyWeeklyData.daily.levels?.difficulty,
+			progress: dailyWeeklyData.daily.progress,
+			completed: dailyWeeklyData.daily.progress >= 100,
+			claimed: dailyWeeklyData.daily.completionClaimed,
+			xp: dailyWeeklyData.daily.xp
+		}
 		: defaultLevel;
 
 	$: weeklyDemon = dailyWeeklyData.weekly
 		? {
-				id: dailyWeeklyData.weekly.id,
-				levelId: dailyWeeklyData.weekly.levelID,
-				name: dailyWeeklyData.weekly.levels?.name,
-				difficulty: dailyWeeklyData.weekly.levels?.difficulty,
-				progress: dailyWeeklyData.weekly.progress,
-				completed: dailyWeeklyData.weekly.progress >= 100,
-				claimed: dailyWeeklyData.weekly.completionClaimed,
-				xp: dailyWeeklyData.weekly.xp
-			}
+			id: dailyWeeklyData.weekly.id,
+			levelId: dailyWeeklyData.weekly.levelID,
+			name: dailyWeeklyData.weekly.levels?.name,
+			difficulty: dailyWeeklyData.weekly.levels?.difficulty,
+			progress: dailyWeeklyData.weekly.progress,
+			completed: dailyWeeklyData.weekly.progress >= 100,
+			claimed: dailyWeeklyData.weekly.completionClaimed,
+			xp: dailyWeeklyData.weekly.xp
+		}
 		: defaultLevel;
 
 	const dispatch = createEventDispatcher<{
-		xpClaimed: { xp: number; levelId: number };
+		xpClaimed: { xp: number; levelId: number; };
 	}>();
 
 	function getDifficultyColor(difficulty: string): string {
@@ -76,6 +76,7 @@
 	async function fetchDailyWeeklyProgress() {
 		try {
 			const headers: Record<string, string> = {};
+
 			if ($user.loggedIn) {
 				headers['Authorization'] = `Bearer ${await $user.token()}`;
 			}
@@ -93,7 +94,9 @@
 	}
 
 	async function claimDailyWeeklyReward(levelId: number) {
-		if (!$user.loggedIn) return;
+		if (!$user.loggedIn) {
+			return;
+		}
 
 		try {
 			const res = await fetch(
@@ -121,19 +124,28 @@
 	}
 
 	async function fetchCheckinStatus() {
-		if (!$user.loggedIn) return;
+		if (!$user.loggedIn) {
+			return;
+		}
+
 		try {
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/ads/rewards/daily-checkin`, {
 				headers: { Authorization: `Bearer ${await $user.token()}` }
 			});
-			if (res.ok) checkinStatus = await res.json();
+
+			if (res.ok) {
+				checkinStatus = await res.json();
+			}
 		} catch (e) {
 			console.error('Failed to fetch checkin status:', e);
 		}
 	}
 
 	function watchRewardedAd() {
-		if (adLoading || checkinStatus?.claimed) return;
+		if (adLoading || checkinStatus?.claimed) {
+			return;
+		}
+
 		adLoading = true;
 
 		const adContainer = document.createElement('div');
@@ -157,7 +169,9 @@
 		loadData();
 
 		const unsubscribe = user.subscribe(async (value) => {
-			if (!mounted) return;
+			if (!mounted) {
+				return;
+			}
 
 			if (value.loggedIn) {
 				await Promise.all([fetchDailyWeeklyProgress(), fetchCheckinStatus()]);

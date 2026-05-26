@@ -37,32 +37,32 @@
 </script>
 
 <div class="flex items-start gap-3">
-	<img
-		class="h-16 w-16 object-contain"
-		src={`https://cdn.gdvn.net/items/${itemData.id}.webp`}
-		alt={itemData.name}
-	/>
-	<div>
-		<div class="font-medium">{itemData.name}</div>
-		{#if itemData.rarity !== undefined}
-			<div class="text-sm text-neutral-400">
-				<b>{get(_)('events.quest.rarity_label')}</b>
-				<span class="font-bold" style="color: {rarityColor(itemData.rarity)}"
-					>{rarityName(itemData.rarity)}</span
-				>
-			</div>
-		{/if}
-		{#if itemData.description}
-			<div class="text-sm text-neutral-400">
-				<b>{get(_)('events.quest.description_label')}:</b>
-				{itemData.description}
-			</div>
-		{/if}
-		{#if quantity > 1}
-			<div class="text-sm text-neutral-400">
-				<b>{get(_)('events.quest.quantity_label')}:</b>
-				{quantity}
-			</div>
-		{/if}
-	</div>
+  <img
+    class="h-16 w-16 object-contain"
+    src={`https://cdn.gdvn.net/items/${itemData.id}.webp`}
+    alt={itemData.name}
+  />
+  <div>
+    <div class="font-medium">{itemData.name}</div>
+    {#if itemData.rarity !== undefined}
+      <div class="text-sm text-neutral-400">
+        <b>{get(_)('events.quest.rarity_label')}</b>
+        <span class="font-bold" style="color: {rarityColor(itemData.rarity)}">{
+          rarityName(itemData.rarity)
+        }</span>
+      </div>
+    {/if}
+    {#if itemData.description}
+      <div class="text-sm text-neutral-400">
+        <b>{get(_)('events.quest.description_label')}:</b>
+        {itemData.description}
+      </div>
+    {/if}
+    {#if quantity > 1}
+      <div class="text-sm text-neutral-400">
+        <b>{get(_)('events.quest.quantity_label')}:</b>
+        {quantity}
+      </div>
+    {/if}
+  </div>
 </div>

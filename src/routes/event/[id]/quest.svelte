@@ -32,12 +32,15 @@
 
 	async function checkQuest() {
 		const res = await (
-			await fetch(`${import.meta.env.VITE_API_URL}/events/quest/${quest.id}/check`, {
-				method: 'GET',
-				headers: {
-					Authorization: 'Bearer ' + (await $user.token())
+			await fetch(
+				`${import.meta.env.VITE_API_URL}/events/quest/${quest.id}/check`,
+				{
+					method: 'GET',
+					headers: {
+						Authorization: 'Bearer ' + (await $user.token())
+					}
 				}
-			})
+			)
 		).json();
 
 		return res;
@@ -45,12 +48,15 @@
 
 	async function claim() {
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/events/quest/${quest.id}/claim`, {
-				method: 'POST',
-				headers: {
-					Authorization: 'Bearer ' + (await $user.token())
+			fetch(
+				`${import.meta.env.VITE_API_URL}/events/quest/${quest.id}/claim`,
+				{
+					method: 'POST',
+					headers: {
+						Authorization: 'Bearer ' + (await $user.token())
+					}
 				}
-			}),
+			),
 			{
 				success: () => {
 					status = 'claimed';
@@ -77,45 +83,45 @@
 </script>
 
 <Card.Root>
-	<Card.Header>
-		<div class="flex w-full items-center">
-			<div class="flex flex-col gap-[10px]">
-				<Card.Title>{quest.title}</Card.Title>
-				<div class="flex gap-[10px]">
-					{#each quest.rewards as reward}
-						<Popover.Root>
-							<Popover.Trigger>
-								<button class="clickable">
-									<div
-										class="flex h-[75px] w-[75px] items-center justify-center overflow-hidden rounded-md bg-neutral-800"
-										style="border-bottom: 4px solid {rarityColor(reward.rarity)};"
-									>
-										<img
-											class="max-h-full max-w-full object-contain p-2"
-											src={`https://cdn.gdvn.net/items/${reward.id}.webp`}
-											alt={reward.name}
-										/>
-									</div>
-								</button>
-							</Popover.Trigger>
-							<Popover.Content>
-								<RewardItemDetails itemData={reward} quantity={1} />
-							</Popover.Content>
-						</Popover.Root>
-					{/each}
-				</div>
-			</div>
-			{#if loading}
-				<Skeleton class="ml-auto h-[35px] w-[70px]" />
-			{:else}
-				<Button class="ml-auto" disabled={claimBtnDisabled} on:click={claim}>
-					{#if status == 'claimable' || status == 'unclaimable'}
-							{get(_)('events.quest.claim_button')}
-						{:else if status == 'claimed'}
-							{get(_)('events.quest.claimed')}
-					{/if}
-				</Button>
-			{/if}
-		</div>
-	</Card.Header>
+  <Card.Header>
+    <div class="flex w-full items-center">
+      <div class="flex flex-col gap-[10px]">
+        <Card.Title>{quest.title}</Card.Title>
+        <div class="flex gap-[10px]">
+          {#each quest.rewards as reward}
+            <Popover.Root>
+              <Popover.Trigger>
+                <button class="clickable">
+                  <div
+                    class="flex h-[75px] w-[75px] items-center justify-center overflow-hidden rounded-md bg-neutral-800"
+                    style="border-bottom: 4px solid {rarityColor(reward.rarity)}"
+                  >
+                    <img
+                      class="max-h-full max-w-full object-contain p-2"
+                      src={`https://cdn.gdvn.net/items/${reward.id}.webp`}
+                      alt={reward.name}
+                    />
+                  </div>
+                </button>
+              </Popover.Trigger>
+              <Popover.Content>
+                <RewardItemDetails itemData={reward} quantity={1} />
+              </Popover.Content>
+            </Popover.Root>
+          {/each}
+        </div>
+      </div>
+      {#if loading}
+        <Skeleton class="ml-auto h-[35px] w-[70px]" />
+      {:else}
+        <Button class="ml-auto" disabled={claimBtnDisabled} on:click={claim}>
+          {#if status == 'claimable' || status == 'unclaimable'}
+            {get(_)('events.quest.claim_button')}
+          {:else if status == 'claimed'}
+            {get(_)('events.quest.claimed')}
+          {/if}
+        </Button>
+      {/if}
+    </div>
+  </Card.Header>
 </Card.Root>

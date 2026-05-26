@@ -17,6 +17,7 @@
 	async function fetchLevels() {
 		try {
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/levels`);
+
 			if (res.ok) {
 				levels = await res.json();
 			}
@@ -26,7 +27,9 @@
 	}
 
 	async function fetchLevelProgress() {
-		if (!$user.loggedIn || levels.length === 0) return;
+		if (!$user.loggedIn || levels.length === 0) {
+			return;
+		}
 
 		try {
 			const levelIds = levels.map((l: any) => l.id);
@@ -58,9 +61,11 @@
 	async function loadData() {
 		loading = true;
 		await fetchLevels();
+
 		if ($user.loggedIn) {
 			await fetchLevelProgress();
 		}
+
 		loading = false;
 	}
 
@@ -69,7 +74,9 @@
 		loadData();
 
 		const unsubscribe = user.subscribe(async (value) => {
-			if (!mounted) return;
+			if (!mounted) {
+				return;
+			}
 
 			if (value.loggedIn && levels.length > 0) {
 				await fetchLevelProgress();

@@ -1,4 +1,4 @@
-import { writable } from "svelte/store";
+import { writable } from 'svelte/store';
 
 interface ProductItem {
     type?: 'product';
@@ -33,15 +33,16 @@ interface Data {
     clear: () => void;
 }
 
-const STORAGE_KEY = "cartItems";
+const STORAGE_KEY = 'cartItems';
 
 const getStoredItems = (): Item[] => {
-    if (typeof localStorage === "undefined") {
+    if (typeof localStorage === 'undefined') {
         return [];
     }
 
     try {
         const stored = localStorage.getItem(STORAGE_KEY);
+
         return stored ? JSON.parse(stored) : [];
     } catch {
         return [];
@@ -49,7 +50,7 @@ const getStoredItems = (): Item[] => {
 };
 
 const saveItems = (items: Item[]): void => {
-    if (typeof localStorage === "undefined") {
+    if (typeof localStorage === 'undefined') {
         return;
     }
 
@@ -74,12 +75,14 @@ const data: Data = {
         return res;
     },
     getItem: (id: number) => {
-        const res = data.items.find((item) => item.type !== 'record-card' && (item as ProductItem).productID === id) as ProductItem | undefined;
+        const res = data.items.find((item) =>
+            item.type !== 'record-card' && (item as ProductItem).productID === id
+        ) as ProductItem | undefined;
 
         if (!res) {
             return {
                 productID: -1,
-                quantity: 0,
+                quantity: 0
             };
         }
 
@@ -124,6 +127,7 @@ const data: Data = {
             const removed = data.items.splice(recordCards[index].i, 1)[0] as RecordCardItem;
             saveItems(data.items);
             cart.set(data);
+
             return removed;
         }
     },

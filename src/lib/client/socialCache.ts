@@ -1,13 +1,13 @@
 import { browser } from '$app/environment';
 import { get, writable, type Writable } from 'svelte/store';
 import {
-	getSocialConversations,
-	getSocialFriends,
-	getSocialMessages,
-	markSocialConversationRead,
-	type SocialConversation,
-	type SocialMessage,
-	type SocialPlayer
+    getSocialConversations,
+    getSocialFriends,
+    getSocialMessages,
+    markSocialConversationRead,
+    type SocialConversation,
+    type SocialMessage,
+    type SocialPlayer
 } from '$lib/client/social';
 
 const DB_NAME = 'gdvn-social-cache';
@@ -17,23 +17,23 @@ const CONVERSATIONS_STORE = 'conversations';
 const MESSAGES_STORE = 'messages';
 
 type CacheRecord<T> = {
-	key: string;
-	uid: string;
-	data: T;
-	updatedAt: string;
+    key: string;
+    uid: string;
+    data: T;
+    updatedAt: string;
 };
 
 type MessageCacheRecord = CacheRecord<SocialMessage[]> & {
-	conversationId: string;
-	complete: boolean;
+    conversationId: string;
+    complete: boolean;
 };
 
 type SocialMessageNotificationMetadata = {
-	type?: string;
-	conversationId?: number | string;
-	message?: SocialMessage;
-	conversation?: SocialConversation;
-	sender?: SocialPlayer;
+    type?: string;
+    conversationId?: number | string;
+    message?: SocialMessage;
+    conversation?: SocialConversation;
+    sender?: SocialPlayer;
 };
 
 export const friendsStore = writable<SocialPlayer[]>([]);
@@ -44,456 +44,535 @@ let dbPromise: Promise<IDBDatabase> | null = null;
 const messageStores = new Map<string, Writable<SocialMessage[]>>();
 
 function nowIso() {
-	return new Date().toISOString();
+    return new Date()
+        .toISOString();
 }
 
 function messageRecordKey(uid: string, conversationId: number | string) {
-	return `${uid}:${conversationId}`;
+    return `${uid}:${conversationId}`;
 }
 
 function openDb() {
-	if (!browser) return Promise.resolve(null);
-	if (dbPromise) return dbPromise;
+    if (!browser) {
+        return Promise.resolve(null);
+    }
 
-	dbPromise = new Promise((resolve, reject) => {
-		const request = indexedDB.open(DB_NAME, DB_VERSION);
+    if (dbPromise) {
+        return dbPromise;
+    }
 
-		request.onupgradeneeded = () => {
-			const db = request.result;
-			for (const storeName of [FRIENDS_STORE, CONVERSATIONS_STORE, MESSAGES_STORE]) {
-				if (!db.objectStoreNames.contains(storeName)) {
-					db.createObjectStore(storeName, { keyPath: 'key' });
-				}
-			}
-		};
+    dbPromise = new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-		request.onsuccess = () => resolve(request.result);
-		request.onerror = () => reject(request.error);
-	});
+        request.onupgradeneeded = () => {
+            const db = request.result;
 
-	return dbPromise;
+            for (const storeName of [FRIENDS_STORE, CONVERSATIONS_STORE, MESSAGES_STORE]) {
+                if (!db.objectStoreNames.contains(storeName)) {
+                    db.createObjectStore(storeName, { keyPath: 'key' });
+                }
+            }
+        };
+
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+
+    return dbPromise;
 }
 
 function requestResult<T>(request: IDBRequest<T>) {
-	return new Promise<T>((resolve, reject) => {
-		request.onsuccess = () => resolve(request.result);
-		request.onerror = () => reject(request.error);
-	});
+    return new Promise<T>((resolve, reject) => {
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
 }
 
 async function readRecord<T>(storeName: string, key: string): Promise<CacheRecord<T> | null> {
-	const db = await openDb();
-	if (!db) return null;
+    const db = await openDb();
 
-	const transaction = db.transaction(storeName, 'readonly');
-	const record = await requestResult<CacheRecord<T> | undefined>(
-		transaction.objectStore(storeName).get(key)
-	);
-	return record || null;
+    if (!db) {
+        return null;
+    }
+
+    const transaction = db.transaction(storeName, 'readonly');
+    const record = await requestResult<CacheRecord<T> | undefined>(
+        transaction.objectStore(storeName)
+            .get(key)
+    );
+
+    return record || null;
 }
 
 async function writeRecord<T>(storeName: string, record: CacheRecord<T>) {
-	const db = await openDb();
-	if (!db) return;
+    const db = await openDb();
 
-	const transaction = db.transaction(storeName, 'readwrite');
-	await requestResult(transaction.objectStore(storeName).put(record));
+    if (!db) {
+        return;
+    }
+
+    const transaction = db.transaction(storeName, 'readwrite');
+    await requestResult(transaction.objectStore(storeName)
+        .put(record));
 }
 
 async function readMessageRecord(uid: string, conversationId: number | string) {
-	return readRecord<SocialMessage[]>(MESSAGES_STORE, messageRecordKey(uid, conversationId)) as Promise<MessageCacheRecord | null>;
+    return readRecord<SocialMessage[]>(
+        MESSAGES_STORE,
+        messageRecordKey(uid, conversationId)
+    ) as Promise<MessageCacheRecord | null>;
 }
 
 async function writeMessageRecord(record: MessageCacheRecord) {
-	await writeRecord<SocialMessage[]>(MESSAGES_STORE, record);
+    await writeRecord<SocialMessage[]>(MESSAGES_STORE, record);
 }
 
 export function setSocialCacheUser(uid: string) {
-	if (currentUid === uid) return;
+    if (currentUid === uid) {
+        return;
+    }
 
-	currentUid = uid;
-	friendsStore.set([]);
-	conversationsStore.set([]);
-	for (const store of messageStores.values()) {
-		store.set([]);
-	}
-	messageStores.clear();
+    currentUid = uid;
+    friendsStore.set([]);
+    conversationsStore.set([]);
+
+    for (const store of messageStores.values()) {
+        store.set([]);
+    }
+
+    messageStores.clear();
 }
 
 export function resetSocialCacheState() {
-	setSocialCacheUser('');
+    setSocialCacheUser('');
 }
 
 export async function hydrateSocialCache(uid: string) {
-	if (!uid) return;
-	setSocialCacheUser(uid);
+    if (!uid) {
+        return;
+    }
 
-	const [friendsRecord, conversationsRecord] = await Promise.all([
-		readRecord<SocialPlayer[]>(FRIENDS_STORE, uid),
-		readRecord<SocialConversation[]>(CONVERSATIONS_STORE, uid)
-	]);
+    setSocialCacheUser(uid);
 
-	if (currentUid !== uid) return;
-	friendsStore.set(friendsRecord?.data || []);
-	conversationsStore.set(sortConversations(conversationsRecord?.data || []));
+    const [friendsRecord, conversationsRecord] = await Promise.all([
+        readRecord<SocialPlayer[]>(FRIENDS_STORE, uid),
+        readRecord<SocialConversation[]>(CONVERSATIONS_STORE, uid)
+    ]);
+
+    if (currentUid !== uid) {
+        return;
+    }
+
+    friendsStore.set(friendsRecord?.data || []);
+    conversationsStore.set(sortConversations(conversationsRecord?.data || []));
 }
 
 export async function refreshSocialFriends(uid: string, token?: string | null) {
-	const friends = await getSocialFriends(token);
-	if (currentUid !== uid) return friends;
+    const friends = await getSocialFriends(token);
 
-	friendsStore.set(friends);
-	await writeRecord<SocialPlayer[]>(FRIENDS_STORE, {
-		key: uid,
-		uid,
-		data: friends,
-		updatedAt: nowIso()
-	});
-	return friends;
+    if (currentUid !== uid) {
+        return friends;
+    }
+
+    friendsStore.set(friends);
+    await writeRecord<SocialPlayer[]>(FRIENDS_STORE, {
+        key: uid,
+        uid,
+        data: friends,
+        updatedAt: nowIso()
+    });
+
+    return friends;
 }
 
 export async function refreshSocialConversations(uid: string, token?: string | null) {
-	const conversations = sortConversations(await getSocialConversations(token));
-	if (currentUid !== uid) return conversations;
+    const conversations = sortConversations(await getSocialConversations(token));
 
-	conversationsStore.set(conversations);
-	await writeRecord<SocialConversation[]>(CONVERSATIONS_STORE, {
-		key: uid,
-		uid,
-		data: conversations,
-		updatedAt: nowIso()
-	});
-	return conversations;
+    if (currentUid !== uid) {
+        return conversations;
+    }
+
+    conversationsStore.set(conversations);
+    await writeRecord<SocialConversation[]>(CONVERSATIONS_STORE, {
+        key: uid,
+        uid,
+        data: conversations,
+        updatedAt: nowIso()
+    });
+
+    return conversations;
 }
 
 function conversationStoreValue() {
-	return get(conversationsStore);
+    return get(conversationsStore);
 }
 
 function sortConversations(conversations: SocialConversation[]) {
-	return [...conversations].sort((left, right) => {
-		const leftMs = conversationTimeMs(left);
-		const rightMs = conversationTimeMs(right);
-		return (Number.isFinite(rightMs) ? rightMs : 0) - (Number.isFinite(leftMs) ? leftMs : 0);
-	});
+    return [...conversations].sort((left, right) => {
+        const leftMs = conversationTimeMs(left);
+        const rightMs = conversationTimeMs(right);
+
+        return (Number.isFinite(rightMs) ? rightMs : 0) - (Number.isFinite(leftMs) ? leftMs : 0);
+    });
 }
 
 function conversationTimeMs(conversation: SocialConversation) {
-	const raw =
-		conversation.lastMessageAt ||
-		conversation.latestMessage?.createdAt ||
-		(conversation as any).updatedAt ||
-		(conversation as any).createdAt ||
-		0;
-	const ms = new Date(raw as string | number).getTime();
-	return Number.isFinite(ms) ? ms : 0;
+    const raw = conversation.lastMessageAt
+        || conversation.latestMessage?.createdAt
+        || (conversation as any).updatedAt
+        || (conversation as any).createdAt
+        || 0;
+    const ms = new Date(raw as string | number)
+        .getTime();
+
+    return Number.isFinite(ms) ? ms : 0;
 }
 
 export async function persistConversations(uid: string, conversations: SocialConversation[]) {
-	const sorted = sortConversations(conversations);
-	conversationsStore.set(sorted);
-	await writeRecord<SocialConversation[]>(CONVERSATIONS_STORE, {
-		key: uid,
-		uid,
-		data: sorted,
-		updatedAt: nowIso()
-	});
+    const sorted = sortConversations(conversations);
+    conversationsStore.set(sorted);
+    await writeRecord<SocialConversation[]>(CONVERSATIONS_STORE, {
+        key: uid,
+        uid,
+        data: sorted,
+        updatedAt: nowIso()
+    });
 }
 
 export async function upsertCachedConversation(uid: string, conversation: SocialConversation) {
-	const conversationId = String(conversation.id);
-	const next = [
-		conversation,
-		...conversationStoreValue().filter((item) => String(item.id) !== conversationId)
-	];
-	await persistConversations(uid, next);
+    const conversationId = String(conversation.id);
+    const next = [
+        conversation,
+        ...conversationStoreValue()
+            .filter((item) => String(item.id) !== conversationId)
+    ];
+    await persistConversations(uid, next);
 }
 
 export async function updateCachedConversationWithMessage(
-	uid: string,
-	conversationId: number | string,
-	message: SocialMessage,
-	conversation?: SocialConversation | null
+    uid: string,
+    conversationId: number | string,
+    message: SocialMessage,
+    conversation?: SocialConversation | null
 ) {
-	if (conversation) {
-		await upsertCachedConversation(uid, {
-			...conversation,
-			latestMessage: message,
-			lastMessageAt: message.createdAt || conversation.lastMessageAt
-		});
-		return;
-	}
+    if (conversation) {
+        await upsertCachedConversation(uid, {
+            ...conversation,
+            latestMessage: message,
+            lastMessageAt: message.createdAt || conversation.lastMessageAt
+        });
 
-	const conversationIdString = String(conversationId);
-	const next = conversationStoreValue().map((item) =>
-		String(item.id) === conversationIdString
-			? {
-					...item,
-					latestMessage: message,
-					lastMessageAt: message.createdAt || item.lastMessageAt,
-					conversationStatus:
-						item.pendingForUid === uid ? 'active' : item.conversationStatus,
-					pendingForUid: item.pendingForUid === uid ? null : item.pendingForUid
-				}
-			: item
-	);
-	await persistConversations(uid, next);
+        return;
+    }
+
+    const conversationIdString = String(conversationId);
+    const next = conversationStoreValue()
+        .map((item) =>
+            String(item.id) === conversationIdString
+                ? {
+                    ...item,
+                    latestMessage: message,
+                    lastMessageAt: message.createdAt || item.lastMessageAt,
+                    conversationStatus: item.pendingForUid === uid ? 'active' : item.conversationStatus,
+                    pendingForUid: item.pendingForUid === uid ? null : item.pendingForUid
+                }
+                : item
+        );
+    await persistConversations(uid, next);
 }
 
 export async function removeFriendFromCache(uid: string, playerUid: string) {
-	const next = get(friendsStore).filter((friend) => friend.uid !== playerUid);
-	friendsStore.set(next);
-	await writeRecord<SocialPlayer[]>(FRIENDS_STORE, {
-		key: uid,
-		uid,
-		data: next,
-		updatedAt: nowIso()
-	});
+    const next = get(friendsStore)
+        .filter((friend) => friend.uid !== playerUid);
+    friendsStore.set(next);
+    await writeRecord<SocialPlayer[]>(FRIENDS_STORE, {
+        key: uid,
+        uid,
+        data: next,
+        updatedAt: nowIso()
+    });
 }
 
 export async function removeConversationsWithPlayerFromCache(uid: string, playerUid: string) {
-	const next = conversationStoreValue().filter(
-		(conversation) => conversation.otherPlayer?.uid !== playerUid
-	);
-	await persistConversations(uid, next);
+    const next = conversationStoreValue()
+        .filter(
+            (conversation) => conversation.otherPlayer?.uid !== playerUid
+        );
+    await persistConversations(uid, next);
 }
 
 export function getConversationMessageStore(conversationId: number | string) {
-	const key = String(conversationId);
-	let store = messageStores.get(key);
-	if (!store) {
-		store = writable<SocialMessage[]>([]);
-		messageStores.set(key, store);
-	}
-	return store;
+    const key = String(conversationId);
+    let store = messageStores.get(key);
+
+    if (!store) {
+        store = writable<SocialMessage[]>([]);
+        messageStores.set(key, store);
+    }
+
+    return store;
 }
 
 function sortMessages(messages: SocialMessage[]) {
-	return [...messages].sort((left, right) => {
-		const leftId = Number(left.id);
-		const rightId = Number(right.id);
-		if (Number.isFinite(leftId) && Number.isFinite(rightId) && leftId !== rightId) {
-			return leftId - rightId;
-		}
+    return [...messages].sort((left, right) => {
+        const leftId = Number(left.id);
+        const rightId = Number(right.id);
 
-		return (
-			new Date(left.createdAt || 0).getTime() - new Date(right.createdAt || 0).getTime()
-		);
-	});
+        if (Number.isFinite(leftId) && Number.isFinite(rightId) && leftId !== rightId) {
+            return leftId - rightId;
+        }
+
+        return (
+            new Date(left.createdAt || 0)
+                .getTime() - new Date(right.createdAt || 0)
+                .getTime()
+        );
+    });
 }
 
 function mergeMessages(left: SocialMessage[], right: SocialMessage[]) {
-	const byId = new Map<string, SocialMessage>();
-	for (const message of [...left, ...right]) {
-		byId.set(String(message.id), message);
-	}
-	return sortMessages([...byId.values()]);
+    const byId = new Map<string, SocialMessage>();
+
+    for (const message of [...left, ...right]) {
+        byId.set(String(message.id), message);
+    }
+
+    return sortMessages([...byId.values()]);
 }
 
 function isSyncedMessage(message: SocialMessage) {
-	return (
-		message.status !== 'pending' &&
-		message.status !== 'failed' &&
-		!String(message.id).startsWith('local-')
-	);
+    return (
+        message.status !== 'pending'
+        && message.status !== 'failed'
+        && !String(message.id)
+            .startsWith('local-')
+    );
 }
 
 export async function replaceCachedMessage(
-	uid: string,
-	conversationId: number | string,
-	localId: number | string,
-	nextMessage: SocialMessage
+    uid: string,
+    conversationId: number | string,
+    localId: number | string,
+    nextMessage: SocialMessage
 ) {
-	const existingRecord = await readMessageRecord(uid, conversationId);
-	const existing = existingRecord?.data?.length
-		? existingRecord.data
-		: get(getConversationMessageStore(conversationId));
-	const replaced = existing.some((message) => String(message.id) === String(localId));
-	const next = replaced
-		? existing.map((message) =>
-				String(message.id) === String(localId) ? nextMessage : message
-			)
-		: mergeMessages(existing, [nextMessage]);
-	await setCachedMessages(uid, conversationId, next, Boolean(existingRecord?.complete));
-	return next;
+    const existingRecord = await readMessageRecord(uid, conversationId);
+    const existing = existingRecord?.data?.length
+        ? existingRecord.data
+        : get(getConversationMessageStore(conversationId));
+    const replaced = existing.some((message) => String(message.id) === String(localId));
+    const next = replaced
+        ? existing.map((message) => String(message.id) === String(localId) ? nextMessage : message)
+        : mergeMessages(existing, [nextMessage]);
+    await setCachedMessages(uid, conversationId, next, Boolean(existingRecord?.complete));
+
+    return next;
 }
 
 export async function updateCachedMessage(
-	uid: string,
-	conversationId: number | string,
-	messageId: number | string,
-	patch: Partial<SocialMessage>
+    uid: string,
+    conversationId: number | string,
+    messageId: number | string,
+    patch: Partial<SocialMessage>
 ) {
-	const existingRecord = await readMessageRecord(uid, conversationId);
-	const existing = existingRecord?.data?.length
-		? existingRecord.data
-		: get(getConversationMessageStore(conversationId));
-	const next = existing.map((message) =>
-		String(message.id) === String(messageId) ? { ...message, ...patch } : message
-	);
-	await setCachedMessages(uid, conversationId, next, Boolean(existingRecord?.complete));
-	return next;
+    const existingRecord = await readMessageRecord(uid, conversationId);
+    const existing = existingRecord?.data?.length
+        ? existingRecord.data
+        : get(getConversationMessageStore(conversationId));
+    const next = existing.map((message) =>
+        String(message.id) === String(messageId) ? { ...message, ...patch } : message
+    );
+    await setCachedMessages(uid, conversationId, next, Boolean(existingRecord?.complete));
+
+    return next;
 }
 
 function lastMessage(messages: SocialMessage[]) {
-	return messages[messages.length - 1] || null;
+    return messages[messages.length - 1] || null;
 }
 
 function lastSyncedMessage(messages: SocialMessage[]) {
-	return [...messages].reverse().find(isSyncedMessage) || null;
+    return [...messages].reverse()
+        .find(isSyncedMessage) || null;
 }
 
 async function readCachedLastSyncedMessage(uid: string, conversationId: number | string) {
-	const existingRecord = await readMessageRecord(uid, conversationId);
-	const existing = existingRecord?.data?.length
-		? existingRecord.data
-		: get(getConversationMessageStore(conversationId));
-	return lastSyncedMessage(existing);
+    const existingRecord = await readMessageRecord(uid, conversationId);
+    const existing = existingRecord?.data?.length
+        ? existingRecord.data
+        : get(getConversationMessageStore(conversationId));
+
+    return lastSyncedMessage(existing);
 }
 
 async function setCachedMessages(
-	uid: string,
-	conversationId: number | string,
-	messages: SocialMessage[],
-	complete: boolean
+    uid: string,
+    conversationId: number | string,
+    messages: SocialMessage[],
+    complete: boolean
 ) {
-	const conversationIdString = String(conversationId);
-	const sorted = sortMessages(messages);
-	getConversationMessageStore(conversationIdString).set(sorted);
-	await writeMessageRecord({
-		key: messageRecordKey(uid, conversationIdString),
-		uid,
-		conversationId: conversationIdString,
-		data: sorted,
-		complete,
-		updatedAt: nowIso()
-	});
+    const conversationIdString = String(conversationId);
+    const sorted = sortMessages(messages);
+    getConversationMessageStore(conversationIdString)
+        .set(sorted);
+    await writeMessageRecord({
+        key: messageRecordKey(uid, conversationIdString),
+        uid,
+        conversationId: conversationIdString,
+        data: sorted,
+        complete,
+        updatedAt: nowIso()
+    });
 }
 
 export async function hydrateConversationMessages(uid: string, conversationId: number | string) {
-	const record = await readMessageRecord(uid, conversationId);
-	const messages = record?.data || [];
-	getConversationMessageStore(conversationId).set(messages);
-	return { messages, complete: Boolean(record?.complete), cached: Boolean(record) };
+    const record = await readMessageRecord(uid, conversationId);
+    const messages = record?.data || [];
+    getConversationMessageStore(conversationId)
+        .set(messages);
+
+    return { messages, complete: Boolean(record?.complete), cached: Boolean(record) };
 }
 
 export async function ensureConversationMessages(
-	uid: string,
-	token: string | null | undefined,
-	conversationId: number | string
+    uid: string,
+    token: string | null | undefined,
+    conversationId: number | string
 ) {
-	const cached = await hydrateConversationMessages(uid, conversationId);
-	if (cached.complete) {
-		return cached.messages;
-	}
+    const cached = await hydrateConversationMessages(uid, conversationId);
 
-	const messages = await getSocialMessages(token, conversationId);
-	await setCachedMessages(uid, conversationId, messages, true);
-	return messages;
+    if (cached.complete) {
+        return cached.messages;
+    }
+
+    const messages = await getSocialMessages(token, conversationId);
+    await setCachedMessages(uid, conversationId, messages, true);
+
+    return messages;
 }
 
 export async function appendCachedMessages(
-	uid: string,
-	conversationId: number | string,
-	messages: SocialMessage[],
-	options: { complete?: boolean } = {}
+    uid: string,
+    conversationId: number | string,
+    messages: SocialMessage[],
+    options: { complete?: boolean; } = {}
 ) {
-	if (!messages.length) return get(getConversationMessageStore(conversationId));
+    if (!messages.length) {
+        return get(getConversationMessageStore(conversationId));
+    }
 
-	const existingRecord = await readMessageRecord(uid, conversationId);
-	const existing = existingRecord?.data?.length
-		? existingRecord.data
-		: get(getConversationMessageStore(conversationId));
-	const merged = mergeMessages(existing, messages);
-	const complete = options.complete ?? Boolean(existingRecord?.complete);
-	await setCachedMessages(uid, conversationId, merged, complete);
-	return merged;
+    const existingRecord = await readMessageRecord(uid, conversationId);
+    const existing = existingRecord?.data?.length
+        ? existingRecord.data
+        : get(getConversationMessageStore(conversationId));
+    const merged = mergeMessages(existing, messages);
+    const complete = options.complete ?? Boolean(existingRecord?.complete);
+    await setCachedMessages(uid, conversationId, merged, complete);
+
+    return merged;
 }
 
 export async function syncConversationMessagesAfter(
-	uid: string,
-	token: string | null | undefined,
-	conversationId: number | string,
-	afterId: number | string
+    uid: string,
+    token: string | null | undefined,
+    conversationId: number | string,
+    afterId: number | string
 ) {
-	const messages = await getSocialMessages(token, conversationId, { afterId });
-	if (!messages.length) return [];
+    const messages = await getSocialMessages(token, conversationId, { afterId });
 
-	await appendCachedMessages(uid, conversationId, messages);
-	const latest = lastMessage(messages);
-	if (latest) {
-		await updateCachedConversationWithMessage(uid, conversationId, latest);
-	}
-	return messages;
+    if (!messages.length) {
+        return [];
+    }
+
+    await appendCachedMessages(uid, conversationId, messages);
+    const latest = lastMessage(messages);
+
+    if (latest) {
+        await updateCachedConversationWithMessage(uid, conversationId, latest);
+    }
+
+    return messages;
 }
 
 export async function syncCachedConversationNewMessages(
-	uid: string,
-	token: string | null | undefined,
-	conversations: SocialConversation[] = conversationStoreValue()
+    uid: string,
+    token: string | null | undefined,
+    conversations: SocialConversation[] = conversationStoreValue()
 ) {
-	const results = await Promise.allSettled(
-		conversations.map(async (conversation) => {
-			const lastSynced = await readCachedLastSyncedMessage(uid, conversation.id);
-			if (!lastSynced?.id) return [];
-			return syncConversationMessagesAfter(uid, token, conversation.id, lastSynced.id);
-		})
-	);
+    const results = await Promise.allSettled(
+        conversations.map(async (conversation) => {
+            const lastSynced = await readCachedLastSyncedMessage(uid, conversation.id);
 
-	return results.flatMap((result) => (result.status === 'fulfilled' ? result.value : []));
+            if (!lastSynced?.id) {
+                return [];
+            }
+
+            return syncConversationMessagesAfter(uid, token, conversation.id, lastSynced.id);
+        })
+    );
+
+    return results.flatMap((result) => (result.status === 'fulfilled' ? result.value : []));
 }
 
 export async function markCachedConversationRead(
-	uid: string,
-	token: string | null | undefined,
-	conversationId: number | string,
-	messageId?: number | string | null
+    uid: string,
+    token: string | null | undefined,
+    conversationId: number | string,
+    messageId?: number | string | null
 ) {
-	const readStatus = await markSocialConversationRead(token, conversationId, messageId);
-	const conversationIdString = String(conversationId);
-	const next = conversationStoreValue().map((conversation) =>
-		String(conversation.id) === conversationIdString
-			? {
-					...conversation,
-					unreadCount: 0,
-					readStatus
-				}
-			: conversation
-	);
-	await persistConversations(uid, next);
-	return readStatus;
+    const readStatus = await markSocialConversationRead(token, conversationId, messageId);
+    const conversationIdString = String(conversationId);
+    const next = conversationStoreValue()
+        .map((conversation) =>
+            String(conversation.id) === conversationIdString
+                ? {
+                    ...conversation,
+                    unreadCount: 0,
+                    readStatus
+                }
+                : conversation
+        );
+    await persistConversations(uid, next);
+
+    return readStatus;
 }
 
 export async function handleSocialMessageNotification(
-	uid: string,
-	token: string | null | undefined,
-	metadata: SocialMessageNotificationMetadata | null | undefined
+    uid: string,
+    token: string | null | undefined,
+    metadata: SocialMessageNotificationMetadata | null | undefined
 ) {
-	if (!uid || metadata?.type !== 'social_message' || !metadata.message) return false;
+    if (!uid || metadata?.type !== 'social_message' || !metadata.message) {
+        return false;
+    }
 
-	const message = metadata.message;
-	const conversationId = metadata.conversationId ?? message.conversationId;
-	if (conversationId === undefined || conversationId === null || conversationId === '') return false;
+    const message = metadata.message;
+    const conversationId = metadata.conversationId ?? message.conversationId;
 
-	const existingRecord = await readMessageRecord(uid, conversationId);
-	const existingMessages = existingRecord?.data?.length
-		? existingRecord.data
-		: get(getConversationMessageStore(conversationId));
-	const previousLast = lastSyncedMessage(existingMessages);
+    if (
+        conversationId === undefined || conversationId === null || conversationId === ''
+    ) {
+        return false;
+    }
 
-	await appendCachedMessages(uid, conversationId, [message], {
-		complete: Boolean(existingRecord?.complete)
-	});
-	await updateCachedConversationWithMessage(
-		uid,
-		conversationId,
-		message,
-		metadata.conversation || null
-	);
+    const existingRecord = await readMessageRecord(uid, conversationId);
+    const existingMessages = existingRecord?.data?.length
+        ? existingRecord.data
+        : get(getConversationMessageStore(conversationId));
+    const previousLast = lastSyncedMessage(existingMessages);
 
-	if (previousLast?.id !== undefined && previousLast?.id !== null) {
-		await syncConversationMessagesAfter(uid, token, conversationId, previousLast.id);
-	}
+    await appendCachedMessages(uid, conversationId, [message], {
+        complete: Boolean(existingRecord?.complete)
+    });
+    await updateCachedConversationWithMessage(
+        uid,
+        conversationId,
+        message,
+        metadata.conversation || null
+    );
 
-	return true;
+    if (previousLast?.id !== undefined && previousLast?.id !== null) {
+        await syncConversationMessagesAfter(uid, token, conversationId, previousLast.id);
+    }
+
+    return true;
 }

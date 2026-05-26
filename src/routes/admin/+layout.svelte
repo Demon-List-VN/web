@@ -3,5 +3,5 @@
 </script>
 
 {#if $user.loggedIn && ($user.data.isAdmin || $user.data.isManager)}
-	<slot />
+  <slot />
 {/if}

@@ -34,7 +34,11 @@
 		{ route: '/lists', name: 'Lists', icon: LayoutList },
 		{ route: '/versus/play', name: '1v1 Versus', icon: Swords },
 		{ route: '/battlepass', name: 'Pass', icon: Ticket },
-		{ route: '/events', name: $locale === 'en' ? 'Event' : 'Sự kiện', icon: Calendar },
+		{
+			route: '/events',
+			name: $locale === 'en' ? 'Event' : 'Sự kiện',
+			icon: Calendar
+		},
 		{
 			name: $locale === 'en' ? 'Community' : 'Cộng đồng',
 			icon: Users,
@@ -44,8 +48,16 @@
 					name: $locale === 'en' ? 'Community Hub' : 'Cộng đồng',
 					icon: MessageCircle
 				},
-				{ route: '/players', name: $locale === 'en' ? 'Players' : 'Người chơi', icon: Users },
-				{ route: '/clans', name: $locale === 'en' ? 'Clans' : 'Hội', icon: Users }
+				{
+					route: '/players',
+					name: $locale === 'en' ? 'Players' : 'Người chơi',
+					icon: Users
+				},
+				{
+					route: '/clans',
+					name: $locale === 'en' ? 'Clans' : 'Hội',
+					icon: Users
+				}
 			]
 		},
 		{
@@ -55,8 +67,16 @@
 		},
 		{ route: '/discord', name: 'Discord', icon: DiscordLogo },
 		{ route: '/wiki', name: 'Wiki', icon: BookOpen },
-		{ route: '/store', name: $locale === 'en' ? 'Store' : 'Cửa hàng', icon: ShoppingBag },
-		{ route: '/vending', name: $locale === 'en' ? 'Card Maker' : 'Máy Tạo Thẻ', icon: CreditCard },
+		{
+			route: '/store',
+			name: $locale === 'en' ? 'Store' : 'Cửa hàng',
+			icon: ShoppingBag
+		},
+		{
+			route: '/vending',
+			name: $locale === 'en' ? 'Card Maker' : 'Máy Tạo Thẻ',
+			icon: CreditCard
+		},
 		{
 			route:
 				'https://docs.google.com/forms/d/e/1FAIpQLSdF4pJFdwbrFKQPLU0PPPX-bkrPJpMTSnlJ6XWNbSCpSOUqpQ/viewform?usp=dialog',
@@ -69,7 +89,9 @@
 			routes: [
 				{
 					route: '/misc/compare',
-					name: $locale === 'en' ? 'Player comparison' : 'So sánh người chơi',
+					name: $locale === 'en'
+						? 'Player comparison'
+						: 'So sánh người chơi',
 					icon: GitCompare
 				},
 				{
@@ -88,12 +110,12 @@
 </script>
 
 <Navbar
-	bind:searchToggled
-	{navLogoSrc}
-	{navLogoAlt}
-	{useCustomListLogo}
-	{onCustomLogoError}
-	{signIn}
-	{signOut}
+  bind:searchToggled
+  {navLogoSrc}
+  {navLogoAlt}
+  {useCustomListLogo}
+  {onCustomLogoError}
+  {signIn}
+  {signOut}
 />
 <Sidebar {linkGroup} />

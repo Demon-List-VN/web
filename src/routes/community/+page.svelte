@@ -9,7 +9,10 @@
 	import { user } from '$lib/client';
 	import { onMount, onDestroy, tick } from 'svelte';
 	import { browser } from '$app/environment';
-	import { getCommunityCache, setCommunityCache } from '$lib/client/communityCache';
+	import {
+		getCommunityCache,
+		setCommunityCache
+	} from '$lib/client/communityCache';
 	import { toast } from 'svelte-sonner';
 	import Ads from '$lib/components/ads.svelte';
 	import {
@@ -53,7 +56,9 @@
 
 	async function fetchAvailableTags() {
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/tags`);
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/community/tags`
+			);
 			availableTags = await res.json();
 		} catch {
 			availableTags = [];
@@ -71,13 +76,19 @@
 	];
 
 	async function fetchPosts(append = false) {
-		if (loading) return;
+		if (loading) {
+			return;
+		}
+
 		loading = true;
 
 		try {
 			const token = await $user.token();
 			const headers: Record<string, string> = {};
-			if (token) headers['Authorization'] = `Bearer ${token}`;
+
+			if (token) {
+				headers['Authorization'] = `Bearer ${token}`;
+			}
 
 			const params = new URLSearchParams({
 				limit: String(PAGE_SIZE),
@@ -98,18 +109,21 @@
 				params.set('tagId', String(activeTagId));
 			}
 
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/posts?${params}`, {
-				headers
-			});
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/community/posts?${params}`,
+				{
+					headers
+				}
+			);
 
 			const json = await res.json();
-			
+
 			if (append) {
 				posts = [...posts, ...json.data];
 			} else {
 				posts = json.data;
 			}
-			
+
 			total = json.total;
 			hasMore = posts.length < total;
 			offset += json.data.length;
@@ -124,13 +138,15 @@
 						'Authorization': `Bearer ${token}`
 					},
 					body: JSON.stringify({ postIds: viewPostIds })
-				}).catch(() => {});
+				})
+					.catch(() => {});
 			}
 		} catch {
 			if (!append) {
 				posts = [];
 				total = 0;
 			}
+
 			hasMore = false;
 		} finally {
 			loading = false;
@@ -157,8 +173,10 @@
 	function handleReport(e: CustomEvent<number>) {
 		if (!$user.loggedIn) {
 			toast.error($_('community.login_required'));
+
 			return;
 		}
+
 		reportPostId = e.detail;
 		reportReason = 'inappropriate';
 		reportDescription = '';
@@ -166,7 +184,10 @@
 	}
 
 	async function submitReport() {
-		if (!reportPostId) return;
+		if (!reportPostId) {
+			return;
+		}
+
 		submittingReport = true;
 
 		try {
@@ -217,7 +238,10 @@
 
 	function setupIntersectionObserver() {
 		const sentinel = document.querySelector('#loadMoreSentinel');
-		if (!sentinel) return;
+
+		if (!sentinel) {
+			return;
+		}
 
 		if (loadMoreObserver) {
 			loadMoreObserver.disconnect();
@@ -241,8 +265,10 @@
 
 	onMount(() => {
 		fetchAvailableTags();
+
 		if (browser) {
 			const cached = getCommunityCache();
+
 			if (cached) {
 				posts = cached.posts as any[];
 				total = cached.total;
@@ -253,9 +279,10 @@
 				searchQuery = cached.searchQuery;
 
 				// Restore scroll position after DOM updates
-				tick().then(() => {
-					window.scrollTo(0, cached.scrollY);
-				});
+				tick()
+					.then(() => {
+						window.scrollTo(0, cached.scrollY);
+					});
 			} else {
 				fetchPosts();
 			}
@@ -271,7 +298,9 @@
 	});
 
 	onDestroy(() => {
-		if (!browser) return;
+		if (!browser) {
+			return;
+		}
 
 		setCommunityCache({
 			posts: posts,
@@ -287,503 +316,587 @@
 </script>
 
 <svelte:head>
-	<title>{$_('head.titles.community')} - {$_('head.site_name')}</title>
-	<meta property="og:title" content={`${$_('head.titles.community')} - ${$_('head.site_name')}`} />
-	<meta property="og:type" content="website" />
-	<meta property="og:url" content="{import.meta.env.VITE_SITE_URL || 'https://demonlist.vn'}/community" />
-	<meta property="og:description" content={$_('head.descriptions.community')} />
-	<meta property="og:site_name" content={$_('head.site_name')} />
-	<meta name="twitter:card" content="summary" />
-	<meta name="twitter:title" content={`${$_('head.titles.community')} - ${$_('head.site_name')}`} />
-	<meta name="twitter:description" content={$_('head.descriptions.community')} />
+  <title>{$_('head.titles.community')} - {$_('head.site_name')}</title>
+  <meta
+    property="og:title"
+    content={`${$_('head.titles.community')} - ${$_('head.site_name')}`}
+  />
+  <meta property="og:type" content="website" />
+  <meta
+    property="og:url"
+    content="{import.meta.env.VITE_SITE_URL || 'https://demonlist.vn'}/community"
+  />
+  <meta property="og:description" content={$_('head.descriptions.community')} />
+  <meta property="og:site_name" content={$_('head.site_name')} />
+  <meta name="twitter:card" content="summary" />
+  <meta
+    name="twitter:title"
+    content={`${$_('head.titles.community')} - ${$_('head.site_name')}`}
+  />
+  <meta
+    name="twitter:description"
+    content={$_('head.descriptions.community')}
+  />
 </svelte:head>
 
 <div class="communityPage">
-	<!-- Hero Banner -->
-	<div class="heroBanner">
-		<div class="heroContent">
-			<h1>{$_('community.title')}</h1>
-			<p>{$_('community.subtitle')}</p>
-		</div>
-	</div>
+  <!-- Hero Banner -->
+  <div class="heroBanner">
+    <div class="heroContent">
+      <h1>{$_('community.title')}</h1>
+      <p>{$_('community.subtitle')}</p>
+    </div>
+  </div>
 
-	<Ads dataAdFormat="auto"  />
+  <Ads dataAdFormat="auto" />
 
-	<div class="communityBody">
-		<!-- Toolbar -->
-		<div class="toolbar">
-			<div class="toolbarTop">
-				{#if $user.loggedIn}
-					<a href="/community/create" class="createBtnLink">
-						<Button class="createBtn">
-							<Plus class="mr-1 h-4 w-4" />
-							{$_('community.create.button')}
-						</Button>
-					</a>
-				{/if}
-				<div class="searchWrapper">
-					<div class="searchBox">
-						<Search class="h-4 w-4 searchIcon" />
-						<input
-							type="text"
-							bind:value={searchQuery}
-							placeholder={$_('community.search_placeholder')}
-							on:keydown={handleSearchKeydown}
-							class="searchInput"
-						/>
-					</div>
-					<Button size="sm" on:click={handleSearch} class="searchButton">
-						{$_('community.search')}
-					</Button>
-				</div>
-			</div>
+  <div class="communityBody">
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="toolbarTop">
+        {#if $user.loggedIn}
+          <a href="/community/create" class="createBtnLink">
+            <Button class="createBtn">
+              <Plus class="mr-1 h-4 w-4" />
+              {$_('community.create.button')}
+            </Button>
+          </a>
+        {/if}
+        <div class="searchWrapper">
+          <div class="searchBox">
+            <Search class="h-4 w-4 searchIcon" />
+            <input
+              type="text"
+              bind:value={searchQuery}
+              placeholder={$_('community.search_placeholder')}
+              on:keydown={handleSearchKeydown}
+              class="searchInput"
+            />
+          </div>
+          <Button size="sm" on:click={handleSearch} class="searchButton">
+            {$_('community.search')}
+          </Button>
+        </div>
+      </div>
 
-			<div class="toolbarBottom">
-				<div class="typeFilters">
-					{#each types as t}
-						<button
-							class="typeBtn"
-							class:active={activeType === t.value}
-							on:click={() => switchType(t.value)}
-						>
-							{#if t.icon}
-								<svelte:component this={t.icon} class="h-4 w-4" />
-							{/if}
-							<span>{$_(`community.type.${t.label}`)}</span>
-						</button>
-					{/each}
-				</div>
+      <div class="toolbarBottom">
+        <div class="typeFilters">
+          {#each types as t}
+            <button
+              class="typeBtn"
+              class:active={activeType === t.value}
+              on:click={() => switchType(t.value)}
+            >
+              {#if t.icon}
+                <svelte:component this={t.icon} class="h-4 w-4" />
+              {/if}
+              <span>{$_(`community.type.${t.label}`)}</span>
+            </button>
+          {/each}
+        </div>
 
-				<div class="sortFilters">
-				<button class="sortBtn" class:active={sortMode === 'recent'} on:click={() => switchSort('recent')}>
-					<Activity class="h-3.5 w-3.5" />
-					{$_('community.sort.recent')}
-					</button>
-					<button class="sortBtn" class:active={sortMode === 'newest'} on:click={() => switchSort('newest')}>
-						{$_('community.sort.newest')}
-					</button>
-					<button class="sortBtn" class:active={sortMode === 'best'} on:click={() => switchSort('best')}>
-						{$_('community.sort.best')}
-					</button>
-				</div>
-			</div>
-		</div>
+        <div class="sortFilters">
+          <button
+            class="sortBtn"
+            class:active={sortMode === 'recent'}
+            on:click={() => switchSort('recent')}
+          >
+            <Activity class="h-3.5 w-3.5" />
+            {$_('community.sort.recent')}
+          </button>
+          <button
+            class="sortBtn"
+            class:active={sortMode === 'newest'}
+            on:click={() => switchSort('newest')}
+          >
+            {$_('community.sort.newest')}
+          </button>
+          <button
+            class="sortBtn"
+            class:active={sortMode === 'best'}
+            on:click={() => switchSort('best')}
+          >
+            {$_('community.sort.best')}
+          </button>
+        </div>
+      </div>
+    </div>
 
-		<!-- Tag Filters -->
-		{#if availableTags.length > 0}
-			<div class="tagFilters">
-				<Tag class="h-3.5 w-3.5 tagIcon" />
-				<button
-					class="tagFilterBtn"
-					class:active={activeTagId === null}
-					on:click={() => switchTag(null)}
-				>
-					{$_('community.type.all')}
-				</button>
-				{#each availableTags.filter(t => !t.adminOnly) as tag}
-					<button
-						class="tagFilterBtn"
-						class:active={activeTagId === tag.id}
-						style="--tag-color: {tag.color}"
-						on:click={() => switchTag(tag.id)}
-					>
-						{tag.name}
-						{#if activeTagId === tag.id}
-							<X class="h-3 w-3" />
-						{/if}
-					</button>
-				{/each}
-			</div>
-		{/if}
+    <!-- Tag Filters -->
+    {#if availableTags.length > 0}
+      <div class="tagFilters">
+        <Tag class="h-3.5 w-3.5 tagIcon" />
+        <button
+          class="tagFilterBtn"
+          class:active={activeTagId === null}
+          on:click={() => switchTag(null)}
+        >
+          {$_('community.type.all')}
+        </button>
+        {#each availableTags.filter(t => !t.adminOnly) as tag}
+          <button
+            class="tagFilterBtn"
+            class:active={activeTagId === tag.id}
+            style="--tag-color: {tag.color}"
+            on:click={() => switchTag(tag.id)}
+          >
+            {tag.name}
+            {#if activeTagId === tag.id}
+              <X class="h-3 w-3" />
+            {/if}
+          </button>
+        {/each}
+      </div>
+    {/if}
 
-		<!-- Posts Grid -->
-		<div class="postsGrid">
-			{#if posts.length > 0}
-				{#each posts as post}
-					<CommunityPostCard {post} on:report={handleReport} />
-				{/each}
-			{:else if !loading}
-				<div class="emptyState">
-					<MessageCircle class="h-12 w-12 text-muted-foreground opacity-50" />
-					<p>{$_('community.no_posts')}</p>
-				</div>
-			{/if}
+    <!-- Posts Grid -->
+    <div class="postsGrid">
+      {#if posts.length > 0}
+        {#each posts as post}
+          <CommunityPostCard {post} on:report={handleReport} />
+        {/each}
+      {:else if !loading}
+        <div class="emptyState">
+          <MessageCircle class="h-12 w-12 text-muted-foreground opacity-50" />
+          <p>{$_('community.no_posts')}</p>
+        </div>
+      {/if}
 
-			{#if loading && posts.length === 0}
-				{#each { length: 12 } as _}
-					<CommunityPostCard post={null} />
-				{/each}
-			{/if}
-		</div>
+      {#if loading && posts.length === 0}
+        {#each { length: 12 } as _}
+          <CommunityPostCard post={null} />
+        {/each}
+      {/if}
+    </div>
 
-		<!-- Load More Sentinel and Loading Indicator -->
-		{#if posts.length > 0}
-			<div id="loadMoreSentinel" class="loadMoreSentinel"></div>
-			{#if loading}
-				<div class="loadingMore">
-					<div class="spinner"></div>
-					<span>{$_('general.loading')}</span>
-				</div>
-			{:else if !hasMore && total > PAGE_SIZE}
-				<div class="endMessage">
-					<span>{$_('community.all_loaded', { values: { total } })}</span>
-				</div>
-			{/if}
-		{/if}
-	</div>
+    <!-- Load More Sentinel and Loading Indicator -->
+    {#if posts.length > 0}
+      <div id="loadMoreSentinel" class="loadMoreSentinel"></div>
+      {#if loading}
+        <div class="loadingMore">
+          <div class="spinner"></div>
+          <span>{$_('general.loading')}</span>
+        </div>
+      {:else if !hasMore && total > PAGE_SIZE}
+        <div class="endMessage">
+          <span>{$_('community.all_loaded', { values: { total } })}</span>
+        </div>
+      {/if}
+    {/if}
+  </div>
 </div>
 
 <!-- Report Dialog -->
 <Dialog.Root bind:open={reportDialogOpen}>
-	<Dialog.Content class="max-w-md">
-		<Dialog.Header>
-			<Dialog.Title>{$_('community.report.title')}</Dialog.Title>
-			<Dialog.Description>{$_('community.report.description')}</Dialog.Description>
-		</Dialog.Header>
+  <Dialog.Content class="max-w-md">
+    <Dialog.Header>
+      <Dialog.Title>{$_('community.report.title')}</Dialog.Title>
+      <Dialog.Description>{
+        $_('community.report.description')
+      }</Dialog.Description>
+    </Dialog.Header>
 
-		<div class="reportForm">
-			<div class="reportField">
-				<span class="reportLabel">{$_('community.report.reason')}</span>
-				<Select.Root
-					onSelectedChange={(v) => {
-						if (v) reportReason = String(v.value);
-					}}
-				>
-					<Select.Trigger>
-						<Select.Value placeholder={$_('community.report.reasons.inappropriate')} />
-					</Select.Trigger>
-					<Select.Content>
-						<Select.Item value="inappropriate">{$_('community.report.reasons.inappropriate')}</Select.Item>
-						<Select.Item value="spam">{$_('community.report.reasons.spam')}</Select.Item>
-						<Select.Item value="harassment">{$_('community.report.reasons.harassment')}</Select.Item>
-						<Select.Item value="misinformation">{$_('community.report.reasons.misinformation')}</Select.Item>
-						<Select.Item value="other">{$_('community.report.reasons.other')}</Select.Item>
-					</Select.Content>
-				</Select.Root>
-			</div>
-			<div class="reportField">
-				<label for="report-desc">{$_('community.report.details')} ({$_('community.create.optional')})</label>
-				<Textarea id="report-desc" bind:value={reportDescription} placeholder={$_('community.report.details_placeholder')} rows={3} />
-			</div>
-		</div>
+    <div class="reportForm">
+      <div class="reportField">
+        <span class="reportLabel">{$_('community.report.reason')}</span>
+        <Select.Root
+          onSelectedChange={(v) => {
+              if (v) {
+ reportReason = String(v.value);
+}
+          }}
+        >
+          <Select.Trigger>
+            <Select.Value
+              placeholder={$_('community.report.reasons.inappropriate')}
+            />
+          </Select.Trigger>
+          <Select.Content>
+            <Select.Item value="inappropriate">{
+              $_('community.report.reasons.inappropriate')
+            }</Select.Item>
+            <Select.Item value="spam">{
+              $_('community.report.reasons.spam')
+            }</Select.Item>
+            <Select.Item value="harassment">{
+              $_('community.report.reasons.harassment')
+            }</Select.Item>
+            <Select.Item value="misinformation">{
+              $_('community.report.reasons.misinformation')
+            }</Select.Item>
+            <Select.Item value="other">{
+              $_('community.report.reasons.other')
+            }</Select.Item>
+          </Select.Content>
+        </Select.Root>
+      </div>
+      <div class="reportField">
+        <label for="report-desc">{$_('community.report.details')} ({
+            $_('community.create.optional')
+          })</label>
+        <Textarea
+          id="report-desc"
+          bind:value={reportDescription}
+          placeholder={$_('community.report.details_placeholder')}
+          rows={3}
+        />
+      </div>
+    </div>
 
-		<Dialog.Footer>
-			<Button variant="outline" on:click={() => (reportDialogOpen = false)}>
-				{$_('general.close')}
-			</Button>
-			<Button variant="destructive" on:click={submitReport} disabled={submittingReport}>
-				{submittingReport ? $_('community.report.submitting') : $_('community.report.submit')}
-			</Button>
-		</Dialog.Footer>
-	</Dialog.Content>
+    <Dialog.Footer>
+      <Button variant="outline" on:click={() => (reportDialogOpen = false)}>
+        {$_('general.close')}
+      </Button>
+      <Button
+        variant="destructive"
+        on:click={submitReport}
+        disabled={submittingReport}
+      >
+        {
+          submittingReport
+          ? $_('community.report.submitting')
+          : $_('community.report.submit')
+        }
+      </Button>
+    </Dialog.Footer>
+  </Dialog.Content>
 </Dialog.Root>
 
 <style lang="scss">
-	.communityPage {
-		min-height: 100vh;
-	}
+.communityPage {
+  min-height: 100vh;
+}
 
-	.heroBanner {
-		background: linear-gradient(135deg, hsl(var(--primary) / 0.15), hsl(var(--primary) / 0.05));
-		border-bottom: 1px solid hsl(var(--border));
-		padding: 40px 50px;
-	}
+.heroBanner {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--primary) / 0.15),
+    hsl(var(--primary) / 0.05)
+  );
+  border-bottom: 1px solid hsl(var(--border));
+  padding: 40px 50px;
+}
 
-	.heroContent {
-		max-width: 800px;
+.heroContent {
+  max-width: 800px;
 
-		h1 { font-size: 28px; font-weight: 700; margin: 0 0 8px; }
-		p { font-size: 15px; color: hsl(var(--muted-foreground)); margin: 0; }
-	}
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0 0 8px;
+  }
+  p {
+    font-size: 15px;
+    color: hsl(var(--muted-foreground));
+    margin: 0;
+  }
+}
 
-	.communityBody {
-		padding: 24px 50px 60px;
-		max-width: 1200px;
-		margin: 0 auto;
-	}
+.communityBody {
+  padding: 24px 50px 60px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
 
-	.toolbar {
-		display: flex;
-		flex-direction: column;
-		gap: 12px;
-		margin-bottom: 24px;
-	}
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
 
-	.toolbarTop {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-		flex-wrap: wrap;
-	}
+.toolbarTop {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
 
-	:global(.createBtn) {
-		flex-shrink: 0;
-	}
+:global(.createBtn) {
+  flex-shrink: 0;
+}
 
-	.createBtnLink {
-		text-decoration: none;
-		flex-shrink: 0;
-	}
+.createBtnLink {
+  text-decoration: none;
+  flex-shrink: 0;
+}
 
-	.searchWrapper {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		flex: 1;
-		min-width: 0;
-	}
+.searchWrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
 
-	.toolbarBottom {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 8px;
-	}
+.toolbarBottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
 
-	.typeFilters {
-		display: flex;
-		gap: 4px;
-		background: hsl(var(--muted));
-		border-radius: 8px;
-		padding: 4px;
-		flex-wrap: wrap;
-	}
+.typeFilters {
+  display: flex;
+  gap: 4px;
+  background: hsl(var(--muted));
+  border-radius: 8px;
+  padding: 4px;
+  flex-wrap: wrap;
+}
 
-	.typeBtn {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-		padding: 6px 14px;
-		border-radius: 6px;
-		font-size: 13px;
-		font-weight: 500;
-		color: hsl(var(--muted-foreground));
-		background: transparent;
-		border: none;
-		cursor: pointer;
-		transition: all 0.2s ease;
-		white-space: nowrap;
+.typeBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
 
-		&:hover { color: hsl(var(--foreground)); }
+  &:hover {
+    color: hsl(var(--foreground));
+  }
 
-		&.active {
-			background: hsl(var(--background));
-			color: hsl(var(--foreground));
-			box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-		}
-	}
+  &.active {
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+}
 
-	.sortFilters {
-		display: flex;
-		gap: 4px;
-		background: hsl(var(--muted));
-		border-radius: 8px;
-		padding: 4px;
-	}
+.sortFilters {
+  display: flex;
+  gap: 4px;
+  background: hsl(var(--muted));
+  border-radius: 8px;
+  padding: 4px;
+}
 
-	.sortBtn {
-		padding: 6px 12px;
-		border-radius: 6px;
-		font-size: 13px;
-		font-weight: 500;
-		color: hsl(var(--muted-foreground));
-		background: transparent;
-		border: none;
-		cursor: pointer;
-		transition: all 0.2s ease;
-		display: flex;
-		align-items: center;
-		gap: 5px;
+.sortBtn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 5px;
 
-		&:hover { color: hsl(var(--foreground)); }
+  &:hover {
+    color: hsl(var(--foreground));
+  }
 
-		&.active {
-			background: hsl(var(--background));
-			color: hsl(var(--foreground));
-			box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-		}
+  &.active {
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+}
 
+.tagFilters {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
 
-	}
+:global(.tagIcon) {
+  color: hsl(var(--muted-foreground));
+  flex-shrink: 0;
+}
 
-	.tagFilters {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-		flex-wrap: wrap;
-		margin-bottom: 4px;
-	}
+.tagFilterBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1.5px solid hsl(var(--border));
+  background: transparent;
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
 
-	:global(.tagIcon) {
-		color: hsl(var(--muted-foreground));
-		flex-shrink: 0;
-	}
+  &:hover {
+    border-color: var(--tag-color, hsl(var(--foreground) / 0.3));
+    color: var(--tag-color, hsl(var(--foreground)));
+  }
 
-	.tagFilterBtn {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-		padding: 4px 12px;
-		border-radius: 16px;
-		font-size: 12px;
-		font-weight: 600;
-		border: 1.5px solid hsl(var(--border));
-		background: transparent;
-		color: hsl(var(--muted-foreground));
-		cursor: pointer;
-		transition: all 0.15s ease;
-		white-space: nowrap;
+  &.active {
+    border-color: var(--tag-color, hsl(var(--primary)));
+    color: var(--tag-color, hsl(var(--primary)));
+    background: color-mix(
+      in srgb,
+      var(--tag-color, hsl(var(--primary))) 10%,
+      transparent
+    );
+  }
+}
 
-		&:hover {
-			border-color: var(--tag-color, hsl(var(--foreground) / 0.3));
-			color: var(--tag-color, hsl(var(--foreground)));
-		}
+.postsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 16px;
+}
 
-		&.active {
-			border-color: var(--tag-color, hsl(var(--primary)));
-			color: var(--tag-color, hsl(var(--primary)));
-			background: color-mix(in srgb, var(--tag-color, hsl(var(--primary))) 10%, transparent);
-		}
-	}
+.emptyState {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 60px 0;
+  p {
+    color: hsl(var(--muted-foreground));
+    font-size: 14px;
+  }
+}
 
-	.postsGrid {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-		gap: 16px;
-	}
+.loadMoreSentinel {
+  height: 1px;
+  margin-top: 16px;
+}
 
-	.emptyState {
-		grid-column: 1 / -1;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 12px;
-		padding: 60px 0;
-		p { color: hsl(var(--muted-foreground)); font-size: 14px; }
-	}
+.loadingMore {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px 0;
+  color: hsl(var(--muted-foreground));
+  font-size: 14px;
+}
 
-	.loadMoreSentinel {
-		height: 1px;
-		margin-top: 16px;
-	}
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid hsl(var(--border));
+  border-top-color: hsl(var(--primary));
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
 
-	.loadingMore {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 12px;
-		padding: 24px 0;
-		color: hsl(var(--muted-foreground));
-		font-size: 14px;
-	}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 
-	.spinner {
-		width: 20px;
-		height: 20px;
-		border: 2px solid hsl(var(--border));
-		border-top-color: hsl(var(--primary));
-		border-radius: 50%;
-		animation: spin 0.8s linear infinite;
-	}
+.endMessage {
+  display: flex;
+  justify-content: center;
+  padding: 24px 0;
+  color: hsl(var(--muted-foreground));
+  font-size: 13px;
+}
 
-	@keyframes spin {
-		to { transform: rotate(360deg); }
-	}
+.searchBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--background));
+  transition: border-color 0.15s;
+  flex: 1;
+  min-width: 0;
 
-	.endMessage {
-		display: flex;
-		justify-content: center;
-		padding: 24px 0;
-		color: hsl(var(--muted-foreground));
-		font-size: 13px;
-	}
+  &:focus-within {
+    border-color: hsl(var(--primary));
+  }
+}
 
-	.searchBox {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 6px 12px;
-		border: 1px solid hsl(var(--border));
-		border-radius: 8px;
-		background: hsl(var(--background));
-		transition: border-color 0.15s;
-		flex: 1;
-		min-width: 0;
+:global(.searchButton) {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
 
-		&:focus-within {
-			border-color: hsl(var(--primary));
-		}
-	}
+.searchInput {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  color: hsl(var(--foreground));
+  flex: 1;
+  width: 100%;
 
-	:global(.searchButton) {
-		flex-shrink: 0;
-		white-space: nowrap;
-	}
+  &::placeholder {
+    color: hsl(var(--muted-foreground));
+  }
+}
 
-	.searchInput {
-		border: none;
-		outline: none;
-		background: transparent;
-		font-size: 13px;
-		color: hsl(var(--foreground));
-		flex: 1;
-		width: 100%;
+@media screen and (max-width: 900px) {
+  .heroBanner {
+    padding: 28px 16px;
+  }
+  .communityBody {
+    padding: 16px 16px 40px;
+  }
+  .postsGrid {
+    grid-template-columns: 1fr;
+  }
 
-		&::placeholder {
-			color: hsl(var(--muted-foreground));
-		}
-	}
+  .toolbarTop {
+    flex-direction: column;
+    align-items: stretch;
+  }
 
-	@media screen and (max-width: 900px) {
-		.heroBanner { padding: 28px 16px; }
-		.communityBody { padding: 16px 16px 40px; }
-		.postsGrid { grid-template-columns: 1fr; }
-		
-		.toolbarTop {
-			flex-direction: column;
-			align-items: stretch;
-		}
-		
-		.searchWrapper {
-			width: 100%;
-		}
-		
-		:global(.createBtn) {
-			width: 100%;
-		}
+  .searchWrapper {
+    width: 100%;
+  }
 
-		.createBtnLink {
-			width: 100%;
-		}
-		
-		.toolbarBottom {
-			flex-direction: column;
-			align-items: stretch;
-		}
-		
-		.typeFilters,
-		.sortFilters {
-			width: 100%;
-			justify-content: center;
-		}
-	}
+  :global(.createBtn) {
+    width: 100%;
+  }
 
-	/* Report form */
-	.reportForm {
-		display: flex;
-		flex-direction: column;
-		gap: 16px;
-		padding: 8px 0;
-	}
+  .createBtnLink {
+    width: 100%;
+  }
 
-	.reportField {
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
+  .toolbarBottom {
+    flex-direction: column;
+    align-items: stretch;
+  }
 
-		label, .reportLabel {
-			font-size: 13px;
-			font-weight: 500;
-		}
-	}
+  .typeFilters,
+  .sortFilters {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Report form */
+.reportForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 8px 0;
+}
+
+.reportField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  label, .reportLabel {
+    font-size: 13px;
+    font-weight: 500;
+  }
+}
 </style>

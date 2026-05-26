@@ -1,24 +1,24 @@
 export type CommunityCacheEntry = {
-	posts: unknown[];
-	total: number;
-	offset: number;
-	hasMore: boolean;
-	activeType: string | null;
-	sortMode: 'newest' | 'best' | 'recent';
-	searchQuery: string;
-	scrollY: number;
+    posts: unknown[];
+    total: number;
+    offset: number;
+    hasMore: boolean;
+    activeType: string | null;
+    sortMode: 'newest' | 'best' | 'recent';
+    searchQuery: string;
+    scrollY: number;
 };
 
 let cached: CommunityCacheEntry | null = null;
 
 export function getCommunityCache(): CommunityCacheEntry | null {
-	return cached;
+    return cached;
 }
 
 export function setCommunityCache(entry: CommunityCacheEntry): void {
-	cached = entry;
+    cached = entry;
 }
 
 export function clearCommunityCache(): void {
-	cached = null;
+    cached = null;
 }

@@ -4,7 +4,9 @@
 	import * as Select from '$lib/components/ui/select';
 	import { goto } from '$app/navigation';
 	import AcceptanceBadge from '$lib/components/AcceptanceBadge.svelte';
-	import ListSelector, { type ListSelectorOption } from '$lib/components/listSelector.svelte';
+	import ListSelector, {
+		type ListSelectorOption
+	} from '$lib/components/listSelector.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
@@ -53,7 +55,11 @@
 	$: sortOptions = [
 		{ value: 'date_submitted', label: $_('player.filter.date_submitted') },
 		{ value: 'progress', label: $_('player.table.progress') },
-		{ value: 'point', label: $_('player.filter.point'), disabled: draftListId === null }
+		{
+			value: 'point',
+			label: $_('player.filter.point'),
+			disabled: draftListId === null
+		}
 	] satisfies Array<SelectOption<RecordSortValue>>;
 	$: sortDirectionOptions = [
 		{ value: 'desc', label: $_('player.filter.descending') },
@@ -62,8 +68,10 @@
 	$: if (draftListId === null && draftSortBy === 'point') {
 		draftSortBy = 'date_submitted';
 	}
-	$: baseRecordsResponse = data.playerRecords ?? data.selectedListRecords ?? data.allListRecords;
-	$: listRecordsResponse = data.allListRecords ?? data.selectedListRecords ?? data.playerRecords;
+	$: baseRecordsResponse = data.playerRecords ?? data.selectedListRecords
+		?? data.allListRecords;
+	$: listRecordsResponse = data.allListRecords ?? data.selectedListRecords
+		?? data.playerRecords;
 	$: selectedListFallback = data.selectedList;
 	$: listSearchUrl = `${import.meta.env.VITE_API_URL}/lists`;
 	$: baseRecords = baseRecordsResponse?.data || [];
@@ -79,20 +87,26 @@
 		data.listSummaries || [],
 		selectedListFallback
 	);
-	$: listOptions = getListOptions(data.listSummaries || [], listRecordsResponse?.data || []);
+	$: listOptions = getListOptions(
+		data.listSummaries || [],
+		listRecordsResponse?.data || []
+	);
 	$: selectedPlatformOption =
-		platformOptions.find((option) => option.value === draftPlatform) ?? platformOptions[0];
+		platformOptions.find((option) => option.value === draftPlatform)
+		?? platformOptions[0];
 	$: selectedSortOption =
-		sortOptions.find((option) => option.value === draftSortBy) ?? sortOptions[0];
+		sortOptions.find((option) => option.value === draftSortBy)
+		?? sortOptions[0];
 	$: selectedSortDirectionOption =
-		sortDirectionOptions.find((option) => option.value === draftSortDirection) ??
-		sortDirectionOptions[0];
+		sortDirectionOptions.find((option) => option.value === draftSortDirection)
+		?? sortDirectionOptions[0];
 	$: tabbedRecords = records.filter((record: PlayerListRecordEntry) =>
 		matchesRecordAcceptanceTab(record, selectedRecordTab)
 	);
 	$: matchingRecords = tabbedRecords.filter(
 		(record: PlayerListRecordEntry) =>
-			matchesLevelIdFilter(record, appliedLevelId) && matchesPlatformFilter(record, appliedPlatform)
+			matchesLevelIdFilter(record, appliedLevelId)
+				&& matchesPlatformFilter(record, appliedPlatform)
 	);
 	$: filteredRecords = sortRecords(
 		matchingRecords,
@@ -101,35 +115,37 @@
 		appliedListId !== null
 	);
 	$: tabbedRecordTotal = tabbedRecords.length;
-	$: showRecordControls = tabbedRecordTotal > 0 || appliedListId !== null || baseRecords.length > 0;
-	$: isLoadingAppliedListRecords =
-		appliedListId !== null &&
-		isLoadingSelectedListRecords &&
-		selectedListRecordsLoadedForId !== appliedListId &&
-		!tabbedRecords.length;
+	$: showRecordControls = tabbedRecordTotal > 0 || appliedListId !== null
+		|| baseRecords.length > 0;
+	$: isLoadingAppliedListRecords = appliedListId !== null
+		&& isLoadingSelectedListRecords
+		&& selectedListRecordsLoadedForId !== appliedListId
+		&& !tabbedRecords.length;
 	$: showPointColumn = appliedListId !== null;
-	$: hasPlatformerRecords = filteredRecords.some((record: PlayerListRecordEntry) =>
-		isPlatformerRecord(record)
-	);
+	$: hasPlatformerRecords = filteredRecords.some((
+		record: PlayerListRecordEntry
+	) => isPlatformerRecord(record));
 	$: hasClassicRecords = filteredRecords.some(
 		(record: PlayerListRecordEntry) => !isPlatformerRecord(record)
 	);
-	$: resultColumnLabel =
-		hasPlatformerRecords && hasClassicRecords
-			? $_('player.table.result')
-			: hasPlatformerRecords
-				? $_('player.table.time')
-				: $_('player.table.progress');
+	$: resultColumnLabel = hasPlatformerRecords && hasClassicRecords
+		? $_('player.table.result')
+		: hasPlatformerRecords
+		? $_('player.table.time')
+		: $_('player.table.progress');
 
 	function getTimeString(ms: number) {
 		const minutes = Math.floor(ms / 60000);
 		const seconds = Math.floor((ms % 60000) / 1000);
 		const milliseconds = ms % 1000;
-		return `${minutes}:${seconds.toString().padStart(2, '0')}.${milliseconds}`;
+
+		return `${minutes}:${seconds.toString()
+			.padStart(2, '0')}.${milliseconds}`;
 	}
 
 	function getRecordDetailHref(record: PlayerListRecordEntry) {
 		const recordQuery = record.id ? `?id=${record.id}` : '';
+
 		return `/record/${record.uid}/${record.levelId}${recordQuery}`;
 	}
 
@@ -141,8 +157,13 @@
 		return Boolean(record?.acceptedAuto) && !record?.acceptedManually;
 	}
 
-	function matchesRecordAcceptanceTab(record: PlayerListRecordEntry, tab: RecordAcceptanceTab) {
-		return tab === 'verified' ? isVerifiedRecord(record) : isUnverifiedRecord(record);
+	function matchesRecordAcceptanceTab(
+		record: PlayerListRecordEntry,
+		tab: RecordAcceptanceTab
+	) {
+		return tab === 'verified'
+			? isVerifiedRecord(record)
+			: isUnverifiedRecord(record);
 	}
 
 	function getListOptions(
@@ -160,7 +181,11 @@
 				id: list.id,
 				title: list.title,
 				identifier: list.identifier,
-				subtitle: list.isOfficial ? 'Official' : list.isVerified ? 'Verified' : null
+				subtitle: list.isOfficial
+					? 'Official'
+					: list.isVerified
+					? 'Verified'
+					: null
 			});
 		}
 
@@ -178,14 +203,18 @@
 			});
 		}
 
-		return Array.from(optionsById.values()).sort((left, right) =>
-			left.title.localeCompare(right.title)
-		);
+		return Array.from(optionsById.values())
+			.sort((left, right) =>
+				left.title.localeCompare(right.title)
+			);
 	}
 
 	function toRankedListReference(
 		list:
-			| Pick<PlayerRankedListSummary, 'id' | 'identifier' | 'title' | 'isPlatformer'>
+			| Pick<
+				PlayerRankedListSummary,
+				'id' | 'identifier' | 'title' | 'isPlatformer'
+			>
 			| null
 			| undefined
 	): PlayerListRecordEntry['rankedList'] {
@@ -217,7 +246,8 @@
 			return toRankedListReference(selectedList);
 		}
 
-		return records.find((record) => record.rankedList?.id === listId)?.rankedList ?? null;
+		return records.find((record) => record.rankedList?.id === listId)
+			?.rankedList ?? null;
 	}
 
 	function getPayloadListReference(value: unknown, fallbackId: number) {
@@ -233,12 +263,11 @@
 			return null;
 		}
 
-		const identifier =
-			typeof list.identifier === 'string'
-				? list.identifier
-				: typeof list.slug === 'string'
-					? list.slug
-					: String(id);
+		const identifier = typeof list.identifier === 'string'
+			? list.identifier
+			: typeof list.slug === 'string'
+			? list.slug
+			: String(id);
 
 		return {
 			id,
@@ -252,25 +281,29 @@
 		payload: unknown,
 		listId: number
 	): PlayerListRecordsResponse {
-		const response = payload && typeof payload === 'object' ? (payload as any) : {};
+		const response = payload && typeof payload === 'object'
+			? (payload as any)
+			: {};
 		const listReference = getPayloadListReference(response.list, listId);
 		const records = Array.isArray(response.data)
 			? response.data
-					.filter(hasListLeaderboardRecordEntry)
-					.map((record: PlayerListRecordEntry) => ({
-						...record,
-						rankedList: record.rankedList ?? listReference
-					}))
+				.filter(hasListLeaderboardRecordEntry)
+				.map((record: PlayerListRecordEntry) => ({
+					...record,
+					rankedList: record.rankedList ?? listReference
+				}))
 			: [];
 
 		return {
 			list: response.list ?? null,
 			data: records,
-			total: typeof response.total === 'number' ? response.total : records.length,
-			lastRefreshedAt:
-				typeof response.lastRefreshedAt === 'string' || response.lastRefreshedAt === null
-					? response.lastRefreshedAt
-					: null
+			total: typeof response.total === 'number'
+				? response.total
+				: records.length,
+			lastRefreshedAt: typeof response.lastRefreshedAt === 'string'
+				|| response.lastRefreshedAt === null
+				? response.lastRefreshedAt
+				: null
 		};
 	}
 
@@ -279,11 +312,14 @@
 			return `record:${record.id}`;
 		}
 
-		return `level:${record.uid}:${record.levelId}:${record.rankedList?.id ?? ''}`;
+		return `level:${record.uid}:${record.levelId}:${
+			record.rankedList?.id ?? ''
+		}`;
 	}
 
 	function hasListLeaderboardRecordEntry(record: PlayerListRecordEntry) {
-		return Number.isFinite(Number(record.point)) && Number.isFinite(Number(record.no));
+		return Number.isFinite(Number(record.point))
+			&& Number.isFinite(Number(record.no));
 	}
 
 	function getDisplayRecords(
@@ -304,7 +340,9 @@
 			allListRecords
 		);
 		const listMatches = allListRecords
-			.filter((record) => matchesListFilter(record, listId, listReference?.id ?? null))
+			.filter((record) =>
+				matchesListFilter(record, listId, listReference?.id ?? null)
+			)
 			.map((record) => ({
 				...record,
 				rankedList: record.rankedList ?? listReference
@@ -318,7 +356,10 @@
 		return Array.from(recordsByKey.values());
 	}
 
-	function matchesLevelIdFilter(record: PlayerListRecordEntry, levelIdFilter: string) {
+	function matchesLevelIdFilter(
+		record: PlayerListRecordEntry,
+		levelIdFilter: string
+	) {
 		if (!levelIdFilter) {
 			return true;
 		}
@@ -347,11 +388,14 @@
 		}
 
 		const isMobile = Boolean(record.mobile);
+
 		return platformFilter === 'mobile' ? isMobile : !isMobile;
 	}
 
 	function isPlatformerRecord(record: PlayerListRecordEntry) {
-		return Boolean(record.level?.isPlatformer ?? record.rankedList?.isPlatformer);
+		return Boolean(
+			record.level?.isPlatformer ?? record.rankedList?.isPlatformer
+		);
 	}
 
 	function applyFilters() {
@@ -360,7 +404,9 @@
 		appliedLevelId = draftLevelId.trim();
 		appliedListId = nextListId;
 		appliedPlatform = draftPlatform;
-		appliedSortBy = nextListId === null && draftSortBy === 'point' ? 'date_submitted' : draftSortBy;
+		appliedSortBy = nextListId === null && draftSortBy === 'point'
+			? 'date_submitted'
+			: draftSortBy;
 		appliedSortDirection = draftSortDirection;
 
 		if (nextListId !== null) {
@@ -372,7 +418,9 @@
 	}
 
 	async function loadSelectedListRecords(listId: number) {
-		if (selectedListRecordsLoadedForId === listId && selectedListRecordsResponse) {
+		if (
+			selectedListRecordsLoadedForId === listId && selectedListRecordsResponse
+		) {
 			return;
 		}
 
@@ -394,7 +442,10 @@
 				return;
 			}
 
-			selectedListRecordsResponse = normalizeListRecordsPayload(payload, listId);
+			selectedListRecordsResponse = normalizeListRecordsPayload(
+				payload,
+				listId
+			);
 			selectedListRecordsLoadedForId = listId;
 		} catch {
 			if (requestId === selectedListRecordsRequestId) {
@@ -412,16 +463,18 @@
 		draftListId = event.detail?.id ?? null;
 	}
 
-	function handlePlatformSelection(option: { value?: string } | undefined) {
+	function handlePlatformSelection(option: { value?: string; } | undefined) {
 		draftPlatform = (option?.value as PlatformFilterValue) ?? 'all';
 	}
 
-	function handleSortSelection(option: { value?: string } | undefined) {
+	function handleSortSelection(option: { value?: string; } | undefined) {
 		const nextSort = (option?.value as RecordSortValue) ?? 'date_submitted';
-		draftSortBy = draftListId === null && nextSort === 'point' ? 'date_submitted' : nextSort;
+		draftSortBy = draftListId === null && nextSort === 'point'
+			? 'date_submitted'
+			: nextSort;
 	}
 
-	function handleSortDirectionSelection(option: { value?: string } | undefined) {
+	function handleSortDirectionSelection(option: { value?: string; } | undefined) {
 		draftSortDirection = (option?.value as RecordSortDirection) ?? 'desc';
 	}
 
@@ -436,11 +489,13 @@
 
 	function getSubmittedAt(record: PlayerListRecordEntry) {
 		if (record.createdAt) {
-			return new Date(record.createdAt).toLocaleString('vi-VN');
+			return new Date(record.createdAt)
+				.toLocaleString('vi-VN');
 		}
 
 		if (record.timestamp) {
-			return new Date(record.timestamp).toLocaleString('vi-VN');
+			return new Date(record.timestamp)
+				.toLocaleString('vi-VN');
 		}
 
 		return '-';
@@ -448,7 +503,8 @@
 
 	function getSubmittedAtTime(record: PlayerListRecordEntry) {
 		if (record.createdAt) {
-			return new Date(record.createdAt).getTime();
+			return new Date(record.createdAt)
+				.getTime();
 		}
 
 		return record.timestamp ?? 0;
@@ -467,7 +523,8 @@
 		right: PlayerListRecordEntry,
 		sortDirection: RecordSortDirection
 	) {
-		const submittedAtDiff = getSubmittedAtTime(right) - getSubmittedAtTime(left);
+		const submittedAtDiff = getSubmittedAtTime(right)
+			- getSubmittedAtTime(left);
 
 		return sortDirection === 'asc' ? -submittedAtDiff : submittedAtDiff;
 	}
@@ -532,10 +589,9 @@
 					return acceptanceDiff;
 				}
 
-				const pointDiff =
-					sortDirection === 'asc'
-						? (left.point ?? 0) - (right.point ?? 0)
-						: (right.point ?? 0) - (left.point ?? 0);
+				const pointDiff = sortDirection === 'asc'
+					? (left.point ?? 0) - (right.point ?? 0)
+					: (right.point ?? 0) - (left.point ?? 0);
 
 				if (pointDiff !== 0) {
 					return pointDiff;
@@ -576,301 +632,349 @@
 </script>
 
 {#if showRecordControls}
-	<Tabs.Root bind:value={selectedRecordTab}>
-		<div class="filterBar">
-			<div class="filterGroup">
-				<div class="filterField">
-					<Label for="record-level-id-filter">{$_('player.filter.level_id')}</Label>
-					<Input
-						id="record-level-id-filter"
-						bind:value={draftLevelId}
-						placeholder={$_('player.filter.level_id_placeholder')}
-						inputmode="numeric"
-						class="w-full min-w-[180px]"
-						on:keydown={handleFilterKeydown}
-					/>
-				</div>
-				<div class="filterField">
-					<Label for="record-list-filter">{$_('player.filter.list')}</Label>
-					<ListSelector
-						id="record-list-filter"
-						selectedId={draftListId}
-						options={listOptions}
-						searchUrl={listSearchUrl}
-						placeholder={$_('player.filter.all_lists')}
-						searchPlaceholder={$_('list_selector.search_placeholder')}
-						emptyLabel={$_('list_selector.no_results')}
-						loadingLabel={`${$_('general.loading')}...`}
-						allowClear
-						clearLabel={$_('player.filter.all_lists')}
-						triggerClass="min-w-[220px]"
-						on:select={handleListSelection}
-					/>
-				</div>
-				<div class="filterField">
-					<Label for="record-platform-filter">{$_('player.filter.platform')}</Label>
-					<Select.Root selected={selectedPlatformOption} onSelectedChange={handlePlatformSelection}>
-						<Select.Trigger id="record-platform-filter" class="w-full min-w-[180px]">
-							<Select.Value placeholder={$_('player.filter.all_platforms')} />
-						</Select.Trigger>
-						<Select.Content>
-							{#each platformOptions as platformOption}
-								<Select.Item value={platformOption.value} label={platformOption.label}>
-									{platformOption.label}
-								</Select.Item>
-							{/each}
-						</Select.Content>
-					</Select.Root>
-				</div>
-				<div class="filterField">
-					<Label for="record-sort-filter">{$_('player.filter.sort_by')}</Label>
-					<Select.Root selected={selectedSortOption} onSelectedChange={handleSortSelection}>
-						<Select.Trigger id="record-sort-filter" class="w-full min-w-[180px]">
-							<Select.Value placeholder={$_('player.filter.date_submitted')} />
-						</Select.Trigger>
-						<Select.Content>
-							{#each sortOptions as sortOption}
-								<Select.Item
-									value={sortOption.value}
-									label={sortOption.label}
-									disabled={sortOption.disabled}
-								>
-									{sortOption.label}
-								</Select.Item>
-							{/each}
-						</Select.Content>
-					</Select.Root>
-				</div>
-				<div class="filterField">
-					<Label for="record-sort-direction-filter">{$_('player.filter.sort_order')}</Label>
-					<Select.Root
-						selected={selectedSortDirectionOption}
-						onSelectedChange={handleSortDirectionSelection}
-					>
-						<Select.Trigger id="record-sort-direction-filter" class="w-full min-w-[160px]">
-							<Select.Value placeholder={$_('player.filter.descending')} />
-						</Select.Trigger>
-						<Select.Content>
-							{#each sortDirectionOptions as sortDirectionOption}
-								<Select.Item value={sortDirectionOption.value} label={sortDirectionOption.label}>
-									{sortDirectionOption.label}
-								</Select.Item>
-							{/each}
-						</Select.Content>
-					</Select.Root>
-				</div>
-			</div>
-			<div class="filterActions">
-				<Button type="button" on:click={applyFilters}>{$_('player.filter.apply')}</Button>
-			</div>
-		</div>
-		<Tabs.List class="w-fit">
-			<Tabs.Trigger value="verified">{$_('player.tabs.verified_records')}</Tabs.Trigger>
-			<Tabs.Trigger value="unverified">{$_('player.tabs.unverified_records')}</Tabs.Trigger>
-		</Tabs.List>
+  <Tabs.Root bind:value={selectedRecordTab}>
+    <div class="filterBar">
+      <div class="filterGroup">
+        <div class="filterField">
+          <Label for="record-level-id-filter">{
+            $_('player.filter.level_id')
+          }</Label>
+          <Input
+            id="record-level-id-filter"
+            bind:value={draftLevelId}
+            placeholder={$_('player.filter.level_id_placeholder')}
+            inputmode="numeric"
+            class="w-full min-w-[180px]"
+            on:keydown={handleFilterKeydown}
+          />
+        </div>
+        <div class="filterField">
+          <Label for="record-list-filter">{$_('player.filter.list')}</Label>
+          <ListSelector
+            id="record-list-filter"
+            selectedId={draftListId}
+            options={listOptions}
+            searchUrl={listSearchUrl}
+            placeholder={$_('player.filter.all_lists')}
+            searchPlaceholder={$_('list_selector.search_placeholder')}
+            emptyLabel={$_('list_selector.no_results')}
+            loadingLabel={`${$_('general.loading')}...`}
+            allowClear
+            clearLabel={$_('player.filter.all_lists')}
+            triggerClass="min-w-[220px]"
+            on:select={handleListSelection}
+          />
+        </div>
+        <div class="filterField">
+          <Label for="record-platform-filter">{
+            $_('player.filter.platform')
+          }</Label>
+          <Select.Root
+            selected={selectedPlatformOption}
+            onSelectedChange={handlePlatformSelection}
+          >
+            <Select.Trigger
+              id="record-platform-filter"
+              class="w-full min-w-[180px]"
+            >
+              <Select.Value placeholder={$_('player.filter.all_platforms')} />
+            </Select.Trigger>
+            <Select.Content>
+              {#each platformOptions as platformOption}
+                <Select.Item
+                  value={platformOption.value}
+                  label={platformOption.label}
+                >
+                  {platformOption.label}
+                </Select.Item>
+              {/each}
+            </Select.Content>
+          </Select.Root>
+        </div>
+        <div class="filterField">
+          <Label for="record-sort-filter">{$_('player.filter.sort_by')}</Label>
+          <Select.Root
+            selected={selectedSortOption}
+            onSelectedChange={handleSortSelection}
+          >
+            <Select.Trigger
+              id="record-sort-filter"
+              class="w-full min-w-[180px]"
+            >
+              <Select.Value placeholder={$_('player.filter.date_submitted')} />
+            </Select.Trigger>
+            <Select.Content>
+              {#each sortOptions as sortOption}
+                <Select.Item
+                  value={sortOption.value}
+                  label={sortOption.label}
+                  disabled={sortOption.disabled}
+                >
+                  {sortOption.label}
+                </Select.Item>
+              {/each}
+            </Select.Content>
+          </Select.Root>
+        </div>
+        <div class="filterField">
+          <Label for="record-sort-direction-filter">{
+            $_('player.filter.sort_order')
+          }</Label>
+          <Select.Root
+            selected={selectedSortDirectionOption}
+            onSelectedChange={handleSortDirectionSelection}
+          >
+            <Select.Trigger
+              id="record-sort-direction-filter"
+              class="w-full min-w-[160px]"
+            >
+              <Select.Value placeholder={$_('player.filter.descending')} />
+            </Select.Trigger>
+            <Select.Content>
+              {#each sortDirectionOptions as sortDirectionOption}
+                <Select.Item
+                  value={sortDirectionOption.value}
+                  label={sortDirectionOption.label}
+                >
+                  {sortDirectionOption.label}
+                </Select.Item>
+              {/each}
+            </Select.Content>
+          </Select.Root>
+        </div>
+      </div>
+      <div class="filterActions">
+        <Button type="button" on:click={applyFilters}>{
+          $_('player.filter.apply')
+        }</Button>
+      </div>
+    </div>
+    <Tabs.List class="w-fit">
+      <Tabs.Trigger value="verified">{
+        $_('player.tabs.verified_records')
+      }</Tabs.Trigger>
+      <Tabs.Trigger value="unverified">{
+        $_('player.tabs.unverified_records')
+      }</Tabs.Trigger>
+    </Tabs.List>
 
-		{#if isLoadingAppliedListRecords}
-			<div class="emptyState">{$_('general.loading')}...</div>
-		{:else if filteredRecords.length}
-			<Table.Root>
-				<Table.Caption>
-					{$_('player.table.total_record')}: {filteredRecords.length} / {tabbedRecordTotal}
-				</Table.Caption>
-				<Table.Header>
-					<Table.Row>
-						<Table.Head>{$_('player.table.level')}</Table.Head>
-						<Table.Head class="w-[100px] text-center">{$_('player.table.submitted_on')}</Table.Head>
-						<Table.Head class="w-[70px] text-center">{$_('acceptance.short_label')}</Table.Head>
-						<Table.Head class="w-[100px] text-center">{$_('player.table.device')}</Table.Head>
-						{#if showPointColumn}
-							<Table.Head class="w-[90px] text-center">{$_('player.table.point')}</Table.Head>
-						{/if}
-						<Table.Head class="w-[80px] text-center">{resultColumnLabel}</Table.Head>
-						<Table.Head class="w-[56px] text-center"></Table.Head>
-					</Table.Row>
-				</Table.Header>
-				<Table.Body>
-					{#each filteredRecords as record}
-						<Table.Row
-							on:click={(e) => {
-								const target = e.target;
-								if (target instanceof HTMLElement && target.closest('a, button')) {
-									return;
-								}
+    {#if isLoadingAppliedListRecords}
+      <div class="emptyState">{$_('general.loading')}...</div>
+    {:else if filteredRecords.length}
+      <Table.Root>
+        <Table.Caption>
+          {$_('player.table.total_record')}: {filteredRecords.length} / {
+            tabbedRecordTotal
+          }
+        </Table.Caption>
+        <Table.Header>
+          <Table.Row>
+            <Table.Head>{$_('player.table.level')}</Table.Head>
+            <Table.Head class="w-[100px] text-center">{
+              $_('player.table.submitted_on')
+            }</Table.Head>
+            <Table.Head class="w-[70px] text-center">{
+              $_('acceptance.short_label')
+            }</Table.Head>
+            <Table.Head class="w-[100px] text-center">{
+              $_('player.table.device')
+            }</Table.Head>
+            {#if showPointColumn}
+              <Table.Head class="w-[90px] text-center">{
+                $_('player.table.point')
+              }</Table.Head>
+            {/if}
+            <Table.Head class="w-[80px] text-center">{
+              resultColumnLabel
+            }</Table.Head>
+            <Table.Head class="w-[56px] text-center"></Table.Head>
+          </Table.Row>
+        </Table.Header>
+        <Table.Body>
+          {#each filteredRecords as record}
+            <Table.Row
+              on:click={(e) => {
+                  const target = e.target;
 
-								goto(getRecordDetailHref(record));
-							}}
-						>
-							<Table.Cell class="font-medium">
-								<div class="relative flex">
-									{#if record.level?.videoID}
-										<img
-											class="levelBG absolute ml-[-18px] mt-[-16px] box-border h-[53.5px] w-[350px] max-w-full object-cover"
-											src={`https://img.youtube.com/vi/${record.level.videoID}/0.jpg`}
-											alt="bg"
-										/>
-									{/if}
-									<a
-										class="levelName z-10"
-										href={`/level/${record.level?.id}`}
-										data-sveltekit-preload-data="tap"
-									>
-										{record.level?.name}
-									</a>
-								</div>
-							</Table.Cell>
-							<Table.Cell class="text-center">
-								{getSubmittedAt(record)}
-							</Table.Cell>
-							<Table.Cell class="text-center">
-								<AcceptanceBadge
-									acceptedManually={record.acceptedManually}
-									acceptedAuto={record.acceptedAuto}
-									compact
-								/>
-							</Table.Cell>
-							<Table.Cell class="text-center">
-								{record.mobile ? 'Mobile' : 'PC'}
-								{#if record.refreshRate}
-									<br />({record.refreshRate}fps)
-								{/if}
-							</Table.Cell>
-							{#if showPointColumn}
-								<Table.Cell class="text-center">{formatPoint(record.point)}</Table.Cell>
-							{/if}
-							{#if isPlatformerRecord(record)}
-								<Table.Cell class="text-center">{getTimeString(record.progress)}</Table.Cell>
-							{:else}
-								<Table.Cell class="text-center">{record.progress}%</Table.Cell>
-							{/if}
-							<Table.Cell class="text-center">
-								<a
-									class="recordDetailButton"
-									href={getRecordDetailHref(record)}
-									title="View detail"
-									aria-label="View detail"
-									data-sveltekit-preload-data="tap"
-								>
-									<InfoCircled class="h-4 w-4" />
-								</a>
-							</Table.Cell>
-						</Table.Row>
-					{/each}
-				</Table.Body>
-			</Table.Root>
-		{:else}
-			<div class="emptyState">
-				{#if tabbedRecordTotal}
-					{#if selectedRecordTab === 'verified'}
-						{$_('player.filter.no_verified_matches')}
-					{:else}
-						{$_('player.filter.no_unverified_matches')}
-					{/if}
-				{:else if selectedRecordTab === 'verified'}
-					{$_('player.filter.no_verified_records')}
-				{:else}
-					{$_('player.filter.no_unverified_records')}
-				{/if}
-			</div>
-		{/if}
-	</Tabs.Root>
+                  if (target instanceof HTMLElement && target.closest('a, button')) {
+                      return;
+                  }
+
+                  goto(getRecordDetailHref(record));
+              }}
+            >
+              <Table.Cell class="font-medium">
+                <div class="relative flex">
+                  {#if record.level?.videoID}
+                    <img
+                      class="levelBG absolute ml-[-18px] mt-[-16px] box-border h-[53.5px] w-[350px] max-w-full object-cover"
+                      src={`https://img.youtube.com/vi/${record.level.videoID}/0.jpg`}
+                      alt="bg"
+                    />
+                  {/if}
+                  <a
+                    class="levelName z-10"
+                    href={`/level/${record.level?.id}`}
+                    data-sveltekit-preload-data="tap"
+                  >
+                    {record.level?.name}
+                  </a>
+                </div>
+              </Table.Cell>
+              <Table.Cell class="text-center">
+                {getSubmittedAt(record)}
+              </Table.Cell>
+              <Table.Cell class="text-center">
+                <AcceptanceBadge
+                  acceptedManually={record.acceptedManually}
+                  acceptedAuto={record.acceptedAuto}
+                  compact
+                />
+              </Table.Cell>
+              <Table.Cell class="text-center">
+                {record.mobile ? 'Mobile' : 'PC'}
+                {#if record.refreshRate}
+                  <br />({record.refreshRate}fps)
+                {/if}
+              </Table.Cell>
+              {#if showPointColumn}
+                <Table.Cell class="text-center">{
+                  formatPoint(record.point)
+                }</Table.Cell>
+              {/if}
+              {#if isPlatformerRecord(record)}
+                <Table.Cell class="text-center">{
+                  getTimeString(record.progress)
+                }</Table.Cell>
+              {:else}
+                <Table.Cell class="text-center">{record.progress}%</Table.Cell>
+              {/if}
+              <Table.Cell class="text-center">
+                <a
+                  class="recordDetailButton"
+                  href={getRecordDetailHref(record)}
+                  title="View detail"
+                  aria-label="View detail"
+                  data-sveltekit-preload-data="tap"
+                >
+                  <InfoCircled class="h-4 w-4" />
+                </a>
+              </Table.Cell>
+            </Table.Row>
+          {/each}
+        </Table.Body>
+      </Table.Root>
+    {:else}
+      <div class="emptyState">
+        {#if tabbedRecordTotal}
+          {#if selectedRecordTab === 'verified'}
+            {$_('player.filter.no_verified_matches')}
+          {:else}
+            {$_('player.filter.no_unverified_matches')}
+          {/if}
+        {:else if selectedRecordTab === 'verified'}
+          {$_('player.filter.no_verified_records')}
+        {:else}
+          {$_('player.filter.no_unverified_records')}
+        {/if}
+      </div>
+    {/if}
+  </Tabs.Root>
 {:else}
-	<div class="emptyState">
-		{#if selectedRecordTab === 'verified'}
-			{$_('player.filter.no_verified_records')}
-		{:else}
-			{$_('player.filter.no_unverified_records')}
-		{/if}
-	</div>
+  <div class="emptyState">
+    {#if selectedRecordTab === 'verified'}
+      {$_('player.filter.no_verified_records')}
+    {:else}
+      {$_('player.filter.no_unverified_records')}
+    {/if}
+  </div>
 {/if}
 
 <style lang="scss">
-	.levelBG {
-		padding-right: 10px;
-		mask-image: linear-gradient(
-			90deg,
-			rgba(0, 0, 0, 0) 0%,
-			rgba(0, 0, 0, 1) 20%,
-			rgba(0, 0, 0, 1) 50%,
-			rgba(0, 0, 0, 0) 90%,
-			rgba(0, 0, 0, 0) 100%
-		);
-		opacity: 0.5;
-		transition: opacity 0.3s;
-	}
+.levelBG {
+  padding-right: 10px;
+  mask-image: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 1) 20%,
+    rgba(0, 0, 0, 1) 50%,
+    rgba(0, 0, 0, 0) 90%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  opacity: 0.5;
+  transition: opacity 0.3s;
+}
 
-	.levelBG:hover {
-		opacity: 1;
-	}
+.levelBG:hover {
+  opacity: 1;
+}
 
-	.levelName {
-		text-shadow: 0px 1px 2px var(--textColorInverted);
-	}
+.levelName {
+  text-shadow: 0px 1px 2px var(--textColorInverted);
+}
 
-	.filterBar,
-	.emptyState {
-		border-radius: var(--radius);
-		border: 1px solid var(--border1);
-		background: hsl(var(--muted) / 0.4);
-		padding: 16px;
-		margin-bottom: 16px;
-	}
+.filterBar,
+.emptyState {
+  border-radius: var(--radius);
+  border: 1px solid var(--border1);
+  background: hsl(var(--muted) / 0.4);
+  padding: 16px;
+  margin-bottom: 16px;
+}
 
-	.filterGroup {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 12px;
-		margin-top: 12px;
-	}
+.filterGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+}
 
-	.filterField {
-		display: flex;
-		flex: 1 1 180px;
-		flex-direction: column;
-		gap: 8px;
-		min-width: 180px;
-	}
+.filterField {
+  display: flex;
+  flex: 1 1 180px;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 180px;
+}
 
-	.filterActions {
-		display: flex;
-		justify-content: flex-end;
-		margin-top: 16px;
-	}
+.filterActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
 
-	.emptyState {
-		color: var(--textColorDimmed);
-	}
+.emptyState {
+  color: var(--textColorDimmed);
+}
 
-	.recordDetailButton {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		height: 32px;
-		width: 32px;
-		border-radius: 9999px;
-		color: hsl(var(--muted-foreground));
-		transition:
-			background-color 0.15s ease,
-			color 0.15s ease;
+.recordDetailButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  width: 32px;
+  border-radius: 9999px;
+  color: hsl(var(--muted-foreground));
+  transition: background-color 0.15s ease, color 0.15s ease;
 
-		&:hover {
-			background-color: hsl(var(--muted));
-			color: hsl(var(--foreground));
-		}
-	}
+  &:hover {
+    background-color: hsl(var(--muted));
+    color: hsl(var(--foreground));
+  }
+}
 
-	@media screen and (max-width: 1200px) {
-		.filterGroup {
-			align-items: flex-start;
-			justify-content: flex-start;
-		}
+@media screen and (max-width: 1200px) {
+  .filterGroup {
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
 
-		.filterActions {
-			justify-content: stretch;
-		}
+  .filterActions {
+    justify-content: stretch;
+  }
 
-		.filterActions :global(button) {
-			width: 100%;
-		}
-	}
+  .filterActions :global(button) {
+    width: 100%;
+  }
+}
 </style>

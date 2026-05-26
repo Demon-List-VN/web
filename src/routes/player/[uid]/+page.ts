@@ -4,12 +4,13 @@ import { isActive } from '$lib/client/isSupporterActive.js';
 import type { PageLoad } from './$types';
 
 export async function load({ params, url, fetch }: Parameters<PageLoad>[0]) {
-	const { uid } = params;
-	const player: any = await (await fetch(`${import.meta.env.VITE_API_URL}/players/${uid}`)).json();
+    const { uid } = params;
+    const player: any = await (await fetch(`${import.meta.env.VITE_API_URL}/players/${uid}`))
+        .json();
 
-	if (isActive(player.supporterUntil)) {
-		throw redirect(307, `/@${player.name}`);
-	}
-	
-	return await getPlayerData(player, fetch, url);
+    if (isActive(player.supporterUntil)) {
+        throw redirect(307, `/@${player.name}`);
+    }
+
+    return await getPlayerData(player, fetch, url);
 }

@@ -1,185 +1,206 @@
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export interface SupporterTierInfo {
-	tier: number;
-	label: string;
-	daysLeft: number;
-	currentTierStart: number;
-	nextTierDays: number;
-	daysToNextTier: number;
-	progress: number;
-	color: string;
+    tier: number;
+    label: string;
+    daysLeft: number;
+    currentTierStart: number;
+    nextTierDays: number;
+    daysToNextTier: number;
+    progress: number;
+    color: string;
 }
 
 const SUPPORTER_TIER_COLORS: Record<number, string> = {
-	1: 'var(--supporter-tier-1)',
-	2: 'var(--supporter-tier-2)',
-	3: 'var(--supporter-tier-3)',
-	4: 'var(--supporter-tier-4)',
-	5: 'var(--supporter-tier-5)',
-	6: 'var(--supporter-tier-6)'
+    1: 'var(--supporter-tier-1)',
+    2: 'var(--supporter-tier-2)',
+    3: 'var(--supporter-tier-3)',
+    4: 'var(--supporter-tier-4)',
+    5: 'var(--supporter-tier-5)',
+    6: 'var(--supporter-tier-6)'
 };
 const ZENITH_GRADIENT_START = '#5900ff';
 const ZENITH_GRADIENT_END_HUE = 286;
 const ZENITH_GRADIENT_HUE_STEP = 8;
 
 function hslToHex(hue: number, saturation: number, lightness: number): string {
-	const chroma = (1 - Math.abs(2 * lightness - 1)) * saturation;
-	const x = chroma * (1 - Math.abs((hue / 60) % 2 - 1));
-	const m = lightness - chroma / 2;
-	let r = 0;
-	let g = 0;
-	let b = 0;
+    const chroma = (1 - Math.abs(2 * lightness - 1)) * saturation;
+    const x = chroma * (1 - Math.abs((hue / 60) % 2 - 1));
+    const m = lightness - chroma / 2;
+    let r = 0;
+    let g = 0;
+    let b = 0;
 
-	if (hue < 60) {
-		r = chroma;
-		g = x;
-	} else if (hue < 120) {
-		r = x;
-		g = chroma;
-	} else if (hue < 180) {
-		g = chroma;
-		b = x;
-	} else if (hue < 240) {
-		g = x;
-		b = chroma;
-	} else if (hue < 300) {
-		r = x;
-		b = chroma;
-	} else {
-		r = chroma;
-		b = x;
-	}
+    if (hue < 60) {
+        r = chroma;
+        g = x;
+    } else if (hue < 120) {
+        r = x;
+        g = chroma;
+    } else if (hue < 180) {
+        g = chroma;
+        b = x;
+    } else if (hue < 240) {
+        g = x;
+        b = chroma;
+    } else if (hue < 300) {
+        r = x;
+        b = chroma;
+    } else {
+        r = chroma;
+        b = x;
+    }
 
-	return `#${[r, g, b]
-		.map((channel) =>
-			Math.round((channel + m) * 255)
-				.toString(16)
-				.padStart(2, '0')
-		)
-		.join('')}`;
+    return `#${
+        [r, g, b]
+            .map((channel) =>
+                Math.round((channel + m) * 255)
+                    .toString(16)
+                    .padStart(2, '0')
+            )
+            .join('')
+    }`;
 }
 
 function getZenithGradientEnd(tier: number): string {
-	const hue = Math.min(360, ZENITH_GRADIENT_END_HUE + Math.max(0, tier - 8) * ZENITH_GRADIENT_HUE_STEP);
+    const hue = Math.min(
+        360,
+        ZENITH_GRADIENT_END_HUE + Math.max(0, tier - 8) * ZENITH_GRADIENT_HUE_STEP
+    );
 
-	return hslToHex(hue, 1, 0.5);
+    return hslToHex(hue, 1, 0.5);
 }
 
 export function getSupporterDaysLeft(supporterUntil?: string | null, now = new Date()): number {
-	if (!supporterUntil) {
-		return 0;
-	}
+    if (!supporterUntil) {
+        return 0;
+    }
 
-	const expiryTime = new Date(supporterUntil).getTime();
+    const expiryTime = new Date(supporterUntil)
+        .getTime();
 
-	if (!Number.isFinite(expiryTime)) {
-		return 0;
-	}
+    if (!Number.isFinite(expiryTime)) {
+        return 0;
+    }
 
-	const diff = expiryTime - now.getTime();
+    const diff = expiryTime - now.getTime();
 
-	return diff > 0 ? Math.ceil(diff / DAY_MS) : 0;
+    return diff > 0 ? Math.ceil(diff / DAY_MS) : 0;
 }
 
 export function getSupporterTierFromDays(daysLeft: number): number | null {
-	if (!Number.isFinite(daysLeft) || daysLeft <= 0) {
-		return null;
-	}
+    if (!Number.isFinite(daysLeft) || daysLeft <= 0) {
+        return null;
+    }
 
-	if (daysLeft <= 30) return 1;
-	if (daysLeft <= 90) return 2;
-	if (daysLeft <= 180) return 3;
-	if (daysLeft <= 360) return 4;
-	if (daysLeft <= 720) return 5;
+    if (daysLeft <= 30) {
+        return 1;
+    }
 
-	return 6 + Math.floor((daysLeft - 721) / 360);
+    if (daysLeft <= 90) {
+        return 2;
+    }
+
+    if (daysLeft <= 180) {
+        return 3;
+    }
+
+    if (daysLeft <= 360) {
+        return 4;
+    }
+
+    if (daysLeft <= 720) {
+        return 5;
+    }
+
+    return 6 + Math.floor((daysLeft - 721) / 360);
 }
 
 export function getSupporterTier(supporterUntil?: string | null, now = new Date()): number | null {
-	return getSupporterTierFromDays(getSupporterDaysLeft(supporterUntil, now));
+    return getSupporterTierFromDays(getSupporterDaysLeft(supporterUntil, now));
 }
 
 export function getSupporterTierLabel(tier: number | null): string {
-	switch (tier) {
-		case 1:
-			return 'Supporter';
-		case 2:
-			return 'Elite Supporter';
-		case 3:
-			return 'Vanguard Supporter';
-		case 4:
-			return 'Legendary Supporter';
-		case 5:
-			return 'Ascendant Supporter';
-		case 6:
-			return 'Transcendent Supporter';
-		case 7:
-			return 'Zenith Supporter';
-		default:
-			return tier && tier > 7 ? `Zenith Supporter T${tier}` : 'Supporter';
-	}
+    switch (tier) {
+        case 1:
+            return 'Supporter';
+        case 2:
+            return 'Elite Supporter';
+        case 3:
+            return 'Vanguard Supporter';
+        case 4:
+            return 'Legendary Supporter';
+        case 5:
+            return 'Ascendant Supporter';
+        case 6:
+            return 'Transcendent Supporter';
+        case 7:
+            return 'Zenith Supporter';
+        default:
+            return tier && tier > 7 ? `Zenith Supporter T${tier}` : 'Supporter';
+    }
 }
 
 export function getSupporterTierColor(tier: number | null): string {
-	if (!tier) {
-		return SUPPORTER_TIER_COLORS[1];
-	}
+    if (!tier) {
+        return SUPPORTER_TIER_COLORS[1];
+    }
 
-	if (tier > 7) {
-		return `linear-gradient(90deg, ${ZENITH_GRADIENT_START}, ${getZenithGradientEnd(tier)})`;
-	}
+    if (tier > 7) {
+        return `linear-gradient(90deg, ${ZENITH_GRADIENT_START}, ${getZenithGradientEnd(tier)})`;
+    }
 
-	return SUPPORTER_TIER_COLORS[Math.min(tier, 6)] ?? SUPPORTER_TIER_COLORS[6];
+    return SUPPORTER_TIER_COLORS[Math.min(tier, 6)] ?? SUPPORTER_TIER_COLORS[6];
 }
 
 export function getSupporterTierStyle(tier: number | null): string {
-	return `--supporter-tier-color: ${getSupporterTierColor(tier)};`;
+    return `--supporter-tier-color: ${getSupporterTierColor(tier)};`;
 }
 
-export function getSupporterTierBounds(tier: number): { start: number; end: number } {
-	switch (tier) {
-		case 1:
-			return { start: 0, end: 30 };
-		case 2:
-			return { start: 30, end: 90 };
-		case 3:
-			return { start: 90, end: 180 };
-		case 4:
-			return { start: 180, end: 360 };
-		case 5:
-			return { start: 360, end: 720 };
-		default: {
-			const normalizedTier = Math.max(6, tier);
-			const start = 720 + (normalizedTier - 6) * 360;
-			return { start, end: start + 360 };
-		}
-	}
+export function getSupporterTierBounds(tier: number): { start: number; end: number; } {
+    switch (tier) {
+        case 1:
+            return { start: 0, end: 30 };
+        case 2:
+            return { start: 30, end: 90 };
+        case 3:
+            return { start: 90, end: 180 };
+        case 4:
+            return { start: 180, end: 360 };
+        case 5:
+            return { start: 360, end: 720 };
+        default: {
+            const normalizedTier = Math.max(6, tier);
+            const start = 720 + (normalizedTier - 6) * 360;
+
+            return { start, end: start + 360 };
+        }
+    }
 }
 
 export function getSupporterTierInfo(
-	supporterUntil?: string | null,
-	now = new Date()
+    supporterUntil?: string | null,
+    now = new Date()
 ): SupporterTierInfo | null {
-	const daysLeft = getSupporterDaysLeft(supporterUntil, now);
-	const tier = getSupporterTierFromDays(daysLeft);
+    const daysLeft = getSupporterDaysLeft(supporterUntil, now);
+    const tier = getSupporterTierFromDays(daysLeft);
 
-	if (!tier) {
-		return null;
-	}
+    if (!tier) {
+        return null;
+    }
 
-	const { start, end } = getSupporterTierBounds(tier);
-	const progress = Math.max(0, Math.min(100, ((daysLeft - start) / (end - start)) * 100));
-	const daysToNextTier = Math.max(1, end - daysLeft + 1);
+    const { start, end } = getSupporterTierBounds(tier);
+    const progress = Math.max(0, Math.min(100, ((daysLeft - start) / (end - start)) * 100));
+    const daysToNextTier = Math.max(1, end - daysLeft + 1);
 
-	return {
-		tier,
-		label: getSupporterTierLabel(tier),
-		daysLeft,
-		currentTierStart: start,
-		nextTierDays: end,
-		daysToNextTier,
-		progress,
-		color: getSupporterTierColor(tier)
-	};
+    return {
+        tier,
+        label: getSupporterTierLabel(tier),
+        daysLeft,
+        currentTierStart: start,
+        nextTierDays: end,
+        daysToNextTier,
+        progress,
+        color: getSupporterTierColor(tier)
+    };
 }

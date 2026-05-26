@@ -16,7 +16,10 @@
 
 	async function fetchRewards() {
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/rewards`);
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/battlepass/rewards`
+			);
+
 			if (res.ok) {
 				rewards = await res.json();
 			}
@@ -26,18 +29,26 @@
 	}
 
 	async function fetchProgress(userInfo = $user) {
-		if (!userInfo.loggedIn) return;
+		if (!userInfo.loggedIn) {
+			return;
+		}
 
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/progress`, {
-				headers: {
-					Authorization: `Bearer ${await userInfo.token()}`
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/battlepass/progress`,
+				{
+					headers: {
+						Authorization: `Bearer ${await userInfo.token()}`
+					}
 				}
-			});
+			);
 
 			if (res.ok) {
 				const progress = await res.json();
-				currentTier = Math.min(Math.floor(progress.xp / XP_PER_TIER), MAX_TIER);
+				currentTier = Math.min(
+					Math.floor(progress.xp / XP_PER_TIER),
+					MAX_TIER
+				);
 				isPremium = progress.isPremium ?? false;
 			}
 		} catch (e) {
@@ -46,14 +57,19 @@
 	}
 
 	async function fetchClaimableRewards(userInfo = $user) {
-		if (!userInfo.loggedIn) return;
+		if (!userInfo.loggedIn) {
+			return;
+		}
 
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/rewards/claimable`, {
-				headers: {
-					Authorization: `Bearer ${await userInfo.token()}`
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/battlepass/rewards/claimable`,
+				{
+					headers: {
+						Authorization: `Bearer ${await userInfo.token()}`
+					}
 				}
-			});
+			);
 
 			if (res.ok) {
 				claimableRewards = await res.json();
@@ -64,7 +80,10 @@
 	}
 
 	async function claimReward(rewardId: number) {
-		if (claimingRewardIds.has(rewardId)) return;
+		if (claimingRewardIds.has(rewardId)) {
+			return;
+		}
+
 		claimingRewardIds = new Set([...claimingRewardIds, rewardId]);
 
 		try {
@@ -84,9 +103,12 @@
 					throw new Error(error || $_('battlepass.claim_failed'));
 				}
 
-				claimableRewards = claimableRewards.filter((reward) => reward.id !== rewardId);
+				claimableRewards = claimableRewards.filter((reward) =>
+					reward.id !== rewardId
+				);
 				await fetchClaimableRewards();
 				await fetchProgress();
+
 				return true;
 			})();
 
@@ -94,7 +116,9 @@
 				loading: $_('battlepass.claiming'),
 				success: $_('battlepass.reward_claimed'),
 				error: (err: unknown) =>
-					err instanceof Error ? err.message : $_('battlepass.claim_failed')
+					err instanceof Error
+						? err.message
+						: $_('battlepass.claim_failed')
 			});
 
 			await claimPromise;
@@ -111,7 +135,11 @@
 		user.subscribe(async (value) => {
 			if (value.checked) {
 				loading = true;
-				await Promise.all([fetchRewards(), fetchProgress(), fetchClaimableRewards()]);
+				await Promise.all([
+					fetchRewards(),
+					fetchProgress(),
+					fetchClaimableRewards()
+				]);
 				loading = false;
 			}
 		});
@@ -119,23 +147,23 @@
 </script>
 
 <div class="mb-4 text-center">
-	<h2 class="text-2xl font-bold">{$_('battlepass.tier_rewards')}</h2>
-	<p class="text-muted-foreground">{$_('battlepass.tier_rewards_desc')}</p>
+  <h2 class="text-2xl font-bold">{$_('battlepass.tier_rewards')}</h2>
+  <p class="text-muted-foreground">{$_('battlepass.tier_rewards_desc')}</p>
 </div>
 
 {#if loading}
-	<div class="flex flex-col gap-4">
-		<Skeleton class="h-24 w-full" />
-		<Skeleton class="h-24 w-full" />
-	</div>
+  <div class="flex flex-col gap-4">
+    <Skeleton class="h-24 w-full" />
+    <Skeleton class="h-24 w-full" />
+  </div>
 {:else}
-	<TierRewardTrack
-		{rewards}
-		{currentTier}
-		{isPremium}
-		{claimableRewards}
-		{claimingRewardIds}
-		editable={false}
-		onClaimReward={claimReward}
-	/>
+  <TierRewardTrack
+    {rewards}
+    {currentTier}
+    {isPremium}
+    {claimableRewards}
+    {claimingRewardIds}
+    editable={false}
+    onClaimReward={claimReward}
+  />
 {/if}

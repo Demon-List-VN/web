@@ -10,20 +10,20 @@
 </script>
 
 <Tabs.Root value="medals">
-	<div class="flex flex-col items-center gap-3">
-		<Tabs.List class="flex h-fit w-fit flex-wrap">
-			<Tabs.Trigger value="medals">{$_('player.tabs.medals')}</Tabs.Trigger>
-			<Tabs.Trigger value="cards">{$_('player.tabs.cards')}</Tabs.Trigger>
-			<Tabs.Trigger value="events">{$_('player.tabs.events')}</Tabs.Trigger>
-		</Tabs.List>
-		<Tabs.Content value="medals" class="w-full">
-			<MedalsTab {userID} />
-		</Tabs.Content>
-		<Tabs.Content value="cards" class="w-full">
-			<CardCollectionTab {userID} />
-		</Tabs.Content>
-		<Tabs.Content value="events" class="w-full">
-			<EventTab {data} />
-		</Tabs.Content>
-	</div>
+  <div class="flex flex-col items-center gap-3">
+    <Tabs.List class="flex h-fit w-fit flex-wrap">
+      <Tabs.Trigger value="medals">{$_('player.tabs.medals')}</Tabs.Trigger>
+      <Tabs.Trigger value="cards">{$_('player.tabs.cards')}</Tabs.Trigger>
+      <Tabs.Trigger value="events">{$_('player.tabs.events')}</Tabs.Trigger>
+    </Tabs.List>
+    <Tabs.Content value="medals" class="w-full">
+      <MedalsTab {userID} />
+    </Tabs.Content>
+    <Tabs.Content value="cards" class="w-full">
+      <CardCollectionTab {userID} />
+    </Tabs.Content>
+    <Tabs.Content value="events" class="w-full">
+      <EventTab {data} />
+    </Tabs.Content>
+  </div>
 </Tabs.Root>

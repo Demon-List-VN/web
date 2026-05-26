@@ -22,204 +22,219 @@
 </script>
 
 <svelte:head>
-	<title>{$_('head.titles.supporter')} - {$_('head.site_name')}</title>
-	<meta property="og:title" content={`${$_('head.titles.supporter')} - ${$_('head.site_name')}`} />
-	<meta property="og:type" content="website" />
+  <title>{$_('head.titles.supporter')} - {$_('head.site_name')}</title>
+  <meta
+    property="og:title"
+    content={`${$_('head.titles.supporter')} - ${$_('head.site_name')}`}
+  />
+  <meta property="og:type" content="website" />
 </svelte:head>
 
 <div in:fade={{ delay: 300, duration: 1000 }}>
-	<img
-		class="bgGradient absolute z-0 h-[550px] w-full object-cover"
-		src={`https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1964&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D`}
-		alt="bg"
-	/>
+  <img
+    class="bgGradient absolute z-0 h-[550px] w-full object-cover"
+    src={'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1964&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'}
+    alt="bg"
+  />
 </div>
 <div class="relative flex flex-col items-center pl-[10px] pr-[10px]">
-	<BigTitle value={$_('supporter.title')} description={$_('supporter.description')} />
-	<div class="mt-[-20px] flex max-w-[1000px] flex-col items-center">
-		<div class="flex flex-col items-center gap-[10px]">
-			<PaymentButton title={$_('supporter.price')} />
-			<span class="text-gray-400">{$_('supporter.or')}</span>
-			<div>
-				<a href="/store">
-					<Button>{$_('supporter.store_button')}</Button>
-				</a>
-				<DonateDialog />
-			</div>
-		</div>
+  <BigTitle
+    value={$_('supporter.title')}
+    description={$_('supporter.description')}
+  />
+  <div class="mt-[-20px] flex max-w-[1000px] flex-col items-center">
+    <div class="flex flex-col items-center gap-[10px]">
+      <PaymentButton title={$_('supporter.price')} />
+      <span class="text-gray-400">{$_('supporter.or')}</span>
+      <div>
+        <a href="/store">
+          <Button>{$_('supporter.store_button')}</Button>
+        </a>
+        <DonateDialog />
+      </div>
+    </div>
 
-		<div class="tierProgressWrapper">
-			{#if $user.loggedIn && isActive($user.data?.supporterUntil)}
-				<SupporterTierProgress supporterUntil={$user.data.supporterUntil} />
-			{:else}
-				<SupporterTierProgress preview />
-			{/if}
-		</div>
+    <div class="tierProgressWrapper">
+      {#if $user.loggedIn && isActive($user.data?.supporterUntil)}
+        <SupporterTierProgress supporterUntil={$user.data.supporterUntil} />
+      {:else}
+        <SupporterTierProgress preview />
+      {/if}
+    </div>
 
-		<TopSupporters topBuyers={data.topBuyers} />
+    <TopSupporters topBuyers={data.topBuyers} />
 
-		<div class="goalWrapper">
-			<h2 class="goalTitle">{$_('supporter.goals.title')}</h2>
-			<div class="goalRow">
-				<div class="goalHeader">
-					<span>{$_('supporter.goals.server_cost')}</span>
-					<span>{serverCostPercent}%</span>
-				</div>
-				<div class="goalBar">
-					<div
-						class="goalBarFill bg-green-600"
-						style={`width: ${toBarWidth(serverCostPercent)}`}
-					></div>
-				</div>
-			</div>
-		</div>
+    <div class="goalWrapper">
+      <h2 class="goalTitle">{$_('supporter.goals.title')}</h2>
+      <div class="goalRow">
+        <div class="goalHeader">
+          <span>{$_('supporter.goals.server_cost')}</span>
+          <span>{serverCostPercent}%</span>
+        </div>
+        <div class="goalBar">
+          <div
+            class="goalBarFill bg-green-600"
+            style={`width: ${toBarWidth(serverCostPercent)}`}
+          >
+          </div>
+        </div>
+      </div>
+    </div>
 
-		<h1 class="mb-[40px] mt-[75px] text-center text-3xl font-bold">
-			{$_('supporter.why_support.title')}
-		</h1>
-		<div class="flex flex-wrap justify-center gap-[10px]">
-			<Card.Root class="w-[300px]">
-				<Card.Header>
-					<Card.Title>{$_('supporter.why_support.support_team.title')}</Card.Title>
-					<Card.Description class="w-[250px]">
-						{$_('supporter.why_support.support_team.description')}
-					</Card.Description>
-				</Card.Header>
-			</Card.Root>
-			<Card.Root class="w-[300px]">
-				<Card.Header>
-					<Card.Title>{$_('supporter.why_support.server_infrastructure.title')}</Card.Title>
-					<Card.Description class="w-[250px]">
-						{$_('supporter.why_support.server_infrastructure.description')}
-					</Card.Description>
-				</Card.Header>
-			</Card.Root>
-			<Card.Root class="w-[300px]">
-				<Card.Header>
-					<Card.Title>{$_('supporter.why_support.self_sustaining.title')}</Card.Title>
-					<Card.Description class="w-[250px]">
-						{$_('supporter.why_support.self_sustaining.description')}
-					</Card.Description>
-				</Card.Header>
-			</Card.Root>
-		</div>
-		<h1 class="mb-[40px] mt-[40px] text-center text-3xl font-bold">
-			{$_('supporter.perks.title')}
-		</h1>
-		<div class="flex flex-wrap justify-center gap-[10px]">
-			<Card.Root class="w-[300px]">
-				<Card.Header>
-					<Card.Title>{$_('supporter.perks.highlighted_name.title')}</Card.Title>
-					<Card.Description class="w-[250px]">
-						{$_('supporter.perks.highlighted_name.description')}
-					</Card.Description>
-				</Card.Header>
-			</Card.Root>
-			<Card.Root class="w-[300px]">
-				<Card.Header>
-					<Card.Title>{$_('supporter.perks.animated_media.title')}</Card.Title>
-					<Card.Description class="w-[250px]">
-						{$_('supporter.perks.animated_media.description')}
-					</Card.Description>
-				</Card.Header>
-			</Card.Root>
-			<Card.Root class="w-[300px]">
-				<Card.Header>
-					<Card.Title>{$_('supporter.perks.ads_free.title')}</Card.Title>
-					<Card.Description class="w-[250px]">
-						{$_('supporter.perks.ads_free.description')}
-					</Card.Description>
-				</Card.Header>
-			</Card.Root>
-			<Card.Root class="w-[300px]">
-				<Card.Header>
-					<Card.Title>{$_('supporter.perks.short_url.title')}</Card.Title>
-					<Card.Description class="w-[250px]">
-						{$_('supporter.perks.short_url.description')}<br />
-						Example: <a href="/@NamPE">gdvn.net/@NamPE</a>
-					</Card.Description>
-				</Card.Header>
-			</Card.Root>
-			<Card.Root class="w-[300px]">
-				<Card.Header>
-					<Card.Title>{$_('supporter.perks.discord_role.title')}</Card.Title>
-					<Card.Description class="w-[250px]">
-						{$_('supporter.perks.discord_role.description')}
-					</Card.Description>
-				</Card.Header>
-			</Card.Root>
-			<Card.Root class="w-[300px]">
-				<Card.Header>
-					<Card.Title>{$_('supporter.perks.more_coming.title')}</Card.Title>
-					<Card.Description class="w-[250px]">
-						{$_('supporter.perks.more_coming.description')}
-					</Card.Description>
-				</Card.Header>
-			</Card.Root>
-		</div>
-		<h1 class="mb-[40px] mt-[40px] text-center text-3xl font-bold">
-			{$_('supporter.decision.title')}
-		</h1>
-		<PaymentButton title={$_('supporter.decision.button')} />
-		<div class="mt-[100px] w-full pl-[10px] text-sm text-gray-400 lg:pl-[50px]">
-			<p>{$_('supporter.notes.title')}</p>
-			<ul>
-				<li>- {$_('supporter.notes.non_recurring')}</li>
-				<li>- {$_('supporter.notes.non_refundable')}</li>
-				<li>- {$_('supporter.notes.extension')}</li>
-				<li>- {$_('supporter.notes.duration')}</li>
-			</ul>
-		</div>
-	</div>
+    <h1 class="mb-[40px] mt-[75px] text-center text-3xl font-bold">
+      {$_('supporter.why_support.title')}
+    </h1>
+    <div class="flex flex-wrap justify-center gap-[10px]">
+      <Card.Root class="w-[300px]">
+        <Card.Header>
+          <Card.Title>{
+            $_('supporter.why_support.support_team.title')
+          }</Card.Title>
+          <Card.Description class="w-[250px]">
+            {$_('supporter.why_support.support_team.description')}
+          </Card.Description>
+        </Card.Header>
+      </Card.Root>
+      <Card.Root class="w-[300px]">
+        <Card.Header>
+          <Card.Title>{
+            $_('supporter.why_support.server_infrastructure.title')
+          }</Card.Title>
+          <Card.Description class="w-[250px]">
+            {$_('supporter.why_support.server_infrastructure.description')}
+          </Card.Description>
+        </Card.Header>
+      </Card.Root>
+      <Card.Root class="w-[300px]">
+        <Card.Header>
+          <Card.Title>{
+            $_('supporter.why_support.self_sustaining.title')
+          }</Card.Title>
+          <Card.Description class="w-[250px]">
+            {$_('supporter.why_support.self_sustaining.description')}
+          </Card.Description>
+        </Card.Header>
+      </Card.Root>
+    </div>
+    <h1 class="mb-[40px] mt-[40px] text-center text-3xl font-bold">
+      {$_('supporter.perks.title')}
+    </h1>
+    <div class="flex flex-wrap justify-center gap-[10px]">
+      <Card.Root class="w-[300px]">
+        <Card.Header>
+          <Card.Title>{
+            $_('supporter.perks.highlighted_name.title')
+          }</Card.Title>
+          <Card.Description class="w-[250px]">
+            {$_('supporter.perks.highlighted_name.description')}
+          </Card.Description>
+        </Card.Header>
+      </Card.Root>
+      <Card.Root class="w-[300px]">
+        <Card.Header>
+          <Card.Title>{$_('supporter.perks.animated_media.title')}</Card.Title>
+          <Card.Description class="w-[250px]">
+            {$_('supporter.perks.animated_media.description')}
+          </Card.Description>
+        </Card.Header>
+      </Card.Root>
+      <Card.Root class="w-[300px]">
+        <Card.Header>
+          <Card.Title>{$_('supporter.perks.ads_free.title')}</Card.Title>
+          <Card.Description class="w-[250px]">
+            {$_('supporter.perks.ads_free.description')}
+          </Card.Description>
+        </Card.Header>
+      </Card.Root>
+      <Card.Root class="w-[300px]">
+        <Card.Header>
+          <Card.Title>{$_('supporter.perks.short_url.title')}</Card.Title>
+          <Card.Description class="w-[250px]">
+            {$_('supporter.perks.short_url.description')}<br />
+            Example: <a href="/@NamPE">gdvn.net/@NamPE</a>
+          </Card.Description>
+        </Card.Header>
+      </Card.Root>
+      <Card.Root class="w-[300px]">
+        <Card.Header>
+          <Card.Title>{$_('supporter.perks.discord_role.title')}</Card.Title>
+          <Card.Description class="w-[250px]">
+            {$_('supporter.perks.discord_role.description')}
+          </Card.Description>
+        </Card.Header>
+      </Card.Root>
+      <Card.Root class="w-[300px]">
+        <Card.Header>
+          <Card.Title>{$_('supporter.perks.more_coming.title')}</Card.Title>
+          <Card.Description class="w-[250px]">
+            {$_('supporter.perks.more_coming.description')}
+          </Card.Description>
+        </Card.Header>
+      </Card.Root>
+    </div>
+    <h1 class="mb-[40px] mt-[40px] text-center text-3xl font-bold">
+      {$_('supporter.decision.title')}
+    </h1>
+    <PaymentButton title={$_('supporter.decision.button')} />
+    <div class="mt-[100px] w-full pl-[10px] text-sm text-gray-400 lg:pl-[50px]">
+      <p>{$_('supporter.notes.title')}</p>
+      <ul>
+        <li>- {$_('supporter.notes.non_recurring')}</li>
+        <li>- {$_('supporter.notes.non_refundable')}</li>
+        <li>- {$_('supporter.notes.extension')}</li>
+        <li>- {$_('supporter.notes.duration')}</li>
+      </ul>
+    </div>
+  </div>
 </div>
 
 <style lang="scss">
-	.bgGradient {
-		filter: blur(175px);
-		margin-top: -55px;
-		mask-image: linear-gradient(rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%);
-	}
+.bgGradient {
+  filter: blur(175px);
+  margin-top: -55px;
+  mask-image: linear-gradient(rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%);
+}
 
-	.goalWrapper {
-		width: 100%;
-		max-width: 700px;
-		margin-top: 24px;
-	}
+.goalWrapper {
+  width: 100%;
+  max-width: 700px;
+  margin-top: 24px;
+}
 
-	.tierProgressWrapper {
-		width: 100%;
-		max-width: 700px;
-		margin-top: 24px;
-	}
+.tierProgressWrapper {
+  width: 100%;
+  max-width: 700px;
+  margin-top: 24px;
+}
 
-	.goalTitle {
-		font-size: 1.25rem;
-		font-weight: 700;
-		margin-bottom: 16px;
-		text-align: center;
-	}
+.goalTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+  text-align: center;
+}
 
-	.goalRow {
-		margin-bottom: 16px;
-	}
+.goalRow {
+  margin-bottom: 16px;
+}
 
-	.goalHeader {
-		display: flex;
-		justify-content: space-between;
-		font-weight: 600;
-		margin-bottom: 8px;
-	}
+.goalHeader {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
 
-	.goalBar {
-		height: 12px;
-		width: 100%;
-		border-radius: 999px;
-		background: hsl(var(--muted));
-		overflow: hidden;
-	}
+.goalBar {
+  height: 12px;
+  width: 100%;
+  border-radius: 999px;
+  background: hsl(var(--muted));
+  overflow: hidden;
+}
 
-	.goalBarFill {
-		height: 100%;
-		transition: width 0.3s ease;
-	}
+.goalBarFill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
 </style>

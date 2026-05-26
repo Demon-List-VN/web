@@ -1,22 +1,21 @@
-import { writable } from "svelte/store"
-import { browser } from "$app/environment"
+import { writable } from 'svelte/store';
+import { browser } from '$app/environment';
 
 function get(key: string, defaultValue: string) {
-    return browser && localStorage.getItem(`settings.${key}`) || defaultValue
+    return browser && localStorage.getItem(`settings.${key}`) || defaultValue;
 }
 
-const settingsValue = {
-}
+const settingsValue = {};
 
 class Settings {
-    value = writable(settingsValue)
+    value = writable(settingsValue);
 
     set(key: string, val: string) {
-        localStorage.setItem('settings.'+ key, val);
+        localStorage.setItem('settings.' + key, val);
         // @ts-expect-error
-        settingsValue[key] = val
-        this.value.set(settingsValue)
+        settingsValue[key] = val;
+        this.value.set(settingsValue);
     }
 }
 
-export const settings = new Settings()
+export const settings = new Settings();

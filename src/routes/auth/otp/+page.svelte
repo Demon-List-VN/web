@@ -4,7 +4,7 @@
 </script>
 
 <svelte:head>
-	<title>{$_('otp.title')}</title>
+  <title>{$_('otp.title')}</title>
 </svelte:head>
 
 <OtpGrantCard />

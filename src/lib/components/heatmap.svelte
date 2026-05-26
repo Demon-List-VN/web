@@ -7,22 +7,29 @@
 	import { _ } from 'svelte-i18n';
 
 	export let uid: string;
-	let year: number = new Date().getFullYear();
-	let data: number[] = Array(366).fill(0);
+	let year: number = new Date()
+		.getFullYear();
+	let data: number[] = Array(366)
+		.fill(0);
 	let splitByMonth = true;
 
 	function daysInMonth(year: number, month: number) {
-		return new Date(year, month, 0).getDate();
+		return new Date(year, month, 0)
+			.getDate();
 	}
 
 	function monthOffset(year: number, month: number) {
-		const x = new Date(year, month, 1).getDay();
+		const x = new Date(year, month, 1)
+			.getDay();
+
 		return (x - 1 + 7) % 7;
 	}
 
 	function dayOfYear(year: number, month: number, date: number) {
-		const x = new Date(year, 0, 1).getTime();
-		const y = new Date(year, month, date).getTime();
+		const x = new Date(year, 0, 1)
+			.getTime();
+		const y = new Date(year, month, date)
+			.getTime();
 
 		return Math.floor((y - x) / 86400000);
 	}
@@ -53,14 +60,16 @@
 <div class="wrapper">
 	<div class="flex">
 		<div class="flex items-center space-x-2">
-			<Label for="split">{$_("heatmap.split_by_month")}</Label>
+			<Label for="split">{$_('heatmap.split_by_month')}</Label>
 			<Switch bind:checked={splitByMonth} id="split" />
 		</div>
 		<div class="ml-auto">
 			<Select.Root
 				selected={{
-					label: String(new Date().getFullYear()),
-					value: new Date().getFullYear()
+					label: String(new Date()
+						.getFullYear()),
+					value: new Date()
+						.getFullYear()
 				}}
 				onSelectedChange={(e) => {
 					// @ts-expect-error
@@ -72,9 +81,12 @@
 					<Select.Value placeholder="Theme" />
 				</Select.Trigger>
 				<Select.Content>
-					{#each { length: new Date().getFullYear() - 2024 + 1 } as _, index}
-						<Select.Item value={new Date().getFullYear() - index}>
-							{new Date().getFullYear() - index}
+					{#each { length: new Date()
+						.getFullYear() - 2024 + 1 } as _, index}
+						<Select.Item value={new Date()
+							.getFullYear() - index}>
+							{new Date()
+								.getFullYear() - index}
 						</Select.Item>
 					{/each}
 				</Select.Content>
@@ -99,7 +111,10 @@
 								</Tooltip.Trigger>
 								<Tooltip.Content>
 									<p>
-										{new Date(year, month, date + 1).toLocaleDateString('vi-VN')}
+										{
+											new Date(year, month, date + 1)
+												.toLocaleDateString('vi-VN')
+										}
 										({data[dayOfYear(year, month, date + 1)]} attempts)
 									</p>
 								</Tooltip.Content>
@@ -124,7 +139,10 @@
 								</Tooltip.Trigger>
 								<Tooltip.Content>
 									<p>
-										{new Date(year, month, date + 1).toLocaleDateString('vi-VN')}
+										{
+											new Date(year, month, date + 1)
+												.toLocaleDateString('vi-VN')
+										}
 										({data[dayOfYear(year, month, date + 1)]} attempts)
 									</p>
 								</Tooltip.Content>
@@ -138,34 +156,34 @@
 </div>
 
 <style lang="scss">
-	.wrapper {
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-	}
-	.heatmapWrapper {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 11px;
-	}
-	.month {
-		display: flex;
-		flex-wrap: wrap;
-		flex-direction: column;
-		height: calc(13px * 7);
-		width: fit-content;
-		gap: 1px;
-	}
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.heatmapWrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 11px;
+}
+.month {
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: column;
+  height: calc(13px * 7);
+  width: fit-content;
+  gap: 1px;
+}
 
-	.cell {
-		height: 12px;
-		width: 12px;
-		border-radius: 3px;
-	}
+.cell {
+  height: 12px;
+  width: 12px;
+  border-radius: 3px;
+}
 
-	.emptyCell {
-		height: 12px;
-		width: 12px;
-		border-radius: 5px;
-	}
+.emptyCell {
+  height: 12px;
+  width: 12px;
+  border-radius: 5px;
+}
 </style>

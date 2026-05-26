@@ -28,12 +28,11 @@
 
 	$: setAppLocale(data.initialLocale);
 
-	$: showOnboarding =
-		$user.checked &&
-		$user.loggedIn &&
-		$user.data &&
-		$user.data.onboarding_done === false &&
-		($user.data.onboarding_step == null || $user.data.onboarding_step === 1);
+	$: showOnboarding = $user.checked
+		&& $user.loggedIn
+		&& $user.data
+		&& $user.data.onboarding_done === false
+		&& ($user.data.onboarding_step == null || $user.data.onboarding_step === 1);
 
 	let searchQuery = '';
 	let searchToggled = false;
@@ -55,23 +54,36 @@
 		return typeof value === 'string' ? value.trim() : '';
 	}
 
-	const activeCustomListBranding = derived([page, customListBranding], ([$page, $branding]) => ({
-		faviconUrl: normalizeThemeAssetUrl($branding?.faviconUrl ?? $page.data?.list?.faviconUrl),
-		logoUrl: normalizeThemeAssetUrl($branding?.logoUrl ?? $page.data?.list?.logoUrl),
-		title: normalizeThemeAssetUrl($branding?.title ?? $page.data?.list?.title)
-	}));
-	const customListFaviconUrl = derived(activeCustomListBranding, ($branding) =>
-		normalizeThemeAssetUrl($branding.faviconUrl)
+	const activeCustomListBranding = derived(
+		[page, customListBranding],
+		([$page, $branding]) => ({
+			faviconUrl: normalizeThemeAssetUrl(
+				$branding?.faviconUrl ?? $page.data?.list?.faviconUrl
+			),
+			logoUrl: normalizeThemeAssetUrl(
+				$branding?.logoUrl ?? $page.data?.list?.logoUrl
+			),
+			title: normalizeThemeAssetUrl(
+				$branding?.title ?? $page.data?.list?.title
+			)
+		})
 	);
-	const customListLogoUrl = derived(activeCustomListBranding, ($branding) =>
-		normalizeThemeAssetUrl($branding.logoUrl)
+	const customListFaviconUrl = derived(
+		activeCustomListBranding,
+		($branding) => normalizeThemeAssetUrl($branding.faviconUrl)
 	);
-	const customListTitle = derived(activeCustomListBranding, ($branding) =>
-		normalizeThemeAssetUrl($branding.title)
+	const customListLogoUrl = derived(
+		activeCustomListBranding,
+		($branding) => normalizeThemeAssetUrl($branding.logoUrl)
+	);
+	const customListTitle = derived(
+		activeCustomListBranding,
+		($branding) => normalizeThemeAssetUrl($branding.title)
 	);
 	const useCustomListLogo = derived(
 		[customListLogoUrl, customLogoFailed],
-		([$customListLogoUrl, $customLogoFailed]) => Boolean($customListLogoUrl && !$customLogoFailed)
+		([$customListLogoUrl, $customLogoFailed]) =>
+			Boolean($customListLogoUrl && !$customLogoFailed)
 	);
 	const navLogoSrc = derived(
 		[customListLogoUrl, useCustomListLogo],
@@ -81,12 +93,15 @@
 	const faviconHref = derived(
 		[customListFaviconUrl, customListLogoUrl, useCustomListLogo],
 		([$customListFaviconUrl, $customListLogoUrl, $useCustomListLogo]) =>
-			$customListFaviconUrl || ($useCustomListLogo ? $customListLogoUrl : defaultFaviconHref)
+			$customListFaviconUrl
+				|| ($useCustomListLogo ? $customListLogoUrl : defaultFaviconHref)
 	);
 	const navLogoAlt = derived(
 		[customListTitle, useCustomListLogo],
 		([$customListTitle, $useCustomListLogo]) =>
-			$useCustomListLogo && $customListTitle ? `${$customListTitle} logo` : 'logo'
+			$useCustomListLogo && $customListTitle
+				? `${$customListTitle} logo`
+				: 'logo'
 	);
 
 	$: if ($customListLogoUrl !== currentCustomLogoUrl) {
@@ -114,9 +129,12 @@
 	}
 
 	async function openPasswordSignInPrompt() {
-		if (!isLocalhost() || passwordSignInOpen) return;
+		if (!isLocalhost() || passwordSignInOpen) {
+			return;
+		}
 
-		passwordSignInEmail = localStorage.getItem(localPasswordSignInEmailKey) || passwordSignInEmail;
+		passwordSignInEmail = localStorage.getItem(localPasswordSignInEmailKey)
+			|| passwordSignInEmail;
 		passwordSignInPassword = '';
 		passwordSignInOpen = true;
 		await tick();
@@ -124,7 +142,9 @@
 	}
 
 	function closePasswordSignInPrompt() {
-		if (passwordSignInLoading) return;
+		if (passwordSignInLoading) {
+			return;
+		}
 
 		passwordSignInOpen = false;
 		passwordSignInPassword = '';
@@ -135,6 +155,7 @@
 
 		if (!email || !passwordSignInPassword) {
 			toast.error('Email and password are required.');
+
 			return;
 		}
 
@@ -155,14 +176,17 @@
 			passwordSignInPassword = '';
 			window.location.reload();
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Failed to sign in.');
+			toast.error(
+				error instanceof Error ? error.message : 'Failed to sign in.'
+			);
 		} finally {
 			passwordSignInLoading = false;
 		}
 	}
 
 	function handleLocalPasswordShortcut(event: KeyboardEvent) {
-		const isSlashKey = event.code === 'Slash' || event.key === '/' || event.key === '?';
+		const isSlashKey = event.code === 'Slash' || event.key === '/'
+			|| event.key === '?';
 
 		if (event.ctrlKey && event.shiftKey && event.altKey && isSlashKey) {
 			event.preventDefault();
@@ -200,7 +224,8 @@
 		let adsScriptLoaded = false;
 
 		user.subscribe((u) => {
-			const enabled = u.checked && (!u.loggedIn || !isActive(u.data.supporterUntil));
+			const enabled = u.checked
+				&& (!u.loggedIn || !isActive(u.data.supporterUntil));
 
 			if (!adsScriptLoaded && enabled) {
 				adsScriptLoaded = true;
@@ -225,15 +250,17 @@
 		setAppLocale(initialLocale);
 		persistLocale(initialLocale);
 
-		const currentTheme =
-			localStorage.getItem('theme') || document.documentElement.getAttribute('data-theme');
+		const currentTheme = localStorage.getItem('theme')
+			|| document.documentElement.getAttribute('data-theme');
 
 		if (!currentTheme) {
 			setMode('dark');
 			setTheme('dark');
 		} else if (currentTheme !== 'light' && currentTheme !== 'dark') {
 			user.subscribe((u) => {
-				if (u.checked && (!u.loggedIn || !isActive(u.data.supporterUntil))) {
+				if (
+					u.checked && (!u.loggedIn || !isActive(u.data.supporterUntil))
+				) {
 					setMode('dark');
 					setTheme('dark');
 				} else {
@@ -264,7 +291,7 @@
 <svelte:window on:keydown={handlePasswordSignInKeydown} />
 
 <svelte:head>
-	<link rel="icon" href={$faviconHref} />
+  <link rel="icon" href={$faviconHref} />
 </svelte:head>
 
 <ModeWatcher defaultMode="system" />
@@ -272,294 +299,306 @@
 <OnboardingModal bind:open={showOnboarding} />
 <Search bind:open={searchToggled} bind:value={searchQuery} />
 <LoadingBar
-	--loading-bar-background-color="rgb(0 100 160 / 80%)"
-	--loading-bar-train-background-color="rgb(0 100 220 / 90%)"
+  --loading-bar-background-color="rgb(0 100 160 / 80%)"
+  --loading-bar-train-background-color="rgb(0 100 220 / 90%)"
 />
 
 {#if passwordSignInOpen}
-	<div class="passwordSignInLayer">
-		<button
-			type="button"
-			class="passwordSignInBackdrop"
-			aria-label="Close password sign in"
-			on:click={closePasswordSignInPrompt}
-		></button>
-		<form class="passwordSignInDialog" on:submit|preventDefault={signInWithPassword}>
-			<h2>Password sign in</h2>
-			<label>
-				<span>Email</span>
-				<input
-					type="email"
-					autocomplete="username"
-					bind:value={passwordSignInEmail}
-					disabled={passwordSignInLoading}
-				/>
-			</label>
-			<label>
-				<span>Password</span>
-				<input
-					bind:this={passwordInput}
-					type="password"
-					autocomplete="current-password"
-					bind:value={passwordSignInPassword}
-					disabled={passwordSignInLoading}
-				/>
-			</label>
-			<div class="passwordSignInActions">
-				<button type="button" on:click={closePasswordSignInPrompt} disabled={passwordSignInLoading}>
-					Cancel
-				</button>
-				<button type="submit" disabled={passwordSignInLoading}>
-					{passwordSignInLoading ? 'Signing in...' : 'Sign in'}
-				</button>
-			</div>
-		</form>
-	</div>
+  <div class="passwordSignInLayer">
+    <button
+      type="button"
+      class="passwordSignInBackdrop"
+      aria-label="Close password sign in"
+      on:click={closePasswordSignInPrompt}
+    >
+    </button>
+    <form
+      class="passwordSignInDialog"
+      on:submit|preventDefault={signInWithPassword}
+    >
+      <h2>Password sign in</h2>
+      <label>
+        <span>Email</span>
+        <input
+          type="email"
+          autocomplete="username"
+          bind:value={passwordSignInEmail}
+          disabled={passwordSignInLoading}
+        />
+      </label>
+      <label>
+        <span>Password</span>
+        <input
+          bind:this={passwordInput}
+          type="password"
+          autocomplete="current-password"
+          bind:value={passwordSignInPassword}
+          disabled={passwordSignInLoading}
+        />
+      </label>
+      <div class="passwordSignInActions">
+        <button
+          type="button"
+          on:click={closePasswordSignInPrompt}
+          disabled={passwordSignInLoading}
+        >
+          Cancel
+        </button>
+        <button type="submit" disabled={passwordSignInLoading}>
+          {passwordSignInLoading ? 'Signing in...' : 'Sign in'}
+        </button>
+      </div>
+    </form>
+  </div>
 {/if}
 
 {#if !hideNav}
-	<NavigationChrome
-		bind:searchToggled
-		navLogoSrc={$navLogoSrc}
-		navLogoAlt={$navLogoAlt}
-		useCustomListLogo={$useCustomListLogo}
-		onCustomLogoError={() => customLogoFailed.set(true)}
-		{signIn}
-		{signOut}
-	/>
+  <NavigationChrome
+    bind:searchToggled
+    navLogoSrc={$navLogoSrc}
+    navLogoAlt={$navLogoAlt}
+    useCustomListLogo={$useCustomListLogo}
+    onCustomLogoError={() => customLogoFailed.set(true)}
+    {signIn}
+    {signOut}
+  />
 {/if}
 
 <!-- Main content wrapper -->
-<div class="layout-container" class:has-sidebar={!hideNav} class:no-pad={removePad}>
-	<slot />
+<div
+  class="layout-container"
+  class:has-sidebar={!hideNav}
+  class:no-pad={removePad}
+>
+  <slot />
 
-	<footer>
-		<div class="footerFiller"></div>
-		<p>
-			© Copyright 2020-2025 gdvn.net.<br />
-			All rights reserved gdvn.net and Geometry Dash Việt Nam are in no way affiliated with RobTopGamesAB
-			®
-		</p>
-		<div class="links">
-			<a href="/about">About</a>
-			<a href="/privacyPolicy">Privacy Policy</a>
-			<a href="/tos">Terms of service</a>
-		</div>
-	</footer>
+  <footer>
+    <div class="footerFiller"></div>
+    <p>
+      © Copyright 2020-2025 gdvn.net.<br />
+      All rights reserved gdvn.net and Geometry Dash Việt Nam are in no way
+      affiliated with RobTopGamesAB ®
+    </p>
+    <div class="links">
+      <a href="/about">About</a>
+      <a href="/privacyPolicy">Privacy Policy</a>
+      <a href="/tos">Terms of service</a>
+    </div>
+  </footer>
 </div>
 
 <style lang="scss">
-	.passwordSignInLayer {
-		position: fixed;
-		inset: 0;
-		z-index: 1000;
-		display: grid;
-		place-items: center;
-		padding: 20px;
-	}
+.passwordSignInLayer {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
 
-	.passwordSignInBackdrop {
-		position: absolute;
-		inset: 0;
-		border: 0;
-		padding: 0;
-		background: rgb(0 0 0 / 55%);
-	}
+.passwordSignInBackdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: rgb(0 0 0 / 55%);
+}
 
-	.passwordSignInDialog {
-		position: relative;
-		width: min(100%, 360px);
-		display: grid;
-		gap: 14px;
-		padding: 18px;
-		border: 1px solid rgb(255 255 255 / 12%);
-		border-radius: 8px;
-		background: var(--background, #111);
-		color: var(--foreground, #fff);
-		box-shadow: 0 18px 60px rgb(0 0 0 / 45%);
+.passwordSignInDialog {
+  position: relative;
+  width: min(100%, 360px);
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 8px;
+  background: var(--background, #111);
+  color: var(--foreground, #fff);
+  box-shadow: 0 18px 60px rgb(0 0 0 / 45%);
 
-		h2 {
-			margin: 0;
-			font-size: 18px;
-			font-weight: 650;
-		}
+  h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 650;
+  }
 
-		label {
-			display: grid;
-			gap: 6px;
-			font-size: 13px;
-		}
+  label {
+    display: grid;
+    gap: 6px;
+    font-size: 13px;
+  }
 
-		input {
-			width: 100%;
-			border: 1px solid rgb(255 255 255 / 16%);
-			border-radius: 6px;
-			padding: 9px 10px;
-			background: rgb(255 255 255 / 7%);
-			color: inherit;
-			font: inherit;
-		}
-	}
+  input {
+    width: 100%;
+    border: 1px solid rgb(255 255 255 / 16%);
+    border-radius: 6px;
+    padding: 9px 10px;
+    background: rgb(255 255 255 / 7%);
+    color: inherit;
+    font: inherit;
+  }
+}
 
-	.passwordSignInActions {
-		display: flex;
-		justify-content: flex-end;
-		gap: 8px;
-		margin-top: 4px;
+.passwordSignInActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
 
-		button {
-			border: 1px solid rgb(255 255 255 / 16%);
-			border-radius: 6px;
-			padding: 8px 12px;
-			background: rgb(255 255 255 / 8%);
-			color: inherit;
-			font: inherit;
-			cursor: pointer;
-		}
+  button {
+    border: 1px solid rgb(255 255 255 / 16%);
+    border-radius: 6px;
+    padding: 8px 12px;
+    background: rgb(255 255 255 / 8%);
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+  }
 
-		button[type='submit'] {
-			background: rgb(0 100 220 / 90%);
-		}
+  button[type="submit"] {
+    background: rgb(0 100 220 / 90%);
+  }
 
-		button:disabled {
-			opacity: 0.55;
-			cursor: not-allowed;
-		}
-	}
+  button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+}
 
-	:global(.markdown) {
-		:global(h1) {
-			display: block;
-			font-size: 2em;
-			margin-top: 0.67em;
-			margin-bottom: 0.67em;
-			margin-left: 0;
-			margin-right: 0;
-			font-weight: bold;
-		}
+:global(.markdown) {
+  :global(h1) {
+    display: block;
+    font-size: 2em;
+    margin-top: 0.67em;
+    margin-bottom: 0.67em;
+    margin-left: 0;
+    margin-right: 0;
+    font-weight: bold;
+  }
 
-		:global(h2) {
-			display: block;
-			font-size: 1.5em;
-			margin-top: 0.83em;
-			margin-bottom: 0.83em;
-			margin-left: 0;
-			margin-right: 0;
-			font-weight: bold;
-		}
+  :global(h2) {
+    display: block;
+    font-size: 1.5em;
+    margin-top: 0.83em;
+    margin-bottom: 0.83em;
+    margin-left: 0;
+    margin-right: 0;
+    font-weight: bold;
+  }
 
-		:global(h3) {
-			display: block;
-			font-size: 1.17em;
-			margin-top: 1em;
-			margin-bottom: 1em;
-			margin-left: 0;
-			margin-right: 0;
-			font-weight: bold;
-		}
+  :global(h3) {
+    display: block;
+    font-size: 1.17em;
+    margin-top: 1em;
+    margin-bottom: 1em;
+    margin-left: 0;
+    margin-right: 0;
+    font-weight: bold;
+  }
 
-		:global(h4) {
-			display: block;
-			margin-top: 1.33em;
-			margin-bottom: 1.33em;
-			margin-left: 0;
-			margin-right: 0;
-			font-weight: bold;
-		}
+  :global(h4) {
+    display: block;
+    margin-top: 1.33em;
+    margin-bottom: 1.33em;
+    margin-left: 0;
+    margin-right: 0;
+    font-weight: bold;
+  }
 
-		:global(h5) {
-			display: block;
-			font-size: 0.83em;
-			margin-top: 1.67em;
-			margin-bottom: 1.67em;
-			margin-left: 0;
-			margin-right: 0;
-			font-weight: bold;
-		}
+  :global(h5) {
+    display: block;
+    font-size: 0.83em;
+    margin-top: 1.67em;
+    margin-bottom: 1.67em;
+    margin-left: 0;
+    margin-right: 0;
+    font-weight: bold;
+  }
 
-		:global(h6) {
-			display: block;
-			font-size: 0.67em;
-			margin-top: 2.33em;
-			margin-bottom: 2.33em;
-			margin-left: 0;
-			margin-right: 0;
-			font-weight: bold;
-		}
+  :global(h6) {
+    display: block;
+    font-size: 0.67em;
+    margin-top: 2.33em;
+    margin-bottom: 2.33em;
+    margin-left: 0;
+    margin-right: 0;
+    font-weight: bold;
+  }
 
-		:global(ul) {
-			list-style: disc;
-			margin: initial;
-			padding: 0 0 0 40px;
-		}
+  :global(ul) {
+    list-style: disc;
+    margin: initial;
+    padding: 0 0 0 40px;
+  }
 
-		:global(ol) {
-			list-style: decimal;
-			margin: initial;
-			padding: 0 0 0 40px;
-		}
+  :global(ol) {
+    list-style: decimal;
+    margin: initial;
+    padding: 0 0 0 40px;
+  }
 
-		:global(li) {
-			display: list-item;
-		}
+  :global(li) {
+    display: list-item;
+  }
 
-		:global(table) {
-			border: solid 1px var(--textColor);
-		}
+  :global(table) {
+    border: solid 1px var(--textColor);
+  }
 
-		:global(th) {
-			border: solid 1px var(--textColor);
-			padding-inline: 10px;
-		}
+  :global(th) {
+    border: solid 1px var(--textColor);
+    padding-inline: 10px;
+  }
 
-		:global(td) {
-			border: solid 1px var(--textColor);
-			padding-inline: 10px;
-		}
-	}
+  :global(td) {
+    border: solid 1px var(--textColor);
+    padding-inline: 10px;
+  }
+}
 
-	/* Layout container */
-	.layout-container {
-		padding-top: 48px;
-		min-height: 100vh;
-		box-sizing: border-box;
+/* Layout container */
+.layout-container {
+  padding-top: 48px;
+  min-height: 100vh;
+  box-sizing: border-box;
 
-		&.has-sidebar {
-			@media screen and (min-width: 1025px) {
-				margin-left: 72px;
-			}
-		}
+  &.has-sidebar {
+    @media screen and (min-width: 1025px) {
+      margin-left: 72px;
+    }
+  }
 
-		&.no-pad {
-			padding-top: 0;
-		}
-	}
+  &.no-pad {
+    padding-top: 0;
+  }
+}
 
-	/* Footer */
-	footer {
-		height: fit-content;
-		padding-top: 20px;
-		margin-bottom: -80px;
-		color: var(--textColor2);
-		background-color: var(--background);
+/* Footer */
+footer {
+  height: fit-content;
+  padding-top: 20px;
+  margin-bottom: -80px;
+  color: var(--textColor2);
+  background-color: var(--background);
 
-		.footerFiller {
-			height: 100px;
-			border-bottom: 1px solid var(--border1);
-			margin-bottom: 20px;
-		}
-		.links {
-			display: flex;
-			justify-content: center;
-			gap: 10px;
+  .footerFiller {
+    height: 100px;
+    border-bottom: 1px solid var(--border1);
+    margin-bottom: 20px;
+  }
+  .links {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
 
-			a {
-				text-decoration: underline;
-			}
-		}
+    a {
+      text-decoration: underline;
+    }
+  }
 
-		p {
-			text-align: center;
-		}
-	}
+  p {
+    text-align: center;
+  }
+}
 </style>

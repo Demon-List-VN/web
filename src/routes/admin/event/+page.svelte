@@ -16,39 +16,39 @@
 	import { onMount } from 'svelte';
 
 	enum State {
-		DEFAULT,
-		NO_EVENT,
-		NEW_EVENT,
-		EDIT_EVENT
-	}
+    DEFAULT,
+    NO_EVENT,
+    NEW_EVENT,
+    EDIT_EVENT
+}
 
-	let state = 0;
-	let levels: any[] = [];
-	let proofs: any[] = [];
-	let event = {
-		id: NaN,
-		created_at: '',
-		start: '',
-		end: '',
-		title: '',
-		description: '',
-		imgUrl: '',
-		exp: NaN,
-		content: '',
-		redirect: null,
-		minExp: 0,
-		needProof: false,
-		isSupporterOnly: false,
-		isContest: false,
-		hidden: false,
-		freeze: '',
-		isExternal: false,
-		data: null,
-		isRanked: false,
-		isCalculated: false,
-		priority: 0,
-		type: ''
-	};
+		let state = 0;
+		let levels: any[] = [];
+		let proofs: any[] = [];
+		let event = {
+			id: NaN,
+			created_at: '',
+			start: '',
+			end: '',
+			title: '',
+			description: '',
+			imgUrl: '',
+			exp: NaN,
+			content: '',
+			redirect: null,
+			minExp: 0,
+			needProof: false,
+			isSupporterOnly: false,
+			isContest: false,
+			hidden: false,
+			freeze: '',
+			isExternal: false,
+			data: null,
+			isRanked: false,
+			isCalculated: false,
+			priority: 0,
+			type: ''
+		};
 
 	function convertTime(x: string) {
 		if (!x) {
@@ -58,17 +58,21 @@
 		const d = new Date(x);
 		d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
 
-		return d.toISOString().slice(0, 16);
+		return d.toISOString()
+			.slice(0, 16);
 	}
 
 	async function fetchEvent() {
 		if (!event.id) {
 			state = State.NEW_EVENT;
+
 			return;
 		}
 
 		try {
-			event = await (await fetch(`${import.meta.env.VITE_API_URL}/events/${event.id}`)).json();
+			event = await (await fetch(
+				`${import.meta.env.VITE_API_URL}/events/${event.id}`
+			)).json();
 			state = State.EDIT_EVENT;
 
 			event.start = convertTime(event.start);
@@ -90,11 +94,13 @@
 	function validate() {
 		const missing: string[] = [];
 
-		if (!event.title || String(event.title).trim() === '') {
+		if (!event.title || String(event.title)
+			.trim() === '') {
 			missing.push('Title');
 		}
 
-		if (!event.description || String(event.description).trim() === '') {
+		if (!event.description || String(event.description)
+			.trim() === '') {
 			missing.push('Description');
 		}
 
@@ -108,7 +114,9 @@
 
 		const priorityRaw: any = event.priority;
 
-		if (priorityRaw === '' || priorityRaw === null || priorityRaw === undefined) {
+		if (
+			priorityRaw === '' || priorityRaw === null || priorityRaw === undefined
+		) {
 			missing.push('Priority');
 		} else if (isNaN(Number(priorityRaw))) {
 			throw new Error('Priority must be a number');
@@ -134,36 +142,40 @@
 		}
 
 		if (event.created_at) {
-			event.created_at = new Date(event.created_at).toISOString();
+			event.created_at = new Date(event.created_at)
+				.toISOString();
 		} else {
 			// @ts-expect-error
 			delete event.created_at;
 		}
 
 		if (event.start) {
-			event.start = new Date(event.start).toISOString();
+			event.start = new Date(event.start)
+				.toISOString();
 		} else {
 			// @ts-expect-error
 			delete event.start;
 		}
 
 		if (event.end) {
-			event.end = new Date(event.end).toISOString();
+			event.end = new Date(event.end)
+				.toISOString();
 		} else {
 			// @ts-expect-error
 			delete event.end;
 		}
 
 		if (event.freeze) {
-			event.freeze = new Date(event.freeze).toISOString();
+			event.freeze = new Date(event.freeze)
+				.toISOString();
 		} else {
 			// @ts-expect-error
 			delete event.freeze;
 		}
 
-		if(!event.id) {
+		if (!event.id) {
 			// @ts-expect-error
-			delete event.id
+			delete event.id;
 		}
 	}
 
@@ -176,6 +188,7 @@
 			validate();
 		} catch (err: any) {
 			toast.error(err.message);
+
 			return;
 		}
 
@@ -209,6 +222,7 @@
 			validate();
 		} catch (err: any) {
 			toast.error(err.message);
+
 			return;
 		}
 
@@ -248,11 +262,13 @@
 			try {
 				e.target.value = '';
 			} catch {}
+
 			return;
 		}
 
 		if (!event.id) {
 			toast.error('Event ID is required to upload');
+
 			return;
 		}
 
@@ -260,35 +276,49 @@
 			type: 'image/webp'
 		});
 
-		toast.promise(upload(`event-banner/${event.id}.webp`, fileToUpload, (await $user.token())!), {
-			success: () => {
-				window.location.reload();
-				return 'Uploaded!';
-			},
-			loading: 'Uploading...',
-			error: 'Failed to upload'
-		});
+		toast.promise(
+			upload(
+				`event-banner/${event.id}.webp`,
+				fileToUpload,
+				(await $user.token())!
+			),
+			{
+				success: () => {
+					window.location.reload();
+
+					return 'Uploaded!';
+				},
+				loading: 'Uploading...',
+				error: 'Failed to upload'
+			}
+		);
 	}
 
 	async function fetchLevels() {
 		levels = await (
-			await fetch(`${import.meta.env.VITE_API_URL}/events/${event.id}/levels`, {
-				method: 'GET',
-				headers: {
-					Authorization: 'Bearer ' + (await $user.token())
+			await fetch(
+				`${import.meta.env.VITE_API_URL}/events/${event.id}/levels`,
+				{
+					method: 'GET',
+					headers: {
+						Authorization: 'Bearer ' + (await $user.token())
+					}
 				}
-			})
+			)
 		).json();
 	}
 
 	async function fetchProofs() {
 		proofs = await (
-			await fetch(`${import.meta.env.VITE_API_URL}/events/${event.id}/proofs?accepted=all`, {
-				method: 'GET',
-				headers: {
-					Authorization: 'Bearer ' + (await $user.token())
+			await fetch(
+				`${import.meta.env.VITE_API_URL}/events/${event.id}/proofs?accepted=all`,
+				{
+					method: 'GET',
+					headers: {
+						Authorization: 'Bearer ' + (await $user.token())
+					}
 				}
-			})
+			)
 		).json();
 	}
 
@@ -298,17 +328,21 @@
 		}
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/events/${event.id}/proofs/${userid}`, {
-				method: 'PATCH',
-				body: JSON.stringify({ accepted: true }),
-				headers: {
-					Authorization: 'Bearer ' + (await $user.token()),
-					'Content-Type': 'application/json'
+			fetch(
+				`${import.meta.env.VITE_API_URL}/events/${event.id}/proofs/${userid}`,
+				{
+					method: 'PATCH',
+					body: JSON.stringify({ accepted: true }),
+					headers: {
+						Authorization: 'Bearer ' + (await $user.token()),
+						'Content-Type': 'application/json'
+					}
 				}
-			}),
+			),
 			{
 				success: () => {
 					fetchProofs();
+
 					return 'Proof accepted!';
 				},
 				loading: 'Accepting...',
@@ -323,17 +357,21 @@
 		}
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/events/${event.id}/proofs/${userid}`, {
-				method: 'PATCH',
-				body: JSON.stringify({ accepted: false }),
-				headers: {
-					Authorization: 'Bearer ' + (await $user.token()),
-					'Content-Type': 'application/json'
+			fetch(
+				`${import.meta.env.VITE_API_URL}/events/${event.id}/proofs/${userid}`,
+				{
+					method: 'PATCH',
+					body: JSON.stringify({ accepted: false }),
+					headers: {
+						Authorization: 'Bearer ' + (await $user.token()),
+						'Content-Type': 'application/json'
+					}
 				}
-			}),
+			),
 			{
 				success: () => {
 					fetchProofs();
+
 					return 'Proof rejected!';
 				},
 				loading: 'Rejecting...',
@@ -343,9 +381,18 @@
 	}
 
 	function exportToCSV() {
-		const headers = ['Created At', 'Player Name', 'Player ID', 'Content', 'Accepted', 'Data', 'Diff'];
+		const headers = [
+			'Created At',
+			'Player Name',
+			'Player ID',
+			'Content',
+			'Accepted',
+			'Data',
+			'Diff'
+		];
 		const rows = proofs.map((proof) => [
-			new Date(proof.created_at).toLocaleString(),
+			new Date(proof.created_at)
+				.toLocaleString(),
 			proof.players?.name || 'Unknown',
 			proof.userid,
 			proof.content,
@@ -356,7 +403,11 @@
 
 		const csvContent = [
 			headers.join(','),
-			...rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+			...rows.map((row) =>
+				row.map((cell) => `"${String(cell)
+					.replace(/"/g, '""')}"`)
+					.join(',')
+			)
 		].join('\n');
 
 		const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -384,65 +435,72 @@
 <Title value="Event manager" />
 
 <div class="wrapper">
-	<div class="input">
-		<Label for="id" class="w-[100px]">Event's ID</Label>
-		<Input
-			bind:value={event.id}
-			placeholder="Leave blank for new event"
-			id="id"
-			type="number"
-			inputmode="numeric"
-			class="w-[300px]"
-		/>
-		<Button on:click={fetchEvent}>Fetch</Button>
-	</div>
+  <div class="input">
+    <Label for="id" class="w-[100px]">Event's ID</Label>
+    <Input
+      bind:value={event.id}
+      placeholder="Leave blank for new event"
+      id="id"
+      type="number"
+      inputmode="numeric"
+      class="w-[300px]"
+    />
+    <Button on:click={fetchEvent}>Fetch</Button>
+  </div>
 
-	{#if state == State.NO_EVENT}
-		<Alert.Root class="w-[500px]">
-			<Alert.Title>Attention!</Alert.Title>
-			<Alert.Description>No event found</Alert.Description>
-		</Alert.Root>
-	{:else if state == State.NEW_EVENT}
-		<Alert.Root class="w-[500px]">
-			<Alert.Title>Attention!</Alert.Title>
-			<Alert.Description>Creating new event</Alert.Description>
-		</Alert.Root>
-	{/if}
-	{#if state == State.NEW_EVENT || state == State.EDIT_EVENT}
-		<Tabs.Root value="basic">
-			<Tabs.List>
-				<Tabs.Trigger value="basic">Basic info</Tabs.Trigger>
-				<Tabs.Trigger value="contest">Contest</Tabs.Trigger>
-				<Tabs.Trigger value="proofs">Proofs</Tabs.Trigger>
-				<Tabs.Trigger value="quests">Quests</Tabs.Trigger>
-			</Tabs.List>
-			<Tabs.Content value="basic">
-				<BasicInfoTab {event} {state} {addEvent} {editEvent} {handleUpload} />
-			</Tabs.Content>
-			<Tabs.Content value="contest">
-				<ContestTab {event} {levels} {editEvent} />
-			</Tabs.Content>
-			<Tabs.Content value="proofs">
-				<ProofsTab {event} {proofs} {fetchProofs} {acceptProof} {rejectProof} {exportToCSV} />
-			</Tabs.Content>
-			<Tabs.Content value="quests">
-				<QuestsTab {event} />
-			</Tabs.Content>
-		</Tabs.Root>
-	{/if}
+  {#if state == State.NO_EVENT}
+    <Alert.Root class="w-[500px]">
+      <Alert.Title>Attention!</Alert.Title>
+      <Alert.Description>No event found</Alert.Description>
+    </Alert.Root>
+  {:else if state == State.NEW_EVENT}
+    <Alert.Root class="w-[500px]">
+      <Alert.Title>Attention!</Alert.Title>
+      <Alert.Description>Creating new event</Alert.Description>
+    </Alert.Root>
+  {/if}
+  {#if state == State.NEW_EVENT || state == State.EDIT_EVENT}
+    <Tabs.Root value="basic">
+      <Tabs.List>
+        <Tabs.Trigger value="basic">Basic info</Tabs.Trigger>
+        <Tabs.Trigger value="contest">Contest</Tabs.Trigger>
+        <Tabs.Trigger value="proofs">Proofs</Tabs.Trigger>
+        <Tabs.Trigger value="quests">Quests</Tabs.Trigger>
+      </Tabs.List>
+      <Tabs.Content value="basic">
+        <BasicInfoTab {event} {state} {addEvent} {editEvent} {handleUpload} />
+      </Tabs.Content>
+      <Tabs.Content value="contest">
+        <ContestTab {event} {levels} {editEvent} />
+      </Tabs.Content>
+      <Tabs.Content value="proofs">
+        <ProofsTab
+          {event}
+          {proofs}
+          {fetchProofs}
+          {acceptProof}
+          {rejectProof}
+          {exportToCSV}
+        />
+      </Tabs.Content>
+      <Tabs.Content value="quests">
+        <QuestsTab {event} />
+      </Tabs.Content>
+    </Tabs.Root>
+  {/if}
 </div>
 
 <style lang="scss">
-	.wrapper {
-		padding-inline: 75px;
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-	}
+.wrapper {
+  padding-inline: 75px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 
-	.input {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-	}
+.input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 </style>

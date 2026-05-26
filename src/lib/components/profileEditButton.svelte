@@ -13,7 +13,9 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import { upload } from '$lib/client/storage';
-	import ListSelector, { type ListSelectorOption } from '$lib/components/listSelector.svelte';
+	import ListSelector, {
+		type ListSelectorOption
+	} from '$lib/components/listSelector.svelte';
 	import { clearPlayerCardSettingsCache } from '$lib/components/playerCard.svelte';
 	import type { PlayerRankedListSummary } from '$lib/types/playerRankedList';
 	import {
@@ -51,13 +53,17 @@
 
 	$: (open, reset());
 	$: listSearchUrl = `${import.meta.env.VITE_API_URL}/lists`;
-	$: playerCardStatLineOptions = getPlayerCardStatLineOptions(playerCardListSummaries);
-	$: playerCardStatLineIds = normalizePlayerCardStatLines(player?.playerCardStatLines);
+	$: playerCardStatLineOptions = getPlayerCardStatLineOptions(
+		playerCardListSummaries
+	);
+	$: playerCardStatLineIds = normalizePlayerCardStatLines(
+		player?.playerCardStatLines
+	);
 	$: if (
-		open &&
-		player?.uid &&
-		playerCardStatLinesLoadedForUid !== player.uid &&
-		!isLoadingPlayerCardStatLines
+		open
+		&& player?.uid
+		&& playerCardStatLinesLoadedForUid !== player.uid
+		&& !isLoadingPlayerCardStatLines
 	) {
 		void loadPlayerCardStatLines(player.uid);
 	}
@@ -65,7 +71,9 @@
 	function reset() {
 		player = structuredClone(data);
 		playerCardShowEloStat = shouldShowPlayerCardEloStat(player?.overviewData);
-		playerCardShowPvpEloStat = shouldShowPlayerCardPvpEloStat(player?.overviewData);
+		playerCardShowPvpEloStat = shouldShowPlayerCardPvpEloStat(
+			player?.overviewData
+		);
 		provinceItem = {
 			disabled: false,
 			label: player.province,
@@ -78,21 +86,25 @@
 		};
 	}
 
-	$: renameCooldownActive =
-		!player.isAdmin &&
-		(player.nameLocked || (player.renameCooldown && new Date(player.renameCooldown) > new Date()));
+	$: renameCooldownActive = !player.isAdmin
+		&& (player.nameLocked
+			|| (player.renameCooldown
+				&& new Date(player.renameCooldown) > new Date()));
 
 	$: renameCooldownMessage = player.nameLocked
 		? $_('profile_edit.rename_locked')
 		: $_('profile_edit.rename_cooldown', {
-				values: { date: new Date(player.renameCooldown).toLocaleDateString() }
-			});
+			values: { date: new Date(player.renameCooldown)
+				.toLocaleDateString() }
+		});
 
 	async function loadPlayerCardStatLines(uid: string) {
 		isLoadingPlayerCardStatLines = true;
 
 		try {
-			const response = await fetch(`${import.meta.env.VITE_API_URL}/players/${uid}/lists`);
+			const response = await fetch(
+				`${import.meta.env.VITE_API_URL}/players/${uid}/lists`
+			);
 			playerCardListSummaries = await response.json();
 			playerCardStatLinesLoadedForUid = uid;
 		} catch {
@@ -109,7 +121,11 @@
 			id: summary.id,
 			title: summary.title,
 			identifier: summary.identifier,
-			subtitle: summary.isOfficial ? 'Official' : summary.isVerified ? 'Verified' : null
+			subtitle: summary.isOfficial
+				? 'Official'
+				: summary.isVerified
+				? 'Verified'
+				: null
 		}));
 	}
 
@@ -129,7 +145,10 @@
 		const seen = new Set<number>();
 
 		for (const id of next) {
-			if (typeof id !== 'number' || !Number.isFinite(id) || id === 0 || seen.has(id)) {
+			if (
+				typeof id !== 'number' || !Number.isFinite(id) || id === 0
+				|| seen.has(id)
+			) {
 				continue;
 			}
 
@@ -177,10 +196,18 @@
 		try {
 			await promise;
 			clearPlayerCardSettingsCache(player.uid);
-			data = { ...data, overviewData, playerCardStatLines: playerCardStatLineIds };
-			player = { ...player, overviewData, playerCardStatLines: playerCardStatLineIds };
+			data = {
+				...data,
+				overviewData,
+				playerCardStatLines: playerCardStatLineIds
+			};
+			player = {
+				...player,
+				overviewData,
+				playerCardStatLines: playerCardStatLineIds
+			};
 		} catch {
-			// handled by toast
+		// handled by toast
 		}
 	}
 
@@ -193,7 +220,11 @@
 
 		if (image.name.endsWith('.gif')) {
 			const handleUpload = async () => {
-				await upload(`avatars/${$user.data.uid}.gif`, image, (await $user.token())!);
+				await upload(
+					`avatars/${$user.data.uid}.gif`,
+					image,
+					(await $user.token())!
+				);
 
 				player.isAvatarGif = true;
 				player.avatarVersion++;
@@ -220,7 +251,11 @@
 				useWebWorker: true
 			});
 			const handleUpload = async () => {
-				await upload(`avatars/${$user.data.uid}.jpg`, cImg, (await $user.token())!);
+				await upload(
+					`avatars/${$user.data.uid}.jpg`,
+					cImg,
+					(await $user.token())!
+				);
 
 				player.isAvatarGif = false;
 				player.avatarVersion++;
@@ -252,7 +287,11 @@
 
 		if (image.name.endsWith('.gif')) {
 			const handleUpload = async () => {
-				await upload(`banners/${$user.data.uid}.gif`, image, (await $user.token())!);
+				await upload(
+					`banners/${$user.data.uid}.gif`,
+					image,
+					(await $user.token())!
+				);
 
 				player.isBannerGif = true;
 				player.bannerVersion++;
@@ -281,7 +320,11 @@
 
 			const cImg = await imageCompression(image, options);
 			const handleUpload = async () => {
-				await upload(`banners/${$user.data.uid}.jpg`, cImg, (await $user.token())!);
+				await upload(
+					`banners/${$user.data.uid}.jpg`,
+					cImg,
+					(await $user.token())!
+				);
 
 				player.isBannerGif = false;
 				player.bannerVersion++;
@@ -310,13 +353,17 @@
 
 		if (!/^[A-Za-z0-9]+$/.test(player.name)) {
 			toast.error($_('toast.player_edit.name'));
+
 			return;
 		}
 
 		const playerToSave = {
 			...player,
 			overviewData: setPlayerCardPvpEloStatVisibility(
-				setPlayerCardEloStatVisibility(player?.overviewData, playerCardShowEloStat),
+				setPlayerCardEloStatVisibility(
+					player?.overviewData,
+					playerCardShowEloStat
+				),
 				playerCardShowPvpEloStat
 			)
 		};
@@ -352,198 +399,231 @@
 </script>
 
 <input
-	style="display:none"
-	type="file"
-	accept={isActive($user.data.supporterUntil) ? '.jpg, .jpeg, .gif' : '.jpg, .jpeg'}
-	on:change={(e) => getAvatar(e)}
-	bind:this={fileinput}
+  style="display: none"
+  type="file"
+  accept={isActive($user.data.supporterUntil) ? '.jpg, .jpeg, .gif' : '.jpg, .jpeg'}
+  on:change={(e) => getAvatar(e)}
+  bind:this={fileinput}
 />
 
 <input
-	style="display:none"
-	type="file"
-	accept={'.jpg, .jpeg, .gif'}
-	on:change={(e) => getBanner(e)}
-	bind:this={fileinput1}
+  style="display: none"
+  type="file"
+  accept={'.jpg, .jpeg, .gif'}
+  on:change={(e) => getBanner(e)}
+  bind:this={fileinput1}
 />
 
 <Dialog.Root bind:open>
-	<Dialog.Trigger class={buttonVariants({ variant: 'outline' })}><Pencil1 /></Dialog.Trigger>
-	<Dialog.Content>
-		<Dialog.Header>
-			<Dialog.Title>{$_('profile_edit.title')}</Dialog.Title>
-			<Dialog.Description>
-				{$_('profile_edit.description')}
-			</Dialog.Description>
-			<div class="grid gap-4 py-4">
-				<div class="grid grid-cols-4 items-center gap-4">
-					<Label for="name" class="text-right">{$_('profile_edit.name')}</Label>
-					<div class="col-span-3 flex flex-col gap-1">
-						<Input id="name" bind:value={player.name} disabled={renameCooldownActive} />
-						{#if renameCooldownActive}
-							<p class="text-xs text-muted-foreground">{renameCooldownMessage}</p>
-						{/if}
-					</div>
-				</div>
-				<div class="flex gap-[10px]">
-					<Button
-						class="w-full"
-						variant="outline"
-						id="avatar"
-						placeholder="Avatar"
-						on:click={() => {
-							fileinput.click();
-						}}>{$_('profile_edit.upload_avatar')}</Button
-					>
-					<Button
-						class="w-full"
-						variant="outline"
-						id="avatar"
-						placeholder="Avatar"
-						disabled={!isActive(player.supporterUntil)}
-						on:click={() => {
-							fileinput1.click();
-						}}>{$_('profile_edit.upload_banner')}</Button
-					>
-				</div>
-				<div class="mb-[10px] flex items-center gap-[10px] text-sm">
-					{$_('profile_edit.border')}
-					<Input
-						type="color"
-						value={player.borderColor || '#000000'}
-						on:input={(event) => setPlayerColor('borderColor', event)}
-					/>
-					{$_('profile_edit.background')}
-					<Input
-						type="color"
-						value={player.bgColor || '#000000'}
-						on:input={(event) => setPlayerColor('bgColor', event)}
-					/>
-					<Button
-						variant="outline"
-						on:click={() => {
-							player.borderColor = player.bgColor = null;
-						}}>{$_('profile_edit.reset')}</Button
-					>
-				</div>
-				<div class="grid grid-cols-4 items-center gap-4">
-					<Label for="youtube" class="text-right">YouTube</Label>
-					<Input id="youtube" bind:value={player.youtube} class="col-span-3" />
-				</div>
-				<div class="grid grid-cols-4 items-center gap-4">
-					<Label for="facebook" class="text-right">Facebook</Label>
-					<Input id="facebook" bind:value={player.facebook} class="col-span-3" />
-				</div>
-				<div class="grid grid-cols-4 items-center gap-4">
-					<Label for="province" class="text-right">{$_('profile_edit.province')}</Label>
-					<Select.Root bind:selected={provinceItem}>
-						<Select.Trigger class="col-span-3">
-							<Select.Value placeholder="Province" />
-						</Select.Trigger>
-						<Select.Content>
-							<ScrollArea class="h-72">
-								{#each Object.keys(provinces)
-									.map((key) => provinces[key])
-									.sort((a, b) => {
-										return a.name > b.name ? 1 : -1;
-									}) as province}
-									<Select.Item
-										value={province.name}
-										on:click={() => {
-											cityItem.value = cityItem.label = null;
-										}}>{province.name}</Select.Item
-									>
-								{/each}
-							</ScrollArea>
-						</Select.Content>
-					</Select.Root>
-				</div>
-				<div class="grid grid-cols-4 items-center gap-4">
-					<Label for="province" class="text-right">{$_('profile_edit.city')}</Label>
-					<Select.Root bind:selected={cityItem} disabled={provinceItem.value == null}>
-						<Select.Trigger class="col-span-3">
-							<Select.Value placeholder={$_('profile_edit.city')} />
-						</Select.Trigger>
-						<Select.Content>
-							<ScrollArea class="h-72">
-								{#each provinces[provinceItem.value].wards as ward}
-									<Select.Item value={ward}>{ward}</Select.Item>
-								{/each}
-							</ScrollArea>
-						</Select.Content>
-					</Select.Root>
-				</div>
-				<div class="grid grid-cols-4 items-center gap-4">
-					<Label for="airplane-mode" class="text-right">{$_('profile_edit.hide_profile')}</Label>
-					<Switch id="airplane-mode" class="col-span-3" bind:checked={player.isHidden} />
-				</div>
-				<div class="grid gap-3 rounded-md border p-4">
-					<div class="space-y-1">
-						<p class="text-sm font-semibold">{$_('profile_edit.player_card_stat_lines')}</p>
-						<p class="text-xs text-muted-foreground">
-							{$_('profile_edit.player_card_stat_lines_description')}
-						</p>
-					</div>
-					<div class="grid grid-cols-4 items-center gap-4">
-						<Label for="show-player-card-elo" class="text-right">
-							{$_('profile_edit.show_elo_stat')}
-						</Label>
-						<Switch
-							id="show-player-card-elo"
-							class="col-span-3"
-							bind:checked={playerCardShowEloStat}
-						/>
-					</div>
-					<div class="grid grid-cols-4 items-center gap-4">
-						<Label for="show-player-card-pvp-elo" class="text-right">
-							{$_('profile_edit.show_pvp_elo_stat')}
-						</Label>
-						<Switch
-							id="show-player-card-pvp-elo"
-							class="col-span-3"
-							bind:checked={playerCardShowPvpEloStat}
-						/>
-					</div>
-					{#each Array(PLAYER_CARD_STAT_LINE_COUNT) as _slot, index}
-						<div class="grid grid-cols-4 items-center gap-4">
-							<Label class="text-right">
-								{$_('profile_edit.player_card_stat_line', { values: { index: index + 1 } })}
-							</Label>
-							{#key `${playerCardStatLineOptions.length}:${playerCardStatLineIds[index] ?? ''}`}
-								<ListSelector
-									selectedId={playerCardStatLineIds[index] ?? null}
-									options={playerCardStatLineOptions}
-									searchUrl={listSearchUrl}
-									placeholder={$_('general.select')}
-									searchPlaceholder={$_('list_selector.search_placeholder')}
-									emptyLabel={$_('list_selector.no_results')}
-									loadingLabel={`${$_('general.loading')}...`}
-									disabled={isLoadingPlayerCardStatLines}
-									triggerClass="col-span-3"
-									on:select={(event) => updatePlayerCardStatLine(index, event.detail?.id)}
-								/>
-							{/key}
-						</div>
-					{/each}
-					{#if isLoadingPlayerCardStatLines}
-						<p class="text-xs text-muted-foreground">{$_('general.loading')}...</p>
-					{/if}
-					<div class="flex justify-end">
-						<Button
-							variant="outline"
-							on:click={savePlayerCardStatLines}
-							disabled={isLoadingPlayerCardStatLines}
-						>
-							{$_('profile_edit.save_stat_lines')}
-						</Button>
-					</div>
-				</div>
-			</div>
-			<Dialog.Footer>
-				<Button type="submit" on:click={saveChanges}>{$_('profile_edit.save')}</Button>
-			</Dialog.Footer>
-		</Dialog.Header>
-	</Dialog.Content>
+  <Dialog.Trigger
+    class={buttonVariants({ variant: 'outline' })}
+  ><Pencil1 /></Dialog.Trigger>
+  <Dialog.Content>
+    <Dialog.Header>
+      <Dialog.Title>{$_('profile_edit.title')}</Dialog.Title>
+      <Dialog.Description>
+        {$_('profile_edit.description')}
+      </Dialog.Description>
+      <div class="grid gap-4 py-4">
+        <div class="grid grid-cols-4 items-center gap-4">
+          <Label for="name" class="text-right">{$_('profile_edit.name')}</Label>
+          <div class="col-span-3 flex flex-col gap-1">
+            <Input
+              id="name"
+              bind:value={player.name}
+              disabled={renameCooldownActive}
+            />
+            {#if renameCooldownActive}
+              <p class="text-xs text-muted-foreground">
+                {renameCooldownMessage}
+              </p>
+            {/if}
+          </div>
+        </div>
+        <div class="flex gap-[10px]">
+          <Button
+            class="w-full"
+            variant="outline"
+            id="avatar"
+            placeholder="Avatar"
+            on:click={() => {
+                fileinput.click();
+            }}
+          >{$_('profile_edit.upload_avatar')}</Button>
+          <Button
+            class="w-full"
+            variant="outline"
+            id="avatar"
+            placeholder="Avatar"
+            disabled={!isActive(player.supporterUntil)}
+            on:click={() => {
+                fileinput1.click();
+            }}
+          >{$_('profile_edit.upload_banner')}</Button>
+        </div>
+        <div class="mb-[10px] flex items-center gap-[10px] text-sm">
+          {$_('profile_edit.border')}
+          <Input
+            type="color"
+            value={player.borderColor || '#000000'}
+            on:input={(event) => setPlayerColor('borderColor', event)}
+          />
+          {$_('profile_edit.background')}
+          <Input
+            type="color"
+            value={player.bgColor || '#000000'}
+            on:input={(event) => setPlayerColor('bgColor', event)}
+          />
+          <Button
+            variant="outline"
+            on:click={() => {
+                player.borderColor = player.bgColor = null;
+            }}
+          >{$_('profile_edit.reset')}</Button>
+        </div>
+        <div class="grid grid-cols-4 items-center gap-4">
+          <Label for="youtube" class="text-right">YouTube</Label>
+          <Input id="youtube" bind:value={player.youtube} class="col-span-3" />
+        </div>
+        <div class="grid grid-cols-4 items-center gap-4">
+          <Label for="facebook" class="text-right">Facebook</Label>
+          <Input
+            id="facebook"
+            bind:value={player.facebook}
+            class="col-span-3"
+          />
+        </div>
+        <div class="grid grid-cols-4 items-center gap-4">
+          <Label for="province" class="text-right">{
+            $_('profile_edit.province')
+          }</Label>
+          <Select.Root bind:selected={provinceItem}>
+            <Select.Trigger class="col-span-3">
+              <Select.Value placeholder="Province" />
+            </Select.Trigger>
+            <Select.Content>
+              <ScrollArea class="h-72">
+                {#each Object.keys(provinces)
+                    .map((key) => provinces[key])
+                    .sort((a, b) => {
+                        return a.name > b.name ? 1 : -1;
+                    }) as province}
+                  <Select.Item
+                    value={province.name}
+                    on:click={() => {
+                        cityItem.value = cityItem.label = null;
+                    }}
+                  >{province.name}</Select.Item>
+                {/each}
+              </ScrollArea>
+            </Select.Content>
+          </Select.Root>
+        </div>
+        <div class="grid grid-cols-4 items-center gap-4">
+          <Label for="province" class="text-right">{
+            $_('profile_edit.city')
+          }</Label>
+          <Select.Root
+            bind:selected={cityItem}
+            disabled={provinceItem.value == null}
+          >
+            <Select.Trigger class="col-span-3">
+              <Select.Value placeholder={$_('profile_edit.city')} />
+            </Select.Trigger>
+            <Select.Content>
+              <ScrollArea class="h-72">
+                {#each provinces[provinceItem.value].wards as ward}
+                  <Select.Item value={ward}>{ward}</Select.Item>
+                {/each}
+              </ScrollArea>
+            </Select.Content>
+          </Select.Root>
+        </div>
+        <div class="grid grid-cols-4 items-center gap-4">
+          <Label for="airplane-mode" class="text-right">{
+            $_('profile_edit.hide_profile')
+          }</Label>
+          <Switch
+            id="airplane-mode"
+            class="col-span-3"
+            bind:checked={player.isHidden}
+          />
+        </div>
+        <div class="grid gap-3 rounded-md border p-4">
+          <div class="space-y-1">
+            <p class="text-sm font-semibold">
+              {$_('profile_edit.player_card_stat_lines')}
+            </p>
+            <p class="text-xs text-muted-foreground">
+              {$_('profile_edit.player_card_stat_lines_description')}
+            </p>
+          </div>
+          <div class="grid grid-cols-4 items-center gap-4">
+            <Label for="show-player-card-elo" class="text-right">
+              {$_('profile_edit.show_elo_stat')}
+            </Label>
+            <Switch
+              id="show-player-card-elo"
+              class="col-span-3"
+              bind:checked={playerCardShowEloStat}
+            />
+          </div>
+          <div class="grid grid-cols-4 items-center gap-4">
+            <Label for="show-player-card-pvp-elo" class="text-right">
+              {$_('profile_edit.show_pvp_elo_stat')}
+            </Label>
+            <Switch
+              id="show-player-card-pvp-elo"
+              class="col-span-3"
+              bind:checked={playerCardShowPvpEloStat}
+            />
+          </div>
+          {#each Array(PLAYER_CARD_STAT_LINE_COUNT) as _slot, index}
+            <div class="grid grid-cols-4 items-center gap-4">
+              <Label class="text-right">
+                {
+                  $_('profile_edit.player_card_stat_line', { values: { index: index + 1 } })
+                }
+              </Label>
+              {#key `${playerCardStatLineOptions.length}:${playerCardStatLineIds[index] ?? ''}`}
+                <ListSelector
+                  selectedId={playerCardStatLineIds[index] ?? null}
+                  options={playerCardStatLineOptions}
+                  searchUrl={listSearchUrl}
+                  placeholder={$_('general.select')}
+                  searchPlaceholder={$_('list_selector.search_placeholder')}
+                  emptyLabel={$_('list_selector.no_results')}
+                  loadingLabel={`${$_('general.loading')}...`}
+                  disabled={isLoadingPlayerCardStatLines}
+                  triggerClass="col-span-3"
+                  on:select={(event) => updatePlayerCardStatLine(index, event.detail?.id)}
+                />
+              {/key}
+            </div>
+          {/each}
+          {#if isLoadingPlayerCardStatLines}
+            <p class="text-xs text-muted-foreground">
+              {$_('general.loading')}...
+            </p>
+          {/if}
+          <div class="flex justify-end">
+            <Button
+              variant="outline"
+              on:click={savePlayerCardStatLines}
+              disabled={isLoadingPlayerCardStatLines}
+            >
+              {$_('profile_edit.save_stat_lines')}
+            </Button>
+          </div>
+        </div>
+      </div>
+      <Dialog.Footer>
+        <Button type="submit" on:click={saveChanges}>{
+          $_('profile_edit.save')
+        }</Button>
+      </Dialog.Footer>
+    </Dialog.Header>
+  </Dialog.Content>
 </Dialog.Root>
 
 <style lang="scss">

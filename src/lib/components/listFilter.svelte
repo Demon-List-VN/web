@@ -38,11 +38,12 @@
 	onMount(async () => {
 		try {
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/levels/tags`);
+
 			if (res.ok) {
 				availableTags = await res.json();
 			}
 		} catch (e) {
-			// Tags are optional, silently fail
+		// Tags are optional, silently fail
 		}
 	});
 
@@ -54,8 +55,7 @@
 		}
 	}
 
-	$: defaultTopColumn =
-		listType === 'fl' ? 'flTop' : 'dlTop';
+	$: defaultTopColumn = listType === 'fl' ? 'flTop' : 'dlTop';
 
 	const dispatch = createEventDispatcher();
 
@@ -68,7 +68,9 @@
 	}
 
 	function handleApplyFilters() {
-		if (applying) return;
+		if (applying) {
+			return;
+		}
 
 		const requestId = applyRequestId + 1;
 		applyRequestId = requestId;
@@ -118,320 +120,333 @@
 </script>
 
 <div class="filterWrapper" class:pinned={isPinned}>
-	<Card.Root class="filterCard">
-		<Card.Header>
-			<div class="headerContent">
-				<div class="headerTitle">
-					<span>{$_('list_filter.title')}</span>
-				</div>
-				<div class="headerButtons">
-					<button
-						class="iconButton"
-						class:active={isPinned}
-						on:click={togglePin}
-						title={isPinned ? $_('list_filter.unpin') : $_('list_filter.pin')}
-					>
-						<div class="pinIcon" class:pinned={isPinned}>
-							<Pin size={18} />
-						</div>
-					</button>
-					<button
-						class="iconButton collapseButton"
-						class:expanded={!isCollapsed}
-						on:click={toggleCollapse}
-						title={isCollapsed ? $_('list_filter.expand') : $_('list_filter.collapse')}
-					>
-						<ChevronDown size={18} />
-					</button>
-				</div>
-			</div>
-		</Card.Header>
-		{#if !isCollapsed}
-			<Card.Content>
-				<div class="filterGrid">
-					<div class="filterRow">
-						<div class="filterGroup">
-							<Label for="topStart">{$_('list_filter.top_range')}</Label>
-							<div class="rangeInputs">
-								<Input
-									id="topStart"
-									type="number"
-									placeholder={$_('list_filter.from')}
-									bind:value={topStart}
-									on:keypress={(e) => e.key === 'Enter' && handleApplyFilters()}
-								/>
-								<span class="rangeSeparator">-</span>
-								<Input
-									id="topEnd"
-									type="number"
-									placeholder={$_('list_filter.to')}
-									bind:value={topEnd}
-									on:keypress={(e) => e.key === 'Enter' && handleApplyFilters()}
-								/>
-							</div>
-						</div>
-						<div class="filterGroup">
-							<Label for="ratingMin">{$_('list_filter.rating_range')}</Label>
-							<div class="rangeInputs">
-								<Input
-									id="ratingMin"
-									type="number"
-									placeholder={$_('list_filter.min')}
-									bind:value={ratingMin}
-									on:keypress={(e) => e.key === 'Enter' && handleApplyFilters()}
-								/>
-								<span class="rangeSeparator">-</span>
-								<Input
-									id="ratingMax"
-									type="number"
-									placeholder={$_('list_filter.max')}
-									bind:value={ratingMax}
-									on:keypress={(e) => e.key === 'Enter' && handleApplyFilters()}
-								/>
-							</div>
-						</div>
-					</div>
-					<div class="filterRow">
-						<div class="filterGroup">
-							<Label for="nameSearch">{$_('list_filter.level_name')}</Label>
-							<Input
-								id="nameSearch"
-								type="text"
-								placeholder={$_('list_filter.search_by_name')}
-								bind:value={nameSearch}
-								on:keypress={(e) => e.key === 'Enter' && handleApplyFilters()}
-							/>
-						</div>
-						<div class="filterGroup">
-							<Label for="creatorSearch">{$_('list_filter.creator_name')}</Label>
-							<Input
-								id="creatorSearch"
-								type="text"
-								placeholder={$_('list_filter.search_by_creator')}
-								bind:value={creatorSearch}
-								on:keypress={(e) => e.key === 'Enter' && handleApplyFilters()}
-							/>
-						</div>
-					</div>
-					<div class="filterRow">
-						<div class="filterGroup">
-							<Label for="sortBy">{$_('list_filter.sort_by')}</Label>
-							<Select.Root
-								onSelectedChange={(v) => {
-									sortBy = v?.value ? String(v.value) : '';
-								}}
-							>
-								<Select.Trigger class="w-full">
-									<Select.Value placeholder={$_('list_filter.sort_by_date')} />
-								</Select.Trigger>
-								<Select.Content>
-									<Select.Item value={defaultTopColumn}>{$_('list_filter.sort_by_top')}</Select.Item
-									>
-									<Select.Item value="created_at">{$_('list_filter.sort_by_date')}</Select.Item>
-								</Select.Content>
-							</Select.Root>
-						</div>
-						<div class="filterGroup">
-							<Label for="ascending">{$_('list_filter.ascending')}</Label>
-							<div class="flex h-10 items-center">
-								<Switch id="ascending" bind:checked={ascending} />
-							</div>
-						</div>
-					</div>
-					{#if availableTags.length > 0}
-						<div class="filterRow" style="grid-template-columns: 1fr;">
-							<div class="filterGroup">
-								<Label>{$_('list_filter.tags', { default: 'Tags' })}</Label>
-								<div class="tagList">
-									{#each availableTags as tag}
-										<button
-											class="tagChip"
-											class:selected={selectedTagIds.includes(tag.id)}
-											style={tag.color ? `--tag-color: ${tag.color}` : ''}
-											on:click={() => toggleTag(tag.id)}
-										>
-											<span>{tag.name}</span>
-											{#if selectedTagIds.includes(tag.id)}
-												<X size={12} />
-											{/if}
-										</button>
-									{/each}
-								</div>
-							</div>
-						</div>
-					{/if}
-				</div>
-				<div class="filterActions">
-					<Button on:click={handleApplyFilters} disabled={applying}>
-						{#if applying}
-							<Loader2 class="mr-2 h-4 w-4 animate-spin" />
-						{/if}
-						{$_('list_filter.apply')}
-					</Button>
-					<Button variant="outline" on:click={handleClearFilters}>{$_('list_filter.clear')}</Button>
-				</div>
-			</Card.Content>
-		{/if}
-	</Card.Root>
+  <Card.Root class="filterCard">
+    <Card.Header>
+      <div class="headerContent">
+        <div class="headerTitle">
+          <span>{$_('list_filter.title')}</span>
+        </div>
+        <div class="headerButtons">
+          <button
+            class="iconButton"
+            class:active={isPinned}
+            on:click={togglePin}
+            title={isPinned ? $_('list_filter.unpin') : $_('list_filter.pin')}
+          >
+            <div class="pinIcon" class:pinned={isPinned}>
+              <Pin size={18} />
+            </div>
+          </button>
+          <button
+            class="iconButton collapseButton"
+            class:expanded={!isCollapsed}
+            on:click={toggleCollapse}
+            title={isCollapsed ? $_('list_filter.expand') : $_('list_filter.collapse')}
+          >
+            <ChevronDown size={18} />
+          </button>
+        </div>
+      </div>
+    </Card.Header>
+    {#if !isCollapsed}
+      <Card.Content>
+        <div class="filterGrid">
+          <div class="filterRow">
+            <div class="filterGroup">
+              <Label for="topStart">{$_('list_filter.top_range')}</Label>
+              <div class="rangeInputs">
+                <Input
+                  id="topStart"
+                  type="number"
+                  placeholder={$_('list_filter.from')}
+                  bind:value={topStart}
+                  on:keypress={(e) => e.key === 'Enter' && handleApplyFilters()}
+                />
+                <span class="rangeSeparator">-</span>
+                <Input
+                  id="topEnd"
+                  type="number"
+                  placeholder={$_('list_filter.to')}
+                  bind:value={topEnd}
+                  on:keypress={(e) => e.key === 'Enter' && handleApplyFilters()}
+                />
+              </div>
+            </div>
+            <div class="filterGroup">
+              <Label for="ratingMin">{$_('list_filter.rating_range')}</Label>
+              <div class="rangeInputs">
+                <Input
+                  id="ratingMin"
+                  type="number"
+                  placeholder={$_('list_filter.min')}
+                  bind:value={ratingMin}
+                  on:keypress={(e) => e.key === 'Enter' && handleApplyFilters()}
+                />
+                <span class="rangeSeparator">-</span>
+                <Input
+                  id="ratingMax"
+                  type="number"
+                  placeholder={$_('list_filter.max')}
+                  bind:value={ratingMax}
+                  on:keypress={(e) => e.key === 'Enter' && handleApplyFilters()}
+                />
+              </div>
+            </div>
+          </div>
+          <div class="filterRow">
+            <div class="filterGroup">
+              <Label for="nameSearch">{$_('list_filter.level_name')}</Label>
+              <Input
+                id="nameSearch"
+                type="text"
+                placeholder={$_('list_filter.search_by_name')}
+                bind:value={nameSearch}
+                on:keypress={(e) => e.key === 'Enter' && handleApplyFilters()}
+              />
+            </div>
+            <div class="filterGroup">
+              <Label for="creatorSearch">{
+                $_('list_filter.creator_name')
+              }</Label>
+              <Input
+                id="creatorSearch"
+                type="text"
+                placeholder={$_('list_filter.search_by_creator')}
+                bind:value={creatorSearch}
+                on:keypress={(e) => e.key === 'Enter' && handleApplyFilters()}
+              />
+            </div>
+          </div>
+          <div class="filterRow">
+            <div class="filterGroup">
+              <Label for="sortBy">{$_('list_filter.sort_by')}</Label>
+              <Select.Root
+                onSelectedChange={(v) => {
+                    sortBy = v?.value ? String(v.value) : '';
+                }}
+              >
+                <Select.Trigger class="w-full">
+                  <Select.Value placeholder={$_('list_filter.sort_by_date')} />
+                </Select.Trigger>
+                <Select.Content>
+                  <Select.Item value={defaultTopColumn}>{
+                    $_('list_filter.sort_by_top')
+                  }</Select.Item>
+                  <Select.Item value="created_at">{
+                    $_('list_filter.sort_by_date')
+                  }</Select.Item>
+                </Select.Content>
+              </Select.Root>
+            </div>
+            <div class="filterGroup">
+              <Label for="ascending">{$_('list_filter.ascending')}</Label>
+              <div class="flex h-10 items-center">
+                <Switch id="ascending" bind:checked={ascending} />
+              </div>
+            </div>
+          </div>
+          {#if availableTags.length > 0}
+            <div class="filterRow" style="grid-template-columns: 1fr">
+              <div class="filterGroup">
+                <Label>{$_('list_filter.tags', { default: 'Tags' })}</Label>
+                <div class="tagList">
+                  {#each availableTags as tag}
+                    <button
+                      class="tagChip"
+                      class:selected={selectedTagIds.includes(tag.id)}
+                      style={tag.color ? `--tag-color: ${tag.color}` : ''}
+                      on:click={() => toggleTag(tag.id)}
+                    >
+                      <span>{tag.name}</span>
+                      {#if selectedTagIds.includes(tag.id)}
+                        <X size={12} />
+                      {/if}
+                    </button>
+                  {/each}
+                </div>
+              </div>
+            </div>
+          {/if}
+        </div>
+        <div class="filterActions">
+          <Button on:click={handleApplyFilters} disabled={applying}>
+            {#if applying}
+              <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+            {/if}
+            {$_('list_filter.apply')}
+          </Button>
+          <Button variant="outline" on:click={handleClearFilters}>{
+            $_('list_filter.clear')
+          }</Button>
+        </div>
+      </Card.Content>
+    {/if}
+  </Card.Root>
 </div>
 
 <style lang="scss">
-	.filterWrapper {
-		margin-bottom: 20px;
-		width: 100%;
-		transition: all 0.3s ease;
-	}
+.filterWrapper {
+  margin-bottom: 20px;
+  width: 100%;
+  transition: all 0.3s ease;
+}
 
-	.filterWrapper.pinned {
-		position: sticky;
-		top: 80px;
-		z-index: 100;
-		margin-bottom: 20px;
-	}
+.filterWrapper.pinned {
+  position: sticky;
+  top: 80px;
+  z-index: 100;
+  margin-bottom: 20px;
+}
 
-	:global(.filterCard) {
-		width: 100%;
-	}
+:global(.filterCard) {
+  width: 100%;
+}
 
-	.headerContent {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-	}
+.headerContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
-	.headerTitle {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		font-size: 1.125rem;
-		font-weight: 600;
-	}
+.headerTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
 
-	.headerButtons {
-		display: flex;
-		gap: 8px;
-	}
+.headerButtons {
+  display: flex;
+  gap: 8px;
+}
 
-	.iconButton {
-		background: none;
-		border: none;
-		cursor: pointer;
-		padding: 4px;
-		border-radius: 4px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		color: var(--muted-foreground);
-		transition: all 0.2s ease;
-	}
+.iconButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted-foreground);
+  transition: all 0.2s ease;
+}
 
-	.iconButton:hover {
-		background: var(--accent);
-		color: var(--accent-foreground);
-	}
+.iconButton:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
 
-	.iconButton.active {
-		color: var(--primary);
-		background: var(--accent);
-	}
+.iconButton.active {
+  color: var(--primary);
+  background: var(--accent);
+}
 
-	.pinIcon {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		transition: transform 0.3s ease;
-	}
+.pinIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease;
+}
 
-	.pinIcon.pinned {
-		transform: rotate(90deg);
-	}
+.pinIcon.pinned {
+  transform: rotate(90deg);
+}
 
-	.collapseButton {
-		transition:
-			transform 0.3s ease,
-			all 0.2s ease;
-	}
+.collapseButton {
+  transition: transform 0.3s ease, all 0.2s ease;
+}
 
-	.collapseButton.expanded {
-		transform: rotate(180deg);
-	}
+.collapseButton.expanded {
+  transform: rotate(180deg);
+}
 
-	.filterGrid {
-		display: flex;
-		flex-direction: column;
-		gap: 16px;
-		margin-bottom: 16px;
-	}
+.filterGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 16px;
+}
 
-	.filterRow {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 16px;
-	}
+.filterRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
 
-	.filterGroup {
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-	}
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
-	.rangeInputs {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-	}
+.rangeInputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
-	.rangeSeparator {
-		font-weight: bold;
-		color: var(--muted-foreground);
-	}
+.rangeSeparator {
+  font-weight: bold;
+  color: var(--muted-foreground);
+}
 
-	.filterActions {
-		display: flex;
-		gap: 8px;
-		justify-content: flex-end;
-	}
+.filterActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
 
-	@media screen and (max-width: 768px) {
-		.filterRow {
-			grid-template-columns: 1fr;
-		}
+@media screen and (max-width: 768px) {
+  .filterRow {
+    grid-template-columns: 1fr;
+  }
 
-		.filterActions {
-			justify-content: stretch;
-			flex-direction: column;
-		}
-	}
+  .filterActions {
+    justify-content: stretch;
+    flex-direction: column;
+  }
+}
 
-	.tagList {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 6px;
-	}
+.tagList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
 
-	.tagChip {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-		padding: 4px 10px;
-		border-radius: 9999px;
-		font-size: 0.8rem;
-		font-weight: 500;
-		cursor: pointer;
-		border: 1.5px solid var(--border);
-		background: transparent;
-		color: var(--foreground);
-		transition: all 0.15s ease;
-	}
+.tagChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--foreground);
+  transition: all 0.15s ease;
+}
 
-	.tagChip:hover {
-		border-color: var(--tag-color, var(--primary));
-		background: color-mix(in srgb, var(--tag-color, var(--primary)) 10%, transparent);
-	}
+.tagChip:hover {
+  border-color: var(--tag-color, var(--primary));
+  background: color-mix(
+    in srgb,
+    var(--tag-color, var(--primary)) 10%,
+    transparent
+  );
+}
 
-	.tagChip.selected {
-		border-color: var(--tag-color, var(--primary));
-		background: color-mix(in srgb, var(--tag-color, var(--primary)) 20%, transparent);
-		color: var(--tag-color, var(--primary));
-	}
+.tagChip.selected {
+  border-color: var(--tag-color, var(--primary));
+  background: color-mix(
+    in srgb,
+    var(--tag-color, var(--primary)) 20%,
+    transparent
+  );
+  color: var(--tag-color, var(--primary));
+}
 </style>

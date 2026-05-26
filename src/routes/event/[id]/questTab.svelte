@@ -54,7 +54,7 @@
 </script>
 
 <div class="mx-auto flex flex-col gap-[10px] lg:w-[1000px]">
-	{#each data as quest}
-		<Quest {quest} />
-	{/each}
+  {#each data as quest}
+    <Quest {quest} />
+  {/each}
 </div>

@@ -58,8 +58,11 @@
 		const promises = [
 			fetch(`${import.meta.env.VITE_API_URL}/search/${value}`, {
 				headers: await getSearchAuthHeaders()
-			}).then((res) => res.json()),
-			fetch(`https://gdbrowser.com/api/search/${value}?page=0&count=5&diff=-2`) // TODO: Migrate to own GD API
+			})
+				.then((res) => res.json()),
+			fetch(
+				`https://gdbrowser.com/api/search/${value}?page=0&count=5&diff=-2`
+			) // TODO: Migrate to own GD API
 				.then((res) => res.json())
 				.catch((err) => [])
 		];
@@ -108,6 +111,7 @@
 		}
 
 		document.addEventListener('keydown', handleKeydown);
+
 		return () => {
 			document.removeEventListener('keydown', handleKeydown);
 		};
@@ -115,124 +119,148 @@
 </script>
 
 <svelte:window
-	on:keydown={(e) => {
-		if (!open) {
-			return;
-		}
+  on:keydown={(e) => {
+      if (!open) {
+          return;
+      }
 
-		if (e.key == 'Enter') {
-			if (state == 0) {
-				search();
-			}
-		}
-	}}
+      if (e.key == 'Enter') {
+          if (state == 0) {
+              search();
+          }
+      }
+  }}
 />
 
 <Command.Dialog bind:open>
-	<Command.Input bind:value placeholder={$_("search.placeholder")} disabled={state != 0} />
-	<Command.List>
-		{#if state != 0}
-			{#if state != 1}
-				<Command.Empty>{$_("search.no_result")}</Command.Empty>
-			{:else}
-				<Command.Empty>
-					<Loading inverted={true} />
-				</Command.Empty>
-			{/if}
-			{#if result.levels.length}
-				<Command.Group heading={$_("search.dlvn")}>
-					{#each result.levels as item}
-						<ContextMenu.Root>
-							<ContextMenu.Trigger>
-								<!--View levels rank-->
-								{#if 'other' in item}
-									<a href={`/level/${item.id}`} data-sveltekit-preload-data="tap">
-										<Command.Item>
-											{#if item.dlTop}
-												<span class="mr-1 font-bold text-white">#{item.dlTop} DL</span>
-											{:else if item.flTop}
-												<span class="mr-1 font-bold text-white">#{item.flTop} FL</span>
-											{/if}
-											{item.name} by {item.creator} ({item.id}) (Not added)
-										</Command.Item>
-									</a>
-								{:else}
-									<a href={`/level/${item.id}`} data-sveltekit-preload-data="tap">
-										<Command.Item>
-											{#if item.dlTop}
-												<span class="mr-1 font-bold text-white">#{item.dlTop} DL</span>
-											{:else if item.flTop}
-												<span class="mr-1 font-bold text-white">#{item.flTop} FL</span>
-											{/if}
-											{item.name} by {item.creator} ({item.id})
-										</Command.Item>
-									</a>
-								{/if}
-							</ContextMenu.Trigger>
-							<ContextMenu.Content>
-								<ContextMenu.Item
-									on:click={async () => {
-										await navigator.clipboard.writeText(item.id);
-										toast.success('Copied to clipboard!');
-									}}>Copy level's ID</ContextMenu.Item
-								>
-							</ContextMenu.Content>
-						</ContextMenu.Root>
-					{/each}
-				</Command.Group>
-			{/if}
-			{#if result.gdBrowserLevels.length}
-				<Command.Group heading={$_("search.gd")}>
-					{#each result.gdBrowserLevels as item}
-						<ContextMenu.Root>
-							<ContextMenu.Trigger>
-								{#if 'other' in item}
-										<a href={`/level/${item.id}`} data-sveltekit-preload-data="tap">
-										<Command.Item>{item.name} by {item.creator} ({item.id})</Command.Item>
-									</a>
-								{:else}
-									<a href={`/level/${item.id}`} data-sveltekit-preload-data="tap">
-										<Command.Item>{item.name} by {item.creator} ({item.id})</Command.Item>
-									</a>
-								{/if}
-							</ContextMenu.Trigger>
-							<ContextMenu.Content>
-								<ContextMenu.Item
-									on:click={async () => {
-										await navigator.clipboard.writeText(item.id);
-										toast.success('Copied to clipboard!');
-									}}>{$_("context.copy_level_id")}</ContextMenu.Item
-								>
-							</ContextMenu.Content>
-						</ContextMenu.Root>
-					{/each}
-				</Command.Group>
-			{/if}
-			{#if result.players.length}
-				<Command.Group heading={$_("search.players")}>
-					{#each result.players as item}
-						<a href={`/player/${item.uid}`} data-sveltekit-preload-data="tap">
-							<Command.Item>
-								<Avatar.Root>
-									<Avatar.Image
-										class="object-cover"
-										src={`https://cdn.gdvn.net/avatars/${item.uid}${
-											isActive(item.supporterUntil) && item.isAvatarGif ? '.gif' : '.jpg'
-										}`}
-										alt="@shadcn"
-									/>
-									<Avatar.Fallback>{item.name[0]}</Avatar.Fallback>
-								</Avatar.Root>
-								{#if isActive(item.supporterUntil)}
-									<span class="ml-[10px] text-yellow-500">{item.name}</span>
-								{:else}
-									<span class="ml-[10px]">{item.name}</span>
-								{/if}
-							</Command.Item>
-						</a>
-					{/each}
-				</Command.Group>
-			{/if}
-		{/if}
-	</Command.List>
+  <Command.Input
+    bind:value
+    placeholder={$_('search.placeholder')}
+    disabled={state != 0}
+  />
+  <Command.List>
+    {#if state != 0}
+      {#if state != 1}
+        <Command.Empty>{$_('search.no_result')}</Command.Empty>
+      {:else}
+        <Command.Empty>
+          <Loading inverted={true} />
+        </Command.Empty>
+      {/if}
+      {#if result.levels.length}
+        <Command.Group heading={$_('search.dlvn')}>
+          {#each result.levels as item}
+            <ContextMenu.Root>
+              <ContextMenu.Trigger>
+                <!--View levels rank-->
+                {#if 'other' in item}
+                  <a
+                    href={`/level/${item.id}`}
+                    data-sveltekit-preload-data="tap"
+                  >
+                    <Command.Item>
+                      {#if item.dlTop}
+                        <span class="mr-1 font-bold text-white"
+                        >#{item.dlTop} DL</span>
+                      {:else if item.flTop}
+                        <span class="mr-1 font-bold text-white"
+                        >#{item.flTop} FL</span>
+                      {/if}
+                      {item.name} by {item.creator} ({item.id}) (Not added)
+                    </Command.Item>
+                  </a>
+                {:else}
+                  <a
+                    href={`/level/${item.id}`}
+                    data-sveltekit-preload-data="tap"
+                  >
+                    <Command.Item>
+                      {#if item.dlTop}
+                        <span class="mr-1 font-bold text-white"
+                        >#{item.dlTop} DL</span>
+                      {:else if item.flTop}
+                        <span class="mr-1 font-bold text-white"
+                        >#{item.flTop} FL</span>
+                      {/if}
+                      {item.name} by {item.creator} ({item.id})
+                    </Command.Item>
+                  </a>
+                {/if}
+              </ContextMenu.Trigger>
+              <ContextMenu.Content>
+                <ContextMenu.Item
+                  on:click={async () => {
+                      await navigator.clipboard.writeText(item.id);
+                      toast.success('Copied to clipboard!');
+                  }}
+                >Copy level's ID</ContextMenu.Item>
+              </ContextMenu.Content>
+            </ContextMenu.Root>
+          {/each}
+        </Command.Group>
+      {/if}
+      {#if result.gdBrowserLevels.length}
+        <Command.Group heading={$_('search.gd')}>
+          {#each result.gdBrowserLevels as item}
+            <ContextMenu.Root>
+              <ContextMenu.Trigger>
+                {#if 'other' in item}
+                  <a
+                    href={`/level/${item.id}`}
+                    data-sveltekit-preload-data="tap"
+                  >
+                    <Command.Item>{item.name} by {item.creator} ({
+                        item.id
+                      })</Command.Item>
+                  </a>
+                {:else}
+                  <a
+                    href={`/level/${item.id}`}
+                    data-sveltekit-preload-data="tap"
+                  >
+                    <Command.Item>{item.name} by {item.creator} ({
+                        item.id
+                      })</Command.Item>
+                  </a>
+                {/if}
+              </ContextMenu.Trigger>
+              <ContextMenu.Content>
+                <ContextMenu.Item
+                  on:click={async () => {
+                      await navigator.clipboard.writeText(item.id);
+                      toast.success('Copied to clipboard!');
+                  }}
+                >{$_('context.copy_level_id')}</ContextMenu.Item>
+              </ContextMenu.Content>
+            </ContextMenu.Root>
+          {/each}
+        </Command.Group>
+      {/if}
+      {#if result.players.length}
+        <Command.Group heading={$_('search.players')}>
+          {#each result.players as item}
+            <a href={`/player/${item.uid}`} data-sveltekit-preload-data="tap">
+              <Command.Item>
+                <Avatar.Root>
+                  <Avatar.Image
+                    class="object-cover"
+                    src={`https://cdn.gdvn.net/avatars/${item.uid}${
+                        isActive(item.supporterUntil) && item.isAvatarGif ? '.gif' : '.jpg'
+                    }`}
+                    alt="@shadcn"
+                  />
+                  <Avatar.Fallback>{item.name[0]}</Avatar.Fallback>
+                </Avatar.Root>
+                {#if isActive(item.supporterUntil)}
+                  <span class="ml-[10px] text-yellow-500">{item.name}</span>
+                {:else}
+                  <span class="ml-[10px]">{item.name}</span>
+                {/if}
+              </Command.Item>
+            </a>
+          {/each}
+        </Command.Group>
+      {/if}
+    {/if}
+  </Command.List>
 </Command.Dialog>

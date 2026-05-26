@@ -5,7 +5,10 @@
 	import { getTitle } from '$lib/client';
 	import { badgeVariants } from '$lib/components/ui/badge';
 	import { isActive } from '$lib/client/isSupporterActive';
-	import { getSupporterTier, getSupporterTierStyle } from '$lib/client/supporterTier';
+	import {
+		getSupporterTier,
+		getSupporterTierStyle
+	} from '$lib/client/supporterTier';
 	import type { PlayerLinkRankBadge } from '$lib/utils/customListRank';
 	import { BadgeCheck, CheckCheck, Crown } from 'lucide-svelte';
 	import PlayerCard from '$lib/components/playerCard.svelte';
@@ -25,25 +28,25 @@
 	$: playerRoleBadge = player?.isManager
 		? 'manager'
 		: player?.isAdmin
-			? 'admin'
-			: player?.isTrusted
-				? 'trusted'
-				: null;
+		? 'admin'
+		: player?.isTrusted
+		? 'trusted'
+		: null;
 	$: builtInRankBadge = showTitle ? getTitle(titleType, player) : null;
 	$: resolvedRankBadge = rankBadge
 		? rankBadge
 		: builtInRankBadge?.title
-			? {
-					label: builtInRankBadge.title,
-					name: builtInRankBadge.fullTitle || builtInRankBadge.title,
-					color: builtInRankBadge.color
-				}
-			: null;
+		? {
+			label: builtInRankBadge.title,
+			name: builtInRankBadge.fullTitle || builtInRankBadge.title,
+			color: builtInRankBadge.color
+		}
+		: null;
 	$: resolvedRankBadgeStyle = rankBadge
 		? `background: ${rankBadge.color}`
 		: builtInRankBadge?.title
-			? `background-color: ${builtInRankBadge.color}`
-			: '';
+		? `background-color: ${builtInRankBadge.color}`
+		: '';
 	$: supporterTier = getSupporterTier(player?.supporterUntil);
 	$: supporterTierStyle = getSupporterTierStyle(supporterTier);
 
@@ -71,146 +74,173 @@
 </script>
 
 <div class="wrapper">
-	{#if showAvatar}
-		<Avatar.Root class="h-[30px] w-[30px]">
-			<Avatar.Image
-				class="playerAvatar"
-				src={`https://cdn.gdvn.net/avatars/${player.uid}${isActive(player.supporterUntil) && player.isAvatarGif ? '.gif' : '.jpg'}?version=${player.avatarVersion}`}
-				alt={player.name}
-			/>
-			<Avatar.Fallback class="playerAvatar">{player.name[0]}</Avatar.Fallback>
-		</Avatar.Root>
-	{/if}
-	<Popover.Root bind:open={isPopoverOpen}>
-		{#if resolvedRankBadge?.label}
-			<Tooltip.Root>
-				<Tooltip.Trigger>
-					<div class="rank" style={resolvedRankBadgeStyle}>
-						<span>{resolvedRankBadge.label}</span>
-					</div>
-				</Tooltip.Trigger>
-				<Tooltip.Content>{resolvedRankBadge.name}</Tooltip.Content>
-			</Tooltip.Root>
-		{/if}
-		{#if player.clan && isActive(player.clans.boostedUntil)}
-			<a
-				href={`/clan/${player.clan}`}
-				class={badgeVariants({ variant: 'secondary' })}
-				style={`background-color: ${player.clans.tagBgColor}; color: ${player.clans.tagTextColor};`}
-				>{player.clans.tag}</a
-			>
-		{/if}
-		<Popover.Trigger
-			class="rounded-sm underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-8 focus-visible:outline-black"
-		>
-			{#if isPopoverOpen}
-				<a
-					href={`/player/${player.uid}`}
-					class="rounded-sm underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-8 focus-visible:outline-black"
-				>
-					<div class="flex items-center gap-[5px]">
-						<span
-							class={isActive(player.supporterUntil) ? 'supporter-tier-text' : ''}
-							style={supporterTierStyle}
-						>
-							{truncateText(
-								player.clan && !isActive(player.clans.boostedUntil)
-									? `[${player.clans.tag}] ${player.name}`
-									: player.name
-							)}
-						</span>
-						{#if playerRoleBadge === 'manager'}
-							<Crown class="h-[14px] w-[14px] text-yellow-500" aria-label="manager" />
-						{:else if playerRoleBadge === 'admin'}
-							<CheckCheck class="h-[14px] w-[14px] text-sky-600" aria-label="admin" />
-						{:else if playerRoleBadge === 'trusted'}
-							<BadgeCheck class="h-[14px] w-[14px] text-blue-500" aria-label="trusted" />
-						{/if}
-					</div>
-				</a>
-			{:else}
-				<div class="flex items-center gap-[5px]">
-					<span
-						class={isActive(player.supporterUntil) ? 'supporter-tier-text' : ''}
-						style={supporterTierStyle}
-					>
-						{truncateText(
-							player.clan && !isActive(player.clans.boostedUntil)
-								? `[${player.clans.tag}] ${player.name}`
-								: player.name
-						)}
-					</span>
-					{#if playerRoleBadge === 'manager'}
-						<Crown class="h-[14px] w-[14px] text-yellow-500" aria-label="manager" />
-					{:else if playerRoleBadge === 'admin'}
-						<CheckCheck class="h-[14px] w-[14px] text-sky-600" aria-label="admin" />
-					{:else if playerRoleBadge === 'trusted'}
-						<BadgeCheck class="h-[14px] w-[14px] text-blue-500" aria-label="trusted" />
-					{/if}
-				</div>
-			{/if}
-		</Popover.Trigger>
-		<Popover.Content class="w-80 border-transparent p-0">
-			<PlayerCard {player} active={isPopoverOpen} />
-		</Popover.Content>
-	</Popover.Root>
+  {#if showAvatar}
+    <Avatar.Root class="h-[30px] w-[30px]">
+      <Avatar.Image
+        class="playerAvatar"
+        src={`https://cdn.gdvn.net/avatars/${player.uid}${
+            isActive(player.supporterUntil) && player.isAvatarGif ? '.gif' : '.jpg'
+        }?version=${player.avatarVersion}`}
+        alt={player.name}
+      />
+      <Avatar.Fallback class="playerAvatar">{player.name[0]}</Avatar.Fallback>
+    </Avatar.Root>
+  {/if}
+  <Popover.Root bind:open={isPopoverOpen}>
+    {#if resolvedRankBadge?.label}
+      <Tooltip.Root>
+        <Tooltip.Trigger>
+          <div class="rank" style={resolvedRankBadgeStyle}>
+            <span>{resolvedRankBadge.label}</span>
+          </div>
+        </Tooltip.Trigger>
+        <Tooltip.Content>{resolvedRankBadge.name}</Tooltip.Content>
+      </Tooltip.Root>
+    {/if}
+    {#if player.clan && isActive(player.clans.boostedUntil)}
+      <a
+        href={`/clan/${player.clan}`}
+        class={badgeVariants({ variant: 'secondary' })}
+        style={`background-color: ${player.clans.tagBgColor}; color: ${player.clans.tagTextColor};`}
+      >{player.clans.tag}</a>
+    {/if}
+    <Popover.Trigger
+      class="rounded-sm underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-8 focus-visible:outline-black"
+    >
+      {#if isPopoverOpen}
+        <a
+          href={`/player/${player.uid}`}
+          class="rounded-sm underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-8 focus-visible:outline-black"
+        >
+          <div class="flex items-center gap-[5px]">
+            <span
+              class={isActive(player.supporterUntil) ? 'supporter-tier-text' : ''}
+              style={supporterTierStyle}
+            >
+              {
+                truncateText(
+                    player.clan && !isActive(player.clans.boostedUntil)
+                        ? `[${player.clans.tag}] ${player.name}`
+                        : player.name
+                )
+              }
+            </span>
+            {#if playerRoleBadge === 'manager'}
+              <Crown
+                class="h-[14px] w-[14px] text-yellow-500"
+                aria-label="manager"
+              />
+            {:else if playerRoleBadge === 'admin'}
+              <CheckCheck
+                class="h-[14px] w-[14px] text-sky-600"
+                aria-label="admin"
+              />
+            {:else if playerRoleBadge === 'trusted'}
+              <BadgeCheck
+                class="h-[14px] w-[14px] text-blue-500"
+                aria-label="trusted"
+              />
+            {/if}
+          </div>
+        </a>
+      {:else}
+        <div class="flex items-center gap-[5px]">
+          <span
+            class={isActive(player.supporterUntil) ? 'supporter-tier-text' : ''}
+            style={supporterTierStyle}
+          >
+            {
+              truncateText(
+                  player.clan && !isActive(player.clans.boostedUntil)
+                      ? `[${player.clans.tag}] ${player.name}`
+                      : player.name
+              )
+            }
+          </span>
+          {#if playerRoleBadge === 'manager'}
+            <Crown
+              class="h-[14px] w-[14px] text-yellow-500"
+              aria-label="manager"
+            />
+          {:else if playerRoleBadge === 'admin'}
+            <CheckCheck
+              class="h-[14px] w-[14px] text-sky-600"
+              aria-label="admin"
+            />
+          {:else if playerRoleBadge === 'trusted'}
+            <BadgeCheck
+              class="h-[14px] w-[14px] text-blue-500"
+              aria-label="trusted"
+            />
+          {/if}
+        </div>
+      {/if}
+    </Popover.Trigger>
+    <Popover.Content class="w-80 border-transparent p-0">
+      <PlayerCard {player} active={isPopoverOpen} />
+    </Popover.Content>
+  </Popover.Root>
 </div>
 
 <style lang="scss">
-	.bgGradient {
-		margin-top: -50px;
-		mask-image: linear-gradient(rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 25%, rgba(0, 0, 0, 0) 100%);
-	}
+.bgGradient {
+  margin-top: -50px;
+  mask-image: linear-gradient(
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 1) 25%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
 
-	.wrapper {
-		display: flex;
-		align-items: center;
-		gap: 7px;
-	}
+.wrapper {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
 
-	.playerAvatar {
-		width: 22px;
-		height: 22px;
-		border-radius: 50%;
-		object-fit: cover;
-		flex-shrink: 0;
-	}
+.playerAvatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
 
-	.leftCol {
-		width: 50px;
-		display: flex;
-		justify-content: center;
-	}
+.leftCol {
+  width: 50px;
+  display: flex;
+  justify-content: center;
+}
 
-	.hoverName {
-		display: flex;
-		gap: 10px;
-		align-items: center;
-		padding-bottom: 10px;
-	}
+.hoverName {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding-bottom: 10px;
+}
 
-	.content {
-		padding-top: 10px;
-	}
+.content {
+  padding-top: 10px;
+}
 
-	.rankWrapper {
-		display: flex;
-		gap: 5px;
-	}
+.rankWrapper {
+  display: flex;
+  gap: 5px;
+}
 
-	.rating {
-		display: flex;
-		gap: 10px;
-		align-items: center;
-		font-size: 13px;
-	}
+.rating {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 13px;
+}
 
-	.rank {
-		color: white;
-		font-size: 10px;
-		width: fit-content;
-		padding-inline: 5px;
-		border-radius: 5px;
-		font-weight: 600;
-	}
+.rank {
+  color: white;
+  font-size: 10px;
+  width: fit-content;
+  padding-inline: 5px;
+  border-radius: 5px;
+  font-weight: 600;
+}
 </style>

@@ -145,10 +145,15 @@
 	};
 
 	function convertTime(x: string) {
-		if (!x) return '';
+		if (!x) {
+			return '';
+		}
+
 		const d = new Date(x);
 		d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-		return d.toISOString().slice(0, 16);
+
+		return d.toISOString()
+			.slice(0, 16);
 	}
 
 	function rarityColor(r: number) {
@@ -185,6 +190,7 @@
 	async function fetchSeasons() {
 		try {
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass`);
+
 			if (res.ok) {
 				const season = await res.json();
 				seasons = [season];
@@ -197,21 +203,30 @@
 	}
 
 	async function fetchSeasonData() {
-		if (!selectedSeason) return;
+		if (!selectedSeason) {
+			return;
+		}
+
 		await Promise.all([
 			fetchLevels(),
 			fetchBattlePassMapPacks(),
 			fetchRewards(),
 			fetchMissions(),
-			selectedSeason.courseId ? fetchCourseEntries(selectedSeason.courseId) : Promise.resolve((courseEntries = []))
+			selectedSeason.courseId
+				? fetchCourseEntries(selectedSeason.courseId)
+				: Promise.resolve(courseEntries = [])
 		]);
 	}
 
 	async function fetchCourses() {
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/courses`, {
-				headers: { Authorization: `Bearer ${await $user.token()}` }
-			});
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/battlepass/courses`,
+				{
+					headers: { Authorization: `Bearer ${await $user.token()}` }
+				}
+			);
+
 			if (res.ok) {
 				courses = await res.json();
 			}
@@ -222,9 +237,13 @@
 
 	async function fetchCourseEntries(courseId: number) {
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/course/${courseId}/entries`, {
-				headers: { Authorization: `Bearer ${await $user.token()}` }
-			});
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/battlepass/course/${courseId}/entries`,
+				{
+					headers: { Authorization: `Bearer ${await $user.token()}` }
+				}
+			);
+
 			if (res.ok) {
 				courseEntries = await res.json();
 			}
@@ -234,19 +253,28 @@
 	}
 
 	async function fetchLevels() {
-		if (!selectedSeason) return;
+		if (!selectedSeason) {
+			return;
+		}
+
 		try {
 			const res = await fetch(
 				`${import.meta.env.VITE_API_URL}/battlepass/season/${selectedSeason.id}/levels`
 			);
-			if (res.ok) levels = await res.json();
+
+			if (res.ok) {
+				levels = await res.json();
+			}
 		} catch (e) {
 			console.error('Failed to fetch levels:', e);
 		}
 	}
 
 	async function fetchBattlePassMapPacks() {
-		if (!selectedSeason) return;
+		if (!selectedSeason) {
+			return;
+		}
+
 		try {
 			const res = await fetch(
 				`${import.meta.env.VITE_API_URL}/battlepass/season/${selectedSeason.id}/mappacks`,
@@ -254,19 +282,28 @@
 					headers: { Authorization: `Bearer ${await $user.token()}` }
 				}
 			);
-			if (res.ok) battlePassMapPacks = await res.json();
+
+			if (res.ok) {
+				battlePassMapPacks = await res.json();
+			}
 		} catch (e) {
 			console.error('Failed to fetch Pass map packs:', e);
 		}
 	}
 
 	async function fetchRewards() {
-		if (!selectedSeason) return;
+		if (!selectedSeason) {
+			return;
+		}
+
 		try {
 			const res = await fetch(
 				`${import.meta.env.VITE_API_URL}/battlepass/season/${selectedSeason.id}/rewards`
 			);
-			if (res.ok) rewards = await res.json();
+
+			if (res.ok) {
+				rewards = await res.json();
+			}
 		} catch (e) {
 			console.error('Failed to fetch rewards:', e);
 		}
@@ -288,12 +325,18 @@
 	}
 
 	async function fetchMissions() {
-		if (!selectedSeason) return;
+		if (!selectedSeason) {
+			return;
+		}
+
 		try {
 			const res = await fetch(
 				`${import.meta.env.VITE_API_URL}/battlepass/season/${selectedSeason.id}/missions`
 			);
-			if (res.ok) missions = await res.json();
+
+			if (res.ok) {
+				missions = await res.json();
+			}
 		} catch (e) {
 			console.error('Failed to fetch missions:', e);
 		}
@@ -313,8 +356,15 @@
 			courseId: seasonForm.courseId ? Number(seasonForm.courseId) : null
 		};
 
-		if (seasonForm.start) body.start = new Date(seasonForm.start).toISOString();
-		if (seasonForm.end) body.end = new Date(seasonForm.end).toISOString();
+		if (seasonForm.start) {
+			body.start = new Date(seasonForm.start)
+				.toISOString();
+		}
+
+		if (seasonForm.end) {
+			body.end = new Date(seasonForm.end)
+				.toISOString();
+		}
 
 		toast.promise(
 			fetch(url, {
@@ -329,6 +379,7 @@
 				success: () => {
 					showSeasonDialog = false;
 					fetchSeasons();
+
 					return isNew ? 'Season created!' : 'Season updated!';
 				},
 				loading: 'Saving...',
@@ -338,16 +389,22 @@
 	}
 
 	async function archiveSeason(id: number) {
-		if (!confirm('Archive this season?')) return;
+		if (!confirm('Archive this season?')) {
+			return;
+		}
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/battlepass/season/${id}/archive`, {
-				method: 'POST',
-				headers: { Authorization: `Bearer ${await $user.token()}` }
-			}),
+			fetch(
+				`${import.meta.env.VITE_API_URL}/battlepass/season/${id}/archive`,
+				{
+					method: 'POST',
+					headers: { Authorization: `Bearer ${await $user.token()}` }
+				}
+			),
 			{
 				success: () => {
 					fetchSeasons();
+
 					return 'Season archived!';
 				},
 				loading: 'Archiving...',
@@ -358,7 +415,9 @@
 
 	// Level CRUD
 	async function saveLevel() {
-		if (!selectedSeason) return;
+		if (!selectedSeason) {
+			return;
+		}
 
 		const isNew = !levelForm.id;
 		const url = isNew
@@ -383,6 +442,7 @@
 				success: () => {
 					showLevelDialog = false;
 					fetchLevels();
+
 					return isNew ? 'Level added!' : 'Level updated!';
 				},
 				loading: 'Saving...',
@@ -392,7 +452,9 @@
 	}
 
 	async function deleteLevel(id: number) {
-		if (!confirm('Delete this level?')) return;
+		if (!confirm('Delete this level?')) {
+			return;
+		}
 
 		toast.promise(
 			fetch(`${import.meta.env.VITE_API_URL}/battlepass/level/${id}`, {
@@ -402,6 +464,7 @@
 			{
 				success: () => {
 					fetchLevels();
+
 					return 'Level deleted!';
 				},
 				loading: 'Deleting...',
@@ -412,25 +475,31 @@
 
 	// Map Pack Link
 	async function linkMapPack() {
-		if (!selectedSeason) return;
+		if (!selectedSeason) {
+			return;
+		}
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/battlepass/season/${selectedSeason.id}/mappacks`, {
-				method: 'POST',
-				body: JSON.stringify({
-					mapPackId: Number(mapPackLinkForm.mapPackId),
-					unlockWeek: mapPackLinkForm.unlockWeek,
-					sortOrder: mapPackLinkForm.sortOrder
-				}),
-				headers: {
-					Authorization: `Bearer ${await $user.token()}`,
-					'Content-Type': 'application/json'
+			fetch(
+				`${import.meta.env.VITE_API_URL}/battlepass/season/${selectedSeason.id}/mappacks`,
+				{
+					method: 'POST',
+					body: JSON.stringify({
+						mapPackId: Number(mapPackLinkForm.mapPackId),
+						unlockWeek: mapPackLinkForm.unlockWeek,
+						sortOrder: mapPackLinkForm.sortOrder
+					}),
+					headers: {
+						Authorization: `Bearer ${await $user.token()}`,
+						'Content-Type': 'application/json'
+					}
 				}
-			}),
+			),
 			{
 				success: () => {
 					showLinkMapPackDialog = false;
 					fetchBattlePassMapPacks();
+
 					return 'Map pack linked!';
 				},
 				loading: 'Linking...',
@@ -440,7 +509,9 @@
 	}
 
 	async function unlinkMapPack(id: number) {
-		if (!confirm('Unlink this map pack?')) return;
+		if (!confirm('Unlink this map pack?')) {
+			return;
+		}
 
 		toast.promise(
 			fetch(`${import.meta.env.VITE_API_URL}/battlepass/mappack/${id}`, {
@@ -450,6 +521,7 @@
 			{
 				success: () => {
 					fetchBattlePassMapPacks();
+
 					return 'Map pack unlinked!';
 				},
 				loading: 'Unlinking...',
@@ -459,24 +531,30 @@
 	}
 
 	async function updateMapPack() {
-		if (!mapPackEditForm.id) return;
+		if (!mapPackEditForm.id) {
+			return;
+		}
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/battlepass/mappack/${mapPackEditForm.id}`, {
-				method: 'PATCH',
-				body: JSON.stringify({
-					unlockWeek: mapPackEditForm.unlockWeek,
-					sortOrder: mapPackEditForm.sortOrder
-				}),
-				headers: {
-					Authorization: `Bearer ${await $user.token()}`,
-					'Content-Type': 'application/json'
+			fetch(
+				`${import.meta.env.VITE_API_URL}/battlepass/mappack/${mapPackEditForm.id}`,
+				{
+					method: 'PATCH',
+					body: JSON.stringify({
+						unlockWeek: mapPackEditForm.unlockWeek,
+						sortOrder: mapPackEditForm.sortOrder
+					}),
+					headers: {
+						Authorization: `Bearer ${await $user.token()}`,
+						'Content-Type': 'application/json'
+					}
 				}
-			}),
+			),
 			{
 				success: () => {
 					showEditMapPackDialog = false;
 					fetchBattlePassMapPacks();
+
 					return 'Map pack updated!';
 				},
 				loading: 'Updating...',
@@ -487,27 +565,33 @@
 
 	// Reward CRUD
 	async function saveReward() {
-		if (!selectedSeason) return;
+		if (!selectedSeason) {
+			return;
+		}
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/battlepass/season/${selectedSeason.id}/rewards`, {
-				method: 'POST',
-				body: JSON.stringify({
-					tier: rewardForm.tier,
-					isPremium: rewardForm.isPremium,
-					itemId: Number(rewardForm.itemId),
-					quantity: rewardForm.quantity,
-					description: rewardForm.description
-				}),
-				headers: {
-					Authorization: `Bearer ${await $user.token()}`,
-					'Content-Type': 'application/json'
+			fetch(
+				`${import.meta.env.VITE_API_URL}/battlepass/season/${selectedSeason.id}/rewards`,
+				{
+					method: 'POST',
+					body: JSON.stringify({
+						tier: rewardForm.tier,
+						isPremium: rewardForm.isPremium,
+						itemId: Number(rewardForm.itemId),
+						quantity: rewardForm.quantity,
+						description: rewardForm.description
+					}),
+					headers: {
+						Authorization: `Bearer ${await $user.token()}`,
+						'Content-Type': 'application/json'
+					}
 				}
-			}),
+			),
 			{
 				success: () => {
 					showRewardDialog = false;
 					fetchRewards();
+
 					return 'Reward created!';
 				},
 				loading: 'Saving...',
@@ -533,6 +617,7 @@
 			{
 				success: () => {
 					fetchRewards();
+
 					return 'Reward deleted!';
 				},
 				loading: 'Deleting...',
@@ -543,7 +628,9 @@
 
 	// Mission CRUD
 	async function saveMission() {
-		if (!selectedSeason) return;
+		if (!selectedSeason) {
+			return;
+		}
 
 		const isNew = !missionForm.id;
 		const url = isNew
@@ -551,6 +638,7 @@
 			: `${import.meta.env.VITE_API_URL}/battlepass/mission/${missionForm.id}`;
 
 		let condition: any[];
+
 		if (conditionBuilderMode) {
 			condition = conditionList;
 		} else {
@@ -560,6 +648,7 @@
 				condition = Array.isArray(parsed) ? parsed : [];
 			} catch (e) {
 				toast.error('Invalid condition JSON');
+
 				return;
 			}
 		}
@@ -567,6 +656,7 @@
 		// Validate that condition is an array
 		if (!Array.isArray(condition)) {
 			toast.error('Condition must be an array');
+
 			return;
 		}
 
@@ -590,6 +680,7 @@
 				success: () => {
 					showMissionDialog = false;
 					fetchMissions();
+
 					return isNew ? 'Mission created!' : 'Mission updated!';
 				},
 				loading: 'Saving...',
@@ -599,7 +690,9 @@
 	}
 
 	async function deleteMission(id: number) {
-		if (!confirm('Delete this mission?')) return;
+		if (!confirm('Delete this mission?')) {
+			return;
+		}
 
 		toast.promise(
 			fetch(`${import.meta.env.VITE_API_URL}/battlepass/mission/${id}`, {
@@ -609,6 +702,7 @@
 			{
 				success: () => {
 					fetchMissions();
+
 					return 'Mission deleted!';
 				},
 				loading: 'Deleting...',
@@ -619,7 +713,9 @@
 
 	// Mission Reward
 	async function addMissionReward() {
-		if (!missionRewardForm.missionId) return;
+		if (!missionRewardForm.missionId) {
+			return;
+		}
 
 		toast.promise(
 			fetch(
@@ -641,6 +737,7 @@
 				success: () => {
 					showMissionRewardDialog = false;
 					fetchMissions();
+
 					return 'Reward added!';
 				},
 				loading: 'Adding...',
@@ -650,16 +747,22 @@
 	}
 
 	async function deleteMissionReward(missionId: number, rewardId: number) {
-		if (!confirm('Delete this reward?')) return;
+		if (!confirm('Delete this reward?')) {
+			return;
+		}
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/battlepass/mission/${missionId}/reward/${rewardId}`, {
-				method: 'DELETE',
-				headers: { Authorization: `Bearer ${await $user.token()}` }
-			}),
+			fetch(
+				`${import.meta.env.VITE_API_URL}/battlepass/mission/${missionId}/reward/${rewardId}`,
+				{
+					method: 'DELETE',
+					headers: { Authorization: `Bearer ${await $user.token()}` }
+				}
+			),
 			{
 				success: () => {
 					fetchMissions();
+
 					return 'Reward deleted!';
 				},
 				loading: 'Deleting...',
@@ -690,6 +793,7 @@
 				success: () => {
 					showCourseDialog = false;
 					fetchCourses();
+
 					return isNew ? 'Course created!' : 'Course updated!';
 				},
 				loading: 'Saving...',
@@ -699,7 +803,9 @@
 	}
 
 	async function removeCourse(id: number) {
-		if (!confirm('Delete this course?')) return;
+		if (!confirm('Delete this course?')) {
+			return;
+		}
 
 		toast.promise(
 			fetch(`${import.meta.env.VITE_API_URL}/battlepass/course/${id}`, {
@@ -712,8 +818,10 @@
 						selectedSeason.courseId = null;
 						seasonForm.courseId = '';
 					}
+
 					fetchCourses();
 					courseEntries = [];
+
 					return 'Course deleted!';
 				},
 				loading: 'Deleting...',
@@ -725,6 +833,7 @@
 	async function saveCourseEntry() {
 		if (!selectedSeason?.courseId) {
 			toast.error('Select a linked course first');
+
 			return;
 		}
 
@@ -741,7 +850,9 @@
 					refId: Number(courseEntryForm.refId),
 					sortOrder: Number(courseEntryForm.sortOrder),
 					rewardXp: 100,
-					rewardItemId: courseEntryForm.rewardItemId ? Number(courseEntryForm.rewardItemId) : null,
+					rewardItemId: courseEntryForm.rewardItemId
+						? Number(courseEntryForm.rewardItemId)
+						: null,
 					rewardQuantity: Number(courseEntryForm.rewardQuantity || 1)
 				}),
 				headers: {
@@ -753,6 +864,7 @@
 				success: () => {
 					showCourseEntryDialog = false;
 					fetchCourseEntries(selectedSeason.courseId);
+
 					return isNew ? 'Entry created!' : 'Entry updated!';
 				},
 				loading: 'Saving...',
@@ -762,8 +874,13 @@
 	}
 
 	async function removeCourseEntry(id: number) {
-		if (!selectedSeason?.courseId) return;
-		if (!confirm('Delete this course entry?')) return;
+		if (!selectedSeason?.courseId) {
+			return;
+		}
+
+		if (!confirm('Delete this course entry?')) {
+			return;
+		}
 
 		toast.promise(
 			fetch(`${import.meta.env.VITE_API_URL}/battlepass/course/entry/${id}`, {
@@ -773,6 +890,7 @@
 			{
 				success: () => {
 					fetchCourseEntries(selectedSeason.courseId);
+
 					return 'Entry deleted!';
 				},
 				loading: 'Deleting...',
@@ -783,7 +901,15 @@
 
 	// Reset form functions
 	function openNewSeason() {
-		seasonForm = { id: null, title: '', description: '', start: '', end: '', primaryColor: '#8b5cf6', courseId: '' };
+		seasonForm = {
+			id: null,
+			title: '',
+			description: '',
+			start: '',
+			end: '',
+			primaryColor: '#8b5cf6',
+			courseId: ''
+		};
 		showSeasonDialog = true;
 	}
 
@@ -841,7 +967,13 @@
 	}
 
 	function openNewLevel() {
-		levelForm = { id: null, levelID: '', xp: 1000, minProgressXp: 500, minProgress: 50 };
+		levelForm = {
+			id: null,
+			levelID: '',
+			xp: 1000,
+			minProgressXp: 500,
+			minProgress: 50
+		};
 		showLevelDialog = true;
 	}
 
@@ -857,7 +989,14 @@
 	}
 
 	function openNewReward() {
-		rewardForm = { id: null, tier: 1, isPremium: false, itemId: '', quantity: 1, description: '' };
+		rewardForm = {
+			id: null,
+			tier: 1,
+			isPremium: false,
+			itemId: '',
+			quantity: 1,
+			description: ''
+		};
 		selectedItem = null;
 		itemSearchQuery = '';
 		itemSearchResults = [];
@@ -873,23 +1012,29 @@
 			quantity: reward.quantity,
 			description: reward.description
 		};
+
 		// Set selected item if editing
 		if (reward.items) {
 			selectedItem = reward.items;
 		}
+
 		showRewardDialog = true;
 	}
 
 	async function searchItems() {
 		if (!itemSearchQuery.trim()) {
 			itemSearchResults = [];
+
 			return;
 		}
 
 		itemSearchLoading = true;
+
 		try {
 			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/item/search?q=${encodeURIComponent(itemSearchQuery)}`,
+				`${import.meta.env.VITE_API_URL}/item/search?q=${
+					encodeURIComponent(itemSearchQuery)
+				}`,
 				{
 					method: 'GET',
 					headers: {
@@ -931,7 +1076,15 @@
 	}
 
 	function openNewMission() {
-		missionForm = { id: null, title: '', description: '', condition: '[]', xp: 100, order: 0, refreshType: 'none' };
+		missionForm = {
+			id: null,
+			title: '',
+			description: '',
+			condition: '[]',
+			xp: 100,
+			order: 0,
+			refreshType: 'none'
+		};
 		conditionBuilderMode = true;
 		conditionList = [];
 		newCondition = { type: 'clear_level', targetId: null, value: null };
@@ -940,8 +1093,10 @@
 
 	function openEditMission(mission: any) {
 		// Ensure condition is always an array
-		const conditions = Array.isArray(mission.condition) ? mission.condition : [];
-		
+		const conditions = Array.isArray(mission.condition)
+			? mission.condition
+			: [];
+
 		missionForm = {
 			id: mission.id,
 			title: mission.title,
@@ -959,18 +1114,25 @@
 
 	function addConditionToList() {
 		const cond: any = { type: newCondition.type };
-		
-		if (newCondition.type === 'clear_level' || newCondition.type === 'clear_mappack') {
+
+		if (
+			newCondition.type === 'clear_level'
+			|| newCondition.type === 'clear_mappack'
+		) {
 			if (!newCondition.targetId) {
 				toast.error('Please enter a target ID');
+
 				return;
 			}
+
 			cond.targetId = Number(newCondition.targetId);
 		} else {
 			if (!newCondition.value) {
 				toast.error('Please enter a value');
+
 				return;
 			}
+
 			cond.value = Number(newCondition.value);
 		}
 
@@ -1024,7 +1186,8 @@
 
 				return acc;
 			}, {})
-		).sort(([a], [b]) => Number(a) - Number(b));
+		)
+			.sort(([a], [b]) => Number(a) - Number(b));
 	}
 
 	$: if (selectedSeason) {
@@ -1040,965 +1203,1167 @@
 <Title value="Pass Manager" />
 
 <div class="wrapper">
-	<div class="mb-6 flex items-center gap-4">
-		<Crown class="h-8 w-8 text-yellow-400" />
-		<h1 class="text-2xl font-bold">Pass Manager</h1>
-		<a href="/admin/battlepass/course">
-			<Button variant="outline" size="sm">Course Manager</Button>
-		</a>
-		<Button
-			variant="outline"
-			size="icon"
-			on:click={() => {
-				fetchSeasons();
-				if (selectedSeason) fetchSeasonData();
-			}}
-		>
-			<RefreshCw class="h-4 w-4" />
-		</Button>
-	</div>
+  <div class="mb-6 flex items-center gap-4">
+    <Crown class="h-8 w-8 text-yellow-400" />
+    <h1 class="text-2xl font-bold">Pass Manager</h1>
+    <a href="/admin/battlepass/course">
+      <Button variant="outline" size="sm">Course Manager</Button>
+    </a>
+    <Button
+      variant="outline"
+      size="icon"
+      on:click={() => {
+          fetchSeasons();
 
-	<!-- Season Selector -->
-	<div class="mb-6 flex items-center gap-4">
-		<Label>Active Season:</Label>
-		{#if selectedSeason}
-			<span class="font-bold">{selectedSeason.title}</span>
-			<Button variant="outline" size="sm" on:click={() => openEditSeason(selectedSeason)}>
-				<Edit class="mr-1 h-4 w-4" />
-				Edit
-			</Button>
-		{:else}
-			<span class="text-muted-foreground">No active season</span>
-		{/if}
-		<Button size="sm" on:click={openNewSeason}>
-			<Plus class="mr-1 h-4 w-4" />
-			New Season
-		</Button>
-	</div>
+          if (selectedSeason) {
+ fetchSeasonData();
+}
+      }}
+    >
+      <RefreshCw class="h-4 w-4" />
+    </Button>
+  </div>
 
-	{#if selectedSeason}
-		<Tabs.Root value="levels">
-			<Tabs.List class="mb-4">
-				<Tabs.Trigger value="levels">Levels</Tabs.Trigger>
-				<Tabs.Trigger value="mappacks">Map Packs</Tabs.Trigger>
-				<Tabs.Trigger value="rewards">Tier Rewards</Tabs.Trigger>
-				<Tabs.Trigger value="missions">Missions</Tabs.Trigger>
-			</Tabs.List>
+  <!-- Season Selector -->
+  <div class="mb-6 flex items-center gap-4">
+    <Label>Active Season:</Label>
+    {#if selectedSeason}
+      <span class="font-bold">{selectedSeason.title}</span>
+      <Button
+        variant="outline"
+        size="sm"
+        on:click={() => openEditSeason(selectedSeason)}
+      >
+        <Edit class="mr-1 h-4 w-4" />
+        Edit
+      </Button>
+    {:else}
+      <span class="text-muted-foreground">No active season</span>
+    {/if}
+    <Button size="sm" on:click={openNewSeason}>
+      <Plus class="mr-1 h-4 w-4" />
+      New Season
+    </Button>
+  </div>
 
-			<!-- Levels Tab -->
-			<Tabs.Content value="levels">
-				<Card.Root>
-					<Card.Header class="flex flex-row items-center justify-between">
-						<Card.Title>Pass Levels</Card.Title>
-						<Button size="sm" on:click={openNewLevel}>
-							<Plus class="mr-1 h-4 w-4" />
-							Add Level
-						</Button>
-					</Card.Header>
-					<Card.Content>
-						<Table.Root>
-							<Table.Header>
-								<Table.Row>
-									<Table.Head>ID</Table.Head>
-									<Table.Head>Level ID</Table.Head>
-									<Table.Head>Level Name</Table.Head>
-									<Table.Head>XP</Table.Head>
-									<Table.Head>Min Progress</Table.Head>
-									<Table.Head>Min Progress XP</Table.Head>
-									<Table.Head>Actions</Table.Head>
-								</Table.Row>
-							</Table.Header>
-							<Table.Body>
-								{#each levels as level}
-									<Table.Row>
-										<Table.Cell>{level.id}</Table.Cell>
-										<Table.Cell>{level.levelID}</Table.Cell>
-										<Table.Cell>{level.levels?.name || '-'}</Table.Cell>
-										<Table.Cell class="text-yellow-400">{level.xp}</Table.Cell>
-										<Table.Cell>{level.minProgress}%</Table.Cell>
-										<Table.Cell class="text-blue-400">{level.minProgressXp}</Table.Cell>
-										<Table.Cell>
-											<div class="flex gap-2">
-												<Button variant="outline" size="icon" on:click={() => openEditLevel(level)}>
-													<Edit class="h-4 w-4" />
-												</Button>
-												<Button
-													variant="destructive"
-													size="icon"
-													on:click={() => deleteLevel(level.id)}
-												>
-													<Trash2 class="h-4 w-4" />
-												</Button>
-											</div>
-										</Table.Cell>
-									</Table.Row>
-								{:else}
-									<Table.Row>
-										<Table.Cell colspan={7} class="text-center text-muted-foreground">
-											No levels added
-										</Table.Cell>
-									</Table.Row>
-								{/each}
-							</Table.Body>
-						</Table.Root>
-					</Card.Content>
-				</Card.Root>
-			</Tabs.Content>
+  {#if selectedSeason}
+    <Tabs.Root value="levels">
+      <Tabs.List class="mb-4">
+        <Tabs.Trigger value="levels">Levels</Tabs.Trigger>
+        <Tabs.Trigger value="mappacks">Map Packs</Tabs.Trigger>
+        <Tabs.Trigger value="rewards">Tier Rewards</Tabs.Trigger>
+        <Tabs.Trigger value="missions">Missions</Tabs.Trigger>
+      </Tabs.List>
 
-			<!-- Map Packs Tab -->
-			<Tabs.Content value="mappacks">
-				<div class="mb-4 flex items-center justify-between">
-					<h2 class="text-2xl font-bold">Season Map Packs</h2>
-					<Button size="sm" on:click={openLinkMapPack}>
-						<Plus class="mr-1 h-4 w-4" />
-						Link Map Pack
-					</Button>
-				</div>
-				<div class="flex flex-col gap-4">
-					{#each getMapPackRenderData(battlePassMapPacks) as [week, packs]}
-						<Card.Root>
-							<Card.Header>
-								<Card.Title>Week {week}</Card.Title>
-							</Card.Header>
-							<Card.Content>
-								<Table.Root>
-									<Table.Header>
-										<Table.Row>
-											<Table.Head class="w-[50px]">ID</Table.Head>
-											<Table.Head>Map Pack</Table.Head>
-											<Table.Head class="w-[150px]">Difficulty</Table.Head>
-											<Table.Head class="w-[100px]">XP</Table.Head>
-											<Table.Head class="w-[75px]">Order</Table.Head>
-											<Table.Head class="w-[100px]">Actions</Table.Head>
-										</Table.Row>
-									</Table.Header>
-									<Table.Body>
-										{#each packs as pack}
-											<Table.Row>
-												<Table.Cell>{pack.id}</Table.Cell>
-												<Table.Cell>{pack.mapPacks?.name || '-'}</Table.Cell>
-												<Table.Cell>{pack.mapPacks?.difficulty || '-'}</Table.Cell>
-												<Table.Cell class="text-yellow-400">{pack.mapPacks?.xp || 0}</Table.Cell>
-												<Table.Cell>{pack.sortOrder}</Table.Cell>
-												<Table.Cell>
-													<div class="flex gap-2">
-														<Button
-															variant="outline"
-															size="icon"
-															on:click={() => openEditMapPack(pack)}
-														>
-															<Edit class="h-4 w-4" />
-														</Button>
-														<Button
-															variant="destructive"
-															size="icon"
-															on:click={() => unlinkMapPack(pack.id)}
-														>
-															<Trash2 class="h-4 w-4" />
-														</Button>
-													</div>
-												</Table.Cell>
-											</Table.Row>
-										{/each}
-									</Table.Body>
-								</Table.Root>
-							</Card.Content>
-						</Card.Root>
-					{:else}
-						<Card.Root>
-							<Card.Content class="p-8 text-center text-muted-foreground">
-								No map packs linked
-							</Card.Content>
-						</Card.Root>
-					{/each}
-				</div>
-			</Tabs.Content>
+      <!-- Levels Tab -->
+      <Tabs.Content value="levels">
+        <Card.Root>
+          <Card.Header class="flex flex-row items-center justify-between">
+            <Card.Title>Pass Levels</Card.Title>
+            <Button size="sm" on:click={openNewLevel}>
+              <Plus class="mr-1 h-4 w-4" />
+              Add Level
+            </Button>
+          </Card.Header>
+          <Card.Content>
+            <Table.Root>
+              <Table.Header>
+                <Table.Row>
+                  <Table.Head>ID</Table.Head>
+                  <Table.Head>Level ID</Table.Head>
+                  <Table.Head>Level Name</Table.Head>
+                  <Table.Head>XP</Table.Head>
+                  <Table.Head>Min Progress</Table.Head>
+                  <Table.Head>Min Progress XP</Table.Head>
+                  <Table.Head>Actions</Table.Head>
+                </Table.Row>
+              </Table.Header>
+              <Table.Body>
+                {#each levels as level}
+                  <Table.Row>
+                    <Table.Cell>{level.id}</Table.Cell>
+                    <Table.Cell>{level.levelID}</Table.Cell>
+                    <Table.Cell>{level.levels?.name || '-'}</Table.Cell>
+                    <Table.Cell class="text-yellow-400">{level.xp}</Table.Cell>
+                    <Table.Cell>{level.minProgress}%</Table.Cell>
+                    <Table.Cell class="text-blue-400">{
+                      level.minProgressXp
+                    }</Table.Cell>
+                    <Table.Cell>
+                      <div class="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          on:click={() => openEditLevel(level)}
+                        >
+                          <Edit class="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          on:click={() => deleteLevel(level.id)}
+                        >
+                          <Trash2 class="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </Table.Cell>
+                  </Table.Row>
+                {:else}
+                  <Table.Row>
+                    <Table.Cell
+                      colspan={7}
+                      class="text-center text-muted-foreground"
+                    >
+                      No levels added
+                    </Table.Cell>
+                  </Table.Row>
+                {/each}
+              </Table.Body>
+            </Table.Root>
+          </Card.Content>
+        </Card.Root>
+      </Tabs.Content>
 
-			<!-- Tier Rewards Tab -->
-			<Tabs.Content value="rewards" class="w-full">
-				<div class="mb-4 flex items-center justify-between">
-					<div>
-						<h2 class="text-2xl font-bold">Tier Rewards</h2>
-						<p class="text-sm text-muted-foreground">
-							Manage rewards for each tier. Click on a tier slot to edit.
-						</p>
-					</div>
-					<Button size="sm" on:click={openNewReward}>
-						<Plus class="mr-1 h-4 w-4" />
-						Add Reward
-					</Button>
-				</div>
+      <!-- Map Packs Tab -->
+      <Tabs.Content value="mappacks">
+        <div class="mb-4 flex items-center justify-between">
+          <h2 class="text-2xl font-bold">Season Map Packs</h2>
+          <Button size="sm" on:click={openLinkMapPack}>
+            <Plus class="mr-1 h-4 w-4" />
+            Link Map Pack
+          </Button>
+        </div>
+        <div class="flex flex-col gap-4">
+          {#each getMapPackRenderData(battlePassMapPacks) as [week, packs]}
+            <Card.Root>
+              <Card.Header>
+                <Card.Title>Week {week}</Card.Title>
+              </Card.Header>
+              <Card.Content>
+                <Table.Root>
+                  <Table.Header>
+                    <Table.Row>
+                      <Table.Head class="w-[50px]">ID</Table.Head>
+                      <Table.Head>Map Pack</Table.Head>
+                      <Table.Head class="w-[150px]">Difficulty</Table.Head>
+                      <Table.Head class="w-[100px]">XP</Table.Head>
+                      <Table.Head class="w-[75px]">Order</Table.Head>
+                      <Table.Head class="w-[100px]">Actions</Table.Head>
+                    </Table.Row>
+                  </Table.Header>
+                  <Table.Body>
+                    {#each packs as pack}
+                      <Table.Row>
+                        <Table.Cell>{pack.id}</Table.Cell>
+                        <Table.Cell>{pack.mapPacks?.name || '-'}</Table.Cell>
+                        <Table.Cell>{
+                          pack.mapPacks?.difficulty || '-'
+                        }</Table.Cell>
+                        <Table.Cell class="text-yellow-400">{
+                          pack.mapPacks?.xp || 0
+                        }</Table.Cell>
+                        <Table.Cell>{pack.sortOrder}</Table.Cell>
+                        <Table.Cell>
+                          <div class="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              on:click={() => openEditMapPack(pack)}
+                            >
+                              <Edit class="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="icon"
+                              on:click={() => unlinkMapPack(pack.id)}
+                            >
+                              <Trash2 class="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </Table.Cell>
+                      </Table.Row>
+                    {/each}
+                  </Table.Body>
+                </Table.Root>
+              </Card.Content>
+            </Card.Root>
+          {:else}
+            <Card.Root>
+              <Card.Content class="p-8 text-center text-muted-foreground">
+                No map packs linked
+              </Card.Content>
+            </Card.Root>
+          {/each}
+        </div>
+      </Tabs.Content>
 
-				<TierRewardTrack
-					bind:rewards
-					currentTier={0}
-					isPremium={false}
-					claimableRewards={[]}
-					editable={true}
-					onRewardClick={openEditReward}
-					onAddRewardClick={handleAddReward}
-				/>
-			</Tabs.Content>
+      <!-- Tier Rewards Tab -->
+      <Tabs.Content value="rewards" class="w-full">
+        <div class="mb-4 flex items-center justify-between">
+          <div>
+            <h2 class="text-2xl font-bold">Tier Rewards</h2>
+            <p class="text-sm text-muted-foreground">
+              Manage rewards for each tier. Click on a tier slot to edit.
+            </p>
+          </div>
+          <Button size="sm" on:click={openNewReward}>
+            <Plus class="mr-1 h-4 w-4" />
+            Add Reward
+          </Button>
+        </div>
 
-			<!-- Missions Tab -->
-			<Tabs.Content value="missions">
-				<Card.Root>
-					<Card.Header class="flex flex-row items-center justify-between">
-						<Card.Title>Missions</Card.Title>
-						<Button size="sm" on:click={openNewMission}>
-							<Plus class="mr-1 h-4 w-4" />
-							Add Mission
-						</Button>
-					</Card.Header>
-					<Card.Content>
-						<div class="flex flex-col gap-4">
-							{#each missions as mission}
-								<Card.Root class="border">
-									<Card.Content class="p-4">
-										<div class="flex items-start justify-between">
-											<div class="flex-1">
-												<h4 class="font-bold">{mission.title}</h4>
-												<p class="text-sm text-muted-foreground">{mission.description}</p>
-												<div class="mt-2 flex items-center gap-4 text-sm">
-													<span class="text-yellow-400">+{mission.xp} XP</span>
-													<span class="text-muted-foreground">Order: {mission.order}</span>
-													{#if mission.refreshType && mission.refreshType !== 'none'}
-														<span class="rounded px-2 py-0.5 text-xs font-medium {mission.refreshType === 'daily' ? 'bg-blue-500/20 text-blue-400' : 'bg-purple-500/20 text-purple-400'}">
-															{mission.refreshType === 'daily' ? '🔄 Daily' : '📅 Weekly'}
-														</span>
-													{/if}
-												</div>
-												<div class="mt-2">
-													<code class="rounded bg-muted px-2 py-1 text-xs">
-														{JSON.stringify(mission.condition || [])}
-													</code>
-												</div>
-												{#if mission.battlePassMissionRewards?.length}
-													<div class="mt-2 flex gap-2">
-														{#each mission.battlePassMissionRewards as reward}
-															<div
-																class="flex items-center gap-1 rounded bg-muted px-2 py-1 text-xs"
-															>
-																<span>Item: {reward.itemId}</span>
-																<span>x{reward.quantity}</span>
-																<Button
-																	variant="ghost"
-																	size="icon"
-																	class="h-4 w-4"
-																	on:click={() => deleteMissionReward(mission.id, reward.id)}
-																>
-																	<Trash2 class="h-3 w-3" />
-																</Button>
-															</div>
-														{/each}
-													</div>
-												{/if}
-											</div>
-											<div class="flex gap-2">
-												<Button
-													variant="outline"
-													size="sm"
-													on:click={() => openAddMissionReward(mission.id)}
-												>
-													<Plus class="mr-1 h-4 w-4" />
-													Reward
-												</Button>
-												<Button
-													variant="outline"
-													size="icon"
-													on:click={() => openEditMission(mission)}
-												>
-													<Edit class="h-4 w-4" />
-												</Button>
-												<Button
-													variant="destructive"
-													size="icon"
-													on:click={() => deleteMission(mission.id)}
-												>
-													<Trash2 class="h-4 w-4" />
-												</Button>
-											</div>
-										</div>
-									</Card.Content>
-								</Card.Root>
-							{:else}
-								<p class="py-8 text-center text-muted-foreground">No missions added</p>
-							{/each}
-						</div>
-					</Card.Content>
-				</Card.Root>
-			</Tabs.Content>
-		</Tabs.Root>
-	{:else}
-		<Alert.Root>
-			<Alert.Title>No Active Season</Alert.Title>
-			<Alert.Description>Create a new season to get started.</Alert.Description>
-		</Alert.Root>
-	{/if}
+        <TierRewardTrack
+          bind:rewards
+          currentTier={0}
+          isPremium={false}
+          claimableRewards={[]}
+          editable={true}
+          onRewardClick={openEditReward}
+          onAddRewardClick={handleAddReward}
+        />
+      </Tabs.Content>
+
+      <!-- Missions Tab -->
+      <Tabs.Content value="missions">
+        <Card.Root>
+          <Card.Header class="flex flex-row items-center justify-between">
+            <Card.Title>Missions</Card.Title>
+            <Button size="sm" on:click={openNewMission}>
+              <Plus class="mr-1 h-4 w-4" />
+              Add Mission
+            </Button>
+          </Card.Header>
+          <Card.Content>
+            <div class="flex flex-col gap-4">
+              {#each missions as mission}
+                <Card.Root class="border">
+                  <Card.Content class="p-4">
+                    <div class="flex items-start justify-between">
+                      <div class="flex-1">
+                        <h4 class="font-bold">{mission.title}</h4>
+                        <p class="text-sm text-muted-foreground">
+                          {mission.description}
+                        </p>
+                        <div class="mt-2 flex items-center gap-4 text-sm">
+                          <span class="text-yellow-400">+{mission.xp} XP</span>
+                          <span class="text-muted-foreground">Order: {
+                              mission.order
+                            }</span>
+                          {#if mission.refreshType && mission.refreshType !== 'none'}
+                            <span
+                              class="rounded px-2 py-0.5 text-xs font-medium {mission.refreshType === 'daily' ? 'bg-blue-500/20 text-blue-400' : 'bg-purple-500/20 text-purple-400'}"
+                            >
+                              {
+                                mission.refreshType === 'daily' ? '🔄 Daily' : '📅 Weekly'
+                              }
+                            </span>
+                          {/if}
+                        </div>
+                        <div class="mt-2">
+                          <code class="rounded bg-muted px-2 py-1 text-xs">
+                            {JSON.stringify(mission.condition || [])}
+                          </code>
+                        </div>
+                        {#if mission.battlePassMissionRewards?.length}
+                          <div class="mt-2 flex gap-2">
+                            {#each mission.battlePassMissionRewards as reward}
+                              <div class="flex items-center gap-1 rounded bg-muted px-2 py-1 text-xs">
+                                <span>Item: {reward.itemId}</span>
+                                <span>x{reward.quantity}</span>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  class="h-4 w-4"
+                                  on:click={() => deleteMissionReward(mission.id, reward.id)}
+                                >
+                                  <Trash2 class="h-3 w-3" />
+                                </Button>
+                              </div>
+                            {/each}
+                          </div>
+                        {/if}
+                      </div>
+                      <div class="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          on:click={() => openAddMissionReward(mission.id)}
+                        >
+                          <Plus class="mr-1 h-4 w-4" />
+                          Reward
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          on:click={() => openEditMission(mission)}
+                        >
+                          <Edit class="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          on:click={() => deleteMission(mission.id)}
+                        >
+                          <Trash2 class="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </Card.Content>
+                </Card.Root>
+              {:else}
+                <p class="py-8 text-center text-muted-foreground">
+                  No missions added
+                </p>
+              {/each}
+            </div>
+          </Card.Content>
+        </Card.Root>
+      </Tabs.Content>
+    </Tabs.Root>
+  {:else}
+    <Alert.Root>
+      <Alert.Title>No Active Season</Alert.Title>
+      <Alert.Description>Create a new season to get started.</Alert.Description>
+    </Alert.Root>
+  {/if}
 </div>
 
 <!-- Season Dialog -->
 <Dialog.Root bind:open={showSeasonDialog}>
-	<Dialog.Content class="max-w-lg">
-		<Dialog.Header>
-			<Dialog.Title>{seasonForm.id ? 'Edit Season' : 'New Season'}</Dialog.Title>
-		</Dialog.Header>
-		<div class="flex flex-col gap-4">
-			<div>
-				<Label for="seasonTitle">Title</Label>
-				<Input id="seasonTitle" bind:value={seasonForm.title} placeholder="Season 1: Genesis" />
-			</div>
-			<div>
-				<Label for="seasonDesc">Description</Label>
-				<Textarea
-					id="seasonDesc"
-					bind:value={seasonForm.description}
-					placeholder="The first Pass season"
-				/>
-			</div>
-			<div class="grid grid-cols-2 gap-4">
-				<div>
-					<Label for="seasonStart">Start Date</Label>
-					<Input id="seasonStart" type="datetime-local" bind:value={seasonForm.start} />
-				</div>
-				<div>
-					<Label for="seasonEnd">End Date</Label>
-					<Input id="seasonEnd" type="datetime-local" bind:value={seasonForm.end} />
-				</div>
-			</div>
-			<div>
-				<Label for="seasonColor">Primary Color</Label>
-				<div class="flex gap-2 items-center">
-					<Input
-						id="seasonColor"
-						type="color"
-						bind:value={seasonForm.primaryColor}
-						class="h-10 w-20 cursor-pointer"
-					/>
-					<Input
-						type="text"
-						bind:value={seasonForm.primaryColor}
-						placeholder="#8b5cf6"
-						class="flex-1"
-					/>
-				</div>
-			</div>
-			<div>
-				<Label for="seasonCourse">Linked Course</Label>
-				<div class="mt-2 flex gap-2">
-					<div class="flex-1">
-						<Select.Root
-							selected={{
-								value: seasonForm.courseId ? String(seasonForm.courseId) : 'none',
-								label: seasonForm.courseId
-									? (courses.find((c) => String(c.id) === String(seasonForm.courseId))?.title ||
-										`Course #${seasonForm.courseId}`)
-									: 'No linked course'
-							}}
-							onSelectedChange={(v) => {
-								if (!v || v.value === 'none') {
-									seasonForm.courseId = '';
-									return;
-								}
+  <Dialog.Content class="max-w-lg">
+    <Dialog.Header>
+      <Dialog.Title>{
+        seasonForm.id ? 'Edit Season' : 'New Season'
+      }</Dialog.Title>
+    </Dialog.Header>
+    <div class="flex flex-col gap-4">
+      <div>
+        <Label for="seasonTitle">Title</Label>
+        <Input
+          id="seasonTitle"
+          bind:value={seasonForm.title}
+          placeholder="Season 1: Genesis"
+        />
+      </div>
+      <div>
+        <Label for="seasonDesc">Description</Label>
+        <Textarea
+          id="seasonDesc"
+          bind:value={seasonForm.description}
+          placeholder="The first Pass season"
+        />
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <Label for="seasonStart">Start Date</Label>
+          <Input
+            id="seasonStart"
+            type="datetime-local"
+            bind:value={seasonForm.start}
+          />
+        </div>
+        <div>
+          <Label for="seasonEnd">End Date</Label>
+          <Input
+            id="seasonEnd"
+            type="datetime-local"
+            bind:value={seasonForm.end}
+          />
+        </div>
+      </div>
+      <div>
+        <Label for="seasonColor">Primary Color</Label>
+        <div class="flex gap-2 items-center">
+          <Input
+            id="seasonColor"
+            type="color"
+            bind:value={seasonForm.primaryColor}
+            class="h-10 w-20 cursor-pointer"
+          />
+          <Input
+            type="text"
+            bind:value={seasonForm.primaryColor}
+            placeholder="#8b5cf6"
+            class="flex-1"
+          />
+        </div>
+      </div>
+      <div>
+        <Label for="seasonCourse">Linked Course</Label>
+        <div class="mt-2 flex gap-2">
+          <div class="flex-1">
+            <Select.Root
+              selected={{
+                  value: seasonForm.courseId ? String(seasonForm.courseId) : 'none',
+                  label: seasonForm.courseId
+                      ? (courses.find((c) => String(c.id) === String(seasonForm.courseId))
+                          ?.title
+                          || `Course #${seasonForm.courseId}`)
+                      : 'No linked course'
+              }}
+              onSelectedChange={(v) => {
+                  if (!v || v.value === 'none') {
+                      seasonForm.courseId = '';
 
-								seasonForm.courseId = Number(v.value);
-							}}
-						>
-							<Select.Trigger id="seasonCourse">
-								<Select.Value placeholder="Select course (optional)" />
-							</Select.Trigger>
-							<Select.Content>
-								<Select.Item value="none" label="No linked course">No linked course</Select.Item>
-								{#each courses as course}
-									<Select.Item value={String(course.id)} label={course.title}>
-										#{course.id} - {course.title}
-									</Select.Item>
-								{/each}
-							</Select.Content>
-						</Select.Root>
-					</div>
-					<a href="/admin/battlepass/course">
-						<Button type="button" variant="outline">Manage</Button>
-					</a>
-				</div>
-				<div class="mt-2 text-xs text-muted-foreground">
-					Choose an existing course to attach to this season.
-				</div>
-			</div>
-		</div>
-		<Dialog.Footer>
-			<Button variant="outline" on:click={() => (showSeasonDialog = false)}>Cancel</Button>
-			<Button on:click={saveSeason}>Save</Button>
-		</Dialog.Footer>
-	</Dialog.Content>
+                      return;
+                  }
+
+                  seasonForm.courseId = Number(v.value);
+              }}
+            >
+              <Select.Trigger id="seasonCourse">
+                <Select.Value placeholder="Select course (optional)" />
+              </Select.Trigger>
+              <Select.Content>
+                <Select.Item value="none" label="No linked course"
+                >No linked course</Select.Item>
+                {#each courses as course}
+                  <Select.Item value={String(course.id)} label={course.title}>
+                    #{course.id} - {course.title}
+                  </Select.Item>
+                {/each}
+              </Select.Content>
+            </Select.Root>
+          </div>
+          <a href="/admin/battlepass/course">
+            <Button type="button" variant="outline">Manage</Button>
+          </a>
+        </div>
+        <div class="mt-2 text-xs text-muted-foreground">
+          Choose an existing course to attach to this season.
+        </div>
+      </div>
+    </div>
+    <Dialog.Footer>
+      <Button variant="outline" on:click={() => (showSeasonDialog = false)}
+      >Cancel</Button>
+      <Button on:click={saveSeason}>Save</Button>
+    </Dialog.Footer>
+  </Dialog.Content>
 </Dialog.Root>
 
 <!-- Level Dialog -->
 <Dialog.Root bind:open={showLevelDialog}>
-	<Dialog.Content class="max-w-lg">
-		<Dialog.Header>
-			<Dialog.Title>{levelForm.id ? 'Edit Level' : 'Add Level'}</Dialog.Title>
-		</Dialog.Header>
-		<div class="flex flex-col gap-4">
-			<div>
-				<Label for="levelID">Level ID</Label>
-				<Input id="levelID" type="number" bind:value={levelForm.levelID} placeholder="12345678" />
-			</div>
-			<div class="grid grid-cols-2 gap-4">
-				<div>
-					<Label for="levelXP">Completion XP</Label>
-					<Input id="levelXP" type="number" bind:value={levelForm.xp} />
-				</div>
-				<div>
-					<Label for="levelMinXP">Min Progress XP</Label>
-					<Input id="levelMinXP" type="number" bind:value={levelForm.minProgressXp} />
-				</div>
-			</div>
-			<div>
-				<Label for="levelMinProgress">Min Progress (%)</Label>
-				<Input
-					id="levelMinProgress"
-					type="number"
-					bind:value={levelForm.minProgress}
-					min="0"
-					max="100"
-				/>
-			</div>
-		</div>
-		<Dialog.Footer>
-			<Button variant="outline" on:click={() => (showLevelDialog = false)}>Cancel</Button>
-			<Button on:click={saveLevel}>Save</Button>
-		</Dialog.Footer>
-	</Dialog.Content>
+  <Dialog.Content class="max-w-lg">
+    <Dialog.Header>
+      <Dialog.Title>{levelForm.id ? 'Edit Level' : 'Add Level'}</Dialog.Title>
+    </Dialog.Header>
+    <div class="flex flex-col gap-4">
+      <div>
+        <Label for="levelID">Level ID</Label>
+        <Input
+          id="levelID"
+          type="number"
+          bind:value={levelForm.levelID}
+          placeholder="12345678"
+        />
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <Label for="levelXP">Completion XP</Label>
+          <Input id="levelXP" type="number" bind:value={levelForm.xp} />
+        </div>
+        <div>
+          <Label for="levelMinXP">Min Progress XP</Label>
+          <Input
+            id="levelMinXP"
+            type="number"
+            bind:value={levelForm.minProgressXp}
+          />
+        </div>
+      </div>
+      <div>
+        <Label for="levelMinProgress">Min Progress (%)</Label>
+        <Input
+          id="levelMinProgress"
+          type="number"
+          bind:value={levelForm.minProgress}
+          min="0"
+          max="100"
+        />
+      </div>
+    </div>
+    <Dialog.Footer>
+      <Button variant="outline" on:click={() => (showLevelDialog = false)}
+      >Cancel</Button>
+      <Button on:click={saveLevel}>Save</Button>
+    </Dialog.Footer>
+  </Dialog.Content>
 </Dialog.Root>
 
 <!-- Link Map Pack Dialog -->
 <Dialog.Root bind:open={showLinkMapPackDialog}>
-	<Dialog.Content class="max-w-lg">
-		<Dialog.Header>
-			<Dialog.Title>Link Map Pack</Dialog.Title>
-		</Dialog.Header>
-		<div class="flex flex-col gap-4">
-			<div>
-				<Label for="mapPackId">Map Pack ID</Label>
-				<Input
-					id="mapPackId"
-					type="number"
-					bind:value={mapPackLinkForm.mapPackId}
-					placeholder="Enter map pack ID"
-				/>
-			</div>
-			<div class="grid grid-cols-2 gap-4">
-				<div>
-					<Label for="unlockWeek">Unlock Week</Label>
-					<Input id="unlockWeek" type="number" bind:value={mapPackLinkForm.unlockWeek} min="1" />
-				</div>
-				<div>
-					<Label for="packOrder">Order</Label>
-					<Input id="packOrder" type="number" bind:value={mapPackLinkForm.sortOrder} min="0" />
-				</div>
-			</div>
-		</div>
-		<Dialog.Footer>
-			<Button variant="outline" on:click={() => (showLinkMapPackDialog = false)}>Cancel</Button>
-			<Button on:click={linkMapPack}>Link</Button>
-		</Dialog.Footer>
-	</Dialog.Content>
+  <Dialog.Content class="max-w-lg">
+    <Dialog.Header>
+      <Dialog.Title>Link Map Pack</Dialog.Title>
+    </Dialog.Header>
+    <div class="flex flex-col gap-4">
+      <div>
+        <Label for="mapPackId">Map Pack ID</Label>
+        <Input
+          id="mapPackId"
+          type="number"
+          bind:value={mapPackLinkForm.mapPackId}
+          placeholder="Enter map pack ID"
+        />
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <Label for="unlockWeek">Unlock Week</Label>
+          <Input
+            id="unlockWeek"
+            type="number"
+            bind:value={mapPackLinkForm.unlockWeek}
+            min="1"
+          />
+        </div>
+        <div>
+          <Label for="packOrder">Order</Label>
+          <Input
+            id="packOrder"
+            type="number"
+            bind:value={mapPackLinkForm.sortOrder}
+            min="0"
+          />
+        </div>
+      </div>
+    </div>
+    <Dialog.Footer>
+      <Button variant="outline" on:click={() => (showLinkMapPackDialog = false)}
+      >Cancel</Button>
+      <Button on:click={linkMapPack}>Link</Button>
+    </Dialog.Footer>
+  </Dialog.Content>
 </Dialog.Root>
 
 <!-- Reward Dialog -->
-<Dialog.Root bind:open={showRewardDialog} onOpenChange={(open) => !open && resetRewardDialog()}>
-	<Dialog.Content class="max-w-lg">
-		<Dialog.Header>
-			<Dialog.Title>{rewardForm.id ? 'Edit' : 'Add'} Tier Reward</Dialog.Title>
-		</Dialog.Header>
-		<div class="flex flex-col gap-4">
-			<div class="grid grid-cols-2 gap-4">
-				<div>
-					<Label for="rewardTier">Tier</Label>
-					<Input id="rewardTier" type="number" bind:value={rewardForm.tier} min="1" max="100" />
-				</div>
-				<div class="flex items-center gap-2 pt-6">
-					<Switch bind:checked={rewardForm.isPremium} />
-					<Label>Premium Reward</Label>
-				</div>
-			</div>
+<Dialog.Root
+  bind:open={showRewardDialog}
+  onOpenChange={(open) => !open && resetRewardDialog()}
+>
+  <Dialog.Content class="max-w-lg">
+    <Dialog.Header>
+      <Dialog.Title>{rewardForm.id ? 'Edit' : 'Add'} Tier Reward</Dialog.Title>
+    </Dialog.Header>
+    <div class="flex flex-col gap-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <Label for="rewardTier">Tier</Label>
+          <Input
+            id="rewardTier"
+            type="number"
+            bind:value={rewardForm.tier}
+            min="1"
+            max="100"
+          />
+        </div>
+        <div class="flex items-center gap-2 pt-6">
+          <Switch bind:checked={rewardForm.isPremium} />
+          <Label>Premium Reward</Label>
+        </div>
+      </div>
 
-			<!-- Item Selection -->
-			{#if selectedItem}
-				<div class="flex items-center gap-3 rounded-lg border p-3">
-					<div
-						class="flex h-[60px] w-[60px] items-center justify-center overflow-hidden rounded-md bg-neutral-800"
-						style="border-bottom: 3px solid {rarityColor(selectedItem.rarity)};"
-					>
-						<img
-							class="max-h-full max-w-full object-contain p-1"
-							src={`https://cdn.gdvn.net/items/${selectedItem.id}.webp`}
-							alt={selectedItem.name}
-						/>
-					</div>
-					<div class="flex-1">
-						<div class="font-medium">{selectedItem.name}</div>
-						<div class="text-sm" style="color: {rarityColor(selectedItem.rarity)}">
-							{rarityName(selectedItem.rarity)}
-						</div>
-					</div>
-					<Button variant="ghost" size="sm" on:click={clearItemSelection}>
-						<X class="h-4 w-4" />
-					</Button>
-				</div>
-			{:else}
-				<div>
-					<Label>Search Item</Label>
-					<div class="relative mt-2">
-						<Search
-							class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-						/>
-						<Input
-							placeholder="Search items by name or ID..."
-							bind:value={itemSearchQuery}
-							on:input={handleItemSearchInput}
-							class="pl-9"
-						/>
-					</div>
-				</div>
-				{#if itemSearchLoading}
-					<p class="text-center text-sm text-muted-foreground">Searching...</p>
-				{:else if itemSearchResults.length > 0}
-					<ScrollArea class="h-[250px] rounded-md border">
-						<div class="p-2">
-							{#each itemSearchResults as item}
-								<button
-									class="flex w-full items-center gap-3 rounded-lg p-2 text-left transition-colors hover:bg-accent"
-									on:click={() => selectItem(item)}
-								>
-									<div
-										class="flex h-[50px] w-[50px] items-center justify-center overflow-hidden rounded-md bg-neutral-800"
-										style="border-bottom: 3px solid {rarityColor(item.rarity)};"
-									>
-										<img
-											class="max-h-full max-w-full object-contain p-1"
-											src={`https://cdn.gdvn.net/items/${item.id}.webp`}
-											alt={item.name}
-										/>
-									</div>
-									<div>
-										<div class="font-medium">{item.name}</div>
-										<div class="text-xs text-muted-foreground">
-											ID: {item.id} •
-											<span style="color: {rarityColor(item.rarity)}"
-												>{rarityName(item.rarity)}</span
-											>
-										</div>
-									</div>
-								</button>
-							{/each}
-						</div>
-					</ScrollArea>
-				{:else if itemSearchQuery}
-					<p class="text-center text-sm text-muted-foreground">No items found</p>
-				{:else}
-					<p class="text-center text-sm text-muted-foreground">Start typing to search for items</p>
-				{/if}
-			{/if}
+      <!-- Item Selection -->
+      {#if selectedItem}
+        <div class="flex items-center gap-3 rounded-lg border p-3">
+          <div
+            class="flex h-[60px] w-[60px] items-center justify-center overflow-hidden rounded-md bg-neutral-800"
+            style="border-bottom: 3px solid {rarityColor(selectedItem.rarity)}"
+          >
+            <img
+              class="max-h-full max-w-full object-contain p-1"
+              src={`https://cdn.gdvn.net/items/${selectedItem.id}.webp`}
+              alt={selectedItem.name}
+            />
+          </div>
+          <div class="flex-1">
+            <div class="font-medium">{selectedItem.name}</div>
+            <div
+              class="text-sm"
+              style="color: {rarityColor(selectedItem.rarity)}"
+            >
+              {rarityName(selectedItem.rarity)}
+            </div>
+          </div>
+          <Button variant="ghost" size="sm" on:click={clearItemSelection}>
+            <X class="h-4 w-4" />
+          </Button>
+        </div>
+      {:else}
+        <div>
+          <Label>Search Item</Label>
+          <div class="relative mt-2">
+            <Search
+              class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            />
+            <Input
+              placeholder="Search items by name or ID..."
+              bind:value={itemSearchQuery}
+              on:input={handleItemSearchInput}
+              class="pl-9"
+            />
+          </div>
+        </div>
+        {#if itemSearchLoading}
+          <p class="text-center text-sm text-muted-foreground">Searching...</p>
+        {:else if itemSearchResults.length > 0}
+          <ScrollArea class="h-[250px] rounded-md border">
+            <div class="p-2">
+              {#each itemSearchResults as item}
+                <button
+                  class="flex w-full items-center gap-3 rounded-lg p-2 text-left transition-colors hover:bg-accent"
+                  on:click={() => selectItem(item)}
+                >
+                  <div
+                    class="flex h-[50px] w-[50px] items-center justify-center overflow-hidden rounded-md bg-neutral-800"
+                    style="border-bottom: 3px solid {rarityColor(item.rarity)}"
+                  >
+                    <img
+                      class="max-h-full max-w-full object-contain p-1"
+                      src={`https://cdn.gdvn.net/items/${item.id}.webp`}
+                      alt={item.name}
+                    />
+                  </div>
+                  <div>
+                    <div class="font-medium">{item.name}</div>
+                    <div class="text-xs text-muted-foreground">
+                      ID: {item.id} •
+                      <span style="color: {rarityColor(item.rarity)}">{
+                        rarityName(item.rarity)
+                      }</span>
+                    </div>
+                  </div>
+                </button>
+              {/each}
+            </div>
+          </ScrollArea>
+        {:else if itemSearchQuery}
+          <p class="text-center text-sm text-muted-foreground">
+            No items found
+          </p>
+        {:else}
+          <p class="text-center text-sm text-muted-foreground">
+            Start typing to search for items
+          </p>
+        {/if}
+      {/if}
 
-			<div>
-				<Label for="rewardQty">Quantity</Label>
-				<Input id="rewardQty" type="number" bind:value={rewardForm.quantity} min="1" />
-			</div>
-		</div>
-		<Dialog.Footer>
-			<div class="flex w-full items-center justify-between">
-				<div>
-					{#if rewardForm.id}
-						<Button
-							variant="destructive"
-							on:click={() => {
-								deleteReward(rewardForm.id);
-								showRewardDialog = false;
-							}}
-						>
-							<Trash2 class="mr-1 h-4 w-4" />
-							Delete
-						</Button>
-					{/if}
-				</div>
-				<div class="flex gap-2">
-					<Button variant="outline" on:click={() => (showRewardDialog = false)}>Cancel</Button>
-					<Button on:click={saveReward} disabled={!selectedItem && !rewardForm.itemId}>Save</Button>
-				</div>
-			</div>
-		</Dialog.Footer>
-	</Dialog.Content>
+      <div>
+        <Label for="rewardQty">Quantity</Label>
+        <Input
+          id="rewardQty"
+          type="number"
+          bind:value={rewardForm.quantity}
+          min="1"
+        />
+      </div>
+    </div>
+    <Dialog.Footer>
+      <div class="flex w-full items-center justify-between">
+        <div>
+          {#if rewardForm.id}
+            <Button
+              variant="destructive"
+              on:click={() => {
+                  deleteReward(rewardForm.id);
+                  showRewardDialog = false;
+              }}
+            >
+              <Trash2 class="mr-1 h-4 w-4" />
+              Delete
+            </Button>
+          {/if}
+        </div>
+        <div class="flex gap-2">
+          <Button variant="outline" on:click={() => (showRewardDialog = false)}
+          >Cancel</Button>
+          <Button
+            on:click={saveReward}
+            disabled={!selectedItem && !rewardForm.itemId}
+          >Save</Button>
+        </div>
+      </div>
+    </Dialog.Footer>
+  </Dialog.Content>
 </Dialog.Root>
 
 <!-- Mission Dialog -->
 <Dialog.Root bind:open={showMissionDialog}>
-	<Dialog.Content class="max-w-2xl max-h-[90vh]">
-		<Dialog.Header>
-			<Dialog.Title>{missionForm.id ? 'Edit Mission' : 'Add Mission'}</Dialog.Title>
-		</Dialog.Header>
-		<ScrollArea class="max-h-[calc(90vh-180px)] pr-4">
-			<div class="flex flex-col gap-4">
-				<div>
-					<Label for="missionTitle">Title</Label>
-					<Input id="missionTitle" bind:value={missionForm.title} placeholder="Beat Extreme Level" />
-				</div>
-				<div>
-					<Label for="missionDesc">Description</Label>
-					<Textarea
-						id="missionDesc"
-						bind:value={missionForm.description}
-						placeholder="Complete the featured extreme demon"
-					/>
-				</div>
+  <Dialog.Content class="max-w-2xl max-h-[90vh]">
+    <Dialog.Header>
+      <Dialog.Title>{
+        missionForm.id ? 'Edit Mission' : 'Add Mission'
+      }</Dialog.Title>
+    </Dialog.Header>
+    <ScrollArea class="max-h-[calc(90vh-180px)] pr-4">
+      <div class="flex flex-col gap-4">
+        <div>
+          <Label for="missionTitle">Title</Label>
+          <Input
+            id="missionTitle"
+            bind:value={missionForm.title}
+            placeholder="Beat Extreme Level"
+          />
+        </div>
+        <div>
+          <Label for="missionDesc">Description</Label>
+          <Textarea
+            id="missionDesc"
+            bind:value={missionForm.description}
+            placeholder="Complete the featured extreme demon"
+          />
+        </div>
 
-				<!-- Condition Builder Toggle -->
-				<div class="flex items-center justify-between rounded-lg border p-3">
-					<div class="flex items-center gap-2">
-						<Label>Condition Editor Mode</Label>
-						<Switch 
-							bind:checked={conditionBuilderMode} 
-							onCheckedChange={() => {
-								if (conditionBuilderMode) {
-									syncJSONToConditions();
-								} else {
-									syncConditionsToJSON();
-								}
-							}}
-						/>
-						<span class="text-sm text-muted-foreground">
-							{conditionBuilderMode ? 'UI Builder' : 'Raw JSON'}
-						</span>
-					</div>
-				</div>
+        <!-- Condition Builder Toggle -->
+        <div class="flex items-center justify-between rounded-lg border p-3">
+          <div class="flex items-center gap-2">
+            <Label>Condition Editor Mode</Label>
+            <Switch
+              bind:checked={conditionBuilderMode}
+              onCheckedChange={() => {
+                  if (conditionBuilderMode) {
+                      syncJSONToConditions();
+                  } else {
+                      syncConditionsToJSON();
+                  }
+              }}
+            />
+            <span class="text-sm text-muted-foreground">
+              {conditionBuilderMode ? 'UI Builder' : 'Raw JSON'}
+            </span>
+          </div>
+        </div>
 
-				{#if conditionBuilderMode}
-					<!-- UI Builder Mode -->
-					<div class="space-y-4">
-						<div>
-							<Label>Conditions</Label>
-							{#if conditionList.length > 0}
-								<div class="mt-2 space-y-2">
-									{#each conditionList as cond, index}
-										<div class="flex items-center gap-2 rounded-lg border bg-muted/30 p-3">
-											<div class="flex-1">
-												<div class="text-sm font-medium">
-													{MISSION_CONDITION_TYPES.find((t) => t.type === cond.type)?.description || cond.type}
-												</div>
-												<code class="text-xs text-muted-foreground">
-													{JSON.stringify(cond)}
-												</code>
-											</div>
-											<Button
-												variant="ghost"
-												size="icon"
-												on:click={() => removeConditionFromList(index)}
-											>
-												<Trash2 class="h-4 w-4" />
-											</Button>
-										</div>
-									{/each}
-								</div>
-							{:else}
-								<p class="mt-2 text-sm text-muted-foreground">No conditions added yet</p>
-							{/if}
-						</div>
+        {#if conditionBuilderMode}
+          <!-- UI Builder Mode -->
+          <div class="space-y-4">
+            <div>
+              <Label>Conditions</Label>
+              {#if conditionList.length > 0}
+                <div class="mt-2 space-y-2">
+                  {#each conditionList as cond, index}
+                    <div class="flex items-center gap-2 rounded-lg border bg-muted/30 p-3">
+                      <div class="flex-1">
+                        <div class="text-sm font-medium">
+                          {
+                            MISSION_CONDITION_TYPES.find((t) => t.type === cond.type)?.description
+                            || cond.type
+                          }
+                        </div>
+                        <code class="text-xs text-muted-foreground">
+                          {JSON.stringify(cond)}
+                        </code>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        on:click={() => removeConditionFromList(index)}
+                      >
+                        <Trash2 class="h-4 w-4" />
+                      </Button>
+                    </div>
+                  {/each}
+                </div>
+              {:else}
+                <p class="mt-2 text-sm text-muted-foreground">
+                  No conditions added yet
+                </p>
+              {/if}
+            </div>
 
-						<!-- Add New Condition -->
-						<div class="rounded-lg border p-4 space-y-3">
-							<Label class="text-base font-semibold">Add Condition</Label>
-							
-							<div>
-								<Label for="condType">Condition Type</Label>
-								<Select.Root
-									selected={{ value: newCondition.type, label: MISSION_CONDITION_TYPES.find(t => t.type === newCondition.type)?.description || newCondition.type }}
-									onSelectedChange={(v) => {
-										if (v) {
-											newCondition.type = v.value;
-											newCondition.targetId = null;
-											newCondition.value = null;
-										}
-									}}
-								>
-									<Select.Trigger id="condType">
-										<Select.Value placeholder="Select condition type" />
-									</Select.Trigger>
-									<Select.Content>
-										{#each MISSION_CONDITION_TYPES as condType}
-											<Select.Item value={condType.type} label={condType.description}>
-												{condType.description}
-											</Select.Item>
-										{/each}
-									</Select.Content>
-								</Select.Root>
-							</div>
+            <!-- Add New Condition -->
+            <div class="rounded-lg border p-4 space-y-3">
+              <Label class="text-base font-semibold">Add Condition</Label>
 
-							{#if newCondition.type === 'clear_level' || newCondition.type === 'clear_mappack'}
-								<div>
-									<Label for="condTarget">
-										{newCondition.type === 'clear_level' ? 'Level ID' : 'Map Pack ID'}
-									</Label>
-									<Input
-										id="condTarget"
-										type="number"
-										bind:value={newCondition.targetId}
-										placeholder="Enter ID"
-									/>
-								</div>
-							{:else}
-								<div>
-									<Label for="condValue">
-										{newCondition.type === 'reach_tier' ? 'Tier Number' : 
-										 newCondition.type === 'earn_xp' ? 'XP Amount' : 
-										 'Count'}
-									</Label>
-									<Input
-										id="condValue"
-										type="number"
-										bind:value={newCondition.value}
-										placeholder="Enter value"
-									/>
-								</div>
-							{/if}
+              <div>
+                <Label for="condType">Condition Type</Label>
+                <Select.Root
+                  selected={{
+                      value: newCondition.type,
+                      label: MISSION_CONDITION_TYPES.find(t =>
+                          t.type === newCondition.type
+                      )?.description || newCondition.type
+                  }}
+                  onSelectedChange={(v) => {
+                      if (v) {
+                          newCondition.type = v.value;
+                          newCondition.targetId = null;
+                          newCondition.value = null;
+                      }
+                  }}
+                >
+                  <Select.Trigger id="condType">
+                    <Select.Value placeholder="Select condition type" />
+                  </Select.Trigger>
+                  <Select.Content>
+                    {#each MISSION_CONDITION_TYPES as condType}
+                      <Select.Item
+                        value={condType.type}
+                        label={condType.description}
+                      >
+                        {condType.description}
+                      </Select.Item>
+                    {/each}
+                  </Select.Content>
+                </Select.Root>
+              </div>
 
-							<Button size="sm" class="w-full" on:click={addConditionToList}>
-								<Plus class="mr-1 h-4 w-4" />
-								Add Condition
-							</Button>
+              {#if newCondition.type === 'clear_level' || newCondition.type === 'clear_mappack'}
+                <div>
+                  <Label for="condTarget">
+                    {
+                      newCondition.type === 'clear_level' ? 'Level ID' : 'Map Pack ID'
+                    }
+                  </Label>
+                  <Input
+                    id="condTarget"
+                    type="number"
+                    bind:value={newCondition.targetId}
+                    placeholder="Enter ID"
+                  />
+                </div>
+              {:else}
+                <div>
+                  <Label for="condValue">
+                    {
+                      newCondition.type === 'reach_tier'
+                      ? 'Tier Number'
+                      : newCondition.type === 'earn_xp'
+                      ? 'XP Amount'
+                      : 'Count'
+                    }
+                  </Label>
+                  <Input
+                    id="condValue"
+                    type="number"
+                    bind:value={newCondition.value}
+                    placeholder="Enter value"
+                  />
+                </div>
+              {/if}
 
-							<div class="rounded bg-muted/50 p-2 text-xs">
-								<span class="font-medium">Example: </span>
-								<code>{JSON.stringify(MISSION_CONDITION_TYPES.find((t) => t.type === newCondition.type)?.example)}</code>
-							</div>
-						</div>
-					</div>
-				{:else}
-					<!-- Raw JSON Mode -->
-					<div>
-						<Label for="missionCondition">Condition (JSON)</Label>
-						<Textarea
-							id="missionCondition"
-							bind:value={missionForm.condition}
-							placeholder={'[{"type": "clear_level", "targetId": 123456}]'}
-							rows={6}
-							class="font-mono text-xs"
-						/>
-						<div class="mt-2 rounded-lg bg-muted/50 p-3 text-xs">
-							<p class="mb-2 font-medium">Available condition types:</p>
-							<ul class="space-y-1 text-muted-foreground">
-								{#each MISSION_CONDITION_TYPES as condType}
-									<li>
-										<code class="rounded bg-muted px-1">{condType.type}</code>
-										<span class="ml-1">- {condType.description}</span>
-									</li>
-								{/each}
-							</ul>
-						</div>
-					</div>
-				{/if}
+              <Button size="sm" class="w-full" on:click={addConditionToList}>
+                <Plus class="mr-1 h-4 w-4" />
+                Add Condition
+              </Button>
 
-				<div class="grid grid-cols-2 gap-4">
-					<div>
-						<Label for="missionXP">XP Reward</Label>
-						<Input id="missionXP" type="number" bind:value={missionForm.xp} />
-					</div>
-					<div>
-						<Label for="missionOrder">Order</Label>
-						<Input id="missionOrder" type="number" bind:value={missionForm.order} />
-					</div>
-				</div>
+              <div class="rounded bg-muted/50 p-2 text-xs">
+                <span class="font-medium">Example: </span>
+                <code>{
+                  JSON.stringify(
+                      MISSION_CONDITION_TYPES.find((t) => t.type === newCondition.type)?.example
+                  )
+                }</code>
+              </div>
+            </div>
+          </div>
+        {:else}
+          <!-- Raw JSON Mode -->
+          <div>
+            <Label for="missionCondition">Condition (JSON)</Label>
+            <Textarea
+              id="missionCondition"
+              bind:value={missionForm.condition}
+              placeholder={'[{"type": "clear_level", "targetId": 123456}]'}
+              rows={6}
+              class="font-mono text-xs"
+            />
+            <div class="mt-2 rounded-lg bg-muted/50 p-3 text-xs">
+              <p class="mb-2 font-medium">Available condition types:</p>
+              <ul class="space-y-1 text-muted-foreground">
+                {#each MISSION_CONDITION_TYPES as condType}
+                  <li>
+                    <code class="rounded bg-muted px-1">{condType.type}</code>
+                    <span class="ml-1">- {condType.description}</span>
+                  </li>
+                {/each}
+              </ul>
+            </div>
+          </div>
+        {/if}
 
-				<!-- Refresh Type -->
-				<div>
-					<Label for="missionRefreshType">Refresh Schedule</Label>
-					<Select.Root
-						selected={{ 
-							value: missionForm.refreshType, 
-							label: MISSION_REFRESH_TYPES.find(t => t.value === missionForm.refreshType)?.label || 'No Refresh' 
-						}}
-						onSelectedChange={(v) => {
-							if (v) missionForm.refreshType = v.value;
-						}}
-					>
-						<Select.Trigger id="missionRefreshType">
-							<Select.Value placeholder="Select refresh schedule" />
-						</Select.Trigger>
-						<Select.Content>
-							{#each MISSION_REFRESH_TYPES as refreshType}
-								<Select.Item value={refreshType.value} label={refreshType.label}>
-									<div class="flex flex-col">
-										<span>{refreshType.label}</span>
-										<span class="text-xs text-muted-foreground">{refreshType.description}</span>
-									</div>
-								</Select.Item>
-							{/each}
-						</Select.Content>
-					</Select.Root>
-					<p class="mt-1 text-xs text-muted-foreground">
-						{#if missionForm.refreshType === 'daily'}
-							Mission progress will reset every day at midnight (UTC+7).
-						{:else if missionForm.refreshType === 'weekly'}
-							Mission progress will reset every Monday at midnight (UTC+7).
-						{:else}
-							Mission does not reset automatically. Progress is permanent.
-						{/if}
-					</p>
-				</div>
-			</div>
-		</ScrollArea>
-		<Dialog.Footer>
-			<Button variant="outline" on:click={() => (showMissionDialog = false)}>Cancel</Button>
-			<Button on:click={saveMission}>Save</Button>
-		</Dialog.Footer>
-	</Dialog.Content>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <Label for="missionXP">XP Reward</Label>
+            <Input id="missionXP" type="number" bind:value={missionForm.xp} />
+          </div>
+          <div>
+            <Label for="missionOrder">Order</Label>
+            <Input
+              id="missionOrder"
+              type="number"
+              bind:value={missionForm.order}
+            />
+          </div>
+        </div>
+
+        <!-- Refresh Type -->
+        <div>
+          <Label for="missionRefreshType">Refresh Schedule</Label>
+          <Select.Root
+            selected={{
+                value: missionForm.refreshType,
+                label: MISSION_REFRESH_TYPES.find(t =>
+                    t.value === missionForm.refreshType
+                )?.label || 'No Refresh'
+            }}
+            onSelectedChange={(v) => {
+                if (v) {
+ missionForm.refreshType = v.value;
+}
+            }}
+          >
+            <Select.Trigger id="missionRefreshType">
+              <Select.Value placeholder="Select refresh schedule" />
+            </Select.Trigger>
+            <Select.Content>
+              {#each MISSION_REFRESH_TYPES as refreshType}
+                <Select.Item
+                  value={refreshType.value}
+                  label={refreshType.label}
+                >
+                  <div class="flex flex-col">
+                    <span>{refreshType.label}</span>
+                    <span class="text-xs text-muted-foreground">{
+                      refreshType.description
+                    }</span>
+                  </div>
+                </Select.Item>
+              {/each}
+            </Select.Content>
+          </Select.Root>
+          <p class="mt-1 text-xs text-muted-foreground">
+            {#if missionForm.refreshType === 'daily'}
+              Mission progress will reset every day at midnight (UTC+7).
+            {:else if missionForm.refreshType === 'weekly'}
+              Mission progress will reset every Monday at midnight (UTC+7).
+            {:else}
+              Mission does not reset automatically. Progress is permanent.
+            {/if}
+          </p>
+        </div>
+      </div>
+    </ScrollArea>
+    <Dialog.Footer>
+      <Button variant="outline" on:click={() => (showMissionDialog = false)}
+      >Cancel</Button>
+      <Button on:click={saveMission}>Save</Button>
+    </Dialog.Footer>
+  </Dialog.Content>
 </Dialog.Root>
 
 <!-- Edit Map Pack Dialog -->
 <Dialog.Root bind:open={showEditMapPackDialog}>
-	<Dialog.Content class="max-w-md">
-		<Dialog.Header>
-			<Dialog.Title>Edit Map Pack</Dialog.Title>
-		</Dialog.Header>
-		<div class="flex flex-col gap-4">
-			<div>
-				<Label for="editUnlockWeek">Unlock Week</Label>
-				<Input id="editUnlockWeek" type="number" min="1" bind:value={mapPackEditForm.unlockWeek} />
-			</div>
-			<div>
-				<Label for="editOrder">Order</Label>
-				<Input id="editOrder" type="number" min="0" bind:value={mapPackEditForm.sortOrder} />
-			</div>
-		</div>
-		<Dialog.Footer>
-			<Button variant="outline" on:click={() => (showEditMapPackDialog = false)}>Cancel</Button>
-			<Button on:click={updateMapPack}>Update</Button>
-		</Dialog.Footer>
-	</Dialog.Content>
+  <Dialog.Content class="max-w-md">
+    <Dialog.Header>
+      <Dialog.Title>Edit Map Pack</Dialog.Title>
+    </Dialog.Header>
+    <div class="flex flex-col gap-4">
+      <div>
+        <Label for="editUnlockWeek">Unlock Week</Label>
+        <Input
+          id="editUnlockWeek"
+          type="number"
+          min="1"
+          bind:value={mapPackEditForm.unlockWeek}
+        />
+      </div>
+      <div>
+        <Label for="editOrder">Order</Label>
+        <Input
+          id="editOrder"
+          type="number"
+          min="0"
+          bind:value={mapPackEditForm.sortOrder}
+        />
+      </div>
+    </div>
+    <Dialog.Footer>
+      <Button variant="outline" on:click={() => (showEditMapPackDialog = false)}
+      >Cancel</Button>
+      <Button on:click={updateMapPack}>Update</Button>
+    </Dialog.Footer>
+  </Dialog.Content>
 </Dialog.Root>
 
 <!-- Mission Reward Dialog -->
 <Dialog.Root bind:open={showMissionRewardDialog}>
-	<Dialog.Content class="max-w-md">
-		<Dialog.Header>
-			<Dialog.Title>Add Mission Reward</Dialog.Title>
-		</Dialog.Header>
-		<div class="flex flex-col gap-4">
-			<div>
-				<Label for="mRewardItem">Item ID</Label>
-				<Input id="mRewardItem" type="number" bind:value={missionRewardForm.itemId} />
-			</div>
-			<div class="grid grid-cols-2 gap-4">
-				<div>
-					<Label for="mRewardQty">Quantity</Label>
-					<Input id="mRewardQty" type="number" bind:value={missionRewardForm.quantity} min="1" />
-				</div>
-				<div>
-					<Label for="mRewardExpire">Expire After (days)</Label>
-					<Input id="mRewardExpire" type="number" bind:value={missionRewardForm.expireAfter} />
-				</div>
-			</div>
-		</div>
-		<Dialog.Footer>
-			<Button variant="outline" on:click={() => (showMissionRewardDialog = false)}>Cancel</Button>
-			<Button on:click={addMissionReward}>Add</Button>
-		</Dialog.Footer>
-	</Dialog.Content>
+  <Dialog.Content class="max-w-md">
+    <Dialog.Header>
+      <Dialog.Title>Add Mission Reward</Dialog.Title>
+    </Dialog.Header>
+    <div class="flex flex-col gap-4">
+      <div>
+        <Label for="mRewardItem">Item ID</Label>
+        <Input
+          id="mRewardItem"
+          type="number"
+          bind:value={missionRewardForm.itemId}
+        />
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <Label for="mRewardQty">Quantity</Label>
+          <Input
+            id="mRewardQty"
+            type="number"
+            bind:value={missionRewardForm.quantity}
+            min="1"
+          />
+        </div>
+        <div>
+          <Label for="mRewardExpire">Expire After (days)</Label>
+          <Input
+            id="mRewardExpire"
+            type="number"
+            bind:value={missionRewardForm.expireAfter}
+          />
+        </div>
+      </div>
+    </div>
+    <Dialog.Footer>
+      <Button
+        variant="outline"
+        on:click={() => (showMissionRewardDialog = false)}
+      >Cancel</Button>
+      <Button on:click={addMissionReward}>Add</Button>
+    </Dialog.Footer>
+  </Dialog.Content>
 </Dialog.Root>
 
 <Dialog.Root bind:open={showCourseDialog}>
-	<Dialog.Content class="max-w-lg">
-		<Dialog.Header>
-			<Dialog.Title>{courseForm.id ? 'Edit Course' : 'New Course'}</Dialog.Title>
-		</Dialog.Header>
-		<div class="flex flex-col gap-4">
-			<div>
-				<Label for="courseTitle">Title</Label>
-				<Input id="courseTitle" bind:value={courseForm.title} placeholder="Starter Course" />
-			</div>
-			<div>
-				<Label for="courseDesc">Description</Label>
-				<Textarea id="courseDesc" bind:value={courseForm.description} placeholder="Course mode description" />
-			</div>
-		</div>
-		<Dialog.Footer>
-			<div class="flex w-full items-center justify-between">
-				<div>
-					{#if courseForm.id}
-						<Button variant="destructive" on:click={() => removeCourse(Number(courseForm.id))}>
-							<Trash2 class="mr-1 h-4 w-4" />
-							Delete
-						</Button>
-					{/if}
-				</div>
-				<div class="flex gap-2">
-					<Button variant="outline" on:click={() => (showCourseDialog = false)}>Cancel</Button>
-					<Button on:click={saveCourse}>Save</Button>
-				</div>
-			</div>
-		</Dialog.Footer>
-	</Dialog.Content>
+  <Dialog.Content class="max-w-lg">
+    <Dialog.Header>
+      <Dialog.Title>{
+        courseForm.id ? 'Edit Course' : 'New Course'
+      }</Dialog.Title>
+    </Dialog.Header>
+    <div class="flex flex-col gap-4">
+      <div>
+        <Label for="courseTitle">Title</Label>
+        <Input
+          id="courseTitle"
+          bind:value={courseForm.title}
+          placeholder="Starter Course"
+        />
+      </div>
+      <div>
+        <Label for="courseDesc">Description</Label>
+        <Textarea
+          id="courseDesc"
+          bind:value={courseForm.description}
+          placeholder="Course mode description"
+        />
+      </div>
+    </div>
+    <Dialog.Footer>
+      <div class="flex w-full items-center justify-between">
+        <div>
+          {#if courseForm.id}
+            <Button
+              variant="destructive"
+              on:click={() => removeCourse(Number(courseForm.id))}
+            >
+              <Trash2 class="mr-1 h-4 w-4" />
+              Delete
+            </Button>
+          {/if}
+        </div>
+        <div class="flex gap-2">
+          <Button variant="outline" on:click={() => (showCourseDialog = false)}
+          >Cancel</Button>
+          <Button on:click={saveCourse}>Save</Button>
+        </div>
+      </div>
+    </Dialog.Footer>
+  </Dialog.Content>
 </Dialog.Root>
 
 <Dialog.Root bind:open={showCourseEntryDialog}>
-	<Dialog.Content class="max-w-lg">
-		<Dialog.Header>
-			<Dialog.Title>{courseEntryForm.id ? 'Edit Course Entry' : 'Add Course Entry'}</Dialog.Title>
-		</Dialog.Header>
-		<div class="flex flex-col gap-4">
-			<div class="grid grid-cols-2 gap-4">
-				<div>
-					<Label for="entryType">Type</Label>
-					<Select.Root
-						selected={{ value: courseEntryForm.type, label: courseEntryForm.type }}
-						onSelectedChange={(v) => {
-							if (v) courseEntryForm.type = v.value;
-						}}
-					>
-						<Select.Trigger id="entryType"><Select.Value placeholder="Type" /></Select.Trigger>
-						<Select.Content>
-							<Select.Item value="level" label="level">level</Select.Item>
-							<Select.Item value="mappack" label="mappack">mappack</Select.Item>
-						</Select.Content>
-					</Select.Root>
-				</div>
-				<div>
-					<Label for="entryRef">Reference ID</Label>
-					<Input id="entryRef" type="number" bind:value={courseEntryForm.refId} />
-				</div>
-			</div>
-			<div>
-				<Label for="entryOrder">Sort Order</Label>
-				<Input id="entryOrder" type="number" bind:value={courseEntryForm.sortOrder} />
-			</div>
-			<div class="grid grid-cols-2 gap-4">
-				<div>
-					<Label for="entryRewardItem">Reward Item ID</Label>
-					<Input id="entryRewardItem" type="number" bind:value={courseEntryForm.rewardItemId} />
-				</div>
-				<div>
-					<Label for="entryRewardQty">Item Qty</Label>
-					<Input id="entryRewardQty" type="number" min="1" bind:value={courseEntryForm.rewardQuantity} />
-				</div>
-			</div>
-			<div class="text-xs text-muted-foreground">XP reward is fixed: +100 XP when this entry is cleared.</div>
-		</div>
-		<Dialog.Footer>
-			<Button variant="outline" on:click={() => (showCourseEntryDialog = false)}>Cancel</Button>
-			<Button on:click={saveCourseEntry}>Save</Button>
-		</Dialog.Footer>
-	</Dialog.Content>
+  <Dialog.Content class="max-w-lg">
+    <Dialog.Header>
+      <Dialog.Title>{
+        courseEntryForm.id ? 'Edit Course Entry' : 'Add Course Entry'
+      }</Dialog.Title>
+    </Dialog.Header>
+    <div class="flex flex-col gap-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <Label for="entryType">Type</Label>
+          <Select.Root
+            selected={{ value: courseEntryForm.type, label: courseEntryForm.type }}
+            onSelectedChange={(v) => {
+                if (v) {
+ courseEntryForm.type = v.value;
+}
+            }}
+          >
+            <Select.Trigger id="entryType"><Select.Value
+                placeholder="Type"
+              /></Select.Trigger>
+            <Select.Content>
+              <Select.Item value="level" label="level">level</Select.Item>
+              <Select.Item value="mappack" label="mappack">mappack</Select.Item>
+            </Select.Content>
+          </Select.Root>
+        </div>
+        <div>
+          <Label for="entryRef">Reference ID</Label>
+          <Input
+            id="entryRef"
+            type="number"
+            bind:value={courseEntryForm.refId}
+          />
+        </div>
+      </div>
+      <div>
+        <Label for="entryOrder">Sort Order</Label>
+        <Input
+          id="entryOrder"
+          type="number"
+          bind:value={courseEntryForm.sortOrder}
+        />
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <Label for="entryRewardItem">Reward Item ID</Label>
+          <Input
+            id="entryRewardItem"
+            type="number"
+            bind:value={courseEntryForm.rewardItemId}
+          />
+        </div>
+        <div>
+          <Label for="entryRewardQty">Item Qty</Label>
+          <Input
+            id="entryRewardQty"
+            type="number"
+            min="1"
+            bind:value={courseEntryForm.rewardQuantity}
+          />
+        </div>
+      </div>
+      <div class="text-xs text-muted-foreground">
+        XP reward is fixed: +100 XP when this entry is cleared.
+      </div>
+    </div>
+    <Dialog.Footer>
+      <Button variant="outline" on:click={() => (showCourseEntryDialog = false)}
+      >Cancel</Button>
+      <Button on:click={saveCourseEntry}>Save</Button>
+    </Dialog.Footer>
+  </Dialog.Content>
 </Dialog.Root>
 
 <style lang="scss">
-	.wrapper {
-		padding-inline: 75px;
-		padding-block: 30px;
-	}
+.wrapper {
+  padding-inline: 75px;
+  padding-block: 30px;
+}
 
-	@media screen and (max-width: 768px) {
-		.wrapper {
-			padding-inline: 15px;
-		}
-	}
+@media screen and (max-width: 768px) {
+  .wrapper {
+    padding-inline: 15px;
+  }
+}
 </style>

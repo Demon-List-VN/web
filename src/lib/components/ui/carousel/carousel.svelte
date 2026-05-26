@@ -1,12 +1,12 @@
 <script>
-	import { writable } from "svelte/store";
-	import { onDestroy } from "svelte";
-	import { setEmblaContex } from "./context.js";
-	import { cn } from "$lib/utils.js";
+	import { writable } from 'svelte/store';
+	import { onDestroy } from 'svelte';
+	import { setEmblaContex } from './context.js';
+	import { cn } from '$lib/utils.js';
 	export let opts = {};
 	export let plugins = [];
 	export let api = undefined;
-	export let orientation = "horizontal";
+	export let orientation = 'horizontal';
 	let className = undefined;
 	export { className as class };
 	const apiStore = writable(undefined);
@@ -25,20 +25,23 @@
 		api?.scrollNext();
 	}
 	function onSelect(api2) {
-		if (!api2) return;
+		if (!api2) {
+			return;
+		}
+
 		canScrollPrev.set(api2.canScrollPrev());
 		canScrollNext.set(api2.canScrollNext());
 	}
 	$: if (api) {
 		onSelect(api);
-		api.on("select", onSelect);
-		api.on("reInit", onSelect);
+		api.on('select', onSelect);
+		api.on('reInit', onSelect);
 	}
 	function handleKeyDown(e) {
-		if (e.key === "ArrowLeft") {
+		if (e.key === 'ArrowLeft') {
 			e.preventDefault();
 			scrollPrev();
-		} else if (e.key === "ArrowRight") {
+		} else if (e.key === 'ArrowRight') {
 			e.preventDefault();
 			scrollNext();
 		}
@@ -53,24 +56,24 @@
 		handleKeyDown,
 		options: optionsStore,
 		plugins: pluginStore,
-		onInit,
+		onInit
 	});
 	function onInit(event) {
 		api = event.detail;
 		apiStore.set(api);
 	}
 	onDestroy(() => {
-		api?.off("select", onSelect);
+		api?.off('select', onSelect);
 	});
 </script>
 
 <div
-	class={cn("relative", className)}
-	on:mouseenter
-	on:mouseleave
-	role="region"
-	aria-roledescription="carousel"
-	{...$$restProps}
+  class={cn('relative', className)}
+  on:mouseenter
+  on:mouseleave
+  role="region"
+  aria-roledescription="carousel"
+  {...$$restProps}
 >
-	<slot />
+  <slot />
 </div>

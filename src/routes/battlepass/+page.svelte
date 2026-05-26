@@ -46,114 +46,122 @@
 </script>
 
 <svelte:head>
-	<title>{$_('battlepass.title')} - {$_('head.site_name')}</title>
+  <title>{$_('battlepass.title')} - {$_('head.site_name')}</title>
 </svelte:head>
 
 {#if !data.season}
-	<div class="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-4">
-		<div class="text-6xl">🎮</div>
-		<h2 class="text-2xl font-bold">{$_('battlepass.no_active_season')}</h2>
-		<p class="text-muted-foreground">{$_('battlepass.check_back_later')}</p>
-	</div>
+  <div class="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-4">
+    <div class="text-6xl">🎮</div>
+    <h2 class="text-2xl font-bold">{$_('battlepass.no_active_season')}</h2>
+    <p class="text-muted-foreground">{$_('battlepass.check_back_later')}</p>
+  </div>
 {:else}
-	<BattlepassTopBanner
-		season={data.season}
-		{primaryColor}
-		{progressRefreshKey}
-		bind:purchaseDialogOpen
-	/>
+  <BattlepassTopBanner
+    season={data.season}
+    {primaryColor}
+    {progressRefreshKey}
+    bind:purchaseDialogOpen
+  />
 
-	{#if showGeodeInstallAlert}
-		<div class="mx-auto mt-6 w-full max-w-6xl px-4">
-			<Alert.Root class="relative border-yellow-300 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/40">
-				<Alert.Title class="pr-8">{$_('battlepass.geode_alert.title')}</Alert.Title>
-				<Alert.Description class="pr-8">
-					{$_('battlepass.geode_alert.description')}
-					<a
-						href="/geode-mods"
-						class="ml-1 font-semibold underline"
-					>
-						{$_('battlepass.geode_alert.download')}
-					</a>
-				</Alert.Description>
-				<button
-					on:click={dismissGeodeInstallAlert}
-					class="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100"
-					aria-label={$_('battlepass.geode_alert.dismiss')}
-				>
-					<X class="h-4 w-4" />
-				</button>
-			</Alert.Root>
-		</div>
-	{/if}
+  {#if showGeodeInstallAlert}
+    <div class="mx-auto mt-6 w-full max-w-6xl px-4">
+      <Alert.Root
+        class="relative border-yellow-300 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/40"
+      >
+        <Alert.Title class="pr-8">{
+          $_('battlepass.geode_alert.title')
+        }</Alert.Title>
+        <Alert.Description class="pr-8">
+          {$_('battlepass.geode_alert.description')}
+          <a
+            href="/geode-mods"
+            class="ml-1 font-semibold underline"
+          >
+            {$_('battlepass.geode_alert.download')}
+          </a>
+        </Alert.Description>
+        <button
+          on:click={dismissGeodeInstallAlert}
+          class="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100"
+          aria-label={$_('battlepass.geode_alert.dismiss')}
+        >
+          <X class="h-4 w-4" />
+        </button>
+      </Alert.Root>
+    </div>
+  {/if}
 
-	<Ads dataAdFormat="auto"  />
+  <Ads dataAdFormat="auto" />
 
-	<!-- Main Content Tabs -->
-	<div class="mx-auto max-w-6xl px-4 py-8">
-		<Tabs.Root value="rewards" class="flex flex-col items-center">
-			<Tabs.List class="mb-6 grid w-full max-w-3xl grid-cols-5">
-				<Tabs.Trigger value="rewards" class="flex items-center gap-2">
-					<Gift class="h-4 w-4" />
-					<span class="hidden sm:inline">{$_('battlepass.tabs.rewards')}</span>
-				</Tabs.Trigger>
-				<Tabs.Trigger value="daily" class="flex items-center gap-2">
-					<Sun class="h-4 w-4" />
-					<span class="hidden sm:inline">{$_('battlepass.tabs.daily')}</span>
-				</Tabs.Trigger>
-				<Tabs.Trigger value="levels" class="flex items-center gap-2">
-					<Star class="h-4 w-4" />
-					<span class="hidden sm:inline">{$_('battlepass.tabs.levels')}</span>
-				</Tabs.Trigger>
-				<Tabs.Trigger value="mappacks" class="flex items-center gap-2">
-					<Map class="h-4 w-4" />
-					<span class="hidden sm:inline">{$_('battlepass.tabs.mappacks')}</span>
-				</Tabs.Trigger>
-				<Tabs.Trigger value="course" class="flex items-center gap-2">
-					<Route class="h-4 w-4" />
-					<span class="hidden sm:inline">{$_('battlepass.tabs.course')}</span>
-				</Tabs.Trigger>
-				<!-- <Tabs.Trigger value="missions" class="flex items-center gap-2">
+  <!-- Main Content Tabs -->
+  <div class="mx-auto max-w-6xl px-4 py-8">
+    <Tabs.Root value="rewards" class="flex flex-col items-center">
+      <Tabs.List class="mb-6 grid w-full max-w-3xl grid-cols-5">
+        <Tabs.Trigger value="rewards" class="flex items-center gap-2">
+          <Gift class="h-4 w-4" />
+          <span class="hidden sm:inline">{$_('battlepass.tabs.rewards')}</span>
+        </Tabs.Trigger>
+        <Tabs.Trigger value="daily" class="flex items-center gap-2">
+          <Sun class="h-4 w-4" />
+          <span class="hidden sm:inline">{$_('battlepass.tabs.daily')}</span>
+        </Tabs.Trigger>
+        <Tabs.Trigger value="levels" class="flex items-center gap-2">
+          <Star class="h-4 w-4" />
+          <span class="hidden sm:inline">{$_('battlepass.tabs.levels')}</span>
+        </Tabs.Trigger>
+        <Tabs.Trigger value="mappacks" class="flex items-center gap-2">
+          <Map class="h-4 w-4" />
+          <span class="hidden sm:inline">{$_('battlepass.tabs.mappacks')}</span>
+        </Tabs.Trigger>
+        <Tabs.Trigger value="course" class="flex items-center gap-2">
+          <Route class="h-4 w-4" />
+          <span class="hidden sm:inline">{$_('battlepass.tabs.course')}</span>
+        </Tabs.Trigger>
+        <!-- <Tabs.Trigger value="missions" class="flex items-center gap-2">
 					<Target class="h-4 w-4" />
 					<span class="hidden sm:inline">{$_('battlepass.tabs.missions')}</span>
 				</Tabs.Trigger> -->
-			</Tabs.List>
+      </Tabs.List>
 
-			<!-- Rewards Tab -->
-			<Tabs.Content value="rewards" class="w-full">
-				<RewardsTab />
-			</Tabs.Content>
+      <!-- Rewards Tab -->
+      <Tabs.Content value="rewards" class="w-full">
+        <RewardsTab />
+      </Tabs.Content>
 
-			<!-- Daily/Weekly Tab -->
-			<Tabs.Content value="daily" class="w-full">
-				<DailyTab {primaryColor} on:xpClaimed={handleXpClaimed} />
-			</Tabs.Content>
+      <!-- Daily/Weekly Tab -->
+      <Tabs.Content value="daily" class="w-full">
+        <DailyTab {primaryColor} on:xpClaimed={handleXpClaimed} />
+      </Tabs.Content>
 
-			<!-- Levels Tab -->
-			<Tabs.Content value="levels" class="w-full">
-				<LevelsTab {primaryColor} />
-			</Tabs.Content>
+      <!-- Levels Tab -->
+      <Tabs.Content value="levels" class="w-full">
+        <LevelsTab {primaryColor} />
+      </Tabs.Content>
 
-			<!-- Map Packs Tab -->
-			<Tabs.Content value="mappacks" class="w-full">
-				<MapPacksTab {primaryColor} seasonStart={data.season?.start} />
-			</Tabs.Content>
+      <!-- Map Packs Tab -->
+      <Tabs.Content value="mappacks" class="w-full">
+        <MapPacksTab {primaryColor} seasonStart={data.season?.start} />
+      </Tabs.Content>
 
-			<Tabs.Content value="course" class="w-full">
-				<CourseTab />
-			</Tabs.Content>
+      <Tabs.Content value="course" class="w-full">
+        <CourseTab />
+      </Tabs.Content>
 
-			<!-- Missions Tab (Planned) -->
-			<!-- <Tabs.Content value="missions" class="w-full">
+      <!-- Missions Tab (Planned) -->
+      <!-- <Tabs.Content value="missions" class="w-full">
 				<MissionsTab {primaryColor} seasonId={data.season?.id} />
 			</Tabs.Content> -->
-		</Tabs.Root>
-	</div>
+    </Tabs.Root>
+  </div>
 
-	<!-- Premium Purchase Dialog -->
-	<PremiumPurchaseDialog bind:open={purchaseDialogOpen} seasonTitle={data.season?.title || ''} seasonId={data.season?.id} />
+  <!-- Premium Purchase Dialog -->
+  <PremiumPurchaseDialog
+    bind:open={purchaseDialogOpen}
+    seasonTitle={data.season?.title || ''}
+    seasonId={data.season?.id}
+  />
 {/if}
 
 <style lang="scss">
-	/* Hero styles moved to BattlepassTopBanner component */
+/* Hero styles moved to BattlepassTopBanner component */
 </style>

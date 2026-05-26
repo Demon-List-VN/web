@@ -52,12 +52,14 @@
 		const romanNumerals = ['M', 'CM', 'D', 'CD', 'C', 'XC', 'L', 'XL', 'X', 'IX', 'V', 'IV', 'I'];
 		const values = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1];
 		let result = '';
+
 		for (let i = 0; i < values.length; i++) {
 			while (num >= values[i]) {
 				num -= values[i];
 				result += romanNumerals[i];
 			}
 		}
+
 		return result;
 	}
 
@@ -68,16 +70,19 @@
 
 		if (!submitData.progress || !submitData.videoLink) {
 			toast.error($_('toast.submission_submit.fill_required'));
+
 			return;
 		}
 
 		if (level.needRaw && !submitData.raw) {
 			toast.error($_('toast.submission_submit.fill_required'));
+
 			return;
 		}
 
 		if (!(0 < submitData.progress && submitData.progress <= 100)) {
 			toast.error($_('toast.submission_submit.invalid_progress'));
+
 			return;
 		}
 
@@ -93,6 +98,7 @@
 			{
 				success: () => {
 					window.location.reload();
+
 					return $_('toast.submission_submit.success');
 				},
 				error: $_('toast.submission_submit.error'),
@@ -120,6 +126,7 @@
 			{
 				success: () => {
 					window.location.reload();
+
 					return $_('toast.submission_cancel.success');
 				},
 				error: $_('toast.submission_cancel.error'),
@@ -140,7 +147,9 @@
 	}
 
 	async function getDeathCount() {
-		if (!level) return;
+		if (!level) {
+			return;
+		}
 
 		try {
 			const res = await (
@@ -152,15 +161,18 @@
 			}
 		} catch (error) {
 			console.error('Failed to fetch death count:', error);
-			deathCount = Array(100).fill(0);
+			deathCount = Array(100)
+				.fill(0);
 		}
 	}
 
 	function genPercent() {
 		const res = Array(100);
+
 		for (let i = 0; i < 100; i++) {
 			res[i] = `${i + 1}%`;
 		}
+
 		return res;
 	}
 
@@ -193,9 +205,9 @@
 						display: showFull,
 						title: showFull
 							? {
-									display: true,
-									text: $_('record_detail.tabs.progress')
-								}
+								display: true,
+								text: $_('record_detail.tabs.progress')
+							}
 							: undefined
 					},
 					y: {
@@ -206,9 +218,9 @@
 						},
 						title: showFull
 							? {
-									display: true,
-									text: $_('contest.deaths')
-								}
+								display: true,
+								text: $_('contest.deaths')
+							}
 							: undefined
 					}
 				},
@@ -327,8 +339,8 @@
 				<div class="relative h-8 w-full overflow-hidden rounded-full bg-gray-300 dark:bg-gray-700">
 					<div
 						class="h-full transition-all duration-300"
-						style="width: {hpPercentage}%; background: linear-gradient(90deg, 
-							{hpPercentage > 50 ? '#10b981' : hpPercentage > 25 ? '#f59e0b' : '#ef4444'} 0%, 
+						style="width: {hpPercentage}%; background: linear-gradient(90deg,
+							{hpPercentage > 50 ? '#10b981' : hpPercentage > 25 ? '#f59e0b' : '#ef4444'} 0%,
 							{hpPercentage > 50 ? '#059669' : hpPercentage > 25 ? '#d97706' : '#dc2626'} 100%)"
 					/>
 					<div

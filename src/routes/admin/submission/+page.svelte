@@ -1,6 +1,8 @@
 <script lang="ts">
 	import RecordDetail from '$lib/components/recordDetail.svelte';
-	import ListSelector, { type ListSelectorOption } from '$lib/components/listSelector.svelte';
+	import ListSelector, {
+		type ListSelectorOption
+	} from '$lib/components/listSelector.svelte';
 	import Title from '$lib/components/Title.svelte';
 	import { Label } from '$lib/components/ui/label';
 	import { Button } from '$lib/components/ui/button';
@@ -28,7 +30,8 @@
 		const seconds = Math.floor((ms % 60000) / 1000);
 		const milliseconds = ms % 1000;
 
-		return `${minutes}:${seconds.toString().padStart(2, '0')}.${milliseconds}`;
+		return `${minutes}:${seconds.toString()
+			.padStart(2, '0')}.${milliseconds}`;
 	}
 
 	function getRecordLists(record: any) {
@@ -47,7 +50,11 @@
 			id,
 			title,
 			identifier: typeof list.slug === 'string' ? list.slug : null,
-			subtitle: list.isOfficial ? 'Official' : list.isVerified ? 'Verified' : null
+			subtitle: list.isOfficial
+				? 'Official'
+				: list.isVerified
+				? 'Verified'
+				: null
 		};
 	}
 
@@ -72,7 +79,9 @@
 			}
 		}
 
-		return [...optionsById.values()].sort((left, right) => left.title.localeCompare(right.title));
+		return [...optionsById.values()].sort((left, right) =>
+			left.title.localeCompare(right.title)
+		);
 	}
 
 	function handleListSelection(event: CustomEvent<ListSelectorOption | null>) {
@@ -96,7 +105,9 @@
 		}
 
 		try {
-			const response = await fetch(`${import.meta.env.VITE_API_URL}/records?${query.toString()}`);
+			const response = await fetch(
+				`${import.meta.env.VITE_API_URL}/records?${query.toString()}`
+			);
 
 			if (!response.ok) {
 				throw new Error(response.statusText);
@@ -153,7 +164,8 @@
 			body: JSON.stringify({
 				to: player.uid,
 				status: 1,
-				content: `Your ${level.name} (${level.id}) submission has been accepted by a moderator`
+				content:
+					`Your ${level.name} (${level.id}) submission has been accepted by a moderator`
 			}),
 			headers: {
 				Authorization: `Bearer ${await $user.token()}`,
@@ -176,19 +188,23 @@
 		toast.loading('Submitting verdict... This page will be refreshed.');
 		const recordQuery = record.id ? `?id=${record.id}` : '';
 
-		await fetch(`${import.meta.env.VITE_API_URL}/records/${player.uid}/${level.id}${recordQuery}`, {
-			method: 'DELETE',
-			headers: {
-				Authorization: `Bearer ${await $user.token()}`
+		await fetch(
+			`${import.meta.env.VITE_API_URL}/records/${player.uid}/${level.id}${recordQuery}`,
+			{
+				method: 'DELETE',
+				headers: {
+					Authorization: `Bearer ${await $user.token()}`
+				}
 			}
-		});
+		);
 
 		await fetch(`${import.meta.env.VITE_API_URL}/notifications`, {
 			method: 'POST',
 			body: JSON.stringify({
 				to: player.uid,
 				status: 2,
-				content: `Your ${level.name} (${level.id}) submission has been rejected by a moderator. Reason: ${reason}`
+				content:
+					`Your ${level.name} (${level.id}) submission has been rejected by a moderator. Reason: ${reason}`
 			}),
 			headers: {
 				Authorization: `Bearer ${await $user.token()}`,
@@ -205,156 +221,174 @@
 <Title value="Submission" />
 
 <div class="wrapper">
-	<div class="filterBar">
-		<div class="filterField">
-			<Label for="submission-list-filter">List</Label>
-			<ListSelector
-				id="submission-list-filter"
-				selectedId={selectedListId}
-				options={listOptions}
-				searchUrl={listSearchUrl}
-				placeholder="All lists"
-				searchPlaceholder="Search lists..."
-				emptyLabel="No lists found"
-				loadingLabel="Loading..."
-				allowClear
-				clearLabel="All lists"
-				triggerClass="min-w-[260px]"
-				on:select={handleListSelection}
-			/>
-		</div>
-	</div>
-	<Table.Root>
-		<Table.Caption>Total record: {records.length}{recordsLoading ? ' (loading...)' : ''}</Table.Caption>
-		<Table.Header>
-			<Table.Row>
-				<Table.Head class="w-[80px] text-center">Queue</Table.Head>
-				<Table.Head>Level</Table.Head>
-				<Table.Head>Lists</Table.Head>
-				<Table.Head class="w-[100px] text-center">Submitted by</Table.Head>
-				<Table.Head class="w-[100px] text-center">Device</Table.Head>
-				<Table.Head class="w-[80px] text-center">Progress</Table.Head>
-				<Table.Head class="w-[80px] text-center">Time</Table.Head>
-				<Table.Head class="w-[0px] text-center"></Table.Head>
-				<Table.Head class="w-[0px] text-center"></Table.Head>
-			</Table.Row>
-		</Table.Header>
-		<Table.Body>
-			{#each records as record (record.id)}
-				<Table.Row
-					on:click={(e) => {
-						// @ts-expect-error
-						if (e.target.nodeName != 'TD') {
-							return;
-						}
+  <div class="filterBar">
+    <div class="filterField">
+      <Label for="submission-list-filter">List</Label>
+      <ListSelector
+        id="submission-list-filter"
+        selectedId={selectedListId}
+        options={listOptions}
+        searchUrl={listSearchUrl}
+        placeholder="All lists"
+        searchPlaceholder="Search lists..."
+        emptyLabel="No lists found"
+        loadingLabel="Loading..."
+        allowClear
+        clearLabel="All lists"
+        triggerClass="min-w-[260px]"
+        on:select={handleListSelection}
+      />
+    </div>
+  </div>
+  <Table.Root>
+    <Table.Caption>Total record: {records.length}{
+        recordsLoading ? ' (loading...)' : ''
+      }</Table.Caption>
+    <Table.Header>
+      <Table.Row>
+        <Table.Head class="w-[80px] text-center">Queue</Table.Head>
+        <Table.Head>Level</Table.Head>
+        <Table.Head>Lists</Table.Head>
+        <Table.Head class="w-[100px] text-center">Submitted by</Table.Head>
+        <Table.Head class="w-[100px] text-center">Device</Table.Head>
+        <Table.Head class="w-[80px] text-center">Progress</Table.Head>
+        <Table.Head class="w-[80px] text-center">Time</Table.Head>
+        <Table.Head class="w-[0px] text-center"></Table.Head>
+        <Table.Head class="w-[0px] text-center"></Table.Head>
+      </Table.Row>
+    </Table.Header>
+    <Table.Body>
+      {#each records as record (record.id)}
+        <Table.Row
+          on:click={(e) => {
+              // @ts-expect-error
+              if (e.target.nodeName != 'TD') {
+                  return;
+              }
 
-						userID = record.players.uid;
-						levelID = record.levels.id;
-						recordID = record.id ?? null;
-						isOpen = true;
-					}}
-				>
-					<Table.Cell class="text-center">{record.queueNo ? `#${record.queueNo}` : '-'}</Table.Cell>
-					<Table.Cell class="font-medium">
-						<a href={`/level/${record.levels.id}`} data-sveltekit-preload-data="tap">
-							{record.levels.name}
-						</a>
-					</Table.Cell>
-					<Table.Cell>
-						{#if getRecordLists(record).length}
-							<div class="listBadges">
-								{#each getRecordLists(record).slice(0, 3) as list (list.id)}
-									<a class="listBadge" href={getListHref(list)}>{list.title}</a>
-								{/each}
-								{#if getRecordLists(record).length > 3}
-									<span class="listBadge muted">+{getRecordLists(record).length - 3}</span>
-								{/if}
-							</div>
-						{:else}
-							<span class="text-muted-foreground">No list</span>
-						{/if}
-					</Table.Cell>
-					<Table.Cell class="text-center"
-						><a href={`/player/${record.players.uid}`}>{record.players.name}</a></Table.Cell
-					>
-					<Table.Cell class="text-center">
-						{record.mobile ? 'Mobile' : 'PC'}
-						{#if record.refreshRate}
-							<br />({record.refreshRate}fps)
-						{/if}
-					</Table.Cell>
-					<Table.Cell class="text-center"
-						>{!record.levels.isPlatformer ? `${record.progress}%` : '-'}</Table.Cell
-					>
-					<Table.Cell class="text-center"
-						>{record.levels.isPlatformer ? getTimeString(record.progress) : '-'}</Table.Cell
-					>
-					<Table.Cell class="text-center">
-						<Button variant="ghost" size="icon" on:click={(event) => handleAcceptClick(event, record)}>
-							<CheckCircled size={20} />
-						</Button>
-					</Table.Cell>
-					<Table.Cell class="text-center">
-						<Button variant="ghost" size="icon" on:click={(event) => handleRejectClick(event, record)}>
-							<CrossCircled size={20} />
-						</Button>
-					</Table.Cell>
-				</Table.Row>
-			{/each}
-		</Table.Body>
-	</Table.Root>
+              userID = record.players.uid;
+              levelID = record.levels.id;
+              recordID = record.id ?? null;
+              isOpen = true;
+          }}
+        >
+          <Table.Cell class="text-center">{
+            record.queueNo ? `#${record.queueNo}` : '-'
+          }</Table.Cell>
+          <Table.Cell class="font-medium">
+            <a
+              href={`/level/${record.levels.id}`}
+              data-sveltekit-preload-data="tap"
+            >
+              {record.levels.name}
+            </a>
+          </Table.Cell>
+          <Table.Cell>
+            {#if getRecordLists(record).length}
+              <div class="listBadges">
+                {#each getRecordLists(record)
+.slice(0, 3) as list (list.id)}
+                  <a class="listBadge" href={getListHref(list)}>{list.title}</a>
+                {/each}
+                {#if getRecordLists(record).length > 3}
+                  <span class="listBadge muted">+{
+                      getRecordLists(record).length - 3
+                    }</span>
+                {/if}
+              </div>
+            {:else}
+              <span class="text-muted-foreground">No list</span>
+            {/if}
+          </Table.Cell>
+          <Table.Cell class="text-center"><a
+              href={`/player/${record.players.uid}`}
+            >{record.players.name}</a></Table.Cell>
+          <Table.Cell class="text-center">
+            {record.mobile ? 'Mobile' : 'PC'}
+            {#if record.refreshRate}
+              <br />({record.refreshRate}fps)
+            {/if}
+          </Table.Cell>
+          <Table.Cell class="text-center">{
+            !record.levels.isPlatformer ? `${record.progress}%` : '-'
+          }</Table.Cell>
+          <Table.Cell class="text-center">{
+            record.levels.isPlatformer ? getTimeString(record.progress) : '-'
+          }</Table.Cell>
+          <Table.Cell class="text-center">
+            <Button
+              variant="ghost"
+              size="icon"
+              on:click={(event) => handleAcceptClick(event, record)}
+            >
+              <CheckCircled size={20} />
+            </Button>
+          </Table.Cell>
+          <Table.Cell class="text-center">
+            <Button
+              variant="ghost"
+              size="icon"
+              on:click={(event) => handleRejectClick(event, record)}
+            >
+              <CrossCircled size={20} />
+            </Button>
+          </Table.Cell>
+        </Table.Row>
+      {/each}
+    </Table.Body>
+  </Table.Root>
 </div>
 
 <style lang="scss">
-	.wrapper {
-		padding-inline: 50px;
-	}
+.wrapper {
+  padding-inline: 50px;
+}
 
-	.filterBar {
-		display: flex;
-		align-items: flex-end;
-		gap: 12px;
-		margin-bottom: 16px;
-	}
+.filterBar {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 16px;
+}
 
-	.filterField {
-		display: grid;
-		gap: 6px;
-		width: min(360px, 100%);
-	}
+.filterField {
+  display: grid;
+  gap: 6px;
+  width: min(360px, 100%);
+}
 
-	.listBadges {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 6px;
-	}
+.listBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
 
-	.listBadge {
-		display: inline-flex;
-		max-width: 180px;
-		align-items: center;
-		border-radius: 6px;
-		border: 1px solid hsl(var(--border));
-		padding: 2px 8px;
-		font-size: 12px;
-		line-height: 1.5;
-		color: hsl(var(--foreground));
-		text-decoration: none;
-	}
+.listBadge {
+  display: inline-flex;
+  max-width: 180px;
+  align-items: center;
+  border-radius: 6px;
+  border: 1px solid hsl(var(--border));
+  padding: 2px 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: hsl(var(--foreground));
+  text-decoration: none;
+}
 
-	.listBadge:not(.muted) {
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
+.listBadge:not(.muted) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
-	.listBadge.muted {
-		color: hsl(var(--muted-foreground));
-	}
+.listBadge.muted {
+  color: hsl(var(--muted-foreground));
+}
 
-	@media screen and (max-width: 900px) {
-		.wrapper {
-			padding-inline: 10px;
-		}
-	}
+@media screen and (max-width: 900px) {
+  .wrapper {
+    padding-inline: 10px;
+  }
+}
 </style>

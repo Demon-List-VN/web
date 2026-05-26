@@ -45,18 +45,22 @@
 		const token = await $user.token();
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/notifications/discord/general-test`, {
-				method: 'POST',
-				headers: {
-					Authorization: 'Bearer ' + token
+			fetch(
+				`${import.meta.env.VITE_API_URL}/notifications/discord/general-test`,
+				{
+					method: 'POST',
+					headers: {
+						Authorization: 'Bearer ' + token
+					}
 				}
-			}).then((response) => {
-				if (!response.ok) {
-					throw new Error('Failed to send Discord message.');
-				}
+			)
+				.then((response) => {
+					if (!response.ok) {
+						throw new Error('Failed to send Discord message.');
+					}
 
-				return response;
-			}),
+					return response;
+				}),
 			{
 				success: 'Sent test message to Discord general!',
 				loading: 'Sending Discord test message...',
@@ -76,7 +80,11 @@
 			items: [
 				{ name: 'Refresh', action: refresh, type: 'button' },
 				{ name: 'Copy Token', action: copyToken, type: 'button' },
-				{ name: 'Test Discord General Message', action: testDiscordGeneralMessage, type: 'button' },
+				{
+					name: 'Test Discord General Message',
+					action: testDiscordGeneralMessage,
+					type: 'button'
+				},
 				{ name: 'API Tester', href: '/admin/api' },
 				{ name: 'Send Notification', href: '/admin/notification' }
 			]
@@ -105,7 +113,11 @@
 			title: 'Events',
 			icon: '🎉',
 			items: [
-				{ name: 'Calculate Contest Rating', action: calculateContestRating, type: 'button' },
+				{
+					name: 'Calculate Contest Rating',
+					action: calculateContestRating,
+					type: 'button'
+				},
 				{ name: 'Event Manager', href: '/admin/event' },
 				{ name: 'Event Proofs', href: '/admin/eventProofs' }
 			]
@@ -147,117 +159,117 @@
 <Title value="Admin Dashboard" />
 
 <div class="wrapper">
-	<div class="categories-grid">
-		{#each visibleCategories as category}
-			<div class="category-card">
-				<div class="category-header">
-					<span class="category-icon">{category.icon}</span>
-					<h2 class="category-title">{category.title}</h2>
-				</div>
-				<div class="category-items">
-					{#each category.items as item}
-						{#if item.type === 'button'}
-							<Button on:click={item.action} class="admin-button" variant="outline">
-								{item.name}
-							</Button>
-						{:else}
-							<a href={item.href} class="admin-link">
-								<span class="link-arrow">→</span>
-								{item.name}
-							</a>
-						{/if}
-					{/each}
-				</div>
-			</div>
-		{/each}
-	</div>
+  <div class="categories-grid">
+    {#each visibleCategories as category}
+      <div class="category-card">
+        <div class="category-header">
+          <span class="category-icon">{category.icon}</span>
+          <h2 class="category-title">{category.title}</h2>
+        </div>
+        <div class="category-items">
+          {#each category.items as item}
+            {#if item.type === 'button'}
+              <Button
+                on:click={item.action}
+                class="admin-button"
+                variant="outline"
+              >
+                {item.name}
+              </Button>
+            {:else}
+              <a href={item.href} class="admin-link">
+                <span class="link-arrow">→</span>
+                {item.name}
+              </a>
+            {/if}
+          {/each}
+        </div>
+      </div>
+    {/each}
+  </div>
 </div>
 
 <style lang="scss">
-	.wrapper {
-		padding: 2rem;
-		max-width: 1400px;
-		margin: 0 auto;
-	}
+.wrapper {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
 
-	.categories-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-		gap: 1.5rem;
-	}
+.categories-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
 
-	.category-card {
-		background: rgba(255, 255, 255, 0.02);
-		border: 1px solid rgba(255, 255, 255, 0.1);
-		border-radius: 12px;
-		padding: 1.5rem;
-		transition: all 0.3s ease;
+.category-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
 
-	}
+.category-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
 
-	.category-header {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		margin-bottom: 1.25rem;
-		padding-bottom: 1rem;
-		border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-	}
+.category-icon {
+  font-size: 1.75rem;
+}
 
-	.category-icon {
-		font-size: 1.75rem;
-	}
+.category-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
 
-	.category-title {
-		font-size: 1.25rem;
-		font-weight: 600;
-		margin: 0;
-	}
+.category-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
 
-	.category-items {
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-	}
+:global(.admin-button) {
+  width: 100%;
+  justify-content: flex-start;
+  padding: 0.75rem 1rem;
+  height: auto;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
 
-	:global(.admin-button) {
-		width: 100%;
-		justify-content: flex-start;
-		padding: 0.75rem 1rem;
-		height: auto;
-		font-size: 0.95rem;
-		transition: all 0.2s ease;
+.admin-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  color: #7cb4f8;
+  text-decoration: none;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  font-size: 0.95rem;
+  border: 1px solid transparent;
 
+  .link-arrow {
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: all 0.2s ease;
+  }
+}
 
-	}
+@media (max-width: 768px) {
+  .wrapper {
+    padding: 1rem;
+  }
 
-	.admin-link {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		padding: 0.75rem 1rem;
-		color: #7cb4f8;
-		text-decoration: none;
-		border-radius: 6px;
-		transition: all 0.2s ease;
-		font-size: 0.95rem;
-		border: 1px solid transparent;
-
-		.link-arrow {
-			opacity: 0;
-			transform: translateX(-4px);
-			transition: all 0.2s ease;
-		}
-
-	}
-
-	@media (max-width: 768px) {
-		.wrapper {
-			padding: 1rem;
-		}
-
-		.categories-grid {
-			grid-template-columns: 1fr;
-		}
-	}
+  .categories-grid {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

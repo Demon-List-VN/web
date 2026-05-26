@@ -8,10 +8,9 @@
 	$: locale = data.locale;
 	$: detail = data.detail;
 	$: isFolder = detail.type === 'folder';
-	$: metadata =
-		!isFolder && detail.metadata && locale
-			? detail.metadata[locale] || Object.values(detail.metadata)[0]
-			: null;
+	$: metadata = !isFolder && detail.metadata && locale
+		? detail.metadata[locale] || Object.values(detail.metadata)[0]
+		: null;
 	$: breadcrumbs = getBreadcrumbs(detail) ?? [];
 	$: folderTitle = isFolder ? getFolderTitle(detail.path) : '';
 
@@ -24,7 +23,8 @@
 
 		const parts: string[] = path.split('/');
 
-		if (parts.at(-1)?.endsWith('.md')) {
+		if (parts.at(-1)
+			?.endsWith('.md')) {
 			parts[parts.length - 1] = parts[parts.length - 1].replace('.md', '');
 		}
 
@@ -37,12 +37,15 @@
 
 		for (let i = 0; i < parts.length; i++) {
 			let part = parts[i];
-			part = part.split('-').join(' ');
-			part = part.charAt(0).toUpperCase() + part.slice(1);
+			part = part.split('-')
+				.join(' ');
+			part = part.charAt(0)
+				.toUpperCase() + part.slice(1);
 
 			res.push({
 				title: part,
-				link: `/wiki/` + parts.slice(0, i + 1).join('/')
+				link: '/wiki/' + parts.slice(0, i + 1)
+					.join('/')
 			});
 		}
 
@@ -52,19 +55,21 @@
 	function getFolderTitle(path: string) {
 		const parts = path.split('/');
 		const name = parts[parts.length - 1];
+
 		return name
 			.split('-')
-			.map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+			.map((word: string) => word.charAt(0)
+				.toUpperCase() + word.slice(1))
 			.join(' ');
 	}
 
 	onMount(() => {
-		console.log(isFolder, detail)
-	})
+		console.log(isFolder, detail);
+	});
 </script>
 
 {#if isFolder}
-	<FolderView data={detail} {breadcrumbs} {folderTitle} {locale} />
+  <FolderView data={detail} {breadcrumbs} {folderTitle} {locale} />
 {:else if metadata}
-	<FileView {metadata} {breadcrumbs} {locale} />
+  <FileView {metadata} {breadcrumbs} {locale} />
 {/if}

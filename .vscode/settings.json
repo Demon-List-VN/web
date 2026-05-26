@@ -4,5 +4,18 @@
         "src/public/locales"
     ],
     "i18n-ally.keystyle": "nested",
-    "i18n-ally.sourceLanguage": "en"
+    "i18n-ally.sourceLanguage": "en",
+    "eslint.format.enable": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": "explicit"
+    },
+    "[typescript]": {
+        "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+    },
+    "[javascript]": {
+        "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+    },
+    "[svelte]": {
+        "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+    }
 }

@@ -6,5 +6,5 @@
 </script>
 
 {#key data}
-	<PlayerMainPage {data} />
+  <PlayerMainPage {data} />
 {/key}

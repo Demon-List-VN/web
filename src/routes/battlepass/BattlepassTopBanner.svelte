@@ -24,21 +24,26 @@
 	let lastProgressRefreshKey = 0;
 
 	// Helper function to convert hex to RGB
-	function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+	function hexToRgb(hex: string): { r: number; g: number; b: number; } | null {
 		const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+
 		return result
 			? {
-					r: parseInt(result[1], 16),
-					g: parseInt(result[2], 16),
-					b: parseInt(result[3], 16)
-				}
+				r: parseInt(result[1], 16),
+				g: parseInt(result[2], 16),
+				b: parseInt(result[3], 16)
+			}
 			: null;
 	}
 
 	// Generate CSS variable strings
 	$: cssVars = (() => {
 		const rgb = hexToRgb(primaryColor);
-		if (!rgb) return '';
+
+		if (!rgb) {
+			return '';
+		}
+
 		return `--primary-color: ${rgb.r}, ${rgb.g}, ${rgb.b};`;
 	})();
 
@@ -46,7 +51,8 @@
 	$: tierProgress = progress ? progress.xp % XP_PER_TIER : 0;
 	$: isPremium = progress?.isPremium ?? false;
 	$: daysRemaining = season
-		? Math.max(0, Math.ceil((new Date(season.end).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+		? Math.max(0, Math.ceil((new Date(season.end)
+			.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
 		: 0;
 
 	$: if (mounted && progressRefreshKey !== lastProgressRefreshKey) {
@@ -58,11 +64,14 @@
 		return new Intl.NumberFormat('vi-VN', {
 			style: 'currency',
 			currency: 'VND'
-		}).format(amount);
+		})
+			.format(amount);
 	}
 
 	async function fetchProgress() {
-		if (!$user.loggedIn || !season) return;
+		if (!$user.loggedIn || !season) {
+			return;
+		}
 
 		try {
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/progress`, {
@@ -81,9 +90,11 @@
 
 	async function loadData() {
 		loading = true;
+
 		if ($user.loggedIn) {
 			fetchProgress();
 		}
+
 		loading = false;
 	}
 
@@ -92,7 +103,9 @@
 		loadData();
 
 		const unsubscribe = user.subscribe(async (value) => {
-			if (!mounted) return;
+			if (!mounted) {
+				return;
+			}
 
 			if (value.loggedIn) {
 				fetchProgress();

@@ -31,8 +31,16 @@
 	type PublicListTab = (typeof PUBLIC_TABS)[number];
 	type PublicListSection = 'official' | 'verified' | 'mirror' | 'browse';
 	type ListTab = PublicListTab | 'mine' | 'starred';
-	type CustomListResolvedRole = 'viewer' | 'owner' | 'admin' | 'helper' | 'moderator';
-	const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://gdvn.net').replace(/\/$/, '');
+	type CustomListResolvedRole =
+		| 'viewer'
+		| 'owner'
+		| 'admin'
+		| 'helper'
+		| 'moderator';
+	const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://gdvn.net').replace(
+		/\/$/,
+		''
+	);
 	const PUBLIC_TAB_SECTIONS: Record<PublicListTab, PublicListSection> = {
 		official: 'official',
 		verified: 'verified',
@@ -72,12 +80,17 @@
 	$: currentPage = data?.page ?? 1;
 	$: pageSize = data?.pageSize ?? 12;
 	$: searchQuery = data?.search ?? '';
-	$: publicTab = (isPublicListTab(data?.tab) ? data.tab : 'official') as PublicListTab;
+	$: publicTab =
+		(isPublicListTab(data?.tab) ? data.tab : 'official') as PublicListTab;
 	$: totalPages = Math.max(1, Math.ceil(total / pageSize));
 	let activeTab: ListTab = publicTab;
-	$: pageTitle = `${$_(`head.list_seo.index_titles.${publicTab}`)} - ${$_('head.site_name')}`;
+	$: pageTitle = `${$_(`head.list_seo.index_titles.${publicTab}`)} - ${
+		$_('head.site_name')
+	}`;
 	$: pageDescription = $_(`head.list_seo.index_descriptions.${publicTab}`);
-	$: canonicalUrl = `${siteUrl}/lists${publicTab === 'official' ? '' : `?tab=${publicTab}`}`;
+	$: canonicalUrl = `${siteUrl}/lists${
+		publicTab === 'official' ? '' : `?tab=${publicTab}`
+	}`;
 
 	// Own lists (client-only, requires auth)
 	let ownLists: ListSummary[] = [];
@@ -91,7 +104,8 @@
 	let searchInput = searchQuery;
 
 	function isPublicListTab(value: unknown): value is PublicListTab {
-		return typeof value === 'string' && (PUBLIC_TABS as readonly string[]).includes(value);
+		return typeof value === 'string'
+			&& (PUBLIC_TABS as readonly string[]).includes(value);
 	}
 
 	function getPublicTabSection(tab: PublicListTab) {
@@ -105,40 +119,72 @@
 	function getQuickLevelId() {
 		const raw = $page.url.searchParams.get('levelId');
 		const parsed = raw ? Number.parseInt(raw, 10) : Number.NaN;
+
 		return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
 	}
 
 	$: quickLevelId = getQuickLevelId();
 
 	function formatVisibility(visibility: string) {
-		if (visibility === 'public') return $_('custom_lists.visibility.public');
-		if (visibility === 'unlisted') return $_('custom_lists.visibility.unlisted');
+		if (visibility === 'public') {
+			return $_(
+				'custom_lists.visibility.public'
+			);
+		}
+
+		if (visibility === 'unlisted') {
+			return $_('custom_lists.visibility.unlisted');
+		}
+
 		return $_('custom_lists.visibility.private');
 	}
 
 	function formatListType(isPlatformer: boolean) {
-		return isPlatformer ? $_('custom_lists.type.platformer') : $_('custom_lists.type.classic');
+		return isPlatformer
+			? $_('custom_lists.type.platformer')
+			: $_('custom_lists.type.classic');
 	}
 
 	function getRoleLabel(role: CustomListResolvedRole | undefined) {
-		if (role === 'admin') return $_('custom_lists.manage.roles.admin');
-		if (role === 'helper') return $_('custom_lists.manage.roles.helper');
-		if (role === 'moderator') return $_('custom_lists.manage.roles.moderator');
-		if (role === 'owner') return $_('custom_lists.manage.roles.owner');
+		if (role === 'admin') {
+			return $_('custom_lists.manage.roles.admin');
+		}
+
+		if (role === 'helper') {
+			return $_('custom_lists.manage.roles.helper');
+		}
+
+		if (role === 'moderator') {
+			return $_(
+				'custom_lists.manage.roles.moderator'
+			);
+		}
+
+		if (role === 'owner') {
+			return $_('custom_lists.manage.roles.owner');
+		}
+
 		return null;
 	}
 
 	function formatDate(value: string) {
-		return new Date(value).toLocaleDateString('vi-VN', {
-			year: 'numeric',
-			month: 'short',
-			day: 'numeric'
-		});
+		return new Date(value)
+			.toLocaleDateString('vi-VN', {
+				year: 'numeric',
+				month: 'short',
+				day: 'numeric'
+			});
 	}
 
 	function getVisibilityIcon(visibility: string) {
-		if (visibility === 'public') return Globe2;
-		if (visibility === 'unlisted') return EyeOff;
+		if (visibility === 'public') {
+			return Globe2;
+		}
+
+		if (visibility === 'unlisted') {
+			return EyeOff;
+		}
+
 		return Lock;
 	}
 
@@ -146,21 +192,29 @@
 		return `/lists/${list.slug || list.id}`;
 	}
 
-	function shouldHideOwnerInfo(list: Pick<ListSummary, 'id' | 'isOfficial' | 'isMirror'>) {
+	function shouldHideOwnerInfo(
+		list: Pick<ListSummary, 'id' | 'isOfficial' | 'isMirror'>
+	) {
 		return Boolean(list.isOfficial || list.isMirror);
 	}
 
 	function isHexColor(value: string | null | undefined) {
-		return typeof value === 'string' && /^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(value.trim());
+		return typeof value === 'string'
+			&& /^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(value.trim());
 	}
 
 	function withHexAlpha(color: string, alpha: string) {
 		const normalized = color.trim();
-		return normalized.length === 9 ? `${normalized.slice(0, 7)}${alpha}` : `${normalized}${alpha}`;
+
+		return normalized.length === 9
+			? `${normalized.slice(0, 7)}${alpha}`
+			: `${normalized}${alpha}`;
 	}
 
 	function hexToRgb(color: string) {
-		const normalized = color.trim().slice(1, 7);
+		const normalized = color.trim()
+			.slice(1, 7);
+
 		return {
 			r: Number.parseInt(normalized.slice(0, 2), 16),
 			g: Number.parseInt(normalized.slice(2, 4), 16),
@@ -171,26 +225,43 @@
 	function isLightColor(color: string) {
 		const { r, g, b } = hexToRgb(color);
 		const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+
 		return luminance >= 0.62;
 	}
 
 	function getListCardStyle(list: ListSummary) {
 		const backgroundColor = isHexColor(list.backgroundColor)
-			? String(list.backgroundColor).trim()
+			? String(list.backgroundColor)
+				.trim()
 			: null;
-		const borderColor = isHexColor(list.borderColor) ? String(list.borderColor).trim() : null;
+		const borderColor = isHexColor(list.borderColor)
+			? String(list.borderColor)
+				.trim()
+			: null;
 		const styles: string[] = [];
 
 		if (backgroundColor) {
 			const lightBackground = isLightColor(backgroundColor);
 			styles.push(
-				`background: ${backgroundColor}; --custom-surface-foreground: ${lightBackground ? '#0f172a' : '#f8fafc'}; --custom-surface-muted: ${lightBackground ? 'rgba(15, 23, 42, 0.72)' : 'rgba(248, 250, 252, 0.78)'}; --custom-surface-chip-background: ${lightBackground ? 'rgba(15, 23, 42, 0.12)' : 'rgba(248, 250, 252, 0.16)'};`
+				`background: ${backgroundColor}; --custom-surface-foreground: ${
+					lightBackground ? '#0f172a' : '#f8fafc'
+				}; --custom-surface-muted: ${
+					lightBackground
+						? 'rgba(15, 23, 42, 0.72)'
+						: 'rgba(248, 250, 252, 0.78)'
+				}; --custom-surface-chip-background: ${
+					lightBackground
+						? 'rgba(15, 23, 42, 0.12)'
+						: 'rgba(248, 250, 252, 0.16)'
+				};`
 			);
 		}
 
 		if (borderColor) {
 			styles.push(`border-color: ${borderColor};`);
-			styles.push(`--custom-surface-chip-border: ${withHexAlpha(borderColor, '55')};`);
+			styles.push(
+				`--custom-surface-chip-border: ${withHexAlpha(borderColor, '55')};`
+			);
 		}
 
 		return styles.length ? styles.join(' ') : undefined;
@@ -198,19 +269,26 @@
 
 	function getListAssetUrl(value: string | null | undefined) {
 		const normalized = typeof value === 'string' ? value.trim() : '';
+
 		return normalized.length ? normalized : null;
 	}
 
 	function getListCardBannerStyle(list: ListSummary) {
 		const backgroundColor = isHexColor(list.backgroundColor)
-			? String(list.backgroundColor).trim()
+			? String(list.backgroundColor)
+				.trim()
 			: null;
-		const borderColor = isHexColor(list.borderColor) ? String(list.borderColor).trim() : null;
+		const borderColor = isHexColor(list.borderColor)
+			? String(list.borderColor)
+				.trim()
+			: null;
 		const styles: string[] = [];
 
 		if (backgroundColor) {
 			styles.push(
-				`background: linear-gradient(180deg, ${withHexAlpha(backgroundColor, 'F0')} 0%, ${withHexAlpha(backgroundColor, 'C2')} 100%);`
+				`background: linear-gradient(180deg, ${
+					withHexAlpha(backgroundColor, 'F0')
+				} 0%, ${withHexAlpha(backgroundColor, 'C2')} 100%);`
 			);
 		}
 
@@ -221,7 +299,10 @@
 		return styles.length ? styles.join(' ') : undefined;
 	}
 
-	function buildPublicTabUrl(tab: PublicListTab, options: { page?: number; search?: string } = {}) {
+	function buildPublicTabUrl(
+		tab: PublicListTab,
+		options: { page?: number; search?: string; } = {}
+	) {
 		const params = new URLSearchParams();
 		const nextPage = options.page ?? 1;
 		const nextSearch = (options.search ?? '').trim();
@@ -243,12 +324,14 @@
 		}
 
 		const qs = params.toString();
+
 		return `/lists${qs ? `?${qs}` : ''}`;
 	}
 
 	function selectTab(nextTab: ListTab) {
 		if (nextTab === 'mine' || nextTab === 'starred') {
 			activeTab = nextTab;
+
 			return;
 		}
 
@@ -269,22 +352,39 @@
 	}
 
 	function handleSearchKeydown(event: KeyboardEvent) {
-		if (event.key === 'Enter') handleSearch();
+		if (event.key === 'Enter') {
+			handleSearch();
+		}
 	}
 
 	$: paginationPages = (() => {
 		const pages: (number | '...')[] = [];
+
 		if (totalPages <= 7) {
-			for (let i = 1; i <= totalPages; i++) pages.push(i);
+			for (let i = 1; i <= totalPages; i++) {
+				pages.push(i);
+			}
 		} else {
 			pages.push(1);
-			if (currentPage > 3) pages.push('...');
+
+			if (currentPage > 3) {
+				pages.push('...');
+			}
+
 			const start = Math.max(2, currentPage - 1);
 			const end = Math.min(totalPages - 1, currentPage + 1);
-			for (let i = start; i <= end; i++) pages.push(i);
-			if (currentPage < totalPages - 2) pages.push('...');
+
+			for (let i = start; i <= end; i++) {
+				pages.push(i);
+			}
+
+			if (currentPage < totalPages - 2) {
+				pages.push('...');
+			}
+
 			pages.push(totalPages);
 		}
+
 		return pages;
 	})();
 
@@ -293,6 +393,7 @@
 		if (!$user.loggedIn) {
 			ownLists = [];
 			ownLoading = false;
+
 			return;
 		}
 
@@ -305,12 +406,16 @@
 				}
 			});
 
-			if (!res.ok) throw new Error('Failed to load your lists');
+			if (!res.ok) {
+				throw new Error('Failed to load your lists');
+			}
 
 			ownLists = await res.json();
 		} catch (error) {
 			toast.error(
-				error instanceof Error ? error.message : $_('custom_lists.toast.failed_load_own')
+				error instanceof Error
+					? error.message
+					: $_('custom_lists.toast.failed_load_own')
 			);
 		} finally {
 			ownLoading = false;
@@ -321,24 +426,31 @@
 		actionListId = listId;
 
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/${listId}/levels`, {
-				method: 'POST',
-				headers: {
-					Authorization: `Bearer ${await $user.token()}`,
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({ levelId })
-			});
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/lists/${listId}/levels`,
+				{
+					method: 'POST',
+					headers: {
+						Authorization: `Bearer ${await $user.token()}`,
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({ levelId })
+				}
+			);
 
 			const payload = await res.json();
 
-			if (!res.ok) throw new Error(payload.error || 'Failed to add level to list');
+			if (!res.ok) {
+				throw new Error(payload.error || 'Failed to add level to list');
+			}
 
 			toast.success($_('custom_lists.toast.level_added'));
 			goto(`/lists/${listId}/manage`);
 		} catch (error) {
 			toast.error(
-				error instanceof Error ? error.message : $_('custom_lists.toast.failed_add_to_list')
+				error instanceof Error
+					? error.message
+					: $_('custom_lists.toast.failed_add_to_list')
 			);
 		} finally {
 			actionListId = null;
@@ -349,24 +461,32 @@
 		if (!$user.loggedIn) {
 			starredLists = [];
 			starredLoading = false;
+
 			return;
 		}
 
 		starredLoading = true;
 
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/lists/starred`, {
-				headers: {
-					Authorization: `Bearer ${await $user.token()}`
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/lists/starred`,
+				{
+					headers: {
+						Authorization: `Bearer ${await $user.token()}`
+					}
 				}
-			});
+			);
 
-			if (!res.ok) throw new Error('Failed to load your starred lists');
+			if (!res.ok) {
+				throw new Error('Failed to load your starred lists');
+			}
 
 			starredLists = await res.json();
 		} catch (error) {
 			toast.error(
-				error instanceof Error ? error.message : $_('custom_lists.toast.failed_load_starred')
+				error instanceof Error
+					? error.message
+					: $_('custom_lists.toast.failed_load_starred')
 			);
 		} finally {
 			starredLoading = false;
@@ -378,14 +498,23 @@
 		goto(`/lists/${listId}/manage`);
 	}
 
-	function handleQuickAddClick(event: MouseEvent, listId: number, levelId: number | null) {
+	function handleQuickAddClick(
+		event: MouseEvent,
+		listId: number,
+		levelId: number | null
+	) {
 		event.stopPropagation();
-		if (!levelId) return;
+
+		if (!levelId) {
+			return;
+		}
+
 		void addLevelToList(listId, levelId);
 	}
 
 	$: if ($user.checked) {
 		const nextKey = $user.loggedIn ? $user.data?.uid || 'authed' : 'guest';
+
 		if (nextKey !== ownLoadKey) {
 			ownLoadKey = nextKey;
 			void fetchOwnLists();
@@ -401,1307 +530,1364 @@
 </script>
 
 <svelte:head>
-	<title>{pageTitle}</title>
-	<meta name="description" content={pageDescription} />
-	<link rel="canonical" href={canonicalUrl} />
-	{#if searchQuery || currentPage > 1 || quickLevelId}
-		<meta name="robots" content="noindex,follow" />
-	{/if}
-	<meta property="og:title" content={pageTitle} />
-	<meta property="og:type" content="website" />
-	<meta property="og:url" content={canonicalUrl} />
-	<meta property="og:description" content={pageDescription} />
-	<meta property="og:site_name" content={$_('head.site_name')} />
-	<meta name="twitter:card" content="summary" />
-	<meta name="twitter:title" content={pageTitle} />
-	<meta name="twitter:description" content={pageDescription} />
+  <title>{pageTitle}</title>
+  <meta name="description" content={pageDescription} />
+  <link rel="canonical" href={canonicalUrl} />
+  {#if searchQuery || currentPage > 1 || quickLevelId}
+    <meta name="robots" content="noindex,follow" />
+  {/if}
+  <meta property="og:title" content={pageTitle} />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content={canonicalUrl} />
+  <meta property="og:description" content={pageDescription} />
+  <meta property="og:site_name" content={$_('head.site_name')} />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content={pageTitle} />
+  <meta name="twitter:description" content={pageDescription} />
 </svelte:head>
 
 <div class="page">
-	<!-- Page Header -->
-	<div class="pageHeader">
-		<div class="headerContent">
-			<h1>{$_('custom_lists.index.title')}</h1>
-			<p class="subtitle">{$_('custom_lists.index.subtitle')}</p>
-		</div>
-		{#if $user.loggedIn}
-			<Button
-				on:click={() => goto(quickLevelId ? `/lists/new?levelId=${quickLevelId}` : '/lists/new')}
-			>
-				<Plus class="mr-2 h-4 w-4" />
-				{$_('custom_lists.index.new_list')}
-			</Button>
-		{/if}
-	</div>
-	<Ads dataAdFormat="auto" />
-	<!-- Quick-add banner -->
-	{#if quickLevelId && $user.loggedIn}
-		<div class="quickBanner">
-			<div class="quickBannerContent">
-				<LinkIcon class="h-5 w-5 flex-shrink-0" />
-				<div>
-					<p class="quickTitle">
-						{$_('custom_lists.index.own.quick_title', { values: { id: quickLevelId } })}
-					</p>
-					<p class="quickDesc">{$_('custom_lists.index.own.quick_desc')}</p>
-				</div>
-			</div>
-		</div>
-	{/if}
+  <!-- Page Header -->
+  <div class="pageHeader">
+    <div class="headerContent">
+      <h1>{$_('custom_lists.index.title')}</h1>
+      <p class="subtitle">{$_('custom_lists.index.subtitle')}</p>
+    </div>
+    {#if $user.loggedIn}
+      <Button
+        on:click={() =>
+        goto(quickLevelId ? `/lists/new?levelId=${quickLevelId}` : '/lists/new')}
+      >
+        <Plus class="mr-2 h-4 w-4" />
+        {$_('custom_lists.index.new_list')}
+      </Button>
+    {/if}
+  </div>
+  <Ads dataAdFormat="auto" />
+  <!-- Quick-add banner -->
+  {#if quickLevelId && $user.loggedIn}
+    <div class="quickBanner">
+      <div class="quickBannerContent">
+        <LinkIcon class="h-5 w-5 flex-shrink-0" />
+        <div>
+          <p class="quickTitle">
+            {
+              $_('custom_lists.index.own.quick_title', { values: { id: quickLevelId } })
+            }
+          </p>
+          <p class="quickDesc">{$_('custom_lists.index.own.quick_desc')}</p>
+        </div>
+      </div>
+    </div>
+  {/if}
 
-	<Tabs.Root bind:value={activeTab}>
-		<div class="tabsList">
-			<Tabs.List>
-				<Tabs.Trigger value="official" on:click={() => selectTab('official')}
-					>{$_('custom_lists.index.tabs.official')}</Tabs.Trigger
-				>
-				<Tabs.Trigger value="verified" on:click={() => selectTab('verified')}
-					>{$_('custom_lists.index.tabs.verified')}</Tabs.Trigger
-				>
-				<Tabs.Trigger value="mirror" on:click={() => selectTab('mirror')}
-					>{$_('custom_lists.index.tabs.mirror')}</Tabs.Trigger
-				>
-				<Tabs.Trigger value="custom" on:click={() => selectTab('custom')}
-					>{$_('custom_lists.index.tabs.community')}</Tabs.Trigger
-				>
-				<Tabs.Trigger value="mine" on:click={() => selectTab('mine')}
-					>{$_('custom_lists.index.tabs.mine')}</Tabs.Trigger
-				>
-				<Tabs.Trigger value="starred" on:click={() => selectTab('starred')}
-					>{$_('custom_lists.index.tabs.starred')}</Tabs.Trigger
-				>
-			</Tabs.List>
-		</div>
+  <Tabs.Root bind:value={activeTab}>
+    <div class="tabsList">
+      <Tabs.List>
+        <Tabs.Trigger value="official" on:click={() => selectTab('official')}>{
+          $_('custom_lists.index.tabs.official')
+        }</Tabs.Trigger>
+        <Tabs.Trigger value="verified" on:click={() => selectTab('verified')}>{
+          $_('custom_lists.index.tabs.verified')
+        }</Tabs.Trigger>
+        <Tabs.Trigger value="mirror" on:click={() => selectTab('mirror')}>{
+          $_('custom_lists.index.tabs.mirror')
+        }</Tabs.Trigger>
+        <Tabs.Trigger value="custom" on:click={() => selectTab('custom')}>{
+          $_('custom_lists.index.tabs.community')
+        }</Tabs.Trigger>
+        <Tabs.Trigger value="mine" on:click={() => selectTab('mine')}>{
+          $_('custom_lists.index.tabs.mine')
+        }</Tabs.Trigger>
+        <Tabs.Trigger value="starred" on:click={() => selectTab('starred')}>{
+          $_('custom_lists.index.tabs.starred')
+        }</Tabs.Trigger>
+      </Tabs.List>
+    </div>
 
-		{#if publicTab === 'verified' || publicTab === 'mirror'}
-			<Tabs.Content value={publicTab}>
-				<section class="section">
-					<div class="sectionHeader">
-						<div class="sectionTitleRow">
-							<h2>{getPublicTabMessage(publicTab, 'heading')}</h2>
-							<Badge variant="outline">{total}</Badge>
-						</div>
-						<p class="sectionHint">{getPublicTabMessage(publicTab, 'hint')}</p>
-					</div>
+    {#if publicTab === 'verified' || publicTab === 'mirror'}
+      <Tabs.Content value={publicTab}>
+        <section class="section">
+          <div class="sectionHeader">
+            <div class="sectionTitleRow">
+              <h2>{getPublicTabMessage(publicTab, 'heading')}</h2>
+              <Badge variant="outline">{total}</Badge>
+            </div>
+            <p class="sectionHint">{getPublicTabMessage(publicTab, 'hint')}</p>
+          </div>
 
-					<div class="searchRow">
-						<div class="searchInputWrap">
-							<span class="searchIcon"><Search class="h-4 w-4" /></span>
-							<Input
-								bind:value={searchInput}
-								placeholder={getPublicTabMessage(publicTab, 'search_placeholder')}
-								on:keydown={handleSearchKeydown}
-							/>
-						</div>
-						<Button variant="outline" on:click={handleSearch}
-							>{getPublicTabMessage(publicTab, 'search_button')}</Button
-						>
-					</div>
+          <div class="searchRow">
+            <div class="searchInputWrap">
+              <span class="searchIcon"><Search class="h-4 w-4" /></span>
+              <Input
+                bind:value={searchInput}
+                placeholder={getPublicTabMessage(publicTab, 'search_placeholder')}
+                on:keydown={handleSearchKeydown}
+              />
+            </div>
+            <Button variant="outline" on:click={handleSearch}>{
+              getPublicTabMessage(publicTab, 'search_button')
+            }</Button>
+          </div>
 
-					{#if lists.length === 0}
-						<div class="emptyState">
-							<h3>{getPublicTabMessage(publicTab, 'empty_title')}</h3>
-							<p>
-								{searchQuery
-									? getPublicTabMessage(publicTab, 'empty_search_hint')
-									: getPublicTabMessage(publicTab, 'empty_browse_hint')}
-							</p>
-						</div>
-					{:else}
-						<div class="listGrid">
-							{#each lists as list}
-								{@const bannerUrl = getListAssetUrl(list.bannerUrl)}
-								{@const logoUrl = getListAssetUrl(list.logoUrl)}
-								<button
-									class="listCard"
-									style={getListCardStyle(list)}
-									on:click={() => goto(getListHref(list))}
-								>
-									{#if bannerUrl || logoUrl}
-										<div class="cardMedia" style={getListCardBannerStyle(list)}>
-											{#if bannerUrl}
-												<img
-													class="cardBanner"
-													src={bannerUrl}
-													alt=""
-													loading="lazy"
-													decoding="async"
-												/>
-											{/if}
-											<div class="cardMediaShade"></div>
-											{#if logoUrl}
-												<div class="cardLogoWrap">
-													<img
-														class="cardLogo"
-														src={logoUrl}
-														alt={`${list.title} logo`}
-														loading="lazy"
-														decoding="async"
-													/>
-												</div>
-											{/if}
-										</div>
-									{/if}
-									<div class="cardTop">
-										<h3 class="cardTitle">{list.title}</h3>
-										<p class="cardDesc">
-											{list.description || $_('custom_lists.detail.no_description')}
-										</p>
-									</div>
+          {#if lists.length === 0}
+            <div class="emptyState">
+              <h3>{getPublicTabMessage(publicTab, 'empty_title')}</h3>
+              <p>
+                {
+                  searchQuery
+                  ? getPublicTabMessage(publicTab, 'empty_search_hint')
+                  : getPublicTabMessage(publicTab, 'empty_browse_hint')
+                }
+              </p>
+            </div>
+          {:else}
+            <div class="listGrid">
+              {#each lists as list}
+                {@const bannerUrl = getListAssetUrl(list.bannerUrl)}
+                {@const logoUrl = getListAssetUrl(list.logoUrl)}
+                <button
+                  class="listCard"
+                  style={getListCardStyle(list)}
+                  on:click={() => goto(getListHref(list))}
+                >
+                  {#if bannerUrl || logoUrl}
+                    <div class="cardMedia" style={getListCardBannerStyle(list)}>
+                      {#if bannerUrl}
+                        <img
+                          class="cardBanner"
+                          src={bannerUrl}
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      {/if}
+                      <div class="cardMediaShade"></div>
+                      {#if logoUrl}
+                        <div class="cardLogoWrap">
+                          <img
+                            class="cardLogo"
+                            src={logoUrl}
+                            alt={`${list.title} logo`}
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        </div>
+                      {/if}
+                    </div>
+                  {/if}
+                  <div class="cardTop">
+                    <h3 class="cardTitle">{list.title}</h3>
+                    <p class="cardDesc">
+                      {
+                        list.description || $_('custom_lists.detail.no_description')
+                      }
+                    </p>
+                  </div>
 
-									<div class="cardMeta">
-										<div class="metaBadges">
-											<span class="metaItem">
-												<svelte:component
-													this={getVisibilityIcon(list.visibility)}
-													class="h-3.5 w-3.5"
-												/>
-												{formatVisibility(list.visibility)}
-											</span>
-											<span class="metaItem">
-												<Layers class="h-3.5 w-3.5" />
-												{formatListType(list.isPlatformer)}
-											</span>
-											{#if list.isOfficial}
-												<span class="metaItem">
-													<Star class="h-3.5 w-3.5" />
-													Official
-												</span>
-											{/if}
-											<span class="metaItem">
-												{$_('custom_lists.detail.levels_badge', {
-													values: { count: list.levelCount }
-												})}
-											</span>
-											<span class="metaItem">
-												<Star class="h-3.5 w-3.5" />
-												{$_('custom_lists.detail.star_count', {
-													values: { count: list.starCount ?? 0 }
-												})}
-											</span>
-										</div>
-										<div class="cardFooter">
-											<span class="metaDate">
-												<Clock class="h-3.5 w-3.5" />
-												{formatDate(list.updated_at)}
-											</span>
-											{#if list.ownerData && !shouldHideOwnerInfo(list)}
-												<span class="ownerInfo">
-													{$_('custom_lists.index.browse.by')}
-													<PlayerLink player={list.ownerData} />
-												</span>
-											{/if}
-										</div>
-									</div>
+                  <div class="cardMeta">
+                    <div class="metaBadges">
+                      <span class="metaItem">
+                        <svelte:component
+                          this={getVisibilityIcon(list.visibility)}
+                          class="h-3.5 w-3.5"
+                        />
+                        {formatVisibility(list.visibility)}
+                      </span>
+                      <span class="metaItem">
+                        <Layers class="h-3.5 w-3.5" />
+                        {formatListType(list.isPlatformer)}
+                      </span>
+                      {#if list.isOfficial}
+                        <span class="metaItem">
+                          <Star class="h-3.5 w-3.5" />
+                          Official
+                        </span>
+                      {/if}
+                      <span class="metaItem">
+                        {
+                          $_('custom_lists.detail.levels_badge', {
+                              values: { count: list.levelCount }
+                          })
+                        }
+                      </span>
+                      <span class="metaItem">
+                        <Star class="h-3.5 w-3.5" />
+                        {
+                          $_('custom_lists.detail.star_count', {
+                              values: { count: list.starCount ?? 0 }
+                          })
+                        }
+                      </span>
+                    </div>
+                    <div class="cardFooter">
+                      <span class="metaDate">
+                        <Clock class="h-3.5 w-3.5" />
+                        {formatDate(list.updated_at)}
+                      </span>
+                      {#if list.ownerData && !shouldHideOwnerInfo(list)}
+                        <span class="ownerInfo">
+                          {$_('custom_lists.index.browse.by')}
+                          <PlayerLink player={list.ownerData} />
+                        </span>
+                      {/if}
+                    </div>
+                  </div>
 
-									{#if list.tags?.length}
-										<div class="cardTags">
-											{#each list.tags.slice(0, 4) as tag}
-												<Badge variant="outline" class="cardTag">{tag}</Badge>
-											{/each}
-											{#if list.tags.length > 4}
-												<Badge variant="outline" class="cardTag">+{list.tags.length - 4}</Badge>
-											{/if}
-										</div>
-									{/if}
-								</button>
-							{/each}
-						</div>
+                  {#if list.tags?.length}
+                    <div class="cardTags">
+                      {#each list.tags.slice(0, 4) as tag}
+                        <Badge variant="outline" class="cardTag">{tag}</Badge>
+                      {/each}
+                      {#if list.tags.length > 4}
+                        <Badge variant="outline" class="cardTag">+{
+                            list.tags.length - 4
+                          }</Badge>
+                      {/if}
+                    </div>
+                  {/if}
+                </button>
+              {/each}
+            </div>
 
-						{#if totalPages > 1}
-							<nav class="pagination" aria-label="Pagination">
-								<Button
-									variant="outline"
-									size="sm"
-									disabled={currentPage <= 1}
-									on:click={() => goToPage(currentPage - 1)}
-								>
-									<ChevronLeft class="h-4 w-4" />
-									<span class="paginationLabel">Prev</span>
-								</Button>
+            {#if totalPages > 1}
+              <nav class="pagination" aria-label="Pagination">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage <= 1}
+                  on:click={() => goToPage(currentPage - 1)}
+                >
+                  <ChevronLeft class="h-4 w-4" />
+                  <span class="paginationLabel">Prev</span>
+                </Button>
 
-								<div class="pageNumbers">
-									{#each paginationPages as p}
-										{#if p === '...'}
-											<span class="pageEllipsis">…</span>
-										{:else}
-											<button
-												class="pageBtn"
-												class:active={p === currentPage}
-												on:click={() => goToPage(p)}
-											>
-												{p}
-											</button>
-										{/if}
-									{/each}
-								</div>
+                <div class="pageNumbers">
+                  {#each paginationPages as p}
+                    {#if p === '...'}
+                      <span class="pageEllipsis">…</span>
+                    {:else}
+                      <button
+                        class="pageBtn"
+                        class:active={p === currentPage}
+                        on:click={() => goToPage(p)}
+                      >
+                        {p}
+                      </button>
+                    {/if}
+                  {/each}
+                </div>
 
-								<Button
-									variant="outline"
-									size="sm"
-									disabled={currentPage >= totalPages}
-									on:click={() => goToPage(currentPage + 1)}
-								>
-									<span class="paginationLabel">Next</span>
-									<ChevronRight class="h-4 w-4" />
-								</Button>
-							</nav>
-						{/if}
-					{/if}
-				</section>
-			</Tabs.Content>
-		{/if}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage >= totalPages}
+                  on:click={() => goToPage(currentPage + 1)}
+                >
+                  <span class="paginationLabel">Next</span>
+                  <ChevronRight class="h-4 w-4" />
+                </Button>
+              </nav>
+            {/if}
+          {/if}
+        </section>
+      </Tabs.Content>
+    {/if}
 
-		<Tabs.Content value="official">
-			<section class="section">
-				<div class="sectionHeader">
-					<div class="sectionTitleRow">
-						<h2>{$_('custom_lists.index.official.heading')}</h2>
-						<Badge variant="outline">{total}</Badge>
-					</div>
-					<p class="sectionHint">{$_('custom_lists.index.official.hint')}</p>
-				</div>
+    <Tabs.Content value="official">
+      <section class="section">
+        <div class="sectionHeader">
+          <div class="sectionTitleRow">
+            <h2>{$_('custom_lists.index.official.heading')}</h2>
+            <Badge variant="outline">{total}</Badge>
+          </div>
+          <p class="sectionHint">{$_('custom_lists.index.official.hint')}</p>
+        </div>
 
-				<div class="searchRow">
-					<div class="searchInputWrap">
-						<span class="searchIcon"><Search class="h-4 w-4" /></span>
-						<Input
-							bind:value={searchInput}
-							placeholder={$_('custom_lists.index.official.search_placeholder')}
-							on:keydown={handleSearchKeydown}
-						/>
-					</div>
-					<Button variant="outline" on:click={handleSearch}
-						>{$_('custom_lists.index.official.search_button')}</Button
-					>
-				</div>
+        <div class="searchRow">
+          <div class="searchInputWrap">
+            <span class="searchIcon"><Search class="h-4 w-4" /></span>
+            <Input
+              bind:value={searchInput}
+              placeholder={$_('custom_lists.index.official.search_placeholder')}
+              on:keydown={handleSearchKeydown}
+            />
+          </div>
+          <Button variant="outline" on:click={handleSearch}>{
+            $_('custom_lists.index.official.search_button')
+          }</Button>
+        </div>
 
-				{#if lists.length === 0}
-					<div class="emptyState">
-						<h3>{$_('custom_lists.index.official.empty_title')}</h3>
-						<p>
-							{searchQuery
-								? $_('custom_lists.index.official.empty_search_hint')
-								: $_('custom_lists.index.official.empty_browse_hint')}
-						</p>
-					</div>
-				{:else}
-					<div class="listGrid">
-						{#each lists as list}
-							{@const bannerUrl = getListAssetUrl(list.bannerUrl)}
-							{@const logoUrl = getListAssetUrl(list.logoUrl)}
-							<button
-								class="listCard"
-								style={getListCardStyle(list)}
-								on:click={() => goto(getListHref(list))}
-							>
-								{#if bannerUrl || logoUrl}
-									<div class="cardMedia" style={getListCardBannerStyle(list)}>
-										{#if bannerUrl}
-											<img
-												class="cardBanner"
-												src={bannerUrl}
-												alt=""
-												loading="lazy"
-												decoding="async"
-											/>
-										{/if}
-										<div class="cardMediaShade"></div>
-										{#if logoUrl}
-											<div class="cardLogoWrap">
-												<img
-													class="cardLogo"
-													src={logoUrl}
-													alt={`${list.title} logo`}
-													loading="lazy"
-													decoding="async"
-												/>
-											</div>
-										{/if}
-									</div>
-								{/if}
-								<div class="cardTop">
-									<h3 class="cardTitle">{list.title}</h3>
-									<p class="cardDesc">
-										{list.description || $_('custom_lists.detail.no_description')}
-									</p>
-								</div>
+        {#if lists.length === 0}
+          <div class="emptyState">
+            <h3>{$_('custom_lists.index.official.empty_title')}</h3>
+            <p>
+              {
+                searchQuery
+                ? $_('custom_lists.index.official.empty_search_hint')
+                : $_('custom_lists.index.official.empty_browse_hint')
+              }
+            </p>
+          </div>
+        {:else}
+          <div class="listGrid">
+            {#each lists as list}
+              {@const bannerUrl = getListAssetUrl(list.bannerUrl)}
+              {@const logoUrl = getListAssetUrl(list.logoUrl)}
+              <button
+                class="listCard"
+                style={getListCardStyle(list)}
+                on:click={() => goto(getListHref(list))}
+              >
+                {#if bannerUrl || logoUrl}
+                  <div class="cardMedia" style={getListCardBannerStyle(list)}>
+                    {#if bannerUrl}
+                      <img
+                        class="cardBanner"
+                        src={bannerUrl}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    {/if}
+                    <div class="cardMediaShade"></div>
+                    {#if logoUrl}
+                      <div class="cardLogoWrap">
+                        <img
+                          class="cardLogo"
+                          src={logoUrl}
+                          alt={`${list.title} logo`}
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </div>
+                    {/if}
+                  </div>
+                {/if}
+                <div class="cardTop">
+                  <h3 class="cardTitle">{list.title}</h3>
+                  <p class="cardDesc">
+                    {
+                      list.description || $_('custom_lists.detail.no_description')
+                    }
+                  </p>
+                </div>
 
-								<div class="cardMeta">
-									<div class="metaBadges">
-										<span class="metaItem">
-											<svelte:component
-												this={getVisibilityIcon(list.visibility)}
-												class="h-3.5 w-3.5"
-											/>
-											{formatVisibility(list.visibility)}
-										</span>
-										<span class="metaItem">
-											<Layers class="h-3.5 w-3.5" />
-											{formatListType(list.isPlatformer)}
-										</span>
-										{#if list.isOfficial}
-											<span class="metaItem">
-												<Star class="h-3.5 w-3.5" />
-												Official
-											</span>
-										{/if}
-										<span class="metaItem">
-											{$_('custom_lists.detail.levels_badge', {
-												values: { count: list.levelCount }
-											})}
-										</span>
-										<span class="metaItem">
-											<Star class="h-3.5 w-3.5" />
-											{$_('custom_lists.detail.star_count', {
-												values: { count: list.starCount ?? 0 }
-											})}
-										</span>
-									</div>
-									<div class="cardFooter">
-										<span class="metaDate">
-											<Clock class="h-3.5 w-3.5" />
-											{formatDate(list.updated_at)}
-										</span>
-										{#if list.ownerData && !shouldHideOwnerInfo(list)}
-											<span class="ownerInfo">
-												{$_('custom_lists.index.browse.by')}
-												<PlayerLink player={list.ownerData} />
-											</span>
-										{/if}
-									</div>
-								</div>
+                <div class="cardMeta">
+                  <div class="metaBadges">
+                    <span class="metaItem">
+                      <svelte:component
+                        this={getVisibilityIcon(list.visibility)}
+                        class="h-3.5 w-3.5"
+                      />
+                      {formatVisibility(list.visibility)}
+                    </span>
+                    <span class="metaItem">
+                      <Layers class="h-3.5 w-3.5" />
+                      {formatListType(list.isPlatformer)}
+                    </span>
+                    {#if list.isOfficial}
+                      <span class="metaItem">
+                        <Star class="h-3.5 w-3.5" />
+                        Official
+                      </span>
+                    {/if}
+                    <span class="metaItem">
+                      {
+                        $_('custom_lists.detail.levels_badge', {
+                            values: { count: list.levelCount }
+                        })
+                      }
+                    </span>
+                    <span class="metaItem">
+                      <Star class="h-3.5 w-3.5" />
+                      {
+                        $_('custom_lists.detail.star_count', {
+                            values: { count: list.starCount ?? 0 }
+                        })
+                      }
+                    </span>
+                  </div>
+                  <div class="cardFooter">
+                    <span class="metaDate">
+                      <Clock class="h-3.5 w-3.5" />
+                      {formatDate(list.updated_at)}
+                    </span>
+                    {#if list.ownerData && !shouldHideOwnerInfo(list)}
+                      <span class="ownerInfo">
+                        {$_('custom_lists.index.browse.by')}
+                        <PlayerLink player={list.ownerData} />
+                      </span>
+                    {/if}
+                  </div>
+                </div>
 
-								{#if list.tags?.length}
-									<div class="cardTags">
-										{#each list.tags.slice(0, 4) as tag}
-											<Badge variant="outline" class="cardTag">{tag}</Badge>
-										{/each}
-										{#if list.tags.length > 4}
-											<Badge variant="outline" class="cardTag">+{list.tags.length - 4}</Badge>
-										{/if}
-									</div>
-								{/if}
-							</button>
-						{/each}
-					</div>
+                {#if list.tags?.length}
+                  <div class="cardTags">
+                    {#each list.tags.slice(0, 4) as tag}
+                      <Badge variant="outline" class="cardTag">{tag}</Badge>
+                    {/each}
+                    {#if list.tags.length > 4}
+                      <Badge variant="outline" class="cardTag">+{
+                          list.tags.length - 4
+                        }</Badge>
+                    {/if}
+                  </div>
+                {/if}
+              </button>
+            {/each}
+          </div>
 
-					{#if totalPages > 1}
-						<nav class="pagination" aria-label="Pagination">
-							<Button
-								variant="outline"
-								size="sm"
-								disabled={currentPage <= 1}
-								on:click={() => goToPage(currentPage - 1)}
-							>
-								<ChevronLeft class="h-4 w-4" />
-								<span class="paginationLabel">Prev</span>
-							</Button>
+          {#if totalPages > 1}
+            <nav class="pagination" aria-label="Pagination">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage <= 1}
+                on:click={() => goToPage(currentPage - 1)}
+              >
+                <ChevronLeft class="h-4 w-4" />
+                <span class="paginationLabel">Prev</span>
+              </Button>
 
-							<div class="pageNumbers">
-								{#each paginationPages as p}
-									{#if p === '...'}
-										<span class="pageEllipsis">…</span>
-									{:else}
-										<Button
-											variant={p === currentPage ? 'default' : 'ghost'}
-											size="sm"
-											on:click={() => goToPage(p)}
-										>
-											{p}
-										</Button>
-									{/if}
-								{/each}
-							</div>
+              <div class="pageNumbers">
+                {#each paginationPages as p}
+                  {#if p === '...'}
+                    <span class="pageEllipsis">…</span>
+                  {:else}
+                    <Button
+                      variant={p === currentPage ? 'default' : 'ghost'}
+                      size="sm"
+                      on:click={() => goToPage(p)}
+                    >
+                      {p}
+                    </Button>
+                  {/if}
+                {/each}
+              </div>
 
-							<Button
-								variant="outline"
-								size="sm"
-								disabled={currentPage >= totalPages}
-								on:click={() => goToPage(currentPage + 1)}
-							>
-								<span class="paginationLabel">Next</span>
-								<ChevronRight class="h-4 w-4" />
-							</Button>
-						</nav>
-					{/if}
-				{/if}
-			</section>
-		</Tabs.Content>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage >= totalPages}
+                on:click={() => goToPage(currentPage + 1)}
+              >
+                <span class="paginationLabel">Next</span>
+                <ChevronRight class="h-4 w-4" />
+              </Button>
+            </nav>
+          {/if}
+        {/if}
+      </section>
+    </Tabs.Content>
 
-		<Tabs.Content value="custom">
-			<section class="section">
-				<div class="sectionHeader">
-					<div class="sectionTitleRow">
-						<h2>{$_('custom_lists.index.browse.heading')}</h2>
-						<Badge variant="outline">{total}</Badge>
-					</div>
-					<p class="sectionHint">{$_('custom_lists.index.browse.hint')}</p>
-				</div>
+    <Tabs.Content value="custom">
+      <section class="section">
+        <div class="sectionHeader">
+          <div class="sectionTitleRow">
+            <h2>{$_('custom_lists.index.browse.heading')}</h2>
+            <Badge variant="outline">{total}</Badge>
+          </div>
+          <p class="sectionHint">{$_('custom_lists.index.browse.hint')}</p>
+        </div>
 
-				<div class="searchRow">
-					<div class="searchInputWrap">
-						<span class="searchIcon"><Search class="h-4 w-4" /></span>
-						<Input
-							bind:value={searchInput}
-							placeholder={$_('custom_lists.index.browse.search_placeholder')}
-							on:keydown={handleSearchKeydown}
-						/>
-					</div>
-					<Button variant="outline" on:click={handleSearch}
-						>{$_('custom_lists.index.browse.search_button')}</Button
-					>
-				</div>
+        <div class="searchRow">
+          <div class="searchInputWrap">
+            <span class="searchIcon"><Search class="h-4 w-4" /></span>
+            <Input
+              bind:value={searchInput}
+              placeholder={$_('custom_lists.index.browse.search_placeholder')}
+              on:keydown={handleSearchKeydown}
+            />
+          </div>
+          <Button variant="outline" on:click={handleSearch}>{
+            $_('custom_lists.index.browse.search_button')
+          }</Button>
+        </div>
 
-				{#if lists.length === 0}
-					<div class="emptyState">
-						<h3>{$_('custom_lists.index.browse.empty_title')}</h3>
-						<p>
-							{searchQuery
-								? $_('custom_lists.index.browse.empty_search_hint')
-								: $_('custom_lists.index.browse.empty_browse_hint')}
-						</p>
-					</div>
-				{:else}
-					<div class="listGrid">
-						{#each lists as list}
-							{@const bannerUrl = getListAssetUrl(list.bannerUrl)}
-							{@const logoUrl = getListAssetUrl(list.logoUrl)}
-							<button
-								class="listCard"
-								style={getListCardStyle(list)}
-								on:click={() => goto(getListHref(list))}
-							>
-								{#if bannerUrl || logoUrl}
-									<div class="cardMedia" style={getListCardBannerStyle(list)}>
-										{#if bannerUrl}
-											<img
-												class="cardBanner"
-												src={bannerUrl}
-												alt=""
-												loading="lazy"
-												decoding="async"
-											/>
-										{/if}
-										<div class="cardMediaShade"></div>
-										{#if logoUrl}
-											<div class="cardLogoWrap">
-												<img
-													class="cardLogo"
-													src={logoUrl}
-													alt={`${list.title} logo`}
-													loading="lazy"
-													decoding="async"
-												/>
-											</div>
-										{/if}
-									</div>
-								{/if}
-								<div class="cardTop">
-									<h3 class="cardTitle">{list.title}</h3>
-									<p class="cardDesc">
-										{list.description || $_('custom_lists.detail.no_description')}
-									</p>
-								</div>
+        {#if lists.length === 0}
+          <div class="emptyState">
+            <h3>{$_('custom_lists.index.browse.empty_title')}</h3>
+            <p>
+              {
+                searchQuery
+                ? $_('custom_lists.index.browse.empty_search_hint')
+                : $_('custom_lists.index.browse.empty_browse_hint')
+              }
+            </p>
+          </div>
+        {:else}
+          <div class="listGrid">
+            {#each lists as list}
+              {@const bannerUrl = getListAssetUrl(list.bannerUrl)}
+              {@const logoUrl = getListAssetUrl(list.logoUrl)}
+              <button
+                class="listCard"
+                style={getListCardStyle(list)}
+                on:click={() => goto(getListHref(list))}
+              >
+                {#if bannerUrl || logoUrl}
+                  <div class="cardMedia" style={getListCardBannerStyle(list)}>
+                    {#if bannerUrl}
+                      <img
+                        class="cardBanner"
+                        src={bannerUrl}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    {/if}
+                    <div class="cardMediaShade"></div>
+                    {#if logoUrl}
+                      <div class="cardLogoWrap">
+                        <img
+                          class="cardLogo"
+                          src={logoUrl}
+                          alt={`${list.title} logo`}
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </div>
+                    {/if}
+                  </div>
+                {/if}
+                <div class="cardTop">
+                  <h3 class="cardTitle">{list.title}</h3>
+                  <p class="cardDesc">
+                    {
+                      list.description || $_('custom_lists.detail.no_description')
+                    }
+                  </p>
+                </div>
 
-								<div class="cardMeta">
-									<div class="metaBadges">
-										<span class="metaItem">
-											<svelte:component
-												this={getVisibilityIcon(list.visibility)}
-												class="h-3.5 w-3.5"
-											/>
-											{formatVisibility(list.visibility)}
-										</span>
-										<span class="metaItem">
-											<Layers class="h-3.5 w-3.5" />
-											{formatListType(list.isPlatformer)}
-										</span>
-										{#if list.isOfficial}
-											<span class="metaItem">
-												<Star class="h-3.5 w-3.5" />
-												Official
-											</span>
-										{/if}
-										<span class="metaItem">
-											{$_('custom_lists.detail.levels_badge', {
-												values: { count: list.levelCount }
-											})}
-										</span>
-										<span class="metaItem">
-											<Star class="h-3.5 w-3.5" />
-											{$_('custom_lists.detail.star_count', {
-												values: { count: list.starCount ?? 0 }
-											})}
-										</span>
-									</div>
-									<div class="cardFooter">
-										<span class="metaDate">
-											<Clock class="h-3.5 w-3.5" />
-											{formatDate(list.updated_at)}
-										</span>
-										{#if list.ownerData && !shouldHideOwnerInfo(list)}
-											<span class="ownerInfo">
-												{$_('custom_lists.index.browse.by')}
-												<PlayerLink player={list.ownerData} />
-											</span>
-										{/if}
-									</div>
-								</div>
+                <div class="cardMeta">
+                  <div class="metaBadges">
+                    <span class="metaItem">
+                      <svelte:component
+                        this={getVisibilityIcon(list.visibility)}
+                        class="h-3.5 w-3.5"
+                      />
+                      {formatVisibility(list.visibility)}
+                    </span>
+                    <span class="metaItem">
+                      <Layers class="h-3.5 w-3.5" />
+                      {formatListType(list.isPlatformer)}
+                    </span>
+                    {#if list.isOfficial}
+                      <span class="metaItem">
+                        <Star class="h-3.5 w-3.5" />
+                        Official
+                      </span>
+                    {/if}
+                    <span class="metaItem">
+                      {
+                        $_('custom_lists.detail.levels_badge', {
+                            values: { count: list.levelCount }
+                        })
+                      }
+                    </span>
+                    <span class="metaItem">
+                      <Star class="h-3.5 w-3.5" />
+                      {
+                        $_('custom_lists.detail.star_count', {
+                            values: { count: list.starCount ?? 0 }
+                        })
+                      }
+                    </span>
+                  </div>
+                  <div class="cardFooter">
+                    <span class="metaDate">
+                      <Clock class="h-3.5 w-3.5" />
+                      {formatDate(list.updated_at)}
+                    </span>
+                    {#if list.ownerData && !shouldHideOwnerInfo(list)}
+                      <span class="ownerInfo">
+                        {$_('custom_lists.index.browse.by')}
+                        <PlayerLink player={list.ownerData} />
+                      </span>
+                    {/if}
+                  </div>
+                </div>
 
-								{#if list.tags?.length}
-									<div class="cardTags">
-										{#each list.tags.slice(0, 4) as tag}
-											<Badge variant="outline" class="cardTag">{tag}</Badge>
-										{/each}
-										{#if list.tags.length > 4}
-											<Badge variant="outline" class="cardTag">+{list.tags.length - 4}</Badge>
-										{/if}
-									</div>
-								{/if}
-							</button>
-						{/each}
-					</div>
+                {#if list.tags?.length}
+                  <div class="cardTags">
+                    {#each list.tags.slice(0, 4) as tag}
+                      <Badge variant="outline" class="cardTag">{tag}</Badge>
+                    {/each}
+                    {#if list.tags.length > 4}
+                      <Badge variant="outline" class="cardTag">+{
+                          list.tags.length - 4
+                        }</Badge>
+                    {/if}
+                  </div>
+                {/if}
+              </button>
+            {/each}
+          </div>
 
-					<!-- Pagination -->
-					{#if totalPages > 1}
-						<nav class="pagination" aria-label="Pagination">
-							<Button
-								variant="outline"
-								size="sm"
-								disabled={currentPage <= 1}
-								on:click={() => goToPage(currentPage - 1)}
-							>
-								<ChevronLeft class="h-4 w-4" />
-								<span class="paginationLabel">Prev</span>
-							</Button>
+          <!-- Pagination -->
+          {#if totalPages > 1}
+            <nav class="pagination" aria-label="Pagination">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage <= 1}
+                on:click={() => goToPage(currentPage - 1)}
+              >
+                <ChevronLeft class="h-4 w-4" />
+                <span class="paginationLabel">Prev</span>
+              </Button>
 
-							<div class="pageNumbers">
-								{#each paginationPages as p}
-									{#if p === '...'}
-										<span class="pageEllipsis">…</span>
-									{:else}
-										<button
-											class="pageBtn"
-											class:active={p === currentPage}
-											on:click={() => goToPage(p)}
-										>
-											{p}
-										</button>
-									{/if}
-								{/each}
-							</div>
+              <div class="pageNumbers">
+                {#each paginationPages as p}
+                  {#if p === '...'}
+                    <span class="pageEllipsis">…</span>
+                  {:else}
+                    <button
+                      class="pageBtn"
+                      class:active={p === currentPage}
+                      on:click={() => goToPage(p)}
+                    >
+                      {p}
+                    </button>
+                  {/if}
+                {/each}
+              </div>
 
-							<Button
-								variant="outline"
-								size="sm"
-								disabled={currentPage >= totalPages}
-								on:click={() => goToPage(currentPage + 1)}
-							>
-								<span class="paginationLabel">Next</span>
-								<ChevronRight class="h-4 w-4" />
-							</Button>
-						</nav>
-					{/if}
-				{/if}
-			</section>
-		</Tabs.Content>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage >= totalPages}
+                on:click={() => goToPage(currentPage + 1)}
+              >
+                <span class="paginationLabel">Next</span>
+                <ChevronRight class="h-4 w-4" />
+              </Button>
+            </nav>
+          {/if}
+        {/if}
+      </section>
+    </Tabs.Content>
 
-		<Tabs.Content value="mine">
-			{#if !$user.checked || ownLoading}
-				<section class="section">
-					<div class="sectionHeader">
-						<h2>{$_('custom_lists.index.own.heading')}</h2>
-					</div>
-					<div class="emptyState slim">{$_('custom_lists.index.own.loading')}</div>
-				</section>
-			{:else if !$user.loggedIn}
-				<section class="section">
-					<div class="emptyState">
-						<h3>{$_('custom_lists.index.own.sign_in_title')}</h3>
-						<p>
-							{quickLevelId
-								? $_('custom_lists.index.own.sign_in_quickadd', { values: { id: quickLevelId } })
-								: $_('custom_lists.index.own.sign_in_desc')}
-						</p>
-					</div>
-				</section>
-			{:else}
-				<section class="section">
-					<div class="sectionHeader">
-						<div class="sectionTitleRow">
-							<h2>{$_('custom_lists.index.own.heading')}</h2>
-							<Badge variant="outline">{ownLists.length}</Badge>
-						</div>
-					</div>
+    <Tabs.Content value="mine">
+      {#if !$user.checked || ownLoading}
+        <section class="section">
+          <div class="sectionHeader">
+            <h2>{$_('custom_lists.index.own.heading')}</h2>
+          </div>
+          <div class="emptyState slim">
+            {$_('custom_lists.index.own.loading')}
+          </div>
+        </section>
+      {:else if !$user.loggedIn}
+        <section class="section">
+          <div class="emptyState">
+            <h3>{$_('custom_lists.index.own.sign_in_title')}</h3>
+            <p>
+              {
+                quickLevelId
+                ? $_('custom_lists.index.own.sign_in_quickadd', {
+                    values: { id: quickLevelId }
+                })
+                : $_('custom_lists.index.own.sign_in_desc')
+              }
+            </p>
+          </div>
+        </section>
+      {:else}
+        <section class="section">
+          <div class="sectionHeader">
+            <div class="sectionTitleRow">
+              <h2>{$_('custom_lists.index.own.heading')}</h2>
+              <Badge variant="outline">{ownLists.length}</Badge>
+            </div>
+          </div>
 
-					{#if ownLists.length === 0}
-						<div class="emptyState slim">
-							<h3>{$_('custom_lists.index.own.empty_title')}</h3>
-							<p>{$_('custom_lists.index.own.empty_desc')}</p>
-						</div>
-					{:else}
-						<div class="listGrid">
-							{#each ownLists as list}
-								{@const bannerUrl = getListAssetUrl(list.bannerUrl)}
-								{@const logoUrl = getListAssetUrl(list.logoUrl)}
-								<button
-									class="listCard"
-									style={getListCardStyle(list)}
-									on:click={() => goto(getListHref(list))}
-								>
-									{#if bannerUrl || logoUrl}
-										<div class="cardMedia" style={getListCardBannerStyle(list)}>
-											{#if bannerUrl}
-												<img
-													class="cardBanner"
-													src={bannerUrl}
-													alt=""
-													loading="lazy"
-													decoding="async"
-												/>
-											{/if}
-											<div class="cardMediaShade"></div>
-											{#if logoUrl}
-												<div class="cardLogoWrap">
-													<img
-														class="cardLogo"
-														src={logoUrl}
-														alt={`${list.title} logo`}
-														loading="lazy"
-														decoding="async"
-													/>
-												</div>
-											{/if}
-										</div>
-									{/if}
-									<div class="cardTop">
-										<h3 class="cardTitle">{list.title}</h3>
-										<p class="cardDesc">
-											{list.description || $_('custom_lists.detail.no_description')}
-										</p>
-									</div>
+          {#if ownLists.length === 0}
+            <div class="emptyState slim">
+              <h3>{$_('custom_lists.index.own.empty_title')}</h3>
+              <p>{$_('custom_lists.index.own.empty_desc')}</p>
+            </div>
+          {:else}
+            <div class="listGrid">
+              {#each ownLists as list}
+                {@const bannerUrl = getListAssetUrl(list.bannerUrl)}
+                {@const logoUrl = getListAssetUrl(list.logoUrl)}
+                <button
+                  class="listCard"
+                  style={getListCardStyle(list)}
+                  on:click={() => goto(getListHref(list))}
+                >
+                  {#if bannerUrl || logoUrl}
+                    <div class="cardMedia" style={getListCardBannerStyle(list)}>
+                      {#if bannerUrl}
+                        <img
+                          class="cardBanner"
+                          src={bannerUrl}
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      {/if}
+                      <div class="cardMediaShade"></div>
+                      {#if logoUrl}
+                        <div class="cardLogoWrap">
+                          <img
+                            class="cardLogo"
+                            src={logoUrl}
+                            alt={`${list.title} logo`}
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        </div>
+                      {/if}
+                    </div>
+                  {/if}
+                  <div class="cardTop">
+                    <h3 class="cardTitle">{list.title}</h3>
+                    <p class="cardDesc">
+                      {
+                        list.description || $_('custom_lists.detail.no_description')
+                      }
+                    </p>
+                  </div>
 
-									<div class="cardMeta">
-										<div class="metaBadges">
-											<span class="metaItem">
-												<svelte:component
-													this={getVisibilityIcon(list.visibility)}
-													class="h-3.5 w-3.5"
-												/>
-												{formatVisibility(list.visibility)}
-											</span>
-											<span class="metaItem">
-												<Layers class="h-3.5 w-3.5" />
-												{formatListType(list.isPlatformer)}
-											</span>
-											{#if list.isOfficial}
-												<span class="metaItem">
-													<Star class="h-3.5 w-3.5" />
-													Official
-												</span>
-											{/if}
-											{#if getRoleLabel(list.currentUserRole) && list.currentUserRole !== 'owner'}
-												<span class="metaItem">{getRoleLabel(list.currentUserRole)}</span>
-											{/if}
-											<span class="metaItem">
-												{$_('custom_lists.detail.levels_badge', {
-													values: { count: list.levelCount }
-												})}
-											</span>
-										</div>
-										<span class="metaDate">
-											<Clock class="h-3.5 w-3.5" />
-											{formatDate(list.updated_at)}
-										</span>
-									</div>
+                  <div class="cardMeta">
+                    <div class="metaBadges">
+                      <span class="metaItem">
+                        <svelte:component
+                          this={getVisibilityIcon(list.visibility)}
+                          class="h-3.5 w-3.5"
+                        />
+                        {formatVisibility(list.visibility)}
+                      </span>
+                      <span class="metaItem">
+                        <Layers class="h-3.5 w-3.5" />
+                        {formatListType(list.isPlatformer)}
+                      </span>
+                      {#if list.isOfficial}
+                        <span class="metaItem">
+                          <Star class="h-3.5 w-3.5" />
+                          Official
+                        </span>
+                      {/if}
+                      {#if getRoleLabel(list.currentUserRole) && list.currentUserRole !== 'owner'}
+                        <span class="metaItem">{
+                          getRoleLabel(list.currentUserRole)
+                        }</span>
+                      {/if}
+                      <span class="metaItem">
+                        {
+                          $_('custom_lists.detail.levels_badge', {
+                              values: { count: list.levelCount }
+                          })
+                        }
+                      </span>
+                    </div>
+                    <span class="metaDate">
+                      <Clock class="h-3.5 w-3.5" />
+                      {formatDate(list.updated_at)}
+                    </span>
+                  </div>
 
-									{#if list.tags?.length}
-										<div class="cardTags">
-											{#each list.tags.slice(0, 4) as tag}
-												<Badge variant="outline" class="cardTag">{tag}</Badge>
-											{/each}
-										</div>
-									{/if}
+                  {#if list.tags?.length}
+                    <div class="cardTags">
+                      {#each list.tags.slice(0, 4) as tag}
+                        <Badge variant="outline" class="cardTag">{tag}</Badge>
+                      {/each}
+                    </div>
+                  {/if}
 
-									<div class="cardActions">
-										{#if quickLevelId}
-											<Button
-												size="sm"
-												on:click={(event) => {
-													event.stopPropagation();
-													handleQuickAddClick(event, list.id, quickLevelId);
-												}}
-												disabled={actionListId === list.id}
-											>
-												<LinkIcon class="mr-1.5 h-3.5 w-3.5" />
-												{$_('custom_lists.index.browse.add_level')}
-											</Button>
-										{/if}
-										<Button
-											variant="outline"
-											size="sm"
-											on:click={(event) => {
-												event.stopPropagation();
-												handleManageClick(event, list.id);
-											}}
-										>
-											<Settings class="mr-1.5 h-3.5 w-3.5" />
-											{$_('custom_lists.actions.manage')}
-										</Button>
-									</div>
-								</button>
-							{/each}
-						</div>
-					{/if}
-				</section>
-			{/if}
-		</Tabs.Content>
+                  <div class="cardActions">
+                    {#if quickLevelId}
+                      <Button
+                        size="sm"
+                        on:click={(event) => {
+                            event.stopPropagation();
+                            handleQuickAddClick(event, list.id, quickLevelId);
+                        }}
+                        disabled={actionListId === list.id}
+                      >
+                        <LinkIcon class="mr-1.5 h-3.5 w-3.5" />
+                        {$_('custom_lists.index.browse.add_level')}
+                      </Button>
+                    {/if}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      on:click={(event) => {
+                          event.stopPropagation();
+                          handleManageClick(event, list.id);
+                      }}
+                    >
+                      <Settings class="mr-1.5 h-3.5 w-3.5" />
+                      {$_('custom_lists.actions.manage')}
+                    </Button>
+                  </div>
+                </button>
+              {/each}
+            </div>
+          {/if}
+        </section>
+      {/if}
+    </Tabs.Content>
 
-		<Tabs.Content value="starred">
-			{#if !$user.checked || starredLoading}
-				<section class="section">
-					<div class="sectionHeader">
-						<h2>{$_('custom_lists.index.starred.heading')}</h2>
-					</div>
-					<div class="emptyState slim">{$_('custom_lists.index.starred.loading')}</div>
-				</section>
-			{:else if !$user.loggedIn}
-				<section class="section">
-					<div class="emptyState">
-						<h3>{$_('custom_lists.index.starred.sign_in_title')}</h3>
-						<p>{$_('custom_lists.index.starred.sign_in_desc')}</p>
-					</div>
-				</section>
-			{:else}
-				<section class="section">
-					<div class="sectionHeader">
-						<div class="sectionTitleRow">
-							<h2>{$_('custom_lists.index.starred.heading')}</h2>
-							<Badge variant="outline">{starredLists.length}</Badge>
-						</div>
-					</div>
+    <Tabs.Content value="starred">
+      {#if !$user.checked || starredLoading}
+        <section class="section">
+          <div class="sectionHeader">
+            <h2>{$_('custom_lists.index.starred.heading')}</h2>
+          </div>
+          <div class="emptyState slim">
+            {$_('custom_lists.index.starred.loading')}
+          </div>
+        </section>
+      {:else if !$user.loggedIn}
+        <section class="section">
+          <div class="emptyState">
+            <h3>{$_('custom_lists.index.starred.sign_in_title')}</h3>
+            <p>{$_('custom_lists.index.starred.sign_in_desc')}</p>
+          </div>
+        </section>
+      {:else}
+        <section class="section">
+          <div class="sectionHeader">
+            <div class="sectionTitleRow">
+              <h2>{$_('custom_lists.index.starred.heading')}</h2>
+              <Badge variant="outline">{starredLists.length}</Badge>
+            </div>
+          </div>
 
-					{#if starredLists.length === 0}
-						<div class="emptyState slim">
-							<h3>{$_('custom_lists.index.starred.empty_title')}</h3>
-							<p>{$_('custom_lists.index.starred.empty_desc')}</p>
-						</div>
-					{:else}
-						<div class="listGrid">
-							{#each starredLists as list}
-								{@const bannerUrl = getListAssetUrl(list.bannerUrl)}
-								{@const logoUrl = getListAssetUrl(list.logoUrl)}
-								<button
-									class="listCard"
-									style={getListCardStyle(list)}
-									on:click={() => goto(getListHref(list))}
-								>
-									{#if bannerUrl || logoUrl}
-										<div class="cardMedia" style={getListCardBannerStyle(list)}>
-											{#if bannerUrl}
-												<img
-													class="cardBanner"
-													src={bannerUrl}
-													alt=""
-													loading="lazy"
-													decoding="async"
-												/>
-											{/if}
-											<div class="cardMediaShade"></div>
-											{#if logoUrl}
-												<div class="cardLogoWrap">
-													<img
-														class="cardLogo"
-														src={logoUrl}
-														alt={`${list.title} logo`}
-														loading="lazy"
-														decoding="async"
-													/>
-												</div>
-											{/if}
-										</div>
-									{/if}
-									<div class="cardTop">
-										<h3 class="cardTitle">{list.title}</h3>
-										<p class="cardDesc">
-											{list.description || $_('custom_lists.detail.no_description')}
-										</p>
-									</div>
+          {#if starredLists.length === 0}
+            <div class="emptyState slim">
+              <h3>{$_('custom_lists.index.starred.empty_title')}</h3>
+              <p>{$_('custom_lists.index.starred.empty_desc')}</p>
+            </div>
+          {:else}
+            <div class="listGrid">
+              {#each starredLists as list}
+                {@const bannerUrl = getListAssetUrl(list.bannerUrl)}
+                {@const logoUrl = getListAssetUrl(list.logoUrl)}
+                <button
+                  class="listCard"
+                  style={getListCardStyle(list)}
+                  on:click={() => goto(getListHref(list))}
+                >
+                  {#if bannerUrl || logoUrl}
+                    <div class="cardMedia" style={getListCardBannerStyle(list)}>
+                      {#if bannerUrl}
+                        <img
+                          class="cardBanner"
+                          src={bannerUrl}
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      {/if}
+                      <div class="cardMediaShade"></div>
+                      {#if logoUrl}
+                        <div class="cardLogoWrap">
+                          <img
+                            class="cardLogo"
+                            src={logoUrl}
+                            alt={`${list.title} logo`}
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        </div>
+                      {/if}
+                    </div>
+                  {/if}
+                  <div class="cardTop">
+                    <h3 class="cardTitle">{list.title}</h3>
+                    <p class="cardDesc">
+                      {
+                        list.description || $_('custom_lists.detail.no_description')
+                      }
+                    </p>
+                  </div>
 
-									<div class="cardMeta">
-										<div class="metaBadges">
-											<span class="metaItem">
-												<svelte:component
-													this={getVisibilityIcon(list.visibility)}
-													class="h-3.5 w-3.5"
-												/>
-												{formatVisibility(list.visibility)}
-											</span>
-											<span class="metaItem">
-												<Layers class="h-3.5 w-3.5" />
-												{formatListType(list.isPlatformer)}
-											</span>
-											{#if list.isOfficial}
-												<span class="metaItem">
-													<Star class="h-3.5 w-3.5" />
-													Official
-												</span>
-											{/if}
-											<span class="metaItem">
-												{$_('custom_lists.detail.levels_badge', {
-													values: { count: list.levelCount }
-												})}
-											</span>
-											<span class="metaItem">
-												<Star class="h-3.5 w-3.5" />
-												{$_('custom_lists.detail.star_count', {
-													values: { count: list.starCount ?? 0 }
-												})}
-											</span>
-										</div>
-										<div class="cardFooter">
-											<span class="metaDate">
-												<Clock class="h-3.5 w-3.5" />
-												{formatDate(list.updated_at)}
-											</span>
-											{#if list.ownerData && !shouldHideOwnerInfo(list)}
-												<span class="ownerInfo">
-													{$_('custom_lists.index.browse.by')}
-													<PlayerLink player={list.ownerData} />
-												</span>
-											{/if}
-										</div>
-									</div>
+                  <div class="cardMeta">
+                    <div class="metaBadges">
+                      <span class="metaItem">
+                        <svelte:component
+                          this={getVisibilityIcon(list.visibility)}
+                          class="h-3.5 w-3.5"
+                        />
+                        {formatVisibility(list.visibility)}
+                      </span>
+                      <span class="metaItem">
+                        <Layers class="h-3.5 w-3.5" />
+                        {formatListType(list.isPlatformer)}
+                      </span>
+                      {#if list.isOfficial}
+                        <span class="metaItem">
+                          <Star class="h-3.5 w-3.5" />
+                          Official
+                        </span>
+                      {/if}
+                      <span class="metaItem">
+                        {
+                          $_('custom_lists.detail.levels_badge', {
+                              values: { count: list.levelCount }
+                          })
+                        }
+                      </span>
+                      <span class="metaItem">
+                        <Star class="h-3.5 w-3.5" />
+                        {
+                          $_('custom_lists.detail.star_count', {
+                              values: { count: list.starCount ?? 0 }
+                          })
+                        }
+                      </span>
+                    </div>
+                    <div class="cardFooter">
+                      <span class="metaDate">
+                        <Clock class="h-3.5 w-3.5" />
+                        {formatDate(list.updated_at)}
+                      </span>
+                      {#if list.ownerData && !shouldHideOwnerInfo(list)}
+                        <span class="ownerInfo">
+                          {$_('custom_lists.index.browse.by')}
+                          <PlayerLink player={list.ownerData} />
+                        </span>
+                      {/if}
+                    </div>
+                  </div>
 
-									{#if list.tags?.length}
-										<div class="cardTags">
-											{#each list.tags.slice(0, 4) as tag}
-												<Badge variant="outline" class="cardTag">{tag}</Badge>
-											{/each}
-											{#if list.tags.length > 4}
-												<Badge variant="outline" class="cardTag">+{list.tags.length - 4}</Badge>
-											{/if}
-										</div>
-									{/if}
-								</button>
-							{/each}
-						</div>
-					{/if}
-				</section>
-			{/if}
-		</Tabs.Content>
-	</Tabs.Root>
+                  {#if list.tags?.length}
+                    <div class="cardTags">
+                      {#each list.tags.slice(0, 4) as tag}
+                        <Badge variant="outline" class="cardTag">{tag}</Badge>
+                      {/each}
+                      {#if list.tags.length > 4}
+                        <Badge variant="outline" class="cardTag">+{
+                            list.tags.length - 4
+                          }</Badge>
+                      {/if}
+                    </div>
+                  {/if}
+                </button>
+              {/each}
+            </div>
+          {/if}
+        </section>
+      {/if}
+    </Tabs.Content>
+  </Tabs.Root>
 </div>
 
 <style lang="scss">
-	.page {
-		max-width: 1100px;
-		margin: 0 auto;
-		padding: 24px 16px 48px;
-		display: flex;
-		flex-direction: column;
-		gap: 24px;
-	}
+.page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
 
-	/* Header */
-	.pageHeader {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 16px;
-		flex-wrap: wrap;
-	}
+/* Header */
+.pageHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
 
-	.headerContent h1 {
-		margin: 0;
-		font-size: 1.75rem;
-		font-weight: 700;
-		letter-spacing: -0.02em;
-	}
+.headerContent h1 {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
 
-	.subtitle {
-		margin: 4px 0 0;
-		color: hsl(var(--muted-foreground));
-		font-size: 0.95rem;
-	}
+.subtitle {
+  margin: 4px 0 0;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.95rem;
+}
 
-	/* Quick Banner */
-	.quickBanner {
-		background: hsl(var(--primary) / 0.06);
-		border: 1px solid hsl(var(--primary) / 0.2);
-		border-radius: 12px;
-		padding: 14px 18px;
-	}
+/* Quick Banner */
+.quickBanner {
+  background: hsl(var(--primary) / 0.06);
+  border: 1px solid hsl(var(--primary) / 0.2);
+  border-radius: 12px;
+  padding: 14px 18px;
+}
 
-	.quickBannerContent {
-		display: flex;
-		align-items: flex-start;
-		gap: 12px;
-		color: hsl(var(--primary));
-	}
+.quickBannerContent {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  color: hsl(var(--primary));
+}
 
-	.quickTitle {
-		margin: 0;
-		font-weight: 600;
-		font-size: 0.95rem;
-	}
+.quickTitle {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
 
-	.quickDesc {
-		margin: 2px 0 0;
-		font-size: 0.875rem;
-		color: hsl(var(--muted-foreground));
-	}
+.quickDesc {
+  margin: 2px 0 0;
+  font-size: 0.875rem;
+  color: hsl(var(--muted-foreground));
+}
 
-	/* Sections */
-	.tabsList {
-		align-self: flex-start;
-	}
+/* Sections */
+.tabsList {
+  align-self: flex-start;
+}
 
-	.section {
-		display: flex;
-		flex-direction: column;
-		gap: 16px;
-	}
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
 
-	.sectionHeader {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-	}
+.sectionHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 
-	.sectionTitleRow {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-	}
+.sectionTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 
-	.sectionTitleRow h2 {
-		margin: 0;
-		font-size: 1.25rem;
-		font-weight: 600;
-	}
+.sectionTitleRow h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
 
-	.sectionHint {
-		margin: 0;
-		color: hsl(var(--muted-foreground));
-		font-size: 0.875rem;
-	}
+.sectionHint {
+  margin: 0;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.875rem;
+}
 
-	/* Search */
-	.searchRow {
-		display: flex;
-		gap: 10px;
-		align-items: center;
-	}
+/* Search */
+.searchRow {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
 
-	.searchInputWrap {
-		position: relative;
-		flex: 1;
-	}
+.searchInputWrap {
+  position: relative;
+  flex: 1;
+}
 
-	.searchInputWrap :global(input) {
-		padding-left: 36px;
-	}
+.searchInputWrap :global(input) {
+  padding-left: 36px;
+}
 
-	.searchIcon {
-		position: absolute;
-		left: 12px;
-		top: 50%;
-		transform: translateY(-50%);
-		color: hsl(var(--muted-foreground));
-		pointer-events: none;
-	}
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: hsl(var(--muted-foreground));
+  pointer-events: none;
+}
 
-	/* List Grid */
-	.listGrid {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-		gap: 14px;
-	}
+/* List Grid */
+.listGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+}
 
-	/* List Card */
-	.listCard {
-		display: flex;
-		flex-direction: column;
-		gap: 12px;
-		padding: 18px;
-		background: hsl(var(--card));
-		border: 1px solid hsl(var(--border));
-		border-radius: 12px;
-		text-align: left;
-		cursor: pointer;
-		color: var(--custom-surface-foreground, hsl(var(--card-foreground)));
-		overflow: hidden;
-		transition:
-			background 0.15s ease,
-			border-color 0.15s ease,
-			box-shadow 0.15s ease;
-		width: 100%;
-	}
+/* List Card */
+.listCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  text-align: left;
+  cursor: pointer;
+  color: var(--custom-surface-foreground, hsl(var(--card-foreground)));
+  overflow: hidden;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+  width: 100%;
+}
 
-	.listCard:hover {
-		border-color: hsl(var(--primary) / 0.4);
-		box-shadow: 0 2px 12px hsl(var(--foreground) / 0.06);
-	}
+.listCard:hover {
+  border-color: hsl(var(--primary) / 0.4);
+  box-shadow: 0 2px 12px hsl(var(--foreground) / 0.06);
+}
 
-	.cardMedia {
-		position: relative;
-		display: flex;
-		align-items: flex-end;
-		min-height: 128px;
-		margin: -18px -18px 2px;
-		padding: 16px 18px;
-		border-bottom: 1px solid hsl(var(--border) / 0.75);
-		background:
-			linear-gradient(180deg, rgb(15 23 42 / 0.18) 0%, rgb(15 23 42 / 0.48) 100%),
-			linear-gradient(135deg, hsl(var(--muted)) 0%, hsl(var(--card)) 100%);
-		isolation: isolate;
-	}
+.cardMedia {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  min-height: 128px;
+  margin: -18px -18px 2px;
+  padding: 16px 18px;
+  border-bottom: 1px solid hsl(var(--border) / 0.75);
+  background:
+    linear-gradient(180deg, rgb(15 23 42 / 0.18) 0%, rgb(15 23 42 / 0.48) 100%),
+    linear-gradient(135deg, hsl(var(--muted)) 0%, hsl(var(--card)) 100%);
+  isolation: isolate;
+}
 
-	.cardBanner {
-		position: absolute;
-		inset: 0;
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-	}
+.cardBanner {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 
-	.cardMediaShade {
-		position: absolute;
-		inset: 0;
-		background: linear-gradient(180deg, rgb(15 23 42 / 0.08) 0%, rgb(15 23 42 / 0.48) 100%);
-		pointer-events: none;
-	}
+.cardMediaShade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgb(15 23 42 / 0.08) 0%,
+    rgb(15 23 42 / 0.48) 100%
+  );
+  pointer-events: none;
+}
 
-	.cardLogoWrap {
-		position: relative;
-		z-index: 1;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 76px;
-		height: 76px;
-		padding: 10px;
-		border-radius: 20px;
-		border: 1px solid var(--custom-card-accent, rgb(255 255 255 / 0.38));
-		background: rgb(255 255 255 / 0.94);
-		box-shadow: 0 16px 36px rgb(15 23 42 / 0.2);
-		backdrop-filter: blur(10px);
-	}
+.cardLogoWrap {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 76px;
+  height: 76px;
+  padding: 10px;
+  border-radius: 20px;
+  border: 1px solid var(--custom-card-accent, rgb(255 255 255 / 0.38));
+  background: rgb(255 255 255 / 0.94);
+  box-shadow: 0 16px 36px rgb(15 23 42 / 0.2);
+  backdrop-filter: blur(10px);
+}
 
-	.cardLogo {
-		max-width: 100%;
-		max-height: 100%;
-		object-fit: contain;
-	}
+.cardLogo {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
 
-	.cardTop {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-		min-width: 0;
-	}
+.cardTop {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
 
-	.cardTitle {
-		margin: 0;
-		font-size: 1.05rem;
-		font-weight: 600;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
+.cardTitle {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
-	.cardDesc {
-		margin: 0;
-		font-size: 0.875rem;
-		color: var(--custom-surface-muted, hsl(var(--muted-foreground)));
-		line-clamp: 2;
-		display: -webkit-box;
-		-webkit-line-clamp: 2;
-		-webkit-box-orient: vertical;
-		overflow: hidden;
-	}
+.cardDesc {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--custom-surface-muted, hsl(var(--muted-foreground)));
+  line-clamp: 2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 
-	.cardMeta {
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-	}
+.cardMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
-	.metaBadges {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 6px 12px;
-	}
+.metaBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
 
-	.metaItem {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-		font-size: 0.8rem;
-		color: var(--custom-surface-muted, hsl(var(--muted-foreground)));
-	}
+.metaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: var(--custom-surface-muted, hsl(var(--muted-foreground)));
+}
 
-	.metaDate {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-		font-size: 0.8rem;
-		color: var(--custom-surface-muted, hsl(var(--muted-foreground)));
-	}
+.metaDate {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: var(--custom-surface-muted, hsl(var(--muted-foreground)));
+}
 
-	.cardFooter {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-		flex-wrap: wrap;
-	}
+.cardFooter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
 
-	.ownerInfo {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		font-size: 0.8rem;
-		color: var(--custom-surface-muted, hsl(var(--muted-foreground)));
-	}
+.ownerInfo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--custom-surface-muted, hsl(var(--muted-foreground)));
+}
 
-	.ownerInfo :global(a) {
-		color: inherit;
-	}
+.ownerInfo :global(a) {
+  color: inherit;
+}
 
-	.cardTags {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 6px;
-	}
+.cardTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
 
-	.listCard :global(.cardTag) {
-		color: var(--custom-surface-foreground, hsl(var(--foreground)));
-		background: var(--custom-surface-chip-background, transparent);
-		border-color: var(--custom-surface-chip-border, hsl(var(--border)));
-	}
+.listCard :global(.cardTag) {
+  color: var(--custom-surface-foreground, hsl(var(--foreground)));
+  background: var(--custom-surface-chip-background, transparent);
+  border-color: var(--custom-surface-chip-border, hsl(var(--border)));
+}
 
-	.cardActions {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 8px;
-		margin-top: auto;
-	}
+.cardActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: auto;
+}
 
-	/* Pagination */
-	.pagination {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 8px;
-		padding-top: 8px;
-		flex-wrap: wrap;
-	}
+/* Pagination */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding-top: 8px;
+  flex-wrap: wrap;
+}
 
-	.pageNumbers {
-		display: flex;
-		align-items: center;
-		gap: 4px;
-	}
+.pageNumbers {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
 
-	.pageBtn {
-		min-width: 36px;
-		height: 36px;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: 8px;
-		border: 1px solid hsl(var(--border));
-		background: transparent;
-		color: hsl(var(--foreground));
-		font-size: 0.875rem;
-		font-weight: 500;
-		cursor: pointer;
-		transition:
-			background 0.15s ease,
-			border-color 0.15s ease;
-	}
+.pageBtn {
+  min-width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid hsl(var(--border));
+  background: transparent;
+  color: hsl(var(--foreground));
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
 
-	.pageBtn:hover {
-		background: hsl(var(--muted));
-	}
+.pageBtn:hover {
+  background: hsl(var(--muted));
+}
 
-	.pageBtn.active {
-		background: hsl(var(--primary));
-		color: hsl(var(--primary-foreground));
-		border-color: hsl(var(--primary));
-	}
+.pageBtn.active {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border-color: hsl(var(--primary));
+}
 
-	.pageEllipsis {
-		min-width: 28px;
-		text-align: center;
-		color: hsl(var(--muted-foreground));
-		font-size: 0.875rem;
-	}
+.pageEllipsis {
+  min-width: 28px;
+  text-align: center;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.875rem;
+}
 
-	.paginationLabel {
-		display: none;
-	}
+.paginationLabel {
+  display: none;
+}
 
-	/* Empty State */
-	.emptyState {
-		border: 1px dashed hsl(var(--border));
-		border-radius: 12px;
-		padding: 40px 24px;
-		text-align: center;
-		background: hsl(var(--muted) / 0.12);
-	}
+/* Empty State */
+.emptyState {
+  border: 1px dashed hsl(var(--border));
+  border-radius: 12px;
+  padding: 40px 24px;
+  text-align: center;
+  background: hsl(var(--muted) / 0.12);
+}
 
-	.emptyState.slim {
-		padding: 28px 20px;
-	}
+.emptyState.slim {
+  padding: 28px 20px;
+}
 
-	.emptyState h3 {
-		margin: 0 0 6px;
-		font-size: 1.05rem;
-		font-weight: 600;
-	}
+.emptyState h3 {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
 
-	.emptyState p {
-		margin: 0;
-		color: hsl(var(--muted-foreground));
-		font-size: 0.9rem;
-	}
+.emptyState p {
+  margin: 0;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.9rem;
+}
 
-	/* Responsive */
-	@media (min-width: 640px) {
-		.paginationLabel {
-			display: inline;
-		}
-	}
+/* Responsive */
+@media (min-width: 640px) {
+  .paginationLabel {
+    display: inline;
+  }
+}
 
-	@media (max-width: 480px) {
-		.pageHeader {
-			flex-direction: column;
-			align-items: stretch;
-		}
+@media (max-width: 480px) {
+  .pageHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
 
-		.headerContent h1 {
-			font-size: 1.4rem;
-		}
+  .headerContent h1 {
+    font-size: 1.4rem;
+  }
 
-		.searchRow {
-			flex-direction: column;
-		}
+  .searchRow {
+    flex-direction: column;
+  }
 
-		.listGrid {
-			grid-template-columns: 1fr;
-		}
+  .listGrid {
+    grid-template-columns: 1fr;
+  }
 
-		.pageNumbers {
-			gap: 2px;
-		}
+  .pageNumbers {
+    gap: 2px;
+  }
 
-		.pageBtn {
-			min-width: 32px;
-			height: 32px;
-			font-size: 0.8rem;
-		}
-	}
+  .pageBtn {
+    min-width: 32px;
+    height: 32px;
+    font-size: 0.8rem;
+  }
+}
 </style>

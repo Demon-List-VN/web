@@ -18,43 +18,45 @@
 			headers: {
 				Authorization: 'Bearer ' + (await $user.token())!
 			}
-		}).then((res) => {
-			if (!res.ok) {
-				alert('An error occured');
-				return;
-			}
+		})
+			.then((res) => {
+				if (!res.ok) {
+					alert('An error occured');
 
-			alert('Merged');
-			window.location.reload();
-		});
+					return;
+				}
+
+				alert('Merged');
+				window.location.reload();
+			});
 	}
 </script>
 
 <Title value="Account merger" />
 <div class="wrapper">
-	<div class="input">
-		<Label for="from" class="w-[150px]">From <br />(will be deleted)</Label>
-		<Input id="from" class="w-[300px]" placeholder="UID" bind:value={uidA} />
-	</div>
-	<div class="input">
-		<Label for="to" class="w-[150px]">To</Label>
-		<Input id="to" class="w-[300px]" placeholder="UID" bind:value={uidB} />
-	</div>
+  <div class="input">
+    <Label for="from" class="w-[150px]">From <br />(will be deleted)</Label>
+    <Input id="from" class="w-[300px]" placeholder="UID" bind:value={uidA} />
+  </div>
+  <div class="input">
+    <Label for="to" class="w-[150px]">To</Label>
+    <Input id="to" class="w-[300px]" placeholder="UID" bind:value={uidB} />
+  </div>
 
-	<Button class="w-[100px]" on:click={merge}>Merge</Button>
+  <Button class="w-[100px]" on:click={merge}>Merge</Button>
 </div>
 
 <style lang="scss">
-	.wrapper {
-		padding-inline: 75px;
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-	}
+.wrapper {
+  padding-inline: 75px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 
-	.input {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-	}
+.input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 </style>

@@ -36,7 +36,9 @@
 	export let triggerClass = '';
 	export let contentClass = '';
 
-	const dispatch = createEventDispatcher<{ select: ListSelectorOption | null }>();
+	const dispatch = createEventDispatcher<
+		{ select: ListSelectorOption | null; }
+	>();
 
 	let open = false;
 	let query = '';
@@ -50,15 +52,19 @@
 
 	$: trimmedQuery = query.trim();
 	$: normalizedQuery = trimmedQuery.toLowerCase();
-	$: selectedOption =
-		getMergedOptions(options, searchResults, selectedOptionCache ? [selectedOptionCache] : []).find(
+	$: selectedOption = getMergedOptions(
+		options,
+		searchResults,
+		selectedOptionCache ? [selectedOptionCache] : []
+	)
+		.find(
 			(option) => option.id === selectedId
 		) ?? null;
 	$: filteredOptions = searchUrl
 		? searchResults
 		: normalizedQuery
-			? options.filter((option) => matchesQuery(option, normalizedQuery))
-			: options;
+		? options.filter((option) => matchesQuery(option, normalizedQuery))
+		: options;
 	$: searchKey = `${searchUrl ?? ''}:${trimmedQuery}`;
 	$: if (browser && open && searchUrl && searchKey !== lastSearchKey) {
 		lastSearchKey = searchKey;
@@ -89,7 +95,9 @@
 	function matchesQuery(option: ListSelectorOption, value: string) {
 		return [option.title, option.identifier, option.subtitle, String(option.id)]
 			.filter(Boolean)
-			.some((entry) => String(entry).toLowerCase().includes(value));
+			.some((entry) => String(entry)
+				.toLowerCase()
+				.includes(value));
 	}
 
 	function scheduleSearch(value: string) {
@@ -100,6 +108,7 @@
 		if (value.length < minSearchLength) {
 			searchResults = [];
 			isSearching = false;
+
 			return;
 		}
 
@@ -135,11 +144,14 @@
 		const canScroll = element.scrollHeight > element.clientHeight;
 		const scrollingDown = event.deltaY > 0;
 		const atTop = element.scrollTop <= 0;
-		const atBottom = Math.ceil(element.scrollTop + element.clientHeight) >= element.scrollHeight;
+		const atBottom = Math.ceil(element.scrollTop + element.clientHeight)
+			>= element.scrollHeight;
 
 		event.stopPropagation();
 
-		if (!canScroll || (scrollingDown && atBottom) || (!scrollingDown && atTop)) {
+		if (
+			!canScroll || (scrollingDown && atBottom) || (!scrollingDown && atTop)
+		) {
 			event.preventDefault();
 		}
 	}
@@ -193,11 +205,11 @@
 	function normalizeSearchPayload(payload: unknown) {
 		const entries = Array.isArray(payload)
 			? payload
-			: payload &&
-				  typeof payload === 'object' &&
-				  Array.isArray((payload as { data?: unknown }).data)
-				? (payload as { data: unknown[] }).data
-				: [];
+			: payload
+				&& typeof payload === 'object'
+				&& Array.isArray((payload as { data?: unknown; }).data)
+			? (payload as { data: unknown[]; }).data
+			: [];
 
 		return getMergedOptions(
 			entries
@@ -219,20 +231,18 @@
 			return null;
 		}
 
-		const identifier =
-			typeof entry.identifier === 'string'
-				? entry.identifier
-				: typeof entry.slug === 'string'
-					? entry.slug
-					: null;
-		const subtitle =
-			typeof entry.subtitle === 'string'
-				? entry.subtitle
-				: entry.isOfficial
-					? 'Official'
-					: entry.isVerified
-						? 'Verified'
-						: null;
+		const identifier = typeof entry.identifier === 'string'
+			? entry.identifier
+			: typeof entry.slug === 'string'
+			? entry.slug
+			: null;
+		const subtitle = typeof entry.subtitle === 'string'
+			? entry.subtitle
+			: entry.isOfficial
+			? 'Official'
+			: entry.isVerified
+			? 'Verified'
+			: null;
 
 		return {
 			id,
@@ -265,130 +275,144 @@
 </script>
 
 <div class={cn('selectorRoot', triggerClass)}>
-	<Popover.Root bind:open>
-		<Popover.Trigger asChild let:builder>
-			<Button
-				builders={[builder]}
-				variant="outline"
-				class="w-full justify-between overflow-hidden px-3"
-				{disabled}
-				{id}
-			>
-				<span class={cn('truncate text-left', !selectedOption && 'text-muted-foreground')}>
-					{selectedOption?.title ?? placeholder}
-				</span>
-				<ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
-			</Button>
-		</Popover.Trigger>
-		<Popover.Content
-			class={cn('min-w-80 max-w-[calc(100vw-32px)] p-0 sm:min-w-[26rem]', contentClass)}
-			align="start"
-			side="bottom"
-			sameWidth
-			strategy="fixed"
-			avoidCollisions={false}
-		>
-			<div class="selectorPopover" on:wheel|preventDefault|stopPropagation>
-				<div class="border-b p-2">
-					<div class="relative">
-						<Search
-							class="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"
-						/>
-						<Input bind:value={query} placeholder={searchPlaceholder} class="pl-8" />
-					</div>
-				</div>
-				<div
-					class="selectorList max-h-72 overflow-y-auto p-1"
-					on:wheel={handleListWheel}
-					on:touchmove|stopPropagation
-				>
-					{#if allowClear}
-						<button type="button" class="selectorItem" on:click={clearSelection}>
-							<span class="min-w-0 flex-1 truncate text-left">{clearLabel}</span>
-						</button>
-					{/if}
+  <Popover.Root bind:open>
+    <Popover.Trigger asChild let:builder>
+      <Button
+        builders={[builder]}
+        variant="outline"
+        class="w-full justify-between overflow-hidden px-3"
+        {disabled}
+        {id}
+      >
+        <span
+          class={cn('truncate text-left', !selectedOption && 'text-muted-foreground')}
+        >
+          {selectedOption?.title ?? placeholder}
+        </span>
+        <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+      </Button>
+    </Popover.Trigger>
+    <Popover.Content
+      class={cn('min-w-80 max-w-[calc(100vw-32px)] p-0 sm:min-w-[26rem]', contentClass)}
+      align="start"
+      side="bottom"
+      sameWidth
+      strategy="fixed"
+      avoidCollisions={false}
+    >
+      <div class="selectorPopover" on:wheel|preventDefault|stopPropagation>
+        <div class="border-b p-2">
+          <div class="relative">
+            <Search
+              class="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"
+            />
+            <Input
+              bind:value={query}
+              placeholder={searchPlaceholder}
+              class="pl-8"
+            />
+          </div>
+        </div>
+        <div
+          class="selectorList max-h-72 overflow-y-auto p-1"
+          on:wheel={handleListWheel}
+          on:touchmove|stopPropagation
+        >
+          {#if allowClear}
+            <button
+              type="button"
+              class="selectorItem"
+              on:click={clearSelection}
+            >
+              <span class="min-w-0 flex-1 truncate text-left">{
+                clearLabel
+              }</span>
+            </button>
+          {/if}
 
-					{#if isSearching}
-						<div class="px-3 py-6 text-center text-sm text-muted-foreground">{loadingLabel}</div>
-					{:else if filteredOptions.length}
-						{#each filteredOptions as option (option.id)}
-							<button
-								type="button"
-								class="selectorItem"
-								class:selected={selectedId === option.id}
-								disabled={option.disabled}
-								on:click={() => selectOption(option)}
-							>
-								<span class="selectorCheck">
-									{#if selectedId === option.id}
-										<Check class="h-4 w-4" />
-									{/if}
-								</span>
-								<span class="min-w-0 flex-1 text-left">
-									<span class="block truncate">{option.title}</span>
-									{#if option.subtitle || option.identifier}
-										<span class="block truncate text-xs text-muted-foreground">
-											{option.subtitle ?? option.identifier}
-										</span>
-									{/if}
-								</span>
-							</button>
-						{/each}
-					{:else}
-						<div class="px-3 py-6 text-center text-sm text-muted-foreground">{emptyLabel}</div>
-					{/if}
-				</div>
-			</div>
-		</Popover.Content>
-	</Popover.Root>
+          {#if isSearching}
+            <div class="px-3 py-6 text-center text-sm text-muted-foreground">
+              {loadingLabel}
+            </div>
+          {:else if filteredOptions.length}
+            {#each filteredOptions as option (option.id)}
+              <button
+                type="button"
+                class="selectorItem"
+                class:selected={selectedId === option.id}
+                disabled={option.disabled}
+                on:click={() => selectOption(option)}
+              >
+                <span class="selectorCheck">
+                  {#if selectedId === option.id}
+                    <Check class="h-4 w-4" />
+                  {/if}
+                </span>
+                <span class="min-w-0 flex-1 text-left">
+                  <span class="block truncate">{option.title}</span>
+                  {#if option.subtitle || option.identifier}
+                    <span class="block truncate text-xs text-muted-foreground">
+                      {option.subtitle ?? option.identifier}
+                    </span>
+                  {/if}
+                </span>
+              </button>
+            {/each}
+          {:else}
+            <div class="px-3 py-6 text-center text-sm text-muted-foreground">
+              {emptyLabel}
+            </div>
+          {/if}
+        </div>
+      </div>
+    </Popover.Content>
+  </Popover.Root>
 </div>
 
 <style lang="scss">
-	.selectorRoot {
-		display: block;
-		width: 100%;
-		min-width: 0;
-	}
+.selectorRoot {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
 
-	.selectorItem {
-		display: flex;
-		width: 100%;
-		align-items: center;
-		gap: 8px;
-		border-radius: 6px;
-		padding: 8px;
-		font-size: 14px;
-		line-height: 1.25;
-		transition:
-			background-color 0.15s ease,
-			color 0.15s ease;
-	}
+.selectorItem {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 8px;
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 14px;
+  line-height: 1.25;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
 
-	.selectorItem:hover,
-	.selectorItem.selected {
-		background-color: hsl(var(--accent));
-		color: hsl(var(--accent-foreground));
-	}
+.selectorItem:hover,
+.selectorItem.selected {
+  background-color: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
 
-	.selectorItem:disabled {
-		cursor: not-allowed;
-		opacity: 0.5;
-	}
+.selectorItem:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
 
-	.selectorList {
-		overscroll-behavior: contain;
-	}
+.selectorList {
+  overscroll-behavior: contain;
+}
 
-	.selectorPopover {
-		overscroll-behavior: contain;
-	}
+.selectorPopover {
+  overscroll-behavior: contain;
+}
 
-	.selectorCheck {
-		display: flex;
-		height: 16px;
-		width: 16px;
-		flex-shrink: 0;
-		align-items: center;
-		justify-content: center;
-	}
+.selectorCheck {
+  display: flex;
+  height: 16px;
+  width: 16px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+}
 </style>

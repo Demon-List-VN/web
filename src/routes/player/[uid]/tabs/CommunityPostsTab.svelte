@@ -22,7 +22,10 @@
 
 		const token = await $user.token();
 		const headers: Record<string, string> = {};
-		if (token) headers['Authorization'] = `Bearer ${token}`;
+
+		if (token) {
+			headers['Authorization'] = `Bearer ${token}`;
+		}
 
 		try {
 			const res = await fetch(
@@ -46,49 +49,49 @@
 </script>
 
 {#if posts === null}
-	<div class="flex justify-center py-10">
-		<p>{$_('general.loading')}</p>
-	</div>
+  <div class="flex justify-center py-10">
+    <p>{$_('general.loading')}</p>
+  </div>
 {:else if posts.length === 0}
-	<div class="flex flex-col items-center justify-center py-12 text-center">
-		<p class="text-muted-foreground">{$_('player.no_community_posts')}</p>
-	</div>
+  <div class="flex flex-col items-center justify-center py-12 text-center">
+    <p class="text-muted-foreground">{$_('player.no_community_posts')}</p>
+  </div>
 {:else}
-	<div class="flex flex-col gap-3">
-		{#each posts as post (post.id)}
-			<CommunityPostCard {post} compact />
-		{/each}
-	</div>
+  <div class="flex flex-col gap-3">
+    {#each posts as post (post.id)}
+      <CommunityPostCard {post} compact />
+    {/each}
+  </div>
 
-	{#if totalPages > 1}
-		<div class="mt-4 flex items-center justify-center gap-4">
-			<Button
-				variant="outline"
-				size="sm"
-				disabled={currentPage === 0}
-				on:click={() => {
-					currentPage--;
-					fetchPosts();
-				}}
-			>
-				<ArrowLeft class="mr-1 h-4 w-4" />
-				{$_('general.previous')}
-			</Button>
-			<span class="text-muted-foreground text-sm">
-				{currentPage + 1} / {totalPages}
-			</span>
-			<Button
-				variant="outline"
-				size="sm"
-				disabled={currentPage >= totalPages - 1}
-				on:click={() => {
-					currentPage++;
-					fetchPosts();
-				}}
-			>
-				{$_('general.next')}
-				<ArrowRight class="ml-1 h-4 w-4" />
-			</Button>
-		</div>
-	{/if}
+  {#if totalPages > 1}
+    <div class="mt-4 flex items-center justify-center gap-4">
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={currentPage === 0}
+        on:click={() => {
+            currentPage--;
+            fetchPosts();
+        }}
+      >
+        <ArrowLeft class="mr-1 h-4 w-4" />
+        {$_('general.previous')}
+      </Button>
+      <span class="text-muted-foreground text-sm">
+        {currentPage + 1} / {totalPages}
+      </span>
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={currentPage >= totalPages - 1}
+        on:click={() => {
+            currentPage++;
+            fetchPosts();
+        }}
+      >
+        {$_('general.next')}
+        <ArrowRight class="ml-1 h-4 w-4" />
+      </Button>
+    </div>
+  {/if}
 {/if}

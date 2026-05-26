@@ -57,12 +57,12 @@
 	};
 
 	type BatchCrawlProgress = {
- 		total: number;
- 		completed: number;
- 		currentLevelId: number | null;
- 		retrying: boolean;
- 		retryElapsedMs: number;
- 	};
+		total: number;
+		completed: number;
+		currentLevelId: number | null;
+		retrying: boolean;
+		retryElapsedMs: number;
+	};
 
 	type LevelItemPatch = {
 		rating?: number;
@@ -88,27 +88,43 @@
 	export let addingLevel = false;
 	export let loadingMoreLevels = false;
 	export let levelsLoadingError = '';
-	export let retryLoadMoreLevels: (pageNumber?: number) => void | Promise<void> = async () => {};
+	export let retryLoadMoreLevels: (pageNumber?: number) => void | Promise<void> =
+		async () => {};
 	export let batchAddProgress: BatchAddProgress | null = null;
 	export let batchCrawlProgress: BatchCrawlProgress | null = null;
 	export let abortBatchAddImport: () => void | Promise<void> = async () => {};
 	export let savingLevelItemId: number | null = null;
 	export let savingLevelDrafts = false;
 	export let savingReorder = false;
-	export let addLevel: (levelId: number) => boolean | Promise<boolean> = async () => false;
-	export let addLevels: (levelInputs: BatchAddLevelInput[]) => BatchAddLevelsResult | Promise<BatchAddLevelsResult> = async () => ({
+	export let addLevel: (levelId: number) => boolean | Promise<boolean> =
+		async () => false;
+	export let addLevels: (
+		levelInputs: BatchAddLevelInput[]
+	) => BatchAddLevelsResult | Promise<BatchAddLevelsResult> = async () => ({
 		added: 0,
 		updated: 0,
 		skipped: 0,
 		failed: [],
 		aborted: false
 	});
-	export let stageLevelDraft: (levelId: number, patch: LevelItemPatch) => void | Promise<void> = async () => {};
-	export let stageMultipleLevelDrafts: (levelIds: number[], patch: LevelItemPatch) => void | Promise<void> = async () => {};
-	export let stageLevelDeletion: (levelId: number) => void | Promise<void> = async () => {};
-	export let stageMultipleLevelDeletions: (levelIds: number[]) => void | Promise<void> = async () => {};
-	export let reorderLevels: (levelIds: number[]) => void | Promise<void> = async () => {};
-	export let applyLevelFilters: (filters: LevelFilters) => boolean | Promise<boolean> = async () => true;
+	export let stageLevelDraft: (
+		levelId: number,
+		patch: LevelItemPatch
+	) => void | Promise<void> = async () => {};
+	export let stageMultipleLevelDrafts: (
+		levelIds: number[],
+		patch: LevelItemPatch
+	) => void | Promise<void> = async () => {};
+	export let stageLevelDeletion: (levelId: number) => void | Promise<void> =
+		async () => {};
+	export let stageMultipleLevelDeletions: (
+		levelIds: number[]
+	) => void | Promise<void> = async () => {};
+	export let reorderLevels: (levelIds: number[]) => void | Promise<void> =
+		async () => {};
+	export let applyLevelFilters: (
+		filters: LevelFilters
+	) => boolean | Promise<boolean> = async () => true;
 
 	let levelsSectionElement: HTMLDivElement | null = null;
 	let allDisplayedItems: any[] = [];
@@ -140,13 +156,21 @@
 	let bulkMinProgressValue = '';
 	let bulkVideoIdValue = '';
 	let csvFileInput: HTMLInputElement | null = null;
-	let csvAddSummary: (BatchAddLevelsResult & { invalidRows: number }) | null = null;
+	let csvAddSummary: (BatchAddLevelsResult & { invalidRows: number; }) | null =
+		null;
 	let addToolsOpen = false;
 	let hasActiveLevelFilters = false;
 	let hasLevelFilterInput = false;
 	let hasPendingLevelFilterChanges = false;
 	const levelsPageSize = 50;
-	const csvExampleColumns = ['levelId', 'createdAt', 'top', 'rating', 'minProgress', 'videoId'];
+	const csvExampleColumns = [
+		'levelId',
+		'createdAt',
+		'top',
+		'rating',
+		'minProgress',
+		'videoId'
+	];
 	const csvExampleRows = [
 		['128', '2024-01-05T12:00:00Z', '3', '5', '47', 'dQw4w9WgXcQ'],
 		['13519', '2024-02-18T09:30:00Z', '9', '10', '100', 'M7lc1UVf-VE'],
@@ -154,7 +178,12 @@
 	];
 
 	$: allDisplayedItems = list
-		? getDisplayedItems(list, pendingLevelAdditions, levelDrafts, levelDeletionDraftIds)
+		? getDisplayedItems(
+			list,
+			pendingLevelAdditions,
+			levelDrafts,
+			levelDeletionDraftIds
+		)
 		: [];
 	$: hasActiveLevelFilters = Boolean(
 		appliedFilterQuery.trim()
@@ -185,12 +214,18 @@
 		&& !getPendingAdditionCount(list);
 	$: quickLevelId = getQuickLevelId();
 	$: currentLevelsPage = Math.max(loadedLevelCount, 1);
-	$: levelsPageCount = Math.max(Math.ceil((list?.levelCount ?? 0) / levelsPageSize), 1);
+	$: levelsPageCount = Math.max(
+		Math.ceil((list?.levelCount ?? 0) / levelsPageSize),
+		1
+	);
 	$: csvProgressPercent = batchAddProgress?.total
 		? Math.min((batchAddProgress.completed / batchAddProgress.total) * 100, 100)
 		: 0;
 	$: crawlProgressPercent = batchCrawlProgress?.total
-		? Math.min((batchCrawlProgress.completed / batchCrawlProgress.total) * 100, 100)
+		? Math.min(
+			(batchCrawlProgress.completed / batchCrawlProgress.total) * 100,
+			100
+		)
 		: 0;
 	$: hasBulkEditValues = Boolean(
 		(list?.mode === 'rating' && bulkRatingValue.trim().length > 0)
@@ -198,8 +233,12 @@
 		|| bulkVideoIdValue.trim().length > 0
 	);
 	$: {
-		const availableLevelIds = new Set(displayedItems.map((item) => item.levelId));
-		const nextSelectedLevelIds = selectedLevelIds.filter((levelId) => availableLevelIds.has(levelId));
+		const availableLevelIds = new Set(
+			displayedItems.map((item) => item.levelId)
+		);
+		const nextSelectedLevelIds = selectedLevelIds.filter((levelId) =>
+			availableLevelIds.has(levelId)
+		);
 
 		if (nextSelectedLevelIds.length !== selectedLevelIds.length) {
 			selectedLevelIds = nextSelectedLevelIds;
@@ -207,7 +246,9 @@
 
 		if (!displayedItems.length) {
 			lastSelectedIndex = null;
-		} else if (lastSelectedIndex != null && lastSelectedIndex >= displayedItems.length) {
+		} else if (
+			lastSelectedIndex != null && lastSelectedIndex >= displayedItems.length
+		) {
 			lastSelectedIndex = displayedItems.length - 1;
 		}
 	}
@@ -216,8 +257,14 @@
 	}
 
 	function getCsvProgressPhaseLabel(phase: BatchAddProgress['phase']) {
-		if (phase === 'adding') return $_('custom_lists.detail.add_level.csv_progress_phase_adding');
-		if (phase === 'updating') return $_('custom_lists.detail.add_level.csv_progress_phase_updating');
+		if (phase === 'adding') {
+			return $_('custom_lists.detail.add_level.csv_progress_phase_adding');
+		}
+
+		if (phase === 'updating') {
+			return $_('custom_lists.detail.add_level.csv_progress_phase_updating');
+		}
+
 		return $_('custom_lists.detail.add_level.csv_progress_phase_reordering');
 	}
 
@@ -240,6 +287,7 @@
 	function getQuickLevelId() {
 		const raw = $page.url.searchParams.get('levelId');
 		const parsed = raw ? Number.parseInt(raw, 10) : Number.NaN;
+
 		return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
 	}
 
@@ -247,7 +295,9 @@
 		const minutes = Math.floor(ms / 60000);
 		const seconds = Math.floor((ms % 60000) / 1000);
 		const milliseconds = ms % 1000;
-		return `${minutes}:${seconds.toString().padStart(2, '0')}.${milliseconds}`;
+
+		return `${minutes}:${seconds.toString()
+			.padStart(2, '0')}.${milliseconds}`;
 	}
 
 	function getEffectiveMinProgress(item: any) {
@@ -256,10 +306,15 @@
 
 	function getMinProgressLabel(item: any) {
 		const minProgress = getEffectiveMinProgress(item);
-		if (minProgress == null) return $_('custom_lists.detail.levels.min_progress_label');
+
+		if (minProgress == null) {
+			return $_('custom_lists.detail.levels.min_progress_label');
+		}
+
 		const value = list?.isPlatformer
 			? `${getTimeString(minProgress)} Base`
 			: `${minProgress}% Min`;
+
 		return item.minProgress == null ? value : `${value} *`;
 	}
 
@@ -275,29 +330,47 @@
 		}
 
 		const suffix = item.videoID == null ? '' : ' *';
-		return `${$_('custom_lists.detail.levels.video_id_label')}: ${videoId}${suffix}`;
+
+		return `${
+			$_('custom_lists.detail.levels.video_id_label')
+		}: ${videoId}${suffix}`;
 	}
 
-	function hasDraftValue(patch: LevelItemPatch | undefined, key: keyof LevelItemPatch) {
+	function hasDraftValue(
+		patch: LevelItemPatch | undefined,
+		key: keyof LevelItemPatch
+	) {
 		return patch ? Object.prototype.hasOwnProperty.call(patch, key) : false;
 	}
 
 	function filterDisplayedItems(items: any[]) {
 		return items.filter((item) => {
-			const pendingMatches = !appliedFilterPendingOnly || hasPendingDraft(item.levelId);
+			const pendingMatches = !appliedFilterPendingOnly
+				|| hasPendingDraft(item.levelId);
 
-			if (!pendingMatches) return false;
-			if (!item.isPendingAddition) return true;
+			if (!pendingMatches) {
+				return false;
+			}
+
+			if (!item.isPendingAddition) {
+				return true;
+			}
 
 			return pendingAdditionMatchesAppliedFilters(item);
 		});
 	}
 
 	function pendingAdditionMatchesAppliedFilters(item: any) {
-		const normalizedQuery = appliedFilterQuery.trim().toLowerCase();
-		const normalizedCreator = appliedFilterCreator.trim().toLowerCase();
-		const minRating = appliedFilterMinRating.trim() ? Number(appliedFilterMinRating) : null;
-		const maxRating = appliedFilterMaxRating.trim() ? Number(appliedFilterMaxRating) : null;
+		const normalizedQuery = appliedFilterQuery.trim()
+			.toLowerCase();
+		const normalizedCreator = appliedFilterCreator.trim()
+			.toLowerCase();
+		const minRating = appliedFilterMinRating.trim()
+			? Number(appliedFilterMinRating)
+			: null;
+		const maxRating = appliedFilterMaxRating.trim()
+			? Number(appliedFilterMaxRating)
+			: null;
 		const rating = item.rating ?? 5;
 
 		if (
@@ -310,20 +383,30 @@
 
 		if (
 			normalizedQuery
-			&& !String(item.level?.name ?? '').toLowerCase().includes(normalizedQuery)
-			&& !String(item.levelId).includes(normalizedQuery)
+			&& !String(item.level?.name ?? '')
+				.toLowerCase()
+				.includes(
+					normalizedQuery
+				)
+			&& !String(item.levelId)
+				.includes(normalizedQuery)
 		) {
 			return false;
 		}
 
 		if (
 			normalizedCreator
-			&& !String(item.level?.creator ?? '').toLowerCase().includes(normalizedCreator)
+			&& !String(item.level?.creator ?? '')
+				.toLowerCase()
+				.includes(
+					normalizedCreator
+				)
 		) {
 			return false;
 		}
 
-		return (minRating == null || rating >= minRating) && (maxRating == null || rating <= maxRating);
+		return (minRating == null || rating >= minRating)
+			&& (maxRating == null || rating <= maxRating);
 	}
 
 	function getDraftLevelFilters(): LevelFilters {
@@ -344,7 +427,10 @@
 	async function commitLevelFilters() {
 		const filters = getDraftLevelFilters();
 		const applied = await applyLevelFilters(filters);
-		if (!applied) return;
+
+		if (!applied) {
+			return;
+		}
 
 		appliedFilterQuery = filterQuery;
 		appliedFilterCreator = filterCreator;
@@ -354,7 +440,9 @@
 	}
 
 	function handleFilterKeydown(event: KeyboardEvent) {
-		if (event.key !== 'Enter') return;
+		if (event.key !== 'Enter') {
+			return;
+		}
 
 		event.preventDefault();
 		void commitLevelFilters();
@@ -374,7 +462,10 @@
 			ratingMax: null,
 			pendingOnly: false
 		});
-		if (!applied) return;
+
+		if (!applied) {
+			return;
+		}
 
 		appliedFilterQuery = '';
 		appliedFilterCreator = '';
@@ -383,15 +474,25 @@
 		appliedFilterPendingOnly = false;
 	}
 
-	function applyDraftToItem(item: any, drafts: Record<number, LevelItemPatch> = levelDrafts) {
+	function applyDraftToItem(
+		item: any,
+		drafts: Record<number, LevelItemPatch> = levelDrafts
+	) {
 		const patch = drafts[item.levelId];
-		if (!patch) return item;
+
+		if (!patch) {
+			return item;
+		}
 
 		return {
 			...item,
 			...(patch.rating !== undefined ? { rating: patch.rating } : {}),
-			...(hasDraftValue(patch, 'minProgress') ? { minProgress: patch.minProgress ?? null } : {}),
-			...(hasDraftValue(patch, 'videoID') ? { videoID: patch.videoID ?? null } : {})
+			...(hasDraftValue(patch, 'minProgress')
+				? { minProgress: patch.minProgress ?? null }
+				: {}),
+			...(hasDraftValue(patch, 'videoID')
+				? { videoID: patch.videoID ?? null }
+				: {})
 		};
 	}
 
@@ -400,7 +501,10 @@
 
 		return [...items].sort((left, right) => {
 			if (itemSort === 'created_at') {
-				const createdAtDifference = new Date(left.created_at).getTime() - new Date(right.created_at).getTime();
+				const createdAtDifference = new Date(left.created_at)
+					.getTime()
+					- new Date(right.created_at)
+						.getTime();
 
 				if (createdAtDifference !== 0) {
 					return createdAtDifference;
@@ -414,7 +518,10 @@
 				const rightPosition = right.position;
 
 				if (leftPosition == null && rightPosition == null) {
-					const createdAtDifference = new Date(left.created_at).getTime() - new Date(right.created_at).getTime();
+					const createdAtDifference = new Date(left.created_at)
+						.getTime()
+						- new Date(right.created_at)
+							.getTime();
 
 					if (createdAtDifference !== 0) {
 						return createdAtDifference;
@@ -423,8 +530,13 @@
 					return left.id - right.id;
 				}
 
-				if (leftPosition == null) return 1;
-				if (rightPosition == null) return -1;
+				if (leftPosition == null) {
+					return 1;
+				}
+
+				if (rightPosition == null) {
+					return -1;
+				}
 
 				if (leftPosition !== rightPosition) {
 					return leftPosition - rightPosition;
@@ -438,7 +550,10 @@
 				}
 			}
 
-			const createdAtDifference = new Date(left.created_at).getTime() - new Date(right.created_at).getTime();
+			const createdAtDifference = new Date(left.created_at)
+				.getTime()
+				- new Date(right.created_at)
+					.getTime();
 
 			if (createdAtDifference !== 0) {
 				return createdAtDifference;
@@ -448,12 +563,17 @@
 		});
 	}
 
-	function getCombinedLevelItems(currentList: any, additions: any[] = pendingLevelAdditions) {
+	function getCombinedLevelItems(
+		currentList: any,
+		additions: any[] = pendingLevelAdditions
+	) {
 		const combinedItems: any[] = [];
 		const seenLevelIds = new Set<number>();
 
 		for (const item of [...(currentList?.items ?? []), ...(additions ?? [])]) {
-			if (!item || seenLevelIds.has(item.levelId)) continue;
+			if (!item || seenLevelIds.has(item.levelId)) {
+				continue;
+			}
 
 			seenLevelIds.add(item.levelId);
 			combinedItems.push(item);
@@ -462,8 +582,14 @@
 		return combinedItems;
 	}
 
-	function getPendingAdditionCount(currentList: any, additions: any[] = pendingLevelAdditions) {
-		return getCombinedLevelItems(currentList, additions).filter((item: any) => item?.isPendingAddition)
+	function getPendingAdditionCount(
+		currentList: any,
+		additions: any[] = pendingLevelAdditions
+	) {
+		return getCombinedLevelItems(currentList, additions)
+			.filter((item: any) =>
+				item?.isPendingAddition
+			)
 			.length;
 	}
 
@@ -486,15 +612,21 @@
 	function hasPendingDraft(levelId: number) {
 		return Boolean(
 			levelDrafts[levelId]
-			|| getCombinedLevelItems(list).some(
-				(item: any) => item.levelId === levelId && item.isPendingAddition
-			)
+			|| getCombinedLevelItems(list)
+				.some(
+					(item: any) =>
+						item.levelId === levelId && item.isPendingAddition
+				)
 		);
 	}
 
 	export function scrollToPendingChanges() {
-		const target = levelsSectionElement?.querySelector<HTMLElement>('[data-pending-change="true"]')
-			?? levelsSectionElement?.querySelector<HTMLElement>('[data-pending-removals="true"]')
+		const target = levelsSectionElement?.querySelector<HTMLElement>(
+			'[data-pending-change="true"]'
+		)
+			?? levelsSectionElement?.querySelector<HTMLElement>(
+				'[data-pending-removals="true"]'
+			)
 			?? levelsSectionElement;
 
 		target?.scrollIntoView({
@@ -505,7 +637,10 @@
 
 	async function handleLevelSelectionClick(event: MouseEvent, index: number) {
 		const target = event.currentTarget;
-		if (!(target instanceof HTMLInputElement)) return;
+
+		if (!(target instanceof HTMLInputElement)) {
+			return;
+		}
 
 		if (event.shiftKey && lastSelectedIndex !== null) {
 			const checked = target.checked;
@@ -515,7 +650,9 @@
 			const startIndex = Math.min(lastSelectedIndex, index);
 			const endIndex = Math.max(lastSelectedIndex, index);
 
-			for (const rangeItem of displayedItems.slice(startIndex, endIndex + 1)) {
+			for (
+				const rangeItem of displayedItems.slice(startIndex, endIndex + 1)
+			) {
 				if (checked) {
 					nextSelected.add(rangeItem.levelId);
 				} else {
@@ -531,7 +668,9 @@
 
 	function selectAllLevels() {
 		selectedLevelIds = displayedItems.map((item) => item.levelId);
-		lastSelectedIndex = displayedItems.length ? displayedItems.length - 1 : null;
+		lastSelectedIndex = displayedItems.length
+			? displayedItems.length - 1
+			: null;
 	}
 
 	function clearLevelSelection() {
@@ -540,7 +679,9 @@
 	}
 
 	async function deleteSelectedLevels() {
-		if (!selectedLevelIds.length) return;
+		if (!selectedLevelIds.length) {
+			return;
+		}
 
 		await stageMultipleLevelDeletions(selectedLevelIds);
 		clearLevelSelection();
@@ -559,26 +700,40 @@
 
 		for (const pattern of patterns) {
 			const match = trimmed.match(pattern);
-			if (match) return match[1];
+
+			if (match) {
+				return match[1];
+			}
 		}
 
 		return null;
 	}
 
 	function startRatingEdit(item: any) {
-		if (!canEditLevels) return;
+		if (!canEditLevels) {
+			return;
+		}
+
 		editingRatingItemId = item.id;
 		editingRatingValue = String(item.rating ?? 5);
 	}
 
 	function startMinProgressEdit(item: any) {
-		if (!canEditLevels) return;
+		if (!canEditLevels) {
+			return;
+		}
+
 		editingMinProgressItemId = item.id;
-		editingMinProgressValue = item.minProgress == null ? '' : String(item.minProgress);
+		editingMinProgressValue = item.minProgress == null
+			? ''
+			: String(item.minProgress);
 	}
 
 	function startVideoIdEdit(item: any) {
-		if (!canEditLevels) return;
+		if (!canEditLevels) {
+			return;
+		}
+
 		editingVideoIdItemId = item.id;
 		editingVideoIdValue = item.videoID ?? '';
 	}
@@ -595,7 +750,11 @@
 
 	function handleMinProgressBlur(event: FocusEvent) {
 		const nextTarget = event.relatedTarget;
-		if (nextTarget instanceof HTMLElement && nextTarget.dataset.minProgressAction) {
+
+		if (
+			nextTarget instanceof HTMLElement
+			&& nextTarget.dataset.minProgressAction
+		) {
 			return;
 		}
 
@@ -604,6 +763,7 @@
 
 	function handleVideoIdBlur(event: FocusEvent) {
 		const nextTarget = event.relatedTarget;
+
 		if (nextTarget instanceof HTMLElement && nextTarget.dataset.videoIdAction) {
 			return;
 		}
@@ -614,28 +774,44 @@
 	async function saveRatingEdit(levelId: number) {
 		const rating = Number.parseFloat(editingRatingValue);
 		editingRatingItemId = null;
+
 		if (!Number.isFinite(rating) || rating < 0) {
 			toast.error($_('custom_lists.toast.rating_invalid'));
+
 			return;
 		}
+
 		await stageLevelDraft(levelId, { rating });
 	}
 
 	async function saveMinProgressEdit(levelId: number) {
-		if (!list) return;
-		const rawValue = editingMinProgressValue == null ? '' : String(editingMinProgressValue).trim();
+		if (!list) {
+			return;
+		}
+
+		const rawValue = editingMinProgressValue == null
+			? ''
+			: String(editingMinProgressValue)
+				.trim();
 		editingMinProgressItemId = null;
 
 		if (!rawValue.length) {
 			await stageLevelDraft(levelId, { minProgress: null });
+
 			return;
 		}
 
 		const minProgress = Number.parseInt(rawValue, 10);
-		if (!Number.isInteger(minProgress) || minProgress < 0 || (!list.isPlatformer && minProgress > 100)) {
+
+		if (
+			!Number.isInteger(minProgress) || minProgress < 0
+			|| (!list.isPlatformer && minProgress > 100)
+		) {
 			toast.error($_('custom_lists.toast.min_progress_invalid'));
+
 			return;
 		}
+
 		await stageLevelDraft(levelId, { minProgress });
 	}
 
@@ -645,6 +821,7 @@
 
 		if (!rawValue.length) {
 			await stageLevelDraft(levelId, { videoID: null });
+
 			return;
 		}
 
@@ -652,6 +829,7 @@
 
 		if (!videoID) {
 			toast.error($_('custom_lists.toast.video_id_invalid'));
+
 			return;
 		}
 
@@ -659,7 +837,9 @@
 	}
 
 	async function applyBulkEdits() {
-		if (!selectedLevelIds.length) return;
+		if (!selectedLevelIds.length) {
+			return;
+		}
 
 		const nextDraft: LevelItemPatch = {};
 		const ratingValue = bulkRatingValue.trim();
@@ -668,8 +848,10 @@
 
 		if (list?.mode === 'rating' && ratingValue.length) {
 			const rating = Number.parseFloat(ratingValue);
+
 			if (!Number.isFinite(rating) || rating < 0) {
 				toast.error($_('custom_lists.toast.rating_invalid'));
+
 				return;
 			}
 
@@ -678,8 +860,13 @@
 
 		if (minProgressValue.length) {
 			const minProgress = Number.parseInt(minProgressValue, 10);
-			if (!Number.isInteger(minProgress) || minProgress < 0 || (!list?.isPlatformer && minProgress > 100)) {
+
+			if (
+				!Number.isInteger(minProgress) || minProgress < 0
+				|| (!list?.isPlatformer && minProgress > 100)
+			) {
 				toast.error($_('custom_lists.toast.min_progress_invalid'));
+
 				return;
 			}
 
@@ -688,15 +875,19 @@
 
 		if (videoIdValue.length) {
 			const videoID = normalizeVideoIdValue(videoIdValue);
+
 			if (!videoID) {
 				toast.error($_('custom_lists.toast.video_id_invalid'));
+
 				return;
 			}
 
 			nextDraft.videoID = videoID;
 		}
 
-		if (!Object.keys(nextDraft).length) return;
+		if (!Object.keys(nextDraft).length) {
+			return;
+		}
 
 		await stageMultipleLevelDrafts(selectedLevelIds, nextDraft);
 		clearLevelSelection();
@@ -704,6 +895,7 @@
 
 	function onDragStart(event: DragEvent, index: number) {
 		draggedIndex = index;
+
 		if (event.dataTransfer) {
 			event.dataTransfer.effectAllowed = 'move';
 		}
@@ -711,9 +903,11 @@
 
 	function onDragOver(event: DragEvent, index: number) {
 		event.preventDefault();
+
 		if (event.dataTransfer) {
 			event.dataTransfer.dropEffect = 'move';
 		}
+
 		dragOverIndex = index;
 	}
 
@@ -724,8 +918,10 @@
 
 	function onDrop(event: DragEvent, targetIndex: number) {
 		event.preventDefault();
+
 		if (draggedIndex === null || draggedIndex === targetIndex) {
 			onDragEnd();
+
 			return;
 		}
 
@@ -739,12 +935,15 @@
 
 	async function submitAddLevel() {
 		const levelId = Number.parseInt(levelIdInput, 10);
+
 		if (!Number.isInteger(levelId) || levelId <= 0) {
 			toast.error($_('custom_lists.toast.level_id_invalid'));
+
 			return;
 		}
 
 		const added = await addLevel(levelId);
+
 		if (added) {
 			levelIdInput = '';
 		}
@@ -779,6 +978,7 @@
 		}
 
 		values.push(value.trim());
+
 		return values;
 	}
 
@@ -812,60 +1012,115 @@
 		const delimiters: Array<',' | ';' | '\t'> = [',', ';', '\t'];
 
 		return delimiters.reduce((selected, delimiter) => (
-			countDelimiter(firstLine, delimiter) > countDelimiter(firstLine, selected) ? delimiter : selected
-		), ',');
+        countDelimiter(firstLine, delimiter)
+									> countDelimiter(firstLine, selected)
+									? delimiter
+									: selected
+			), ',');
 	}
 
 	function normalizeColumnName(value: string) {
-		return value.trim().toLowerCase().replace(/[\s_-]+/g, '');
+		return value.trim()
+			.toLowerCase()
+			.replace(/[\s_-]+/g, '');
 	}
 
 	function getCsvColumnIndexes(cells: string[]) {
-		const indexes: { levelId?: number; createdAt?: number; top?: number; rating?: number; minProgress?: number; videoId?: number } = {};
+		const indexes: {
+			levelId?: number;
+			createdAt?: number;
+			top?: number;
+			rating?: number;
+			minProgress?: number;
+			videoId?: number;
+		} = {};
 
 		cells.forEach((cell, index) => {
 			const normalizedCell = normalizeColumnName(cell);
 
-			if (indexes.levelId === undefined && ['levelid', 'id', 'level'].includes(normalizedCell)) {
+			if (
+				indexes.levelId === undefined
+				&& ['levelid', 'id', 'level'].includes(normalizedCell)
+			) {
 				indexes.levelId = index;
 			}
 
-			if (indexes.top === undefined && ['top', 'rank', 'position', 'listtop'].includes(normalizedCell)) {
+			if (
+				indexes.top === undefined
+				&& ['top', 'rank', 'position', 'listtop'].includes(normalizedCell)
+			) {
 				indexes.top = index;
 			}
 
-			if (indexes.createdAt === undefined && ['createdat', 'created', 'createdtime', 'createddate', 'datecreated'].includes(normalizedCell)) {
+			if (
+				indexes.createdAt === undefined
+				&& [
+					'createdat',
+					'created',
+					'createdtime',
+					'createddate',
+					'datecreated'
+				].includes(normalizedCell)
+			) {
 				indexes.createdAt = index;
 			}
 
-			if (indexes.rating === undefined && ['rating', 'rate'].includes(normalizedCell)) {
+			if (
+				indexes.rating === undefined
+				&& ['rating', 'rate'].includes(normalizedCell)
+			) {
 				indexes.rating = index;
 			}
 
-			if (indexes.minProgress === undefined && ['minprogress', 'minimumprogress', 'basetime'].includes(normalizedCell)) {
+			if (
+				indexes.minProgress === undefined
+				&& ['minprogress', 'minimumprogress', 'basetime'].includes(
+					normalizedCell
+				)
+			) {
 				indexes.minProgress = index;
 			}
 
-			if (indexes.videoId === undefined && ['videoid', 'video', 'youtubeid', 'youtubevideoid'].includes(normalizedCell)) {
+			if (
+				indexes.videoId === undefined
+				&& ['videoid', 'video', 'youtubeid', 'youtubevideoid'].includes(
+					normalizedCell
+				)
+			) {
 				indexes.videoId = index;
 			}
 		});
 
-		return indexes.levelId === undefined ? null : indexes as { levelId: number; createdAt?: number; top?: number; rating?: number; minProgress?: number; videoId?: number };
+		return indexes.levelId === undefined
+			? null
+			: indexes as {
+				levelId: number;
+				createdAt?: number;
+				top?: number;
+				rating?: number;
+				minProgress?: number;
+				videoId?: number;
+			};
 	}
 
 	function parsePositiveIntegerCell(value: string | undefined) {
-		const normalizedValue = value?.replace(/^\uFEFF/, '').trim();
+		const normalizedValue = value?.replace(/^\uFEFF/, '')
+			.trim();
+
 		if (!normalizedValue?.length || !/^\d+$/.test(normalizedValue)) {
 			return null;
 		}
 
 		const parsedValue = Number.parseInt(normalizedValue, 10);
-		return Number.isInteger(parsedValue) && parsedValue > 0 ? parsedValue : null;
+
+		return Number.isInteger(parsedValue) && parsedValue > 0
+			? parsedValue
+			: null;
 	}
 
 	function parseOptionalIntegerCell(value: string | undefined) {
 		const normalizedValue = value?.trim();
+
 		if (!normalizedValue?.length) {
 			return undefined;
 		}
@@ -879,11 +1134,13 @@
 
 	function parseOptionalFloatCell(value: string | undefined) {
 		const normalizedValue = value?.trim();
+
 		if (!normalizedValue?.length) {
 			return undefined;
 		}
 
 		const parsed = Number(normalizedValue);
+
 		if (!Number.isFinite(parsed)) {
 			return Number.NaN;
 		}
@@ -893,6 +1150,7 @@
 
 	function parseOptionalVideoIdCell(value: string | undefined) {
 		const normalizedValue = value?.trim();
+
 		if (!normalizedValue?.length) {
 			return undefined;
 		}
@@ -902,20 +1160,27 @@
 
 	function parseOptionalCreatedAtCell(value: string | undefined) {
 		const normalizedValue = value?.trim();
+
 		if (!normalizedValue?.length) {
 			return undefined;
 		}
 
 		const timestamp = Date.parse(normalizedValue);
+
 		if (Number.isNaN(timestamp)) {
 			return null;
 		}
 
-		return new Date(timestamp).toISOString();
+		return new Date(timestamp)
+			.toISOString();
 	}
 
 	function parseSingleLineIds(input: string) {
-		const tokens = input.split(/[\s,;\t]+/).map((token) => token.trim()).filter(Boolean);
+		const tokens = input.split(/[\s,;\t]+/)
+			.map((token) => token.trim())
+			.filter(
+				Boolean
+			);
 		const levelInputs: BatchAddLevelInput[] = [];
 		let invalidRows = 0;
 
@@ -926,6 +1191,7 @@
 			}
 
 			const levelId = Number.parseInt(token, 10);
+
 			if (!Number.isInteger(levelId) || levelId <= 0) {
 				invalidRows += 1;
 				continue;
@@ -938,7 +1204,9 @@
 	}
 
 	function parseCsvLevelInputs(rawInput: string) {
-		const input = rawInput.replace(/^\uFEFF/, '').trim();
+		const input = rawInput.replace(/^\uFEFF/, '')
+			.trim();
+
 		if (!input) {
 			return {
 				levelInputs: [],
@@ -950,34 +1218,53 @@
 			return parseSingleLineIds(input);
 		}
 
-		const lines = input.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+		const lines = input.split(/\r?\n/)
+			.map((line) => line.trim())
+			.filter(
+				Boolean
+			);
 		const delimiter = detectCsvDelimiter(lines);
-		const headerIndexes = lines.length ? getCsvColumnIndexes(parseDelimitedLine(lines[0], delimiter)) : null;
+		const headerIndexes = lines.length
+			? getCsvColumnIndexes(parseDelimitedLine(lines[0], delimiter))
+			: null;
 		const startIndex = headerIndexes ? 1 : 0;
 		const levelInputs: BatchAddLevelInput[] = [];
 		let invalidRows = 0;
 
 		for (let index = startIndex; index < lines.length; index += 1) {
 			const cells = parseDelimitedLine(lines[index], delimiter);
+
 			if (!cells.some((cell) => cell.length)) {
 				continue;
 			}
 
-			const levelIdCell = headerIndexes ? cells[headerIndexes.levelId] : cells[0];
+			const levelIdCell = headerIndexes
+				? cells[headerIndexes.levelId]
+				: cells[0];
 			const createdAtCell = headerIndexes
-				? (headerIndexes.createdAt === undefined ? undefined : cells[headerIndexes.createdAt])
+				? (headerIndexes.createdAt === undefined
+					? undefined
+					: cells[headerIndexes.createdAt])
 				: cells[1];
 			const ratingCell = headerIndexes
-				? (headerIndexes.rating === undefined ? undefined : cells[headerIndexes.rating])
+				? (headerIndexes.rating === undefined
+					? undefined
+					: cells[headerIndexes.rating])
 				: (list?.mode === 'top' ? cells[3] : cells[2]);
 			const topCell = headerIndexes
-				? (headerIndexes.top === undefined ? undefined : cells[headerIndexes.top])
+				? (headerIndexes.top === undefined
+					? undefined
+					: cells[headerIndexes.top])
 				: (list?.mode === 'top' ? cells[2] : undefined);
 			const minProgressCell = headerIndexes
-				? (headerIndexes.minProgress === undefined ? undefined : cells[headerIndexes.minProgress])
+				? (headerIndexes.minProgress === undefined
+					? undefined
+					: cells[headerIndexes.minProgress])
 				: (list?.mode === 'top' ? cells[4] : cells[3]);
 			const videoIdCell = headerIndexes
-				? (headerIndexes.videoId === undefined ? undefined : cells[headerIndexes.videoId])
+				? (headerIndexes.videoId === undefined
+					? undefined
+					: cells[headerIndexes.videoId])
 				: (list?.mode === 'top' ? cells[5] : cells[4]);
 
 			const levelId = parsePositiveIntegerCell(levelIdCell);
@@ -1058,7 +1345,10 @@
 	async function handleCsvFileChange(event: Event) {
 		const input = event.currentTarget as HTMLInputElement | null;
 		const file = input?.files?.[0];
-		if (!file) return;
+
+		if (!file) {
+			return;
+		}
 
 		try {
 			csvInput = await file.text();
@@ -1083,8 +1373,9 @@
 				failed: [],
 				aborted: false,
 				invalidRows
-			} as BatchAddLevelsResult & { invalidRows: number };
+			} as BatchAddLevelsResult & { invalidRows: number; };
 			toast.error($_('custom_lists.toast.level_csv_invalid'));
+
 			return;
 		}
 
@@ -1099,29 +1390,35 @@
 				? 'custom_lists.detail.add_level.csv_result_aborted'
 				: 'custom_lists.detail.add_level.csv_result',
 			{
-			values: {
-				added: summary.added,
-				updated: summary.updated,
-				skipped: summary.skipped,
-				failed: summary.failed.length,
-				invalid: invalidRows
-			}
+				values: {
+					added: summary.added,
+					updated: summary.updated,
+					skipped: summary.skipped,
+					failed: summary.failed.length,
+					invalid: invalidRows
+				}
 			}
 		);
 
 		if (summary.aborted) {
 			toast.info($_('custom_lists.detail.add_level.csv_aborted_toast'));
+
 			return;
 		}
 
-		if ((summary.added > 0 || summary.updated > 0) && summary.failed.length === 0 && invalidRows === 0) {
+		if (
+			(summary.added > 0 || summary.updated > 0)
+			&& summary.failed.length === 0 && invalidRows === 0
+		) {
 			toast.success(resultMessage);
 			csvInput = '';
+
 			return;
 		}
 
 		if (summary.added > 0 || summary.updated > 0) {
 			toast.info(resultMessage);
+
 			return;
 		}
 
@@ -1130,1489 +1427,1658 @@
 </script>
 
 <div class="tabContent">
-	{#if canEditLevels}
-		<Collapsible.Root bind:open={addToolsOpen}>
-			<div class="toolCard addToolsCard">
-				<Button
-					type="button"
-					variant="ghost"
-					class="h-auto w-full justify-between p-0 text-left hover:bg-transparent hover:text-current focus-visible:ring-0 focus-visible:ring-offset-0"
-					aria-expanded={addToolsOpen}
-					aria-controls="csv-add-tools-panel"
-					on:click={() => {
-						addToolsOpen = !addToolsOpen;
-					}}
-				>
-					<div class="addToolsTriggerText">
-						<h2 class="toolHeading">{$_('custom_lists.detail.add_level.heading')}</h2>
-						<p class="addToolsSummaryHint">{$_('custom_lists.detail.add_level.hint')}</p>
-					</div>
-					<span class="addToolsIndicator" aria-hidden="true" class:isOpen={addToolsOpen}>
-						<ChevronRight class="h-4 w-4" />
-					</span>
-				</Button>
+  {#if canEditLevels}
+    <Collapsible.Root bind:open={addToolsOpen}>
+      <div class="toolCard addToolsCard">
+        <Button
+          type="button"
+          variant="ghost"
+          class="h-auto w-full justify-between p-0 text-left hover:bg-transparent hover:text-current focus-visible:ring-0 focus-visible:ring-offset-0"
+          aria-expanded={addToolsOpen}
+          aria-controls="csv-add-tools-panel"
+          on:click={() => {
+              addToolsOpen = !addToolsOpen;
+          }}
+        >
+          <div class="addToolsTriggerText">
+            <h2 class="toolHeading">
+              {$_('custom_lists.detail.add_level.heading')}
+            </h2>
+            <p class="addToolsSummaryHint">
+              {$_('custom_lists.detail.add_level.hint')}
+            </p>
+          </div>
+          <span
+            class="addToolsIndicator"
+            aria-hidden="true"
+            class:isOpen={addToolsOpen}
+          >
+            <ChevronRight class="h-4 w-4" />
+          </span>
+        </Button>
 
-				<Collapsible.Content id="csv-add-tools-panel">
-					<div class="addToolsBody">
-				<div class="field">
-					<label for="level-id">{$_('custom_lists.detail.add_level.id_label')}</label>
-					<Input id="level-id" bind:value={levelIdInput} inputmode="numeric" />
-				</div>
-				<div class="formActions">
-					<Button type="button" on:click={submitAddLevel} disabled={addingLevel}>
-						<Plus class="mr-2 h-4 w-4" />
-						{$_('custom_lists.detail.add_level.button')}
-					</Button>
-				</div>
+        <Collapsible.Content id="csv-add-tools-panel">
+          <div class="addToolsBody">
+            <div class="field">
+              <label for="level-id">{
+                $_('custom_lists.detail.add_level.id_label')
+              }</label>
+              <Input
+                id="level-id"
+                bind:value={levelIdInput}
+                inputmode="numeric"
+              />
+            </div>
+            <div class="formActions">
+              <Button
+                type="button"
+                on:click={submitAddLevel}
+                disabled={addingLevel}
+              >
+                <Plus class="mr-2 h-4 w-4" />
+                {$_('custom_lists.detail.add_level.button')}
+              </Button>
+            </div>
 
-				<div class="toolDivider"></div>
+            <div class="toolDivider"></div>
 
-				<div class="field">
-					<label for="level-csv">{$_('custom_lists.detail.add_level.csv_label')}</label>
-					<div class="csvInputWrap">
-						<Textarea
-							id="level-csv"
-							rows={6}
-							bind:value={csvInput}
-							placeholder={$_('custom_lists.detail.add_level.csv_placeholder')}
-							on:input={() => {
-								csvAddSummary = null;
-							}}
-						/>
-					</div>
-				</div>
-				<p class="hint">{$_('custom_lists.detail.add_level.csv_hint')}</p>
-				<div class="csvExampleCard">
-					<p class="csvExampleTitle">{$_('custom_lists.detail.add_level.csv_example_title')}</p>
-					<p class="csvExampleHint">{$_('custom_lists.detail.add_level.csv_example_hint')}</p>
-					<div class="csvExampleTableWrap">
-						<table class="csvExampleTable">
-							<thead>
-								<tr>
-									{#each csvExampleColumns as column}
-										<th scope="col">{column}</th>
-									{/each}
-								</tr>
-							</thead>
-							<tbody>
-								{#each csvExampleRows as row}
-									<tr>
-										{#each row as cell}
-											<td>{cell}</td>
-										{/each}
-									</tr>
-								{/each}
-							</tbody>
-						</table>
-					</div>
-				</div>
-				<div class="formActions">
-					<input
-						bind:this={csvFileInput}
-						class="csvFileInput"
-						id="level-csv-file"
-						type="file"
-						accept=".csv,text/csv"
-						on:change={handleCsvFileChange}
-					/>
-					<Button
-						type="button"
-						variant="outline"
-						on:click={() => csvFileInput?.click()}
-						disabled={addingLevel}
-					>
-						{$_('custom_lists.detail.add_level.csv_file_button')}
-					</Button>
-					<Button type="button" on:click={submitAddCsvLevels} disabled={addingLevel}>
-						<Plus class="mr-2 h-4 w-4" />
-						{$_('custom_lists.detail.add_level.csv_button')}
-					</Button>
-				</div>
+            <div class="field">
+              <label for="level-csv">{
+                $_('custom_lists.detail.add_level.csv_label')
+              }</label>
+              <div class="csvInputWrap">
+                <Textarea
+                  id="level-csv"
+                  rows={6}
+                  bind:value={csvInput}
+                  placeholder={$_('custom_lists.detail.add_level.csv_placeholder')}
+                  on:input={() => {
+                      csvAddSummary = null;
+                  }}
+                />
+              </div>
+            </div>
+            <p class="hint">{$_('custom_lists.detail.add_level.csv_hint')}</p>
+            <div class="csvExampleCard">
+              <p class="csvExampleTitle">
+                {$_('custom_lists.detail.add_level.csv_example_title')}
+              </p>
+              <p class="csvExampleHint">
+                {$_('custom_lists.detail.add_level.csv_example_hint')}
+              </p>
+              <div class="csvExampleTableWrap">
+                <table class="csvExampleTable">
+                  <thead>
+                    <tr>
+                      {#each csvExampleColumns as column}
+                        <th scope="col">{column}</th>
+                      {/each}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {#each csvExampleRows as row}
+                      <tr>
+                        {#each row as cell}
+                          <td>{cell}</td>
+                        {/each}
+                      </tr>
+                    {/each}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="formActions">
+              <input
+                bind:this={csvFileInput}
+                class="csvFileInput"
+                id="level-csv-file"
+                type="file"
+                accept=".csv, text/csv"
+                on:change={handleCsvFileChange}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                on:click={() => csvFileInput?.click()}
+                disabled={addingLevel}
+              >
+                {$_('custom_lists.detail.add_level.csv_file_button')}
+              </Button>
+              <Button
+                type="button"
+                on:click={submitAddCsvLevels}
+                disabled={addingLevel}
+              >
+                <Plus class="mr-2 h-4 w-4" />
+                {$_('custom_lists.detail.add_level.csv_button')}
+              </Button>
+            </div>
 
-				{#if batchAddProgress}
-					<div class="csvProgress" aria-live="polite">
-						<div class="csvProgressHeader">
-							<div class="csvProgressHeaderCopy">
-								<p class="csvProgressTitle">{$_('custom_lists.detail.add_level.csv_progress_label')}</p>
-								<p class="csvProgressValue">{batchAddProgress.completed}/{batchAddProgress.total}</p>
-							</div>
-							{#if addingLevel}
-								<Button type="button" variant="outline" size="sm" on:click={() => abortBatchAddImport()}>
-									{$_('custom_lists.detail.add_level.csv_abort_button')}
-								</Button>
-							{/if}
-						</div>
-						<div
-							class="csvProgressBar"
-							role="progressbar"
-							aria-valuemin="0"
-							aria-valuemax={batchAddProgress.total}
-							aria-valuenow={batchAddProgress.completed}
-						>
-							<div class="csvProgressFill" style={`width: ${csvProgressPercent}%`}></div>
-						</div>
-						<p class="csvProgressStats">
-							{$_('custom_lists.detail.add_level.csv_progress_status', {
-								values: {
-									completed: batchAddProgress.completed,
-									total: batchAddProgress.total,
-									added: batchAddProgress.added,
-									updated: batchAddProgress.updated,
-									skipped: batchAddProgress.skipped,
-									failed: batchAddProgress.failed
-								}
-							})}
-						</p>
-						<p class="csvProgressWarning">{$_('custom_lists.detail.add_level.csv_progress_warning')}</p>
-						<p class="csvProgressCurrent">
-							{batchAddProgress.aborted
-								? $_('custom_lists.detail.add_level.csv_progress_aborted')
-								: addingLevel
-									? getCsvProgressCurrentLabel(batchAddProgress)
-									: $_('custom_lists.detail.add_level.csv_progress_complete')}
-						</p>
-						{#if batchAddProgress.retrying}
-							<p class="csvProgressRetry">
-								{$_('custom_lists.detail.add_level.csv_progress_retry')}
-							</p>
-						{/if}
-					</div>
-				{/if}
+            {#if batchAddProgress}
+              <div class="csvProgress" aria-live="polite">
+                <div class="csvProgressHeader">
+                  <div class="csvProgressHeaderCopy">
+                    <p class="csvProgressTitle">
+                      {$_('custom_lists.detail.add_level.csv_progress_label')}
+                    </p>
+                    <p class="csvProgressValue">
+                      {batchAddProgress.completed}/{batchAddProgress.total}
+                    </p>
+                  </div>
+                  {#if addingLevel}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      on:click={() => abortBatchAddImport()}
+                    >
+                      {$_('custom_lists.detail.add_level.csv_abort_button')}
+                    </Button>
+                  {/if}
+                </div>
+                <div
+                  class="csvProgressBar"
+                  role="progressbar"
+                  aria-valuemin="0"
+                  aria-valuemax={batchAddProgress.total}
+                  aria-valuenow={batchAddProgress.completed}
+                >
+                  <div
+                    class="csvProgressFill"
+                    style={`width: ${csvProgressPercent}%`}
+                  >
+                  </div>
+                </div>
+                <p class="csvProgressStats">
+                  {
+                    $_('custom_lists.detail.add_level.csv_progress_status', {
+                        values: {
+                            completed: batchAddProgress.completed,
+                            total: batchAddProgress.total,
+                            added: batchAddProgress.added,
+                            updated: batchAddProgress.updated,
+                            skipped: batchAddProgress.skipped,
+                            failed: batchAddProgress.failed
+                        }
+                    })
+                  }
+                </p>
+                <p class="csvProgressWarning">
+                  {$_('custom_lists.detail.add_level.csv_progress_warning')}
+                </p>
+                <p class="csvProgressCurrent">
+                  {
+                    batchAddProgress.aborted
+                    ? $_('custom_lists.detail.add_level.csv_progress_aborted')
+                    : addingLevel
+                    ? getCsvProgressCurrentLabel(batchAddProgress)
+                    : $_('custom_lists.detail.add_level.csv_progress_complete')
+                  }
+                </p>
+                {#if batchAddProgress.retrying}
+                  <p class="csvProgressRetry">
+                    {$_('custom_lists.detail.add_level.csv_progress_retry')}
+                  </p>
+                {/if}
+              </div>
+            {/if}
 
-				{#if batchCrawlProgress}
-					<div class="csvProgress" aria-live="polite">
-						<div class="csvProgressHeader">
-							<div class="csvProgressHeaderCopy">
-								<p class="csvProgressTitle">Crawling progress</p>
-								<p class="csvProgressValue">{batchCrawlProgress.completed}/{batchCrawlProgress.total}</p>
-							</div>
-							{#if addingLevel}
-								<Button type="button" variant="outline" size="sm" on:click={() => abortBatchAddImport()}>
-									{$_('custom_lists.detail.add_level.csv_abort_button')}
-								</Button>
-							{/if}
-						</div>
-						<div
-							class="csvProgressBar"
-							role="progressbar"
-							aria-valuemin="0"
-							aria-valuemax={batchCrawlProgress.total}
-							aria-valuenow={batchCrawlProgress.completed}
-						>
-							<div class="csvProgressFill" style={`width: ${crawlProgressPercent}%`}></div>
-						</div>
-						<p class="csvProgressCurrent">
-							{batchCrawlProgress.currentLevelId
-								? `Crawling: #${batchCrawlProgress.currentLevelId}`
-								: 'Preparing...'}
-						</p>
-					</div>
-				{/if}
+            {#if batchCrawlProgress}
+              <div class="csvProgress" aria-live="polite">
+                <div class="csvProgressHeader">
+                  <div class="csvProgressHeaderCopy">
+                    <p class="csvProgressTitle">Crawling progress</p>
+                    <p class="csvProgressValue">
+                      {batchCrawlProgress.completed}/{batchCrawlProgress.total}
+                    </p>
+                  </div>
+                  {#if addingLevel}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      on:click={() => abortBatchAddImport()}
+                    >
+                      {$_('custom_lists.detail.add_level.csv_abort_button')}
+                    </Button>
+                  {/if}
+                </div>
+                <div
+                  class="csvProgressBar"
+                  role="progressbar"
+                  aria-valuemin="0"
+                  aria-valuemax={batchCrawlProgress.total}
+                  aria-valuenow={batchCrawlProgress.completed}
+                >
+                  <div
+                    class="csvProgressFill"
+                    style={`width: ${crawlProgressPercent}%`}
+                  >
+                  </div>
+                </div>
+                <p class="csvProgressCurrent">
+                  {
+                    batchCrawlProgress.currentLevelId
+                    ? `Crawling: #${batchCrawlProgress.currentLevelId}`
+                    : 'Preparing...'
+                  }
+                </p>
+              </div>
+            {/if}
 
-				{#if csvAddSummary}
-					<div
-						class="csvSummary"
-						class:hasIssues={csvAddSummary.failed.length > 0 || csvAddSummary.invalidRows > 0}
-					>
-						<p>
-							{$_(csvAddSummary.aborted
-								? 'custom_lists.detail.add_level.csv_result_aborted'
-								: 'custom_lists.detail.add_level.csv_result', {
-								values: {
-									added: csvAddSummary.added,
-									updated: csvAddSummary.updated,
-									skipped: csvAddSummary.skipped,
-									failed: csvAddSummary.failed.length,
-									invalid: csvAddSummary.invalidRows
-								}
-							})}
-						</p>
-						{#if csvAddSummary.failed.length > 0}
-							<p class="csvSummaryHeading">{$_('custom_lists.detail.add_level.csv_failures')}</p>
-							<ul class="csvFailureList">
-								{#each csvAddSummary.failed.slice(0, 5) as failure}
-									<li>#{failure.levelId}: {failure.message}</li>
-								{/each}
-								{#if csvAddSummary.failed.length > 5}
-									<li>
-										{$_('custom_lists.detail.add_level.csv_failure_more', {
-											values: { count: csvAddSummary.failed.length - 5 }
-										})}
-									</li>
-								{/if}
-							</ul>
-						{/if}
-					</div>
-				{/if}
-					</div>
-				</Collapsible.Content>
-			</div>
-		</Collapsible.Root>
-	{/if}
+            {#if csvAddSummary}
+              <div
+                class="csvSummary"
+                class:hasIssues={csvAddSummary.failed.length > 0 || csvAddSummary.invalidRows > 0}
+              >
+                <p>
+                  {
+                    $_(
+                        csvAddSummary.aborted
+                            ? 'custom_lists.detail.add_level.csv_result_aborted'
+                            : 'custom_lists.detail.add_level.csv_result',
+                        {
+                            values: {
+                                added: csvAddSummary.added,
+                                updated: csvAddSummary.updated,
+                                skipped: csvAddSummary.skipped,
+                                failed: csvAddSummary.failed.length,
+                                invalid: csvAddSummary.invalidRows
+                            }
+                        }
+                    )
+                  }
+                </p>
+                {#if csvAddSummary.failed.length > 0}
+                  <p class="csvSummaryHeading">
+                    {$_('custom_lists.detail.add_level.csv_failures')}
+                  </p>
+                  <ul class="csvFailureList">
+                    {#each csvAddSummary.failed.slice(0, 5) as failure}
+                      <li>#{failure.levelId}: {failure.message}</li>
+                    {/each}
+                    {#if csvAddSummary.failed.length > 5}
+                      <li>
+                        {
+                          $_('custom_lists.detail.add_level.csv_failure_more', {
+                              values: { count: csvAddSummary.failed.length - 5 }
+                          })
+                        }
+                      </li>
+                    {/if}
+                  </ul>
+                {/if}
+              </div>
+            {/if}
+          </div>
+        </Collapsible.Content>
+      </div>
+    </Collapsible.Root>
+  {/if}
 
-	<div class="levelsSection" bind:this={levelsSectionElement}>
-		<div class="sectionHeader">
-			<h2>{$_('custom_lists.detail.levels.heading')}</h2>
-			<div class="sectionMeta">
-				{#if list?.mode === 'rating'}
-					<Badge variant="secondary">
-						<Star class="mr-1 h-3 w-3" />
-						{$_('custom_lists.detail.edit.mode_rating')}
-					</Badge>
-				{:else}
-					<Badge variant="secondary">
-						<ListOrdered class="mr-1 h-3 w-3" />
-						{$_('custom_lists.detail.edit.mode_top')}
-					</Badge>
-				{/if}
-				<Badge variant="outline">
-					{(list?.levelCount ?? allDisplayedItems.length) + getPendingAdditionCount(list)}
-				</Badge>
-				{#if hasActiveLevelFilters}
-					<Badge variant="secondary">
-						{$_('custom_lists.detail.levels.filter_shown', { values: { count: displayedItems.length } })}
-					</Badge>
-				{/if}
-			</div>
-		</div>
+  <div class="levelsSection" bind:this={levelsSectionElement}>
+    <div class="sectionHeader">
+      <h2>{$_('custom_lists.detail.levels.heading')}</h2>
+      <div class="sectionMeta">
+        {#if list?.mode === 'rating'}
+          <Badge variant="secondary">
+            <Star class="mr-1 h-3 w-3" />
+            {$_('custom_lists.detail.edit.mode_rating')}
+          </Badge>
+        {:else}
+          <Badge variant="secondary">
+            <ListOrdered class="mr-1 h-3 w-3" />
+            {$_('custom_lists.detail.edit.mode_top')}
+          </Badge>
+        {/if}
+        <Badge variant="outline">
+          {
+            (list?.levelCount ?? allDisplayedItems.length) + getPendingAdditionCount(list)
+          }
+        </Badge>
+        {#if hasActiveLevelFilters}
+          <Badge variant="secondary">
+            {
+              $_('custom_lists.detail.levels.filter_shown', {
+                  values: { count: displayedItems.length }
+              })
+            }
+          </Badge>
+        {/if}
+      </div>
+    </div>
 
-		<div class="toolCard filterCard">
-			<div class="filterHeader">
-				<div class="filterTitle">
-					<Filter class="h-4 w-4" />
-					<span>{$_('custom_lists.detail.levels.filter_title')}</span>
-				</div>
-				{#if hasActiveLevelFilters || hasLevelFilterInput}
-					<Button type="button" variant="ghost" size="sm" on:click={clearLevelFilters}>
-						<X class="mr-1.5 h-3.5 w-3.5" />
-						{$_('custom_lists.detail.levels.filter_clear')}
-					</Button>
-				{/if}
-			</div>
-			<div class="filterGrid">
-				<div class="filterField">
-					<label for="manage-level-name-filter">{$_('custom_lists.detail.levels.filter_level_label')}</label>
-					<div class="filterInputWrap">
-						<Search class="h-4 w-4" />
-						<Input
-							id="manage-level-name-filter"
-							type="search"
-							bind:value={filterQuery}
-							placeholder={$_('custom_lists.detail.levels.filter_level_placeholder')}
-							on:keydown={handleFilterKeydown}
-						/>
-					</div>
-				</div>
-				<div class="filterField">
-					<label for="manage-level-creator-filter">{$_('custom_lists.detail.levels.filter_creator_label')}</label>
-					<Input
-						id="manage-level-creator-filter"
-						type="search"
-						bind:value={filterCreator}
-						placeholder={$_('custom_lists.detail.levels.filter_creator_placeholder')}
-						on:keydown={handleFilterKeydown}
-					/>
-				</div>
-				{#if list?.mode === 'rating'}
-					<fieldset class="filterField rangeField">
-						<legend>{$_('custom_lists.detail.levels.rating_label')}</legend>
-						<div class="rangeInputs">
-							<Input
-								type="number"
-								min="0"
-								step="any"
-								bind:value={filterMinRating}
-								placeholder={$_('list_filter.min')}
-								aria-label={$_('custom_lists.detail.levels.filter_min_rating_label')}
-								on:keydown={handleFilterKeydown}
-							/>
-							<span class="rangeSeparator">-</span>
-							<Input
-								type="number"
-								min="0"
-								step="any"
-								bind:value={filterMaxRating}
-								placeholder={$_('list_filter.max')}
-								aria-label={$_('custom_lists.detail.levels.filter_max_rating_label')}
-								on:keydown={handleFilterKeydown}
-							/>
-						</div>
-					</fieldset>
-				{/if}
-				<label class="pendingFilterToggle">
-					<input type="checkbox" bind:checked={filterPendingOnly} />
-					<span>{$_('custom_lists.detail.levels.filter_pending_only')}</span>
-				</label>
-			</div>
-			<div class="filterActions">
-				<Button
-					type="button"
-					size="sm"
-					on:click={commitLevelFilters}
-					disabled={loadingMoreLevels || !hasPendingLevelFilterChanges}
-				>
-					<Filter class="mr-1.5 h-3.5 w-3.5" />
-					{$_('list_filter.apply')}
-				</Button>
-			</div>
-		</div>
+    <div class="toolCard filterCard">
+      <div class="filterHeader">
+        <div class="filterTitle">
+          <Filter class="h-4 w-4" />
+          <span>{$_('custom_lists.detail.levels.filter_title')}</span>
+        </div>
+        {#if hasActiveLevelFilters || hasLevelFilterInput}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            on:click={clearLevelFilters}
+          >
+            <X class="mr-1.5 h-3.5 w-3.5" />
+            {$_('custom_lists.detail.levels.filter_clear')}
+          </Button>
+        {/if}
+      </div>
+      <div class="filterGrid">
+        <div class="filterField">
+          <label for="manage-level-name-filter">{
+            $_('custom_lists.detail.levels.filter_level_label')
+          }</label>
+          <div class="filterInputWrap">
+            <Search class="h-4 w-4" />
+            <Input
+              id="manage-level-name-filter"
+              type="search"
+              bind:value={filterQuery}
+              placeholder={$_('custom_lists.detail.levels.filter_level_placeholder')}
+              on:keydown={handleFilterKeydown}
+            />
+          </div>
+        </div>
+        <div class="filterField">
+          <label for="manage-level-creator-filter">{
+            $_('custom_lists.detail.levels.filter_creator_label')
+          }</label>
+          <Input
+            id="manage-level-creator-filter"
+            type="search"
+            bind:value={filterCreator}
+            placeholder={$_('custom_lists.detail.levels.filter_creator_placeholder')}
+            on:keydown={handleFilterKeydown}
+          />
+        </div>
+        {#if list?.mode === 'rating'}
+          <fieldset class="filterField rangeField">
+            <legend>{$_('custom_lists.detail.levels.rating_label')}</legend>
+            <div class="rangeInputs">
+              <Input
+                type="number"
+                min="0"
+                step="any"
+                bind:value={filterMinRating}
+                placeholder={$_('list_filter.min')}
+                aria-label={$_('custom_lists.detail.levels.filter_min_rating_label')}
+                on:keydown={handleFilterKeydown}
+              />
+              <span class="rangeSeparator">-</span>
+              <Input
+                type="number"
+                min="0"
+                step="any"
+                bind:value={filterMaxRating}
+                placeholder={$_('list_filter.max')}
+                aria-label={$_('custom_lists.detail.levels.filter_max_rating_label')}
+                on:keydown={handleFilterKeydown}
+              />
+            </div>
+          </fieldset>
+        {/if}
+        <label class="pendingFilterToggle">
+          <input type="checkbox" bind:checked={filterPendingOnly} />
+          <span>{$_('custom_lists.detail.levels.filter_pending_only')}</span>
+        </label>
+      </div>
+      <div class="filterActions">
+        <Button
+          type="button"
+          size="sm"
+          on:click={commitLevelFilters}
+          disabled={loadingMoreLevels || !hasPendingLevelFilterChanges}
+        >
+          <Filter class="mr-1.5 h-3.5 w-3.5" />
+          {$_('list_filter.apply')}
+        </Button>
+      </div>
+    </div>
 
-		{#if canEditLevels && displayedItems.length > 0}
-			<div
-				class="selectionPanel"
-				class:isSticky={selectedLevelIds.length > 0}
-				data-pending-removals={levelDeletionDraftIds.length > 0 ? 'true' : undefined}
-			>
-				<div class="selectionToolbar">
-					<div class="selectionSummary">
-						<Badge variant={selectedLevelIds.length ? 'secondary' : 'outline'}>
-							{$_('custom_lists.detail.levels.selected_count', { values: { count: selectedLevelIds.length } })}
-						</Badge>
-						{#if levelDeletionDraftIds.length > 0}
-							<Badge variant="secondary">
-								{$_('custom_lists.detail.levels.pending_remove_count', { values: { count: levelDeletionDraftIds.length } })}
-							</Badge>
-						{/if}
-					</div>
-					<div class="selectionActions">
-						<Button type="button" variant="destructive" size="sm" on:click={deleteSelectedLevels} disabled={!selectedLevelIds.length || savingLevelDrafts}>
-							<Trash2 class="mr-1.5 h-3.5 w-3.5" />
-							{$_('custom_lists.detail.levels.remove_selected')}
-						</Button>
-						<Button type="button" variant="outline" size="sm" on:click={selectAllLevels}>
-							{$_('custom_lists.detail.levels.select_all')}
-						</Button>
-						<Button type="button" variant="outline" size="sm" on:click={clearLevelSelection} disabled={!selectedLevelIds.length}>
-							{$_('custom_lists.detail.levels.clear_selection')}
-						</Button>
-					</div>
-				</div>
+    {#if canEditLevels && displayedItems.length > 0}
+      <div
+        class="selectionPanel"
+        class:isSticky={selectedLevelIds.length > 0}
+        data-pending-removals={levelDeletionDraftIds.length > 0 ? 'true' : undefined}
+      >
+        <div class="selectionToolbar">
+          <div class="selectionSummary">
+            <Badge variant={selectedLevelIds.length ? 'secondary' : 'outline'}>
+              {
+                $_('custom_lists.detail.levels.selected_count', {
+                    values: { count: selectedLevelIds.length }
+                })
+              }
+            </Badge>
+            {#if levelDeletionDraftIds.length > 0}
+              <Badge variant="secondary">
+                {
+                  $_('custom_lists.detail.levels.pending_remove_count', {
+                      values: { count: levelDeletionDraftIds.length }
+                  })
+                }
+              </Badge>
+            {/if}
+          </div>
+          <div class="selectionActions">
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              on:click={deleteSelectedLevels}
+              disabled={!selectedLevelIds.length || savingLevelDrafts}
+            >
+              <Trash2 class="mr-1.5 h-3.5 w-3.5" />
+              {$_('custom_lists.detail.levels.remove_selected')}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              on:click={selectAllLevels}
+            >
+              {$_('custom_lists.detail.levels.select_all')}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              on:click={clearLevelSelection}
+              disabled={!selectedLevelIds.length}
+            >
+              {$_('custom_lists.detail.levels.clear_selection')}
+            </Button>
+          </div>
+        </div>
 
-				{#if selectedLevelIds.length > 0}
-					<div class="toolCard bulkEditCard">
-						<form class="bulkEditForm" on:submit|preventDefault={applyBulkEdits}>
-							{#if list?.mode === 'rating'}
-								<div class="bulkEditField">
-									<label for="bulk-rating">{$_('custom_lists.detail.levels.rating_label')}</label>
-									<Input id="bulk-rating" type="number" min="0" step="any" bind:value={bulkRatingValue} />
-								</div>
-							{/if}
+        {#if selectedLevelIds.length > 0}
+          <div class="toolCard bulkEditCard">
+            <form
+              class="bulkEditForm"
+              on:submit|preventDefault={applyBulkEdits}
+            >
+              {#if list?.mode === 'rating'}
+                <div class="bulkEditField">
+                  <label for="bulk-rating">{
+                    $_('custom_lists.detail.levels.rating_label')
+                  }</label>
+                  <Input
+                    id="bulk-rating"
+                    type="number"
+                    min="0"
+                    step="any"
+                    bind:value={bulkRatingValue}
+                  />
+                </div>
+              {/if}
 
-							<div class="bulkEditField">
-								<label for="bulk-min-progress">{$_('custom_lists.detail.levels.min_progress_label')}</label>
-								<Input
-									id="bulk-min-progress"
-									type="number"
-									min="0"
-									max={list?.isPlatformer ? undefined : '100'}
-									bind:value={bulkMinProgressValue}
-								/>
-							</div>
+              <div class="bulkEditField">
+                <label for="bulk-min-progress">{
+                  $_('custom_lists.detail.levels.min_progress_label')
+                }</label>
+                <Input
+                  id="bulk-min-progress"
+                  type="number"
+                  min="0"
+                  max={list?.isPlatformer ? undefined : '100'}
+                  bind:value={bulkMinProgressValue}
+                />
+              </div>
 
-							<div class="bulkEditField">
-								<label for="bulk-video-id">{$_('custom_lists.detail.levels.video_id_label')}</label>
-								<Input id="bulk-video-id" type="text" bind:value={bulkVideoIdValue} />
-							</div>
-							<div class="bulkEditApplyButton">
-								<Button type="button" size="sm" disabled={savingLevelDrafts || !hasBulkEditValues} on:click={applyBulkEdits}>
-									{$_('custom_lists.detail.levels.apply_to_selected')}
-								</Button>
-							</div>
-						</form>
-					</div>
-				{/if}
-			</div>
-		{/if}
+              <div class="bulkEditField">
+                <label for="bulk-video-id">{
+                  $_('custom_lists.detail.levels.video_id_label')
+                }</label>
+                <Input
+                  id="bulk-video-id"
+                  type="text"
+                  bind:value={bulkVideoIdValue}
+                />
+              </div>
+              <div class="bulkEditApplyButton">
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={savingLevelDrafts || !hasBulkEditValues}
+                  on:click={applyBulkEdits}
+                >
+                  {$_('custom_lists.detail.levels.apply_to_selected')}
+                </Button>
+              </div>
+            </form>
+          </div>
+        {/if}
+      </div>
+    {/if}
 
-		{#if displayedItems.length === 0}
-			<div class="emptyState slim">
-				{#if hasActiveLevelFilters && allDisplayedItems.length > 0}
-					<h3>{$_('custom_lists.detail.levels.filter_empty_title')}</h3>
-					<p>{$_('custom_lists.detail.levels.filter_empty_desc')}</p>
-				{:else}
-					<h3>{$_('custom_lists.detail.levels.empty_title')}</h3>
-					<p>
-						{levelDeletionDraftIds.length > 0
-							? $_('custom_lists.detail.levels.empty_pending_delete')
-							: canEditLevels
-								? $_('custom_lists.detail.levels.empty_owner')
-								: $_('custom_lists.detail.levels.empty_visitor')}
-					</p>
-				{/if}
-			</div>
-		{:else}
-			<div class="levelList">
-				{#each displayedItems as item, index}
-					<div
-						class="levelItem"
-						class:isDraggable={canDragReorder}
-						class:dragOver={canDragReorder && dragOverIndex === index}
-						class:dragging={canDragReorder && draggedIndex === index}
-						class:selected={selectedLevelIds.includes(item.levelId)}
-						data-pending-change={hasPendingDraft(item.levelId) ? 'true' : undefined}
-						role="listitem"
-						draggable={canDragReorder}
-						on:dragstart={(event) => {
-							if (canDragReorder) {
-								onDragStart(event, index);
-							}
-						}}
-						on:dragover={(event) => {
-							if (canDragReorder) {
-								onDragOver(event, index);
-							}
-						}}
-						on:drop={(event) => {
-							if (canDragReorder) {
-								onDrop(event, index);
-							}
-						}}
-						on:dragend={() => {
-							if (canDragReorder) {
-								onDragEnd();
-							}
-						}}
-					>
-						<div class="levelRow">
-							{#if canEditLevels}
-								<label class="selectToggle">
-									<input
-										type="checkbox"
-										bind:group={selectedLevelIds}
-										value={item.levelId}
-										aria-label={$_('custom_lists.detail.levels.select_level', { values: { id: item.levelId } })}
-										on:click={(event) => handleLevelSelectionClick(event, index)}
-									/>
-								</label>
-							{/if}
+    {#if displayedItems.length === 0}
+      <div class="emptyState slim">
+        {#if hasActiveLevelFilters && allDisplayedItems.length > 0}
+          <h3>{$_('custom_lists.detail.levels.filter_empty_title')}</h3>
+          <p>{$_('custom_lists.detail.levels.filter_empty_desc')}</p>
+        {:else}
+          <h3>{$_('custom_lists.detail.levels.empty_title')}</h3>
+          <p>
+            {
+              levelDeletionDraftIds.length > 0
+              ? $_('custom_lists.detail.levels.empty_pending_delete')
+              : canEditLevels
+              ? $_('custom_lists.detail.levels.empty_owner')
+              : $_('custom_lists.detail.levels.empty_visitor')
+            }
+          </p>
+        {/if}
+      </div>
+    {:else}
+      <div class="levelList">
+        {#each displayedItems as item, index}
+          <div
+            class="levelItem"
+            class:isDraggable={canDragReorder}
+            class:dragOver={canDragReorder && dragOverIndex === index}
+            class:dragging={canDragReorder && draggedIndex === index}
+            class:selected={selectedLevelIds.includes(item.levelId)}
+            data-pending-change={hasPendingDraft(item.levelId) ? 'true' : undefined}
+            role="listitem"
+            draggable={canDragReorder}
+            on:dragstart={(event) => {
+                if (canDragReorder) {
+                    onDragStart(event, index);
+                }
+            }}
+            on:dragover={(event) => {
+                if (canDragReorder) {
+                    onDragOver(event, index);
+                }
+            }}
+            on:drop={(event) => {
+                if (canDragReorder) {
+                    onDrop(event, index);
+                }
+            }}
+            on:dragend={() => {
+                if (canDragReorder) {
+                    onDragEnd();
+                }
+            }}
+          >
+            <div class="levelRow">
+              {#if canEditLevels}
+                <label class="selectToggle">
+                  <input
+                    type="checkbox"
+                    bind:group={selectedLevelIds}
+                    value={item.levelId}
+                    aria-label={$_('custom_lists.detail.levels.select_level', { values: { id: item.levelId } })}
+                    on:click={(event) => handleLevelSelectionClick(event, index)}
+                  />
+                </label>
+              {/if}
 
-							{#if canDragReorder}
-								<div class="dragHandle" title={$_('custom_lists.detail.levels.drag_hint')}>
-									<GripVertical class="h-5 w-5" />
-								</div>
-							{/if}
+              {#if canDragReorder}
+                <div
+                  class="dragHandle"
+                  title={$_('custom_lists.detail.levels.drag_hint')}
+                >
+                  <GripVertical class="h-5 w-5" />
+                </div>
+              {/if}
 
-							<div class="rankBadge">#{index + 1}</div>
+              <div class="rankBadge">#{index + 1}</div>
 
-							<div class="levelBody">
-								{#if item.level}
-									<a class="levelLink" href={`/level/${item.levelId}`}>{item.level.name || `Level #${item.levelId}`}</a>
-									<p class="levelMeta">
-										{$_('custom_lists.detail.levels.by')} {item.level.creator || 'Unknown'}
-										{#if item.level.difficulty} • {item.level.difficulty}{/if}
-										{#if item.level.isPlatformer} • {$_('custom_lists.detail.levels.platformer')}{/if}
-									</p>
-								{:else}
-									<span class="levelLink missing">{$_('custom_lists.detail.levels.unavailable', { values: { id: item.levelId } })}</span>
-									<p class="levelMeta">{$_('custom_lists.detail.levels.unavailable_desc')}</p>
-								{/if}
-							</div>
+              <div class="levelBody">
+                {#if item.level}
+                  <a class="levelLink" href={`/level/${item.levelId}`}>{
+                    item.level.name || `Level #${item.levelId}`
+                  }</a>
+                  <p class="levelMeta">
+                    {$_('custom_lists.detail.levels.by')}
+                    {item.level.creator || 'Unknown'}
+                    {#if item.level.difficulty}
+                      • {item.level.difficulty}{/if}
+                    {#if item.level.isPlatformer}
+                      • {$_('custom_lists.detail.levels.platformer')}{/if}
+                  </p>
+                {:else}
+                  <span class="levelLink missing">{
+                    $_('custom_lists.detail.levels.unavailable', { values: { id: item.levelId } })
+                  }</span>
+                  <p class="levelMeta">
+                    {$_('custom_lists.detail.levels.unavailable_desc')}
+                  </p>
+                {/if}
+              </div>
 
-							<div class="levelActions">
-								{#if list?.mode === 'rating'}
-									{#if canEditLevels && editingRatingItemId === item.id}
-										<input
-											class="inlineInput ratingInput"
-											type="number"
-											min="0"
-											step="any"
-											bind:value={editingRatingValue}
-											disabled={savingLevelDrafts}
-											on:blur={() => saveRatingEdit(item.levelId)}
-											on:keydown={(event) => event.key === 'Enter' && saveRatingEdit(item.levelId)}
-										/>
-									{:else}
-										<button
-											class="chipBtn"
-											class:editable={canEditLevels}
-											type="button"
-											disabled={savingLevelDrafts}
-											on:click={canEditLevels ? () => startRatingEdit(item) : undefined}
-											title={canEditLevels ? $_('custom_lists.detail.levels.rating_edit_hint') : undefined}
-										>
-											★ {item.rating ?? 5}
-										</button>
-									{/if}
-								{/if}
+              <div class="levelActions">
+                {#if list?.mode === 'rating'}
+                  {#if canEditLevels && editingRatingItemId === item.id}
+                    <input
+                      class="inlineInput ratingInput"
+                      type="number"
+                      min="0"
+                      step="any"
+                      bind:value={editingRatingValue}
+                      disabled={savingLevelDrafts}
+                      on:blur={() => saveRatingEdit(item.levelId)}
+                      on:keydown={(event) => event.key === 'Enter' && saveRatingEdit(item.levelId)}
+                    />
+                  {:else}
+                    <button
+                      class="chipBtn"
+                      class:editable={canEditLevels}
+                      type="button"
+                      disabled={savingLevelDrafts}
+                      on:click={canEditLevels ? () => startRatingEdit(item) : undefined}
+                      title={canEditLevels ? $_('custom_lists.detail.levels.rating_edit_hint') : undefined}
+                    >
+                      ★ {item.rating ?? 5}
+                    </button>
+                  {/if}
+                {/if}
 
-								{#if canEditLevels && editingMinProgressItemId === item.id}
-									<input
-										class="inlineInput minProgressInput"
-										type="number"
-										min="0"
-										max={list?.isPlatformer ? undefined : '100'}
-										placeholder={item.level?.minProgress != null ? String(item.level.minProgress) : undefined}
-										bind:value={editingMinProgressValue}
-										disabled={savingLevelDrafts}
-										on:blur={handleMinProgressBlur}
-										on:keydown={(event) => {
-											if (event.key === 'Enter') {
-												event.preventDefault();
-												saveMinProgressEdit(item.levelId);
-											}
-											if (event.key === 'Escape') {
-												event.preventDefault();
-												cancelMinProgressEdit();
-											}
-										}}
-									/>
-									<div class="inlineEditActions">
-										<button
-											type="button"
-											class="inlineEditBtn inlineEditBtnPrimary"
-											data-min-progress-action="save"
-											on:mousedown|preventDefault
-											on:click={() => saveMinProgressEdit(item.levelId)}
-											disabled={savingLevelDrafts || savingLevelItemId === item.levelId}
-										>
-											<Save class="mr-1.5 h-3.5 w-3.5" />
-											{$_('custom_lists.detail.levels.save_button')}
-										</button>
-										<button
-											type="button"
-											class="inlineEditBtn inlineEditBtnSecondary"
-											data-min-progress-action="cancel"
-											on:mousedown|preventDefault
-											on:click={cancelMinProgressEdit}
-											disabled={savingLevelDrafts || savingLevelItemId === item.levelId}
-										>
-											{$_('custom_lists.detail.levels.cancel_button')}
-										</button>
-									</div>
-								{:else}
-									<button
-										class="chipBtn"
-										class:editable={canEditLevels}
-										type="button"
-										disabled={savingLevelDrafts}
-										on:click={canEditLevels ? () => startMinProgressEdit(item) : undefined}
-										title={canEditLevels ? $_('custom_lists.detail.levels.min_progress_edit_hint') : undefined}
-									>
-										{getMinProgressLabel(item)}
-									</button>
-								{/if}
+                {#if canEditLevels && editingMinProgressItemId === item.id}
+                  <input
+                    class="inlineInput minProgressInput"
+                    type="number"
+                    min="0"
+                    max={list?.isPlatformer ? undefined : '100'}
+                    placeholder={item.level?.minProgress != null ? String(item.level.minProgress) : undefined}
+                    bind:value={editingMinProgressValue}
+                    disabled={savingLevelDrafts}
+                    on:blur={handleMinProgressBlur}
+                    on:keydown={(event) => {
+                        if (event.key === 'Enter') {
+                            event.preventDefault();
+                            saveMinProgressEdit(item.levelId);
+                        }
 
-									{#if canEditLevels && editingVideoIdItemId === item.id}
-										<input
-											class="inlineInput videoIdInput"
-											type="text"
-											placeholder={item.videoID == null && item.level?.videoID ? item.level.videoID : undefined}
-											bind:value={editingVideoIdValue}
-											disabled={savingLevelDrafts}
-											on:blur={handleVideoIdBlur}
-											on:keydown={(event) => {
-												if (event.key === 'Enter') {
-													event.preventDefault();
-													saveVideoIdEdit(item.levelId);
-												}
-												if (event.key === 'Escape') {
-													event.preventDefault();
-													cancelVideoIdEdit();
-												}
-											}}
-										/>
-										<div class="inlineEditActions">
-											<button
-												type="button"
-												class="inlineEditBtn inlineEditBtnPrimary"
-												data-video-id-action="save"
-												on:mousedown|preventDefault
-												on:click={() => saveVideoIdEdit(item.levelId)}
-												disabled={savingLevelDrafts || savingLevelItemId === item.levelId}
-											>
-												<Save class="mr-1.5 h-3.5 w-3.5" />
-												{$_('custom_lists.detail.levels.save_button')}
-											</button>
-											<button
-												type="button"
-												class="inlineEditBtn inlineEditBtnSecondary"
-												data-video-id-action="cancel"
-												on:mousedown|preventDefault
-												on:click={cancelVideoIdEdit}
-												disabled={savingLevelDrafts || savingLevelItemId === item.levelId}
-											>
-												{$_('custom_lists.detail.levels.cancel_button')}
-											</button>
-										</div>
-									{:else}
-										<button
-											class="chipBtn"
-											class:editable={canEditLevels}
-											type="button"
-											disabled={savingLevelDrafts}
-											on:click={canEditLevels ? () => startVideoIdEdit(item) : undefined}
-											title={canEditLevels ? $_('custom_lists.detail.levels.video_id_edit_hint') : undefined}
-										>
-											{getVideoIdLabel(item)}
-										</button>
-									{/if}
+                        if (event.key === 'Escape') {
+                            event.preventDefault();
+                            cancelMinProgressEdit();
+                        }
+                    }}
+                  />
+                  <div class="inlineEditActions">
+                    <button
+                      type="button"
+                      class="inlineEditBtn inlineEditBtnPrimary"
+                      data-min-progress-action="save"
+                      on:mousedown|preventDefault
+                      on:click={() => saveMinProgressEdit(item.levelId)}
+                      disabled={savingLevelDrafts || savingLevelItemId === item.levelId}
+                    >
+                      <Save class="mr-1.5 h-3.5 w-3.5" />
+                      {$_('custom_lists.detail.levels.save_button')}
+                    </button>
+                    <button
+                      type="button"
+                      class="inlineEditBtn inlineEditBtnSecondary"
+                      data-min-progress-action="cancel"
+                      on:mousedown|preventDefault
+                      on:click={cancelMinProgressEdit}
+                      disabled={savingLevelDrafts || savingLevelItemId === item.levelId}
+                    >
+                      {$_('custom_lists.detail.levels.cancel_button')}
+                    </button>
+                  </div>
+                {:else}
+                  <button
+                    class="chipBtn"
+                    class:editable={canEditLevels}
+                    type="button"
+                    disabled={savingLevelDrafts}
+                    on:click={canEditLevels ? () => startMinProgressEdit(item) : undefined}
+                    title={canEditLevels
+                    ? $_('custom_lists.detail.levels.min_progress_edit_hint')
+                    : undefined}
+                  >
+                    {getMinProgressLabel(item)}
+                  </button>
+                {/if}
 
-									{#if hasPendingDraft(item.levelId)}
-										<Badge variant="secondary">
-											{$_('custom_lists.detail.levels.draft_badge')}
-										</Badge>
-									{/if}
+                {#if canEditLevels && editingVideoIdItemId === item.id}
+                  <input
+                    class="inlineInput videoIdInput"
+                    type="text"
+                    placeholder={item.videoID == null && item.level?.videoID ? item.level.videoID : undefined}
+                    bind:value={editingVideoIdValue}
+                    disabled={savingLevelDrafts}
+                    on:blur={handleVideoIdBlur}
+                    on:keydown={(event) => {
+                        if (event.key === 'Enter') {
+                            event.preventDefault();
+                            saveVideoIdEdit(item.levelId);
+                        }
 
-								<Badge variant="outline">{$_('custom_lists.detail.levels.id_badge', { values: { id: item.levelId } })}</Badge>
+                        if (event.key === 'Escape') {
+                            event.preventDefault();
+                            cancelVideoIdEdit();
+                        }
+                    }}
+                  />
+                  <div class="inlineEditActions">
+                    <button
+                      type="button"
+                      class="inlineEditBtn inlineEditBtnPrimary"
+                      data-video-id-action="save"
+                      on:mousedown|preventDefault
+                      on:click={() => saveVideoIdEdit(item.levelId)}
+                      disabled={savingLevelDrafts || savingLevelItemId === item.levelId}
+                    >
+                      <Save class="mr-1.5 h-3.5 w-3.5" />
+                      {$_('custom_lists.detail.levels.save_button')}
+                    </button>
+                    <button
+                      type="button"
+                      class="inlineEditBtn inlineEditBtnSecondary"
+                      data-video-id-action="cancel"
+                      on:mousedown|preventDefault
+                      on:click={cancelVideoIdEdit}
+                      disabled={savingLevelDrafts || savingLevelItemId === item.levelId}
+                    >
+                      {$_('custom_lists.detail.levels.cancel_button')}
+                    </button>
+                  </div>
+                {:else}
+                  <button
+                    class="chipBtn"
+                    class:editable={canEditLevels}
+                    type="button"
+                    disabled={savingLevelDrafts}
+                    on:click={canEditLevels ? () => startVideoIdEdit(item) : undefined}
+                    title={canEditLevels ? $_('custom_lists.detail.levels.video_id_edit_hint') : undefined}
+                  >
+                    {getVideoIdLabel(item)}
+                  </button>
+                {/if}
 
-								{#if canEditLevels}
-									<Button
-										variant="destructive"
-										size="sm"
-										on:click={() => deleteLevel(item.levelId)}
-										disabled={savingLevelDrafts}
-									>
-										<Trash2 class="mr-1.5 h-3.5 w-3.5" />
-										{$_('custom_lists.detail.levels.remove')}
-									</Button>
-								{/if}
-							</div>
-						</div>
-					</div>
-				{/each}
-			</div>
-			{#if levelsPageCount > 1}
-				<div class="paginationWrap">
-					<Pagination.Root
-						count={list?.levelCount ?? displayedItems.length}
-						perPage={levelsPageSize}
-						page={currentLevelsPage}
-						let:pages
-						let:currentPage={paginationCurrentPage}
-					>
-						<Pagination.Content>
-							<Pagination.Item>
-								<Button
-									type="button"
-									variant="ghost"
-									size="sm"
-									disabled={paginationCurrentPage <= 1 || loadingMoreLevels}
-									on:click={() => retryLoadMoreLevels(paginationCurrentPage - 1)}
-								>
-									Previous
-								</Button>
-							</Pagination.Item>
-							{#each pages as p (p.key)}
-								{#if p.type === 'ellipsis'}
-									<Pagination.Item>
-										<Pagination.Ellipsis />
-									</Pagination.Item>
-								{:else}
-									<Pagination.Item isVisible={currentLevelsPage === p.value}>
-										<Button
-											type="button"
-											variant={currentLevelsPage === p.value ? 'outline' : 'ghost'}
-											size="icon"
-											disabled={loadingMoreLevels}
-											on:click={() => retryLoadMoreLevels(p.value)}
-										>
-											{p.value}
-										</Button>
-									</Pagination.Item>
-								{/if}
-							{/each}
-							<Pagination.Item>
-								<Button
-									type="button"
-									variant="ghost"
-									size="sm"
-									disabled={paginationCurrentPage >= levelsPageCount || loadingMoreLevels}
-									on:click={() => retryLoadMoreLevels(paginationCurrentPage + 1)}
-								>
-									Next
-								</Button>
-							</Pagination.Item>
-						</Pagination.Content>
-					</Pagination.Root>
-					{#if loadingMoreLevels}
-						<p class="paginationStatus">{$_('general.loading')}...</p>
-					{/if}
-				</div>
-			{/if}
-			{#if levelsLoadingError}
-				<div class="pageError">
-					<p>{levelsLoadingError}</p>
-					<Button variant="outline" size="sm" on:click={() => retryLoadMoreLevels()}>Retry</Button>
-				</div>
-			{/if}
-		{/if}
-	</div>
+                {#if hasPendingDraft(item.levelId)}
+                  <Badge variant="secondary">
+                    {$_('custom_lists.detail.levels.draft_badge')}
+                  </Badge>
+                {/if}
+
+                <Badge variant="outline">{
+                  $_('custom_lists.detail.levels.id_badge', { values: { id: item.levelId } })
+                }</Badge>
+
+                {#if canEditLevels}
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    on:click={() => deleteLevel(item.levelId)}
+                    disabled={savingLevelDrafts}
+                  >
+                    <Trash2 class="mr-1.5 h-3.5 w-3.5" />
+                    {$_('custom_lists.detail.levels.remove')}
+                  </Button>
+                {/if}
+              </div>
+            </div>
+          </div>
+        {/each}
+      </div>
+      {#if levelsPageCount > 1}
+        <div class="paginationWrap">
+          <Pagination.Root
+            count={list?.levelCount ?? displayedItems.length}
+            perPage={levelsPageSize}
+            page={currentLevelsPage}
+            let:pages
+            let:currentPage={paginationCurrentPage}
+          >
+            <Pagination.Content>
+              <Pagination.Item>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={paginationCurrentPage <= 1 || loadingMoreLevels}
+                  on:click={() => retryLoadMoreLevels(paginationCurrentPage - 1)}
+                >
+                  Previous
+                </Button>
+              </Pagination.Item>
+              {#each pages as p (p.key)}
+                {#if p.type === 'ellipsis'}
+                  <Pagination.Item>
+                    <Pagination.Ellipsis />
+                  </Pagination.Item>
+                {:else}
+                  <Pagination.Item isVisible={currentLevelsPage === p.value}>
+                    <Button
+                      type="button"
+                      variant={currentLevelsPage === p.value ? 'outline' : 'ghost'}
+                      size="icon"
+                      disabled={loadingMoreLevels}
+                      on:click={() => retryLoadMoreLevels(p.value)}
+                    >
+                      {p.value}
+                    </Button>
+                  </Pagination.Item>
+                {/if}
+              {/each}
+              <Pagination.Item>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={paginationCurrentPage >= levelsPageCount || loadingMoreLevels}
+                  on:click={() => retryLoadMoreLevels(paginationCurrentPage + 1)}
+                >
+                  Next
+                </Button>
+              </Pagination.Item>
+            </Pagination.Content>
+          </Pagination.Root>
+          {#if loadingMoreLevels}
+            <p class="paginationStatus">{$_('general.loading')}...</p>
+          {/if}
+        </div>
+      {/if}
+      {#if levelsLoadingError}
+        <div class="pageError">
+          <p>{levelsLoadingError}</p>
+          <Button
+            variant="outline"
+            size="sm"
+            on:click={() => retryLoadMoreLevels()}
+          >Retry</Button>
+        </div>
+      {/if}
+    {/if}
+  </div>
 </div>
 
 <style lang="scss">
-	.tabContent {
-		display: flex;
-		flex-direction: column;
-		gap: 16px;
-		margin-top: 16px;
-	}
-
-	.toolCard {
-		background: hsl(var(--card));
-		border: 1px solid hsl(var(--border));
-		border-radius: 12px;
-		padding: 22px;
-		display: flex;
-		flex-direction: column;
-		gap: 16px;
-	}
-
-	.toolHeading {
-		margin: 0;
-		font-size: 1.1rem;
-		font-weight: 600;
-	}
-
-	.addToolsCard {
-		overflow: hidden;
-	}
-
-	.addToolsSummaryHint {
-		margin: 6px 0 0;
-		font-size: 0.82rem;
-		color: hsl(var(--muted-foreground));
-	}
-
-	.addToolsTriggerText {
-		display: flex;
-		flex-direction: column;
-		align-items: flex-start;
-		min-width: 0;
-	}
-
-	.addToolsIndicator {
-		width: 32px;
-		height: 32px;
-		border-radius: 999px;
-		border: 1px solid hsl(var(--border));
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		transition: transform 0.15s ease;
-		flex-shrink: 0;
-	}
-
-	.addToolsIndicator :global(svg) {
-		transition: transform 0.15s ease;
-	}
-
-	.addToolsIndicator.isOpen :global(svg) {
-		transform: rotate(90deg);
-	}
-
-	.addToolsBody {
-		margin-top: 16px;
-		display: flex;
-		flex-direction: column;
-		gap: 16px;
-	}
-
-	.toolDivider {
-		height: 1px;
-		background: hsl(var(--border));
-	}
-
-	.field {
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-	}
-
-	label {
-		font-size: 0.9rem;
-		font-weight: 500;
-	}
-
-	.hint {
-		font-size: 0.8rem;
-		color: hsl(var(--muted-foreground));
-		margin: 0;
-	}
-
-	.formActions {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 10px;
-		margin-top: 4px;
-	}
-
-	.csvInputWrap :global(textarea) {
-		min-height: 140px;
-		resize: vertical;
-		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-	}
-
-	.csvFileInput {
-		display: none;
-	}
-
-	.csvSummary {
-		border: 1px solid hsl(var(--border));
-		border-radius: 10px;
-		background: hsl(var(--muted) / 0.12);
-		padding: 14px 16px;
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-	}
-
-	.csvSummary.hasIssues {
-		border-color: hsl(var(--primary));
-		background: hsl(var(--primary) / 0.08);
-	}
-
-	.csvSummary p {
-		margin: 0;
-		font-size: 0.9rem;
-	}
-
-	.csvProgress {
-		border: 1px solid hsl(var(--border));
-		border-radius: 10px;
-		background: hsl(var(--muted) / 0.08);
-		padding: 14px 16px;
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-	}
-
-	.csvProgressHeader {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-	}
-
-	.csvProgressHeaderCopy {
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-	}
-
-	.csvProgressTitle,
-	.csvProgressValue,
-	.csvProgressStats,
-	.csvProgressCurrent,
-	.csvProgressRetry {
-		margin: 0;
-	}
-
-	.csvProgressTitle {
-		font-size: 0.9rem;
-		font-weight: 600;
-	}
-
-	.csvProgressValue {
-		font-size: 0.82rem;
-		color: hsl(var(--muted-foreground));
-	}
-
-	.csvProgressBar {
-		height: 10px;
-		border-radius: 999px;
-		background: hsl(var(--muted));
-		overflow: hidden;
-	}
-
-	.csvProgressFill {
-		height: 100%;
-		background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary) / 0.65));
-		transition: width 0.2s ease;
-	}
-
-	.csvProgressStats,
-	.csvProgressCurrent,
-	.csvProgressRetry {
-		font-size: 0.85rem;
-	}
-
-	.csvProgressCurrent,
-	.csvProgressRetry {
-		color: hsl(var(--muted-foreground));
-	}
-
-	.csvSummaryHeading {
-		font-weight: 600;
-	}
-
-	.csvExampleCard {
-		border: 1px solid hsl(var(--border));
-		border-radius: 10px;
-		background: hsl(var(--muted) / 0.08);
-		padding: 14px 16px;
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-	}
-
-	.csvExampleTitle,
-	.csvExampleHint {
-		margin: 0;
-	}
-
-	.csvExampleTitle {
-		font-size: 0.9rem;
-		font-weight: 600;
-	}
-
-	.csvExampleHint {
-		font-size: 0.82rem;
-		color: hsl(var(--muted-foreground));
-	}
-
-	.csvExampleTableWrap {
-		overflow-x: auto;
-	}
-
-	.csvExampleTable {
-		width: 100%;
-		min-width: 280px;
-		border-collapse: collapse;
-		background: hsl(var(--background));
-		border: 1px solid hsl(var(--border));
-		border-radius: 8px;
-		overflow: hidden;
-	}
-
-	.csvExampleTable th,
-	.csvExampleTable td {
-		padding: 10px 12px;
-		border-bottom: 1px solid hsl(var(--border));
-		font-size: 0.8rem;
-		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-	}
-
-	.csvExampleTable th {
-		text-align: left;
-		font-weight: 700;
-		background: hsl(var(--muted) / 0.22);
-	}
-
-	.csvExampleTable tbody tr:last-child td {
-		border-bottom: 0;
-	}
-
-	.csvFailureList {
-		margin: 0;
-		padding-left: 18px;
-		font-size: 0.85rem;
-		color: hsl(var(--muted-foreground));
-	}
-
-	.csvFailureList li + li {
-		margin-top: 4px;
-	}
-
-	.levelsSection {
-		display: flex;
-		flex-direction: column;
-		gap: 16px;
-	}
-
-	.sectionHeader {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 10px;
-	}
-
-	.sectionHeader h2 {
-		margin: 0;
-		font-size: 1.2rem;
-		font-weight: 600;
-	}
-
-	.sectionMeta {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-	}
-
-	.selectionToolbar {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-		flex-wrap: wrap;
-	}
-
-	.filterCard {
-		padding: 14px 16px;
-		gap: 12px;
-	}
-
-	.filterHeader {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-	}
-
-	.filterTitle {
-		display: inline-flex;
-		align-items: center;
-		gap: 8px;
-		font-size: 0.95rem;
-		font-weight: 600;
-	}
-
-	.filterTitle :global(svg) {
-		color: hsl(var(--muted-foreground));
-	}
-
-	.filterGrid {
-		display: grid;
-		grid-template-columns: minmax(180px, 1.2fr) minmax(160px, 1fr) minmax(180px, 1fr) auto;
-		gap: 12px;
-		align-items: end;
-	}
-
-	.filterField {
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-		min-width: 0;
-	}
-
-	.rangeField {
-		margin: 0;
-		padding: 0;
-		border: 0;
-	}
-
-	.rangeField legend {
-		padding: 0;
-		font-size: 0.9rem;
-		font-weight: 500;
-	}
-
-	.filterInputWrap {
-		position: relative;
-		display: flex;
-		align-items: center;
-	}
-
-	.filterInputWrap :global(svg) {
-		position: absolute;
-		left: 10px;
-		color: hsl(var(--muted-foreground));
-		pointer-events: none;
-	}
-
-	.filterInputWrap :global(input) {
-		padding-left: 34px;
-	}
-
-	.rangeInputs {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-	}
-
-	.rangeInputs :global(input) {
-		min-width: 0;
-	}
-
-	.rangeSeparator {
-		color: hsl(var(--muted-foreground));
-		font-weight: 600;
-	}
-
-	.pendingFilterToggle {
-		min-height: 40px;
-		display: inline-flex;
-		align-items: center;
-		gap: 8px;
-		white-space: nowrap;
-	}
-
-	.pendingFilterToggle input {
-		width: 16px;
-		height: 16px;
-		accent-color: hsl(var(--primary));
-	}
-
-	.filterActions {
-		display: flex;
-		justify-content: flex-end;
-	}
-
-	.selectionPanel {
-		display: flex;
-		flex-direction: column;
-		gap: 12px;
-	}
-
-	.selectionPanel.isSticky {
-		position: sticky;
-		top: 48px;
-		z-index: 40;
-		padding: 8px 0;
-		background: hsl(var(--background) / 0.96);
-		backdrop-filter: blur(12px);
-		border-bottom: 1px solid hsl(var(--border) / 0.7);
-	}
-
-	.selectionSummary {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		flex-wrap: wrap;
-	}
-
-	.selectionActions {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		flex-wrap: wrap;
-	}
-
-	.bulkEditCard {
-		background: hsl(var(--primary) / 0.06);
-		border-color: hsl(var(--primary) / 0.22);
-		padding: 14px 16px;
-	}
-
-	.bulkEditForm {
-		display: flex;
-		align-items: flex-end;
-		gap: 12px;
-		flex-wrap: wrap;
-	}
-
-	.bulkEditField {
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-		flex: 1 1 170px;
-		min-width: 170px;
-	}
-
-	.bulkEditField :global(input) {
-		width: 100%;
-	}
-
-	.bulkEditApplyButton {
-		align-self: flex-end;
-		flex-shrink: 0;
-		display: flex;
-	}
-
-	.levelList {
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-	}
-
-	.paginationWrap {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 10px;
-		padding-top: 8px;
-	}
-
-	.paginationStatus {
-		font-size: 0.85rem;
-		color: hsl(var(--muted-foreground));
-	}
-
-	.pageError {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-		padding: 12px 14px;
-		border: 1px solid hsl(var(--border));
-		border-radius: 10px;
-		background: hsl(var(--muted) / 0.08);
-	}
-
-	.pageError p {
-		margin: 0;
-		font-size: 0.9rem;
-		color: hsl(var(--muted-foreground));
-	}
-
-	.levelItem {
-		background: hsl(var(--card));
-		border: 1px solid hsl(var(--border));
-		border-radius: 10px;
-		padding: 14px 18px;
-		transition: opacity 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
-	}
-
-	.levelItem.selected {
-		border-color: hsl(var(--primary));
-		box-shadow: 0 0 0 2px hsl(var(--primary) / 0.12);
-	}
-
-	.levelItem.isDraggable {
-		cursor: grab;
-	}
-
-	.levelItem.isDraggable:active {
-		cursor: grabbing;
-	}
-
-	.levelItem.dragging {
-		opacity: 0.4;
-	}
-
-	.levelItem.dragOver {
-		border-color: hsl(var(--primary));
-		box-shadow: 0 0 0 2px hsl(var(--primary) / 0.25);
-	}
-
-	.levelRow {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-	}
-
-	.selectToggle {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		flex-shrink: 0;
-	}
-
-	.selectToggle input {
-		width: 16px;
-		height: 16px;
-		cursor: pointer;
-		accent-color: hsl(var(--primary));
-	}
-
-	.dragHandle {
-		color: hsl(var(--muted-foreground));
-		flex-shrink: 0;
-		display: flex;
-		align-items: center;
-	}
-
-	.rankBadge {
-		font-size: 0.85rem;
-		font-weight: 700;
-		color: hsl(var(--muted-foreground));
-		min-width: 28px;
-		text-align: center;
-		flex-shrink: 0;
-	}
-
-	.levelBody {
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-		flex: 1;
-		min-width: 0;
-	}
-
-	.levelLink {
-		font-weight: 600;
-		text-decoration: none;
-		color: hsl(var(--foreground));
-		font-size: 0.95rem;
-	}
-
-	.levelLink:hover {
-		text-decoration: underline;
-	}
-
-	.levelLink.missing {
-		color: hsl(var(--destructive));
-	}
-
-	.levelMeta {
-		margin: 0;
-		font-size: 0.8rem;
-		color: hsl(var(--muted-foreground));
-	}
-
-	.levelActions {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		flex-wrap: wrap;
-		flex-shrink: 0;
-	}
-
-	.chipBtn {
-		background: hsl(var(--muted));
-		border: 1px solid hsl(var(--border));
-		color: hsl(var(--foreground));
-		font-size: 0.8rem;
-		font-weight: 600;
-		padding: 4px 10px;
-		border-radius: 999px;
-		cursor: default;
-		white-space: nowrap;
-	}
-
-	.chipBtn.editable {
-		cursor: pointer;
-		transition: background 0.15s ease, border-color 0.15s ease;
-	}
-
-	.chipBtn.editable:hover {
-		background: hsl(var(--primary) / 0.12);
-		border-color: hsl(var(--primary));
-	}
-
-	.inlineInput {
-		padding: 4px 8px;
-		border: 1px solid hsl(var(--primary));
-		border-radius: 6px;
-		background: hsl(var(--background));
-		color: hsl(var(--foreground));
-		font-size: 0.85rem;
-		text-align: center;
-	}
-
-	.ratingInput {
-		width: 60px;
-	}
-
-	.minProgressInput {
-		width: 120px;
-	}
-
-	.videoIdInput {
-		width: 170px;
-		text-align: left;
-	}
-
-	.inlineEditActions {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-	}
-
-	.inlineEditBtn {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		gap: 6px;
-		min-height: 32px;
-		padding: 0 12px;
-		border-radius: 8px;
-		border: 1px solid hsl(var(--border));
-		font-size: 0.8rem;
-		font-weight: 600;
-		cursor: pointer;
-		transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-	}
-
-	.inlineEditBtn:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
-	}
-
-	.inlineEditBtnPrimary {
-		background: hsl(var(--primary));
-		border-color: hsl(var(--primary));
-		color: hsl(var(--primary-foreground));
-	}
-
-	.inlineEditBtnPrimary:hover:not(:disabled) {
-		background: hsl(var(--primary) / 0.9);
-	}
-
-	.inlineEditBtnSecondary {
-		background: hsl(var(--background));
-		color: hsl(var(--foreground));
-	}
-
-	.inlineEditBtnSecondary:hover:not(:disabled) {
-		background: hsl(var(--muted) / 0.5);
-	}
-
-	.emptyState {
-		border: 1px dashed hsl(var(--border));
-		border-radius: 12px;
-		padding: 40px 24px;
-		text-align: center;
-		background: hsl(var(--muted) / 0.12);
-	}
-
-	.emptyState.slim {
-		padding: 28px 20px;
-	}
-
-	.emptyState h3 {
-		margin: 0 0 6px;
-		font-size: 1.05rem;
-		font-weight: 600;
-	}
-
-	.emptyState p {
-		margin: 0;
-		color: hsl(var(--muted-foreground));
-		font-size: 0.9rem;
-	}
-
-	@media (max-width: 760px) {
-		.filterGrid {
-			grid-template-columns: 1fr;
-		}
-
-		.filterActions {
-			justify-content: stretch;
-		}
-
-		.filterActions :global(button) {
-			width: 100%;
-		}
-
-		.levelRow {
-			flex-direction: column;
-			align-items: flex-start;
-		}
-
-		.levelActions {
-			width: 100%;
-		}
-
-		.sectionHeader {
-			flex-direction: column;
-			align-items: flex-start;
-		}
-
-		.selectionToolbar {
-			align-items: flex-start;
-		}
-
-		.bulkEditForm {
-			align-items: stretch;
-		}
-
-		.bulkEditField {
-			min-width: 0;
-			flex-basis: 100%;
-		}
-
-		.bulkEditApplyButton {
-			align-self: stretch;
-			width: 100%;
-		}
-
-		.bulkEditApplyButton :global(button) {
-			width: 100%;
-		}
-	}
-
-	@media (max-width: 480px) {
-		.toolCard {
-			padding: 16px;
-		}
-
-		.levelItem {
-			padding: 12px 14px;
-		}
-
-		.pageError {
-			flex-direction: column;
-			align-items: stretch;
-		}
-	}
+.tabContent {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.toolCard {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.toolHeading {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.addToolsCard {
+  overflow: hidden;
+}
+
+.addToolsSummaryHint {
+  margin: 6px 0 0;
+  font-size: 0.82rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.addToolsTriggerText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.addToolsIndicator {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid hsl(var(--border));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+}
+
+.addToolsIndicator :global(svg) {
+  transition: transform 0.15s ease;
+}
+
+.addToolsIndicator.isOpen :global(svg) {
+  transform: rotate(90deg);
+}
+
+.addToolsBody {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.toolDivider {
+  height: 1px;
+  background: hsl(var(--border));
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+label {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.hint {
+  font-size: 0.8rem;
+  color: hsl(var(--muted-foreground));
+  margin: 0;
+}
+
+.formActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.csvInputWrap :global(textarea) {
+  min-height: 140px;
+  resize: vertical;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+}
+
+.csvFileInput {
+  display: none;
+}
+
+.csvSummary {
+  border: 1px solid hsl(var(--border));
+  border-radius: 10px;
+  background: hsl(var(--muted) / 0.12);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.csvSummary.hasIssues {
+  border-color: hsl(var(--primary));
+  background: hsl(var(--primary) / 0.08);
+}
+
+.csvSummary p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.csvProgress {
+  border: 1px solid hsl(var(--border));
+  border-radius: 10px;
+  background: hsl(var(--muted) / 0.08);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.csvProgressHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.csvProgressHeaderCopy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.csvProgressTitle,
+.csvProgressValue,
+.csvProgressStats,
+.csvProgressCurrent,
+.csvProgressRetry {
+  margin: 0;
+}
+
+.csvProgressTitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.csvProgressValue {
+  font-size: 0.82rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.csvProgressBar {
+  height: 10px;
+  border-radius: 999px;
+  background: hsl(var(--muted));
+  overflow: hidden;
+}
+
+.csvProgressFill {
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    hsl(var(--primary)),
+    hsl(var(--primary) / 0.65)
+  );
+  transition: width 0.2s ease;
+}
+
+.csvProgressStats,
+.csvProgressCurrent,
+.csvProgressRetry {
+  font-size: 0.85rem;
+}
+
+.csvProgressCurrent,
+.csvProgressRetry {
+  color: hsl(var(--muted-foreground));
+}
+
+.csvSummaryHeading {
+  font-weight: 600;
+}
+
+.csvExampleCard {
+  border: 1px solid hsl(var(--border));
+  border-radius: 10px;
+  background: hsl(var(--muted) / 0.08);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.csvExampleTitle,
+.csvExampleHint {
+  margin: 0;
+}
+
+.csvExampleTitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.csvExampleHint {
+  font-size: 0.82rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.csvExampleTableWrap {
+  overflow-x: auto;
+}
+
+.csvExampleTable {
+  width: 100%;
+  min-width: 280px;
+  border-collapse: collapse;
+  background: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.csvExampleTable th,
+.csvExampleTable td {
+  padding: 10px 12px;
+  border-bottom: 1px solid hsl(var(--border));
+  font-size: 0.8rem;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+}
+
+.csvExampleTable th {
+  text-align: left;
+  font-weight: 700;
+  background: hsl(var(--muted) / 0.22);
+}
+
+.csvExampleTable tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.csvFailureList {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.85rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.csvFailureList li + li {
+  margin-top: 4px;
+}
+
+.levelsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.sectionHeader h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.sectionMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.selectionToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.filterCard {
+  padding: 14px 16px;
+  gap: 12px;
+}
+
+.filterHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.filterTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.filterTitle :global(svg) {
+  color: hsl(var(--muted-foreground));
+}
+
+.filterGrid {
+  display: grid;
+  grid-template-columns:
+    minmax(180px, 1.2fr) minmax(160px, 1fr) minmax(180px, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.filterField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.rangeField {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.rangeField legend {
+  padding: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.filterInputWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.filterInputWrap :global(svg) {
+  position: absolute;
+  left: 10px;
+  color: hsl(var(--muted-foreground));
+  pointer-events: none;
+}
+
+.filterInputWrap :global(input) {
+  padding-left: 34px;
+}
+
+.rangeInputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rangeInputs :global(input) {
+  min-width: 0;
+}
+
+.rangeSeparator {
+  color: hsl(var(--muted-foreground));
+  font-weight: 600;
+}
+
+.pendingFilterToggle {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.pendingFilterToggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: hsl(var(--primary));
+}
+
+.filterActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.selectionPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.selectionPanel.isSticky {
+  position: sticky;
+  top: 48px;
+  z-index: 40;
+  padding: 8px 0;
+  background: hsl(var(--background) / 0.96);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid hsl(var(--border) / 0.7);
+}
+
+.selectionSummary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.selectionActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.bulkEditCard {
+  background: hsl(var(--primary) / 0.06);
+  border-color: hsl(var(--primary) / 0.22);
+  padding: 14px 16px;
+}
+
+.bulkEditForm {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.bulkEditField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 170px;
+  min-width: 170px;
+}
+
+.bulkEditField :global(input) {
+  width: 100%;
+}
+
+.bulkEditApplyButton {
+  align-self: flex-end;
+  flex-shrink: 0;
+  display: flex;
+}
+
+.levelList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.paginationWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding-top: 8px;
+}
+
+.paginationStatus {
+  font-size: 0.85rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.pageError {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 10px;
+  background: hsl(var(--muted) / 0.08);
+}
+
+.pageError p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.levelItem {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 10px;
+  padding: 14px 18px;
+  transition:
+    opacity 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.levelItem.selected {
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.12);
+}
+
+.levelItem.isDraggable {
+  cursor: grab;
+}
+
+.levelItem.isDraggable:active {
+  cursor: grabbing;
+}
+
+.levelItem.dragging {
+  opacity: 0.4;
+}
+
+.levelItem.dragOver {
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.25);
+}
+
+.levelRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.selectToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.selectToggle input {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: hsl(var(--primary));
+}
+
+.dragHandle {
+  color: hsl(var(--muted-foreground));
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.rankBadge {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: hsl(var(--muted-foreground));
+  min-width: 28px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.levelBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.levelLink {
+  font-weight: 600;
+  text-decoration: none;
+  color: hsl(var(--foreground));
+  font-size: 0.95rem;
+}
+
+.levelLink:hover {
+  text-decoration: underline;
+}
+
+.levelLink.missing {
+  color: hsl(var(--destructive));
+}
+
+.levelMeta {
+  margin: 0;
+  font-size: 0.8rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.levelActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.chipBtn {
+  background: hsl(var(--muted));
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--foreground));
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  cursor: default;
+  white-space: nowrap;
+}
+
+.chipBtn.editable {
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.chipBtn.editable:hover {
+  background: hsl(var(--primary) / 0.12);
+  border-color: hsl(var(--primary));
+}
+
+.inlineInput {
+  padding: 4px 8px;
+  border: 1px solid hsl(var(--primary));
+  border-radius: 6px;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.ratingInput {
+  width: 60px;
+}
+
+.minProgressInput {
+  width: 120px;
+}
+
+.videoIdInput {
+  width: 170px;
+  text-align: left;
+}
+
+.inlineEditActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inlineEditBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid hsl(var(--border));
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.inlineEditBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.inlineEditBtnPrimary {
+  background: hsl(var(--primary));
+  border-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.inlineEditBtnPrimary:hover:not(:disabled) {
+  background: hsl(var(--primary) / 0.9);
+}
+
+.inlineEditBtnSecondary {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+.inlineEditBtnSecondary:hover:not(:disabled) {
+  background: hsl(var(--muted) / 0.5);
+}
+
+.emptyState {
+  border: 1px dashed hsl(var(--border));
+  border-radius: 12px;
+  padding: 40px 24px;
+  text-align: center;
+  background: hsl(var(--muted) / 0.12);
+}
+
+.emptyState.slim {
+  padding: 28px 20px;
+}
+
+.emptyState h3 {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.emptyState p {
+  margin: 0;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.9rem;
+}
+
+@media (max-width: 760px) {
+  .filterGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .filterActions {
+    justify-content: stretch;
+  }
+
+  .filterActions :global(button) {
+    width: 100%;
+  }
+
+  .levelRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .levelActions {
+    width: 100%;
+  }
+
+  .sectionHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .selectionToolbar {
+    align-items: flex-start;
+  }
+
+  .bulkEditForm {
+    align-items: stretch;
+  }
+
+  .bulkEditField {
+    min-width: 0;
+    flex-basis: 100%;
+  }
+
+  .bulkEditApplyButton {
+    align-self: stretch;
+    width: 100%;
+  }
+
+  .bulkEditApplyButton :global(button) {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .toolCard {
+    padding: 16px;
+  }
+
+  .levelItem {
+    padding: 12px 14px;
+  }
+
+  .pageError {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
 </style>

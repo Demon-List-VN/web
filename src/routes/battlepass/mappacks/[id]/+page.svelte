@@ -1,115 +1,136 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { _ } from 'svelte-i18n';
-  import { page } from '$app/stores';
-  import { user } from '$lib/client';
-  import { toast } from 'svelte-sonner';
-  import { Button } from '$lib/components/ui/button';
-  import * as Card from '$lib/components/ui/card/index.js';
-  import { Skeleton } from '$lib/components/ui/skeleton/index.js';
-  import Map from 'lucide-svelte/icons/map';
-  import Lock from 'lucide-svelte/icons/lock';
-  import Check from 'lucide-svelte/icons/check';
-  import { DIFFICULTY_COLORS, DIFFICULTY_NAMES } from '$lib/battlepass/constants';
-  import type { PageData } from './$types';
+	import { onMount } from 'svelte';
+	import { _ } from 'svelte-i18n';
+	import { page } from '$app/stores';
+	import { user } from '$lib/client';
+	import { toast } from 'svelte-sonner';
+	import { Button } from '$lib/components/ui/button';
+	import * as Card from '$lib/components/ui/card/index.js';
+	import { Skeleton } from '$lib/components/ui/skeleton/index.js';
+	import Map from 'lucide-svelte/icons/map';
+	import Lock from 'lucide-svelte/icons/lock';
+	import Check from 'lucide-svelte/icons/check';
+	import { DIFFICULTY_COLORS, DIFFICULTY_NAMES } from '$lib/battlepass/constants';
+	import type { PageData } from './$types';
 
-  export let data: PageData;
-  export let primaryColor: string = '#8b5cf6';
+	export let data: PageData;
+	export let primaryColor: string = '#8b5cf6';
 
-  const loading = false;
-  let mounted = false;
+	const loading = false;
+	let mounted = false;
 
-  let localMapPackWrapper: any = null;
-  $: mapPackWrapper = localMapPackWrapper || data.mapPackWrapper;
+	let localMapPackWrapper: any = null;
+	$: mapPackWrapper = localMapPackWrapper || data.mapPackWrapper;
 
-  $: mapPackProgress = mapPackWrapper?.progress || null;
-  $: mapPackLevelProgress = mapPackWrapper?.levelProgress || {};
+	$: mapPackProgress = mapPackWrapper?.progress || null;
+	$: mapPackLevelProgress = mapPackWrapper?.levelProgress || {};
 
-  $: mapPack = mapPackWrapper?.mapPacks;
+	$: mapPack = mapPackWrapper?.mapPacks;
 
-  $: completedLevelsCount = mapPack?.mapPackLevels?.filter((level: any) => 
-    (mapPackLevelProgress[level?.levelID] ?? 0) >= 100
-  ).length || 0;
+	$: completedLevelsCount = mapPack?.mapPackLevels?.filter((level: any) =>
+		(mapPackLevelProgress[level?.levelID] ?? 0) >= 100
+	).length || 0;
 
-  $: totalLevelsCount = mapPack?.mapPackLevels?.length || 0;
+	$: totalLevelsCount = mapPack?.mapPackLevels?.length || 0;
 
-  // Generate CSS variable strings for primary color rgba
-  $: cssVars = (() => {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(primaryColor);
-    if (!result) return '';
-    const rgb = {
-      r: parseInt(result[1], 16),
-      g: parseInt(result[2], 16),
-      b: parseInt(result[3], 16)
-    };
-    return `--primary-color: ${rgb.r}, ${rgb.g}, ${rgb.b};`;
-  })();
+	// Generate CSS variable strings for primary color rgba
+	$: cssVars = (() => {
+		const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(primaryColor);
 
-  function getDifficultyColor(difficulty: string): string {
-    return DIFFICULTY_COLORS[difficulty?.toLowerCase()] || '#6b7280';
-  }
+		if (!result) {
+			return '';
+		}
 
-  function getDifficultyName(difficulty: string): string {
-    return DIFFICULTY_NAMES[difficulty?.toLowerCase()] || difficulty || 'Unknown';
-  }
+		const rgb = {
+			r: parseInt(result[1], 16),
+			g: parseInt(result[2], 16),
+			b: parseInt(result[3], 16)
+		};
 
-  function getMapPackLevelProgress(levelID: number): number {
-    return mapPackLevelProgress[levelID] ?? 0;
-  }
+		return `--primary-color: ${rgb.r}, ${rgb.g}, ${rgb.b};`;
+	})();
 
-  function isLevelCompleted(levelID: number): boolean {
-    return (mapPackLevelProgress[levelID] ?? 0) >= 100;
-  }
+	function getDifficultyColor(difficulty: string): string {
+		return DIFFICULTY_COLORS[difficulty?.toLowerCase()] || '#6b7280';
+	}
 
-  function isMapPackCompleted(): boolean {
-    const p = mapPackProgress?.progress ?? 0;
-    if (p >= 100) return true;
-    return totalLevelsCount > 0 && completedLevelsCount === totalLevelsCount;
-  }
+	function getDifficultyName(difficulty: string): string {
+		return DIFFICULTY_NAMES[difficulty?.toLowerCase()] || difficulty || 'Unknown';
+	}
 
-  function isMapPackClaimed(): boolean {
-    return mapPackProgress?.claimed ?? false;
-  }
+	function getMapPackLevelProgress(levelID: number): number {
+		return mapPackLevelProgress[levelID] ?? 0;
+	}
 
-  async function fetchMapPackData() {
-    if (!mapPackWrapper?.id) return;
-    const token = $user.loggedIn ? await $user.token() : null;
-    if (!token) {
-        localMapPackWrapper = null; // Revert to data.mapPackWrapper (which likely has no progress)
-        return;
-    }
+	function isLevelCompleted(levelID: number): boolean {
+		return (mapPackLevelProgress[levelID] ?? 0) >= 100;
+	}
 
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/mappack/${mapPackWrapper.id}`, {
-          headers: {
-              Authorization: `Bearer ${token}`
-          }
-      });
-      if (res.ok) {
-          localMapPackWrapper = await res.json();
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  }
+	function isMapPackCompleted(): boolean {
+		const p = mapPackProgress?.progress ?? 0;
 
-  onMount(() => {
-    mounted = true;
-    
-    if ($user.loggedIn && mapPackWrapper?.id) {
-      fetchMapPackData();
-    }
-    
-    const unsub = user.subscribe(async (value) => {
-      if (!mounted) return;
-      if (value.loggedIn && mapPackWrapper?.id) {
-        await fetchMapPackData();
-      } else if (!value.loggedIn) {
-        localMapPackWrapper = null;
-      }
-    });
-    return () => { mounted = false; unsub(); };
-  });
+		if (p >= 100) {
+			return true;
+		}
+
+		return totalLevelsCount > 0 && completedLevelsCount === totalLevelsCount;
+	}
+
+	function isMapPackClaimed(): boolean {
+		return mapPackProgress?.claimed ?? false;
+	}
+
+	async function fetchMapPackData() {
+		if (!mapPackWrapper?.id) {
+			return;
+		}
+
+		const token = $user.loggedIn ? await $user.token() : null;
+
+		if (!token) {
+			localMapPackWrapper = null; // Revert to data.mapPackWrapper (which likely has no progress)
+
+			return;
+		}
+
+		try {
+			const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/mappack/${mapPackWrapper.id}`, {
+				headers: {
+					Authorization: `Bearer ${token}`
+				}
+			});
+
+			if (res.ok) {
+				localMapPackWrapper = await res.json();
+			}
+		} catch (e) {
+			console.error(e);
+		}
+	}
+
+	onMount(() => {
+		mounted = true;
+
+		if ($user.loggedIn && mapPackWrapper?.id) {
+			fetchMapPackData();
+		}
+
+		const unsub = user.subscribe(async (value) => {
+			if (!mounted) {
+				return;
+			}
+
+			if (value.loggedIn && mapPackWrapper?.id) {
+				await fetchMapPackData();
+			} else if (!value.loggedIn) {
+				localMapPackWrapper = null;
+			}
+		});
+
+		return () => {
+			mounted = false; unsub();
+		};
+	});
 </script>
 
 <div class="mx-auto max-w-6xl mt-10">
@@ -118,7 +139,7 @@
       <!-- Hero Header Card -->
       <div class="relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-background via-background to-muted/20 shadow-xl">
         <div class="absolute inset-0 opacity-10" style="background: linear-gradient(135deg, {getDifficultyColor(mapPack?.difficulty)}40 0%, transparent 50%);" />
-        
+
         <div class="relative p-8 md:p-10">
           <div class="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
             <!-- Left Section -->
@@ -153,7 +174,7 @@
                   </div>
                 </div>
               </div>
-              
+
               <div class="flex items-center gap-4 text-sm">
                 <div class="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-1.5">
                   <Map class="h-4 w-4 text-muted-foreground" />
@@ -228,7 +249,7 @@
                       <p class="mt-0.5 text-xs text-muted-foreground">ID: {level.levelID}</p>
                     </div>
                   </div>
-                  
+
                   <div class="flex items-center gap-1.5">
                     {#if levelCompleted}
                       <div class="rounded-full bg-green-500/20 px-2 py-1 text-xs font-semibold text-green-600">

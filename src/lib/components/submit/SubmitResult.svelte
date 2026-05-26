@@ -139,6 +139,7 @@
 									{@const parsed = (() => {
 										try {
 											const match = log.match(/(\{.*\}|\[.*\])/s);
+
 											if (match) {
 												return {
 													prefix: log.substring(0, match.index),
@@ -147,6 +148,7 @@
 												};
 											}
 										} catch {}
+
 										return { prefix: log, hasJson: false };
 									})()}
 

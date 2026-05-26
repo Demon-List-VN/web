@@ -32,8 +32,11 @@
 	}
 
 	function getRewardState() {
-		if (data.end && new Date().getTime() > new Date(data.end).getTime()) {
+		if (data.end && new Date()
+			.getTime() > new Date(data.end)
+				.getTime()) {
 			rewardState = 4;
+
 			return;
 		}
 
@@ -41,7 +44,9 @@
 			return;
 		}
 
-		fetch(`${import.meta.env.VITE_API_URL}/events/${data.id}/proofs/${$user.data.uid}`)
+		fetch(
+			`${import.meta.env.VITE_API_URL}/events/${data.id}/proofs/${$user.data.uid}`
+		)
 			.then((res) => {
 				if (!res.ok) {
 					rewardState = 4;
@@ -90,12 +95,15 @@
 		cancelOpened = false;
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/events/${data.id}/proofs/${$user.data.uid}`, {
-				method: 'DELETE',
-				headers: {
-					Authorization: 'Bearer ' + (await $user.token())!
+			fetch(
+				`${import.meta.env.VITE_API_URL}/events/${data.id}/proofs/${$user.data.uid}`,
+				{
+					method: 'DELETE',
+					headers: {
+						Authorization: 'Bearer ' + (await $user.token())!
+					}
 				}
-			}),
+			),
 			{
 				success: () => {
 					rewardState = 4;
@@ -116,55 +124,89 @@
 </script>
 
 {#if $user.loggedIn}
-	<div class="md-[15px] mb-[15px] mt-[15px] flex justify-center">
-		{#if rewardState == 0}
-			<Skeleton class="h-[35px] w-[200px]" />
-		{:else if rewardState == 1}
-			<Button class="w-[200px]" disabled>{$_('contest.participate.reward_claimed')}</Button>
-		{:else if rewardState == 2}
-			{#if canCancelParticipation()}
-				<Dialog.Root bind:open={cancelOpened}>
-					<Dialog.Trigger>
-						<Button class="w-[200px]" variant="destructive">{$_('contest.participate.cancel_participation')}</Button>
-					</Dialog.Trigger>
-					<Dialog.Content>
-						<Dialog.Header>
-							<Dialog.Title>{$_('contest.participate.cancel_confirm.title')}</Dialog.Title>
-							<Dialog.Description>{$_('contest.participate.cancel_confirm.description')}</Dialog.Description>
-						</Dialog.Header>
-						<Button variant="destructive" on:click={cancelProof}>{$_('contest.participate.cancel_confirm.proceed')}</Button>
-					</Dialog.Content>
-				</Dialog.Root>
-			{:else}
-				<Button class="w-[200px]" disabled>{$_('contest.participate.participated')}</Button>
-			{/if}
-		{:else if rewardState == 3}
-			<Button class="w-[200px]" disabled>{$_('contest.participate.event_ended')}</Button>
-		{:else if rewardState == 4}
-			{#if $user.data.exp < data.minExp}
-				<Button class="w-[300px]" disabled>{$_('contest.participate.not_enough_exp', { values: { minExp: data.minExp } })}</Button>
-			{:else if !$user.data.discord}
-				<Button class="w-[300px]" disabled>{$_('contest.participate.discord_required')}</Button>
-			{:else if isEventEnded()}
-				<Button class="w-[200px]" disabled>{$_('contest.participate.event_ended')}</Button>
-			{:else}
-				<Dialog.Root bind:open={claimOpened}>
-					<Dialog.Trigger>
-						<Button class="w-[200px]">{$_('contest.participate.participate')}</Button>
-					</Dialog.Trigger>
-					<Dialog.Content>
-						<Dialog.Header>
-							<Dialog.Title>{$_('contest.participate.participate_dialog.title')}</Dialog.Title>
-						</Dialog.Header>
-						{#if data.needProof}
-							<Textarea class="h-[125px]" placeholder={$_('contest.participate.participate_dialog.proof_placeholder')} bind:value={proof} />
-						{:else}
-							<Textarea class="h-[125px]" placeholder={$_('contest.participate.participate_dialog.message_placeholder')} bind:value={proof} />
-						{/if}
-						<Button on:click={claimReward}>{$_('contest.participate.participate_dialog.continue')}</Button>
-					</Dialog.Content>
-				</Dialog.Root>
-			{/if}
-		{/if}
-	</div>
+  <div class="md-[15px] mb-[15px] mt-[15px] flex justify-center">
+    {#if rewardState == 0}
+      <Skeleton class="h-[35px] w-[200px]" />
+    {:else if rewardState == 1}
+      <Button class="w-[200px]" disabled>{
+        $_('contest.participate.reward_claimed')
+      }</Button>
+    {:else if rewardState == 2}
+      {#if canCancelParticipation()}
+        <Dialog.Root bind:open={cancelOpened}>
+          <Dialog.Trigger>
+            <Button class="w-[200px]" variant="destructive">{
+              $_('contest.participate.cancel_participation')
+            }</Button>
+          </Dialog.Trigger>
+          <Dialog.Content>
+            <Dialog.Header>
+              <Dialog.Title>{
+                $_('contest.participate.cancel_confirm.title')
+              }</Dialog.Title>
+              <Dialog.Description>{
+                $_('contest.participate.cancel_confirm.description')
+              }</Dialog.Description>
+            </Dialog.Header>
+            <Button variant="destructive" on:click={cancelProof}>{
+              $_('contest.participate.cancel_confirm.proceed')
+            }</Button>
+          </Dialog.Content>
+        </Dialog.Root>
+      {:else}
+        <Button class="w-[200px]" disabled>{
+          $_('contest.participate.participated')
+        }</Button>
+      {/if}
+    {:else if rewardState == 3}
+      <Button class="w-[200px]" disabled>{
+        $_('contest.participate.event_ended')
+      }</Button>
+    {:else if rewardState == 4}
+      {#if $user.data.exp < data.minExp}
+        <Button class="w-[300px]" disabled>{
+          $_('contest.participate.not_enough_exp', { values: { minExp: data.minExp } })
+        }</Button>
+      {:else if !$user.data.discord}
+        <Button class="w-[300px]" disabled>{
+          $_('contest.participate.discord_required')
+        }</Button>
+      {:else if isEventEnded()}
+        <Button class="w-[200px]" disabled>{
+          $_('contest.participate.event_ended')
+        }</Button>
+      {:else}
+        <Dialog.Root bind:open={claimOpened}>
+          <Dialog.Trigger>
+            <Button class="w-[200px]">{
+              $_('contest.participate.participate')
+            }</Button>
+          </Dialog.Trigger>
+          <Dialog.Content>
+            <Dialog.Header>
+              <Dialog.Title>{
+                $_('contest.participate.participate_dialog.title')
+              }</Dialog.Title>
+            </Dialog.Header>
+            {#if data.needProof}
+              <Textarea
+                class="h-[125px]"
+                placeholder={$_('contest.participate.participate_dialog.proof_placeholder')}
+                bind:value={proof}
+              />
+            {:else}
+              <Textarea
+                class="h-[125px]"
+                placeholder={$_('contest.participate.participate_dialog.message_placeholder')}
+                bind:value={proof}
+              />
+            {/if}
+            <Button on:click={claimReward}>{
+              $_('contest.participate.participate_dialog.continue')
+            }</Button>
+          </Dialog.Content>
+        </Dialog.Root>
+      {/if}
+    {/if}
+  </div>
 {/if}

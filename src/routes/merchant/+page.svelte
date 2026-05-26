@@ -8,32 +8,32 @@
 <Title value="Merchant" />
 
 <div class="wrapper">
-	<Tabs.Root value="orders">
-		<Tabs.List class="mb-4">
-			<Tabs.Trigger value="orders">Orders</Tabs.Trigger>
-			<Tabs.Trigger value="products">Products</Tabs.Trigger>
-		</Tabs.List>
+  <Tabs.Root value="orders">
+    <Tabs.List class="mb-4">
+      <Tabs.Trigger value="orders">Orders</Tabs.Trigger>
+      <Tabs.Trigger value="products">Products</Tabs.Trigger>
+    </Tabs.List>
 
-		<Tabs.Content value="orders">
-			<OrdersTab />
-		</Tabs.Content>
+    <Tabs.Content value="orders">
+      <OrdersTab />
+    </Tabs.Content>
 
-		<Tabs.Content value="products">
-			<ProductsTab />
-		</Tabs.Content>
-	</Tabs.Root>
+    <Tabs.Content value="products">
+      <ProductsTab />
+    </Tabs.Content>
+  </Tabs.Root>
 </div>
 
 <style lang="scss">
-	.wrapper {
-		padding: 2rem;
-		max-width: 1400px;
-		margin: 0 auto;
-	}
+.wrapper {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
 
-	@media (max-width: 768px) {
-		.wrapper {
-			padding: 1rem;
-		}
-	}
+@media (max-width: 768px) {
+  .wrapper {
+    padding: 1rem;
+  }
+}
 </style>

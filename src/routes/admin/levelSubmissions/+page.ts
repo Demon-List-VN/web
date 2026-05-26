@@ -6,5 +6,5 @@ export async function load({ fetch }: Parameters<PageLoad>[0]) {
     // For now, return empty array and let the page handle fetching with auth
     return {
         data: []
-    }
+    };
 }

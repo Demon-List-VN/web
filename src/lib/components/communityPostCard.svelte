@@ -1,5 +1,21 @@
 <script lang="ts">
-	import { ThumbsUp, MessageSquare, Pin, Image, BookOpen, Megaphone, MessageCircle, Play, Trophy, Gamepad2, Star, ThumbsDown, Flag, Users, Layers } from 'lucide-svelte';
+	import {
+		ThumbsUp,
+		MessageSquare,
+		Pin,
+		Image,
+		BookOpen,
+		Megaphone,
+		MessageCircle,
+		Play,
+		Trophy,
+		Gamepad2,
+		Star,
+		ThumbsDown,
+		Flag,
+		Users,
+		Layers
+	} from 'lucide-svelte';
 	import { _, locale } from 'svelte-i18n';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import { user } from '$lib/client';
@@ -19,9 +35,14 @@
 	async function toggleLike() {
 		if (!$user.loggedIn) {
 			toast.error($_('community.login_required'));
+
 			return;
 		}
-		if (likingPost) return;
+
+		if (likingPost) {
+			return;
+		}
+
 		likingPost = true;
 
 		try {
@@ -79,577 +100,662 @@
 		const date = new Date(dateStr);
 		const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-		if (seconds < 60) return $locale === 'vi' ? 'Vừa xong' : 'Just now';
+		if (seconds < 60) {
+			return $locale === 'vi' ? 'Vừa xong' : 'Just now';
+		}
+
 		const minutes = Math.floor(seconds / 60);
-		if (minutes < 60) return `${minutes}m`;
+
+		if (minutes < 60) {
+			return `${minutes}m`;
+		}
+
 		const hours = Math.floor(minutes / 60);
-		if (hours < 24) return `${hours}h`;
+
+		if (hours < 24) {
+			return `${hours}h`;
+		}
+
 		const days = Math.floor(hours / 24);
-		if (days < 30) return `${days}d`;
+
+		if (days < 30) {
+			return `${days}d`;
+		}
+
 		const months = Math.floor(days / 30);
-		if (months < 12) return `${months}mo`;
+
+		if (months < 12) {
+			return `${months}mo`;
+		}
+
 		const years = Math.floor(months / 12);
+
 		return `${years}y`;
 	}
 
 	function getYouTubeThumbnail(url: string): string | null {
-		if (!url) return null;
-		const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
-		return match ? `https://img.youtube.com/vi/${match[1]}/mqdefault.jpg` : null;
+		if (!url) {
+			return null;
+		}
+
+		const match = url.match(
+			/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/
+		);
+
+		return match
+			? `https://img.youtube.com/vi/${match[1]}/mqdefault.jpg`
+			: null;
 	}
 
 	$: author = post?.players;
 	$: TypeIcon = typeIcons[post?.type] || MessageCircle;
-	$: thumbnail = post?.imageUrl || (post?.videoUrl ? getYouTubeThumbnail(post.videoUrl) : null);
+	$: thumbnail = post?.imageUrl
+		|| (post?.videoUrl ? getYouTubeThumbnail(post.videoUrl) : null);
 	$: isMedia = post?.type === 'media';
-	$: postTags = (post?.communityPostsTags || []).map((pt: any) => pt.postTags).filter(Boolean);
-	$: isParticipantsFull = post?.type === 'collab' && post?.participantsCount >= post?.maxParticipants;
-	$: postHref = post ? (post.clanId ? `/clan/${post.clanId}/community/${post.id}` : `/community/${post.id}`) : '#';
+	$: postTags = (post?.communityPostsTags || []).map((pt: any) => pt.postTags)
+		.filter(Boolean);
+	$: isParticipantsFull = post?.type === 'collab'
+		&& post?.participantsCount >= post?.maxParticipants;
+	$: postHref = post
+		? (post.clanId
+			? `/clan/${post.clanId}/community/${post.id}`
+			: `/community/${post.id}`)
+		: '#';
 </script>
 
 {#if post}
-	<a href={postHref} class="communityPost" class:compact class:pinned={post.pinned} class:mediaPost={isMedia && thumbnail && !compact} class:participantsFull={isParticipantsFull}>
-		{#if post.pinned}
-			<div class="pinnedBadge">
-				<Pin class="h-3 w-3" />
-				<span>{$_('community.pinned')}</span>
-			</div>
-		{/if}
+  <a
+    href={postHref}
+    class="communityPost"
+    class:compact
+    class:pinned={post.pinned}
+    class:mediaPost={isMedia && thumbnail && !compact}
+    class:participantsFull={isParticipantsFull}
+  >
+    {#if post.pinned}
+      <div class="pinnedBadge">
+        <Pin class="h-3 w-3" />
+        <span>{$_('community.pinned')}</span>
+      </div>
+    {/if}
 
-		{#if isMedia && thumbnail && !compact}
-			<!-- Media layout: full-width image on top, then title below -->
-			<div class="mediaImage">
-				<img src={thumbnail} alt="" loading="lazy" />
-				{#if post.videoUrl && !post.imageUrl}
-					<div class="videoOverlay">
-						<Play class="h-6 w-6" />
-					</div>
-				{/if}
-			</div>
-			<div class="mediaBody">
-				<div class="postAuthor">
-					<!-- svelte-ignore a11y-click-events-have-key-events -->
-					<!-- svelte-ignore a11y-no-static-element-interactions -->
-					<div class="authorLink" on:click|stopPropagation|preventDefault>
-						{#if author}
-							<PlayerLink player={author} showAvatar />
-						{:else}
-							<span>Unknown</span>
-						{/if}
-					</div>
-					<span class="postTime">{timeAgo(post.createdAt)}</span>
-				</div>
-				<h3 class="postTitle">{post.title}</h3>
-			</div>
-		{:else}
-			<!-- Default layout: side-by-side -->
-			<div class="postMain">
-				<div class="postLeft">
-					<div class="postAuthor">
-						<!-- svelte-ignore a11y-click-events-have-key-events -->
-						<!-- svelte-ignore a11y-no-static-element-interactions -->
-						<div class="authorLink" on:click|stopPropagation|preventDefault>
-							{#if author}
-							<PlayerLink player={author} showAvatar />
-							{:else}
-								<span>Unknown</span>
-							{/if}
-						</div>
-						<span class="postTime">{timeAgo(post.createdAt)}</span>
-					</div>
-					<div class="postContent">
-						<div class="postTitleRow">
-							<div class="typeBadge {typeBgColors[post.type]}">
-								<svelte:component this={TypeIcon} class="h-3.5 w-3.5 {typeColors[post.type]}" />
-								<span class={typeColors[post.type]}>{$_(`community.type.${post.type}`)}</span>
-							</div>
-							{#if post.type === 'review' && post.isRecommended !== null}
-								<div class="recommendBadge" class:recommended={post.isRecommended} class:notRecommended={!post.isRecommended}>
-									{#if post.isRecommended}
-										<ThumbsUp class="h-3 w-3" />
-									{:else}
-										<ThumbsDown class="h-3 w-3" />
-									{/if}
-									<span>{post.isRecommended ? $_('community.review.recommended') : $_('community.review.not_recommended')}</span>
-								</div>
-							{/if}
-							{#if postTags.length > 0}
-								<div class="postTags">
-									{#each postTags as tag}
-										<span class="postTag" style="background: {tag.color}18; color: {tag.color}; border-color: {tag.color}30">
-											{tag.name}
-										</span>
-									{/each}
-								</div>
-							{/if}
-							<h3 class="postTitle">{post.title}</h3>
-						</div>
-						{#if !compact && post.content}
-							<div class="postExcerpt"><Markdown content={post.content.length > 300 ? post.content.slice(0, 300) + '...' : post.content} /></div>
-						{/if}
-					</div>
-				</div>
-				{#if thumbnail}
-					<div class="postImage" class:compactImage={compact}>
-						<img src={thumbnail} alt="" loading="lazy" />
-						{#if post.videoUrl && !post.imageUrl}
-							<div class="videoOverlay">
-								<Play class="h-5 w-5" />
-							</div>
-						{/if}
-					</div>
-				{/if}
-			</div>
-		{/if}
-		{#if post.attachedRecord || post.attachedLevel || post.attachedList}
-			<div class="attachmentBar">
-				{#if post.attachedRecord}
-					<div class="attachmentChip">
-						<Trophy class="h-3.5 w-3.5 text-amber-500" />
-						<span class="attachmentName">{post.attachedRecord.levelName}</span>
-						<span class="attachmentMeta">{post.attachedRecord.progress}%</span>
-					</div>
-				{:else if post.attachedLevel}
-					<div class="attachmentChip">
-						<Gamepad2 class="h-3.5 w-3.5 text-emerald-500" />
-						<span class="attachmentName">{post.attachedLevel.name}</span>
-						<span class="attachmentMeta">{post.attachedLevel.creator}</span>
-					</div>
-				{:else if post.attachedList}
-					<div class="attachmentChip">
-						<Layers class="h-3.5 w-3.5 text-sky-500" />
-						<span class="attachmentName">{post.attachedList.title}</span>
-						<span class="attachmentMeta">{post.attachedList.ownerName}</span>
-					</div>
-				{/if}
-			</div>
-		{/if}
-		<div class="postFooter">
-			<div class="postStats">
-				<!-- svelte-ignore a11y-click-events-have-key-events -->
-				<!-- svelte-ignore a11y-no-static-element-interactions -->
-				<div class="postStat likeBtn" class:liked={post.liked} on:click|stopPropagation|preventDefault={toggleLike}>
-					<ThumbsUp class="h-4 w-4" />
-					<span>{post.likesCount}</span>
-				</div>
-				<div class="postStat">
-					<MessageSquare class="h-4 w-4" />
-					<span>{post.commentsCount}</span>
-				</div>
-							{#if post.type === 'collab'}
-					<div class="postStat participantStat" class:participantFull={post.participantsCount >= post.maxParticipants}>
-						<Users class="h-4 w-4" />
-						<span>{post.participantsCount}/{post.maxParticipants}</span>
-					</div>
-				{/if}
-			</div>
-			{#if $user.loggedIn && $user.data?.uid !== post.uid}
-				<!-- svelte-ignore a11y-click-events-have-key-events -->
-				<!-- svelte-ignore a11y-no-static-element-interactions -->
-				<div class="reportBtn" on:click|stopPropagation|preventDefault={() => dispatch('report', post.id)} title={$_('community.report.button')}>
-					<Flag class="h-3.5 w-3.5" />
-				</div>
-			{/if}
-		</div>
-	</a>
+    {#if isMedia && thumbnail && !compact}
+      <!-- Media layout: full-width image on top, then title below -->
+      <div class="mediaImage">
+        <img src={thumbnail} alt="" loading="lazy" />
+        {#if post.videoUrl && !post.imageUrl}
+          <div class="videoOverlay">
+            <Play class="h-6 w-6" />
+          </div>
+        {/if}
+      </div>
+      <div class="mediaBody">
+        <div class="postAuthor">
+          <!-- svelte-ignore a11y-click-events-have-key-events -->
+          <!-- svelte-ignore a11y-no-static-element-interactions -->
+          <div class="authorLink" on:click|stopPropagation|preventDefault>
+            {#if author}
+              <PlayerLink player={author} showAvatar />
+            {:else}
+              <span>Unknown</span>
+            {/if}
+          </div>
+          <span class="postTime">{timeAgo(post.createdAt)}</span>
+        </div>
+        <h3 class="postTitle">{post.title}</h3>
+      </div>
+    {:else}
+      <!-- Default layout: side-by-side -->
+      <div class="postMain">
+        <div class="postLeft">
+          <div class="postAuthor">
+            <!-- svelte-ignore a11y-click-events-have-key-events -->
+            <!-- svelte-ignore a11y-no-static-element-interactions -->
+            <div class="authorLink" on:click|stopPropagation|preventDefault>
+              {#if author}
+                <PlayerLink player={author} showAvatar />
+              {:else}
+                <span>Unknown</span>
+              {/if}
+            </div>
+            <span class="postTime">{timeAgo(post.createdAt)}</span>
+          </div>
+          <div class="postContent">
+            <div class="postTitleRow">
+              <div class="typeBadge {typeBgColors[post.type]}">
+                <svelte:component
+                  this={TypeIcon}
+                  class="h-3.5 w-3.5 {typeColors[post.type]}"
+                />
+                <span class={typeColors[post.type]}>{
+                  $_(`community.type.${post.type}`)
+                }</span>
+              </div>
+              {#if post.type === 'review' && post.isRecommended !== null}
+                <div
+                  class="recommendBadge"
+                  class:recommended={post.isRecommended}
+                  class:notRecommended={!post.isRecommended}
+                >
+                  {#if post.isRecommended}
+                    <ThumbsUp class="h-3 w-3" />
+                  {:else}
+                    <ThumbsDown class="h-3 w-3" />
+                  {/if}
+                  <span>{
+                    post.isRecommended
+                    ? $_('community.review.recommended')
+                    : $_('community.review.not_recommended')
+                  }</span>
+                </div>
+              {/if}
+              {#if postTags.length > 0}
+                <div class="postTags">
+                  {#each postTags as tag}
+                    <span
+                      class="postTag"
+                      style="background: {tag.color}18; color: {tag.color}; border-color: {tag.color}30"
+                    >
+                      {tag.name}
+                    </span>
+                  {/each}
+                </div>
+              {/if}
+              <h3 class="postTitle">{post.title}</h3>
+            </div>
+            {#if !compact && post.content}
+              <div class="postExcerpt">
+                <Markdown
+                  content={post.content.length > 300 ? post.content.slice(0, 300) + '...' : post.content}
+                />
+              </div>
+            {/if}
+          </div>
+        </div>
+        {#if thumbnail}
+          <div class="postImage" class:compactImage={compact}>
+            <img src={thumbnail} alt="" loading="lazy" />
+            {#if post.videoUrl && !post.imageUrl}
+              <div class="videoOverlay">
+                <Play class="h-5 w-5" />
+              </div>
+            {/if}
+          </div>
+        {/if}
+      </div>
+    {/if}
+    {#if post.attachedRecord || post.attachedLevel || post.attachedList}
+      <div class="attachmentBar">
+        {#if post.attachedRecord}
+          <div class="attachmentChip">
+            <Trophy class="h-3.5 w-3.5 text-amber-500" />
+            <span class="attachmentName">{post.attachedRecord.levelName}</span>
+            <span class="attachmentMeta">{post.attachedRecord.progress}%</span>
+          </div>
+        {:else if post.attachedLevel}
+          <div class="attachmentChip">
+            <Gamepad2 class="h-3.5 w-3.5 text-emerald-500" />
+            <span class="attachmentName">{post.attachedLevel.name}</span>
+            <span class="attachmentMeta">{post.attachedLevel.creator}</span>
+          </div>
+        {:else if post.attachedList}
+          <div class="attachmentChip">
+            <Layers class="h-3.5 w-3.5 text-sky-500" />
+            <span class="attachmentName">{post.attachedList.title}</span>
+            <span class="attachmentMeta">{post.attachedList.ownerName}</span>
+          </div>
+        {/if}
+      </div>
+    {/if}
+    <div class="postFooter">
+      <div class="postStats">
+        <!-- svelte-ignore a11y-click-events-have-key-events -->
+        <!-- svelte-ignore a11y-no-static-element-interactions -->
+        <div
+          class="postStat likeBtn"
+          class:liked={post.liked}
+          on:click|stopPropagation|preventDefault={toggleLike}
+        >
+          <ThumbsUp class="h-4 w-4" />
+          <span>{post.likesCount}</span>
+        </div>
+        <div class="postStat">
+          <MessageSquare class="h-4 w-4" />
+          <span>{post.commentsCount}</span>
+        </div>
+        {#if post.type === 'collab'}
+          <div
+            class="postStat participantStat"
+            class:participantFull={post.participantsCount >= post.maxParticipants}
+          >
+            <Users class="h-4 w-4" />
+            <span>{post.participantsCount}/{post.maxParticipants}</span>
+          </div>
+        {/if}
+      </div>
+      {#if $user.loggedIn && $user.data?.uid !== post.uid}
+        <!-- svelte-ignore a11y-click-events-have-key-events -->
+        <!-- svelte-ignore a11y-no-static-element-interactions -->
+        <div
+          class="reportBtn"
+          on:click|stopPropagation|preventDefault={() => dispatch('report', post.id)}
+          title={$_('community.report.button')}
+        >
+          <Flag class="h-3.5 w-3.5" />
+        </div>
+      {/if}
+    </div>
+  </a>
 {:else}
-	<!-- Skeleton -->
-	<div class="communityPost skeleton">
-		<div class="postMain">
-			<div class="postLeft">
-				<div class="postAuthor">
-					<div class="skeletonLine w-24"></div>
-					<div class="skeletonLine w-12"></div>
-				</div>
-				<div class="postContent">
-					<div class="skeletonLine w-3/4 h-5"></div>
-					<div class="skeletonLine w-full"></div>
-				</div>
-			</div>
-		</div>
-		<div class="postFooter">
-			<div class="skeletonLine w-8"></div>
-			<div class="skeletonLine w-8"></div>
-		</div>
-	</div>
+  <!-- Skeleton -->
+  <div class="communityPost skeleton">
+    <div class="postMain">
+      <div class="postLeft">
+        <div class="postAuthor">
+          <div class="skeletonLine w-24"></div>
+          <div class="skeletonLine w-12"></div>
+        </div>
+        <div class="postContent">
+          <div class="skeletonLine w-3/4 h-5"></div>
+          <div class="skeletonLine w-full"></div>
+        </div>
+      </div>
+    </div>
+    <div class="postFooter">
+      <div class="skeletonLine w-8"></div>
+      <div class="skeletonLine w-8"></div>
+    </div>
+  </div>
 {/if}
 
 <style lang="scss">
-	.communityPost {
-		display: flex;
-		flex-direction: column;
-		border: 1px solid hsl(var(--border));
-		border-radius: 12px;
-		background: hsl(var(--card));
-		overflow: hidden;
-		transition: all 0.2s ease;
-		text-decoration: none;
-		color: inherit;
-		cursor: pointer;
-		min-height: 220px;
-		height: 100%;
+.communityPost {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  background: hsl(var(--card));
+  overflow: hidden;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  min-height: 220px;
+  height: 100%;
 
-		&:hover {
-			border-color: hsl(var(--border) / 0.8);
-			background: hsl(var(--accent) / 0.3);
-			transform: translateY(-1px);
-			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-		}
+  &:hover {
+    border-color: hsl(var(--border) / 0.8);
+    background: hsl(var(--accent) / 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
 
-		&.pinned {
-			border-color: hsl(var(--primary) / 0.3);
-			background: hsl(var(--primary) / 0.03);
-		}
+  &.pinned {
+    border-color: hsl(var(--primary) / 0.3);
+    background: hsl(var(--primary) / 0.03);
+  }
 
-		&.compact {
-			border-radius: 8px;
-			min-height: auto;
-			height: auto;
-			.postContent { margin-top: 4px; }
-		}
+  &.compact {
+    border-radius: 8px;
+    min-height: auto;
+    height: auto;
+    .postContent {
+      margin-top: 4px;
+    }
+  }
 
-		&.participantsFull {
-			opacity: 0.6;
-			order: 1;
-		}
-	}
+  &.participantsFull {
+    opacity: 0.6;
+    order: 1;
+  }
+}
 
-	.pinnedBadge {
-		display: flex;
-		align-items: center;
-		gap: 4px;
-		padding: 6px 16px;
-		font-size: 11px;
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-		color: hsl(var(--primary));
-		background: hsl(var(--primary) / 0.08);
-		border-bottom: 1px solid hsl(var(--primary) / 0.1);
-	}
+.pinnedBadge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: hsl(var(--primary));
+  background: hsl(var(--primary) / 0.08);
+  border-bottom: 1px solid hsl(var(--primary) / 0.1);
+}
 
-	.postMain {
-		display: flex;
-		gap: 16px;
-		padding: 16px;
-		flex: 1;
-		min-height: 0;
-	}
+.postMain {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  flex: 1;
+  min-height: 0;
+}
 
-	.postLeft {
-		flex: 1;
-		min-width: 0;
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-	}
+.postLeft {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 
-	.postAuthor {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-	}
+.postAuthor {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 
-	.authorLink { font-size: 13px; }
+.authorLink {
+  font-size: 13px;
+}
 
-	.postTime {
-		font-size: 11px;
-		color: hsl(var(--muted-foreground));
-	}
+.postTime {
+  font-size: 11px;
+  color: hsl(var(--muted-foreground));
+}
 
-	.postContent {
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-	}
+.postContent {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 
-	.postTitleRow {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		flex-wrap: wrap;
-	}
+.postTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 
-	.typeBadge {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-		padding: 2px 8px;
-		border-radius: 6px;
-		font-size: 11px;
-		font-weight: 600;
-		text-transform: capitalize;
-		white-space: nowrap;
-		flex-shrink: 0;
-	}
+.typeBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
 
-	.postTitle {
-		font-weight: 600;
-		font-size: 15px;
-		line-height: 1.4;
-		margin: 0;
-		display: -webkit-box;
-		-webkit-line-clamp: 2;
-		line-clamp: 2;
-		-webkit-box-orient: vertical;
-		overflow: hidden;
-	}
+.postTitle {
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1.4;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 
-	.postExcerpt {
-		font-size: 13px;
-		color: hsl(var(--muted-foreground));
-		line-height: 1.5;
-		margin: 0;
-		display: -webkit-box;
-		-webkit-line-clamp: 3;
-		line-clamp: 3;
-		-webkit-box-orient: vertical;
-		overflow: hidden;
-		max-height: 4.5em;
+.postExcerpt {
+  font-size: 13px;
+  color: hsl(var(--muted-foreground));
+  line-height: 1.5;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-height: 4.5em;
 
-		:global(p) {
-			margin: 0;
-		}
+  :global(p) {
+    margin: 0;
+  }
 
-		:global(img) {
-			display: none;
-		}
+  :global(img) {
+    display: none;
+  }
 
-		:global(h1), :global(h2), :global(h3), :global(h4), :global(h5), :global(h6) {
-			font-size: inherit;
-			font-weight: inherit;
-			margin: 0;
-		}
+  :global(h1), :global(h2), :global(h3), :global(h4), :global(h5), :global(h6) {
+    font-size: inherit;
+    font-weight: inherit;
+    margin: 0;
+  }
 
-		:global(pre) {
-			display: none;
-		}
+  :global(pre) {
+    display: none;
+  }
 
-		:global(ul), :global(ol) {
-			margin: 0;
-			padding-left: 16px;
-		}
-	}
+  :global(ul), :global(ol) {
+    margin: 0;
+    padding-left: 16px;
+  }
+}
 
-	.postImage {
-		width: 120px;
-		height: 120px;
-		max-height: 120px;
-		flex-shrink: 0;
-		border-radius: 8px;
-		overflow: hidden;
-		position: relative;
+.postImage {
+  width: 120px;
+  height: 120px;
+  max-height: 120px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
 
-		img {
-			width: 100%;
-			height: 100%;
-			object-fit: cover;
-		}
-	}
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
 
-	.videoOverlay {
-		position: absolute;
-		inset: 0;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: rgba(0, 0, 0, 0.35);
-		color: white;
-	}
+.videoOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+  color: white;
+}
 
-	/* Media post layout */
-	.mediaPost {
-		grid-row: span 2;
+/* Media post layout */
+.mediaPost {
+  grid-row: span 2;
 
-		.postFooter {
-			border-top: none;
-		}
-	}
+  .postFooter {
+    border-top: none;
+  }
+}
 
-	.mediaImage {
-		width: 100%;
-		aspect-ratio: 16 / 9;
-		max-height: 310px;
-		overflow: hidden;
-		position: relative;
-		background: hsl(var(--muted));
+.mediaImage {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  max-height: 310px;
+  overflow: hidden;
+  position: relative;
+  background: hsl(var(--muted));
 
-		img {
-			width: 100%;
-			height: 100%;
-			object-fit: contain;
-		}
-	}
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+}
 
-	.mediaBody {
-		padding: 12px 16px 4px;
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-		flex: 1;
-	}
+.mediaBody {
+  padding: 12px 16px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
 
-	.postFooter {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		gap: 16px;
-		padding: 10px 16px;
-		border-top: 1px solid hsl(var(--border) / 0.5);
-		margin-top: auto;
-	}
+.postFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  border-top: 1px solid hsl(var(--border) / 0.5);
+  margin-top: auto;
+}
 
-	.postStats {
-		display: flex;
-		gap: 16px;
-	}
+.postStats {
+  display: flex;
+  gap: 16px;
+}
 
-	.postStat {
-		display: flex;
-		align-items: center;
-		gap: 5px;
-		font-size: 12px;
-		color: hsl(var(--muted-foreground));
-		&.liked { color: hsl(var(--primary)); }
+.postStat {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: hsl(var(--muted-foreground));
+  &.liked {
+    color: hsl(var(--primary));
+  }
 
-		&.likeBtn {
-			cursor: pointer;
-			border-radius: 6px;
-			padding: 4px 8px;
-			margin: -4px -8px;
-			transition: all 0.15s;
+  &.likeBtn {
+    cursor: pointer;
+    border-radius: 6px;
+    padding: 4px 8px;
+    margin: -4px -8px;
+    transition: all 0.15s;
 
-			&:hover {
-				color: hsl(var(--primary));
-				background: hsl(var(--primary) / 0.1);
-			}
-		}
-	}
+    &:hover {
+      color: hsl(var(--primary));
+      background: hsl(var(--primary) / 0.1);
+    }
+  }
+}
 
-	.participantStat {
-		color: rgb(99, 102, 241);
+.participantStat {
+  color: rgb(99, 102, 241);
 
-		&.participantFull {
-			color: hsl(0 84% 60%);
-		}
-	}
+  &.participantFull {
+    color: hsl(0 84% 60%);
+  }
+}
 
-	.reportBtn {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		padding: 4px;
-		border-radius: 4px;
-		color: hsl(var(--muted-foreground));
-		cursor: pointer;
-		opacity: 0;
-		transition: all 0.15s;
+.reportBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.15s;
 
-		&:hover {
-			color: hsl(0 84% 60%);
-			background: hsl(0 84% 60% / 0.1);
-		}
-	}
+  &:hover {
+    color: hsl(0 84% 60%);
+    background: hsl(0 84% 60% / 0.1);
+  }
+}
 
-	.communityPost:hover .reportBtn {
-		opacity: 1;
-	}
+.communityPost:hover .reportBtn {
+  opacity: 1;
+}
 
-	/* Attachment bar */
-	.attachmentBar {
-		padding: 0 16px 0;
-	}
+/* Attachment bar */
+.attachmentBar {
+  padding: 0 16px 0;
+}
 
-	.attachmentChip {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-		padding: 6px 10px;
-		border-radius: 6px;
-		background: hsl(var(--muted) / 0.5);
-		font-size: 12px;
-		overflow: hidden;
+.attachmentChip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: hsl(var(--muted) / 0.5);
+  font-size: 12px;
+  overflow: hidden;
 
-		.attachmentName {
-			font-weight: 500;
-			overflow: hidden;
-			text-overflow: ellipsis;
-			white-space: nowrap;
-			flex: 1;
-			min-width: 0;
-		}
+  .attachmentName {
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+  }
 
-		.attachmentMeta {
-			color: hsl(var(--muted-foreground));
-			flex-shrink: 0;
-		}
-	}
+  .attachmentMeta {
+    color: hsl(var(--muted-foreground));
+    flex-shrink: 0;
+  }
+}
 
-	.skeleton { pointer-events: none; }
+.skeleton {
+  pointer-events: none;
+}
 
-	.recommendBadge {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-		padding: 2px 8px;
-		border-radius: 6px;
-		font-size: 11px;
-		font-weight: 600;
-		white-space: nowrap;
-		flex-shrink: 0;
+.recommendBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
 
-		&.recommended {
-			background: rgba(34, 197, 94, 0.1);
-			color: rgb(34, 197, 94);
-		}
+  &.recommended {
+    background: rgba(34, 197, 94, 0.1);
+    color: rgb(34, 197, 94);
+  }
 
-		&.notRecommended {
-			background: rgba(239, 68, 68, 0.1);
-			color: rgb(239, 68, 68);
-		}
-	}
+  &.notRecommended {
+    background: rgba(239, 68, 68, 0.1);
+    color: rgb(239, 68, 68);
+  }
+}
 
-	.postTags {
-		display: flex;
-		gap: 4px;
-		flex-wrap: wrap;
-	}
+.postTags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
 
-	.postTag {
-		display: inline-flex;
-		align-items: center;
-		padding: 1px 7px;
-		border-radius: 10px;
-		font-size: 10px;
-		font-weight: 600;
-		white-space: nowrap;
-		flex-shrink: 0;
-		border: 1px solid;
-		line-height: 1.5;
-	}
+.postTag {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  border: 1px solid;
+  line-height: 1.5;
+}
 
-	.skeletonLine {
-		height: 14px;
-		border-radius: 4px;
-		background: hsl(var(--muted));
-		animation: pulse 1.5s ease-in-out infinite;
-	}
+.skeletonLine {
+  height: 14px;
+  border-radius: 4px;
+  background: hsl(var(--muted));
+  animation: pulse 1.5s ease-in-out infinite;
+}
 
-	@keyframes pulse {
-		0%, 100% { opacity: 1; }
-		50% { opacity: 0.5; }
-	}
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
 
-	@media screen and (max-width: 640px) {
-		.postImage {
-			width: 80px;
-			height: 80px;
-			max-height: 80px;
-		}
-		.postImage.compactImage {
-			width: 60px;
-			height: 60px;
-			max-height: 60px;
-		}
-	}
+@media screen and (max-width: 640px) {
+  .postImage {
+    width: 80px;
+    height: 80px;
+    max-height: 80px;
+  }
+  .postImage.compactImage {
+    width: 60px;
+    height: 60px;
+    max-height: 60px;
+  }
+}
 </style>

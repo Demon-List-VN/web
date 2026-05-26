@@ -7,7 +7,7 @@
 </script>
 
 <PostDetail
-	postId={postId || ''}
-	apiPrefix={`${import.meta.env.VITE_API_URL}/clans/${clanId}/community`}
-	backLink={`/clan/${clanId}`}
+  postId={postId || ''}
+  apiPrefix={`${import.meta.env.VITE_API_URL}/clans/${clanId}/community`}
+  backLink={`/clan/${clanId}`}
 />

@@ -43,6 +43,7 @@
 		} catch {
 			toast.error('Invalid query.');
 			state = 0;
+
 			return;
 		}
 
@@ -51,7 +52,9 @@
 
 			const query = new URLSearchParams(x);
 			const res = await (
-				await fetch(`${import.meta.env.VITE_API_URL}/players?${query.toString()}`)
+				await fetch(
+					`${import.meta.env.VITE_API_URL}/players?${query.toString()}`
+				)
 			).json();
 
 			players = res;
@@ -63,133 +66,152 @@
 </script>
 
 <svelte:head>
-	<title>{$_('head.titles.players')} - {$_('head.site_name')}</title>
+  <title>{$_('head.titles.players')} - {$_('head.site_name')}</title>
 </svelte:head>
 
 <div class="wrapper">
-	<Card.Root class="mb-[50px] ml-auto mr-auto max-w-[1000px]">
-		<Card.Header>
-			<Card.Title>{$_('players.title', { default: 'Filter' })}</Card.Title>
-		</Card.Header>
-		<Card.Content>
-			<h4>{$_('players.filter.location')}</h4>
-			<div class="selectWrapper">
-				<Select.Root bind:selected={filter.province}>
-					<Select.Trigger>
-						<Select.Value placeholder={$_('players.filter.province')} />
-					</Select.Trigger>
-					<Select.Content>
-						<ScrollArea class="h-[300px]">
-							{#each data.provinces.list as province}
-								<Select.Item value={province.name} on:click={() => (filter.city = null)}
-									>{province.name}</Select.Item
-								>
-							{/each}
-						</ScrollArea>
-					</Select.Content>
-				</Select.Root>
-				<Select.Root disabled={filter.province == null} bind:selected={filter.city}>
-					<Select.Trigger>
-						<Select.Value placeholder={$_('players.filter.city')} />
-					</Select.Trigger>
-					<Select.Content>
-						<ScrollArea class="h-[300px]">
-							{#each data.provinces.map[filter.province.value].wards as ward}
-								<Select.Item value={ward}>{ward}</Select.Item>
-							{/each}
-						</ScrollArea>
-					</Select.Content>
-				</Select.Root>
-			</div>
-			<h4 class="mt-[10px]">{$_('players.filter.options')}</h4>
-			<div class="selectWrapper">
-				<Select.Root bind:selected={filter.sortBy}>
-					<Select.Trigger>
-						<Select.Value placeholder={$_('players.filter.sort_by')} />
-					</Select.Trigger>
-					<Select.Content>
-						<Select.Item value="rating">{$_('players.filter.rating')}</Select.Item>
-						<Select.Item value="totalFLpt">{$_('players.filter.featured_list_point')}</Select.Item>
-					</Select.Content>
-				</Select.Root>
-				<div class="flex items-center space-x-2">
-					<Switch id="airplane-mode" bind:checked={filter.ascending} />
-					<Label for="airplane-mode">{$_('players.filter.sort_ascending')}</Label>
-				</div>
-			</div>
-		</Card.Content>
-		<Card.Footer>
-			<Button variant="outline" class="ml-auto" on:click={reset}
-				>{$_('players.filter.reset')}</Button
-			>
-			<Button type="submit" class="ml-[10px] transition-all" on:click={apply}>Apply</Button>
-		</Card.Footer>
-	</Card.Root>
-	<Ads />
-	{#if state == 1}
-		<Loading inverted />
-	{:else if state == 2}
-		<Table.Root>
-			<Table.Caption>{$_('players.table.total_player')}: {players.length}</Table.Caption>
-			<Table.Header>
-				<Table.Row>
-					<Table.Head class="w-[75px] text-center">{$_('players.table.no')}</Table.Head>
-					<Table.Head>{$_('players.table.player')}</Table.Head>
-					<Table.Head class="w-[100px] text-center">
-						{pointProp == 'rating' ? $_('players.table.rating') : $_('players.table.total_point')}
-					</Table.Head>
-				</Table.Row>
-			</Table.Header>
-			<Table.Body>
-				{#each players as player, index}
-					<Table.Row>
-						<Table.Cell class="text-center font-medium">
-							#{index + 1}
-						</Table.Cell>
-						<Table.Cell class="font-medium">
-							<PlayerHoverCard {player} />
-						</Table.Cell>
-						<Table.Cell class="text-center">
-							{#if pointProp == 'rating'}
-								{player.rating}
-							{:else if pointProp == 'totalFLpt'}
-								{player.totalFLpt}
-							{/if}
-						</Table.Cell>
-					</Table.Row>
-				{/each}
-			</Table.Body>
-		</Table.Root>
-	{/if}
+  <Card.Root class="mb-[50px] ml-auto mr-auto max-w-[1000px]">
+    <Card.Header>
+      <Card.Title>{$_('players.title', { default: 'Filter' })}</Card.Title>
+    </Card.Header>
+    <Card.Content>
+      <h4>{$_('players.filter.location')}</h4>
+      <div class="selectWrapper">
+        <Select.Root bind:selected={filter.province}>
+          <Select.Trigger>
+            <Select.Value placeholder={$_('players.filter.province')} />
+          </Select.Trigger>
+          <Select.Content>
+            <ScrollArea class="h-[300px]">
+              {#each data.provinces.list as province}
+                <Select.Item
+                  value={province.name}
+                  on:click={() => (filter.city = null)}
+                >{province.name}</Select.Item>
+              {/each}
+            </ScrollArea>
+          </Select.Content>
+        </Select.Root>
+        <Select.Root
+          disabled={filter.province == null}
+          bind:selected={filter.city}
+        >
+          <Select.Trigger>
+            <Select.Value placeholder={$_('players.filter.city')} />
+          </Select.Trigger>
+          <Select.Content>
+            <ScrollArea class="h-[300px]">
+              {#each data.provinces.map[filter.province.value].wards as ward}
+                <Select.Item value={ward}>{ward}</Select.Item>
+              {/each}
+            </ScrollArea>
+          </Select.Content>
+        </Select.Root>
+      </div>
+      <h4 class="mt-[10px]">{$_('players.filter.options')}</h4>
+      <div class="selectWrapper">
+        <Select.Root bind:selected={filter.sortBy}>
+          <Select.Trigger>
+            <Select.Value placeholder={$_('players.filter.sort_by')} />
+          </Select.Trigger>
+          <Select.Content>
+            <Select.Item value="rating">{
+              $_('players.filter.rating')
+            }</Select.Item>
+            <Select.Item value="totalFLpt">{
+              $_('players.filter.featured_list_point')
+            }</Select.Item>
+          </Select.Content>
+        </Select.Root>
+        <div class="flex items-center space-x-2">
+          <Switch id="airplane-mode" bind:checked={filter.ascending} />
+          <Label for="airplane-mode">{
+            $_('players.filter.sort_ascending')
+          }</Label>
+        </div>
+      </div>
+    </Card.Content>
+    <Card.Footer>
+      <Button variant="outline" class="ml-auto" on:click={reset}>{
+        $_('players.filter.reset')
+      }</Button>
+      <Button type="submit" class="ml-[10px] transition-all" on:click={apply}
+      >Apply</Button>
+    </Card.Footer>
+  </Card.Root>
+  <Ads />
+  {#if state == 1}
+    <Loading inverted />
+  {:else if state == 2}
+    <Table.Root>
+      <Table.Caption>{$_('players.table.total_player')}: {
+          players.length
+        }</Table.Caption>
+      <Table.Header>
+        <Table.Row>
+          <Table.Head class="w-[75px] text-center">{
+            $_('players.table.no')
+          }</Table.Head>
+          <Table.Head>{$_('players.table.player')}</Table.Head>
+          <Table.Head class="w-[100px] text-center">
+            {
+              pointProp == 'rating'
+              ? $_('players.table.rating')
+              : $_('players.table.total_point')
+            }
+          </Table.Head>
+        </Table.Row>
+      </Table.Header>
+      <Table.Body>
+        {#each players as player, index}
+          <Table.Row>
+            <Table.Cell class="text-center font-medium">
+              #{index + 1}
+            </Table.Cell>
+            <Table.Cell class="font-medium">
+              <PlayerHoverCard {player} />
+            </Table.Cell>
+            <Table.Cell class="text-center">
+              {#if pointProp == 'rating'}
+                {player.rating}
+              {:else if pointProp == 'totalFLpt'}
+                {player.totalFLpt}
+              {/if}
+            </Table.Cell>
+          </Table.Row>
+        {/each}
+      </Table.Body>
+    </Table.Root>
+  {/if}
 </div>
 
 <style lang="scss">
-	h4 {
-		font-weight: 600;
-		margin-bottom: 10px;
-	}
+h4 {
+  font-weight: 600;
+  margin-bottom: 10px;
+}
 
-	.wrapper {
-		padding-top: 50px;
-		padding-inline: 100px;
-	}
+.wrapper {
+  padding-top: 50px;
+  padding-inline: 100px;
+}
 
-	.selectWrapper {
-		display: grid;
-		grid-template-columns: calc(50% - 10px) calc(50% - 10px);
-		gap: 20px;
-	}
+.selectWrapper {
+  display: grid;
+  grid-template-columns: calc(50% - 10px) calc(50% - 10px);
+  gap: 20px;
+}
 
-	@media screen and (max-width: 900px) {
-		.wrapper {
-			padding-inline: 20px;
-		}
-	}
+@media screen and (max-width: 900px) {
+  .wrapper {
+    padding-inline: 20px;
+  }
+}
 
-	@media screen and (max-width: 600px) {
-		.selectWrapper {
-			grid-template-columns: 100%;
-			gap: 10px;
-		}
-	}
+@media screen and (max-width: 600px) {
+  .selectWrapper {
+    grid-template-columns: 100%;
+    gap: 10px;
+  }
+}
 </style>

@@ -17,15 +17,17 @@
 					Authorization: 'Bearer ' + (await $user.token())!,
 					'Content-Type': 'application/json'
 				}
-			}).then(async (res) => {
-				if (res.ok) {
-					await $user.syncRole();
-				}
-			}),
+			})
+				.then(async (res) => {
+					if (res.ok) {
+						await $user.syncRole();
+					}
+				}),
 			{
 				loading: $_('discord_link.loading'),
 				success: () => {
 					window.location.href = '/';
+
 					return $_('discord_link.success');
 				},
 				error: $_('discord_link.error')

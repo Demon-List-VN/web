@@ -56,7 +56,8 @@
 	$: if (canViewAudit && loadKey && loadKey !== lastLoadedKey && !loading) {
 		void loadBundle();
 	}
-	$: activeChangelog = changelogs.find((entry) => entry.id === activeChangelogId) ?? null;
+	$: activeChangelog = changelogs.find((entry) => entry.id === activeChangelogId)
+		?? null;
 	$: publishText = editorContent.trim();
 	$: selectedAuditSet = new Set(selectedAuditIds);
 
@@ -67,40 +68,54 @@
 	}
 
 	async function readPayload(response: Response) {
-		const payload = await response.json().catch(() => null);
+		const payload = await response.json()
+			.catch(() => null);
+
 		if (!response.ok) {
 			throw new Error(payload?.error || 'Failed to update changelog');
 		}
+
 		return payload;
 	}
 
 	function syncEditor(changelog: Changelog | null) {
-		editorContent = [formatChangelogTitle(changelog?.title ?? ''), changelog?.body ?? '']
+		editorContent = [
+			formatChangelogTitle(changelog?.title ?? ''),
+			changelog?.body ?? ''
+		]
 			.filter((value) => value.trim().length)
 			.join('\n\n');
 		editorMode = 'edit';
 		selectedAuditIds = (changelog?.entries ?? [])
 			.map((entry) => entry.auditLogId)
-			.filter((auditLogId): auditLogId is number => typeof auditLogId === 'number');
+			.filter((auditLogId): auditLogId is number =>
+				typeof auditLogId === 'number'
+			);
 	}
 
 	function formatChangelogTitle(title: string) {
 		const trimmedTitle = title.trim();
+
 		return trimmedTitle ? `### ${trimmedTitle.replace(/^#{1,6}\s*/, '')}` : '';
 	}
 
 	function getEditorDraft() {
 		const trimmedContent = editorContent.trim();
 		const [rawTitle = '', ...bodyLines] = trimmedContent.split(/\r?\n/);
-		const title =
-			rawTitle.replace(/^#{1,6}\s*/, '').trim() || activeChangelog?.title || 'Changelog';
-		const body = bodyLines.join('\n').replace(/^\s+/, '').trim();
+		const title = rawTitle.replace(/^#{1,6}\s*/, '')
+			.trim()
+			|| activeChangelog?.title || 'Changelog';
+		const body = bodyLines.join('\n')
+			.replace(/^\s+/, '')
+			.trim();
 
 		return { title, body };
 	}
 
 	function getLocalChangelogEntries(auditLogIds: number[]) {
-		const auditEntryById = new Map(auditEntries.map((entry) => [entry.id, entry]));
+		const auditEntryById = new Map(
+			auditEntries.map((entry) => [entry.id, entry])
+		);
 
 		return auditLogIds.map((auditLogId, index) => ({
 			id: -auditLogId,
@@ -116,10 +131,14 @@
 			...saved,
 			entries
 		};
-		const existingIndex = changelogs.findIndex((entry) => entry.id === saved.id);
+		const existingIndex = changelogs.findIndex((entry) =>
+			entry.id === saved.id
+		);
 
 		if (existingIndex >= 0) {
-			changelogs = changelogs.map((entry) => (entry.id === saved.id ? next : entry));
+			changelogs = changelogs.map((
+				entry
+			) => (entry.id === saved.id ? next : entry));
 		} else {
 			changelogs = [next, ...changelogs];
 		}
@@ -129,56 +148,81 @@
 	}
 
 	async function loadBundle() {
-		if (!list || !$user.loggedIn) return;
+		if (!list || !$user.loggedIn) {
+			return;
+		}
+
 		const key = loadKey;
 		lastLoadedKey = key;
 		loading = true;
 
 		try {
-			const response = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/changelogs`, {
-				headers: await getAuthHeaders()
-			});
+			const response = await fetch(
+				`${import.meta.env.VITE_API_URL}/lists/${list.id}/changelogs`,
+				{
+					headers: await getAuthHeaders()
+				}
+			);
 			const payload = await readPayload(response);
 
-			if (key !== lastLoadedKey) return;
+			if (key !== lastLoadedKey) {
+				return;
+			}
 
 			settings = payload.settings ?? null;
 			changelogs = payload.changelogs ?? [];
 			auditEntries = payload.auditEntries ?? [];
-			const preferred =
-				changelogs.find((entry) => entry.status === 'draft') ?? changelogs[0] ?? null;
+			const preferred = changelogs.find((entry) => entry.status === 'draft')
+				?? changelogs[0] ?? null;
 			activeChangelogId = preferred?.id ?? null;
 			syncEditor(preferred);
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Failed to load changelogs');
+			toast.error(
+				error instanceof Error ? error.message : 'Failed to load changelogs'
+			);
 		} finally {
 			loading = false;
 		}
 	}
 
 	function getAuditMetadata(entry: any) {
-		return entry?.metadata && typeof entry.metadata === 'object' ? entry.metadata : {};
+		return entry?.metadata && typeof entry.metadata === 'object'
+			? entry.metadata
+			: {};
 	}
 
 	function getActorName(entry: any) {
 		return (
-			entry.actorData?.name ||
-			entry.actorUid ||
-			$_('custom_lists.manage.collaboration.unknown_player')
+			entry.actorData?.name
+			|| entry.actorUid
+			|| $_('custom_lists.manage.collaboration.unknown_player')
 		);
 	}
 
 	function getActionLabel(action: string) {
-		if (action === 'level_added') return $_('custom_lists.manage.audit.level_added');
-		if (action === 'level_updated') return $_('custom_lists.manage.audit.level_updated');
-		if (action === 'level_removed') return $_('custom_lists.manage.audit.level_removed');
-		if (action === 'levels_reordered') return $_('custom_lists.manage.audit.levels_reordered');
+		if (action === 'level_added') {
+			return $_('custom_lists.manage.audit.level_added');
+		}
+
+		if (action === 'level_updated') {
+			return $_('custom_lists.manage.audit.level_updated');
+		}
+
+		if (action === 'level_removed') {
+			return $_('custom_lists.manage.audit.level_removed');
+		}
+
+		if (action === 'levels_reordered') {
+			return $_('custom_lists.manage.audit.levels_reordered');
+		}
+
 		return action.replaceAll('_', ' ');
 	}
 
 	function getAuditTitle(entry: any) {
 		const metadata = getAuditMetadata(entry);
-		const levelName = String(metadata.levelName ?? '').trim();
+		const levelName = String(metadata.levelName ?? '')
+			.trim();
 		const levelId = metadata.levelId ?? entry.id;
 
 		if (entry.action === 'levels_reordered') {
@@ -201,7 +245,10 @@
 		}
 
 		if (entry.action === 'level_updated') {
-			const fields = Array.isArray(metadata.fields) ? metadata.fields.join(', ') : '-';
+			const fields = Array.isArray(metadata.fields)
+				? metadata.fields.join(', ')
+				: '-';
+
 			return `${actor} updated level #${metadata.levelId ?? '-'}: ${fields}.`;
 		}
 
@@ -222,36 +269,54 @@
 	}
 
 	async function stageSelectedAuditEntries() {
-		if (!list || !canEditLevels || !selectedAuditIds.length) return;
+		if (!list || !canEditLevels || !selectedAuditIds.length) {
+			return;
+		}
+
 		saving = true;
 
 		try {
-			const response = await fetch(`${import.meta.env.VITE_API_URL}/lists/${list.id}/changelogs`, {
-				method: 'POST',
-				headers: {
-					...(await getAuthHeaders()),
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({
-					changelogId: activeChangelog?.status === 'draft' ? activeChangelog.id : undefined,
-					auditLogIds: selectedAuditIds,
-					mode: changelogMode
-				})
-			});
+			const response = await fetch(
+				`${import.meta.env.VITE_API_URL}/lists/${list.id}/changelogs`,
+				{
+					method: 'POST',
+					headers: {
+						...(await getAuthHeaders()),
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({
+						changelogId: activeChangelog?.status === 'draft'
+							? activeChangelog.id
+							: undefined,
+						auditLogIds: selectedAuditIds,
+						mode: changelogMode
+					})
+				}
+			);
 			const saved = await readPayload(response);
 			toast.success($_('custom_lists.manage.changelog.staged'));
 			upsertLocalChangelog(saved, selectedAuditIds);
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Failed to stage changelog');
+			toast.error(
+				error instanceof Error ? error.message : 'Failed to stage changelog'
+			);
 		} finally {
 			saving = false;
 		}
 	}
 
-	async function saveActiveChangelog(options: { regenerate?: boolean } = {}) {
-		if (!list || !activeChangelog || !canEditLevels) return;
-		if (options.regenerate && !confirm($_('custom_lists.manage.changelog.regenerate_confirm')))
+	async function saveActiveChangelog(options: { regenerate?: boolean; } = {}) {
+		if (!list || !activeChangelog || !canEditLevels) {
 			return;
+		}
+
+		if (
+			options.regenerate
+			&& !confirm($_('custom_lists.manage.changelog.regenerate_confirm'))
+		) {
+			return;
+		}
+
 		saving = true;
 
 		try {
@@ -277,7 +342,9 @@
 			upsertLocalChangelog(saved, selectedAuditIds);
 			toast.success($_('custom_lists.manage.changelog.saved'));
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Failed to save changelog');
+			toast.error(
+				error instanceof Error ? error.message : 'Failed to save changelog'
+			);
 		} finally {
 			saving = false;
 		}
@@ -289,8 +356,14 @@
 	}
 
 	async function deleteActiveChangelog() {
-		if (!list || !activeChangelog || !canEditLevels) return;
-		if (!confirm($_('custom_lists.manage.changelog.delete_confirm'))) return;
+		if (!list || !activeChangelog || !canEditLevels) {
+			return;
+		}
+
+		if (!confirm($_('custom_lists.manage.changelog.delete_confirm'))) {
+			return;
+		}
+
 		saving = true;
 
 		try {
@@ -309,20 +382,27 @@
 			toast.success($_('custom_lists.manage.changelog.deleted'));
 			await loadBundle();
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Failed to delete changelog');
+			toast.error(
+				error instanceof Error
+					? error.message
+					: 'Failed to delete changelog'
+			);
 		} finally {
 			saving = false;
 		}
 	}
 
 	async function publish(method: 'copy' | 'discord') {
-		if (!list || !activeChangelog || !canEditLevels) return;
+		if (!list || !activeChangelog || !canEditLevels) {
+			return;
+		}
 
 		if (method === 'copy') {
 			await navigator.clipboard.writeText(publishText);
 		}
 
 		saving = true;
+
 		try {
 			const response = await fetch(
 				`${import.meta.env.VITE_API_URL}/lists/${list.id}/changelogs/${activeChangelog.id}/publish`,
@@ -344,7 +424,11 @@
 			await loadBundle();
 			activeChangelogId = saved.id;
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Failed to publish changelog');
+			toast.error(
+				error instanceof Error
+					? error.message
+					: 'Failed to publish changelog'
+			);
 		} finally {
 			saving = false;
 		}
@@ -352,465 +436,480 @@
 </script>
 
 <div class="tabContent">
-	<section class="card">
-		<header class="cardHead">
-			<div>
-				<h2 class="cardTitle">{$_('custom_lists.manage.changelog.heading')}</h2>
-				<p class="hint">{$_('custom_lists.manage.changelog.hint')}</p>
-			</div>
-			<Button variant="outline" size="sm" on:click={loadBundle} disabled={loading}>
-				<RefreshCw class="mr-2 h-4 w-4" />
-				{$_('general.refresh')}
-			</Button>
-		</header>
+  <section class="card">
+    <header class="cardHead">
+      <div>
+        <h2 class="cardTitle">{$_('custom_lists.manage.changelog.heading')}</h2>
+        <p class="hint">{$_('custom_lists.manage.changelog.hint')}</p>
+      </div>
+      <Button
+        variant="outline"
+        size="sm"
+        on:click={loadBundle}
+        disabled={loading}
+      >
+        <RefreshCw class="mr-2 h-4 w-4" />
+        {$_('general.refresh')}
+      </Button>
+    </header>
 
-		{#if loading}
-			<p class="hint">{$_('general.loading')}...</p>
-		{:else}
-			<div class="layoutGrid">
-				<div class="sidePanel">
-					<div class="panelBlock">
-						<h3>{$_('custom_lists.manage.changelog.audit_picker')}</h3>
-						<div class="modePicker" aria-label="Changelog mode">
-							<button
-								type="button"
-								class:selected={changelogMode === 'top'}
-								on:click={() => (changelogMode = 'top')}
-								disabled={saving}
-							>
-								Thay đổi top
-							</button>
-							<button
-								type="button"
-								class:selected={changelogMode === 'rating'}
-								on:click={() => (changelogMode = 'rating')}
-								disabled={saving}
-							>
-								Thay đổi rating
-							</button>
-						</div>
-						{#if auditEntries.length}
-							<div class="auditList">
-								{#each auditEntries as entry}
-									<button
-										type="button"
-										class="auditRow"
-										class:selected={selectedAuditSet.has(entry.id)}
-										on:click={() => toggleAuditSelection(entry.id)}
-									>
-										<div class="auditRowTop">
-											<Badge variant="secondary">{getActionLabel(entry.action)}</Badge>
-											<span>{formatDateTime(entry.created_at)}</span>
-										</div>
-										<strong>{getAuditTitle(entry)}</strong>
-										<p>{getAuditDetail(entry)}</p>
-									</button>
-								{/each}
-							</div>
-						{:else}
-							<p class="hint">{$_('custom_lists.manage.collaboration.audit_empty')}</p>
-						{/if}
-						<Button
-							class="w-full"
-							on:click={stageSelectedAuditEntries}
-							disabled={!canEditLevels || saving || !selectedAuditIds.length}
-						>
-							<Check class="mr-2 h-4 w-4" />
-							{$_('custom_lists.manage.changelog.stage_selected')}
-						</Button>
-					</div>
-				</div>
+    {#if loading}
+      <p class="hint">{$_('general.loading')}...</p>
+    {:else}
+      <div class="layoutGrid">
+        <div class="sidePanel">
+          <div class="panelBlock">
+            <h3>{$_('custom_lists.manage.changelog.audit_picker')}</h3>
+            <div class="modePicker" aria-label="Changelog mode">
+              <button
+                type="button"
+                class:selected={changelogMode === 'top'}
+                on:click={() => (changelogMode = 'top')}
+                disabled={saving}
+              >
+                Thay đổi top
+              </button>
+              <button
+                type="button"
+                class:selected={changelogMode === 'rating'}
+                on:click={() => (changelogMode = 'rating')}
+                disabled={saving}
+              >
+                Thay đổi rating
+              </button>
+            </div>
+            {#if auditEntries.length}
+              <div class="auditList">
+                {#each auditEntries as entry}
+                  <button
+                    type="button"
+                    class="auditRow"
+                    class:selected={selectedAuditSet.has(entry.id)}
+                    on:click={() => toggleAuditSelection(entry.id)}
+                  >
+                    <div class="auditRowTop">
+                      <Badge variant="secondary">{
+                        getActionLabel(entry.action)
+                      }</Badge>
+                      <span>{formatDateTime(entry.created_at)}</span>
+                    </div>
+                    <strong>{getAuditTitle(entry)}</strong>
+                    <p>{getAuditDetail(entry)}</p>
+                  </button>
+                {/each}
+              </div>
+            {:else}
+              <p class="hint">
+                {$_('custom_lists.manage.collaboration.audit_empty')}
+              </p>
+            {/if}
+            <Button
+              class="w-full"
+              on:click={stageSelectedAuditEntries}
+              disabled={!canEditLevels || saving || !selectedAuditIds.length}
+            >
+              <Check class="mr-2 h-4 w-4" />
+              {$_('custom_lists.manage.changelog.stage_selected')}
+            </Button>
+          </div>
+        </div>
 
-				<div class="editorPanel">
-					<div class="changelogList">
-						{#each changelogs as changelog}
-							<button
-								type="button"
-								class="changelogPill"
-								class:selected={changelog.id === activeChangelogId}
-								on:click={() => selectChangelog(changelog)}
-							>
-								<span>{changelog.title}</span>
-								<Badge variant={changelog.status === 'published' ? 'secondary' : 'outline'}>
-									{changelog.status}
-								</Badge>
-							</button>
-						{/each}
-					</div>
+        <div class="editorPanel">
+          <div class="changelogList">
+            {#each changelogs as changelog}
+              <button
+                type="button"
+                class="changelogPill"
+                class:selected={changelog.id === activeChangelogId}
+                on:click={() => selectChangelog(changelog)}
+              >
+                <span>{changelog.title}</span>
+                <Badge
+                  variant={changelog.status === 'published' ? 'secondary' : 'outline'}
+                >
+                  {changelog.status}
+                </Badge>
+              </button>
+            {/each}
+          </div>
 
-					{#if activeChangelog}
-						<div class="editorFields">
-							<div class="editorField">
-								<div class="editorFieldHeader">
-									<label for="changelog-content">Changelog</label>
-									<div class="editorModeTabs" role="tablist" aria-label="Changelog body mode">
-										<button
-											type="button"
-											role="tab"
-											aria-selected={editorMode === 'edit'}
-											class:selected={editorMode === 'edit'}
-											on:click={() => (editorMode = 'edit')}
-										>
-											Edit
-										</button>
-										<button
-											type="button"
-											role="tab"
-											aria-selected={editorMode === 'preview'}
-											class:selected={editorMode === 'preview'}
-											on:click={() => (editorMode = 'preview')}
-											disabled={!editorContent.trim()}
-										>
-											Preview
-										</button>
-									</div>
-								</div>
-								{#if editorMode === 'preview'}
-									<div class="markdownPreview">
-										<Markdown content={editorContent} />
-									</div>
-								{:else}
-									<Textarea
-										id="changelog-content"
-										bind:value={editorContent}
-										rows={16}
-										disabled={!canEditLevels || saving}
-									/>
-								{/if}
-							</div>
-						</div>
+          {#if activeChangelog}
+            <div class="editorFields">
+              <div class="editorField">
+                <div class="editorFieldHeader">
+                  <label for="changelog-content">Changelog</label>
+                  <div
+                    class="editorModeTabs"
+                    role="tablist"
+                    aria-label="Changelog body mode"
+                  >
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={editorMode === 'edit'}
+                      class:selected={editorMode === 'edit'}
+                      on:click={() => (editorMode = 'edit')}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={editorMode === 'preview'}
+                      class:selected={editorMode === 'preview'}
+                      on:click={() => (editorMode = 'preview')}
+                      disabled={!editorContent.trim()}
+                    >
+                      Preview
+                    </button>
+                  </div>
+                </div>
+                {#if editorMode === 'preview'}
+                  <div class="markdownPreview">
+                    <Markdown content={editorContent} />
+                  </div>
+                {:else}
+                  <Textarea
+                    id="changelog-content"
+                    bind:value={editorContent}
+                    rows={16}
+                    disabled={!canEditLevels || saving}
+                  />
+                {/if}
+              </div>
+            </div>
 
-						{#if activeChangelog.entries?.length}
-							<div class="entryList">
-								{#each activeChangelog.entries as entry}
-									<div class="entryRow">
-										<span>{getAuditTitle(entry.snapshot)}</span>
-										<Button
-											variant="ghost"
-											size="sm"
-											on:click={() => entry.auditLogId && removeAuditEntry(entry.auditLogId)}
-											disabled={!canEditLevels || saving || !entry.auditLogId}
-										>
-											<Trash2 class="h-4 w-4" />
-										</Button>
-									</div>
-								{/each}
-							</div>
-						{/if}
+            {#if activeChangelog.entries?.length}
+              <div class="entryList">
+                {#each activeChangelog.entries as entry}
+                  <div class="entryRow">
+                    <span>{getAuditTitle(entry.snapshot)}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      on:click={() => entry.auditLogId && removeAuditEntry(entry.auditLogId)}
+                      disabled={!canEditLevels || saving || !entry.auditLogId}
+                    >
+                      <Trash2 class="h-4 w-4" />
+                    </Button>
+                  </div>
+                {/each}
+              </div>
+            {/if}
 
-						<div class="actionRow">
-							<Button
-								variant="outline"
-								on:click={() => saveActiveChangelog()}
-								disabled={!canEditLevels || saving}
-							>
-								<Save class="mr-2 h-4 w-4" />
-								{$_('custom_lists.manage.changelog.save')}
-							</Button>
-							<Button
-								variant="outline"
-								on:click={() => saveActiveChangelog({ regenerate: true })}
-								disabled={!canEditLevels || saving}
-							>
-								<RefreshCw class="mr-2 h-4 w-4" />
-								{$_('custom_lists.manage.changelog.regenerate')}
-							</Button>
-							<Button
-								variant="outline"
-								on:click={() => publish('copy')}
-								disabled={!canEditLevels || saving || !publishText.trim()}
-							>
-								<Copy class="mr-2 h-4 w-4" />
-								{$_('custom_lists.manage.changelog.copy_publish')}
-							</Button>
-							<Button
-								on:click={() => publish('discord')}
-								disabled={!canEditLevels ||
-									saving ||
-									!settings?.discordChannelId ||
-									!publishText.trim()}
-							>
-								<Megaphone class="mr-2 h-4 w-4" />
-								{$_('custom_lists.manage.changelog.discord_publish')}
-							</Button>
-							<Button
-								variant="destructive"
-								on:click={deleteActiveChangelog}
-								disabled={!canEditLevels || saving}
-							>
-								<Trash2 class="mr-2 h-4 w-4" />
-								{$_('general.delete')}
-							</Button>
-						</div>
-					{:else}
-						<div class="emptyState">
-							<p>{$_('custom_lists.manage.changelog.empty')}</p>
-						</div>
-					{/if}
-				</div>
-			</div>
-		{/if}
-	</section>
+            <div class="actionRow">
+              <Button
+                variant="outline"
+                on:click={() => saveActiveChangelog()}
+                disabled={!canEditLevels || saving}
+              >
+                <Save class="mr-2 h-4 w-4" />
+                {$_('custom_lists.manage.changelog.save')}
+              </Button>
+              <Button
+                variant="outline"
+                on:click={() => saveActiveChangelog({ regenerate: true })}
+                disabled={!canEditLevels || saving}
+              >
+                <RefreshCw class="mr-2 h-4 w-4" />
+                {$_('custom_lists.manage.changelog.regenerate')}
+              </Button>
+              <Button
+                variant="outline"
+                on:click={() => publish('copy')}
+                disabled={!canEditLevels || saving || !publishText.trim()}
+              >
+                <Copy class="mr-2 h-4 w-4" />
+                {$_('custom_lists.manage.changelog.copy_publish')}
+              </Button>
+              <Button
+                on:click={() => publish('discord')}
+                disabled={!canEditLevels
+                || saving
+                || !settings?.discordChannelId
+                || !publishText.trim()}
+              >
+                <Megaphone class="mr-2 h-4 w-4" />
+                {$_('custom_lists.manage.changelog.discord_publish')}
+              </Button>
+              <Button
+                variant="destructive"
+                on:click={deleteActiveChangelog}
+                disabled={!canEditLevels || saving}
+              >
+                <Trash2 class="mr-2 h-4 w-4" />
+                {$_('general.delete')}
+              </Button>
+            </div>
+          {:else}
+            <div class="emptyState">
+              <p>{$_('custom_lists.manage.changelog.empty')}</p>
+            </div>
+          {/if}
+        </div>
+      </div>
+    {/if}
+  </section>
 </div>
 
 <style lang="scss">
-	.tabContent {
-		display: flex;
-		flex-direction: column;
-		gap: 16px;
-		margin-top: 16px;
-	}
+.tabContent {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
 
-	.card {
-		background: hsl(var(--card));
-		border: 1px solid hsl(var(--border));
-		border-radius: 14px;
-		padding: 22px;
-	}
+.card {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 14px;
+  padding: 22px;
+}
 
-	.cardHead {
-		display: flex;
-		justify-content: space-between;
-		align-items: flex-start;
-		gap: 12px;
-		margin-bottom: 16px;
-	}
+.cardHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
 
-	.cardTitle {
-		margin: 0;
-		font-size: 1.1rem;
-		font-weight: 600;
-	}
+.cardTitle {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
 
-	.hint,
-	.auditRow p,
-	.emptyState {
-		margin: 0;
-		color: hsl(var(--muted-foreground));
-		font-size: 0.85rem;
-	}
+.hint,
+.auditRow p,
+.emptyState {
+  margin: 0;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.85rem;
+}
 
-	.layoutGrid {
-		display: grid;
-		grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
-		gap: 16px;
-	}
+.layoutGrid {
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  gap: 16px;
+}
 
-	.sidePanel,
-	.editorPanel,
-	.panelBlock {
-		display: flex;
-		flex-direction: column;
-		gap: 12px;
-	}
+.sidePanel,
+.editorPanel,
+.panelBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 
-	.panelBlock,
-	.editorPanel {
-		border: 1px solid hsl(var(--border));
-		border-radius: 10px;
-		padding: 14px;
-	}
+.panelBlock,
+.editorPanel {
+  border: 1px solid hsl(var(--border));
+  border-radius: 10px;
+  padding: 14px;
+}
 
-	.panelBlock h3 {
-		margin: 0;
-		font-size: 0.95rem;
-		font-weight: 600;
-	}
+.panelBlock h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
 
-	.modePicker {
-		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 6px;
-	}
+.modePicker {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
 
-	.modePicker button {
-		border: 1px solid hsl(var(--border));
-		border-radius: 8px;
-		background: transparent;
-		color: hsl(var(--foreground));
-		cursor: pointer;
-		font-size: 0.82rem;
-		font-weight: 600;
-		min-height: 36px;
-		padding: 7px 9px;
-	}
+.modePicker button {
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: transparent;
+  color: hsl(var(--foreground));
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  min-height: 36px;
+  padding: 7px 9px;
+}
 
-	.modePicker button.selected {
-		border-color: hsl(var(--primary));
-		background: hsl(var(--primary) / 0.1);
-		color: hsl(var(--primary));
-	}
+.modePicker button.selected {
+  border-color: hsl(var(--primary));
+  background: hsl(var(--primary) / 0.1);
+  color: hsl(var(--primary));
+}
 
-	.auditList {
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-		max-height: 520px;
-		overflow: auto;
-	}
+.auditList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 520px;
+  overflow: auto;
+}
 
-	.auditRow,
-	.changelogPill {
-		text-align: left;
-		border: 1px solid hsl(var(--border));
-		background: transparent;
-		color: hsl(var(--foreground));
-		border-radius: 8px;
-		cursor: pointer;
-	}
+.auditRow,
+.changelogPill {
+  text-align: left;
+  border: 1px solid hsl(var(--border));
+  background: transparent;
+  color: hsl(var(--foreground));
+  border-radius: 8px;
+  cursor: pointer;
+}
 
-	.auditRow {
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-		padding: 10px;
-	}
+.auditRow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+}
 
-	.auditRow.selected,
-	.changelogPill.selected {
-		border-color: hsl(var(--primary));
-		background: hsl(var(--primary) / 0.08);
-	}
+.auditRow.selected,
+.changelogPill.selected {
+  border-color: hsl(var(--primary));
+  background: hsl(var(--primary) / 0.08);
+}
 
-	.auditRowTop,
-	.changelogPill,
-	.entryRow,
-	.actionRow {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-	}
+.auditRowTop,
+.changelogPill,
+.entryRow,
+.actionRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
-	.auditRowTop,
-	.changelogPill {
-		justify-content: space-between;
-	}
+.auditRowTop,
+.changelogPill {
+  justify-content: space-between;
+}
 
-	.auditRowTop span {
-		color: hsl(var(--muted-foreground));
-		font-size: 0.75rem;
-	}
+.auditRowTop span {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.75rem;
+}
 
-	.changelogList {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 8px;
-	}
+.changelogList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 
-	.changelogPill {
-		padding: 8px 10px;
-		max-width: 100%;
-	}
+.changelogPill {
+  padding: 8px 10px;
+  max-width: 100%;
+}
 
-	.changelogPill span {
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
+.changelogPill span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
-	.editorFields {
-		display: grid;
-		gap: 12px;
-	}
+.editorFields {
+  display: grid;
+  gap: 12px;
+}
 
-	.editorField {
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-	}
+.editorField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 
-	.editorFieldHeader {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 10px;
-	}
+.editorFieldHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
 
-	.editorModeTabs {
-		display: inline-flex;
-		align-items: center;
-		border: 1px solid hsl(var(--border));
-		border-radius: 8px;
-		background: hsl(var(--muted) / 0.24);
-		padding: 2px;
-	}
+.editorModeTabs {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--muted) / 0.24);
+  padding: 2px;
+}
 
-	.editorModeTabs button {
-		border: 0;
-		border-radius: 6px;
-		background: transparent;
-		color: hsl(var(--muted-foreground));
-		cursor: pointer;
-		font-size: 0.8rem;
-		font-weight: 600;
-		min-height: 30px;
-		padding: 5px 10px;
-	}
+.editorModeTabs button {
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  min-height: 30px;
+  padding: 5px 10px;
+}
 
-	.editorModeTabs button.selected {
-		background: hsl(var(--background));
-		color: hsl(var(--foreground));
-		box-shadow: 0 1px 2px hsl(var(--foreground) / 0.08);
-	}
+.editorModeTabs button.selected {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  box-shadow: 0 1px 2px hsl(var(--foreground) / 0.08);
+}
 
-	.editorModeTabs button:disabled {
-		cursor: not-allowed;
-		opacity: 0.45;
-	}
+.editorModeTabs button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
 
-	.editorField label {
-		font-size: 0.9rem;
-		font-weight: 500;
-	}
+.editorField label {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
 
-	.markdownPreview {
-		min-height: 320px;
-		max-height: 520px;
-		overflow: auto;
-		border: 1px solid hsl(var(--border));
-		border-radius: 8px;
-		background: hsl(var(--background));
-		padding: 12px 14px;
-	}
+.markdownPreview {
+  min-height: 320px;
+  max-height: 520px;
+  overflow: auto;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--background));
+  padding: 12px 14px;
+}
 
-	.markdownPreview :global(.markdown ol) {
-		margin: 0 0 12px;
-		padding-left: 1.5rem;
-	}
+.markdownPreview :global(.markdown ol) {
+  margin: 0 0 12px;
+  padding-left: 1.5rem;
+}
 
-	.markdownPreview :global(.markdown p:last-child),
-	.markdownPreview :global(.markdown ol:last-child) {
-		margin-bottom: 0;
-	}
+.markdownPreview :global(.markdown p:last-child),
+.markdownPreview :global(.markdown ol:last-child) {
+  margin-bottom: 0;
+}
 
-	.entryList {
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-	}
+.entryList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 
-	.entryRow {
-		justify-content: space-between;
-		border: 1px solid hsl(var(--border));
-		border-radius: 8px;
-		padding: 8px 10px;
-		font-size: 0.85rem;
-	}
+.entryRow {
+  justify-content: space-between;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.85rem;
+}
 
-	.actionRow {
-		flex-wrap: wrap;
-	}
+.actionRow {
+  flex-wrap: wrap;
+}
 
-	.emptyState {
-		border: 1px dashed hsl(var(--border));
-		border-radius: 10px;
-		padding: 24px;
-		text-align: center;
-	}
+.emptyState {
+  border: 1px dashed hsl(var(--border));
+  border-radius: 10px;
+  padding: 24px;
+  text-align: center;
+}
 
-	@media (max-width: 900px) {
-		.layoutGrid {
-			grid-template-columns: 1fr;
-		}
-	}
+@media (max-width: 900px) {
+  .layoutGrid {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

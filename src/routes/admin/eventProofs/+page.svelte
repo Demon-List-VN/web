@@ -50,19 +50,23 @@
 
 		toast.loading('Submitting verdict... This page will be refreshed');
 
-		await fetch(`${import.meta.env.VITE_API_URL}/events/${item.eventID}/proofs/${item.players.uid}`, {
-			method: 'DELETE',
-			headers: {
-				Authorization: 'Bearer ' + (await $user.token())!
+		await fetch(
+			`${import.meta.env.VITE_API_URL}/events/${item.eventID}/proofs/${item.players.uid}`,
+			{
+				method: 'DELETE',
+				headers: {
+					Authorization: 'Bearer ' + (await $user.token())!
+				}
 			}
-		});
+		);
 
 		await fetch(`${import.meta.env.VITE_API_URL}/notifications`, {
 			method: 'POST',
 			body: JSON.stringify({
 				to: item.players.uid,
 				status: 2,
-				content: `${item.events.title} event's reward claim request rejected. Reason: ${reason}`
+				content:
+					`${item.events.title} event's reward claim request rejected. Reason: ${reason}`
 			}),
 			headers: {
 				Authorization: `Bearer ${await $user.token()}`,
@@ -79,54 +83,54 @@
 <Title value="Event proofs" />
 
 <div class="wrapper">
-	<Table.Root>
-		<Table.Header>
-			<Table.Row>
-				<Table.Head class="w-[150px]">Event</Table.Head>
-				<Table.Head class="w-[150px]">Player</Table.Head>
-				<Table.Head>Content</Table.Head>
-				<Table.Head class="w-[50px]"></Table.Head>
-				<Table.Head class="w-[50px]"></Table.Head>
-			</Table.Row>
-		</Table.Header>
-		<Table.Body>
-			{#each data.data as item}
-				<Table.Row>
-					<Table.Cell class="font-medium">
-						<a href={`/event/${item.events.id}`}>
-							{item.events.title}
-						</a>
-					</Table.Cell>
-					<Table.Cell>
-						<a href={`/player/${item.players.uid}`}>
-							{item.players.name}
-						</a>
-					</Table.Cell>
-					<Table.Cell>{item.content}</Table.Cell>
-					<Table.Cell>
-						<Button variant="icon" on:click={() => reject(item)}>
-							<CrossCircled size={20} />
-						</Button>
-					</Table.Cell>
-					<Table.Cell>
-						<Button variant="icon" on:click={() => accept(item)}>
-							<CheckCircled size={20} />
-						</Button>
-					</Table.Cell>
-				</Table.Row>
-			{/each}
-		</Table.Body>
-	</Table.Root>
+  <Table.Root>
+    <Table.Header>
+      <Table.Row>
+        <Table.Head class="w-[150px]">Event</Table.Head>
+        <Table.Head class="w-[150px]">Player</Table.Head>
+        <Table.Head>Content</Table.Head>
+        <Table.Head class="w-[50px]"></Table.Head>
+        <Table.Head class="w-[50px]"></Table.Head>
+      </Table.Row>
+    </Table.Header>
+    <Table.Body>
+      {#each data.data as item}
+        <Table.Row>
+          <Table.Cell class="font-medium">
+            <a href={`/event/${item.events.id}`}>
+              {item.events.title}
+            </a>
+          </Table.Cell>
+          <Table.Cell>
+            <a href={`/player/${item.players.uid}`}>
+              {item.players.name}
+            </a>
+          </Table.Cell>
+          <Table.Cell>{item.content}</Table.Cell>
+          <Table.Cell>
+            <Button variant="icon" on:click={() => reject(item)}>
+              <CrossCircled size={20} />
+            </Button>
+          </Table.Cell>
+          <Table.Cell>
+            <Button variant="icon" on:click={() => accept(item)}>
+              <CheckCircled size={20} />
+            </Button>
+          </Table.Cell>
+        </Table.Row>
+      {/each}
+    </Table.Body>
+  </Table.Root>
 </div>
 
 <style lang="scss">
-	.wrapper {
-		padding-inline: 50px;
-	}
+.wrapper {
+  padding-inline: 50px;
+}
 
-	@media screen and (max-width: 900px) {
-		.wrapper {
-			padding-inline: 10px;
-		}
-	}
+@media screen and (max-width: 900px) {
+  .wrapper {
+    padding-inline: 10px;
+  }
+}
 </style>

@@ -16,62 +16,64 @@
 	let tab = 'detail';
 
 	onMount(async () => {
-		levels = await (await fetch(`${import.meta.env.VITE_API_URL}/events/${data.id}/levels`)).json();
+		levels = await (await fetch(
+			`${import.meta.env.VITE_API_URL}/events/${data.id}/levels`
+		)).json();
 	});
 </script>
 
 <svelte:head>
-	<title>{data.title} - {$_('head.site_name')}</title>
+  <title>{data.title} - {$_('head.site_name')}</title>
 </svelte:head>
 
 {#if tab == 'detail'}
-	<EventBanner {data} />
+  <EventBanner {data} />
 {/if}
 
-<Ads dataAdFormat="auto"  />
+<Ads dataAdFormat="auto" />
 
 {#if !data.hidden || ($user.loggedIn && $user.data.isAdmin)}
-	<Tabs.Root bind:value={tab} class="mt-[20px] flex flex-col items-center">
-		<Tabs.List>
-			<Tabs.Trigger value="detail">{$_('cup.tabs.detail')}</Tabs.Trigger>
-			<Tabs.Trigger value="standing">{$_('cup.tabs.standing')}</Tabs.Trigger>
-			<Tabs.Trigger value="schedule">{$_('cup.tabs.schedule')}</Tabs.Trigger>
-		</Tabs.List>
-		<Tabs.Content value="detail">
-			<div class="markdown">
-				{#if data.content}
-					<Markdown content={data.content} />
-				{/if}
-			</div>
-		</Tabs.Content>
-		<Tabs.Content value="standing" class="mt-[20px] h-[100vh] w-full">
-			<SingleElimBracket {data} />
-		</Tabs.Content>
-		<Tabs.Content value="schedule" class="h-[100vh] w-full">
-			<iframe
-				src={data.data.calendar}
-				style="border: 0"
-				width="100%"
-				height="85%"
-				frameborder="0"
-				scrolling="no"
-				title="schedule"
-			/>
-		</Tabs.Content>
-	</Tabs.Root>
+  <Tabs.Root bind:value={tab} class="mt-[20px] flex flex-col items-center">
+    <Tabs.List>
+      <Tabs.Trigger value="detail">{$_('cup.tabs.detail')}</Tabs.Trigger>
+      <Tabs.Trigger value="standing">{$_('cup.tabs.standing')}</Tabs.Trigger>
+      <Tabs.Trigger value="schedule">{$_('cup.tabs.schedule')}</Tabs.Trigger>
+    </Tabs.List>
+    <Tabs.Content value="detail">
+      <div class="markdown">
+        {#if data.content}
+          <Markdown content={data.content} />
+        {/if}
+      </div>
+    </Tabs.Content>
+    <Tabs.Content value="standing" class="mt-[20px] h-[100vh] w-full">
+      <SingleElimBracket {data} />
+    </Tabs.Content>
+    <Tabs.Content value="schedule" class="h-[100vh] w-full">
+      <iframe
+        src={data.data.calendar}
+        style="border: 0"
+        width="100%"
+        height="85%"
+        frameborder="0"
+        scrolling="no"
+        title="schedule"
+      />
+    </Tabs.Content>
+  </Tabs.Root>
 {/if}
 
 <style lang="scss">
-	.markdown {
-		width: 1000px;
-		margin-inline: auto;
-		max-width: 100%;
-		padding-inline: 10px;
-	}
+.markdown {
+  width: 1000px;
+  margin-inline: auto;
+  max-width: 100%;
+  padding-inline: 10px;
+}
 
-	@media screen and (max-width: 1000px) {
-		.markdown {
-			width: 100%;
-		}
-	}
+@media screen and (max-width: 1000px) {
+  .markdown {
+    width: 100%;
+  }
+}
 </style>

@@ -236,17 +236,24 @@
 	$: structuredData = getStructuredData(list, canonicalUrl, listDescription, listImage);
 
 	function formatVisibility(visibility: string) {
-		if (visibility === 'public') return $_('custom_lists.visibility.public');
-		if (visibility === 'unlisted') return $_('custom_lists.visibility.unlisted');
+		if (visibility === 'public') {
+			return $_('custom_lists.visibility.public');
+		}
+
+		if (visibility === 'unlisted') {
+			return $_('custom_lists.visibility.unlisted');
+		}
+
 		return $_('custom_lists.visibility.private');
 	}
 
 	function formatDate(value: string) {
-		return new Date(value).toLocaleDateString('vi-VN', {
-			year: 'numeric',
-			month: 'short',
-			day: 'numeric'
-		});
+		return new Date(value)
+			.toLocaleDateString('vi-VN', {
+				year: 'numeric',
+				month: 'short',
+				day: 'numeric'
+			});
 	}
 
 	function getModeLabel(mode: 'rating' | 'top') {
@@ -287,13 +294,16 @@
 		}
 
 		const slug = currentList.slug || '';
+
 		if (currentList.isOfficial && OFFICIAL_LIST_SLUGS.has(slug)) {
 			return $_(`head.list_seo.official_descriptions.${slug}`);
 		}
 
 		const description = currentList.description?.trim();
+
 		if (description) {
-			return description.length > 160 ? `${description.slice(0, 157).trim()}...` : description;
+			return description.length > 160 ? `${description.slice(0, 157)
+				.trim()}...` : description;
 		}
 
 		return $_('head.list_seo.detail_description', {
@@ -322,12 +332,13 @@
 			url,
 			image,
 			numberOfItems: currentList.levelCount ?? currentList.items?.length ?? 0,
-			itemListElement: (currentList.items ?? []).slice(0, 50).map((item, index) => ({
-				'@type': 'ListItem',
-				position: item.position ?? index + 1,
-				url: `${siteUrl}/level/${item.levelId}`,
-				name: item.level?.name || `Level ${item.levelId}`
-			}))
+			itemListElement: (currentList.items ?? []).slice(0, 50)
+				.map((item, index) => ({
+					'@type': 'ListItem',
+					position: item.position ?? index + 1,
+					url: `${siteUrl}/level/${item.levelId}`,
+					name: item.level?.name || `Level ${item.levelId}`
+				}))
 		});
 	}
 
@@ -339,12 +350,19 @@
 		}
 
 		const params = new URLSearchParams({ videoId });
+
 		return `/level/${item.levelId}?${params.toString()}`;
 	}
 
 	function getVisibilityIcon(visibility: string) {
-		if (visibility === 'public') return Globe2;
-		if (visibility === 'unlisted') return EyeOff;
+		if (visibility === 'public') {
+			return Globe2;
+		}
+
+		if (visibility === 'unlisted') {
+			return EyeOff;
+		}
+
 		return Lock;
 	}
 
@@ -359,8 +377,14 @@
 	}
 
 	function getStaffRoleLabel(role: PublicStaffRole) {
-		if (role === 'owner') return $_('custom_lists.manage.roles.owner');
-		if (role === 'admin') return $_('custom_lists.manage.roles.admin');
+		if (role === 'owner') {
+			return $_('custom_lists.manage.roles.owner');
+		}
+
+		if (role === 'admin') {
+			return $_('custom_lists.manage.roles.admin');
+		}
+
 		return $_('custom_lists.manage.roles.helper');
 	}
 
@@ -414,11 +438,14 @@
 
 	function withHexAlpha(color: string, alpha: string) {
 		const normalized = color.trim();
+
 		return normalized.length === 9 ? `${normalized.slice(0, 7)}${alpha}` : `${normalized}${alpha}`;
 	}
 
 	function hexToRgb(color: string) {
-		const normalized = color.trim().slice(1, 7);
+		const normalized = color.trim()
+			.slice(1, 7);
+
 		return {
 			r: Number.parseInt(normalized.slice(0, 2), 16),
 			g: Number.parseInt(normalized.slice(2, 4), 16),
@@ -429,6 +456,7 @@
 	function isLightColor(color: string) {
 		const { r, g, b } = hexToRgb(color);
 		const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+
 		return luminance >= 0.62;
 	}
 
@@ -439,7 +467,8 @@
 			return null;
 		}
 
-		return String(backgroundColor).trim();
+		return String(backgroundColor)
+			.trim();
 	}
 
 	function getListThemeBorderColor(currentList: CustomList | null) {
@@ -449,7 +478,8 @@
 			return null;
 		}
 
-		return String(borderColor).trim();
+		return String(borderColor)
+			.trim();
 	}
 
 	function getThemedSurfaceStyle(backgroundColor: string | null, borderColor: string | null) {
@@ -509,16 +539,32 @@
 	function getRequestedTab(searchParams: URLSearchParams): DetailTab {
 		const tab = searchParams.get('tab');
 
-		if (tab === 'leaderboard') return 'leaderboard';
-		if (tab === 'my-record') return 'my-record';
-		if (tab === 'staff') return 'staff';
-		if (tab === 'records') return 'leaderboard';
-		if (tab === 'community') return 'community';
+		if (tab === 'leaderboard') {
+			return 'leaderboard';
+		}
+
+		if (tab === 'my-record') {
+			return 'my-record';
+		}
+
+		if (tab === 'staff') {
+			return 'staff';
+		}
+
+		if (tab === 'records') {
+			return 'leaderboard';
+		}
+
+		if (tab === 'community') {
+			return 'community';
+		}
+
 		return 'levels';
 	}
 
 	function getRequestedLeaderboardPage(searchParams: URLSearchParams) {
 		const parsed = Number.parseInt(searchParams.get('page') || '1', 10);
+
 		return Number.isInteger(parsed) && parsed > 0 ? parsed : 1;
 	}
 
@@ -539,6 +585,7 @@
 		}
 
 		const search = query.toString();
+
 		return `${$page.url.pathname}${search ? `?${search}` : ''}`;
 	}
 
@@ -607,7 +654,10 @@
 		const minutes = Math.floor(ms / 60000);
 		const seconds = Math.floor((ms % 60000) / 1000);
 		const milliseconds = ms % 1000;
-		return `${minutes}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
+
+		return `${minutes}:${seconds.toString()
+			.padStart(2, '0')}.${milliseconds.toString()
+			.padStart(3, '0')}`;
 	}
 
 	function formatRecordProgress(progress: number) {
@@ -635,6 +685,7 @@
 
 	function getRecordDetailUrl(entry: CustomListRecordPoint) {
 		const recordQuery = entry.id ? `?id=${entry.id}` : '';
+
 		return `/record/${entry.uid}/${entry.levelId}${recordQuery}`;
 	}
 
@@ -648,13 +699,33 @@
 			end: String(end)
 		});
 
-		if (filters.topStart) params.set('topMin', filters.topStart);
-		if (filters.topEnd) params.set('topMax', filters.topEnd);
-		if (filters.ratingMin) params.set('ratingMin', filters.ratingMin);
-		if (filters.ratingMax) params.set('ratingMax', filters.ratingMax);
-		if (filters.nameSearch) params.set('nameSearch', filters.nameSearch);
-		if (filters.creatorSearch) params.set('creatorSearch', filters.creatorSearch);
-		if (filters.tagIds) params.set('tagIds', filters.tagIds);
+		if (filters.topStart) {
+			params.set('topMin', filters.topStart);
+		}
+
+		if (filters.topEnd) {
+			params.set('topMax', filters.topEnd);
+		}
+
+		if (filters.ratingMin) {
+			params.set('ratingMin', filters.ratingMin);
+		}
+
+		if (filters.ratingMax) {
+			params.set('ratingMax', filters.ratingMax);
+		}
+
+		if (filters.nameSearch) {
+			params.set('nameSearch', filters.nameSearch);
+		}
+
+		if (filters.creatorSearch) {
+			params.set('creatorSearch', filters.creatorSearch);
+		}
+
+		if (filters.tagIds) {
+			params.set('tagIds', filters.tagIds);
+		}
 
 		if (hasActiveFilters()) {
 			params.set('ascending', String(filters.ascending));
@@ -666,12 +737,12 @@
 	function hasActiveFilters() {
 		return Boolean(
 			filters.topStart ||
-				filters.topEnd ||
-				filters.ratingMin ||
-				filters.ratingMax ||
-				filters.nameSearch ||
-				filters.creatorSearch ||
-				filters.tagIds
+			filters.topEnd ||
+			filters.ratingMin ||
+			filters.ratingMax ||
+			filters.nameSearch ||
+			filters.creatorSearch ||
+			filters.tagIds
 		);
 	}
 
@@ -722,7 +793,8 @@
 
 	async function fetchListDetail(start: number, end: number, headers?: HeadersInit) {
 		const res = await fetch(getListDetailUrl(start, end), headers ? { headers } : undefined);
-		const payload = await res.json().catch(() => null);
+		const payload = await res.json()
+			.catch(() => null);
 
 		if (!res.ok || !payload) {
 			throw new Error(payload?.error || 'Failed to load list');
@@ -748,6 +820,7 @@
 			listLevelsError
 		) {
 			destroyLevelsObserver();
+
 			return;
 		}
 
@@ -776,7 +849,11 @@
 
 	async function refetchWithAuth() {
 		const key = `${$page.params.id}:${$user.data?.uid || 'authed'}`;
-		if (key === authFetchKey) return;
+
+		if (key === authFetchKey) {
+			return;
+		}
+
 		authFetchKey = key;
 		const recoveringPrivateList = requiresAuthRecovery;
 
@@ -812,8 +889,8 @@
 		const fetchKey = `${$page.params.id}:${$user.loggedIn ? $user.data?.uid || 'authed' : 'anon'}:${start}`;
 		const headers = $user.loggedIn
 			? {
-					Authorization: `Bearer ${await $user.token()}`
-				}
+				Authorization: `Bearer ${await $user.token()}`
+			}
 			: undefined;
 
 		listLevelsFetchKey = fetchKey;
@@ -828,16 +905,17 @@
 			}
 
 			const incoming = payload.items ?? [];
+
 			if (incoming.length < LEVELS_PAGE_SIZE) {
 				reachedEnd = true;
 			}
 
 			list = list
 				? {
-						...list,
-						...payload,
-						items: mergeListItems(list.items, incoming)
-					}
+					...list,
+					...payload,
+					items: mergeListItems(list.items, incoming)
+				}
 				: payload;
 			loadingError = '';
 			listLevelsError = '';
@@ -876,6 +954,7 @@
 
 		if (!list) {
 			finishApplying?.();
+
 			return;
 		}
 
@@ -895,6 +974,7 @@
 			}
 
 			const incoming = payload.items ?? [];
+
 			if (incoming.length < LEVELS_PAGE_SIZE) {
 				reachedEnd = true;
 			}
@@ -928,15 +1008,21 @@
 	}
 
 	onMount(() => {
-		if (!browser) return;
+		if (!browser) {
+			return;
+		}
+
 		window.addEventListener('scroll', handleScroll);
 	});
 
 	async function toggleStar() {
-		if (!list || starLoading) return;
+		if (!list || starLoading) {
+			return;
+		}
 
 		if (!$user.loggedIn) {
 			toast.error($_('community.login_required'));
+
 			return;
 		}
 
@@ -950,7 +1036,8 @@
 				}
 			});
 
-			const payload = await res.json().catch(() => null);
+			const payload = await res.json()
+				.catch(() => null);
 
 			if (!res.ok) {
 				throw new Error(payload?.error || $_('custom_lists.toast.failed_star'));
@@ -973,7 +1060,9 @@
 	}
 
 	async function crawlMirrorList() {
-		if (!list || !canCrawlMirror || crawlingMirror) return;
+		if (!list || !canCrawlMirror || crawlingMirror) {
+			return;
+		}
 
 		crawlingMirror = true;
 		const crawlToast = toast.loading($_('custom_lists.toast.crawling_mirror'));
@@ -1029,8 +1118,10 @@
 			const res = await fetch(
 				`${import.meta.env.VITE_API_URL}/community/lists/${listId}/posts?limit=6`
 			);
+
 			if (!res.ok) {
 				relatedPosts = [];
+
 				return;
 			}
 
@@ -1043,7 +1134,10 @@
 	}
 
 	function openCreatePost() {
-		if (!list) return;
+		if (!list) {
+			return;
+		}
+
 		goto(`/community/create?listId=${list.id}`);
 	}
 
@@ -1058,8 +1152,8 @@
 			});
 			const headers = $user.loggedIn
 				? {
-						Authorization: `Bearer ${await $user.token()}`
-					}
+					Authorization: `Bearer ${await $user.token()}`
+				}
 				: undefined;
 			const res = await fetch(
 				`${import.meta.env.VITE_API_URL}/lists/${$page.params.id}/leaderboard?${query.toString()}`,
@@ -1067,7 +1161,8 @@
 					headers
 				}
 			);
-			const payload = await res.json().catch(() => null);
+			const payload = await res.json()
+				.catch(() => null);
 
 			if (fetchKey !== leaderboardFetchKey) {
 				return;
@@ -1104,8 +1199,8 @@
 		});
 		const headers = $user.loggedIn
 			? {
-					Authorization: `Bearer ${await $user.token()}`
-				}
+				Authorization: `Bearer ${await $user.token()}`
+			}
 			: undefined;
 		const res = await fetch(
 			`${import.meta.env.VITE_API_URL}/lists/${$page.params.id}/records?${query.toString()}`,
@@ -1113,7 +1208,8 @@
 				headers
 			}
 		);
-		const payload = await res.json().catch(() => null);
+		const payload = await res.json()
+			.catch(() => null);
 
 		if (!res.ok) {
 			throw new Error(payload?.error || $_('custom_lists.detail.records.failed_load'));
@@ -1184,10 +1280,10 @@
 
 	$: canManageList = Boolean(
 		list &&
-			(list.permissions?.canEditSettings ||
-				list.permissions?.canEditLevels ||
-				list.permissions?.canViewAudit ||
-				list.permissions?.canViewMembers)
+		(list.permissions?.canEditSettings ||
+			list.permissions?.canEditLevels ||
+			list.permissions?.canViewAudit ||
+			list.permissions?.canViewMembers)
 	);
 	$: listItems = list?.items ?? [];
 	$: listCardType = list?.isPlatformer ? 'pl' : 'dl';
@@ -1203,12 +1299,12 @@
 		requestedTab === 'community' && !canShowCommunity
 			? 'levels'
 			: requestedTab === 'leaderboard' && !canShowLeaderboard
-				? 'levels'
-				: requestedTab === 'my-record' && !canShowMyRecord
-					? 'levels'
-					: requestedTab === 'staff' && !canShowStaffTab
-						? 'levels'
-						: requestedTab;
+			? 'levels'
+			: requestedTab === 'my-record' && !canShowMyRecord
+			? 'levels'
+			: requestedTab === 'staff' && !canShowStaffTab
+			? 'levels'
+			: requestedTab;
 	$: selectedLeaderboardPlayer =
 		(leaderboard.find((player) => player.uid === selectedLeaderboardPlayerUid) as
 			| LeaderboardPlayer
@@ -1219,6 +1315,7 @@
 	}
 	$: if (list?.id && canShowCommunity && activeTab === 'community') {
 		const nextKey = String(list.id);
+
 		if (nextKey !== relatedPostsKey) {
 			relatedPostsKey = nextKey;
 			fetchRelatedPosts(list.id);
@@ -1291,6 +1388,7 @@
 	onDestroy(() => {
 		clearCustomListBranding();
 		destroyLevelsObserver();
+
 		if (browser) {
 			window.removeEventListener('scroll', handleScroll);
 		}

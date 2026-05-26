@@ -1,11 +1,14 @@
 <script>
-	import { cn } from "$lib/utils.js";
+	import { cn } from '$lib/utils.js';
 	let className = undefined;
 	export { className as class };
 </script>
 
 <div class="w-full overflow-auto">
-	<table class={cn("w-full caption-bottom text-sm", className)} {...$$restProps}>
-		<slot />
-	</table>
+  <table
+    class={cn('w-full caption-bottom text-sm', className)}
+    {...$$restProps}
+  >
+    <slot />
+  </table>
 </div>

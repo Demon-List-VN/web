@@ -20,8 +20,8 @@
 	let facebook = '';
 	let loading = false;
 	let provinces: Record<string, any> = {};
-	let provinceItem: { value: string | null; label?: string } = { value: null };
-	let cityItem: { value: string | null; label?: string } = { value: null };
+	let provinceItem: { value: string | null; label?: string; } = { value: null };
+	let cityItem: { value: string | null; label?: string; } = { value: null };
 
 	$: uid = $user.data?.uid;
 
@@ -40,6 +40,7 @@
 
 	async function patchOnboarding(body: Record<string, any>) {
 		const token = await $user.token();
+
 		return fetch(`${import.meta.env.VITE_API_URL}/players/${uid}/onboarding`, {
 			method: 'PATCH',
 			headers: {
@@ -57,28 +58,44 @@
 
 	async function handleNameNext() {
 		nameError = '';
+
 		if (!/^[A-Za-z0-9]{3,30}$/.test(name)) {
 			nameError = $_('onboarding.name_error_format');
+
 			return;
 		}
+
 		loading = true;
+
 		try {
 			const res = await patchOnboarding({ name });
+
 			if (res.status === 409) {
 				nameError = $_('onboarding.name_error_taken');
+
 				return;
 			}
+
 			if (res.status === 400) {
 				const body = await res.json();
-				if (body.message?.includes('cooldown')) nameError = $_('onboarding.name_error_cooldown');
-				else if (body.message?.includes('khóa')) nameError = $_('onboarding.name_error_locked');
-				else nameError = body.message;
+
+				if (body.message?.includes('cooldown')) {
+					nameError = $_('onboarding.name_error_cooldown');
+				} else if (body.message?.includes('khóa')) {
+					nameError = $_('onboarding.name_error_locked');
+				} else {
+					nameError = body.message;
+				}
+
 				return;
 			}
+
 			if (!res.ok) {
 				nameError = 'Lỗi không xác định. Vui lòng thử lại.';
+
 				return;
 			}
+
 			await goToStep(3);
 		} finally {
 			loading = false;
@@ -87,6 +104,7 @@
 
 	async function handleLocationNext() {
 		loading = true;
+
 		try {
 			if (provinceItem.value) {
 				await patchOnboarding({
@@ -94,6 +112,7 @@
 					city: cityItem.value ?? undefined
 				});
 			}
+
 			await goToStep(4);
 		} finally {
 			loading = false;
@@ -102,11 +121,22 @@
 
 	async function handleSocialNext() {
 		loading = true;
+
 		try {
 			const body: Record<string, any> = {};
-			if (youtube.trim()) body.youtube = youtube.trim();
-			if (facebook.trim()) body.facebook = facebook.trim();
-			if (Object.keys(body).length) await patchOnboarding(body);
+
+			if (youtube.trim()) {
+				body.youtube = youtube.trim();
+			}
+
+			if (facebook.trim()) {
+				body.facebook = facebook.trim();
+			}
+
+			if (Object.keys(body).length) {
+				await patchOnboarding(body);
+			}
+
 			await goToStep(5);
 		} finally {
 			loading = false;
@@ -115,6 +145,7 @@
 
 	async function handleComplete() {
 		loading = true;
+
 		try {
 			await patchOnboarding({ onboarding_done: true });
 			open = false;

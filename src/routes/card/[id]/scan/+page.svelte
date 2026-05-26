@@ -59,18 +59,36 @@
 
 	onMount(() => {
 		const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 		if (prefersReduced) {
 			showCard = showId = showName = showState = showPlayerRows = showFooter = true;
+
 			return;
 		}
 
-		setTimeout(() => { showCard = true; }, 100);
-		setTimeout(() => { showId = true; }, 900);
-		setTimeout(() => { showName = true; }, 1100);
-		setTimeout(() => { showState = true; }, 1300);
-		setTimeout(() => { showPlayerRows = true; }, 1500);
-		setTimeout(() => { if (data.owner) showConfetti = true; }, 1500);
-		setTimeout(() => { showFooter = true; }, 2500);
+		setTimeout(() => {
+			showCard = true;
+		}, 100);
+		setTimeout(() => {
+			showId = true;
+		}, 900);
+		setTimeout(() => {
+			showName = true;
+		}, 1100);
+		setTimeout(() => {
+			showState = true;
+		}, 1300);
+		setTimeout(() => {
+			showPlayerRows = true;
+		}, 1500);
+		setTimeout(() => {
+			if (data.owner) {
+				showConfetti = true;
+			}
+		}, 1500);
+		setTimeout(() => {
+			showFooter = true;
+		}, 2500);
 	});
 
 	function togglePreview() {
@@ -91,6 +109,7 @@
 				success: () => {
 					editMode = false;
 					window.location.reload();
+
 					return 'Nội dung đã được cập nhật!';
 				},
 				error: 'Không thể cập nhật nội dung',
@@ -110,6 +129,7 @@
 			{
 				success: () => {
 					window.location.reload();
+
 					return 'Thẻ đã được kích hoạt!';
 				},
 				error: 'Không thể kích hoạt thẻ',
@@ -129,6 +149,7 @@
 			{
 				success: () => {
 					window.location.reload();
+
 					return 'Đã liên kết!';
 				},
 				error: 'Không thể liên kết',
@@ -204,11 +225,11 @@
 					{#if $user.loggedIn}
 						<AlertDialog.Root>
 							<AlertDialog.Trigger>
-								<Button class="w-full">{$_("card.link.button")} {$user.data.name}</Button>
+								<Button class="w-full">{$_('card.link.button')} {$user.data.name}</Button>
 							</AlertDialog.Trigger>
 							<AlertDialog.Content>
 								<AlertDialog.Header>
-									<AlertDialog.Title>{$_("card.link.title")} ({$user.data.name})?</AlertDialog.Title
+									<AlertDialog.Title>{$_('card.link.title')} ({$user.data.name})?</AlertDialog.Title
 									>
 									<AlertDialog.Description>
 										{#if $locale == 'vi'}
@@ -227,8 +248,8 @@
 									</AlertDialog.Description>
 								</AlertDialog.Header>
 								<AlertDialog.Footer>
-									<AlertDialog.Cancel>{$_("general.cancel")}</AlertDialog.Cancel>
-									<AlertDialog.Action on:click={link}>{$_("general.continue")}</AlertDialog.Action>
+									<AlertDialog.Cancel>{$_('general.cancel')}</AlertDialog.Cancel>
+									<AlertDialog.Action on:click={link}>{$_('general.continue')}</AlertDialog.Action>
 								</AlertDialog.Footer>
 							</AlertDialog.Content>
 						</AlertDialog.Root>
@@ -365,7 +386,7 @@
 		<div class="w-full" in:fade={{ duration: 400 }}>
 			{#if data.owner && $user.data?.uid === data.owner}
 				<div class="mt-4 w-full">
-					<Button class="w-full" on:click={() => (editMode = true)}>{$_("card.edit")}</Button>
+					<Button class="w-full" on:click={() => (editMode = true)}>{$_('card.edit')}</Button>
 					<Dialog.Root bind:open={editMode}>
 						<Dialog.Content class="sm:max-w-[800px]">
 							<Dialog.Header>

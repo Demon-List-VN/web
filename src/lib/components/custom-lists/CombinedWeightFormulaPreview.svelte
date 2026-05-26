@@ -45,7 +45,9 @@
 		isCurrent: boolean;
 	};
 
-	type FormulaPreviewEvaluator = ReturnType<typeof createPreviewCustomListWeightFormula>;
+	type FormulaPreviewEvaluator = ReturnType<
+		typeof createPreviewCustomListWeightFormula
+	>;
 
 	type FormulaPreviewEvaluators = {
 		recordScore: FormulaPreviewEvaluator;
@@ -136,11 +138,14 @@
 	}
 
 	function formatOutput(value: number) {
-		return Number.isInteger(value) ? String(value) : String(Math.round(value * 1000) / 1000);
+		return Number.isInteger(value)
+			? String(value)
+			: String(Math.round(value * 1000) / 1000);
 	}
 
 	function parseNumericInput(value: string, fallback: number = 0) {
 		const parsed = Number(value);
+
 		return Number.isFinite(parsed) ? parsed : fallback;
 	}
 
@@ -202,7 +207,10 @@
 			Number(evaluators.recordScore.evaluate(getPreviewPayload(input)).output)
 		);
 		const weight = assertFiniteFormulaOutput(
-			Number(evaluators.weight.evaluate(getPreviewPayload(input, recordScore)).output)
+			Number(
+				evaluators.weight.evaluate(getPreviewPayload(input, recordScore))
+					.output
+			)
 		);
 
 		return {
@@ -211,17 +219,24 @@
 		};
 	}
 
-	function getFormulaOutputValue(result: FormulaPreviewResult, key: FormulaOutputKey) {
+	function getFormulaOutputValue(
+		result: FormulaPreviewResult,
+		key: FormulaOutputKey
+	) {
 		return result[key];
 	}
 
 	function getFormulaOutputLabel(key: FormulaOutputKey) {
 		switch (key) {
 			case 'recordScore':
-				return `score(x) - ${$_('custom_lists.formula.record_score_output_label')}`;
+				return `score(x) - ${
+					$_('custom_lists.formula.record_score_output_label')
+				}`;
 			case 'weight':
 			default:
-				return `weighted(x) - ${$_('custom_lists.formula.weight_output_label')}`;
+				return `weighted(x) - ${
+					$_('custom_lists.formula.weight_output_label')
+				}`;
 		}
 	}
 
@@ -232,7 +247,9 @@
 		];
 	}
 
-	function getFormulaResultCards(result: FormulaPreviewResult | null): FormulaResultCard[] {
+	function getFormulaResultCards(
+		result: FormulaPreviewResult | null
+	): FormulaResultCard[] {
 		return [
 			{
 				key: 'recordScore',
@@ -257,14 +274,18 @@
 				inputKey: 'levelCount' as const
 			},
 			...(mode === 'top'
-				? [{ token: 'top', label: $_('custom_lists.formula.top_label'), inputKey: 'top' as const }]
+				? [{
+					token: 'top',
+					label: $_('custom_lists.formula.top_label'),
+					inputKey: 'top' as const
+				}]
 				: [
-						{
-							token: 'rating',
-							label: $_('custom_lists.formula.rating_label'),
-							inputKey: 'rating' as const
-						}
-					]),
+					{
+						token: 'rating',
+						label: $_('custom_lists.formula.rating_label'),
+						inputKey: 'rating' as const
+					}
+				]),
 			{
 				token: isPlatformer ? 'time' : 'progress',
 				inputKey: 'time' as const,
@@ -314,9 +335,10 @@
 	}
 
 	function dedupeSortedValues(values: number[]) {
-		return [...new Set(values.map((value) => Math.max(0, Math.round(value))))].sort(
-			(left, right) => left - right
-		);
+		return [...new Set(values.map((value) => Math.max(0, Math.round(value))))]
+			.sort(
+				(left, right) => left - right
+			);
 	}
 
 	function getDefaultGraphRange(variable: FormulaVariable | undefined) {
@@ -331,7 +353,10 @@
 			previewInput[variable.inputKey],
 			getGraphAxisMin(variable.token)
 		);
-		const levelCount = Math.max(1, parseNumericInput(previewInput.levelCount, 25));
+		const levelCount = Math.max(
+			1,
+			parseNumericInput(previewInput.levelCount, 25)
+		);
 
 		switch (variable.token) {
 			case 'position':
@@ -360,7 +385,13 @@
 			case 'baseTime':
 				return {
 					min: '0',
-					max: String(Math.max(currentValue, 60000, Math.round(currentValue * 1.5)))
+					max: String(
+						Math.max(
+							currentValue,
+							60000,
+							Math.round(currentValue * 1.5)
+						)
+					)
 				};
 			default:
 				return {
@@ -456,7 +487,8 @@
 
 		const points = settled
 			.filter(
-				(result): result is PromiseFulfilledResult<GraphPoint> => result.status === 'fulfilled'
+				(result): result is PromiseFulfilledResult<GraphPoint> =>
+					result.status === 'fulfilled'
 			)
 			.map((result) => result.value)
 			.sort((left, right) => left.x - right.x);
@@ -466,7 +498,8 @@
 		}
 
 		const firstError = settled.find(
-			(result): result is PromiseRejectedResult => result.status === 'rejected'
+			(result): result is PromiseRejectedResult =>
+				result.status === 'rejected'
 		);
 
 		throw firstError?.reason instanceof Error
@@ -474,12 +507,18 @@
 			: new Error($_('custom_lists.formula.preview_error'));
 	}
 
-	function mergeGraphPoints(points: GraphPoint[], currentPoint: GraphPoint | null) {
+	function mergeGraphPoints(
+		points: GraphPoint[],
+		currentPoint: GraphPoint | null
+	) {
 		const mergedPoints = points.map((point) =>
 			currentPoint && point.x === currentPoint.x ? currentPoint : point
 		);
 
-		if (currentPoint && !mergedPoints.some((point) => point.x === currentPoint.x)) {
+		if (
+			currentPoint
+			&& !mergedPoints.some((point) => point.x === currentPoint.x)
+		) {
 			mergedPoints.push(currentPoint);
 		}
 
@@ -497,7 +536,8 @@
 			return {
 				points: mergedPoints,
 				currentPoint: currentPoint
-					? mergedPoints.find((point) => point.x === currentPoint.x) || currentPoint
+					? mergedPoints.find((point) => point.x === currentPoint.x)
+						|| currentPoint
 					: null
 			};
 		}
@@ -515,12 +555,17 @@
 		return {
 			points: cumulativePoints,
 			currentPoint: currentPoint
-				? cumulativePoints.find((point) => point.x === currentPoint.x) || null
+				? cumulativePoints.find((point) => point.x === currentPoint.x)
+					|| null
 				: null
 		};
 	}
 
-	function buildGraphBars(points: GraphPoint[], currentPoint: GraphPoint | null, token: string) {
+	function buildGraphBars(
+		points: GraphPoint[],
+		currentPoint: GraphPoint | null,
+		token: string
+	) {
 		const sortedPoints = [...points].sort((left, right) => left.x - right.x);
 
 		if (!sortedPoints.length) {
@@ -549,8 +594,14 @@
 				const pointTop = ((maxValue - point.y) / range) * 100;
 				const rawTopPercent = Math.min(pointTop, zeroLineTop);
 				const rawHeightPercent = Math.abs(pointTop - zeroLineTop);
-				const heightPercent = Math.min(100, Math.max(rawHeightPercent, 1.5));
-				const topPercent = Math.max(0, Math.min(100 - heightPercent, rawTopPercent));
+				const heightPercent = Math.min(
+					100,
+					Math.max(rawHeightPercent, 1.5)
+				);
+				const topPercent = Math.max(
+					0,
+					Math.min(100 - heightPercent, rawTopPercent)
+				);
 				const isCurrent = currentPoint ? point.x === currentPoint.x : false;
 
 				return {
@@ -560,11 +611,10 @@
 					valueLabel: formatOutput(point.y),
 					topPercent,
 					heightPercent,
-					showLabel:
-						index === 0 ||
-						index === sortedPoints.length - 1 ||
-						isCurrent ||
-						index % labelInterval === 0,
+					showLabel: index === 0
+						|| index === sortedPoints.length - 1
+						|| isCurrent
+						|| index % labelInterval === 0,
 					isCurrent
 				};
 			}),
@@ -582,7 +632,9 @@
 		graphError = '';
 
 		try {
-			const selectedVariable = formulaVariables.find((variable) => variable.token === graphXAxis);
+			const selectedVariable = formulaVariables.find((variable) =>
+				variable.token === graphXAxis
+			);
 
 			if (!selectedVariable) {
 				throw new Error($_('custom_lists.formula.preview_error'));
@@ -609,10 +661,9 @@
 				};
 			} else {
 				previewResult = null;
-				previewError =
-					currentResult.reason instanceof Error
-						? currentResult.reason.message
-						: $_('custom_lists.formula.preview_error');
+				previewError = currentResult.reason instanceof Error
+					? currentResult.reason.message
+					: $_('custom_lists.formula.preview_error');
 				graphCurrentPoint = null;
 			}
 
@@ -621,10 +672,9 @@
 				graphError = '';
 			} else {
 				graphPoints = [];
-				graphError =
-					graphResult.reason instanceof Error
-						? graphResult.reason.message
-						: $_('custom_lists.formula.preview_error');
+				graphError = graphResult.reason instanceof Error
+					? graphResult.reason.message
+					: $_('custom_lists.formula.preview_error');
 			}
 		} catch (error) {
 			if (requestId !== previewRequestId) {
@@ -634,8 +684,9 @@
 			previewResult = null;
 			graphPoints = [];
 			graphCurrentPoint = null;
-			previewError =
-				error instanceof Error ? error.message : $_('custom_lists.formula.preview_error');
+			previewError = error instanceof Error
+				? error.message
+				: $_('custom_lists.formula.preview_error');
 			graphError = previewError;
 		} finally {
 			if (requestId === previewRequestId) {
@@ -661,17 +712,20 @@
 	$: formulaResultCards = getFormulaResultCards(previewResult);
 
 	$: if (
-		formulaVariables.length &&
-		!formulaVariables.some((variable) => variable.token === graphXAxis)
+		formulaVariables.length
+		&& !formulaVariables.some((variable) => variable.token === graphXAxis)
 	) {
-		graphXAxis =
-			formulaVariables.find((variable) => variable.token === getDefaultGraphXAxis(isPlatformer))
-				?.token || formulaVariables[0].token;
+		graphXAxis = formulaVariables.find((variable) =>
+			variable.token === getDefaultGraphXAxis(isPlatformer)
+		)
+			?.token || formulaVariables[0].token;
 	}
 
 	$: if (graphXAxis !== graphSelectionSignature) {
 		graphSelectionSignature = graphXAxis;
-		const nextVariable = formulaVariables.find((variable) => variable.token === graphXAxis);
+		const nextVariable = formulaVariables.find((variable) =>
+			variable.token === graphXAxis
+		);
 		const defaultRange = getDefaultGraphRange(nextVariable);
 		graphRangeMin = defaultRange.min;
 		graphRangeMax = defaultRange.max;
@@ -692,7 +746,9 @@
 	}
 
 	$: {
-		const selectedVariable = formulaVariables.find((variable) => variable.token === graphXAxis);
+		const selectedVariable = formulaVariables.find((variable) =>
+			variable.token === graphXAxis
+		);
 		const normalizedRange = normalizeGraphRange(selectedVariable);
 		const nextRangeSignature = [
 			graphXAxis,
@@ -741,7 +797,8 @@
 	}
 
 	$: graphAxisLabel =
-		formulaVariables.find((variable) => variable.token === graphXAxis)?.label || graphXAxis;
+		formulaVariables.find((variable) => variable.token === graphXAxis)?.label
+		|| graphXAxis;
 
 	$: graphOutputLabel = showCumulativeSum
 		? $_('custom_lists.formula.cumulative_output_label')
@@ -759,677 +816,707 @@
 </script>
 
 <div class="formulaPreviewCard">
-	<div class="formulaPreviewHeader">
-		<div>
-			<h3>{$_('custom_lists.formula.combined_preview_title')}</h3>
-			<p>{$_('custom_lists.formula.combined_preview_hint')}</p>
-		</div>
-		<Button
-			type="button"
-			variant="outline"
-			size="sm"
-			on:click={runPreview}
-			disabled={previewLoading}
-		>
-			{previewLoading ? `${$_('general.loading')}...` : $_('custom_lists.formula.preview_button')}
-		</Button>
-	</div>
+  <div class="formulaPreviewHeader">
+    <div>
+      <h3>{$_('custom_lists.formula.combined_preview_title')}</h3>
+      <p>{$_('custom_lists.formula.combined_preview_hint')}</p>
+    </div>
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      on:click={runPreview}
+      disabled={previewLoading}
+    >
+      {
+        previewLoading
+        ? `${$_('general.loading')}...`
+        : $_('custom_lists.formula.preview_button')
+      }
+    </Button>
+  </div>
 
-	<div class="formulaPreviewVariables">
-		<span class="formulaPreviewVariablesLabel"
-			>{$_('custom_lists.formula.available_variables_label')}</span
-		>
-		<div class="formulaPreviewVariableGroups">
-			<div class="formulaPreviewVariableGroup">
-				<span class="formulaPreviewVariableGroupLabel">score(x)</span>
-				<div class="formulaPreviewVariableList">
-					{#each recordFormulaVariables as variable}
-						<div class="formulaPreviewVariable">
-							<code class="formulaPreviewVariableToken">{variable.token}</code>
-							<span class="formulaPreviewVariableName">{variable.label}</span>
-						</div>
-					{/each}
-				</div>
-			</div>
-			<div class="formulaPreviewVariableGroup">
-				<span class="formulaPreviewVariableGroupLabel">weighted(x)</span>
-				<div class="formulaPreviewVariableList">
-					{#each weightFormulaVariables as variable}
-						<div class="formulaPreviewVariable">
-							<code class="formulaPreviewVariableToken">{variable.token}</code>
-							<span class="formulaPreviewVariableName">{variable.label}</span>
-						</div>
-					{/each}
-				</div>
-			</div>
-		</div>
-		{#if isPlatformer}
-			<p class="formulaPreviewNote">{$_('custom_lists.formula.platformer_time_note')}</p>
-		{/if}
-	</div>
+  <div class="formulaPreviewVariables">
+    <span class="formulaPreviewVariablesLabel">{
+      $_('custom_lists.formula.available_variables_label')
+    }</span>
+    <div class="formulaPreviewVariableGroups">
+      <div class="formulaPreviewVariableGroup">
+        <span class="formulaPreviewVariableGroupLabel">score(x)</span>
+        <div class="formulaPreviewVariableList">
+          {#each recordFormulaVariables as variable}
+            <div class="formulaPreviewVariable">
+              <code class="formulaPreviewVariableToken">{variable.token}</code>
+              <span class="formulaPreviewVariableName">{variable.label}</span>
+            </div>
+          {/each}
+        </div>
+      </div>
+      <div class="formulaPreviewVariableGroup">
+        <span class="formulaPreviewVariableGroupLabel">weighted(x)</span>
+        <div class="formulaPreviewVariableList">
+          {#each weightFormulaVariables as variable}
+            <div class="formulaPreviewVariable">
+              <code class="formulaPreviewVariableToken">{variable.token}</code>
+              <span class="formulaPreviewVariableName">{variable.label}</span>
+            </div>
+          {/each}
+        </div>
+      </div>
+    </div>
+    {#if isPlatformer}
+      <p class="formulaPreviewNote">
+        {$_('custom_lists.formula.platformer_time_note')}
+      </p>
+    {/if}
+  </div>
 
-	<div class="formulaPreviewGrid">
-		{#each formulaVariables as variable}
-			<div class="field">
-				<label for={`formula-preview-combined-${variable.token}`}>{variable.label}</label>
-				<Input
-					id={`formula-preview-combined-${variable.token}`}
-					type="number"
-					min={getGraphAxisMin(variable.token)}
-					value={previewInput[variable.inputKey]}
-					on:input={(event) => handlePreviewInput(variable.inputKey, event)}
-				/>
-			</div>
-		{/each}
-	</div>
+  <div class="formulaPreviewGrid">
+    {#each formulaVariables as variable}
+      <div class="field">
+        <label for={`formula-preview-combined-${variable.token}`}>{
+          variable.label
+        }</label>
+        <Input
+          id={`formula-preview-combined-${variable.token}`}
+          type="number"
+          min={getGraphAxisMin(variable.token)}
+          value={previewInput[variable.inputKey]}
+          on:input={(event) => handlePreviewInput(variable.inputKey, event)}
+        />
+      </div>
+    {/each}
+  </div>
 
-	<div class="formulaPreviewResults" class:formulaPreviewResultError={Boolean(previewError)}>
-		{#if previewError}
-			<div class="formulaPreviewResultMessage">{previewError}</div>
-		{:else}
-			{#each formulaResultCards as card (card.key)}
-				<div class="formulaPreviewResultCard">
-					<div>
-						<span class="formulaPreviewResultFunction">{card.label}</span>
-						<span class="formulaPreviewResultDescription">{card.description}</span>
-					</div>
-					<span
-						class="formulaPreviewResultValue"
-						class:formulaPreviewResultPlaceholder={card.value == null}
-					>
-						{card.value == null
-							? $_('custom_lists.formula.preview_pending')
-							: formatOutput(card.value)}
-					</span>
-				</div>
-			{/each}
-		{/if}
-	</div>
+  <div
+    class="formulaPreviewResults"
+    class:formulaPreviewResultError={Boolean(previewError)}
+  >
+    {#if previewError}
+      <div class="formulaPreviewResultMessage">{previewError}</div>
+    {:else}
+      {#each formulaResultCards as card (card.key)}
+        <div class="formulaPreviewResultCard">
+          <div>
+            <span class="formulaPreviewResultFunction">{card.label}</span>
+            <span class="formulaPreviewResultDescription">{
+              card.description
+            }</span>
+          </div>
+          <span
+            class="formulaPreviewResultValue"
+            class:formulaPreviewResultPlaceholder={card.value == null}
+          >
+            {
+              card.value == null
+              ? $_('custom_lists.formula.preview_pending')
+              : formatOutput(card.value)
+            }
+          </span>
+        </div>
+      {/each}
+    {/if}
+  </div>
 
-	<div class="formulaPreviewGraphCard" class:formulaPreviewResultError={Boolean(graphError)}>
-		<div class="formulaPreviewGraphHeader">
-			<div>
-				<h4>{$_('custom_lists.formula.graph_title')}</h4>
-				<p>{$_('custom_lists.formula.graph_hint')}</p>
-			</div>
-			<div class="formulaPreviewGraphControls">
-				<div class="field formulaPreviewGraphOutputField">
-					<label for="formula-preview-combined-output"
-						>{$_('custom_lists.formula.graph_output_label')}</label
-					>
-					<select id="formula-preview-combined-output" bind:value={graphOutputKey}>
-						{#each formulaOutputOptions as output}
-							<option value={output.key}>{output.label}</option>
-						{/each}
-					</select>
-				</div>
-				<div class="field formulaPreviewGraphAxisField">
-					<label for="formula-preview-combined-x-axis"
-						>{$_('custom_lists.formula.x_axis_label')}</label
-					>
-					<select id="formula-preview-combined-x-axis" bind:value={graphXAxis}>
-						{#each formulaVariables as variable}
-							<option value={variable.token}>{variable.label}</option>
-						{/each}
-					</select>
-				</div>
-				<div class="field formulaPreviewGraphRangeField">
-					<label for="formula-preview-combined-graph-range-min"
-						>{$_('custom_lists.formula.range_start_label')}</label
-					>
-					<Input
-						id="formula-preview-combined-graph-range-min"
-						type="number"
-						min={getGraphAxisMin(graphXAxis)}
-						bind:value={graphRangeMin}
-					/>
-				</div>
-				<div class="field formulaPreviewGraphRangeField">
-					<label for="formula-preview-combined-graph-range-max"
-						>{$_('custom_lists.formula.range_end_label')}</label
-					>
-					<Input
-						id="formula-preview-combined-graph-range-max"
-						type="number"
-						min={getGraphAxisMin(graphXAxis)}
-						bind:value={graphRangeMax}
-					/>
-				</div>
-				<label class="formulaPreviewGraphToggle" for="formula-preview-combined-cumulative-sum">
-					<input
-						id="formula-preview-combined-cumulative-sum"
-						type="checkbox"
-						bind:checked={showCumulativeSum}
-					/>
-					<span>{$_('custom_lists.formula.cumulative_sum_label')}</span>
-				</label>
-			</div>
-		</div>
+  <div
+    class="formulaPreviewGraphCard"
+    class:formulaPreviewResultError={Boolean(graphError)}
+  >
+    <div class="formulaPreviewGraphHeader">
+      <div>
+        <h4>{$_('custom_lists.formula.graph_title')}</h4>
+        <p>{$_('custom_lists.formula.graph_hint')}</p>
+      </div>
+      <div class="formulaPreviewGraphControls">
+        <div class="field formulaPreviewGraphOutputField">
+          <label for="formula-preview-combined-output">{
+            $_('custom_lists.formula.graph_output_label')
+          }</label>
+          <select
+            id="formula-preview-combined-output"
+            bind:value={graphOutputKey}
+          >
+            {#each formulaOutputOptions as output}
+              <option value={output.key}>{output.label}</option>
+            {/each}
+          </select>
+        </div>
+        <div class="field formulaPreviewGraphAxisField">
+          <label for="formula-preview-combined-x-axis">{
+            $_('custom_lists.formula.x_axis_label')
+          }</label>
+          <select id="formula-preview-combined-x-axis" bind:value={graphXAxis}>
+            {#each formulaVariables as variable}
+              <option value={variable.token}>{variable.label}</option>
+            {/each}
+          </select>
+        </div>
+        <div class="field formulaPreviewGraphRangeField">
+          <label for="formula-preview-combined-graph-range-min">{
+            $_('custom_lists.formula.range_start_label')
+          }</label>
+          <Input
+            id="formula-preview-combined-graph-range-min"
+            type="number"
+            min={getGraphAxisMin(graphXAxis)}
+            bind:value={graphRangeMin}
+          />
+        </div>
+        <div class="field formulaPreviewGraphRangeField">
+          <label for="formula-preview-combined-graph-range-max">{
+            $_('custom_lists.formula.range_end_label')
+          }</label>
+          <Input
+            id="formula-preview-combined-graph-range-max"
+            type="number"
+            min={getGraphAxisMin(graphXAxis)}
+            bind:value={graphRangeMax}
+          />
+        </div>
+        <label
+          class="formulaPreviewGraphToggle"
+          for="formula-preview-combined-cumulative-sum"
+        >
+          <input
+            id="formula-preview-combined-cumulative-sum"
+            type="checkbox"
+            bind:checked={showCumulativeSum}
+          />
+          <span>{$_('custom_lists.formula.cumulative_sum_label')}</span>
+        </label>
+      </div>
+    </div>
 
-		{#if graphError}
-			<div class="formulaPreviewGraphEmptyState">{graphError}</div>
-		{:else if previewLoading}
-			<div class="formulaPreviewGraphEmptyState">{$_('general.loading')}...</div>
-		{:else if graphBars.length > 0}
-			<div class="formulaPreviewBarChart">
-				<div class="formulaPreviewBarChartSummary">
-					<span
-						>{graphAxisLabel}: {graphDisplayCurrentPoint
-							? formatAxisValue(graphXAxis, graphDisplayCurrentPoint.x)
-							: '-'}</span
-					>
-					<span
-						>{graphOutputLabel}: {graphDisplayCurrentPoint
-							? formatOutput(graphDisplayCurrentPoint.y)
-							: '-'}</span
-					>
-				</div>
-				<div class="formulaPreviewBarChartLayout">
-					<div class="formulaPreviewBarChartScale" aria-hidden="true">
-						<span>{formatOutput(graphMaxValue)}</span>
-						{#if graphZeroLineTop > 0 && graphZeroLineTop < 100}
-							<span
-								class="formulaPreviewBarChartScaleZero"
-								style={`top: calc(${graphZeroLineTop}% - 0.55rem);`}
-							>
-								0
-							</span>
-						{/if}
-						<span>{formatOutput(graphMinValue)}</span>
-					</div>
-					<div class="formulaPreviewBarChartPlot">
-						<div class="formulaPreviewBarChartArea">
-							<div class="formulaPreviewBarChartGrid"></div>
-							<div class="formulaPreviewBarChartZeroLine" style={`top: ${graphZeroLineTop}%`}></div>
-							<div
-								class="formulaPreviewBarChartColumns"
-								style={`--bar-count: ${Math.max(graphBars.length, 1)};`}
-							>
-								{#each graphBars as bar (bar.x)}
-									<div class="formulaPreviewBarColumn">
-										<div class="formulaPreviewBarTrack">
-											<button
-												type="button"
-												class="formulaPreviewBar"
-												class:formulaPreviewBarCurrent={bar.isCurrent}
-												style={`top: ${bar.topPercent}%; height: ${bar.heightPercent}%`}
-												aria-label={`${graphAxisLabel}: ${bar.label}, ${graphOutputLabel}: ${bar.valueLabel}`}
-											>
-												<span class="formulaPreviewBarTooltip" aria-hidden="true">
-													<span>{graphAxisLabel}: {bar.label}</span>
-													<span>{graphOutputLabel}: {bar.valueLabel}</span>
-												</span>
-											</button>
-										</div>
-										<span class="formulaPreviewBarLabel">
-											{bar.showLabel ? bar.label : ''}
-										</span>
-									</div>
-								{/each}
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		{:else}
-			<div class="formulaPreviewGraphEmptyState">{$_('custom_lists.formula.graph_pending')}</div>
-		{/if}
-	</div>
+    {#if graphError}
+      <div class="formulaPreviewGraphEmptyState">{graphError}</div>
+    {:else if previewLoading}
+      <div class="formulaPreviewGraphEmptyState">
+        {$_('general.loading')}...
+      </div>
+    {:else if graphBars.length > 0}
+      <div class="formulaPreviewBarChart">
+        <div class="formulaPreviewBarChartSummary">
+          <span>{graphAxisLabel}: {
+              graphDisplayCurrentPoint
+              ? formatAxisValue(graphXAxis, graphDisplayCurrentPoint.x)
+              : '-'
+            }</span>
+          <span>{graphOutputLabel}: {
+              graphDisplayCurrentPoint
+              ? formatOutput(graphDisplayCurrentPoint.y)
+              : '-'
+            }</span>
+        </div>
+        <div class="formulaPreviewBarChartLayout">
+          <div class="formulaPreviewBarChartScale" aria-hidden="true">
+            <span>{formatOutput(graphMaxValue)}</span>
+            {#if graphZeroLineTop > 0 && graphZeroLineTop < 100}
+              <span
+                class="formulaPreviewBarChartScaleZero"
+                style={`top: calc(${graphZeroLineTop}% - 0.55rem);`}
+              >
+                0
+              </span>
+            {/if}
+            <span>{formatOutput(graphMinValue)}</span>
+          </div>
+          <div class="formulaPreviewBarChartPlot">
+            <div class="formulaPreviewBarChartArea">
+              <div class="formulaPreviewBarChartGrid"></div>
+              <div
+                class="formulaPreviewBarChartZeroLine"
+                style={`top: ${graphZeroLineTop}%`}
+              >
+              </div>
+              <div
+                class="formulaPreviewBarChartColumns"
+                style={`--bar-count: ${Math.max(graphBars.length, 1)};`}
+              >
+                {#each graphBars as bar (bar.x)}
+                  <div class="formulaPreviewBarColumn">
+                    <div class="formulaPreviewBarTrack">
+                      <button
+                        type="button"
+                        class="formulaPreviewBar"
+                        class:formulaPreviewBarCurrent={bar.isCurrent}
+                        style={`top: ${bar.topPercent}%; height: ${bar.heightPercent}%`}
+                        aria-label={`${graphAxisLabel}: ${bar.label}, ${graphOutputLabel}: ${bar.valueLabel}`}
+                      >
+                        <span
+                          class="formulaPreviewBarTooltip"
+                          aria-hidden="true"
+                        >
+                          <span>{graphAxisLabel}: {bar.label}</span>
+                          <span>{graphOutputLabel}: {bar.valueLabel}</span>
+                        </span>
+                      </button>
+                    </div>
+                    <span class="formulaPreviewBarLabel">
+                      {bar.showLabel ? bar.label : ''}
+                    </span>
+                  </div>
+                {/each}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    {:else}
+      <div class="formulaPreviewGraphEmptyState">
+        {$_('custom_lists.formula.graph_pending')}
+      </div>
+    {/if}
+  </div>
 </div>
 
 <style lang="scss">
-	.formulaPreviewCard {
-		display: flex;
-		flex-direction: column;
-		gap: 12px;
-		padding: 14px;
-		border: 1px solid hsl(var(--border));
-		border-radius: 10px;
-		background: hsl(var(--muted) / 0.18);
-	}
+.formulaPreviewCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 10px;
+  background: hsl(var(--muted) / 0.18);
+}
 
-	.formulaPreviewHeader {
-		display: flex;
-		justify-content: space-between;
-		align-items: flex-start;
-		gap: 12px;
-		flex-wrap: wrap;
-	}
+.formulaPreviewHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
 
-	.formulaPreviewHeader h3 {
-		margin: 0;
-		font-size: 0.95rem;
-		font-weight: 600;
-	}
+.formulaPreviewHeader h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
 
-	.formulaPreviewHeader p {
-		margin: 4px 0 0;
-		font-size: 0.8rem;
-		color: hsl(var(--muted-foreground));
-	}
+.formulaPreviewHeader p {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: hsl(var(--muted-foreground));
+}
 
-	.formulaPreviewGrid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-		gap: 12px;
-	}
+.formulaPreviewGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
 
-	.formulaPreviewVariables {
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-		padding: 12px 14px;
-		border-radius: 8px;
-		border: 1px dashed hsl(var(--border));
-		background: hsl(var(--background));
-	}
+.formulaPreviewVariables {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px dashed hsl(var(--border));
+  background: hsl(var(--background));
+}
 
-	.formulaPreviewVariablesLabel {
-		font-size: 0.8rem;
-		font-weight: 600;
-	}
+.formulaPreviewVariablesLabel {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
 
-	.formulaPreviewVariableGroups {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-		gap: 12px;
-	}
+.formulaPreviewVariableGroups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
 
-	.formulaPreviewVariableGroup {
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-		min-width: 0;
-	}
+.formulaPreviewVariableGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
 
-	.formulaPreviewVariableGroupLabel {
-		font-size: 0.78rem;
-		font-weight: 700;
-	}
+.formulaPreviewVariableGroupLabel {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
 
-	.formulaPreviewNote {
-		margin: 0;
-		font-size: 0.78rem;
-		color: hsl(var(--muted-foreground));
-	}
+.formulaPreviewNote {
+  margin: 0;
+  font-size: 0.78rem;
+  color: hsl(var(--muted-foreground));
+}
 
-	.formulaPreviewVariableList {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-		gap: 10px;
-	}
+.formulaPreviewVariableList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
 
-	.formulaPreviewVariable {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		flex-wrap: wrap;
-	}
+.formulaPreviewVariable {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 
-	.formulaPreviewVariableToken {
-		padding: 4px 8px;
-		border-radius: 999px;
-		border: 1px solid hsl(var(--border));
-		background: hsl(var(--muted));
-		font-size: 0.78rem;
-		font-weight: 600;
-	}
+.formulaPreviewVariableToken {
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--muted));
+  font-size: 0.78rem;
+  font-weight: 600;
+}
 
-	.formulaPreviewVariableName {
-		font-size: 0.8rem;
-		color: hsl(var(--muted-foreground));
-	}
+.formulaPreviewVariableName {
+  font-size: 0.8rem;
+  color: hsl(var(--muted-foreground));
+}
 
-	.field {
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-	}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 
-	.field label {
-		font-size: 0.85rem;
-		font-weight: 500;
-	}
+.field label {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
 
-	.formulaPreviewResults {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-		gap: 10px;
-	}
+.formulaPreviewResults {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+}
 
-	.formulaPreviewResultCard,
-	.formulaPreviewResultMessage {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		gap: 12px;
-		padding: 12px 14px;
-		border-radius: 8px;
-		background: hsl(var(--background));
-		border: 1px solid hsl(var(--border));
-	}
+.formulaPreviewResultCard,
+.formulaPreviewResultMessage {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+}
 
-	.formulaPreviewResultMessage {
-		grid-column: 1 / -1;
-		justify-content: flex-start;
-		color: hsl(var(--destructive));
-		font-size: 0.86rem;
-		font-weight: 600;
-	}
+.formulaPreviewResultMessage {
+  grid-column: 1 / -1;
+  justify-content: flex-start;
+  color: hsl(var(--destructive));
+  font-size: 0.86rem;
+  font-weight: 600;
+}
 
-	.formulaPreviewResultError .formulaPreviewResultCard,
-	.formulaPreviewResultError .formulaPreviewResultMessage {
-		border-color: hsl(var(--destructive) / 0.45);
-	}
+.formulaPreviewResultError .formulaPreviewResultCard,
+.formulaPreviewResultError .formulaPreviewResultMessage {
+  border-color: hsl(var(--destructive) / 0.45);
+}
 
-	.formulaPreviewResultFunction,
-	.formulaPreviewResultValue {
-		display: block;
-		font-size: 0.9rem;
-		font-weight: 700;
-	}
+.formulaPreviewResultFunction,
+.formulaPreviewResultValue {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
 
-	.formulaPreviewResultDescription {
-		display: block;
-		margin-top: 2px;
-		font-size: 0.76rem;
-		color: hsl(var(--muted-foreground));
-	}
+.formulaPreviewResultDescription {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.76rem;
+  color: hsl(var(--muted-foreground));
+}
 
-	.formulaPreviewResultValue {
-		text-align: right;
-	}
+.formulaPreviewResultValue {
+  text-align: right;
+}
 
-	.formulaPreviewResultPlaceholder {
-		color: hsl(var(--muted-foreground));
-		font-weight: 500;
-	}
+.formulaPreviewResultPlaceholder {
+  color: hsl(var(--muted-foreground));
+  font-weight: 500;
+}
 
-	.formulaPreviewGraphCard {
-		display: flex;
-		flex-direction: column;
-		gap: 12px;
-		padding: 12px 14px;
-		border-radius: 8px;
-		background: hsl(var(--background));
-		border: 1px solid hsl(var(--border));
-	}
+.formulaPreviewGraphCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+}
 
-	.formulaPreviewGraphCard.formulaPreviewResultError {
-		border-color: hsl(var(--destructive) / 0.45);
-	}
+.formulaPreviewGraphCard.formulaPreviewResultError {
+  border-color: hsl(var(--destructive) / 0.45);
+}
 
-	.formulaPreviewGraphHeader {
-		display: flex;
-		justify-content: space-between;
-		align-items: flex-start;
-		gap: 12px;
-		flex-wrap: wrap;
-	}
+.formulaPreviewGraphHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
 
-	.formulaPreviewGraphHeader h4 {
-		margin: 0;
-		font-size: 0.9rem;
-		font-weight: 600;
-	}
+.formulaPreviewGraphHeader h4 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
 
-	.formulaPreviewGraphHeader p {
-		margin: 4px 0 0;
-		font-size: 0.8rem;
-		color: hsl(var(--muted-foreground));
-	}
+.formulaPreviewGraphHeader p {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: hsl(var(--muted-foreground));
+}
 
-	.formulaPreviewGraphOutputField,
-	.formulaPreviewGraphAxisField {
-		min-width: 180px;
-	}
+.formulaPreviewGraphOutputField,
+.formulaPreviewGraphAxisField {
+  min-width: 180px;
+}
 
-	.formulaPreviewGraphRangeField {
-		width: 8rem;
-	}
+.formulaPreviewGraphRangeField {
+  width: 8rem;
+}
 
-	.formulaPreviewGraphControls {
-		display: flex;
-		align-items: flex-end;
-		gap: 12px;
-		flex-wrap: wrap;
-	}
+.formulaPreviewGraphControls {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
 
-	.formulaPreviewGraphOutputField select,
-	.formulaPreviewGraphAxisField select {
-		height: 2.5rem;
-		padding: 0 0.75rem;
-		border-radius: calc(var(--radius) - 2px);
-		border: 1px solid hsl(var(--input));
-		background: hsl(var(--background));
-		font-size: 0.875rem;
-	}
+.formulaPreviewGraphOutputField select,
+.formulaPreviewGraphAxisField select {
+  height: 2.5rem;
+  padding: 0 0.75rem;
+  border-radius: calc(var(--radius) - 2px);
+  border: 1px solid hsl(var(--input));
+  background: hsl(var(--background));
+  font-size: 0.875rem;
+}
 
-	.formulaPreviewGraphToggle {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		min-height: 2.5rem;
-		font-size: 0.82rem;
-		font-weight: 500;
-		color: hsl(var(--foreground));
-		cursor: pointer;
-	}
+.formulaPreviewGraphToggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 2.5rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: hsl(var(--foreground));
+  cursor: pointer;
+}
 
-	.formulaPreviewGraphToggle input {
-		width: 1rem;
-		height: 1rem;
-		margin: 0;
-		accent-color: hsl(var(--primary));
-	}
+.formulaPreviewGraphToggle input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: hsl(var(--primary));
+}
 
-	.formulaPreviewBarChart {
-		display: flex;
-		flex-direction: column;
-		gap: 12px;
-	}
+.formulaPreviewBarChart {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 
-	.formulaPreviewBarChartSummary {
-		display: flex;
-		justify-content: space-between;
-		gap: 10px;
-		flex-wrap: wrap;
-		font-size: 0.8rem;
-		color: hsl(var(--muted-foreground));
-	}
+.formulaPreviewBarChartSummary {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+  color: hsl(var(--muted-foreground));
+}
 
-	.formulaPreviewBarChartLayout {
-		display: flex;
-		gap: 12px;
-		align-items: stretch;
-	}
+.formulaPreviewBarChartLayout {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+}
 
-	.formulaPreviewBarChartScale {
-		position: relative;
-		display: flex;
-		flex-direction: column;
-		justify-content: space-between;
-		width: 3rem;
-		padding: 2px 0 1.85rem;
-		font-size: 0.72rem;
-		color: hsl(var(--muted-foreground));
-	}
+.formulaPreviewBarChartScale {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 3rem;
+  padding: 2px 0 1.85rem;
+  font-size: 0.72rem;
+  color: hsl(var(--muted-foreground));
+}
 
-	.formulaPreviewBarChartScaleZero {
-		position: absolute;
-		left: 0;
-	}
+.formulaPreviewBarChartScaleZero {
+  position: absolute;
+  left: 0;
+}
 
-	.formulaPreviewBarChartPlot {
-		flex: 1;
-		min-width: 0;
-	}
+.formulaPreviewBarChartPlot {
+  flex: 1;
+  min-width: 0;
+}
 
-	.formulaPreviewBarChartArea {
-		position: relative;
-		height: 260px;
-		padding: 8px 0 0;
-	}
+.formulaPreviewBarChartArea {
+  position: relative;
+  height: 260px;
+  padding: 8px 0 0;
+}
 
-	.formulaPreviewBarChartGrid {
-		position: absolute;
-		inset: 8px 0 1.85rem;
-		border-radius: 8px;
-		background-image: linear-gradient(
-			to top,
-			hsl(var(--border) / 0.75) 0,
-			hsl(var(--border) / 0.75) 1px,
-			transparent 1px,
-			transparent calc(25% - 1px)
-		);
-		background-size: 100% 25%;
-	}
+.formulaPreviewBarChartGrid {
+  position: absolute;
+  inset: 8px 0 1.85rem;
+  border-radius: 8px;
+  background-image: linear-gradient(
+    to top,
+    hsl(var(--border) / 0.75) 0,
+    hsl(var(--border) / 0.75) 1px,
+    transparent 1px,
+    transparent calc(25% - 1px)
+  );
+  background-size: 100% 25%;
+}
 
-	.formulaPreviewBarChartZeroLine {
-		position: absolute;
-		left: 0;
-		right: 0;
-		height: 1px;
-		background: hsl(var(--border));
-		transform: translateY(-0.5px);
-		pointer-events: none;
-	}
+.formulaPreviewBarChartZeroLine {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: hsl(var(--border));
+  transform: translateY(-0.5px);
+  pointer-events: none;
+}
 
-	.formulaPreviewBarChartColumns {
-		position: absolute;
-		inset: 8px 0 0;
-		display: grid;
-		grid-template-columns: repeat(var(--bar-count), minmax(0, 1fr));
-		gap: 2px;
-		overflow: visible;
-	}
+.formulaPreviewBarChartColumns {
+  position: absolute;
+  inset: 8px 0 0;
+  display: grid;
+  grid-template-columns: repeat(var(--bar-count), minmax(0, 1fr));
+  gap: 2px;
+  overflow: visible;
+}
 
-	.formulaPreviewBarColumn {
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-		align-items: center;
-		min-width: 0;
-	}
+.formulaPreviewBarColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
 
-	.formulaPreviewBarTrack {
-		position: relative;
-		width: 100%;
-		height: 220px;
-		overflow: visible;
-	}
+.formulaPreviewBarTrack {
+  position: relative;
+  width: 100%;
+  height: 220px;
+  overflow: visible;
+}
 
-	.formulaPreviewBar {
-		position: absolute;
-		left: 50%;
-		right: auto;
-		width: min(100%, 0.32rem);
-		padding: 0;
-		border: 0;
-		border-radius: 0;
-		background: hsl(var(--primary));
-		appearance: none;
-		cursor: pointer;
-		transform: translateX(-50%);
-		transition:
-			transform 0.16s ease,
-			opacity 0.16s ease;
-	}
+.formulaPreviewBar {
+  position: absolute;
+  left: 50%;
+  right: auto;
+  width: min(100%, 0.32rem);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: hsl(var(--primary));
+  appearance: none;
+  cursor: pointer;
+  transform: translateX(-50%);
+  transition: transform 0.16s ease, opacity 0.16s ease;
+}
 
-	.formulaPreviewBarColumn:hover .formulaPreviewBar,
-	.formulaPreviewBarColumn:focus-within .formulaPreviewBar,
-	.formulaPreviewBar:hover,
-	.formulaPreviewBar:focus-visible {
-		transform: translate(-50%, -2px);
-		opacity: 0.92;
-		outline: none;
-	}
+.formulaPreviewBarColumn:hover .formulaPreviewBar,
+.formulaPreviewBarColumn:focus-within .formulaPreviewBar,
+.formulaPreviewBar:hover,
+.formulaPreviewBar:focus-visible {
+  transform: translate(-50%, -2px);
+  opacity: 0.92;
+  outline: none;
+}
 
-	.formulaPreviewBarCurrent {
-		background: hsl(var(--destructive));
-	}
+.formulaPreviewBarCurrent {
+  background: hsl(var(--destructive));
+}
 
-	.formulaPreviewBarTooltip {
-		position: absolute;
-		left: 50%;
-		bottom: calc(100% + 8px);
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-		padding: 7px 9px;
-		border-radius: 6px;
-		background: hsl(var(--foreground));
-		color: hsl(var(--background));
-		font-size: 0.72rem;
-		line-height: 1.3;
-		white-space: nowrap;
-		transform: translate(-50%, 6px);
-		opacity: 0;
-		visibility: hidden;
-		pointer-events: none;
-		z-index: 2;
-		transition:
-			transform 0.16s ease,
-			opacity 0.16s ease,
-			visibility 0.16s ease;
-	}
+.formulaPreviewBarTooltip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 7px 9px;
+  border-radius: 6px;
+  background: hsl(var(--foreground));
+  color: hsl(var(--background));
+  font-size: 0.72rem;
+  line-height: 1.3;
+  white-space: nowrap;
+  transform: translate(-50%, 6px);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: 2;
+  transition: transform 0.16s ease, opacity 0.16s ease, visibility 0.16s ease;
+}
 
-	.formulaPreviewBarTooltip::after {
-		content: '';
-		position: absolute;
-		left: 50%;
-		top: 100%;
-		width: 8px;
-		height: 8px;
-		background: hsl(var(--foreground));
-		transform: translate(-50%, -50%) rotate(45deg);
-	}
+.formulaPreviewBarTooltip::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 8px;
+  height: 8px;
+  background: hsl(var(--foreground));
+  transform: translate(-50%, -50%) rotate(45deg);
+}
 
-	.formulaPreviewBarColumn:hover .formulaPreviewBarTooltip,
-	.formulaPreviewBarColumn:focus-within .formulaPreviewBarTooltip,
-	.formulaPreviewBar:hover .formulaPreviewBarTooltip,
-	.formulaPreviewBar:focus-visible .formulaPreviewBarTooltip {
-		transform: translate(-50%, 0);
-		opacity: 1;
-		visibility: visible;
-	}
+.formulaPreviewBarColumn:hover .formulaPreviewBarTooltip,
+.formulaPreviewBarColumn:focus-within .formulaPreviewBarTooltip,
+.formulaPreviewBar:hover .formulaPreviewBarTooltip,
+.formulaPreviewBar:focus-visible .formulaPreviewBarTooltip {
+  transform: translate(-50%, 0);
+  opacity: 1;
+  visibility: visible;
+}
 
-	.formulaPreviewBarLabel {
-		min-height: 1.8rem;
-		width: 100%;
-		overflow: hidden;
-		font-size: 0.7rem;
-		line-height: 1.25;
-		color: hsl(var(--muted-foreground));
-		text-align: center;
-		white-space: nowrap;
-		text-overflow: ellipsis;
-	}
+.formulaPreviewBarLabel {
+  min-height: 1.8rem;
+  width: 100%;
+  overflow: hidden;
+  font-size: 0.7rem;
+  line-height: 1.25;
+  color: hsl(var(--muted-foreground));
+  text-align: center;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
 
-	.formulaPreviewGraphEmptyState {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		min-height: 180px;
-		padding: 16px;
-		border-radius: 8px;
-		border: 1px dashed hsl(var(--border));
-		color: hsl(var(--muted-foreground));
-		text-align: center;
-		font-size: 0.85rem;
-	}
+.formulaPreviewGraphEmptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 180px;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px dashed hsl(var(--border));
+  color: hsl(var(--muted-foreground));
+  text-align: center;
+  font-size: 0.85rem;
+}
 
-	@media (max-width: 720px) {
-		.formulaPreviewBarChartLayout {
-			gap: 8px;
-		}
+@media (max-width: 720px) {
+  .formulaPreviewBarChartLayout {
+    gap: 8px;
+  }
 
-		.formulaPreviewBarChartScale {
-			width: 2.5rem;
-		}
+  .formulaPreviewBarChartScale {
+    width: 2.5rem;
+  }
 
-		.formulaPreviewBarChartColumns {
-			gap: 1px;
-		}
-	}
+  .formulaPreviewBarChartColumns {
+    gap: 1px;
+  }
+}
 </style>

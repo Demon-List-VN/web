@@ -14,65 +14,88 @@
 </script>
 
 <svelte:head>
-	<title>{data.player.name} - {$_('head.site_name')}</title>
-	<meta property="og:title" content={`${data.player.name} - ${$_('head.site_name')}`} />
-	<meta
-		property="og:description"
-		content={data.selectedList
-			? `${data.selectedList.title}: ${Math.round(data.selectedList.score * 10) / 10} #${data.selectedList.rank}\n${$_('head.labels.records')}: ${data.selectedList.completedCount}\n${$_('head.labels.contest_rating')}: ${data.player.elo}`
-			: `${$_('head.labels.classic_rating')}: ${data.player.rating} #${data.player.overallRank}\n${$_('head.labels.featured_list_points')}: ${data.player.totalFLpt} #${data.player.flrank}\n${$_('head.labels.contest_rating')}: ${data.player.elo}`}
-	/>
-	<meta
-		property="og:image"
-		content={`https://cdn.gdvn.net/avatars/${data.player.uid}${
-			isActive(data.player.supporterUntil) && data.player.isAvatarGif ? '.gif' : '.jpg'
-		}?version=${data.player.avatarVersion}`}
-	/>
+  <title>{data.player.name} - {$_('head.site_name')}</title>
+  <meta
+    property="og:title"
+    content={`${data.player.name} - ${$_('head.site_name')}`}
+  />
+  <meta
+    property="og:description"
+    content={data.selectedList
+    ? `${data.selectedList.title}: ${
+        Math.round(data.selectedList.score * 10) / 10
+    } #${data.selectedList.rank}\n${
+        $_('head.labels.records')
+    }: ${data.selectedList.completedCount}\n${
+        $_('head.labels.contest_rating')
+    }: ${data.player.elo}`
+    : `${
+        $_('head.labels.classic_rating')
+    }: ${data.player.rating} #${data.player.overallRank}\n${
+        $_('head.labels.featured_list_points')
+    }: ${data.player.totalFLpt} #${data.player.flrank}\n${
+        $_('head.labels.contest_rating')
+    }: ${data.player.elo}`}
+  />
+  <meta
+    property="og:image"
+    content={`https://cdn.gdvn.net/avatars/${data.player.uid}${
+        isActive(data.player.supporterUntil) && data.player.isAvatarGif
+            ? '.gif'
+            : '.jpg'
+    }?version=${data.player.avatarVersion}`}
+  />
 </svelte:head>
 
 {#if data.player.isBanned}
-	<div class="relative z-50 flex h-[50px] items-center justify-center bg-red-600">
-		{$_('player.banned_notice')}
-	</div>
+  <div class="relative z-50 flex h-[50px] items-center justify-center bg-red-600">
+    {$_('player.banned_notice')}
+  </div>
 {:else if data.player.isHidden}
-	<div class="relative z-50 flex h-[50px] items-center justify-center bg-yellow-600">
-		{$_('player.hidden_notice')}
-	</div>
+  <div class="relative z-50 flex h-[50px] items-center justify-center bg-yellow-600">
+    {$_('player.hidden_notice')}
+  </div>
 {/if}
 
 <ProfileHero bind:data />
 
 {#if !isActive(data.player.supporterUntil)}
-	<div class="mx-auto max-w-[1200px] px-4 py-4">
-		<Ads dataAdFormat="auto" />
-	</div>
+  <div class="mx-auto max-w-[1200px] px-4 py-4">
+    <Ads dataAdFormat="auto" />
+  </div>
 {/if}
 
 <div class="mx-auto max-w-[1200px] px-4 pb-8 sm:px-6 lg:px-8">
-	<Tabs.Root value="overview">
-		<div class="flex flex-col items-center gap-4 pt-4">
-			<Tabs.List class="flex h-fit w-fit flex-wrap">
-				<Tabs.Trigger value="overview">{$_('player.tabs.overview')}</Tabs.Trigger>
-				<Tabs.Trigger value="records">{$_('player.tabs.records')}</Tabs.Trigger>
-				<Tabs.Trigger value="activity">{$_('player.tabs.activity')}</Tabs.Trigger>
-				<Tabs.Trigger value="collection">{$_('player.tabs.collection')}</Tabs.Trigger>
-			</Tabs.List>
+  <Tabs.Root value="overview">
+    <div class="flex flex-col items-center gap-4 pt-4">
+      <Tabs.List class="flex h-fit w-fit flex-wrap">
+        <Tabs.Trigger value="overview">{
+          $_('player.tabs.overview')
+        }</Tabs.Trigger>
+        <Tabs.Trigger value="records">{$_('player.tabs.records')}</Tabs.Trigger>
+        <Tabs.Trigger value="activity">{
+          $_('player.tabs.activity')
+        }</Tabs.Trigger>
+        <Tabs.Trigger value="collection">{
+          $_('player.tabs.collection')
+        }</Tabs.Trigger>
+      </Tabs.List>
 
-			<Tabs.Content value="overview" class="w-full max-w-[1200px]">
-				<OverviewTab {data} />
-			</Tabs.Content>
+      <Tabs.Content value="overview" class="w-full max-w-[1200px]">
+        <OverviewTab {data} />
+      </Tabs.Content>
 
-			<Tabs.Content value="records" class="w-full max-w-[1200px]">
-				<RecordsTab bind:data />
-			</Tabs.Content>
+      <Tabs.Content value="records" class="w-full max-w-[1200px]">
+        <RecordsTab bind:data />
+      </Tabs.Content>
 
-			<Tabs.Content value="activity" class="w-full max-w-[1200px]">
-				<ActivityTab userID={data.player.uid} />
-			</Tabs.Content>
+      <Tabs.Content value="activity" class="w-full max-w-[1200px]">
+        <ActivityTab userID={data.player.uid} />
+      </Tabs.Content>
 
-			<Tabs.Content value="collection" class="w-full max-w-[1200px]">
-				<CollectionTab userID={data.player.uid} {data} />
-			</Tabs.Content>
-		</div>
-	</Tabs.Root>
+      <Tabs.Content value="collection" class="w-full max-w-[1200px]">
+        <CollectionTab userID={data.player.uid} {data} />
+      </Tabs.Content>
+    </div>
+  </Tabs.Root>
 </div>

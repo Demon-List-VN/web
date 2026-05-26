@@ -78,53 +78,53 @@
 <Title value="Rating estimator" />
 
 <div class="wrapper">
-	{#if l == r - 1}
-		{#if lvStart && lvEnd}
-			<p>Estimated rating range: {lvEnd.rating} - {lvStart.rating}</p>
-			<div class="finWrapper">
-				<LevelCard {...toLevelCardProps(lvStart, 'dl')} type="dl" />
-				<LevelCard {...toLevelCardProps(lvEnd, 'dl')} type="dl" />
-			</div>
-		{:else}
-			<Loading inverted />
-		{/if}
-	{:else if level}
-		<div class="lvWrapper">
-			<LevelCard {...toLevelCardProps(level, 'dl')} type="dl" />
-			<div class="btn">
-				<Button on:click={setEasier}>Easier</Button>
-				<span>or</span>
-				<Button on:click={setHarder}>Harder</Button>
-			</div>
-			<div>Placement range: {r} - {l}</div>
-		</div>
-	{:else}
-		<Loading inverted />
-	{/if}
+  {#if l == r - 1}
+    {#if lvStart && lvEnd}
+      <p>Estimated rating range: {lvEnd.rating} - {lvStart.rating}</p>
+      <div class="finWrapper">
+        <LevelCard {...toLevelCardProps(lvStart, 'dl')} type="dl" />
+        <LevelCard {...toLevelCardProps(lvEnd, 'dl')} type="dl" />
+      </div>
+    {:else}
+      <Loading inverted />
+    {/if}
+  {:else if level}
+    <div class="lvWrapper">
+      <LevelCard {...toLevelCardProps(level, 'dl')} type="dl" />
+      <div class="btn">
+        <Button on:click={setEasier}>Easier</Button>
+        <span>or</span>
+        <Button on:click={setHarder}>Harder</Button>
+      </div>
+      <div>Placement range: {r} - {l}</div>
+    </div>
+  {:else}
+    <Loading inverted />
+  {/if}
 </div>
 
 <style lang="scss">
-	.lvWrapper {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 10px;
-	}
+.lvWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
 
-	.finWrapper {
-		display: flex;
-		gap: 20px;
-		margin-top: 20px;
-	}
+.finWrapper {
+  display: flex;
+  gap: 20px;
+  margin-top: 20px;
+}
 
-	.wrapper {
-		padding: 80px;
-	}
+.wrapper {
+  padding: 80px;
+}
 
-	.btn {
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		gap: 10px;
-	}
+.btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
 </style>

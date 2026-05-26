@@ -4,9 +4,9 @@ import type { Reroute } from '@sveltejs/kit';
 // hits the existing file-based routes. The original URL (with prefix) is still
 // available via `event.url` in server hooks.
 export const reroute: Reroute = ({ url }) => {
-	const match = url.pathname.match(/^\/(en|vi)(\/.*)?$/);
+    const match = url.pathname.match(/^\/(en|vi)(\/.*)?$/);
 
-	if (match) {
-		return match[2] || '/';
-	}
+    if (match) {
+        return match[2] || '/';
+    }
 };

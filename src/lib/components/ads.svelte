@@ -33,12 +33,12 @@
 </script>
 
 {#if !hidden}
-	<ins
-		class="adsbygoogle"
-		style="display:block"
-		data-ad-client="ca-pub-4605218533506777"
-		data-ad-slot="7284584064"
-		data-ad-format="auto"
-		data-full-width-responsive="true"
-	></ins>
+  <ins
+    class="adsbygoogle"
+    style="display: block"
+    data-ad-client="ca-pub-4605218533506777"
+    data-ad-slot="7284584064"
+    data-ad-format="auto"
+    data-full-width-responsive="true"
+  ></ins>
 {/if}

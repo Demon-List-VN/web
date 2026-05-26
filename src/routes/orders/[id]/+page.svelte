@@ -75,7 +75,11 @@
 					headers: { Authorization: `Bearer ${await $user.token()}` }
 				}
 			);
-			if (!res.ok) throw new Error();
+
+			if (!res.ok) {
+				throw new Error();
+			}
+
 			data.recordCards = data.recordCards.map((c: any) =>
 				c.id === rc.id ? { ...c, printed: true } : c
 			);
@@ -89,7 +93,11 @@
 		selectedCard = rc;
 		setTimeout(() => {
 			const el = document.getElementById('record-card-print-area');
-			if (!el) return;
+
+			if (!el) {
+				return;
+			}
+
 			const parent = el.parentNode;
 			const next = el.nextSibling;
 
@@ -101,7 +109,10 @@
 				'afterprint',
 				() => {
 					document.body.classList.remove('printing-record-card');
-					if (parent) parent.insertBefore(el, next);
+
+					if (parent) {
+						parent.insertBefore(el, next);
+					}
 				},
 				{ once: true }
 			);
@@ -111,11 +122,14 @@
 	function openMassExport() {
 		if (data?.recordCards) {
 			const initial: Record<string, boolean> = {};
+
 			for (const rc of data.recordCards) {
 				initial[rc.id] = cardNFCMap[rc.id] ?? false;
 			}
+
 			cardNFCMap = initial;
 		}
+
 		// Render print area immediately so images load while user reviews cards
 		isMassExport = true;
 		massExportDialogOpen = true;
@@ -127,16 +141,27 @@
 	}
 
 	function toggleAllNFC() {
-		if (!data?.recordCards) return;
+		if (!data?.recordCards) {
+			return;
+		}
+
 		const allOn = data.recordCards.every((rc: any) => cardNFCMap[rc.id]);
 		const nextMap: Record<string, boolean> = {};
-		for (const rc of data.recordCards) nextMap[rc.id] = !allOn;
+
+		for (const rc of data.recordCards) {
+			nextMap[rc.id] = !allOn;
+		}
+
 		cardNFCMap = nextMap;
 	}
 
 	function massExport() {
 		const el = document.getElementById('record-card-print-area');
-		if (!el) return;
+
+		if (!el) {
+			return;
+		}
+
 		const parent = el.parentNode;
 		const nextSibling = el.nextSibling;
 
@@ -148,6 +173,7 @@
 			'afterprint',
 			() => {
 				document.body.classList.remove('printing-record-card');
+
 				if (parent) {
 					if (nextSibling && parent.contains(nextSibling)) {
 						parent.insertBefore(el, nextSibling);
@@ -344,7 +370,8 @@
 										</p>
 									</div>
 									<div class="ml-auto flex items-center">
-										{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(
+										{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' })
+.format(
 											item.quantity * item.products.price
 										)}
 									</div>
@@ -388,7 +415,8 @@
 											{new Intl.NumberFormat('vi-VN', {
 												style: 'currency',
 												currency: 'VND'
-											}).format(rc.material === 'paper' ? 29000 : 149000)}
+											})
+.format(rc.material === 'paper' ? 29000 : 149000)}
 										</div>
 									</div>
 									{#if $user.loggedIn && $user.data.isManager}
@@ -428,7 +456,8 @@
 						<p>{$_('order_detail.subtotal')}</p>
 						<p class="ml-auto">
 							<b>
-								{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(
+								{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' })
+.format(
 									data.amount
 								)}
 							</b>
@@ -439,7 +468,8 @@
 							<p>{$_('order_detail.shipping_fee')}</p>
 							<p class="ml-auto">
 								<b>
-									{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(
+									{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' })
+.format(
 										data.fee
 									)}
 								</b>
@@ -452,7 +482,8 @@
 						</p>
 						<p class="ml-auto text-lg">
 							<b>
-								{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(
+								{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' })
+.format(
 									data.amount + data.fee
 								)}
 							</b>
@@ -483,8 +514,10 @@
 								</div>
 								<div class="flex-1 pb-4">
 									<p class="text-sm text-muted-foreground">
-										{new Date(item.created_at).toLocaleDateString('vi-VN')} -
-										{new Date(item.created_at).toLocaleTimeString('vi-VN')}
+										{new Date(item.created_at)
+.toLocaleDateString('vi-VN')} -
+										{new Date(item.created_at)
+.toLocaleTimeString('vi-VN')}
 									</p>
 									{#if item.link}
 										<a href={item.link}>
@@ -577,7 +610,9 @@
 						label: CARD_SIZES.find((s) => s.id === selectedPrintSize)?.label
 					}}
 					onSelectedChange={(v) => {
-						if (v) selectedPrintSize = v.value;
+						if (v) {
+ selectedPrintSize = v.value;
+}
 					}}
 				>
 					<Select.Trigger class="w-[160px]">
@@ -616,7 +651,11 @@
 </Dialog.Root>
 
 <!-- Manager: Mass Export dialog -->
-<Dialog.Root bind:open={massExportDialogOpen} onOpenChange={(open) => { if (!open) isMassExport = false; }}>
+<Dialog.Root bind:open={massExportDialogOpen} onOpenChange={(open) => {
+ if (!open) {
+ isMassExport = false;
+}
+}}>
 	<Dialog.Content class="max-w-[900px]">
 		<Dialog.Header>
 			<Dialog.Title>Mass Export PDF</Dialog.Title>
@@ -692,7 +731,9 @@
 						label: CARD_SIZES.find((s) => s.id === massExportPrintSize)?.label
 					}}
 					onSelectedChange={(v) => {
-						if (v) massExportPrintSize = v.value;
+						if (v) {
+ massExportPrintSize = v.value;
+}
 					}}
 				>
 					<Select.Trigger class="w-[160px]">

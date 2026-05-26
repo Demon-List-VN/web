@@ -1,18 +1,18 @@
 import { browser } from '$app/environment';
 
 export function getBorderStyle(player: any) {
-	if (player.borderColor) {
-		const isDark = browser && localStorage.getItem('theme') == 'dark';
-		const bgColor = isDark ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.5)';
+    if (player.borderColor) {
+        const isDark = browser && localStorage.getItem('theme') == 'dark';
+        const bgColor = isDark ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.5)';
 
-		let style = `border-color: ${player.borderColor}; background-color: ${bgColor}`;
+        let style = `border-color: ${player.borderColor}; background-color: ${bgColor}`;
 
-		if (player.borderColor) {
-			style += `; box-shadow: 0 0 12px ${player.borderColor}40`;
-		}
+        if (player.borderColor) {
+            style += `; box-shadow: 0 0 12px ${player.borderColor}40`;
+        }
 
-		return style;
-	}
+        return style;
+    }
 
-	return '';
+    return '';
 }

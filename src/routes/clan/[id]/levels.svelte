@@ -7,7 +7,7 @@
 	import { toLevelCardProps } from '$lib/components/levelCardProps';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import { _ } from 'svelte-i18n';
-	
+
 	export let clan: any;
 
 	const filter = {
@@ -39,7 +39,10 @@
 	async function fetchLevels() {
 		fetch(
 			// @ts-expect-error
-			`${import.meta.env.VITE_API_URL}/clans/${clan.id}/list/${list}?${new URLSearchParams(filter[list]).toString()}`
+			`${import.meta.env.VITE_API_URL}/clans/${clan.id}/list/${list}?${
+				new URLSearchParams(filter[list])
+					.toString()
+			}`
 		)
 			.then((res) => res.json())
 			.then((res: any) => {
@@ -53,82 +56,85 @@
 		if (!isActive(clan.boostedUntil)) {
 			return;
 		}
-        
+
 		await fetchLevels();
 	});
 </script>
 
 {#if isActive(clan.boostedUntil)}
-	<div class="filter">
-		<div class="filterItem">
-			<Label>List</Label>
-			<Select.Root
-				selected={{
-					label: 'Classic',
-					value: 'string'
-				}}
-				onSelectedChange={(e) => {
-					// @ts-expect-error
-					selectedList = e?.value;
-				}}
-			>
-				<Select.Trigger class="w-[200px]">
-					<Select.Value placeholder="Select item to sort by" />
-				</Select.Trigger>
-				<Select.Content>
-					<Select.Item value="dl" selected>Classic</Select.Item>
-					<Select.Item value="pl">Platformer</Select.Item>
-					<Select.Item value="fl">Featured</Select.Item>
-				</Select.Content>
-			</Select.Root>
-			<Button
-				variant="outline"
-				on:click={async () => {
-					list = selectedList;
+  <div class="filter">
+    <div class="filterItem">
+      <Label>List</Label>
+      <Select.Root
+        selected={{
+            label: 'Classic',
+            value: 'string'
+        }}
+        onSelectedChange={(e) => {
+            // @ts-expect-error
+            selectedList = e?.value;
+        }}
+      >
+        <Select.Trigger class="w-[200px]">
+          <Select.Value placeholder="Select item to sort by" />
+        </Select.Trigger>
+        <Select.Content>
+          <Select.Item value="dl" selected>Classic</Select.Item>
+          <Select.Item value="pl">Platformer</Select.Item>
+          <Select.Item value="fl">Featured</Select.Item>
+        </Select.Content>
+      </Select.Root>
+      <Button
+        variant="outline"
+        on:click={async () => {
+            list = selectedList;
 
-					if (levels[list].length) {
-						return;
-					}
+            if (levels[list].length) {
+                return;
+            }
 
-					await fetchLevels();
-				}}>{$_("general.apply")}</Button
-			>
-		</div>
-	</div>
+            await fetchLevels();
+        }}
+      >{$_('general.apply')}</Button>
+    </div>
+  </div>
 {/if}
 
 <div class="mx-auto grid max-w-[1000px] grid-cols-1 gap-[10px] xl:grid-cols-2">
-	{#each levels[list] as level, index}
-		<LevelCard {...toLevelCardProps(level, list, { top: index + 1 })} type={list} />
-	{/each}
+  {#each levels[list] as level, index}
+    <LevelCard
+      {...toLevelCardProps(level, list, { top: index + 1 })}
+      type={list}
+    />
+  {/each}
 </div>
 
 <style lang="scss">
-	.filter {
-		display: flex;
-		gap: 30px;
-		margin-bottom: 10px;
-		justify-content: center;
-		border-radius: var(--radius);
-		border: 1px solid var(--border1);
-		padding-top: 10px;
-		padding-bottom: 10px;
-		width: fit-content;
-		padding-inline: 20px;
-		margin-inline: auto;
+.filter {
+  display: flex;
+  gap: 30px;
+  margin-bottom: 10px;
+  justify-content: center;
+  border-radius: var(--radius);
+  border: 1px solid var(--border1);
+  padding-top: 10px;
+  padding-bottom: 10px;
+  width: fit-content;
+  padding-inline: 20px;
+  margin-inline: auto;
 
-		.filterItem {
-			display: flex;
-			gap: 10px;
-			align-items: center;
-		}
-	}
+  .filterItem {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+}
 
-	@media screen and (max-width: 1200px) {
-		.filter {
-			flex-direction: column;
-			margin-bottom: 20px;
-			gap: 15px;
-		}
-	}
+@media screen and (max-width: 1200px) {
+  .filter {
+    flex-direction: column;
+    margin-bottom: 20px;
+    gap: 15px;
+  }
+}
 </style>

@@ -23,49 +23,52 @@
 		}
 
 		records = await (
-			await fetch(`${import.meta.env.VITE_API_URL}/events/${event.id}/submissions`, {
-				method: 'GET',
-				headers: {
-					Authorization: 'Bearer ' + (await $user.token())
+			await fetch(
+				`${import.meta.env.VITE_API_URL}/events/${event.id}/submissions`,
+				{
+					method: 'GET',
+					headers: {
+						Authorization: 'Bearer ' + (await $user.token())
+					}
 				}
-			})
+			)
 		).json();
 	}
 
 	onMount(async () => {
-		// await fetchRecord();
-		// user.subscribe((value) => {
-		// 	fetchRecord();
-		// });
+	// await fetchRecord();
+    // user.subscribe((value) => {
+    // 	fetchRecord();
+    // });
 	});
 </script>
 
 <div class="ml-auto mr-auto flex w-[1000px] max-w-full flex-col gap-[10px]">
-	<div class="flex items-center justify-center gap-[20px] rounded-lg border p-3">
-		<div class="flex items-center gap-2">
-			<Button class="w-fit" variant="outline" on:click={() => refresh()}>
-				<Reload size={16} />
-			</Button>
-		</div>
-		<div class="flex items-center gap-2">
-			<Switch id="death-count-toggle" bind:checked={showDeathCount} />
-			<Label for="death-count-toggle" class="cursor-pointer">
-				{$_('contest.show_death_count')}
-			</Label>
-		</div>
-	</div>
+  <div class="flex items-center justify-center gap-[20px] rounded-lg border p-3">
+    <div class="flex items-center gap-2">
+      <Button class="w-fit" variant="outline" on:click={() => refresh()}>
+        <Reload size={16} />
+      </Button>
+    </div>
+    <div class="flex items-center gap-2">
+      <Switch id="death-count-toggle" bind:checked={showDeathCount} />
+      <Label for="death-count-toggle" class="cursor-pointer">
+        {$_('contest.show_death_count')}
+      </Label>
+    </div>
+  </div>
 
-	{#if $user.loggedIn && !$user.data.discord}
-		<Alert.Root class="text-yellow-400">
-			<Alert.Title class="flex items-center gap-[10px]">
-				<ExclamationTriangle size={15} />
-				{$_('contest.alerts.discord_required')}
-			</Alert.Title>
-		</Alert.Root>
-	{/if}
-	{#key records}
-		{#each levels as level, index}
-			<LevelCard {level} {index} {event} {showDeathCount} type={event.type} />
-		{/each}
-	{/key}
+  {#if $user.loggedIn && !$user.data.discord}
+    <Alert.Root class="text-yellow-400">
+      <Alert.Title class="flex items-center gap-[10px]">
+        <ExclamationTriangle size={15} />
+        {$_('contest.alerts.discord_required')}
+      </Alert.Title>
+    </Alert.Root>
+  {/if}
+  {#key records}
+    {#each levels as level, index}
+      <LevelCard {level} {index} {event} {showDeathCount} type={event.type} />
+    {/each}
+  {/key}
 </div>

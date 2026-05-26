@@ -60,13 +60,16 @@
 		});
 
 		if (response.status === 409) {
-			const data = await response.json().catch(() => null);
+			const data = await response.json()
+				.catch(() => null);
 			toast.error(data?.error ?? $_('settings.api.create.limit'));
+
 			return;
 		}
 
 		if (!response.ok) {
 			toast.error($_('settings.api.create.error'));
+
 			return;
 		}
 
@@ -102,6 +105,7 @@
 				loading: $_('pointercrate_link.loading'),
 				success: () => {
 					window.location.reload();
+
 					return $_('pointercrate_link.success');
 				},
 				error: $_('pointercrate_link.error')
@@ -144,12 +148,15 @@
 		loggingOutAll = true;
 
 		try {
-			const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/logout-all`, {
-				method: 'POST',
-				headers: {
-					Authorization: 'Bearer ' + (await $user.token())!
+			const response = await fetch(
+				`${import.meta.env.VITE_API_URL}/auth/logout-all`,
+				{
+					method: 'POST',
+					headers: {
+						Authorization: 'Bearer ' + (await $user.token())!
+					}
 				}
-			});
+			);
 
 			if (!response.ok) {
 				throw new Error('Failed to log out all devices');
@@ -168,391 +175,454 @@
 </script>
 
 <Dialog.Root bind:open={settingsOpen}>
-	<Dialog.Trigger let:builder>
-		<Button
-			builders={[builder]}
-			variant="ghost"
-			size="icon"
-			class="rounded-full text-[var(--textColor2)] hover:text-[var(--textColor1)]"
-		>
-			<Gear class="h-[18px] w-[18px]" />
-			<span class="sr-only">{$_('settings.title')}</span>
-		</Button>
-	</Dialog.Trigger>
-	<Dialog.Content>
-		<Dialog.Header>
-			<Dialog.Title>{$_('settings.title')}</Dialog.Title>
-		</Dialog.Header>
-		<Tabs.Root value="general">
-			<Tabs.List>
-				<Tabs.Trigger value="general">{$_('settings.tabs.general')}</Tabs.Trigger>
-				<Tabs.Trigger value="api">{$_('settings.tabs.api')}</Tabs.Trigger>
-				<Tabs.Trigger value="sub">{$_('settings.tabs.sub')}</Tabs.Trigger>
-				<Tabs.Trigger value="discord">Discord</Tabs.Trigger>
-				<Tabs.Trigger value="pointercrate">Pointercrate</Tabs.Trigger>
-			</Tabs.List>
-			<Tabs.Content value="general">
-				<div class="setting">
-					<Label>{$_('settings.general.theme.title')}</Label>
-					<div class="right">
-						<Tooltip.Root>
-							<Tooltip.Trigger let:builder>
-								<Button
-									builders={[builder]}
-									variant="outline"
-									size="icon"
-									on:click={() => {
-										setMode('light');
-										setTheme('light');
-									}}
-								>
-									<Sun class="h-[1.2rem] w-[1.2rem]" />
-								</Button>
-							</Tooltip.Trigger>
-							<Tooltip.Content>
-								<p>{$_('settings.general.theme.light')}</p>
-							</Tooltip.Content>
-						</Tooltip.Root>
-						<Tooltip.Root>
-							<Tooltip.Trigger let:builder>
-								<Button
-									builders={[builder]}
-									variant="outline"
-									size="icon"
-									on:click={() => {
-										setMode('dark');
-										setTheme('dark');
-									}}
-								>
-									<Moon class="h-[1.2rem] w-[1.2rem]" />
-								</Button>
-							</Tooltip.Trigger>
-							<Tooltip.Content>
-								<p>{$_('settings.general.theme.dark')}</p>
-							</Tooltip.Content>
-						</Tooltip.Root>
-						{#if $user.loggedIn && isActive($user.data.supporterUntil)}
-							<Tooltip.Root>
-								<Tooltip.Trigger let:builder>
-									<Button
-										builders={[builder]}
-										variant="outline"
-										size="icon"
-										on:click={() => {
-											setMode('dark');
-											setTheme('red');
-										}}
-									>
-										<div class="h-[1.2rem] w-[1.2rem] rounded-full bg-red-500"></div>
-									</Button>
-								</Tooltip.Trigger>
-								<Tooltip.Content>
-									<p>{$_('settings.general.theme.red')}</p>
-								</Tooltip.Content>
-							</Tooltip.Root>
-							<Tooltip.Root>
-								<Tooltip.Trigger let:builder>
-									<Button
-										builders={[builder]}
-										variant="outline"
-										size="icon"
-										on:click={() => {
-											setMode('dark');
-											setTheme('green');
-										}}
-									>
-										<div class="h-[1.2rem] w-[1.2rem] rounded-full bg-green-500"></div>
-									</Button>
-								</Tooltip.Trigger>
-								<Tooltip.Content>
-									<p>{$_('settings.general.theme.green')}</p>
-								</Tooltip.Content>
-							</Tooltip.Root>
-							<Tooltip.Root>
-								<Tooltip.Trigger let:builder>
-									<Button
-										builders={[builder]}
-										variant="outline"
-										size="icon"
-										on:click={() => {
-											setMode('dark');
-											setTheme('blue');
-										}}
-									>
-										<div class="h-[1.2rem] w-[1.2rem] rounded-full bg-blue-500"></div>
-									</Button>
-								</Tooltip.Trigger>
-								<Tooltip.Content>
-									<p>{$_('settings.general.theme.blue')}</p>
-								</Tooltip.Content>
-							</Tooltip.Root>
-							<Tooltip.Root>
-								<Tooltip.Trigger let:builder>
-									<Button
-										builders={[builder]}
-										variant="outline"
-										size="icon"
-										on:click={() => {
-											setMode('dark');
-											setTheme('pink');
-										}}
-									>
-										<div class="h-[1.2rem] w-[1.2rem] rounded-full bg-pink-500"></div>
-									</Button>
-								</Tooltip.Trigger>
-								<Tooltip.Content>
-									<p>{$_('settings.general.theme.pink')}</p>
-								</Tooltip.Content>
-							</Tooltip.Root>
-							<Tooltip.Root>
-								<Tooltip.Trigger let:builder>
-									<Button
-										builders={[builder]}
-										variant="outline"
-										size="icon"
-										on:click={() => {
-											setMode('dark');
-											setTheme('gold');
-										}}
-									>
-										<div class="h-[1.2rem] w-[1.2rem] rounded-full bg-yellow-500"></div>
-									</Button>
-								</Tooltip.Trigger>
-								<Tooltip.Content>
-									<p>{$_('settings.general.theme.gold')}</p>
-								</Tooltip.Content>
-							</Tooltip.Root>
-						{/if}
-					</div>
-				</div>
-				<div class="setting">
-					<Label>{$_('settings.general.language.title')}</Label>
-					<div class="right">
-						<Button
-							variant="outline"
-							size="sm"
-							on:click={() => {
-								const currentLang = $locale;
-								const newLang = currentLang === 'en' ? 'vi' : 'en';
-								document.cookie = `locale=${newLang}; Path=/; Max-Age=31536000; SameSite=Lax`;
-								try {
-									localStorage.setItem('locale', newLang);
-								} catch {}
-								locale.set(newLang);
+  <Dialog.Trigger let:builder>
+    <Button
+      builders={[builder]}
+      variant="ghost"
+      size="icon"
+      class="rounded-full text-[var(--textColor2)] hover:text-[var(--textColor1)]"
+    >
+      <Gear class="h-[18px] w-[18px]" />
+      <span class="sr-only">{$_('settings.title')}</span>
+    </Button>
+  </Dialog.Trigger>
+  <Dialog.Content>
+    <Dialog.Header>
+      <Dialog.Title>{$_('settings.title')}</Dialog.Title>
+    </Dialog.Header>
+    <Tabs.Root value="general">
+      <Tabs.List>
+        <Tabs.Trigger value="general">{
+          $_('settings.tabs.general')
+        }</Tabs.Trigger>
+        <Tabs.Trigger value="api">{$_('settings.tabs.api')}</Tabs.Trigger>
+        <Tabs.Trigger value="sub">{$_('settings.tabs.sub')}</Tabs.Trigger>
+        <Tabs.Trigger value="discord">Discord</Tabs.Trigger>
+        <Tabs.Trigger value="pointercrate">Pointercrate</Tabs.Trigger>
+      </Tabs.List>
+      <Tabs.Content value="general">
+        <div class="setting">
+          <Label>{$_('settings.general.theme.title')}</Label>
+          <div class="right">
+            <Tooltip.Root>
+              <Tooltip.Trigger let:builder>
+                <Button
+                  builders={[builder]}
+                  variant="outline"
+                  size="icon"
+                  on:click={() => {
+                      setMode('light');
+                      setTheme('light');
+                  }}
+                >
+                  <Sun class="h-[1.2rem] w-[1.2rem]" />
+                </Button>
+              </Tooltip.Trigger>
+              <Tooltip.Content>
+                <p>{$_('settings.general.theme.light')}</p>
+              </Tooltip.Content>
+            </Tooltip.Root>
+            <Tooltip.Root>
+              <Tooltip.Trigger let:builder>
+                <Button
+                  builders={[builder]}
+                  variant="outline"
+                  size="icon"
+                  on:click={() => {
+                      setMode('dark');
+                      setTheme('dark');
+                  }}
+                >
+                  <Moon class="h-[1.2rem] w-[1.2rem]" />
+                </Button>
+              </Tooltip.Trigger>
+              <Tooltip.Content>
+                <p>{$_('settings.general.theme.dark')}</p>
+              </Tooltip.Content>
+            </Tooltip.Root>
+            {#if $user.loggedIn && isActive($user.data.supporterUntil)}
+              <Tooltip.Root>
+                <Tooltip.Trigger let:builder>
+                  <Button
+                    builders={[builder]}
+                    variant="outline"
+                    size="icon"
+                    on:click={() => {
+                        setMode('dark');
+                        setTheme('red');
+                    }}
+                  >
+                    <div class="h-[1.2rem] w-[1.2rem] rounded-full bg-red-500">
+                    </div>
+                  </Button>
+                </Tooltip.Trigger>
+                <Tooltip.Content>
+                  <p>{$_('settings.general.theme.red')}</p>
+                </Tooltip.Content>
+              </Tooltip.Root>
+              <Tooltip.Root>
+                <Tooltip.Trigger let:builder>
+                  <Button
+                    builders={[builder]}
+                    variant="outline"
+                    size="icon"
+                    on:click={() => {
+                        setMode('dark');
+                        setTheme('green');
+                    }}
+                  >
+                    <div class="h-[1.2rem] w-[1.2rem] rounded-full bg-green-500">
+                    </div>
+                  </Button>
+                </Tooltip.Trigger>
+                <Tooltip.Content>
+                  <p>{$_('settings.general.theme.green')}</p>
+                </Tooltip.Content>
+              </Tooltip.Root>
+              <Tooltip.Root>
+                <Tooltip.Trigger let:builder>
+                  <Button
+                    builders={[builder]}
+                    variant="outline"
+                    size="icon"
+                    on:click={() => {
+                        setMode('dark');
+                        setTheme('blue');
+                    }}
+                  >
+                    <div class="h-[1.2rem] w-[1.2rem] rounded-full bg-blue-500">
+                    </div>
+                  </Button>
+                </Tooltip.Trigger>
+                <Tooltip.Content>
+                  <p>{$_('settings.general.theme.blue')}</p>
+                </Tooltip.Content>
+              </Tooltip.Root>
+              <Tooltip.Root>
+                <Tooltip.Trigger let:builder>
+                  <Button
+                    builders={[builder]}
+                    variant="outline"
+                    size="icon"
+                    on:click={() => {
+                        setMode('dark');
+                        setTheme('pink');
+                    }}
+                  >
+                    <div class="h-[1.2rem] w-[1.2rem] rounded-full bg-pink-500">
+                    </div>
+                  </Button>
+                </Tooltip.Trigger>
+                <Tooltip.Content>
+                  <p>{$_('settings.general.theme.pink')}</p>
+                </Tooltip.Content>
+              </Tooltip.Root>
+              <Tooltip.Root>
+                <Tooltip.Trigger let:builder>
+                  <Button
+                    builders={[builder]}
+                    variant="outline"
+                    size="icon"
+                    on:click={() => {
+                        setMode('dark');
+                        setTheme('gold');
+                    }}
+                  >
+                    <div class="h-[1.2rem] w-[1.2rem] rounded-full bg-yellow-500">
+                    </div>
+                  </Button>
+                </Tooltip.Trigger>
+                <Tooltip.Content>
+                  <p>{$_('settings.general.theme.gold')}</p>
+                </Tooltip.Content>
+              </Tooltip.Root>
+            {/if}
+          </div>
+        </div>
+        <div class="setting">
+          <Label>{$_('settings.general.language.title')}</Label>
+          <div class="right">
+            <Button
+              variant="outline"
+              size="sm"
+              on:click={() => {
+                  const currentLang = $locale;
+                  const newLang = currentLang === 'en' ? 'vi' : 'en';
+                  document.cookie =
+                      `locale=${newLang}; Path=/; Max-Age=31536000; SameSite=Lax`;
 
-								const currentPath = $page.url.pathname;
-								const stripped = currentPath.replace(/^\/(en|vi)(?=\/|$)/, '') || '/';
-								const target = `/${newLang}${stripped === '/' ? '' : stripped}${$page.url.search}`;
-								goto(target, { invalidateAll: true });
-							}}
-						>
-							{$locale === 'vi' ? 'Tiếng Việt' : 'English'}
-						</Button>
-					</div>
-				</div>
-			</Tabs.Content>
-			<Tabs.Content value="api">
-				<div class="otp-auth">
-					<div>
-						<p class="text-sm font-medium">{$_('settings.auth.otp.title')}</p>
-						<p class="text-sm text-muted-foreground">{$_('settings.auth.otp.description')}</p>
-					</div>
-					<Button variant="outline" on:click={openOtpGrantPage}>
-						{$_('settings.auth.otp.button')}
-					</Button>
-				</div>
-				<div class="otp-auth">
-					<div>
-						<p class="text-sm font-medium">{$_('settings.auth.logout_all.title')}</p>
-						<p class="text-sm text-muted-foreground">{$_('settings.auth.logout_all.description')}</p>
-					</div>
-					<AlertDialog.Root>
-						<AlertDialog.Trigger asChild let:builder>
-							<Button variant="destructive" builders={[builder]} disabled={loggingOutAll}>
-								{$_('settings.auth.logout_all.button')}
-							</Button>
-						</AlertDialog.Trigger>
-						<AlertDialog.Content>
-							<AlertDialog.Header>
-								<AlertDialog.Title>{$_('settings.auth.logout_all.confirm_title')}</AlertDialog.Title>
-								<AlertDialog.Description>
-									{$_('settings.auth.logout_all.confirm_description')}
-								</AlertDialog.Description>
-							</AlertDialog.Header>
-							<AlertDialog.Footer>
-								<AlertDialog.Cancel>{$_('settings.auth.logout_all.cancel')}</AlertDialog.Cancel>
-								<AlertDialog.Action on:click={logoutAllDevices}>
-									{$_('settings.auth.logout_all.continue')}
-								</AlertDialog.Action>
-							</AlertDialog.Footer>
-						</AlertDialog.Content>
-					</AlertDialog.Root>
-				</div>
-				<Table.Root>
-					<Table.Header>
-						<Table.Row>
-							<Table.Head class="w-[70px]">{$_('settings.api.key')}</Table.Head>
-							<Table.Head>{$_('settings.api.flag')}</Table.Head>
-							<Table.Head>{$_('settings.api.created_at')}</Table.Head>
-							<Table.Head class="text-right"></Table.Head>
-						</Table.Row>
-					</Table.Header>
-					<Table.Body>
-						{#each APIKeys as key}
-							<Table.Row>
-								<Table.Cell class="font-medium" on:click={() => {}}>
-									<button on:click={() => copyToClipboard(key.key)} class="w-[50px] truncate">
-										{key.key}
-									</button>
-								</Table.Cell>
-								<Table.Cell>{key.flag ?? 'manual'}</Table.Cell>
-								<Table.Cell>{new Date(key.created_at).toLocaleString('vi-VN')}</Table.Cell>
-								<Table.Cell class="text-right">
-									<AlertDialog.Root>
-										<AlertDialog.Trigger asChild let:builder>
-											<Button variant="destructive" size="icon" builders={[builder]}
-												><Trash size={20} /></Button
-											>
-										</AlertDialog.Trigger>
-										<AlertDialog.Content>
-											<AlertDialog.Header>
-												<AlertDialog.Title>{$_('settings.api.delete.title')}</AlertDialog.Title>
-												<AlertDialog.Description>
-													{$_('settings.api.delete.description')}
-												</AlertDialog.Description>
-											</AlertDialog.Header>
-											<AlertDialog.Footer>
-												<AlertDialog.Cancel>{$_('settings.api.delete.cancel')}</AlertDialog.Cancel>
-												<AlertDialog.Action on:click={() => deleteKey(key.key)}
-													>{$_('settings.api.delete.continue')}</AlertDialog.Action
-												>
-											</AlertDialog.Footer>
-										</AlertDialog.Content>
-									</AlertDialog.Root>
-								</Table.Cell>
-							</Table.Row>
-						{/each}
-					</Table.Body>
-				</Table.Root>
-				<AlertDialog.Root>
-					<AlertDialog.Trigger asChild let:builder>
-						<Button builders={[builder]} class="mt-[10px] w-full" variant="outline"
-							>{$_('settings.api.create.button')}</Button
-						>
-					</AlertDialog.Trigger>
-					<AlertDialog.Content>
-						<AlertDialog.Header>
-							<AlertDialog.Title>{$_('settings.api.create.title')}</AlertDialog.Title>
-							<AlertDialog.Description>
-								{$_('settings.api.create.description')}
-							</AlertDialog.Description>
-						</AlertDialog.Header>
-						<AlertDialog.Footer>
-							<AlertDialog.Cancel>{$_('settings.api.create.cancel')}</AlertDialog.Cancel>
-							<AlertDialog.Action on:click={createNewKey}
-								>{$_('settings.api.create.continue')}</AlertDialog.Action
-							>
-						</AlertDialog.Footer>
-					</AlertDialog.Content>
-				</AlertDialog.Root>
-			</Tabs.Content>
-			<Tabs.Content value="sub">
-				<Table.Root>
-					<Table.Header>
-						<Table.Row>
-							<Table.Head class="w-[120px]">{$_('settings.subscriptions.name')}</Table.Head>
-							<Table.Head>{$_('settings.subscriptions.active_until')}</Table.Head>
-						</Table.Row>
-					</Table.Header>
-					<Table.Body>
-						<Table.Row>
-							{#if $user.loggedIn}
-								<Table.Cell class="font-medium">Supporter Role</Table.Cell>
-								{#if $user.data.supporterUntil == null}
-									<Table.Cell>Not activated</Table.Cell>
-								{:else}
-									<Table.Cell
-										>{new Date($user.data.supporterUntil).toLocaleString('vi-VN')}
-										{isActive($user.data.supporterUntil)
-											? ''
-											: `(${$_('settings.subscriptions.expired')})`}</Table.Cell
-									>
-								{/if}
-							{/if}
-						</Table.Row>
-					</Table.Body>
-				</Table.Root>
-			</Tabs.Content>
-			<Tabs.Content value="discord">
-				{#if $user.loggedIn}
-					{#if $user.data.discord}
-						<Button class="w-full" variant="outline" disabled
-							>{$_('settings.account.linked')}</Button
-						>
-						<Button class="mt-2 w-full" variant="outline" on:click={syncDiscordRole}
-							>{$_('settings.account.sync_role')}</Button
-						>
-					{:else}
-						<a href={DISCORD_OAUTH_URL}>
-							<Button class="w-full" variant="outline">{$_('settings.account.link')}</Button>
-						</a>
-					{/if}
-				{/if}
-			</Tabs.Content>
-			<Tabs.Content value="pointercrate">
-				{#if $user.loggedIn}
-					{#if $user.data.pointercrate}
-						<Button class="w-full" variant="outline" disabled
-							>{$_('settings.account.linked')}</Button
-						>
-					{:else}
-						<Dialog.Root bind:open={open1}>
-							<Dialog.Trigger class="w-full">
-								<Button class="w-full" variant="outline">{$_('settings.account.link')}</Button>
-							</Dialog.Trigger>
-							<Dialog.Content>
-								<Dialog.Header>
-									<Dialog.Title>{$_('settings.account.pointercrate.title')}</Dialog.Title>
-									<Input
-										inputmode="numeric"
-										placeholder={$_('settings.account.pointercrate.placeholder')}
-										bind:value={token}
-									/>
-								</Dialog.Header>
-								<Button on:click={pointercrateLink}>{$_('settings.account.link')}</Button>
-							</Dialog.Content>
-						</Dialog.Root>
-					{/if}
-				{/if}
-			</Tabs.Content>
-		</Tabs.Root>
-	</Dialog.Content>
+                  try {
+                      localStorage.setItem('locale', newLang);
+                  } catch {}
+
+                  locale.set(newLang);
+
+                  const currentPath = $page.url.pathname;
+                  const stripped = currentPath.replace(/^\/(en|vi)(?=\/|$)/, '') || '/';
+                  const target = `/${newLang}${
+                      stripped === '/' ? '' : stripped
+                  }${$page.url.search}`;
+                  goto(target, { invalidateAll: true });
+              }}
+            >
+              {$locale === 'vi' ? 'Tiếng Việt' : 'English'}
+            </Button>
+          </div>
+        </div>
+      </Tabs.Content>
+      <Tabs.Content value="api">
+        <div class="otp-auth">
+          <div>
+            <p class="text-sm font-medium">{$_('settings.auth.otp.title')}</p>
+            <p class="text-sm text-muted-foreground">
+              {$_('settings.auth.otp.description')}
+            </p>
+          </div>
+          <Button variant="outline" on:click={openOtpGrantPage}>
+            {$_('settings.auth.otp.button')}
+          </Button>
+        </div>
+        <div class="otp-auth">
+          <div>
+            <p class="text-sm font-medium">
+              {$_('settings.auth.logout_all.title')}
+            </p>
+            <p class="text-sm text-muted-foreground">
+              {$_('settings.auth.logout_all.description')}
+            </p>
+          </div>
+          <AlertDialog.Root>
+            <AlertDialog.Trigger asChild let:builder>
+              <Button
+                variant="destructive"
+                builders={[builder]}
+                disabled={loggingOutAll}
+              >
+                {$_('settings.auth.logout_all.button')}
+              </Button>
+            </AlertDialog.Trigger>
+            <AlertDialog.Content>
+              <AlertDialog.Header>
+                <AlertDialog.Title>{
+                  $_('settings.auth.logout_all.confirm_title')
+                }</AlertDialog.Title>
+                <AlertDialog.Description>
+                  {$_('settings.auth.logout_all.confirm_description')}
+                </AlertDialog.Description>
+              </AlertDialog.Header>
+              <AlertDialog.Footer>
+                <AlertDialog.Cancel>{
+                  $_('settings.auth.logout_all.cancel')
+                }</AlertDialog.Cancel>
+                <AlertDialog.Action on:click={logoutAllDevices}>
+                  {$_('settings.auth.logout_all.continue')}
+                </AlertDialog.Action>
+              </AlertDialog.Footer>
+            </AlertDialog.Content>
+          </AlertDialog.Root>
+        </div>
+        <Table.Root>
+          <Table.Header>
+            <Table.Row>
+              <Table.Head class="w-[70px]">{$_('settings.api.key')}</Table.Head>
+              <Table.Head>{$_('settings.api.flag')}</Table.Head>
+              <Table.Head>{$_('settings.api.created_at')}</Table.Head>
+              <Table.Head class="text-right"></Table.Head>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>
+            {#each APIKeys as key}
+              <Table.Row>
+                <Table.Cell class="font-medium" on:click={() => {}}>
+                  <button
+                    on:click={() => copyToClipboard(key.key)}
+                    class="w-[50px] truncate"
+                  >
+                    {key.key}
+                  </button>
+                </Table.Cell>
+                <Table.Cell>{key.flag ?? 'manual'}</Table.Cell>
+                <Table.Cell>{
+                  new Date(key.created_at)
+.toLocaleString('vi-VN')
+                }</Table.Cell>
+                <Table.Cell class="text-right">
+                  <AlertDialog.Root>
+                    <AlertDialog.Trigger asChild let:builder>
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        builders={[builder]}
+                      ><Trash size={20} /></Button>
+                    </AlertDialog.Trigger>
+                    <AlertDialog.Content>
+                      <AlertDialog.Header>
+                        <AlertDialog.Title>{
+                          $_('settings.api.delete.title')
+                        }</AlertDialog.Title>
+                        <AlertDialog.Description>
+                          {$_('settings.api.delete.description')}
+                        </AlertDialog.Description>
+                      </AlertDialog.Header>
+                      <AlertDialog.Footer>
+                        <AlertDialog.Cancel>{
+                          $_('settings.api.delete.cancel')
+                        }</AlertDialog.Cancel>
+                        <AlertDialog.Action
+                          on:click={() => deleteKey(key.key)}
+                        >{
+                          $_('settings.api.delete.continue')
+                        }</AlertDialog.Action>
+                      </AlertDialog.Footer>
+                    </AlertDialog.Content>
+                  </AlertDialog.Root>
+                </Table.Cell>
+              </Table.Row>
+            {/each}
+          </Table.Body>
+        </Table.Root>
+        <AlertDialog.Root>
+          <AlertDialog.Trigger asChild let:builder>
+            <Button
+              builders={[builder]}
+              class="mt-[10px] w-full"
+              variant="outline"
+            >{$_('settings.api.create.button')}</Button>
+          </AlertDialog.Trigger>
+          <AlertDialog.Content>
+            <AlertDialog.Header>
+              <AlertDialog.Title>{
+                $_('settings.api.create.title')
+              }</AlertDialog.Title>
+              <AlertDialog.Description>
+                {$_('settings.api.create.description')}
+              </AlertDialog.Description>
+            </AlertDialog.Header>
+            <AlertDialog.Footer>
+              <AlertDialog.Cancel>{
+                $_('settings.api.create.cancel')
+              }</AlertDialog.Cancel>
+              <AlertDialog.Action on:click={createNewKey}>{
+                $_('settings.api.create.continue')
+              }</AlertDialog.Action>
+            </AlertDialog.Footer>
+          </AlertDialog.Content>
+        </AlertDialog.Root>
+      </Tabs.Content>
+      <Tabs.Content value="sub">
+        <Table.Root>
+          <Table.Header>
+            <Table.Row>
+              <Table.Head class="w-[120px]">{
+                $_('settings.subscriptions.name')
+              }</Table.Head>
+              <Table.Head>{
+                $_('settings.subscriptions.active_until')
+              }</Table.Head>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>
+            <Table.Row>
+              {#if $user.loggedIn}
+                <Table.Cell class="font-medium">Supporter Role</Table.Cell>
+                {#if $user.data.supporterUntil == null}
+                  <Table.Cell>Not activated</Table.Cell>
+                {:else}
+                  <Table.Cell>{
+                      new Date($user.data.supporterUntil)
+.toLocaleString('vi-VN')
+                    }
+                    {
+                      isActive($user.data.supporterUntil)
+                      ? ''
+                      : `(${$_('settings.subscriptions.expired')})`
+                    }</Table.Cell>
+                {/if}
+              {/if}
+            </Table.Row>
+          </Table.Body>
+        </Table.Root>
+      </Tabs.Content>
+      <Tabs.Content value="discord">
+        {#if $user.loggedIn}
+          {#if $user.data.discord}
+            <Button class="w-full" variant="outline" disabled>{
+              $_('settings.account.linked')
+            }</Button>
+            <Button
+              class="mt-2 w-full"
+              variant="outline"
+              on:click={syncDiscordRole}
+            >{$_('settings.account.sync_role')}</Button>
+          {:else}
+            <a href={DISCORD_OAUTH_URL}>
+              <Button class="w-full" variant="outline">{
+                $_('settings.account.link')
+              }</Button>
+            </a>
+          {/if}
+        {/if}
+      </Tabs.Content>
+      <Tabs.Content value="pointercrate">
+        {#if $user.loggedIn}
+          {#if $user.data.pointercrate}
+            <Button class="w-full" variant="outline" disabled>{
+              $_('settings.account.linked')
+            }</Button>
+          {:else}
+            <Dialog.Root bind:open={open1}>
+              <Dialog.Trigger class="w-full">
+                <Button class="w-full" variant="outline">{
+                  $_('settings.account.link')
+                }</Button>
+              </Dialog.Trigger>
+              <Dialog.Content>
+                <Dialog.Header>
+                  <Dialog.Title>{
+                    $_('settings.account.pointercrate.title')
+                  }</Dialog.Title>
+                  <Input
+                    inputmode="numeric"
+                    placeholder={$_('settings.account.pointercrate.placeholder')}
+                    bind:value={token}
+                  />
+                </Dialog.Header>
+                <Button on:click={pointercrateLink}>{
+                  $_('settings.account.link')
+                }</Button>
+              </Dialog.Content>
+            </Dialog.Root>
+          {/if}
+        {/if}
+      </Tabs.Content>
+    </Tabs.Root>
+  </Dialog.Content>
 </Dialog.Root>
 
 <style lang="scss">
-	.setting {
-		display: flex;
-		align-items: center;
-		margin-top: 10px;
-		margin-bottom: 10px;
+.setting {
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+  margin-bottom: 10px;
 
-		.right {
-			margin-left: auto;
-		}
-	}
+  .right {
+    margin-left: auto;
+  }
+}
 
-	.otp-auth {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-		justify-content: space-between;
-		margin-bottom: 12px;
-	}
+.otp-auth {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
 
-	@media screen and (max-width: 520px) {
-		.otp-auth {
-			align-items: stretch;
-			flex-direction: column;
-		}
-	}
+@media screen and (max-width: 520px) {
+  .otp-auth {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
 </style>

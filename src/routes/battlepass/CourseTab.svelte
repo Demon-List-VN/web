@@ -35,11 +35,13 @@
 
 	function getLevelName(entry: any) {
 		const level = getLevelData(entry);
+
 		return level?.name || 'Unknown level';
 	}
 
 	function getLevelCreator(entry: any) {
 		const level = getLevelData(entry);
+
 		return level?.creator || '';
 	}
 
@@ -64,7 +66,10 @@
 	}
 
 	function getCourseReward(entry: any) {
-		if (!entry?.rewardItemId) return null;
+		if (!entry?.rewardItemId) {
+			return null;
+		}
+
 		return {
 			itemId: entry.rewardItemId,
 			quantity: Number(entry.rewardQuantity || 1),
@@ -81,16 +86,18 @@
 	}
 
 	function updateEntryClaimed(entryId: number) {
-		if (!courseData?.entries?.length) return;
+		if (!courseData?.entries?.length) {
+			return;
+		}
 
 		courseData = {
 			...courseData,
 			entries: courseData.entries.map((entry: any) =>
 				Number(entry.id) === entryId
 					? {
-							...entry,
-							claimed: true
-						}
+						...entry,
+						claimed: true
+					}
 					: entry
 			)
 		};
@@ -134,6 +141,7 @@
 				}
 
 				updateEntryClaimed(entryId);
+
 				return true;
 			})();
 
@@ -179,17 +187,17 @@
 		const [levelsRes, mapPacksRes] = await Promise.all([
 			levelIds.length > 0
 				? fetch(`${import.meta.env.VITE_API_URL}/levels/batch`, {
-						method: 'POST',
-						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({ batch: levelIds })
-					})
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ batch: levelIds })
+				})
 				: Promise.resolve(null),
 			mapPackIds.length > 0
 				? fetch(`${import.meta.env.VITE_API_URL}/mappacks/batch`, {
-						method: 'POST',
-						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({ batch: mapPackIds })
-					})
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ batch: mapPackIds })
+				})
 				: Promise.resolve(null)
 		]);
 
@@ -216,6 +224,7 @@
 
 	async function fetchCourse() {
 		loading = true;
+
 		try {
 			const token = await $user.token();
 			const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
@@ -224,12 +233,17 @@
 				const payload = await courseInFlight;
 				courseData = payload;
 				await fetchBatchDetails(payload);
+
 				return;
 			}
 
 			courseInFlight = (async () => {
 				const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/course`, { headers });
-				if (!res.ok) return null;
+
+				if (!res.ok) {
+					return null;
+				}
+
 				return await res.json();
 			})();
 

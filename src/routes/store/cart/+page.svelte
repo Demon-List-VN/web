@@ -12,8 +12,14 @@
 	import { _ } from 'svelte-i18n';
 	import CardPreview from '../../vending/CardPreview.svelte';
 
-	const MATERIAL_PRICES: Record<string, number> = { paper: 29000, plastic: 149000 };
-	const MATERIAL_LABELS: Record<string, string> = { paper: 'Giấy', plastic: 'Nhựa' };
+	const MATERIAL_PRICES: Record<string, number> = {
+		paper: 29000,
+		plastic: 149000
+	};
+	const MATERIAL_LABELS: Record<string, string> = {
+		paper: 'Giấy',
+		plastic: 'Nhựa'
+	};
 
 	let data: any[] = [];
 
@@ -21,10 +27,16 @@
 		const productIDs = $cart.queryArray();
 
 		// Fetch levels for record cards that are missing levelName
-		const recordCardsToFetchLevels = $cart.getRecordCards().filter(rc => !rc.levelName);
+		const recordCardsToFetchLevels = $cart.getRecordCards()
+			.filter(rc =>
+				!rc.levelName
+			);
+
 		if (recordCardsToFetchLevels.length > 0) {
-			const levelIDs = [...new Set(recordCardsToFetchLevels.map(rc => rc.levelID))];
-			// Do whatever logic we can later. Currently we might not need to fetch.
+			const levelIDs = [
+				...new Set(recordCardsToFetchLevels.map(rc => rc.levelID))
+			];
+		// Do whatever logic we can later. Currently we might not need to fetch.
 		}
 
 		if (!productIDs.length) {
@@ -33,7 +45,9 @@
 
 		data = await (
 			await fetch(
-				`${import.meta.env.VITE_API_URL}/store/products?ids=${JSON.stringify(productIDs)}`
+				`${import.meta.env.VITE_API_URL}/store/products?ids=${
+					JSON.stringify(productIDs)
+				}`
 			)
 		).json();
 	}
@@ -62,140 +76,182 @@
 </script>
 
 <svelte:head>
-	<title>{$_('head.titles.cart')} - {$_('head.site_name')}</title>
+  <title>{$_('head.titles.cart')} - {$_('head.site_name')}</title>
 </svelte:head>
 
-<div
-	class="mb-[50px] ml-auto mr-auto mt-[30px] flex w-[1200px] max-w-full items-center pl-[15px] pr-[15px]"
->
-	<h2>{$_('store.cart.title')}</h2>
+<div class="mb-[50px] ml-auto mr-auto mt-[30px] flex w-[1200px] max-w-full items-center pl-[15px] pr-[15px]">
+  <h2>{$_('store.cart.title')}</h2>
 </div>
 {#if hasItems}
-	<div
-		class="mb-[50px] ml-auto mr-auto mt-[30px] flex w-[1200px] max-w-full flex-col justify-center gap-[15px] pl-[15px] pr-[15px]"
-	>
-		{#if $user.loggedIn && !$user.data.discord}
-			<Alert.Root class="text-yellow-400">
-				<Alert.Title class="flex items-center gap-[10px]">
-					<ExclamationTriangle size={15} />
-					{$_('store.cart.discord_required')}
-				</Alert.Title>
-			</Alert.Root>
-		{:else if !$user.loggedIn}
-			<Alert.Root class="text-yellow-400">
-				<Alert.Title class="flex items-center gap-[10px]">
-					<ExclamationTriangle size={15} />
-					{$_('store.cart.login_required')}
-				</Alert.Title>
-			</Alert.Root>
-		{/if}
-		<Table.Root>
-			<Table.Header>
-				<Table.Row>
-					<Table.Head class="w-[300px]">{$_('store.cart.product')}</Table.Head>
-					<Table.Head class="w-[50px] text-center">{$_('store.cart.qty')}</Table.Head>
-					<Table.Head class="w-[200px]">{$_('store.cart.amount')}</Table.Head>
-					<Table.Head class="text-right">{$_('store.cart.action')}</Table.Head>
-				</Table.Row>
-			</Table.Header>
-			<Table.Body>
-				{#each data as product}
-					<Table.Row>
-						<Table.Cell class="w-[300px]">
-							<a href={`/store/product/${product.id}`}> {product.name}</a>
-						</Table.Cell>
-						<Table.Cell class="w-[50px] text-center">
-							{$cart.getItem(product.id)?.quantity}
-						</Table.Cell>
-						<Table.Cell class="w-[200px]">
-							{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(
-								product.price * $cart.getItem(product.id).quantity
-							)}
-						</Table.Cell>
-						<Table.Cell class="text-right">
-							<Button
-								variant="destructive"
-								size="icon"
-								on:click={async () => {
-									$cart.removeItem(product.id);
-									data = data.filter((item) => item.id !== product.id);
-									toast.success($_('store.cart.remove_success', { values: { product: product.name } }));
-								}}
-							>
-								<Cross2 size={16} />
-							</Button>
-						</Table.Cell>
-					</Table.Row>
-				{/each}
-				{#each recordCards as rc, i}
-					<Table.Row>
-						<Table.Cell class="w-[300px]">
-							<CardPreview
-								data={{
-									playerUID: cartPlayerUID,
-									playerName: cartPlayerName,
-									clanTag: cartClanTag,
-									clanTagBg: cartClanTagBg,
-									clanTagText: cartClanTagText,
-									levelName: rc.levelName || `Level #${rc.levelID}`,
-									creator: rc.creator || '',
-									progress: rc.progress ?? null,
-									bgImage: rc.imgUrl || `https://levelthumbs.prevter.me/thumbnail/${rc.levelID}/high`,
-									avatarImage: rc.avatarUrl || `https://cdn.gdvn.net/avatars/${$user.data?.uid}.jpg`,
-									template: rc.template
-								}}
-								size="mini"
-							/>
-							<div class="mt-2">
-								Thẻ Bản Ghi — {rc.levelName || `Level #${rc.levelID}`}
-								<span class="ml-2 text-xs opacity-60">({MATERIAL_LABELS[rc.material]})</span>
-							</div>
-						</Table.Cell>
-						<Table.Cell class="w-[50px] text-center">1</Table.Cell>
-						<Table.Cell class="w-[200px]">
-							{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(
-								MATERIAL_PRICES[rc.material] ?? 0
-							)}
-						</Table.Cell>
-						<Table.Cell class="text-right">
-							<Button
-								variant="destructive"
-								size="icon"
-								on:click={async () => {
-									const removed = $cart.removeRecordCard(i);
-									if (removed && $user.loggedIn) {
-										const token = await $user.token();
-										const uid = $user.data?.uid;
-										if (removed.imgUrl) fetch(`${import.meta.env.VITE_API_URL}/storage/object?path=${encodeURIComponent(`record-cards/${uid}-${removed.levelID}`)}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }).catch(() => {});
-										if (removed.avatarUrl) fetch(`${import.meta.env.VITE_API_URL}/storage/object?path=${encodeURIComponent(`record-cards/${uid}-${removed.levelID}-avatar`)}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }).catch(() => {});
-									}
-									toast.success('Đã xoá thẻ bản ghi khỏi giỏ hàng');
-								}}
-							>
-								<Cross2 size={16} />
-							</Button>
-						</Table.Cell>
-					</Table.Row>
-				{/each}
-			</Table.Body>
-		</Table.Root>
-		<div class="flex justify-end">
-			<p class="text-right text-lg">
-				{$_('store.cart.total')}<br />
-				<span class="text-2xl font-semibold">
-					{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(grandTotal)}
-				</span>
-			</p>
-		</div>
-		<CheckoutButton bind:items={data} />
-	</div>
+  <div class="mb-[50px] ml-auto mr-auto mt-[30px] flex w-[1200px] max-w-full flex-col justify-center gap-[15px] pl-[15px] pr-[15px]">
+    {#if $user.loggedIn && !$user.data.discord}
+      <Alert.Root class="text-yellow-400">
+        <Alert.Title class="flex items-center gap-[10px]">
+          <ExclamationTriangle size={15} />
+          {$_('store.cart.discord_required')}
+        </Alert.Title>
+      </Alert.Root>
+    {:else if !$user.loggedIn}
+      <Alert.Root class="text-yellow-400">
+        <Alert.Title class="flex items-center gap-[10px]">
+          <ExclamationTriangle size={15} />
+          {$_('store.cart.login_required')}
+        </Alert.Title>
+      </Alert.Root>
+    {/if}
+    <Table.Root>
+      <Table.Header>
+        <Table.Row>
+          <Table.Head class="w-[300px]">{$_('store.cart.product')}</Table.Head>
+          <Table.Head class="w-[50px] text-center">{
+            $_('store.cart.qty')
+          }</Table.Head>
+          <Table.Head class="w-[200px]">{$_('store.cart.amount')}</Table.Head>
+          <Table.Head class="text-right">{$_('store.cart.action')}</Table.Head>
+        </Table.Row>
+      </Table.Header>
+      <Table.Body>
+        {#each data as product}
+          <Table.Row>
+            <Table.Cell class="w-[300px]">
+              <a href={`/store/product/${product.id}`}> {product.name}</a>
+            </Table.Cell>
+            <Table.Cell class="w-[50px] text-center">
+              {$cart.getItem(product.id)?.quantity}
+            </Table.Cell>
+            <Table.Cell class="w-[200px]">
+              {
+                new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' })
+.format(
+                    product.price * $cart.getItem(product.id).quantity
+                )
+              }
+            </Table.Cell>
+            <Table.Cell class="text-right">
+              <Button
+                variant="destructive"
+                size="icon"
+                on:click={async () => {
+                    $cart.removeItem(product.id);
+                    data = data.filter((item) => item.id !== product.id);
+                    toast.success(
+                        $_('store.cart.remove_success', { values: { product: product.name } })
+                    );
+                }}
+              >
+                <Cross2 size={16} />
+              </Button>
+            </Table.Cell>
+          </Table.Row>
+        {/each}
+        {#each recordCards as rc, i}
+          <Table.Row>
+            <Table.Cell class="w-[300px]">
+              <CardPreview
+                data={{
+                    playerUID: cartPlayerUID,
+                    playerName: cartPlayerName,
+                    clanTag: cartClanTag,
+                    clanTagBg: cartClanTagBg,
+                    clanTagText: cartClanTagText,
+                    levelName: rc.levelName || `Level #${rc.levelID}`,
+                    creator: rc.creator || '',
+                    progress: rc.progress ?? null,
+                    bgImage: rc.imgUrl
+                        || `https://levelthumbs.prevter.me/thumbnail/${rc.levelID}/high`,
+                    avatarImage: rc.avatarUrl
+                        || `https://cdn.gdvn.net/avatars/${$user.data?.uid}.jpg`,
+                    template: rc.template
+                }}
+                size="mini"
+              />
+              <div class="mt-2">
+                Thẻ Bản Ghi — {rc.levelName || `Level #${rc.levelID}`}
+                <span class="ml-2 text-xs opacity-60"
+                >({MATERIAL_LABELS[rc.material]})</span>
+              </div>
+            </Table.Cell>
+            <Table.Cell class="w-[50px] text-center">1</Table.Cell>
+            <Table.Cell class="w-[200px]">
+              {
+                new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' })
+.format(
+                    MATERIAL_PRICES[rc.material] ?? 0
+                )
+              }
+            </Table.Cell>
+            <Table.Cell class="text-right">
+              <Button
+                variant="destructive"
+                size="icon"
+                on:click={async () => {
+                    const removed = $cart.removeRecordCard(i);
+
+                    if (removed && $user.loggedIn) {
+                        const token = await $user.token();
+                        const uid = $user.data?.uid;
+
+                        if (removed.imgUrl) {
+                            fetch(
+                                `${import.meta.env.VITE_API_URL}/storage/object?path=${
+                                    encodeURIComponent(`record-cards/${uid}-${removed.levelID}`)
+                                }`,
+                                {
+                                    method: 'DELETE',
+                                    headers: { Authorization: `Bearer ${token}` }
+                                }
+                            )
+.catch(() => {});
+                        }
+
+                        if (removed.avatarUrl) {
+                            fetch(
+                                `${import.meta.env.VITE_API_URL}/storage/object?path=${
+                                    encodeURIComponent(
+                                        `record-cards/${uid}-${removed.levelID}-avatar`
+                                    )
+                                }`,
+                                {
+                                    method: 'DELETE',
+                                    headers: { Authorization: `Bearer ${token}` }
+                                }
+                            )
+.catch(() => {});
+                        }
+                    }
+
+                    toast.success('Đã xoá thẻ bản ghi khỏi giỏ hàng');
+                }}
+              >
+                <Cross2 size={16} />
+              </Button>
+            </Table.Cell>
+          </Table.Row>
+        {/each}
+      </Table.Body>
+    </Table.Root>
+    <div class="flex justify-end">
+      <p class="text-right text-lg">
+        {$_('store.cart.total')}<br />
+        <span class="text-2xl font-semibold">
+          {
+            new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' })
+.format(
+                grandTotal
+            )
+          }
+        </span>
+      </p>
+    </div>
+    <CheckoutButton bind:items={data} />
+  </div>
 {:else}
-	<p class="text-center opacity-50">{$_('store.cart.empty')}</p>
+  <p class="text-center opacity-50">{$_('store.cart.empty')}</p>
 {/if}
 
 <style lang="scss">
-	h2 {
-		font-weight: 600;
-		font-size: 35px;
-	}
+h2 {
+  font-weight: 600;
+  font-size: 35px;
+}
 </style>

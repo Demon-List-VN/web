@@ -36,8 +36,8 @@
 	$: bgImage = card?.img
 		? card.img
 		: level?.id
-			? `https://levelthumbs.prevter.me/thumbnail/${level.id}/high`
-			: '';
+		? `https://levelthumbs.prevter.me/thumbnail/${level.id}/high`
+		: '';
 
 	$: template = (card?.template ?? 1) as 1 | 2 | 3;
 
@@ -61,14 +61,18 @@
 		record?.flPt ? { label: 'FL', value: record.flPt } : null,
 		record?.plPt ? { label: 'PL', value: record.plPt } : null,
 		record?.clPt ? { label: 'CL', value: record.clPt } : null
-	].filter(Boolean) as { label: string; value: number }[];
+	].filter(Boolean) as { label: string; value: number; }[];
 
 	onMount(() => {
-		if (data.notFound) return;
+		if (data.notFound) {
+			return;
+		}
 
 		const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 		if (prefersReduced) {
 			showCard = showId = showInfo = showRecord = true;
+
 			return;
 		}
 
@@ -225,7 +229,8 @@
 							<Calendar size={15} class="detail-icon" />
 							<span class="detail-label">Ngày:</span>
 							<span class="detail-value">
-								{new Date(record.timestamp).toLocaleDateString('vi-VN')}
+								{new Date(record.timestamp)
+.toLocaleDateString('vi-VN')}
 							</span>
 						</div>
 					{/if}

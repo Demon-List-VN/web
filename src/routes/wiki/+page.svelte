@@ -7,7 +7,14 @@
 	import * as Carousel from '$lib/components/ui/carousel/index.js';
 	import * as Alert from '$lib/components/ui/alert';
 	import Ads from '$lib/components/ads.svelte';
-	import { BookOpen, FileText, Scale, Newspaper, History, AlertCircle } from 'lucide-svelte';
+	import {
+		BookOpen,
+		FileText,
+		Scale,
+		Newspaper,
+		History,
+		AlertCircle
+	} from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 
 	interface WikiFile {
@@ -41,7 +48,9 @@
 				query.set('locale', $locale);
 			}
 
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/wiki/latest?${query.toString()}`);
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/wiki/latest?${query.toString()}`
+			);
 
 			if (!res.ok) {
 				throw new Error(`HTTP ${res.status}`);
@@ -62,125 +71,140 @@
 	});
 
 	$: quickLinks = [
-		{ icon: Scale, labelKey: 'wiki.quick_links.rules', href: `wiki/rules` },
-		{ icon: Newspaper, labelKey: 'wiki.quick_links.news', href: `/wiki/news` },
-		{ icon: History, labelKey: 'wiki.quick_links.changelog', href: `/wiki/changelogs` },
-		{ icon: FileText, labelKey: 'wiki.quick_links.guides', href: `/wiki/guides` }
+		{ icon: Scale, labelKey: 'wiki.quick_links.rules', href: 'wiki/rules' },
+		{ icon: Newspaper, labelKey: 'wiki.quick_links.news', href: '/wiki/news' },
+		{
+			icon: History,
+			labelKey: 'wiki.quick_links.changelog',
+			href: '/wiki/changelogs'
+		},
+		{
+			icon: FileText,
+			labelKey: 'wiki.quick_links.guides',
+			href: '/wiki/guides'
+		}
 	];
 </script>
 
 <svelte:head>
-	<title>{$_('head.titles.wiki')} - {$_('head.site_name')}</title>
-	<meta
-		name="description"
-		content={$_('head.descriptions.wiki')}
-	/>
+  <title>{$_('head.titles.wiki')} - {$_('head.site_name')}</title>
+  <meta
+    name="description"
+    content={$_('head.descriptions.wiki')}
+  />
 </svelte:head>
 
 <BigTitle value="Wiki" description={$_('wiki.description')} />
 
-<Ads  />
+<Ads />
 
 <div class="wrapper">
-	<!-- Quick Links Section -->
-	<section class="quick-links">
-		<div class="quick-links-grid">
-			{#each quickLinks as link}
-				<a href={link.href}>
-					<Button variant="outline" class="quick-link-btn h-auto w-full flex-col gap-2 py-6">
-						<svelte:component this={link.icon} class="h-8 w-8 text-primary" />
-						<span class="text-sm font-medium">{$_(link.labelKey)}</span>
-					</Button>
-				</a>
-			{/each}
-		</div>
-	</section>
+  <!-- Quick Links Section -->
+  <section class="quick-links">
+    <div class="quick-links-grid">
+      {#each quickLinks as link}
+        <a href={link.href}>
+          <Button
+            variant="outline"
+            class="quick-link-btn h-auto w-full flex-col gap-2 py-6"
+          >
+            <svelte:component this={link.icon} class="h-8 w-8 text-primary" />
+            <span class="text-sm font-medium">{$_(link.labelKey)}</span>
+          </Button>
+        </a>
+      {/each}
+    </div>
+  </section>
 
-	<!-- Latest Articles -->
-	<section class="section">
-		<h2 class="section-title">
-			<FileText class="mr-2 inline h-5 w-5" />
-			{$_('wiki.latest_articles')}
-		</h2>
-		<div class="carouselWrapper">
-			{#if isLoading}
-				<Carousel.Root>
-					<Carousel.Content>
-						{#each { length: 4 } as _}
-							<Carousel.Item class="sm:basis-1/1 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-								<WikiCard item={null} locale={String($locale)} />
-							</Carousel.Item>
-						{/each}
-					</Carousel.Content>
-					<Carousel.Previous />
-					<Carousel.Next />
-				</Carousel.Root>
-			{:else if latestFiles.length > 0}
-				<Carousel.Root>
-					<Carousel.Content>
-						{#each latestFiles as file}
-							<Carousel.Item class="sm:basis-1/1 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-								<WikiCard item={file} locale={String($locale)} />
-							</Carousel.Item>
-						{/each}
-					</Carousel.Content>
-					<Carousel.Previous />
-					<Carousel.Next />
-				</Carousel.Root>
-			{:else}
-				<p class="text-center text-foreground/60">{$_('wiki.no_articles')}</p>
-			{/if}
-		</div>
-	</section>
+  <!-- Latest Articles -->
+  <section class="section">
+    <h2 class="section-title">
+      <FileText class="mr-2 inline h-5 w-5" />
+      {$_('wiki.latest_articles')}
+    </h2>
+    <div class="carouselWrapper">
+      {#if isLoading}
+        <Carousel.Root>
+          <Carousel.Content>
+            {#each { length: 4 } as _}
+              <Carousel.Item
+                class="sm:basis-1/1 md:basis-1/2 lg:basis-1/3 xl:basis-1/4"
+              >
+                <WikiCard item={null} locale={String($locale)} />
+              </Carousel.Item>
+            {/each}
+          </Carousel.Content>
+          <Carousel.Previous />
+          <Carousel.Next />
+        </Carousel.Root>
+      {:else if latestFiles.length > 0}
+        <Carousel.Root>
+          <Carousel.Content>
+            {#each latestFiles as file}
+              <Carousel.Item
+                class="sm:basis-1/1 md:basis-1/2 lg:basis-1/3 xl:basis-1/4"
+              >
+                <WikiCard item={file} locale={String($locale)} />
+              </Carousel.Item>
+            {/each}
+          </Carousel.Content>
+          <Carousel.Previous />
+          <Carousel.Next />
+        </Carousel.Root>
+      {:else}
+        <p class="text-center text-foreground/60">{$_('wiki.no_articles')}</p>
+      {/if}
+    </div>
+  </section>
 </div>
 
 <style lang="scss">
-	.wrapper {
-		padding-inline: 50px;
-		max-width: 1500px;
-		margin: 0 auto;
-	}
+.wrapper {
+  padding-inline: 50px;
+  max-width: 1500px;
+  margin: 0 auto;
+}
 
-	.quick-links {
-		margin-bottom: 40px;
-	}
+.quick-links {
+  margin-bottom: 40px;
+}
 
-	.quick-links-grid {
-		display: grid;
-		grid-template-columns: repeat(4, 1fr);
-		gap: 16px;
-	}
+.quick-links-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
 
-	.section {
-		margin-bottom: 40px;
-	}
+.section {
+  margin-bottom: 40px;
+}
 
-	.section-title {
-		font-size: 1.25rem;
-		font-weight: 600;
-		margin-bottom: 20px;
-		display: flex;
-		align-items: center;
-	}
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+}
 
-	.carouselWrapper {
-		max-width: 100%;
-	}
+.carouselWrapper {
+  max-width: 100%;
+}
 
-	@media screen and (max-width: 900px) {
-		.wrapper {
-			padding-inline: 15px;
-		}
+@media screen and (max-width: 900px) {
+  .wrapper {
+    padding-inline: 15px;
+  }
 
-		.quick-links-grid {
-			grid-template-columns: repeat(2, 1fr);
-		}
-	}
+  .quick-links-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 
-	@media screen and (max-width: 480px) {
-		.quick-links-grid {
-			grid-template-columns: 1fr 1fr;
-			gap: 10px;
-		}
-	}
+@media screen and (max-width: 480px) {
+  .quick-links-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+}
 </style>

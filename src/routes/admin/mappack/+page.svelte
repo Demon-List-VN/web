@@ -42,7 +42,10 @@
 	async function fetchGeneralMapPacks() {
 		try {
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/mappacks`);
-			if (res.ok) generalMapPacks = await res.json();
+
+			if (res.ok) {
+				generalMapPacks = await res.json();
+			}
 		} catch (e) {
 			console.error('Failed to fetch general map packs:', e);
 		}
@@ -73,6 +76,7 @@
 				success: () => {
 					showGeneralMapPackDialog = false;
 					fetchGeneralMapPacks();
+
 					return isNew ? 'Map pack created!' : 'Map pack updated!';
 				},
 				loading: 'Saving...',
@@ -82,7 +86,9 @@
 	}
 
 	async function deleteGeneralMapPack(id: number) {
-		if (!confirm('Delete this map pack?')) return;
+		if (!confirm('Delete this map pack?')) {
+			return;
+		}
 
 		toast.promise(
 			fetch(`${import.meta.env.VITE_API_URL}/mappacks/${id}`, {
@@ -92,6 +98,7 @@
 			{
 				success: () => {
 					fetchGeneralMapPacks();
+
 					return 'Map pack deleted!';
 				},
 				loading: 'Deleting...',
@@ -102,7 +109,9 @@
 
 	// Map Pack Level
 	async function addMapPackLevel() {
-		if (!mapPackLevelForm.mapPackId) return;
+		if (!mapPackLevelForm.mapPackId) {
+			return;
+		}
 
 		toast.promise(
 			fetch(
@@ -123,6 +132,7 @@
 				success: () => {
 					showMapPackLevelDialog = false;
 					fetchGeneralMapPacks();
+
 					return 'Level added!';
 				},
 				loading: 'Adding...',
@@ -132,7 +142,9 @@
 	}
 
 	async function deleteMapPackLevel(mapPackId: number, levelId: number) {
-		if (!confirm('Remove this level?')) return;
+		if (!confirm('Remove this level?')) {
+			return;
+		}
 
 		toast.promise(
 			fetch(
@@ -145,6 +157,7 @@
 			{
 				success: () => {
 					fetchGeneralMapPacks();
+
 					return 'Level removed!';
 				},
 				loading: 'Removing...',
@@ -155,7 +168,13 @@
 
 	// Reset form functions
 	function openNewGeneralMapPack() {
-		generalMapPackForm = { id: null, name: '', description: '', difficulty: '-', xp: 200 };
+		generalMapPackForm = {
+			id: null,
+			name: '',
+			description: '',
+			difficulty: '-',
+			xp: 200
+		};
 		showGeneralMapPackDialog = true;
 	}
 
@@ -181,161 +200,194 @@
 </script>
 
 <svelte:head>
-	<title>{$_('head.titles.map_pack_manager')} - {$_('head.titles.admin')}</title>
+  <title>
+    {$_('head.titles.map_pack_manager')} - {$_('head.titles.admin')}
+  </title>
 </svelte:head>
 
 <Title value="Map Pack Manager" />
 
 <div class="wrapper">
-	<div class="mb-4 flex justify-end">
-		<Button on:click={openNewGeneralMapPack}>
-			<Plus class="mr-1 h-4 w-4" />
-			Add New Map Pack
-		</Button>
-	</div>
-	<div class="flex flex-col gap-4">
-		{#each generalMapPacks as pack}
-			<Card.Root class="border">
-				<Card.Content class="p-4">
-					<div class="flex items-start justify-between">
-						<div class="flex-1">
-							<h4 class="font-bold">{pack.name} (ID: {pack.id})</h4>
-							<p class="text-sm text-muted-foreground">{pack.description || '-'}</p>
-							<div class="mt-2 flex items-center gap-4 text-sm">
-								<span class="capitalize">{pack.difficulty}</span>
-								<span class="text-yellow-400">+{pack.xp} XP</span>
-							</div>
-							{#if pack.mapPackLevels?.length}
-								<div class="mt-2 flex flex-wrap gap-2">
-									{#each pack.mapPackLevels as level}
-										<div class="flex items-center gap-1 rounded bg-muted px-2 py-1 text-xs">
-											<a href={`/level/${level.levelID}`}>{level.levels?.name}</a>
-											{#if level.levels?.creator}
-												<span class="text-muted-foreground">by {level.levels.creator}</span>
-											{/if}
-											<Button
-												variant="ghost"
-												size="icon"
-												class="h-4 w-4"
-												on:click={() => deleteMapPackLevel(pack.id, level.id)}
-											>
-												<Trash2 class="h-3 w-3" />
-											</Button>
-										</div>
-									{/each}
-								</div>
-							{/if}
-						</div>
-						<div class="flex gap-2">
-							<Button variant="outline" size="sm" on:click={() => openAddMapPackLevel(pack.id)}>
-								<Plus class="mr-1 h-4 w-4" />
-								Level
-							</Button>
-							<Button variant="outline" size="icon" on:click={() => openEditGeneralMapPack(pack)}>
-								<Edit class="h-4 w-4" />
-							</Button>
-							<Button
-								variant="destructive"
-								size="icon"
-								on:click={() => deleteGeneralMapPack(pack.id)}
-							>
-								<Trash2 class="h-4 w-4" />
-							</Button>
-						</div>
-					</div>
-				</Card.Content>
-			</Card.Root>
-		{:else}
-			<p class="py-8 text-center text-muted-foreground">No map packs created</p>
-		{/each}
-	</div>
+  <div class="mb-4 flex justify-end">
+    <Button on:click={openNewGeneralMapPack}>
+      <Plus class="mr-1 h-4 w-4" />
+      Add New Map Pack
+    </Button>
+  </div>
+  <div class="flex flex-col gap-4">
+    {#each generalMapPacks as pack}
+      <Card.Root class="border">
+        <Card.Content class="p-4">
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <h4 class="font-bold">{pack.name} (ID: {pack.id})</h4>
+              <p class="text-sm text-muted-foreground">
+                {pack.description || '-'}
+              </p>
+              <div class="mt-2 flex items-center gap-4 text-sm">
+                <span class="capitalize">{pack.difficulty}</span>
+                <span class="text-yellow-400">+{pack.xp} XP</span>
+              </div>
+              {#if pack.mapPackLevels?.length}
+                <div class="mt-2 flex flex-wrap gap-2">
+                  {#each pack.mapPackLevels as level}
+                    <div class="flex items-center gap-1 rounded bg-muted px-2 py-1 text-xs">
+                      <a href={`/level/${level.levelID}`}>{
+                        level.levels?.name
+                      }</a>
+                      {#if level.levels?.creator}
+                        <span class="text-muted-foreground">by {
+                            level.levels.creator
+                          }</span>
+                      {/if}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        class="h-4 w-4"
+                        on:click={() => deleteMapPackLevel(pack.id, level.id)}
+                      >
+                        <Trash2 class="h-3 w-3" />
+                      </Button>
+                    </div>
+                  {/each}
+                </div>
+              {/if}
+            </div>
+            <div class="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                on:click={() => openAddMapPackLevel(pack.id)}
+              >
+                <Plus class="mr-1 h-4 w-4" />
+                Level
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                on:click={() => openEditGeneralMapPack(pack)}
+              >
+                <Edit class="h-4 w-4" />
+              </Button>
+              <Button
+                variant="destructive"
+                size="icon"
+                on:click={() => deleteGeneralMapPack(pack.id)}
+              >
+                <Trash2 class="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </Card.Content>
+      </Card.Root>
+    {:else}
+      <p class="py-8 text-center text-muted-foreground">No map packs created</p>
+    {/each}
+  </div>
 </div>
 
 <!-- General Map Pack Dialog -->
 <Dialog.Root bind:open={showGeneralMapPackDialog}>
-	<Dialog.Content class="max-w-lg">
-		<Dialog.Header>
-			<Dialog.Title>{generalMapPackForm.id ? 'Edit Map Pack' : 'Create Map Pack'}</Dialog.Title>
-		</Dialog.Header>
-		<div class="flex flex-col gap-4">
-			<div>
-				<Label for="packName">Name</Label>
-				<Input id="packName" bind:value={generalMapPackForm.name} placeholder="Harder Pack 1" />
-			</div>
-			<div>
-				<Label for="packDesc">Description</Label>
-				<Textarea
-					id="packDesc"
-					bind:value={generalMapPackForm.description}
-					placeholder="A collection of harder levels"
-				/>
-			</div>
-			<div class="grid grid-cols-2 gap-4">
-				<div>
-					<Label for="packDifficulty">Difficulty</Label>
-					<Select.Root
-						onSelectedChange={(v) => (generalMapPackForm.difficulty = v?.value || '-')}
-					>
-						<Select.Trigger>
-							<Select.Value placeholder={generalMapPackForm.difficulty} />
-						</Select.Trigger>
-						<Select.Content>
-							{#each MAP_PACK_DIFFICULTY_OPTIONS as opt}
-								<Select.Item value={opt.value}>{opt.label}</Select.Item>
-							{/each}
-						</Select.Content>
-					</Select.Root>
-				</div>
-				<div>
-					<Label for="packXP">XP</Label>
-					<Input id="packXP" type="number" bind:value={generalMapPackForm.xp} />
-				</div>
-			</div>
-		</div>
-		<Dialog.Footer>
-			<Button variant="outline" on:click={() => (showGeneralMapPackDialog = false)}>Cancel</Button>
-			<Button on:click={saveGeneralMapPack}>Save</Button>
-		</Dialog.Footer>
-	</Dialog.Content>
+  <Dialog.Content class="max-w-lg">
+    <Dialog.Header>
+      <Dialog.Title>{
+        generalMapPackForm.id ? 'Edit Map Pack' : 'Create Map Pack'
+      }</Dialog.Title>
+    </Dialog.Header>
+    <div class="flex flex-col gap-4">
+      <div>
+        <Label for="packName">Name</Label>
+        <Input
+          id="packName"
+          bind:value={generalMapPackForm.name}
+          placeholder="Harder Pack 1"
+        />
+      </div>
+      <div>
+        <Label for="packDesc">Description</Label>
+        <Textarea
+          id="packDesc"
+          bind:value={generalMapPackForm.description}
+          placeholder="A collection of harder levels"
+        />
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <Label for="packDifficulty">Difficulty</Label>
+          <Select.Root
+            onSelectedChange={(v) => (generalMapPackForm.difficulty = v?.value || '-')}
+          >
+            <Select.Trigger>
+              <Select.Value placeholder={generalMapPackForm.difficulty} />
+            </Select.Trigger>
+            <Select.Content>
+              {#each MAP_PACK_DIFFICULTY_OPTIONS as opt}
+                <Select.Item value={opt.value}>{opt.label}</Select.Item>
+              {/each}
+            </Select.Content>
+          </Select.Root>
+        </div>
+        <div>
+          <Label for="packXP">XP</Label>
+          <Input id="packXP" type="number" bind:value={generalMapPackForm.xp} />
+        </div>
+      </div>
+    </div>
+    <Dialog.Footer>
+      <Button
+        variant="outline"
+        on:click={() => (showGeneralMapPackDialog = false)}
+      >Cancel</Button>
+      <Button on:click={saveGeneralMapPack}>Save</Button>
+    </Dialog.Footer>
+  </Dialog.Content>
 </Dialog.Root>
 
 <!-- Map Pack Level Dialog -->
 <Dialog.Root bind:open={showMapPackLevelDialog}>
-	<Dialog.Content class="max-w-md">
-		<Dialog.Header>
-			<Dialog.Title>Add Level to Map Pack</Dialog.Title>
-		</Dialog.Header>
-		<div class="flex flex-col gap-4">
-			<div>
-				<Label for="mpLevelID">Level ID</Label>
-				<Input
-					id="mpLevelID"
-					type="number"
-					bind:value={mapPackLevelForm.levelID}
-					placeholder="12345678"
-				/>
-			</div>
-			<div>
-				<Label for="mpLevelOrder">Order</Label>
-				<Input id="mpLevelOrder" type="number" bind:value={mapPackLevelForm.order} min="0" />
-			</div>
-		</div>
-		<Dialog.Footer>
-			<Button variant="outline" on:click={() => (showMapPackLevelDialog = false)}>Cancel</Button>
-			<Button on:click={addMapPackLevel}>Add</Button>
-		</Dialog.Footer>
-	</Dialog.Content>
+  <Dialog.Content class="max-w-md">
+    <Dialog.Header>
+      <Dialog.Title>Add Level to Map Pack</Dialog.Title>
+    </Dialog.Header>
+    <div class="flex flex-col gap-4">
+      <div>
+        <Label for="mpLevelID">Level ID</Label>
+        <Input
+          id="mpLevelID"
+          type="number"
+          bind:value={mapPackLevelForm.levelID}
+          placeholder="12345678"
+        />
+      </div>
+      <div>
+        <Label for="mpLevelOrder">Order</Label>
+        <Input
+          id="mpLevelOrder"
+          type="number"
+          bind:value={mapPackLevelForm.order}
+          min="0"
+        />
+      </div>
+    </div>
+    <Dialog.Footer>
+      <Button
+        variant="outline"
+        on:click={() => (showMapPackLevelDialog = false)}
+      >Cancel</Button>
+      <Button on:click={addMapPackLevel}>Add</Button>
+    </Dialog.Footer>
+  </Dialog.Content>
 </Dialog.Root>
 
 <style lang="scss">
-	.wrapper {
-		padding-inline: 75px;
-		padding-block: 30px;
-	}
+.wrapper {
+  padding-inline: 75px;
+  padding-block: 30px;
+}
 
-	@media screen and (max-width: 768px) {
-		.wrapper {
-			padding-inline: 15px;
-		}
-	}
+@media screen and (max-width: 768px) {
+  .wrapper {
+    padding-inline: 15px;
+  }
+}
 </style>

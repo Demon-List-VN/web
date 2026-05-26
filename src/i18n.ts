@@ -9,38 +9,39 @@ addMessages('en', en);
 addMessages('vi', vi);
 
 init({
-	fallbackLocale: DEFAULT_LOCALE,
-	initialLocale: DEFAULT_LOCALE
+    fallbackLocale: DEFAULT_LOCALE,
+    initialLocale: DEFAULT_LOCALE
 });
 
 export function resolveLocale(candidate?: string | null) {
-	if (!candidate) {
-		return DEFAULT_LOCALE;
-	}
+    if (!candidate) {
+        return DEFAULT_LOCALE;
+    }
 
-	const normalized = candidate.toLowerCase();
+    const normalized = candidate.toLowerCase();
 
-	if (normalized.startsWith('en')) {
-		return 'en';
-	}
+    if (normalized.startsWith('en')) {
+        return 'en';
+    }
 
-	if (normalized.startsWith('vi')) {
-		return 'vi';
-	}
+    if (normalized.startsWith('vi')) {
+        return 'vi';
+    }
 
-	return DEFAULT_LOCALE;
+    return DEFAULT_LOCALE;
 }
 
 export function resolveLocaleFromCountry(candidate?: string | null) {
-	if (!candidate) {
-		return null;
-	}
+    if (!candidate) {
+        return null;
+    }
 
-	return candidate.toUpperCase() === 'VN' ? 'vi' : 'en';
+    return candidate.toUpperCase() === 'VN' ? 'vi' : 'en';
 }
 
 export function setAppLocale(candidate?: string | null) {
-	const nextLocale = resolveLocale(candidate);
-	locale.set(nextLocale);
-	return nextLocale;
+    const nextLocale = resolveLocale(candidate);
+    locale.set(nextLocale);
+
+    return nextLocale;
 }

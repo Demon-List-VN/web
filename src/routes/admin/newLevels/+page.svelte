@@ -8,19 +8,19 @@
 <Title value="New levels" />
 
 <div class="wrapper">
-	{#each data.data as level}
-		<p>{level.id} - {level.name}</p>
-	{/each}
+  {#each data.data as level}
+    <p>{level.id} - {level.name}</p>
+  {/each}
 </div>
 
 <style lang="scss">
-	.wrapper {
-		padding-inline: 75px;
-	}
+.wrapper {
+  padding-inline: 75px;
+}
 
-	@media screen and (max-width: 900px) {
-		.wrapper {
-			padding-inline: 10px;
-		}
-	}
+@media screen and (max-width: 900px) {
+  .wrapper {
+    padding-inline: 10px;
+  }
+}
 </style>

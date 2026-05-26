@@ -48,6 +48,7 @@
 
 	async function getHeaders() {
 		const token = await $user.token();
+
 		return {
 			Authorization: `Bearer ${token}`,
 			'Content-Type': 'application/json'
@@ -55,9 +56,12 @@
 	}
 
 	function normalizeNullableText(value: unknown) {
-		if (typeof value !== 'string') return null;
+		if (typeof value !== 'string') {
+			return null;
+		}
 
 		const trimmed = value.trim();
+
 		return trimmed ? trimmed : null;
 	}
 
@@ -65,19 +69,30 @@
 	async function fetchAllTags() {
 		try {
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/levels/tags`);
-			if (res.ok) allTags = await res.json();
+
+			if (res.ok) {
+				allTags = await res.json();
+			}
 		} catch {}
 	}
 
 	async function createTag() {
-		if (!newTagName.trim()) return;
+		if (!newTagName.trim()) {
+			return;
+		}
+
 		creatingTag = true;
+
 		try {
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/levels/tags`, {
 				method: 'POST',
 				headers: await getHeaders(),
-				body: JSON.stringify({ name: newTagName.trim(), color: newTagColor })
+				body: JSON.stringify({
+					name: newTagName.trim(),
+					color: newTagColor
+				})
 			});
+
 			if (res.ok) {
 				newTagName = '';
 				newTagColor = '#3b82f6';
@@ -96,12 +111,21 @@
 	}
 
 	async function deleteTag(tagId: number) {
-		if (!confirm('Delete this tag? It will be removed from all levels.')) return;
+		if (
+			!confirm('Delete this tag? It will be removed from all levels.')
+		) {
+			return;
+		}
+
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/levels/tags/${tagId}`, {
-				method: 'DELETE',
-				headers: await getHeaders()
-			});
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/levels/tags/${tagId}`,
+				{
+					method: 'DELETE',
+					headers: await getHeaders()
+				}
+			);
+
 			if (res.ok) {
 				await fetchAllTags();
 				toast.success('Tag deleted');
@@ -124,17 +148,25 @@
 	}
 
 	async function saveEditTag() {
-		if (!editLevelTagName.trim() || !editingLevelTag) return;
+		if (!editLevelTagName.trim() || !editingLevelTag) {
+			return;
+		}
+
 		savingLevelTagEdit = true;
+
 		try {
 			const res = await fetch(
 				`${import.meta.env.VITE_API_URL}/levels/tags/${editingLevelTag.id}`,
 				{
 					method: 'PUT',
 					headers: await getHeaders(),
-					body: JSON.stringify({ name: editLevelTagName.trim(), color: editLevelTagColor })
+					body: JSON.stringify({
+						name: editLevelTagName.trim(),
+						color: editLevelTagColor
+					})
 				}
 			);
+
 			if (res.ok) {
 				toast.success('Tag updated');
 				cancelEditTag();
@@ -153,9 +185,15 @@
 
 	// Level tag assignment
 	async function fetchLevelTags() {
-		if (isNaN(level.id)) return;
+		if (isNaN(level.id)) {
+			return;
+		}
+
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/levels/${level.id}/tags`);
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/levels/${level.id}/tags`
+			);
+
 			if (res.ok) {
 				const data = await res.json();
 				levelTags = data.map((t: any) => t.levelTags || t);
@@ -178,15 +216,22 @@
 	async function saveLevelTags() {
 		if (!levelTags || !Array.isArray(levelTags)) {
 			toast.error('Invalid level tags data');
+
 			return;
 		}
+
 		savingLevelTags = true;
+
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/levels/${level.id}/tags`, {
-				method: 'PUT',
-				headers: await getHeaders(),
-				body: JSON.stringify({ tag_ids: levelTags.map((t) => t.id) })
-			});
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/levels/${level.id}/tags`,
+				{
+					method: 'PUT',
+					headers: await getHeaders(),
+					body: JSON.stringify({ tag_ids: levelTags.map((t) => t.id) })
+				}
+			);
+
 			if (res.ok) {
 				toast.success('Level tags updated');
 			} else {
@@ -201,22 +246,38 @@
 
 	// Variant management
 	async function fetchVariants() {
-		if (isNaN(level.id)) return;
+		if (isNaN(level.id)) {
+			return;
+		}
+
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/levels/${level.id}/variants`);
-			if (res.ok) variants = await res.json();
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/levels/${level.id}/variants`
+			);
+
+			if (res.ok) {
+				variants = await res.json();
+			}
 		} catch {}
 	}
 
 	async function addVariant() {
-		if (isNaN(newVariantId)) return;
+		if (isNaN(newVariantId)) {
+			return;
+		}
+
 		addingVariant = true;
+
 		try {
-			const res = await fetch(`${import.meta.env.VITE_API_URL}/levels/${level.id}/variants`, {
-				method: 'POST',
-				headers: await getHeaders(),
-				body: JSON.stringify({ variantLevelId: newVariantId })
-			});
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/levels/${level.id}/variants`,
+				{
+					method: 'POST',
+					headers: await getHeaders(),
+					body: JSON.stringify({ variantLevelId: newVariantId })
+				}
+			);
+
 			if (res.ok) {
 				newVariantId = NaN;
 				await fetchVariants();
@@ -233,7 +294,10 @@
 	}
 
 	async function removeVariant(variantId: number) {
-		if (!confirm('Remove this variant?')) return;
+		if (!confirm('Remove this variant?')) {
+			return;
+		}
+
 		try {
 			const res = await fetch(
 				`${import.meta.env.VITE_API_URL}/levels/${level.id}/variants/${variantId}`,
@@ -242,6 +306,7 @@
 					headers: await getHeaders()
 				}
 			);
+
 			if (res.ok) {
 				await fetchVariants();
 				toast.success('Variant removed');
@@ -253,8 +318,14 @@
 
 	onMount(() => {
 		const tab = $page.url.searchParams.get('tab');
-		if (tab === 'tags' || tab === 'variants') activeTab = tab;
-		if (activeTab === 'tags') fetchAllTags();
+
+		if (tab === 'tags' || tab === 'variants') {
+			activeTab = tab;
+		}
+
+		if (activeTab === 'tags') {
+			fetchAllTags();
+		}
 	});
 
 	async function fetchLevel() {
@@ -265,7 +336,10 @@
 				state = 1;
 				fetchLevelTags();
 				fetchVariants();
-				if (allTags.length === 0) fetchAllTags();
+
+				if (allTags.length === 0) {
+					fetchAllTags();
+				}
 			})
 			.catch((_err) => {
 				fetch(`${import.meta.env.VITE_API_URL}/levels/${level.id}?fromGD=1`)
@@ -303,19 +377,23 @@
 				Authorization: `Bearer ${await $user.token()}`,
 				'Content-Type': 'application/json'
 			}
-		}).then((res) => {
-			if (!res.ok) {
-				alert('An error occured');
-				return;
-			}
+		})
+			.then((res) => {
+				if (!res.ok) {
+					alert('An error occured');
 
-			alert('Success!');
-			window.location.reload();
-		});
+					return;
+				}
+
+				alert('Success!');
+				window.location.reload();
+			});
 	}
 
 	async function deleteLevel() {
-		if (!confirm("This level and all of it's record will be deleted. Proceed?")) {
+		if (
+			!confirm("This level and all of it's record will be deleted. Proceed?")
+		) {
 			return;
 		}
 
@@ -324,486 +402,553 @@
 			headers: {
 				Authorization: `Bearer ${await $user.token()}`
 			}
-		}).then((res) => {
-			if (!res.ok) {
-				alert('An error occured');
-				return;
-			}
+		})
+			.then((res) => {
+				if (!res.ok) {
+					alert('An error occured');
 
-			alert('Success!');
-			window.location.reload();
-		});
+					return;
+				}
+
+				alert('Success!');
+				window.location.reload();
+			});
 	}
 </script>
 
 <Title value="Level manager" />
 
 <div class="wrapper">
-	<div class="tabBar">
-		<button class="tab" class:active={activeTab === 'level'} on:click={() => (activeTab = 'level')}
-			>Level Manager</button
-		>
-		<button
-			class="tab"
-			class:active={activeTab === 'tags'}
-			on:click={() => {
-				activeTab = 'tags';
-				fetchAllTags();
-			}}>Level Tags</button
-		>
-	</div>
+  <div class="tabBar">
+    <button
+      class="tab"
+      class:active={activeTab === 'level'}
+      on:click={() => (activeTab = 'level')}
+    >
+      Level Manager
+    </button>
+    <button
+      class="tab"
+      class:active={activeTab === 'tags'}
+      on:click={() => {
+          activeTab = 'tags';
+          fetchAllTags();
+      }}
+    >
+      Level Tags
+    </button>
+  </div>
 
-	{#if activeTab === 'tags'}
-		<!-- Tag Management -->
-		<div class="section">
-			<h3 class="sectionTitle"><Tag class="h-4 w-4" /> Create New Tag</h3>
-			<div class="createTagRow">
-				<Input placeholder="Tag name" bind:value={newTagName} class="w-[200px]" />
-				<div class="colorPickerWrap">
-					<Palette class="h-4 w-4" />
-					<input type="color" bind:value={newTagColor} class="colorInput" />
-				</div>
-				<span
-					class="tagPreview"
-					style="background: {newTagColor}18; color: {newTagColor}; border: 1px solid {newTagColor}30"
-				>
-					{newTagName || 'Preview'}
-				</span>
-				<Button on:click={createTag} disabled={creatingTag || !newTagName.trim()} size="sm">
-					<Plus class="mr-1 h-3.5 w-3.5" />
-					{creatingTag ? 'Creating...' : 'Create'}
-				</Button>
-			</div>
-		</div>
+  {#if activeTab === 'tags'}
+    <!-- Tag Management -->
+    <div class="section">
+      <h3 class="sectionTitle"><Tag class="h-4 w-4" /> Create New Tag</h3>
+      <div class="createTagRow">
+        <Input
+          placeholder="Tag name"
+          bind:value={newTagName}
+          class="w-[200px]"
+        />
+        <div class="colorPickerWrap">
+          <Palette class="h-4 w-4" />
+          <input type="color" bind:value={newTagColor} class="colorInput" />
+        </div>
+        <span
+          class="tagPreview"
+          style="background: {newTagColor}18; color: {newTagColor}; border: 1px solid {newTagColor}30"
+        >
+          {newTagName || 'Preview'}
+        </span>
+        <Button
+          on:click={createTag}
+          disabled={creatingTag || !newTagName.trim()}
+          size="sm"
+        >
+          <Plus class="mr-1 h-3.5 w-3.5" />
+          {creatingTag ? 'Creating...' : 'Create'}
+        </Button>
+      </div>
+    </div>
 
-		<div class="section">
-			<h3 class="sectionTitle">All Level Tags</h3>
-			{#if allTags.length === 0}
-				<p class="muted">No tags yet. Create one above.</p>
-			{:else}
-				<div class="tagGrid">
-					{#each allTags as tag}
-						<div class="tagItem">
-							{#if editingLevelTag && editingLevelTag.id === tag.id}
-								<div class="editTagRow">
-									<Input placeholder="Tag name" bind:value={editLevelTagName} class="w-[140px]" />
-									<input type="color" bind:value={editLevelTagColor} class="colorInput" />
-									<span
-										class="tagPreview"
-										style="background: {editLevelTagColor}18; color: {editLevelTagColor}; border: 1px solid {editLevelTagColor}30"
-									>
-										{editLevelTagName || 'Preview'}
-									</span>
-									<Button on:click={saveEditTag} disabled={savingLevelTagEdit || !editLevelTagName.trim()} size="sm">
-										{savingLevelTagEdit ? 'Saving...' : 'Save'}
-									</Button>
-									<button class="deleteTagBtn" on:click={cancelEditTag} title="Cancel">
-										<X class="h-3.5 w-3.5" />
-									</button>
-								</div>
-							{:else}
-								<span
-									class="tagBadge"
-									style="background: {tag.color || '#666'}18; color: {tag.color ||
-										'#666'}; border: 1px solid {tag.color || '#666'}30"
-								>
-									{tag.name}
-								</span>
-								<button class="editTagBtn" on:click={() => startEditTag(tag)} title="Edit tag">
-									<Pencil class="h-3.5 w-3.5" />
-								</button>
-								<button class="deleteTagBtn" on:click={() => deleteTag(tag.id)} title="Delete tag">
-									<Trash2 class="h-3.5 w-3.5" />
-								</button>
-							{/if}
-						</div>
-					{/each}
-				</div>
-			{/if}
-		</div>
-	{/if}
+    <div class="section">
+      <h3 class="sectionTitle">All Level Tags</h3>
+      {#if allTags.length === 0}
+        <p class="muted">No tags yet. Create one above.</p>
+      {:else}
+        <div class="tagGrid">
+          {#each allTags as tag}
+            <div class="tagItem">
+              {#if editingLevelTag && editingLevelTag.id === tag.id}
+                <div class="editTagRow">
+                  <Input
+                    placeholder="Tag name"
+                    bind:value={editLevelTagName}
+                    class="w-[140px]"
+                  />
+                  <input
+                    type="color"
+                    bind:value={editLevelTagColor}
+                    class="colorInput"
+                  />
+                  <span
+                    class="tagPreview"
+                    style="background: {editLevelTagColor}18; color: {editLevelTagColor}; border: 1px solid {editLevelTagColor}30"
+                  >
+                    {editLevelTagName || 'Preview'}
+                  </span>
+                  <Button
+                    on:click={saveEditTag}
+                    disabled={savingLevelTagEdit || !editLevelTagName.trim()}
+                    size="sm"
+                  >
+                    {savingLevelTagEdit ? 'Saving...' : 'Save'}
+                  </Button>
+                  <button
+                    class="deleteTagBtn"
+                    on:click={cancelEditTag}
+                    title="Cancel"
+                  >
+                    <X class="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              {:else}
+                <span
+                  class="tagBadge"
+                  style="background: {tag.color || '#666'}18; color: {tag.color
+    || '#666'}; border: 1px solid {tag.color || '#666'}30"
+                >
+                  {tag.name}
+                </span>
+                <button
+                  class="editTagBtn"
+                  on:click={() => startEditTag(tag)}
+                  title="Edit tag"
+                >
+                  <Pencil class="h-3.5 w-3.5" />
+                </button>
+                <button
+                  class="deleteTagBtn"
+                  on:click={() => deleteTag(tag.id)}
+                  title="Delete tag"
+                >
+                  <Trash2 class="h-3.5 w-3.5" />
+                </button>
+              {/if}
+            </div>
+          {/each}
+        </div>
+      {/if}
+    </div>
+  {/if}
 
-	{#if activeTab === 'level' || activeTab === 'variants'}
-		<div class="input">
-			<Label for="id" class="w-[100px]">Level's ID</Label>
-			<Input id="id" type="number" inputmode="numeric" class="w-[300px]" bind:value={level.id} />
-			<Button on:click={fetchLevel}>Fetch</Button>
-		</div>
-		{#if state == 2}
-			<Alert.Root class="w-[500px]">
-				<Alert.Title>Attention!</Alert.Title>
-				<Alert.Description
-					>No level found in DLVN but exist on GD server. Some detail has been autofilled for you.</Alert.Description
-				>
-			</Alert.Root>
-		{/if}
-		{#if state == 3}
-			<Alert.Root class="w-[500px]">
-				<Alert.Title>Attention!</Alert.Title>
-				<Alert.Description
-					>No level found on GD server. Please recheck the level's ID.</Alert.Description
-				>
-			</Alert.Root>
-		{/if}
-		{#if state == 1 || state == 2}
-			<div class="input mt-[50px]">
-				<Label for="name" class="w-[100px]">Name</Label>
-				<Input
-					id="name"
-					class="w-[300px]"
-					placeholder="Required"
-					required
-					bind:value={level.name}
-				/>
-			</div>
-			<div class="input">
-				<Label for="creator" class="w-[100px]">Creator</Label>
-				<Input
-					id="creator"
-					class="w-[300px]"
-					placeholder="Required"
-					required
-					bind:value={level.creator}
-				/>
-			</div>
-						<div class="input">
-				<Label for="creator" class="w-[100px]">VideoID</Label>
-				<Input
-					id="creator"
-					class="w-[300px]"
-					placeholder="Required"
-					required
-					bind:value={level.videoID}
-				/>
-			</div>
-			<div class="input">
-				<Label for="isPlatformer" class="w-[100px]">Platformer</Label>
-				<Switch id="isPlatformer" bind:checked={level.isPlatformer}></Switch>
-			</div>
-			<div class="flex w-[150px] flex-col gap-[15px]">
-				<Button on:click={updateLevel}>{state == 1 ? 'Update' : 'Add new level'}</Button>
-				{#if state == 1}
-					<Button on:click={deleteLevel} variant="destructive" class="mt-[100px]">Delete</Button>
-				{/if}
-			</div>
+  {#if activeTab === 'level' || activeTab === 'variants'}
+    <div class="input">
+      <Label for="id" class="w-[100px]">Level's ID</Label>
+      <Input
+        id="id"
+        type="number"
+        inputmode="numeric"
+        class="w-[300px]"
+        bind:value={level.id}
+      />
+      <Button on:click={fetchLevel}>Fetch</Button>
+    </div>
+    {#if state == 2}
+      <Alert.Root class="w-[500px]">
+        <Alert.Title>Attention!</Alert.Title>
+        <Alert.Description>No level found in DLVN but exist on GD server. Some
+          detail has been autofilled for you.</Alert.Description>
+      </Alert.Root>
+    {/if}
+    {#if state == 3}
+      <Alert.Root class="w-[500px]">
+        <Alert.Title>Attention!</Alert.Title>
+        <Alert.Description>No level found on GD server. Please recheck the
+          level's ID.</Alert.Description>
+      </Alert.Root>
+    {/if}
+    {#if state == 1 || state == 2}
+      <div class="input mt-[50px]">
+        <Label for="name" class="w-[100px]">Name</Label>
+        <Input
+          id="name"
+          class="w-[300px]"
+          placeholder="Required"
+          required
+          bind:value={level.name}
+        />
+      </div>
+      <div class="input">
+        <Label for="creator" class="w-[100px]">Creator</Label>
+        <Input
+          id="creator"
+          class="w-[300px]"
+          placeholder="Required"
+          required
+          bind:value={level.creator}
+        />
+      </div>
+      <div class="input">
+        <Label for="creator" class="w-[100px]">VideoID</Label>
+        <Input
+          id="creator"
+          class="w-[300px]"
+          placeholder="Required"
+          required
+          bind:value={level.videoID}
+        />
+      </div>
+      <div class="input">
+        <Label for="isPlatformer" class="w-[100px]">Platformer</Label>
+        <Switch id="isPlatformer" bind:checked={level.isPlatformer}></Switch>
+      </div>
+      <div class="flex w-[150px] flex-col gap-[15px]">
+        <Button on:click={updateLevel}>{
+          state == 1 ? 'Update' : 'Add new level'
+        }</Button>
+        {#if state == 1}
+          <Button
+            on:click={deleteLevel}
+            variant="destructive"
+            class="mt-[100px]"
+          >Delete</Button>
+        {/if}
+      </div>
 
-			{#if state === 1}
-				<!-- Level Tags Assignment -->
-				<div class="section mt-8">
-					<h3 class="sectionTitle"><Tag class="h-4 w-4" /> Level Tags</h3>
-					{#if allTags.length > 0}
-						<div class="tagPickerRow">
-							{#each allTags as tag}
-								{#key levelTags}
-									<button
-										class="tagChipBtn"
-										class:selected={isTagSelected(tag.id)}
-										style="--tag-color: {tag.color || '#666'}"
-										on:click={() => toggleLevelTag(tag)}
-									>
-										{tag.name}
-									</button>
-								{/key}
-							{/each}
-						</div>
-						<Button on:click={saveLevelTags} disabled={savingLevelTags} size="sm" class="mt-2">
-							{savingLevelTags ? 'Saving...' : 'Save Tags'}
-						</Button>
-					{:else}
-						<p class="muted">
-							No tags available. <button
-								class="linkBtn"
-								on:click={() => {
-									activeTab = 'tags';
-									fetchAllTags();
-								}}>Create tags first</button
-							>
-						</p>
-					{/if}
-				</div>
+      {#if state === 1}
+        <!-- Level Tags Assignment -->
+        <div class="section mt-8">
+          <h3 class="sectionTitle"><Tag class="h-4 w-4" /> Level Tags</h3>
+          {#if allTags.length > 0}
+            <div class="tagPickerRow">
+              {#each allTags as tag}
+                {#key levelTags}
+                  <button
+                    class="tagChipBtn"
+                    class:selected={isTagSelected(tag.id)}
+                    style="--tag-color: {tag.color || '#666'}"
+                    on:click={() => toggleLevelTag(tag)}
+                  >
+                    {tag.name}
+                  </button>
+                {/key}
+              {/each}
+            </div>
+            <Button
+              on:click={saveLevelTags}
+              disabled={savingLevelTags}
+              size="sm"
+              class="mt-2"
+            >
+              {savingLevelTags ? 'Saving...' : 'Save Tags'}
+            </Button>
+          {:else}
+            <p class="muted">
+              No tags available. <button
+                class="linkBtn"
+                on:click={() => {
+                    activeTab = 'tags';
+                    fetchAllTags();
+                }}
+              >
+                Create tags first
+              </button>
+            </p>
+          {/if}
+        </div>
 
-				<!-- Variants Section -->
-				<div class="section mt-8">
-					<h3 class="sectionTitle"><Link class="h-4 w-4" /> Low Detail Variants</h3>
-					<div class="createTagRow mb-3">
-						<Input
-							placeholder="Variant Level ID"
-							type="number"
-							inputmode="numeric"
-							bind:value={newVariantId}
-							class="w-[200px]"
-						/>
-						<Button on:click={addVariant} disabled={addingVariant || isNaN(newVariantId)} size="sm">
-							<Plus class="mr-1 h-3.5 w-3.5" />
-							{addingVariant ? 'Adding...' : 'Add Variant'}
-						</Button>
-					</div>
-					{#if variants.length === 0}
-						<p class="muted">No variants for this level.</p>
-					{:else}
-						<div class="variantList">
-							{#each variants as variant}
-								<div class="variantItem">
-									<div class="variantInfo">
-										<a href="/level/{variant.id}" target="_blank" class="variantLink">
-											<b>{variant.name || variant.id}</b>
-										</a>
-										{#if variant.creator}
-											<span class="muted">by {variant.creator}</span>
-										{/if}
-										<span class="muted">ID: {variant.id}</span>
-									</div>
-									<button
-										class="deleteTagBtn"
-										on:click={() => removeVariant(variant.id)}
-										title="Remove variant"
-									>
-										<Trash2 class="h-3.5 w-3.5" />
-									</button>
-								</div>
-							{/each}
-						</div>
-					{/if}
-				</div>
-			{/if}
-		{/if}
-	{/if}
+        <!-- Variants Section -->
+        <div class="section mt-8">
+          <h3 class="sectionTitle">
+            <Link class="h-4 w-4" /> Low Detail Variants
+          </h3>
+          <div class="createTagRow mb-3">
+            <Input
+              placeholder="Variant Level ID"
+              type="number"
+              inputmode="numeric"
+              bind:value={newVariantId}
+              class="w-[200px]"
+            />
+            <Button
+              on:click={addVariant}
+              disabled={addingVariant || isNaN(newVariantId)}
+              size="sm"
+            >
+              <Plus class="mr-1 h-3.5 w-3.5" />
+              {addingVariant ? 'Adding...' : 'Add Variant'}
+            </Button>
+          </div>
+          {#if variants.length === 0}
+            <p class="muted">No variants for this level.</p>
+          {:else}
+            <div class="variantList">
+              {#each variants as variant}
+                <div class="variantItem">
+                  <div class="variantInfo">
+                    <a
+                      href="/level/{variant.id}"
+                      target="_blank"
+                      class="variantLink"
+                    >
+                      <b>{variant.name || variant.id}</b>
+                    </a>
+                    {#if variant.creator}
+                      <span class="muted">by {variant.creator}</span>
+                    {/if}
+                    <span class="muted">ID: {variant.id}</span>
+                  </div>
+                  <button
+                    class="deleteTagBtn"
+                    on:click={() => removeVariant(variant.id)}
+                    title="Remove variant"
+                  >
+                    <Trash2 class="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              {/each}
+            </div>
+          {/if}
+        </div>
+      {/if}
+    {/if}
+  {/if}
 </div>
 
 <style lang="scss">
-	.wrapper {
-		padding-inline: 75px;
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-	}
+.wrapper {
+  padding-inline: 75px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 
-	.input {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-	}
+.input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 
-	.tabBar {
-		display: flex;
-		gap: 2px;
-		border-bottom: 1px solid hsl(var(--border));
-		margin-bottom: 20px;
-	}
+.tabBar {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid hsl(var(--border));
+  margin-bottom: 20px;
+}
 
-	.tab {
-		padding: 8px 16px;
-		border: none;
-		background: transparent;
-		cursor: pointer;
-		font-size: 14px;
-		font-weight: 500;
-		color: hsl(var(--muted-foreground));
-		border-bottom: 2px solid transparent;
-		transition: all 0.15s;
+.tab {
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
 
-		&:hover {
-			color: hsl(var(--foreground));
-		}
+  &:hover {
+    color: hsl(var(--foreground));
+  }
 
-		&.active {
-			color: hsl(var(--primary));
-			border-bottom-color: hsl(var(--primary));
-		}
-	}
+  &.active {
+    color: hsl(var(--primary));
+    border-bottom-color: hsl(var(--primary));
+  }
+}
 
-	.section {
-		padding: 12px 0;
-	}
+.section {
+  padding: 12px 0;
+}
 
-	.sectionTitle {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-		font-size: 16px;
-		font-weight: 600;
-		margin-bottom: 12px;
-	}
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
 
-	.createTagRow {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-		flex-wrap: wrap;
-	}
+.createTagRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
 
-	.colorPickerWrap {
-		display: flex;
-		align-items: center;
-		gap: 4px;
-	}
+.colorPickerWrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
 
-	.colorInput {
-		width: 36px;
-		height: 36px;
-		border: 1px solid hsl(var(--border));
-		border-radius: 6px;
-		cursor: pointer;
-		padding: 2px;
-		background: transparent;
-	}
+.colorInput {
+  width: 36px;
+  height: 36px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 2px;
+  background: transparent;
+}
 
-	.tagPreview {
-		display: inline-flex;
-		align-items: center;
-		padding: 4px 12px;
-		border-radius: 12px;
-		font-size: 13px;
-		font-weight: 600;
-	}
+.tagPreview {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
 
-	.tagGrid {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 8px;
-	}
+.tagGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 
-	.tagItem {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-	}
+.tagItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 
-	.tagBadge {
-		display: inline-flex;
-		align-items: center;
-		padding: 4px 12px;
-		border-radius: 12px;
-		font-size: 13px;
-		font-weight: 600;
-	}
+.tagBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
 
-	.deleteTagBtn {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 24px;
-		height: 24px;
-		border-radius: 50%;
-		border: none;
-		background: transparent;
-		color: hsl(var(--muted-foreground));
-		cursor: pointer;
-		transition: all 0.15s;
+.deleteTagBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  transition: all 0.15s;
 
-		&:hover {
-			background: hsl(var(--destructive) / 0.1);
-			color: hsl(var(--destructive));
-		}
-	}
+  &:hover {
+    background: hsl(var(--destructive) / 0.1);
+    color: hsl(var(--destructive));
+  }
+}
 
-	.editTagBtn {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 24px;
-		height: 24px;
-		border-radius: 50%;
-		border: none;
-		background: transparent;
-		color: hsl(var(--muted-foreground));
-		cursor: pointer;
-		transition: all 0.15s;
+.editTagBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  transition: all 0.15s;
 
-		&:hover {
-			background: hsl(var(--primary) / 0.1);
-			color: hsl(var(--primary));
-		}
-	}
+  &:hover {
+    background: hsl(var(--primary) / 0.1);
+    color: hsl(var(--primary));
+  }
+}
 
-	.editTagRow {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-	}
+.editTagRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 
-	.tagPickerRow {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 6px;
-	}
+.tagPickerRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
 
-	.tagChipBtn {
-		display: inline-flex;
-		align-items: center;
-		padding: 4px 12px;
-		border-radius: 16px;
-		font-size: 13px;
-		font-weight: 600;
-		cursor: pointer;
-		border: 1px solid color-mix(in srgb, var(--tag-color) 40%, transparent);
-		background: transparent;
-		color: var(--tag-color);
-		opacity: 0.5;
-		transition: all 0.15s;
+.tagChipBtn {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid color-mix(in srgb, var(--tag-color) 40%, transparent);
+  background: transparent;
+  color: var(--tag-color);
+  opacity: 0.5;
+  transition: all 0.15s;
 
-		&:hover:not(.selected) {
-			background: color-mix(in srgb, var(--tag-color) 15%, transparent);
-			opacity: 0.75;
-		}
+  &:hover:not(.selected) {
+    background: color-mix(in srgb, var(--tag-color) 15%, transparent);
+    opacity: 0.75;
+  }
 
-		&.selected {
-			background: color-mix(in srgb, var(--tag-color) 20%, transparent);
-			border-color: var(--tag-color);
-			opacity: 1;
-		}
-	}
+  &.selected {
+    background: color-mix(in srgb, var(--tag-color) 20%, transparent);
+    border-color: var(--tag-color);
+    opacity: 1;
+  }
+}
 
-	.muted {
-		color: hsl(var(--muted-foreground));
-		font-size: 13px;
-	}
+.muted {
+  color: hsl(var(--muted-foreground));
+  font-size: 13px;
+}
 
-	.linkBtn {
-		background: none;
-		border: none;
-		color: hsl(var(--primary));
-		cursor: pointer;
-		text-decoration: underline;
-		font-size: 13px;
-		padding: 0;
-	}
+.linkBtn {
+  background: none;
+  border: none;
+  color: hsl(var(--primary));
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: 13px;
+  padding: 0;
+}
 
-	.variantList {
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-	}
+.variantList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
-	.variantItem {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 8px 12px;
-		border: 1px solid hsl(var(--border));
-		border-radius: 8px;
-		background: hsl(var(--muted) / 0.3);
-	}
+.variantItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--muted) / 0.3);
+}
 
-	.variantInfo {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-	}
+.variantInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 
-	.variantLink {
-		color: hsl(var(--primary));
-		text-decoration: none;
+.variantLink {
+  color: hsl(var(--primary));
+  text-decoration: none;
 
-		&:hover {
-			text-decoration: underline;
-		}
-	}
+  &:hover {
+    text-decoration: underline;
+  }
+}
 
-	.mb-3 {
-		margin-bottom: 12px;
-	}
-	.mt-8 {
-		margin-top: 32px;
-	}
+.mb-3 {
+  margin-bottom: 12px;
+}
+.mt-8 {
+  margin-top: 32px;
+}
 </style>

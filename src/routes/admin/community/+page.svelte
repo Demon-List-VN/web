@@ -112,6 +112,7 @@
 
 	async function getAuthHeaders() {
 		const token = await $user.token();
+
 		return {
 			'Content-Type': 'application/json',
 			Authorization: `Bearer ${token}`
@@ -124,8 +125,14 @@
 			limit: String(PAGE_SIZE),
 			offset: String(currentPage * PAGE_SIZE)
 		});
-		if (filterType) params.set('type', filterType);
-		if (showHidden) params.set('hidden', 'true');
+
+		if (filterType) {
+			params.set('type', filterType);
+		}
+
+		if (showHidden) {
+			params.set('hidden', 'true');
+		}
 
 		try {
 			const headers = await getAuthHeaders();
@@ -142,7 +149,9 @@
 	}
 
 	async function deletePost(id: number) {
-		if (!confirm('Are you sure you want to delete this post?')) return;
+		if (!confirm('Are you sure you want to delete this post?')) {
+			return;
+		}
 
 		try {
 			const headers = await getAuthHeaders();
@@ -150,7 +159,11 @@
 				method: 'DELETE',
 				headers
 			});
-			if (!res.ok) throw new Error();
+
+			if (!res.ok) {
+				throw new Error();
+			}
+
 			toast.success('Post deleted');
 			await fetchPosts();
 		} catch {
@@ -166,7 +179,11 @@
 				headers,
 				body: JSON.stringify({ pinned: !post.pinned })
 			});
-			if (!res.ok) throw new Error();
+
+			if (!res.ok) {
+				throw new Error();
+			}
+
 			post.pinned = !post.pinned;
 			posts = posts;
 			toast.success(post.pinned ? 'Post pinned' : 'Post unpinned');
@@ -189,7 +206,9 @@
 	}
 
 	async function saveEdit() {
-		if (!editPost) return;
+		if (!editPost) {
+			return;
+		}
 
 		try {
 			const headers = await getAuthHeaders();
@@ -199,8 +218,14 @@
 				type: editPost.type,
 				pinned: editPost.pinned
 			};
-			if (editPost.imageUrl) body.imageUrl = editPost.imageUrl;
-			if (editPost.videoUrl) body.videoUrl = editPost.videoUrl;
+
+			if (editPost.imageUrl) {
+				body.imageUrl = editPost.imageUrl;
+			}
+
+			if (editPost.videoUrl) {
+				body.videoUrl = editPost.videoUrl;
+			}
 
 			const res = await fetch(
 				`${import.meta.env.VITE_API_URL}/community/admin/posts/${editPost.id}`,
@@ -211,7 +236,10 @@
 				}
 			);
 
-			if (!res.ok) throw new Error();
+			if (!res.ok) {
+				throw new Error();
+			}
+
 			toast.success('Post updated');
 			editDialogOpen = false;
 			editPost = null;
@@ -222,18 +250,20 @@
 	}
 
 	function formatDate(dateStr: string) {
-		return new Date(dateStr).toLocaleDateString('en-US', {
-			year: 'numeric',
-			month: 'short',
-			day: 'numeric',
-			hour: '2-digit',
-			minute: '2-digit'
-		});
+		return new Date(dateStr)
+			.toLocaleDateString('en-US', {
+				year: 'numeric',
+				month: 'short',
+				day: 'numeric',
+				hour: '2-digit',
+				minute: '2-digit'
+			});
 	}
 
 	onMount(() => {
 		// Check for tab query param
 		const tabParam = $page.url.searchParams.get('tab');
+
 		if (
 			tabParam === 'tags' ||
 			tabParam === 'reports' ||
@@ -243,6 +273,7 @@
 		) {
 			switchTab(tabParam as any);
 		}
+
 		fetchPosts();
 		// Fetch pending count for badge
 		fetchPendingCount();
@@ -259,7 +290,7 @@
 			const json = await res.json();
 			pendingTotal = json.total;
 		} catch {
-			// ignore
+		// ignore
 		}
 	}
 
@@ -273,7 +304,7 @@
 			const json = await res.json();
 			pendingCommentsTotal = json.total;
 		} catch {
-			// ignore
+		// ignore
 		}
 	}
 
@@ -309,7 +340,11 @@
 					headers
 				}
 			);
-			if (!res.ok) throw new Error();
+
+			if (!res.ok) {
+				throw new Error();
+			}
+
 			toast.success('Report resolved');
 			await fetchReports();
 		} catch {
@@ -321,18 +356,23 @@
 		tab: 'posts' | 'comments' | 'reports' | 'moderation' | 'comment-moderation' | 'tags'
 	) {
 		activeTab = tab;
+
 		if (tab === 'reports' && !reports) {
 			fetchReports();
 		}
+
 		if (tab === 'moderation' && !pendingPosts) {
 			fetchPendingPosts();
 		}
+
 		if (tab === 'comment-moderation' && !pendingComments) {
 			fetchPendingComments();
 		}
+
 		if (tab === 'comments' && !allComments) {
 			fetchAllComments();
 		}
+
 		if (tab === 'tags' && !tags) {
 			fetchTags();
 		}
@@ -342,6 +382,7 @@
 
 	async function fetchTags() {
 		tags = null;
+
 		try {
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/tags`);
 			tags = await res.json();
@@ -353,9 +394,12 @@
 	async function createTag() {
 		if (!newTagName.trim()) {
 			toast.error('Tag name is required');
+
 			return;
 		}
+
 		creatingTag = true;
+
 		try {
 			const headers = await getAuthHeaders();
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/tags`, {
@@ -367,10 +411,12 @@
 					adminOnly: newTagAdminOnly
 				})
 			});
+
 			if (!res.ok) {
 				const err = await res.json();
 				throw new Error(err.error || 'Failed to create tag');
 			}
+
 			toast.success('Tag created');
 			newTagName = '';
 			newTagColor = '#3b82f6';
@@ -384,14 +430,21 @@
 	}
 
 	async function deleteTag(id: number) {
-		if (!confirm('Delete this tag? It will be removed from all posts.')) return;
+		if (!confirm('Delete this tag? It will be removed from all posts.')) {
+			return;
+		}
+
 		try {
 			const headers = await getAuthHeaders();
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/tags/${id}`, {
 				method: 'DELETE',
 				headers
 			});
-			if (!res.ok) throw new Error();
+
+			if (!res.ok) {
+				throw new Error();
+			}
+
 			toast.success('Tag deleted');
 			await fetchTags();
 		} catch {
@@ -414,8 +467,12 @@
 	}
 
 	async function saveEditPostTag() {
-		if (!editTagName.trim() || !editingTag) return;
+		if (!editTagName.trim() || !editingTag) {
+			return;
+		}
+
 		savingTagEdit = true;
+
 		try {
 			const headers = await getAuthHeaders();
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/tags/${editingTag.id}`, {
@@ -427,6 +484,7 @@
 					adminOnly: editTagAdminOnly
 				})
 			});
+
 			if (res.ok) {
 				toast.success('Tag updated');
 				cancelEditPostTag();
@@ -434,7 +492,8 @@
 			} else if (res.status === 409) {
 				toast.error('Tag name already exists');
 			} else {
-				const err = await res.json().catch(() => ({}));
+				const err = await res.json()
+					.catch(() => ({}));
 				toast.error(err.error || 'Failed to update tag');
 			}
 		} catch {
@@ -463,7 +522,11 @@
 					body: JSON.stringify({ hidden: !post.hidden })
 				}
 			);
-			if (!res.ok) throw new Error();
+
+			if (!res.ok) {
+				throw new Error();
+			}
+
 			post.hidden = !post.hidden;
 			posts = posts;
 			toast.success(post.hidden ? 'Post hidden' : 'Post unhidden');
@@ -506,7 +569,11 @@
 					headers
 				}
 			);
-			if (!res.ok) throw new Error();
+
+			if (!res.ok) {
+				throw new Error();
+			}
+
 			toast.success('Post approved');
 			moderationDetailOpen = false;
 			moderationDetailPost = null;
@@ -517,7 +584,10 @@
 	}
 
 	async function rejectPendingPost(id: number) {
-		if (!confirm('Are you sure you want to reject this post?')) return;
+		if (!confirm('Are you sure you want to reject this post?')) {
+			return;
+		}
+
 		try {
 			const headers = await getAuthHeaders();
 			const res = await fetch(
@@ -527,7 +597,11 @@
 					headers
 				}
 			);
-			if (!res.ok) throw new Error();
+
+			if (!res.ok) {
+				throw new Error();
+			}
+
 			toast.success('Post rejected');
 			moderationDetailOpen = false;
 			moderationDetailPost = null;
@@ -576,7 +650,11 @@
 					headers
 				}
 			);
-			if (!res.ok) throw new Error();
+
+			if (!res.ok) {
+				throw new Error();
+			}
+
 			toast.success('Comment approved');
 			commentModerationDetailOpen = false;
 			commentModerationDetailComment = null;
@@ -587,7 +665,10 @@
 	}
 
 	async function rejectPendingComment(id: number) {
-		if (!confirm('Are you sure you want to reject this comment? It will be deleted.')) return;
+		if (!confirm('Are you sure you want to reject this comment? It will be deleted.')) {
+			return;
+		}
+
 		try {
 			const headers = await getAuthHeaders();
 			const res = await fetch(
@@ -597,7 +678,11 @@
 					headers
 				}
 			);
-			if (!res.ok) throw new Error();
+
+			if (!res.ok) {
+				throw new Error();
+			}
+
 			toast.success('Comment rejected');
 			commentModerationDetailOpen = false;
 			commentModerationDetailComment = null;
@@ -616,6 +701,7 @@
 		if (!moderationResult) {
 			return null;
 		}
+
 		if (!moderationResult?.categories || !moderationResult?.scores) {
 			return null;
 		}
@@ -625,11 +711,14 @@
 		);
 	}
 
-	function getCategoryScores(moderationResult: any): Array<{ name: string; score: number }> {
-		if (!moderationResult?.categories || !moderationResult?.scores) return [];
+	function getCategoryScores(moderationResult: any): Array<{ name: string; score: number; }> {
+		if (!moderationResult?.categories || !moderationResult?.scores) {
+			return [];
+		}
+
 		return moderationResult.categories
 			.map((name: string, i: number) => ({ name, score: moderationResult.scores[i] as number }))
-			.sort((a: { score: number }, b: { score: number }) => b.score - a.score);
+			.sort((a: { score: number; }, b: { score: number; }) => b.score - a.score);
 	}
 
 	// ---- All Comments ----
@@ -640,8 +729,14 @@
 			limit: String(PAGE_SIZE),
 			offset: String(allCommentsPage * PAGE_SIZE)
 		});
-		if (allCommentsSearch.trim()) params.set('search', allCommentsSearch.trim());
-		if (showHiddenComments) params.set('hidden', 'true');
+
+		if (allCommentsSearch.trim()) {
+			params.set('search', allCommentsSearch.trim());
+		}
+
+		if (showHiddenComments) {
+			params.set('hidden', 'true');
+		}
 
 		try {
 			const headers = await getAuthHeaders();
@@ -659,14 +754,21 @@
 	}
 
 	async function adminDeleteComment(id: number) {
-		if (!confirm('Are you sure you want to delete this comment?')) return;
+		if (!confirm('Are you sure you want to delete this comment?')) {
+			return;
+		}
+
 		try {
 			const headers = await getAuthHeaders();
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/community/admin/comments/${id}`, {
 				method: 'DELETE',
 				headers
 			});
-			if (!res.ok) throw new Error();
+
+			if (!res.ok) {
+				throw new Error();
+			}
+
 			toast.success('Comment deleted');
 			await fetchAllComments();
 		} catch {
@@ -685,7 +787,11 @@
 					body: JSON.stringify({ hidden: !comment.communityCommentsAdmin?.hidden })
 				}
 			);
-			if (!res.ok) throw new Error();
+
+			if (!res.ok) {
+				throw new Error();
+			}
+
 			const isHidden = !comment.communityCommentsAdmin?.hidden;
 			comment.communityCommentsAdmin = { ...comment.communityCommentsAdmin, hidden: isHidden };
 			allComments = allComments;
@@ -2014,7 +2120,9 @@
 					<span class="fieldLabel">Type</span>
 					<Select.Root
 						onSelectedChange={(v) => {
-							if (v) editPost.type = String(v.value);
+							if (v) {
+ editPost.type = String(v.value);
+}
 						}}
 					>
 						<Select.Trigger>

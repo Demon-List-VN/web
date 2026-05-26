@@ -1,33 +1,42 @@
 # Resources
+
 - [Geometry Dash Việt Nam API server](https://github.com/NamPE286/DemonListVN-v3-api)
 - [Geometry Dash Việt Nam Discord server](https://discord.gg/gdvn)
+
 # Contribution Terms and Conditions
 
 By submitting a Pull Request (“PR”) to this repository, you (“Contributor”) acknowledge and agree to the following terms and conditions:
 
-## 1. Grant of Rights  
+## 1. Grant of Rights
+
 Upon submission of a PR, Contributor hereby grants NamPE (Bùi Hùng Nam) a worldwide, non-exclusive, royalty-free, sublicensable, and transferable license to use, modify, reproduce, distribute, publicly display, and create derivative works of the submitted code, features, and ideas, regardless of whether the PR is merged, closed, or rejected.
 
-## 2. Supporter-Exclusive Features  
-NamPE reserves the right to designate any submitted feature as supporter-exclusive content. In such cases:  
-- Contributor will receive a negotiable amount of compensation per supporter-exclusive feature.  
-- NamPE shall provide proper credit to the Contributor in connection with the use of the supporter-exclusive feature, even if the PR is closed.  
+## 2. Supporter-Exclusive Features
+
+NamPE reserves the right to designate any submitted feature as supporter-exclusive content. In such cases:
+
+- Contributor will receive a negotiable amount of compensation per supporter-exclusive feature.
+- NamPE shall provide proper credit to the Contributor in connection with the use of the supporter-exclusive feature, even if the PR is closed.
 - If NamPE fails to provide agreed-upon compensation or credit, unless NamPE has reached a separate agreement with the Contributor, the feature shall be made freely available to all users.
 
-## 3. Explicit Assignment of Rights  
+## 3. Explicit Assignment of Rights
+
 Should the Contributor expressly agree in writing (including but not limited to email, chat, or other written digital communication), NamPE shall obtain full and exclusive rights to use, modify, distribute, and monetize the submitted contributions without further obligation to provide credit or compensation.
 
-## 4. Contributor Obligations  
-By submitting a PR, Contributor agrees to:  
-- Refrain from modifying or deleting any existing features or components related to payment functionalities.  
-- Not remove or alter credits attributed to other contributors, nor insert credits where not warranted.  
+## 4. Contributor Obligations
+
+By submitting a PR, Contributor agrees to:
+
+- Refrain from modifying or deleting any existing features or components related to payment functionalities.
+- Not remove or alter credits attributed to other contributors, nor insert credits where not warranted.
 - Not modify or remove core documentation or legal files such as `README.md`, `LICENSE.md`, or this `CONTRIBUTING.md` file.
-- Ensure that submitted features do not interfere with existing design, functionality, or visibility of other features. Contributor is encouraged to place credit in a discreet manner, such as within an easter egg.  
-- Contributor is responsible for any bugs or issues arising from their submitted contributions and agrees to address such problems if requested.  
+- Ensure that submitted features do not interfere with existing design, functionality, or visibility of other features. Contributor is encouraged to place credit in a discreet manner, such as within an easter egg.
+- Contributor is responsible for any bugs or issues arising from their submitted contributions and agrees to address such problems if requested.
 - Failure to comply with these obligations may result in immediate closure or rejection of the PR.
 
-## 5. Miscellaneous  
-- These terms constitute the entire agreement between the Contributor and NamPE regarding submitted contributions and supersede any prior communications.  
+## 5. Miscellaneous
+
+- These terms constitute the entire agreement between the Contributor and NamPE regarding submitted contributions and supersede any prior communications.
 - NamPE reserves the right to update or amend these terms at any time without prior notice. Continued submission of PRs constitutes acceptance of the updated terms.
 
 # Reporting Bugs

@@ -14,7 +14,6 @@
 	import { DIFFICULTY_COLORS, DIFFICULTY_NAMES } from '$lib/battlepass/constants';
 	import UnlockTimer from './UnlockTimer.svelte';
 
-
 	export let primaryColor: string = '#8b5cf6';
 	export let seasonStart: string | null = null; // ISO string
 
@@ -26,21 +25,30 @@
 	// Generate CSS variable strings
 	$: cssVars = (() => {
 		const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(primaryColor);
-		if (!result) return '';
+
+		if (!result) {
+			return '';
+		}
+
 		const rgb = {
 			r: parseInt(result[1], 16),
 			g: parseInt(result[2], 16),
 			b: parseInt(result[3], 16)
 		};
+
 		return `--primary-color: ${rgb.r}, ${rgb.g}, ${rgb.b};`;
 	})();
 
-		// Navigate to dedicated map pack page
-		function openMapPackPage(pack: any) {
-			const id = pack?.id;
-			if (!id) return;
-			window.location.href = `/battlepass/mappacks/${id}`;
+	// Navigate to dedicated map pack page
+	function openMapPackPage(pack: any) {
+		const id = pack?.id;
+
+		if (!id) {
+			return;
 		}
+
+		window.location.href = `/battlepass/mappacks/${id}`;
+	}
 
 	function getDifficultyColor(difficulty: string): string {
 		return DIFFICULTY_COLORS[difficulty?.toLowerCase()] || '#6b7280';
@@ -72,10 +80,11 @@
 
 	async function fetchMapPacks() {
 		try {
-            const token = $user.loggedIn ? await $user.token() : null;
-            const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
+			const token = $user.loggedIn ? await $user.token() : null;
+			const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
 
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/mappacks`, { headers });
+
 			if (res.ok) {
 				mapPacks = await res.json();
 			}
@@ -87,6 +96,7 @@
 	async function fetchNextLockedMapPack() {
 		try {
 			const res = await fetch(`${import.meta.env.VITE_API_URL}/battlepass/mappacks/next-locked`);
+
 			if (res.ok) {
 				const payload = await res.json();
 				nextLockedMapPack = payload?.nextLockedMapPack ?? null;
@@ -135,7 +145,9 @@
 		loadData();
 
 		const unsubscribe = user.subscribe(async () => {
-			if (!mounted) return;
+			if (!mounted) {
+				return;
+			}
 
 			// Reload when login state changes to get/clear progress
             // Always fetch map packs to get updated progress data

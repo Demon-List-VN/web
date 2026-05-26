@@ -5,7 +5,6 @@
 	export let data: PageData;
 </script>
 
-
 {#key data.player.uid}
-	<PlayerMainPage {data} />
+  <PlayerMainPage {data} />
 {/key}

@@ -60,7 +60,7 @@
 
 	// Report state
 	let reportDialogOpen = false;
-	let reportTarget: { type: 'post' | 'comment'; id: number } | null = null;
+	let reportTarget: { type: 'post' | 'comment'; id: number; } | null = null;
 
 	// @ mention state
 	let showMentionDropdown = false;
@@ -128,13 +128,14 @@
 	};
 
 	function formatDate(dateStr: string) {
-		return new Date(dateStr).toLocaleDateString($locale || 'vi-VN', {
-			year: 'numeric',
-			month: 'long',
-			day: 'numeric',
-			hour: '2-digit',
-			minute: '2-digit'
-		});
+		return new Date(dateStr)
+			.toLocaleDateString($locale || 'vi-VN', {
+				year: 'numeric',
+				month: 'long',
+				day: 'numeric',
+				hour: '2-digit',
+				minute: '2-digit'
+			});
 	}
 
 	function timeAgo(dateStr: string) {
@@ -142,26 +143,46 @@
 		const date = new Date(dateStr);
 		const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-		if (seconds < 60) return $locale === 'vi' ? 'Vừa xong' : 'Just now';
+		if (seconds < 60) {
+			return $locale === 'vi' ? 'Vừa xong' : 'Just now';
+		}
+
 		const minutes = Math.floor(seconds / 60);
-		if (minutes < 60) return `${minutes}m`;
+
+		if (minutes < 60) {
+			return `${minutes}m`;
+		}
+
 		const hours = Math.floor(minutes / 60);
-		if (hours < 24) return `${hours}h`;
+
+		if (hours < 24) {
+			return `${hours}h`;
+		}
+
 		const days = Math.floor(hours / 24);
-		if (days < 30) return `${days}d`;
+
+		if (days < 30) {
+			return `${days}d`;
+		}
+
 		return formatDate(dateStr);
 	}
 
 	function getAttachedRecordHref(attachedRecord: any) {
 		const uid = attachedRecord?.userid ?? attachedRecord?.uid ?? post?.uid;
 		const recordQuery = attachedRecord?.id ? `?id=${attachedRecord.id}` : '';
+
 		return uid ? `/record/${uid}/${attachedRecord.levelid}${recordQuery}` : '#';
 	}
 
 	async function getHeaders() {
 		const token = await $user.token();
 		const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-		if (token) headers['Authorization'] = `Bearer ${token}`;
+
+		if (token) {
+			headers['Authorization'] = `Bearer ${token}`;
+		}
+
 		return headers;
 	}
 
@@ -173,7 +194,11 @@
 			const res = await fetch(`${apiPrefix}/posts/${postId}`, {
 				headers
 			});
-			if (!res.ok) throw new Error();
+
+			if (!res.ok) {
+				throw new Error();
+			}
+
 			post = await res.json();
 		} catch {
 			post = null;
@@ -198,9 +223,14 @@
 	async function toggleLike() {
 		if (!$user.loggedIn) {
 			toast.error($_('community.login_required'));
+
 			return;
 		}
-		if (likingPost) return;
+
+		if (likingPost) {
+			return;
+		}
+
 		likingPost = true;
 
 		const headers = await getHeaders();
@@ -224,24 +254,36 @@
 	function handleCommentImageSelect(e: Event) {
 		const target = e.target as HTMLInputElement;
 		const file = target.files?.[0];
-		if (!file) return;
+
+		if (!file) {
+			return;
+		}
+
 		commentImageFile = file;
 		const reader = new FileReader();
 		reader.onload = () => {
 			commentImagePreview = reader.result as string;
 		};
+
 		reader.readAsDataURL(file);
 	}
 
 	function clearCommentImage() {
 		commentImageFile = null;
 		commentImagePreview = null;
-		if (commentFileInput) commentFileInput.value = '';
+
+		if (commentFileInput) {
+			commentFileInput.value = '';
+		}
 	}
 
 	async function uploadCommentImage(): Promise<string | undefined> {
-		if (!commentImageFile) return undefined;
+		if (!commentImageFile) {
+			return undefined;
+		}
+
 		commentUploading = true;
+
 		try {
 			const token = (await $user.token())!;
 			const uid = $user.data.uid;
@@ -250,6 +292,7 @@
 			const path = `community/${uid}/comment_${timestamp}.${ext}`;
 
 			let fileToUpload: File | Blob = commentImageFile;
+
 			if (ext !== 'gif') {
 				fileToUpload = await imageCompression(commentImageFile, {
 					maxSizeMB: 1,
@@ -259,9 +302,11 @@
 			}
 
 			await upload(path, fileToUpload, token);
+
 			return `https://cdn.gdvn.net/${path}`;
 		} catch {
 			toast.error($_('community.create.upload_failed'));
+
 			return undefined;
 		} finally {
 			commentUploading = false;
@@ -269,9 +314,13 @@
 	}
 
 	async function submitComment() {
-		if (!newComment.trim() && !commentImageFile) return;
+		if (!newComment.trim() && !commentImageFile) {
+			return;
+		}
+
 		if (!$user.loggedIn) {
 			toast.error($_('community.login_required'));
+
 			return;
 		}
 
@@ -284,6 +333,7 @@
 			// Upload image and append as markdown
 			if (commentImageFile) {
 				const imageUrl = await uploadCommentImage();
+
 				if (imageUrl) {
 					content = content.trim()
 						? `${content.trim()}\n\n![image](${imageUrl})`
@@ -292,6 +342,7 @@
 			}
 
 			const body: any = { content };
+
 			if (commentAttachedLevel) {
 				body.attachedLevel = commentAttachedLevel;
 			}
@@ -349,6 +400,7 @@
 	async function toggleCommentLike(comment: any) {
 		if (!$user.loggedIn) {
 			toast.error($_('community.login_required'));
+
 			return;
 		}
 
@@ -369,7 +421,10 @@
 	}
 
 	async function deletePost() {
-		if (!confirm($_('community.delete_confirm'))) return;
+		if (!confirm($_('community.delete_confirm'))) {
+			return;
+		}
+
 		const headers = await getHeaders();
 
 		try {
@@ -402,26 +457,35 @@
 	function openReport(type: 'post' | 'comment', id: number) {
 		if (!$user.loggedIn) {
 			toast.error($_('community.login_required'));
+
 			return;
 		}
+
 		reportTarget = { type, id };
 		reportDialogOpen = true;
 	}
 
 	async function fetchAvailableTags() {
-		if (availableTags.length > 0) return;
+		if (availableTags.length > 0) {
+			return;
+		}
+
 		loadingTags = true;
+
 		try {
 			const res = await fetch(`${apiPrefix}/tags`);
+
 			if (res.ok) {
 				let tags = await res.json();
+
 				if (!$user.data?.isAdmin) {
 					tags = tags.filter((t: any) => !t.adminOnly);
 				}
+
 				availableTags = tags;
 			}
 		} catch {
-			// ignore
+		// ignore
 		} finally {
 			loadingTags = false;
 		}
@@ -433,8 +497,10 @@
 		} else {
 			if (editTagIds.length >= 5) {
 				toast.error('Maximum 5 tags');
+
 				return;
 			}
+
 			editTagIds = [...editTagIds, tagId];
 		}
 	}
@@ -460,22 +526,27 @@
 		// Validate based on role
 		if (isOwner && !editTitle.trim()) {
 			toast.error($_('community.create.validation_error'));
+
 			return;
 		}
+
 		editSaving = true;
 		const headers = await getHeaders();
 
 		try {
 			const body: any = {};
+
 			// Owner can edit title and content
 			if (isOwner) {
 				body.title = editTitle;
 				body.content = editContent;
 			}
+
 			// Admin (not owner) can only edit type
 			if (isAdminNotOwner) {
 				body.type = editType;
 			}
+
 			const endpoint = isAdminNotOwner && !post.clanId
 				? `${import.meta.env.VITE_API_URL}/community/admin/posts/${post.id}`
 				: `${apiPrefix}/posts/${post.id}`;
@@ -484,7 +555,11 @@
 				headers,
 				body: JSON.stringify(body)
 			});
-			if (!res.ok) throw new Error();
+
+			if (!res.ok) {
+				throw new Error();
+			}
+
 			const updated = await res.json();
 			post = { ...post, ...updated };
 
@@ -498,11 +573,12 @@
 						body: JSON.stringify({ tagIds: editTagIds })
 					}
 				);
+
 				if (tagRes.ok) {
 					await fetchPost();
 				}
 			} catch {
-				// Tag save failed but post save succeeded
+			// Tag save failed but post save succeeded
 			}
 
 			editing = false;
@@ -526,6 +602,7 @@
 
 		if (atMatch) {
 			mentionQuery = atMatch[1];
+
 			if (mentionQuery.length >= 1) {
 				clearTimeout(mentionTimer);
 				mentionTimer = setTimeout(() => searchMentions(mentionQuery), 300);
@@ -603,8 +680,12 @@
 
 	// Participant functions
 	async function fetchParticipants() {
-		if (!post || post.type !== 'collab') return;
+		if (!post || post.type !== 'collab') {
+			return;
+		}
+
 		loadingParticipants = true;
+
 		try {
 			const headers = await getHeaders();
 			delete headers['Content-Type'];
@@ -612,6 +693,7 @@
 				`${apiPrefix}/posts/${post.id}/participants`,
 				{ headers }
 			);
+
 			if (res.ok) {
 				const data = await res.json();
 				participants = data.participants || [];
@@ -627,19 +709,24 @@
 	async function requestJoin() {
 		if (!$user.loggedIn) {
 			toast.error($_('community.login_required'));
+
 			return;
 		}
+
 		participantActionLoading = true;
+
 		try {
 			const headers = await getHeaders();
 			const res = await fetch(
 				`${apiPrefix}/posts/${post.id}/participants`,
 				{ method: 'POST', headers }
 			);
+
 			if (!res.ok) {
 				const err = await res.json();
 				throw new Error(err.error);
 			}
+
 			toast.success($_('community.participants.request_sent'));
 			await fetchParticipants();
 		} catch (e: any) {
@@ -651,16 +738,19 @@
 
 	async function cancelJoinRequest() {
 		participantActionLoading = true;
+
 		try {
 			const headers = await getHeaders();
 			const res = await fetch(
 				`${apiPrefix}/posts/${post.id}/participants/cancel`,
 				{ method: 'POST', headers }
 			);
+
 			if (!res.ok) {
 				const err = await res.json();
 				throw new Error(err.error);
 			}
+
 			toast.success($_('community.participants.request_cancelled'));
 			await fetchParticipants();
 		} catch (e: any) {
@@ -672,6 +762,7 @@
 
 	async function handleParticipantAction(action: 'approve' | 'reject' | 'revoke', uid: string) {
 		participantActionLoading = true;
+
 		try {
 			const headers = await getHeaders();
 			const method = action === 'revoke' ? 'DELETE' : 'PUT';
@@ -679,10 +770,12 @@
 				`${apiPrefix}/posts/${post.id}/participants/${uid}/${action}`,
 				{ method, headers }
 			);
+
 			if (!res.ok) {
 				const err = await res.json();
 				throw new Error(err.error);
 			}
+
 			const msgKey = `community.participants.${action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'revoked'}_success`;
 			toast.success($_(msgKey));
 			await fetchParticipants();
@@ -720,7 +813,8 @@
 
 	$: author = post?.players;
 	$: TypeIcon = post ? typeIcons[post.type] || MessageCircle : MessageCircle;
-	$: postTags = (post?.communityPostsTags || []).map((pt: any) => pt.postTags).filter(Boolean);
+	$: postTags = (post?.communityPostsTags || []).map((pt: any) => pt.postTags)
+		.filter(Boolean);
 	$: isOwner = $user.loggedIn && post && $user.data?.uid === post.uid;
 	$: isAdmin = $user.loggedIn && $user.data?.isAdmin;
 	$: isAdminNotOwner = isAdmin && !isOwner;
@@ -734,10 +828,14 @@
 	}
 
 	function getYouTubeId(url: string): string | null {
-		if (!url) return null;
+		if (!url) {
+			return null;
+		}
+
 		const match = url.match(
 			/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/
 		);
+
 		return match ? match[1] : null;
 	}
 
@@ -808,10 +906,13 @@
 							<Select.Root
 								selected={{
 									value: editType,
-									label: editType.charAt(0).toUpperCase() + editType.slice(1)
+									label: editType.charAt(0)
+.toUpperCase() + editType.slice(1)
 								}}
 								onSelectedChange={(v) => {
-									if (v) editType = String(v.value);
+									if (v) {
+ editType = String(v.value);
+}
 								}}
 							>
 								<Select.Trigger class="w-[180px]">

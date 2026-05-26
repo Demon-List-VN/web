@@ -10,20 +10,26 @@
 	let selectedPlayer: any = null;
 
 	async function invitePlayer() {
-		if (!selectedPlayer?.uid) return;
-		
+		if (!selectedPlayer?.uid) {
+			return;
+		}
+
 		opened = false;
 
 		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/clans/invite/${selectedPlayer.uid}`, {
-				method: 'POST',
-				headers: {
-					Authorization: 'Bearer ' + (await $user.token())
+			fetch(
+				`${import.meta.env.VITE_API_URL}/clans/invite/${selectedPlayer.uid}`,
+				{
+					method: 'POST',
+					headers: {
+						Authorization: 'Bearer ' + (await $user.token())
+					}
 				}
-			}),
+			),
 			{
 				success: () => {
 					selectedPlayer = null;
+
 					return $_('toast.clan_invite.success');
 				},
 				loading: $_('toast.clan_invite.loading'),
@@ -38,26 +44,26 @@
 </script>
 
 <Dialog.Root bind:open={opened}>
-	<Dialog.Trigger class="w-full">
-		<Button variant="outline" class="w-full">{$_('clan.invite.button')}</Button>
-	</Dialog.Trigger>
-	<Dialog.Content>
-		<Dialog.Header>
-			<Dialog.Title>{$_('clan.invite.title')}</Dialog.Title>
-		</Dialog.Header>
-			<div class="flex items-center gap-[10px]">
-				<PlayerSelector 
-					bind:value={selectedPlayer} 
-					on:select={handlePlayerSelect}
-					placeholder={$_('clan.invite.placeholder')}
-				/>
-				<Button 
-					on:click={invitePlayer} 
-					disabled={!selectedPlayer} 
-					class="w-[100px]"
-				>
-					{$_('clan.invite.button')}
-				</Button>
-			</div>
-	</Dialog.Content>
+  <Dialog.Trigger class="w-full">
+    <Button variant="outline" class="w-full">{$_('clan.invite.button')}</Button>
+  </Dialog.Trigger>
+  <Dialog.Content>
+    <Dialog.Header>
+      <Dialog.Title>{$_('clan.invite.title')}</Dialog.Title>
+    </Dialog.Header>
+    <div class="flex items-center gap-[10px]">
+      <PlayerSelector
+        bind:value={selectedPlayer}
+        on:select={handlePlayerSelect}
+        placeholder={$_('clan.invite.placeholder')}
+      />
+      <Button
+        on:click={invitePlayer}
+        disabled={!selectedPlayer}
+        class="w-[100px]"
+      >
+        {$_('clan.invite.button')}
+      </Button>
+    </div>
+  </Dialog.Content>
 </Dialog.Root>
