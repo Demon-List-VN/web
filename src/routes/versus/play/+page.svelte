@@ -2279,7 +2279,17 @@
                 <div class="summary-stats">
                   <div style={pvpRank?.summaryStyle ?? ''}>
                     <span>{$_('pvp.current_elo')}</span>
-                    <strong>{pvpRatingLabel}</strong>
+                    <strong class="summary-rating-value">
+                      {#if pvpRank}
+                        <span
+                          class="summary-rating-rank-badge"
+                          style={pvpRank.badgeStyle}
+                        >
+                          {pvpRank.label}
+                        </span>
+                      {/if}
+                      <span>{pvpRatingLabel}</span>
+                    </strong>
                     {#if showRatingUnlockProgress}
                       <div class="rating-unlock-progress">
                         <div class="rating-unlock-progress-track">
@@ -2965,6 +2975,30 @@ h1 {
   color: hsl(var(--foreground));
   font-size: 1.4rem;
   line-height: 1;
+}
+
+.summary-stats .summary-rating-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.summary-rating-value span {
+  color: inherit;
+}
+
+.summary-rating-rank-badge {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  min-height: 20px;
+  border-radius: 5px;
+  padding-inline: 7px;
+  font-size: 11px !important;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .rating-unlock-progress {
