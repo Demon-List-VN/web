@@ -359,9 +359,9 @@
         },
         "leaderboard": {
             "title": "PvP leaderboard",
-            "description": "Only players with at least 50 ranked matches and 1 rated match in the last 7 days are listed.",
-            "empty": "No player has reached 50 ranked matches yet.",
-            "need_more_matches": "Need {count} more rated matches to be on the leaderboard. You also need 1 rated match in the last 7 days.",
+            "description": "Players are listed after their Glicko2 RD is below 100 and they have 1 rated match in the last 7 days.",
+            "empty": "No player currently meets the leaderboard requirements.",
+            "need_stable_rating": "Lower your Glicko2 RD below 100 to be on the leaderboard.",
             "need_recent_match": "Play 1 rated match in the last 7 days to be on the leaderboard.",
             "rank": "Rank",
             "player": "Player",
@@ -428,9 +428,9 @@
             "empty": "Play ranked matches to build your Elo graph.",
             "start": "Start",
             "filters": {
-                "25": "Last 25",
-                "100": "Last 100",
-                "all": "All time"
+                "25": "25",
+                "100": "100",
+                "all": "All"
             }
         },
         "elo_matches_left": "{count} matches left to show Elo",

@@ -51,6 +51,7 @@
 		isActivePvpMatch,
 		isPvpMatchConfirmedByBoth,
 		isPvpMatchRanked,
+		isPvpRatingStable,
 		sendPvpInvite,
 		startPvpMatchmaking,
 		type PvpClan,
@@ -244,14 +245,14 @@
 		currentUid,
 		matches.filter((match) => getPvpMode(match) === selectedMode)
 	);
-	$: leaderboardMatchesNeeded = Math.max(0, 50 - Number(pvpRatedMatchCount || 0));
 	$: hasRecentLeaderboardMatch = hasRecentRatedPvpMatch(
 		matches.filter((match) => getPvpMode(match) === selectedMode),
 		7
 	);
-	$: showLeaderboardMatchCountNotice = pvpRatedMatchCount >= 5
-		&& pvpRatedMatchCount < 50;
-	$: showLeaderboardActivityNotice = pvpRatedMatchCount >= 50
+	$: showLeaderboardStabilityNotice = pvpRatingInitialized
+		&& !isPvpRatingStable(pvpRatingDeviation);
+	$: showLeaderboardActivityNotice = pvpRatingInitialized
+		&& isPvpRatingStable(pvpRatingDeviation)
 		&& !hasRecentLeaderboardMatch;
 	$: currentSearchRange = lobby.matchmaking?.currentSearchRange
 		?? lobby.matchmaking?.current_search_range ?? null;
@@ -2230,7 +2231,6 @@
                       </div>
                       <Tabs.Root bind:value={eloGraphFilter}>
                         <Tabs.List
-                          class="elo-filter-group"
                           aria-label={$_('pvp.elo_graph.filter')}
                         >
                           {#each ELO_GRAPH_FILTERS as filter}
@@ -2244,19 +2244,6 @@
                         </Tabs.List>
                       </Tabs.Root>
                     </div>
-                    {#if showLeaderboardMatchCountNotice}
-                      <div class="leaderboard-requirement-notice">
-                        {
-                          $_('pvp.leaderboard.need_more_matches', {
-                              values: { count: leaderboardMatchesNeeded }
-                          })
-                        }
-                      </div>
-                    {:else if showLeaderboardActivityNotice}
-                      <div class="leaderboard-requirement-notice">
-                        {$_('pvp.leaderboard.need_recent_match')}
-                      </div>
-                    {/if}
                     {#if eloGraphPoints.length > 1}
                       <div class="elo-chart-wrapper">
                         <canvas

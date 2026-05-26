@@ -359,9 +359,9 @@
         },
         "leaderboard": {
             "title": "Bảng xếp hạng PvP",
-            "description": "Chỉ hiển thị người chơi có ít nhất 50 trận xếp hạng và 1 trận xếp hạng trong 7 ngày gần nhất.",
-            "empty": "Chưa có người chơi nào đạt 50 trận xếp hạng.",
-            "need_more_matches": "Cần thêm {count} trận xếp hạng để lên bảng xếp hạng. Bạn cũng cần 1 trận xếp hạng trong 7 ngày gần nhất.",
+            "description": "Người chơi được xếp hạng khi Glicko2 RD dưới 100 và có 1 trận xếp hạng trong 7 ngày gần nhất.",
+            "empty": "Hiện chưa có người chơi nào đạt điều kiện lên bảng xếp hạng.",
+            "need_stable_rating": "Hãy giảm Glicko2 RD xuống dưới 100 để lên bảng xếp hạng.",
             "need_recent_match": "Hãy chơi 1 trận xếp hạng trong 7 ngày gần nhất để lên bảng xếp hạng.",
             "rank": "Hạng",
             "player": "Người chơi",
@@ -428,8 +428,8 @@
             "empty": "Chơi trận xếp hạng để tạo biểu đồ Elo.",
             "start": "Bắt đầu",
             "filters": {
-                "25": "25 trận gần nhất",
-                "100": "100 trận gần nhất",
+                "25": "25",
+                "100": "100",
                 "all": "Tất cả"
             }
         },

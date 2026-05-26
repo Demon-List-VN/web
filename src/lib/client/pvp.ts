@@ -305,6 +305,7 @@ export type PvpMe = {
 export type PvpLeaderboardPlayer = PvpPlayer & {
     rank?: number;
     pvpRating: number;
+    pvpRatingDeviation?: number | null;
     pvpRatedMatchCount: number;
 };
 
@@ -379,7 +380,7 @@ export const PVP_ACTIVE_MATCH_STATUSES = ['pending', 'ban_pick', 'in_progress', 
 export const PVP_FINISHED_MATCH_STATUSES = ['completed', 'cancelled', 'disputed'];
 export const PVP_DIFFICULTIES: PvpDifficulty[] = ['easy', 'medium', 'hard'];
 export const PVP_UNCERTAIN_RATING_DEVIATION = 100;
-export const PVP_RATING_ACTIVITY_DAYS = 14;
+export const PVP_RATING_ACTIVITY_DAYS = 7;
 export const PVP_CLASSIC_MATCH_DURATION_MS = 15 * 60 * 1000;
 export const PVP_PLATFORMER_MATCH_DURATION_MS = 60 * 60 * 1000;
 
