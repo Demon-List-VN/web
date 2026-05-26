@@ -3,10 +3,9 @@
 	import { _ } from 'svelte-i18n';
 	import * as Pagination from '$lib/components/ui/pagination';
 	import * as Table from '$lib/components/ui/table';
-	import { buttonVariants } from '$lib/components/ui/button';
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import { cn } from '$lib/utils';
-	import { ArrowRight } from 'lucide-svelte';
+	import { ExternalLink } from 'lucide-svelte';
 	import {
 		getPublicPvpMatchesPageForPlayer,
 		getPvpMatchId,
@@ -17,8 +16,6 @@
 		getPvpParticipantRatingBefore,
 		getPvpParticipantRatingDiff,
 		getPvpParticipantUid,
-		getPvpVisibleParticipantRatingLabel,
-		getPvpWinnerUid,
 		type PvpParticipant,
 		type PvpMatch
 	} from '$lib/client/pvp';
@@ -64,7 +61,8 @@
 		return (
 			getPvpParticipants(match)
 				.find(
-					(participant) => getPvpParticipantUid(participant) === userID
+					(participant) =>
+						String(getPvpParticipantUid(participant)) === String(userID)
 				) ?? null
 		);
 	}
@@ -79,24 +77,6 @@
 
 	function ratingDiff(match: PvpMatch) {
 		return getPvpParticipantRatingDiff(playerParticipant(match));
-	}
-
-	function shouldHideRating(match: PvpMatch) {
-		return ratingAfterLabel(match) === null;
-	}
-
-	function ratingAfterLabel(match: PvpMatch) {
-		return getPvpVisibleParticipantRatingLabel(playerParticipant(match));
-	}
-
-	function matchResult(match: PvpMatch) {
-		const winnerUid = getPvpWinnerUid(match);
-
-		if (!winnerUid || !playerParticipant(match)) {
-			return null;
-		}
-
-		return String(winnerUid) === String(userID) ? 'win' : 'lose';
 	}
 
 	function formatRating(value: number | null) {
@@ -169,25 +149,17 @@
           <Table.Head class="w-[180px] text-center">{
             $_('player.table.time')
           }</Table.Head>
-          <Table.Head class="w-[100px] text-center">{
-            $_('player.table.result')
+          <Table.Head class="w-[220px] text-center">{
+            $_('player.table.elo')
           }</Table.Head>
-          <Table.Head class="w-[120px] text-center">{
-            $_('player.table.elo_before')
-          }</Table.Head>
-          <Table.Head class="w-[120px] text-center">{
-            $_('player.table.elo_diff')
-          }</Table.Head>
-          <Table.Head class="w-[120px] text-center">{
-            $_('player.table.current_elo')
-          }</Table.Head>
-          <Table.Head class="w-[120px] text-right"></Table.Head>
+          <Table.Head class="w-[56px] text-right"></Table.Head>
         </Table.Row>
       </Table.Header>
       <Table.Body>
         {#each matches as match}
+          {@const before = ratingBefore(match)}
+          {@const after = ratingAfter(match)}
           {@const diff = ratingDiff(match)}
-          {@const result = matchResult(match)}
           {@const matchId = getPvpMatchId(match)}
           {@const participants = getPvpParticipants(match)}
           {@const playerA = participants[0]}
@@ -200,13 +172,13 @@
                 {#if playerAData?.uid}
                   <PlayerLink player={playerAData} truncate={18} />
                 {:else}
-                  <span>{participantText(playerA, 'Player A')}</span>
+                  <span class="truncate">{participantText(playerA, 'Player A')}</span>
                 {/if}
-                <span class="text-muted-foreground">vs</span>
+                <span class="shrink-0 text-muted-foreground">vs</span>
                 {#if playerBData?.uid}
                   <PlayerLink player={playerBData} truncate={18} />
                 {:else}
-                  <span>{participantText(playerB, 'Player B')}</span>
+                  <span class="truncate">{participantText(playerB, 'Player B')}</span>
                 {/if}
               </div>
             </Table.Cell>
@@ -214,45 +186,39 @@
               formatDate(matchDate(match))
             }</Table.Cell>
             <Table.Cell
-              class={`text-center font-semibold ${
-                  result === 'win'
-                      ? 'text-green-600'
-                      : result === 'lose'
-                      ? 'text-red-600'
-                      : ''
-              }`}
+              class="text-center font-semibold"
             >
-              {result === 'win' ? 'Win' : result === 'lose' ? 'Lose' : '-'}
+              {#if before !== null || after !== null}
+                <span>{formatRating(before)}</span>
+                <span class="mx-1 text-muted-foreground">-&gt;</span>
+                <span>{formatRating(after)}</span>
+                {#if diff !== null}
+                  <span
+                    class={cn(
+                      'ml-1',
+                      diff > 0
+                          ? 'text-green-600'
+                          : diff < 0
+                          ? 'text-red-600'
+                          : 'text-muted-foreground'
+                    )}
+                  >
+                    ({formatRatingDiff(diff)})
+                  </span>
+                {/if}
+              {:else}
+                -
+              {/if}
             </Table.Cell>
-            <Table.Cell class="text-center">{
-              shouldHideRating(match) ? '-' : formatRating(ratingBefore(match))
-            }</Table.Cell>
-            <Table.Cell
-              class={`text-center font-semibold ${
-                  shouldHideRating(match) || diff === null
-                      ? ''
-                      : diff > 0
-                      ? 'text-primary'
-                      : diff < 0
-                      ? 'text-destructive'
-                      : ''
-              }`}
-            >
-              {shouldHideRating(match) ? '-' : formatRatingDiff(diff)}
-            </Table.Cell>
-            <Table.Cell class="text-center font-semibold">{
-              shouldHideRating(match)
-              ? '-'
-              : (ratingAfterLabel(match) ?? formatRating(ratingAfter(match)))
-            }</Table.Cell>
             <Table.Cell class="text-right">
               {#if matchId}
                 <a
                   href={`/versus/matches/${matchId}`}
-                  class={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'gap-1')}
+                  class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label={$_('pvp.view_match')}
+                  title={$_('pvp.view_match')}
                 >
-                  {$_('pvp.view_match')}
-                  <ArrowRight class="h-4 w-4" />
+                  <ExternalLink class="h-4 w-4" />
                 </a>
               {/if}
             </Table.Cell>

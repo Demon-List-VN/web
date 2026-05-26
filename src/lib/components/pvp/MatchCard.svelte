@@ -18,6 +18,7 @@
 		getPvpSelfParticipant,
 		getPvpStatus,
 		getPvpTimeReachedMs,
+		getPvpVisibleParticipantRating,
 		getPvpVisibleParticipantRatingLabel,
 		getPvpParticipantRatingDiff,
 		getPvpWinnerUid,
@@ -162,6 +163,12 @@
 			|| shouldHideParticipantInfo(participant);
 	}
 
+	function isCurrentParticipant(participant: typeof titleLeft) {
+		const uid = getPvpParticipantUid(participant);
+
+		return Boolean(uid && currentUid && String(uid) === String(currentUid));
+	}
+
 	function winnerName() {
 		const winner = participants.find(
 			(participant) => getPvpParticipantUid(participant) === winnerUid
@@ -171,11 +178,29 @@
 	}
 
 	function ratingLabel(participant: typeof self) {
-		if (!participant || shouldMaskParticipant(participant)) {
+		if (!participant) {
 			return null;
 		}
 
-		return getPvpVisibleParticipantRatingLabel(participant);
+		const isCurrent = isCurrentParticipant(participant);
+
+		if (shouldMaskParticipant(participant) && !isCurrent) {
+			return null;
+		}
+
+		const visibleLabel = getPvpVisibleParticipantRatingLabel(participant);
+
+		if (visibleLabel !== null) {
+			return visibleLabel;
+		}
+
+		if (participantIsAnonymous(participant) && isCurrent) {
+			const rating = getPvpVisibleParticipantRating(participant);
+
+			return rating === null ? null : String(Math.round(rating));
+		}
+
+		return null;
 	}
 
 	function ratingDiffLabel(participant: typeof self) {

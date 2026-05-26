@@ -1611,6 +1611,7 @@
             "total_convictions": "Total convictions",
             "total_pvp_matches": "Total PvP matches",
             "match": "Match",
+            "elo": "ELO",
             "elo_before": "ELO before",
             "elo_diff": "ELO diff",
             "current_elo": "Current ELO"

@@ -1610,6 +1610,7 @@
             "total_convictions": "Tổng số án tích",
             "total_pvp_matches": "Tổng số trận PvP",
             "match": "Trận",
+            "elo": "ELO",
             "elo_before": "ELO trước",
             "elo_diff": "Chênh lệch ELO",
             "current_elo": "ELO hiện tại"
