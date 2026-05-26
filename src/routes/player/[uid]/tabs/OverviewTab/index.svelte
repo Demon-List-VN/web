@@ -11,6 +11,7 @@
 		getPvpStatus,
 		getPvpVisibleRatingLabel,
 		isPvpMatchRanked,
+		isPvpRatingStable,
 		type PvpMatch
 	} from '$lib/client/pvp';
 	import Heatmap from '$lib/components/heatmap.svelte';
@@ -131,6 +132,8 @@
 	$: pvpRating = getPvpRatingValue(player);
 	$: pvpRatedMatchCount = getPvpRatedMatchCount(player);
 	$: pvpRatingDeviation = getPvpRatingDeviationValue(player);
+	$: pvpGraphDisabled = pvpRating !== null
+		&& !isPvpRatingStable(pvpRatingDeviation);
 	$: pvpStartLabel = $_('player.overview.start');
 	$: pvpRatingHistory = getPvpRatingHistory(
 		pvpMatches,
@@ -612,7 +615,12 @@
             {$_('player.overview.rated_matches')}
           </span>
         </div>
-        {#if pvpRatingHistory.ratings.length}
+        {#if pvpGraphDisabled}
+          <div class="empty-panel graph-empty">
+            <LineChart class="h-5 w-5" />
+            <span>{$_('player.overview.pvp_graph_unstable')}</span>
+          </div>
+        {:else if pvpRatingHistory.ratings.length}
           <div class="chart-wrapper compact">
             {#key `${player.uid}:pvp:${pvpRatingHistory.ratings.join(':')}`}
               <canvas

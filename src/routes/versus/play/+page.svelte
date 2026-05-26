@@ -62,7 +62,9 @@
 		type PvpMatchmakingRequest,
 		type PvpMe,
 		type PvpMode,
-		type PvpWeeklyRace
+		type PvpWeeklyRace,
+		PVP_UNCERTAIN_RATING_DEVIATION,
+		PVP_DEFAULT_RATING_DEVIATION
 	} from '$lib/client/pvp';
 	import {
 		setPvpRealtimeAuth,
@@ -236,6 +238,9 @@
 		? Math.round(eloGraphEnd - eloGraphStart)
 		: null;
 	$: eloGraphMatchCount = Math.max(0, eloGraphPoints.length - 1);
+	$: eloGraphDisabled = pvpRating !== null
+		&& !isPvpRatingStable(pvpRatingDeviation);
+	$: ratingUnlockProgress = getRatingUnlockProgress(pvpRatingDeviation);
 	$: pvpWinLossStats = getPvpWinLossStats(
 		matches.filter((match) => getPvpMode(match) === selectedMode),
 		currentUid
@@ -876,6 +881,20 @@
 			},
 			{ wins: 0, losses: 0 }
 		);
+	}
+
+	function getRatingUnlockProgress(ratingDeviation: number | null | undefined) {
+		if (!Number.isFinite(Number(ratingDeviation))) {
+			return 0;
+		}
+
+		const span = PVP_DEFAULT_RATING_DEVIATION
+			- PVP_UNCERTAIN_RATING_DEVIATION;
+		const progress = (
+			PVP_DEFAULT_RATING_DEVIATION - Number(ratingDeviation)
+		) / span;
+
+		return Math.round(Math.max(0, Math.min(1, progress)) * 100);
 	}
 
 	function updateInviteMatches(invites: PvpInvite[], nextMatch: PvpMatch) {
@@ -2199,6 +2218,22 @@
                   <div>
                     <span>{$_('pvp.current_elo')}</span>
                     <strong>{pvpRatingLabel}</strong>
+                    {#if pvpRating !== null && pvpRatingDeviation !== null && pvpRatingDeviation > PVP_UNCERTAIN_RATING_DEVIATION}
+                      <div class="rating-unlock-progress">
+                        <div class="rating-unlock-progress-track">
+                          <span style={`width: ${ratingUnlockProgress}%`}></span>
+                        </div>
+                        <small>
+                          {
+                            $_('pvp.rating_unlock_progress', {
+                                values: {
+                                    progress: ratingUnlockProgress
+                                }
+                            })
+                          }
+                        </small>
+                      </div>
+                    {/if}
                   </div>
                   <div>
                     <span>{$_('pvp.result.win')} / {
@@ -2244,7 +2279,11 @@
                         </Tabs.List>
                       </Tabs.Root>
                     </div>
-                    {#if eloGraphPoints.length > 1}
+                    {#if eloGraphDisabled}
+                      <div class="elo-graph-empty">
+                        {$_('pvp.elo_graph.need_stable_rating')}
+                      </div>
+                    {:else if eloGraphPoints.length > 1}
                       <div class="elo-chart-wrapper">
                         <canvas
                           use:createEloChart={eloGraphChartData}
@@ -2779,15 +2818,30 @@ h1 {
   line-height: 1;
 }
 
-.leaderboard-requirement-notice {
-  border: 1px solid hsl(var(--primary) / 0.25);
-  border-radius: 8px;
-  background: hsl(var(--primary) / 0.08);
-  padding: 10px 12px;
-  color: hsl(var(--foreground));
-  font-size: 13px;
-  font-weight: 650;
-  line-height: 1.4;
+.rating-unlock-progress {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.rating-unlock-progress-track {
+  overflow: hidden;
+  height: 6px;
+  border-radius: 999px;
+  background: hsl(var(--muted));
+}
+
+.rating-unlock-progress-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: hsl(var(--primary));
+}
+
+.rating-unlock-progress small {
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .elo-graph-panel {
