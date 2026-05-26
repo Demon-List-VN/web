@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
-	import { Bell, Check, ExternalLink, Inbox, Loader2, Trash2, X } from 'lucide-svelte';
+	import { Bell, ExternalLink, Inbox, Trash2, X } from 'lucide-svelte';
 	import * as Popover from '$lib/components/ui/popover';
 	import { Button } from '$lib/components/ui/button';
 	import { user } from '$lib/client';
@@ -9,31 +9,19 @@
 	import { _, locale } from 'svelte-i18n';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
-
-	type Notification = {
-		id?: number | string;
-		content?: string | null;
-		redirect?: string | null;
-		timestamp?: string | null;
-		to?: string | null;
-		metadata?: {
-			type?: string;
-			actionEndpoints?: {
-				accept?: string;
-				reject?: string;
-				decline?: string;
-			};
-			[key: string]: unknown;
-		} | null;
-	};
-
-	type PopupNotification = Notification & {
-		popupId: string;
-	};
+	import NotificationActions from '$lib/components/notifications/NotificationActions.svelte';
+	import {
+		actionEndpoint,
+		isActionableNotification,
+		notificationKey,
+		type NotificationAction,
+		type PopupNotification,
+		type UserNotification
+	} from '$lib/components/notifications/notification';
 
 	const POPUP_DURATION_MS = 6000;
 
-	let notifications: Notification[] = [];
+	let notifications: UserNotification[] = [];
 	let popups: PopupNotification[] = [];
 	let activeUid = '';
 	let loading = false;
@@ -41,13 +29,6 @@
 	let actionLoading = '';
 	let cleanupRealtime: (() => Promise<void>) | null = null;
 	const popupTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
-
-	function notificationKey(notification: Notification) {
-		return String(
-			notification.id ??
-				`${notification.timestamp ?? Date.now()}-${notification.redirect ?? ''}-${notification.content ?? ''}`
-		);
-	}
 
 	function normalizeRedirect(redirect?: string | null) {
 		if (!redirect) return null;
@@ -65,7 +46,7 @@
 		}
 	}
 
-	function normalizeNotification(notification: Notification): Notification {
+	function normalizeNotification(notification: UserNotification): UserNotification {
 		return {
 			...notification,
 			redirect: normalizeRedirect(notification.redirect),
@@ -73,7 +54,7 @@
 		};
 	}
 
-	function mergeNotification(notification: Notification) {
+	function mergeNotification(notification: UserNotification) {
 		if (notification.metadata?.type === 'social_message') return;
 
 		const normalized = normalizeNotification(notification);
@@ -81,7 +62,7 @@
 		notifications = [normalized, ...notifications.filter((item) => notificationKey(item) !== key)];
 	}
 
-	async function handleSocialNotification(uid: string, notification: Notification) {
+	async function handleSocialNotification(uid: string, notification: UserNotification) {
 		if (notification.metadata?.type !== 'social_message') return;
 
 		try {
@@ -91,28 +72,13 @@
 		}
 	}
 
-	function actionEndpoint(notification: Notification, action: 'accept' | 'reject') {
-		const endpoints = notification.metadata?.actionEndpoints;
-		if (!endpoints) return null;
-		return action === 'accept' ? endpoints.accept : endpoints.reject || endpoints.decline || null;
-	}
-
-	function isActionable(notification: Notification) {
-		const type = notification.metadata?.type;
-		return (
-			(type === 'friend_request' || type === 'pvp_invite') &&
-			Boolean(actionEndpoint(notification, 'accept')) &&
-			Boolean(actionEndpoint(notification, 'reject'))
-		);
-	}
-
-	function removeNotification(notification: Notification) {
+	function removeNotification(notification: UserNotification) {
 		const key = notificationKey(notification);
 		notifications = notifications.filter((item) => notificationKey(item) !== key);
 		popups = popups.filter((popup) => notificationKey(popup) !== key);
 	}
 
-	async function deleteNotification(notification: Notification) {
+	async function deleteNotification(notification: UserNotification) {
 		const uid = notification.to ?? activeUid;
 		if (!notification.id || !uid) return;
 
@@ -136,8 +102,8 @@
 
 	async function handleNotificationAction(
 		event: MouseEvent,
-		notification: Notification,
-		action: 'accept' | 'reject'
+		notification: UserNotification,
+		action: NotificationAction
 	) {
 		event.preventDefault();
 		event.stopPropagation();
@@ -269,7 +235,7 @@
 		popups = popups.filter((popup) => popup.popupId !== popupId);
 	}
 
-	function showPopup(notification: Notification) {
+	function showPopup(notification: UserNotification) {
 		const popupId = `${notificationKey(notification)}-${Date.now()}`;
 		popups = [{ ...notification, popupId }, ...popups].slice(0, 3);
 
@@ -298,7 +264,7 @@
 					filter: `to=eq.${uid}`
 				},
 				(payload) => {
-					const notification = normalizeNotification(payload.new as Notification);
+					const notification = normalizeNotification(payload.new as UserNotification);
 					void handleSocialNotification(uid, notification);
 					if (notification.metadata?.type === 'social_message') return;
 
@@ -367,10 +333,20 @@
 			<div class="popupIcon">
 				<Bell size={16} />
 			</div>
-			<a class="popupBody" href={popup.redirect || '#!'}>
-				<span class="popupEyebrow">{$_('notifications.title')}</span>
-				<span class="popupContent">{popup.content}</span>
-			</a>
+			<div class="popupMain">
+				<a class="popupBody" href={popup.redirect || '#!'}>
+					<span class="popupEyebrow">{$_('notifications.title')}</span>
+					<span class="popupContent">{popup.content}</span>
+				</a>
+				{#if isActionableNotification(popup)}
+					<NotificationActions
+						actionKey={notificationKey(popup)}
+						{actionLoading}
+						compact
+						onAction={(event, action) => handleNotificationAction(event, popup, action)}
+					/>
+				{/if}
+			</div>
 			<button
 				class="popupClose"
 				aria-label={$_('notifications.close')}
@@ -428,7 +404,7 @@
 		{:else}
 			<div class="notificationList">
 				{#each notifications as notification (notificationKey(notification))}
-					{#if isActionable(notification)}
+					{#if isActionableNotification(notification)}
 						<div class="notificationItem actionableNotification">
 							<span class="itemDot"></span>
 							<span class="itemContent">
@@ -442,33 +418,12 @@
 										{/if}
 									</span>
 								</a>
-								<span class="notificationActions">
-									<Button
-										size="sm"
-										on:click={(event) => handleNotificationAction(event, notification, 'accept')}
-										disabled={Boolean(actionLoading)}
-									>
-										{#if actionLoading === `${notificationKey(notification)}:accept`}
-											<Loader2 class="h-4 w-4 animate-spin" />
-										{:else}
-											<Check class="h-4 w-4" />
-										{/if}
-										{$_('general.accept')}
-									</Button>
-									<Button
-										size="sm"
-										variant="outline"
-										on:click={(event) => handleNotificationAction(event, notification, 'reject')}
-										disabled={Boolean(actionLoading)}
-									>
-										{#if actionLoading === `${notificationKey(notification)}:reject`}
-											<Loader2 class="h-4 w-4 animate-spin" />
-										{:else}
-											<X size={14} />
-										{/if}
-										{$_('general.reject')}
-									</Button>
-								</span>
+								<NotificationActions
+									actionKey={notificationKey(notification)}
+									{actionLoading}
+									onAction={(event, action) =>
+										handleNotificationAction(event, notification, action)}
+								/>
 							</span>
 						</div>
 					{:else}
@@ -605,13 +560,6 @@
 		text-decoration: none;
 	}
 
-	.notificationActions {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 6px;
-		margin-top: 4px;
-	}
-
 	.itemDot {
 		width: 7px;
 		height: 7px;
@@ -686,6 +634,12 @@
 			0 0 0 1px rgb(255 255 255 / 4%) inset;
 		pointer-events: auto;
 		animation: popupIn 0.18s ease-out;
+	}
+
+	.popupMain {
+		min-width: 0;
+		display: grid;
+		gap: 8px;
 	}
 
 	.popupIcon {
