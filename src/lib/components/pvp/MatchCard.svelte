@@ -174,7 +174,7 @@
 			return null;
 		}
 
-		return getPvpVisibleParticipantRatingLabel(participant, match);
+		return getPvpVisibleParticipantRatingLabel(participant);
 	}
 
 	function ratingDiffLabel(participant: typeof self) {

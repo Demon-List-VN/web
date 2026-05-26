@@ -1867,7 +1867,9 @@
 			return null;
 		}
 
-		return getPvpVisibleParticipantRatingLabel(participant, match);
+		return getPvpVisibleParticipantRatingLabel(participant, {
+			unstableLabel: '?'
+		});
 	}
 
 	function participantRatingDiffLabel(

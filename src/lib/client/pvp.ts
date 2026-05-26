@@ -118,6 +118,8 @@ export type PvpParticipant = {
     pvp_rating?: number | null;
     pvpRatedMatchCount?: number | null;
     pvp_rated_match_count?: number | null;
+    pvpRatingDeviation?: number | null;
+    pvp_rating_deviation?: number | null;
     [key: string]: unknown;
 };
 
@@ -376,7 +378,6 @@ export type PvpClanWeeklyRace = {
 export const PVP_ACTIVE_MATCH_STATUSES = ['pending', 'ban_pick', 'in_progress', 'waiting_result'];
 export const PVP_FINISHED_MATCH_STATUSES = ['completed', 'cancelled', 'disputed'];
 export const PVP_DIFFICULTIES: PvpDifficulty[] = ['easy', 'medium', 'hard'];
-export const PVP_RATING_VISIBLE_MATCHES = 10;
 export const PVP_UNCERTAIN_RATING_DEVIATION = 100;
 export const PVP_RATING_ACTIVITY_DAYS = 14;
 export const PVP_CLASSIC_MATCH_DURATION_MS = 15 * 60 * 1000;
@@ -1151,33 +1152,39 @@ export function getPvpVisibleParticipantRatingDeviation(
     return getFinitePvpNumber(value);
 }
 
+export function isPvpRatingStable(ratingDeviation: number | null | undefined) {
+    return ratingDeviation !== null
+        && ratingDeviation !== undefined
+        && Number.isFinite(Number(ratingDeviation))
+        && Number(ratingDeviation) < PVP_UNCERTAIN_RATING_DEVIATION;
+}
+
+export function getPvpVisibleRatingLabel(
+    rating: number | null | undefined,
+    ratingDeviation: number | null | undefined,
+    options: { unstableLabel?: string | null; } = {}
+) {
+    const value = getFinitePvpNumber(rating);
+
+    if (value === null) {
+        return null;
+    }
+
+    if (!isPvpRatingStable(ratingDeviation)) {
+        return options.unstableLabel ?? null;
+    }
+
+    return String(Math.round(value));
+}
+
 export function getPvpVisibleParticipantRatingLabel(
     participant: PvpParticipant | null | undefined,
-    match?: PvpMatch | null | undefined
+    options: { unstableLabel?: string | null; } = {}
 ) {
-    const ratedMatchCount = getPvpVisibleParticipantRatedMatchCount(participant);
-
-    if (ratedMatchCount !== null && ratedMatchCount < PVP_RATING_VISIBLE_MATCHES) {
-        return null;
-    }
-
-    if (match && !isPvpRatingActivityRecent(match)) {
-        return null;
-    }
-
     const rating = getPvpVisibleParticipantRating(participant);
-
-    if (rating === null) {
-        return null;
-    }
-
-    const roundedRating = Math.round(rating);
     const ratingDeviation = getPvpVisibleParticipantRatingDeviation(participant);
-    const suffix = ratingDeviation !== null && ratingDeviation > PVP_UNCERTAIN_RATING_DEVIATION
-        ? '?'
-        : '';
 
-    return `${roundedRating}${suffix}`;
+    return getPvpVisibleRatingLabel(rating, ratingDeviation, options);
 }
 
 export function hasPvpParticipantAccepted(participant: PvpParticipant | null | undefined) {

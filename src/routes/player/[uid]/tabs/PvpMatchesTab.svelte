@@ -8,7 +8,6 @@
 	import { cn } from '$lib/utils';
 	import { ArrowRight } from 'lucide-svelte';
 	import {
-		PVP_RATING_VISIBLE_MATCHES,
 		getPublicPvpMatchesPageForPlayer,
 		getPvpMatchId,
 		getPvpParticipants,
@@ -18,10 +17,8 @@
 		getPvpParticipantRatingBefore,
 		getPvpParticipantRatingDiff,
 		getPvpParticipantUid,
-		getPvpVisibleParticipantRatedMatchCount,
 		getPvpVisibleParticipantRatingLabel,
 		getPvpWinnerUid,
-		isPvpRatingActivityRecent,
 		type PvpParticipant,
 		type PvpMatch
 	} from '$lib/client/pvp';
@@ -85,19 +82,11 @@
 	}
 
 	function shouldHideRating(match: PvpMatch) {
-		const ratedMatchCount = getPvpVisibleParticipantRatedMatchCount(
-			playerParticipant(match)
-		);
-
-		return (
-			(ratedMatchCount !== null
-				&& ratedMatchCount < PVP_RATING_VISIBLE_MATCHES)
-			|| !isPvpRatingActivityRecent(match)
-		);
+		return ratingAfterLabel(match) === null;
 	}
 
 	function ratingAfterLabel(match: PvpMatch) {
-		return getPvpVisibleParticipantRatingLabel(playerParticipant(match), match);
+		return getPvpVisibleParticipantRatingLabel(playerParticipant(match));
 	}
 
 	function matchResult(match: PvpMatch) {

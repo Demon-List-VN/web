@@ -7,13 +7,10 @@
 		getPvpParticipantRatingAfter,
 		getPvpParticipantRatingBefore,
 		getPvpParticipantRatingDiff,
-		getPvpRatedMatchActivityMs,
 		getPvpSelfParticipant,
 		getPvpStatus,
+		getPvpVisibleRatingLabel,
 		isPvpMatchRanked,
-		PVP_RATING_ACTIVITY_DAYS,
-		PVP_RATING_VISIBLE_MATCHES,
-		PVP_UNCERTAIN_RATING_DEVIATION,
 		type PvpMatch
 	} from '$lib/client/pvp';
 	import Heatmap from '$lib/components/heatmap.svelte';
@@ -134,7 +131,6 @@
 	$: pvpRating = getPvpRatingValue(player);
 	$: pvpRatedMatchCount = getPvpRatedMatchCount(player);
 	$: pvpRatingDeviation = getPvpRatingDeviationValue(player);
-	$: pvpRatingRecent = hasRecentPvpRatingMatch(pvpMatches);
 	$: pvpStartLabel = $_('player.overview.start');
 	$: pvpRatingHistory = getPvpRatingHistory(
 		pvpMatches,
@@ -170,23 +166,7 @@
 			return '-';
 		}
 
-		if (
-			pvpRatedMatchCount !== null
-			&& pvpRatedMatchCount < PVP_RATING_VISIBLE_MATCHES
-		) {
-			return '-';
-		}
-
-		if (!pvpRatingRecent) {
-			return '-';
-		}
-
-		return `${pvpRating}${
-			pvpRatingDeviation !== null
-				&& pvpRatingDeviation > PVP_UNCERTAIN_RATING_DEVIATION
-				? '?'
-				: ''
-		}`;
+		return getPvpVisibleRatingLabel(pvpRating, pvpRatingDeviation) ?? '-';
 	}
 
 	function formatDate(record: PlayerListRecordEntry) {
@@ -237,26 +217,6 @@
 		);
 
 		return Number.isFinite(ratingDeviation) ? ratingDeviation : null;
-	}
-
-	function hasRecentPvpRatingMatch(matches: PvpMatch[]) {
-		const activeSince = Date.now()
-			- PVP_RATING_ACTIVITY_DAYS * 24 * 60 * 60 * 1000;
-
-		return matches.some((match) => {
-			if (
-				getPvpStatus(match, '') !== 'completed' || !isPvpMatchRanked(match)
-			) {
-				return false;
-			}
-
-			const participant = getPvpSelfParticipant(match, player.uid);
-
-			return (
-				getPvpParticipantRatingAfter(participant) !== null
-				&& getPvpRatedMatchActivityMs(match) >= activeSince
-			);
-		});
 	}
 
 	function getRecordTime(record: PlayerListRecordEntry) {

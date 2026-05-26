@@ -46,13 +46,11 @@
 		getPvpStatus,
 		getPvpSelfParticipant,
 		getPvpWinnerUid,
+		getPvpVisibleRatingLabel,
 		hasPvpParticipantAccepted,
 		isActivePvpMatch,
 		isPvpMatchConfirmedByBoth,
 		isPvpMatchRanked,
-		PVP_RATING_ACTIVITY_DAYS,
-		PVP_RATING_VISIBLE_MATCHES,
-		PVP_UNCERTAIN_RATING_DEVIATION,
 		sendPvpInvite,
 		startPvpMatchmaking,
 		type PvpClan,
@@ -213,23 +211,11 @@
 	$: pvpRatingDeviation = getFiniteNumber(
 		selectedRatingState?.pvpRatingDeviation
 	);
-	$: pvpVisibleMatchesLeft = Math.max(
-		0,
-		PVP_RATING_VISIBLE_MATCHES - Number(pvpRatedMatchCount || 0)
-	);
-	$: hasRecentRatingMatch = hasRecentRatedPvpMatch(
-		matches.filter((match) => getPvpMode(match) === selectedMode),
-		PVP_RATING_ACTIVITY_DAYS
-	);
-	$: pvpRatingVisible = pvpVisibleMatchesLeft === 0 && hasRecentRatingMatch;
-	$: pvpRatingLabel = pvpRatingVisible && pvpRating !== null
-		? `${Math.round(pvpRating)}${
-			pvpRatingDeviation !== null
-				&& pvpRatingDeviation > PVP_UNCERTAIN_RATING_DEVIATION
-				? '?'
-				: ''
-		}`
-		: '--';
+	$: pvpRatingLabel = getPvpVisibleRatingLabel(
+		pvpRating,
+		pvpRatingDeviation,
+		{ unstableLabel: '?' }
+	) ?? '--';
 	$: pvpRatingInitialized = Boolean(
 		selectedRatingState?.pvpRatingInitialized ?? pvpRating !== null
 	);

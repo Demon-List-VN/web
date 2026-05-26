@@ -16,6 +16,7 @@
 	import * as Avatar from '$lib/components/ui/avatar';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { getTitle } from '$lib/client';
+	import { getPvpVisibleRatingLabel } from '$lib/client/pvp';
 	import { badgeVariants } from '$lib/components/ui/badge';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { getExpLevel } from '$lib/client/getExpLevel';
@@ -252,14 +253,6 @@
 		return Number.isFinite(numberValue) ? Math.round(numberValue) : null;
 	}
 
-	function getPvpRatedMatchCount(player: any) {
-		const value = player?.pvpRatedMatchCount ?? player?.pvp_rated_match_count
-			?? null;
-		const numberValue = Number(value);
-
-		return Number.isFinite(numberValue) ? numberValue : null;
-	}
-
 	function getPvpRatingDeviation(player: any) {
 		const value = player?.pvpRatingDeviation ?? player?.pvp_rating_deviation
 			?? null;
@@ -275,17 +268,10 @@
 			return '-';
 		}
 
-		const matchCount = getPvpRatedMatchCount(player);
-
-		if (matchCount !== null && matchCount < 10) {
-			return '-';
-		}
-
 		const ratingDeviation = getPvpRatingDeviation(player);
+		const label = getPvpVisibleRatingLabel(rating, ratingDeviation);
 
-		return `${rating}${
-			ratingDeviation !== null && ratingDeviation > 100 ? '?' : ''
-		}`;
+		return label ?? '-';
 	}
 </script>
 
