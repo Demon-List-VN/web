@@ -7,16 +7,19 @@
 		getPvpParticipantRatingAfter,
 		getPvpParticipantRatingBefore,
 		getPvpParticipantRatingDiff,
+		getPvpMode,
 		getPvpSelfParticipant,
 		getPvpStatus,
 		getPvpVisibleRatingLabel,
 		isPvpMatchRanked,
 		isPvpRatingStable,
-		type PvpMatch
+		type PvpMatch,
+		type PvpMode
 	} from '$lib/client/pvp';
 	import Heatmap from '$lib/components/heatmap.svelte';
 	import * as Card from '$lib/components/ui/card';
 	import * as Select from '$lib/components/ui/select';
+	import * as Tabs from '$lib/components/ui/tabs';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import type { PlayerListRecordEntry } from '$lib/types/playerRankedList';
 	import { getPlayerRankedListScoreLabel } from '$lib/types/playerRankedList';
@@ -24,6 +27,11 @@
 		normalizeCustomListRankBadges,
 		resolveCustomListRankBadge
 	} from '$lib/utils/customListRank';
+	import {
+		getPvpRatingDeviationForMode,
+		getPvpRatingForMode,
+		resolvePvpRank
+	} from '$lib/utils/pvpRank';
 	import Chart from 'chart.js/auto';
 	import 'chartjs-adapter-date-fns';
 	import annotationPlugin from 'chartjs-plugin-annotation';
@@ -45,6 +53,7 @@
 	export let data: PageData;
 
 	const INITIAL_EVENT_RATING = 1500;
+	const PVP_MODES: PvpMode[] = ['classic', 'platformer'];
 	const eloRankBands = [
 		{ min: 3500, max: Infinity, color: 'rgba(170, 0, 0, 0.15)' },
 		{ min: 3000, max: 3500, color: 'rgba(255, 51, 51, 0.15)' },
@@ -129,14 +138,16 @@
 	$: exp = player.exp + player.extraExp;
 	$: expLevel = getExpLevel(exp);
 	$: contestTitle = getTitle('elo', player);
-	$: pvpRating = getPvpRatingValue(player);
-	$: pvpRatedMatchCount = getPvpRatedMatchCount(player);
-	$: pvpRatingDeviation = getPvpRatingDeviationValue(player);
+	let selectedPvpMode: PvpMode = 'classic';
+	$: pvpRating = getPvpRatingForMode(player, selectedPvpMode);
+	$: pvpRatedMatchCount = getPvpRatedMatchCount(player, selectedPvpMode);
+	$: pvpRatingDeviation = getPvpRatingDeviationForMode(player, selectedPvpMode);
+	$: pvpRank = resolvePvpRank(pvpRating, pvpRatingDeviation);
 	$: pvpGraphDisabled = pvpRating !== null
 		&& !isPvpRatingStable(pvpRatingDeviation);
 	$: pvpStartLabel = $_('player.overview.start');
 	$: pvpRatingHistory = getPvpRatingHistory(
-		pvpMatches,
+		pvpMatches.filter((match) => getPvpMode(match) === selectedPvpMode),
 		player.uid,
 		pvpStartLabel
 	);
@@ -200,26 +211,28 @@
 		return `${record.progress ?? 0}%`;
 	}
 
-	function getPvpRatingValue(value: any) {
-		const rating = Number(value?.pvpRating ?? value?.pvp_rating ?? null);
-
-		return Number.isFinite(rating) ? Math.round(rating) : null;
-	}
-
-	function getPvpRatedMatchCount(value: any) {
+	function getPvpRatedMatchCount(value: any, mode: PvpMode) {
 		const matchCount = Number(
-			value?.pvpRatedMatchCount ?? value?.pvp_rated_match_count ?? null
+			mode === 'platformer'
+				? value?.pvpPlatformerRatedMatchCount
+					?? value?.pvp_platformer_rated_match_count
+					?? value?.ratings?.platformer?.pvpRatedMatchCount
+					?? value?.ratings?.platformer?.pvp_rated_match_count
+					?? value?.platformerRating?.pvpRatedMatchCount
+					?? value?.platformerRating?.pvp_rated_match_count
+					?? (String(value?.mode || '') === mode
+						? value?.pvpRatedMatchCount ?? value?.pvp_rated_match_count
+						: null)
+				: value?.pvpRatedMatchCount
+					?? value?.pvp_rated_match_count
+					?? value?.ratings?.classic?.pvpRatedMatchCount
+					?? value?.ratings?.classic?.pvp_rated_match_count
+					?? value?.rating?.pvpRatedMatchCount
+					?? value?.rating?.pvp_rated_match_count
+					?? null
 		);
 
 		return Number.isFinite(matchCount) ? matchCount : null;
-	}
-
-	function getPvpRatingDeviationValue(value: any) {
-		const ratingDeviation = Number(
-			value?.pvpRatingDeviation ?? value?.pvp_rating_deviation ?? null
-		);
-
-		return Number.isFinite(ratingDeviation) ? ratingDeviation : null;
 	}
 
 	function getRecordTime(record: PlayerListRecordEntry) {
@@ -599,21 +612,45 @@
       class="rating-graph-card overflow-hidden"
       style={getBorderStyle(player)}
     >
-      <Card.Header>
+      <Card.Header class="pvp-card-header">
         <div class="section-heading">
           <Zap class="h-5 w-5" />
           <Card.Title class="text-xl">{
             $_('player.overview.pvp_rating')
           }</Card.Title>
         </div>
+        <Tabs.Root bind:value={selectedPvpMode}>
+          <Tabs.List
+            class="profile-pvp-mode-list"
+            aria-label={$_('pvp.mode_label')}
+          >
+            {#each PVP_MODES as mode}
+              <Tabs.Trigger value={mode} class="profile-pvp-mode-trigger">
+                {$_(`pvp.mode.${mode}`)}
+              </Tabs.Trigger>
+            {/each}
+          </Tabs.List>
+        </Tabs.Root>
       </Card.Header>
       <Card.Content class="space-y-4">
-        <div class="rating-value-row">
-          <strong class="rating-value">{formatPvpRating()}</strong>
-          <span>
-            {pvpRatedMatchCount ?? 0}
-            {$_('player.overview.rated_matches')}
-          </span>
+        <div class="rating-value-row pvp-rating-row">
+          <div class="pvp-rating-main">
+            {#if pvpRank}
+              <span class="pvp-rank-badge" style={pvpRank.badgeStyle}>
+                {pvpRank.label}
+              </span>
+            {/if}
+            <strong class="rating-value">{formatPvpRating()}</strong>
+          </div>
+          <div class="pvp-rating-meta">
+            <span>
+              {$_('player.overview.rank')}: {pvpRank?.label ?? $_('pvp.unranked')}
+            </span>
+            <span>
+              {pvpRatedMatchCount ?? 0}
+              {$_('player.overview.rated_matches')}
+            </span>
+          </div>
         </div>
         {#if pvpGraphDisabled}
           <div class="empty-panel graph-empty">
@@ -622,7 +659,7 @@
           </div>
         {:else if pvpRatingHistory.ratings.length}
           <div class="chart-wrapper compact">
-            {#key `${player.uid}:pvp:${pvpRatingHistory.ratings.join(':')}`}
+            {#key `${player.uid}:pvp:${selectedPvpMode}:${pvpRatingHistory.ratings.join(':')}`}
               <canvas
                 use:createPvpChart
                 aria-label={$_('player.overview.pvp_rating')}
@@ -853,6 +890,32 @@
   color: hsl(var(--primary));
 }
 
+:global(.pvp-card-header) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+:global(.profile-pvp-mode-list) {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: auto;
+  min-width: 190px;
+  height: auto;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--muted) / 0.28);
+  padding: 3px;
+}
+
+:global(.profile-pvp-mode-trigger) {
+  min-height: 30px;
+  padding-inline: 10px;
+  font-size: 12px;
+}
+
 .section-subtitle {
   margin-top: 3px;
   color: hsl(var(--muted-foreground));
@@ -876,8 +939,46 @@
   line-height: 1;
 }
 
-.rating-value-row span,
+.rating-value-row > span,
 .exp-value-row span {
+  max-width: 48%;
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: right;
+}
+
+.pvp-rating-row {
+  align-items: center;
+}
+
+.pvp-rating-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pvp-rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  min-height: 22px;
+  border-radius: 5px;
+  padding-inline: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.pvp-rating-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
   max-width: 48%;
   color: hsl(var(--muted-foreground));
   font-size: 12px;
@@ -1096,8 +1197,14 @@
     flex-direction: column;
   }
 
-  .rating-value-row span,
+  .rating-value-row > span,
   .exp-value-row span {
+    max-width: 100%;
+    text-align: left;
+  }
+
+  .pvp-rating-meta {
+    align-items: flex-start;
     max-width: 100%;
     text-align: left;
   }

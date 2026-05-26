@@ -163,6 +163,10 @@ export const PVP_RANKS: PvpRankDefinition[] = [
 ];
 
 function finiteNumber(value: unknown) {
+    if (value === null || value === undefined || value === '') {
+        return null;
+    }
+
     const numberValue = Number(value);
 
     return Number.isFinite(numberValue) ? numberValue : null;
@@ -216,7 +220,13 @@ export function getPvpRatingForMode(player: any, mode: PvpMode = 'classic') {
     if (mode === 'platformer') {
         const platformerRating = firstFinite([
             player.pvpPlatformerRating,
-            player.pvp_platformer_rating
+            player.pvp_platformer_rating,
+            player.ratings?.platformer?.pvpRating,
+            player.ratings?.platformer?.pvp_rating,
+            player.platformerRating?.pvpRating,
+            player.platformerRating?.pvp_rating,
+            player.platformer_rating?.pvpRating,
+            player.platformer_rating?.pvp_rating
         ]);
 
         if (platformerRating !== null) {
@@ -232,7 +242,14 @@ export function getPvpRatingForMode(player: any, mode: PvpMode = 'classic') {
         return null;
     }
 
-    const rating = firstFinite([player.pvpRating, player.pvp_rating]);
+    const rating = firstFinite([
+        player.pvpRating,
+        player.pvp_rating,
+        player.ratings?.classic?.pvpRating,
+        player.ratings?.classic?.pvp_rating,
+        player.rating?.pvpRating,
+        player.rating?.pvp_rating
+    ]);
 
     return rating === null ? null : Math.round(rating);
 }
@@ -245,7 +262,13 @@ export function getPvpRatingDeviationForMode(player: any, mode: PvpMode = 'class
     if (mode === 'platformer') {
         const platformerDeviation = firstFinite([
             player.pvpPlatformerRatingDeviation,
-            player.pvp_platformer_rating_deviation
+            player.pvp_platformer_rating_deviation,
+            player.ratings?.platformer?.pvpRatingDeviation,
+            player.ratings?.platformer?.pvp_rating_deviation,
+            player.platformerRating?.pvpRatingDeviation,
+            player.platformerRating?.pvp_rating_deviation,
+            player.platformer_rating?.pvpRatingDeviation,
+            player.platformer_rating?.pvp_rating_deviation
         ]);
 
         if (platformerDeviation !== null) {
@@ -257,7 +280,14 @@ export function getPvpRatingDeviationForMode(player: any, mode: PvpMode = 'class
             : null;
     }
 
-    return firstFinite([player.pvpRatingDeviation, player.pvp_rating_deviation]);
+    return firstFinite([
+        player.pvpRatingDeviation,
+        player.pvp_rating_deviation,
+        player.ratings?.classic?.pvpRatingDeviation,
+        player.ratings?.classic?.pvp_rating_deviation,
+        player.rating?.pvpRatingDeviation,
+        player.rating?.pvp_rating_deviation
+    ]);
 }
 
 export function resolvePvpRank(
