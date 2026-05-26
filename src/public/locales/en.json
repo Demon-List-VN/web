@@ -355,7 +355,8 @@
             "history": "History",
             "weekly_race": "Weekly Race",
             "clan_race": "Clan Race",
-            "leaderboard": "Leaderboard"
+            "leaderboard": "Leaderboard",
+            "rules": "Rules"
         },
         "leaderboard": {
             "title": "PvP leaderboard",
@@ -438,6 +439,20 @@
         "elo_needs_recent_match": "Play a ranked match to show Elo",
         "rating_established": "Rating established",
         "rating_unlock_progress": "{progress}% to unlock rank",
+        "rank_progress_next": "{progress}% to {rank}",
+        "rank_progress_max": "Max rank reached",
+        "rules": {
+            "title": "PvP rank rules",
+            "description": "Ranks unlock after your PvP Elo is stable in that mode.",
+            "unlock_note": "Classic and Platformer use separate Elo. A rank badge appears when that mode's rating deviation is below 150.",
+            "rank": "Rank",
+            "condition": "Condition",
+            "conditions": {
+                "less": "Elo below {rating}",
+                "range": "Elo {min}-{max}",
+                "at_least": "Elo {rating}+"
+            }
+        },
         "ranked": "Ranked",
         "unranked": "Unranked",
         "match_type": "Match type",

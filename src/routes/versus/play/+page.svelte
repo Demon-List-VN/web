@@ -74,11 +74,19 @@
 		type PvpRealtimeEvent
 	} from '$lib/client/pvpRealtime';
 	import { playPvpBell } from '$lib/client/pvpSound';
+	import {
+		getPvpNextRankProgress,
+		getPvpRankCondition,
+		PVP_RANKS,
+		resolvePvpRank,
+		type PvpRankDefinition
+	} from '$lib/utils/pvpRank';
 	import { onDestroy, onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { _ } from 'svelte-i18n';
 	import {
 		CalendarDays,
+		BookOpen,
 		ChevronRight,
 		Clock,
 		Eye,
@@ -241,6 +249,11 @@
 	$: eloGraphDisabled = pvpRating !== null
 		&& !isPvpRatingStable(pvpRatingDeviation);
 	$: ratingUnlockProgress = getRatingUnlockProgress(pvpRatingDeviation);
+	$: pvpRank = resolvePvpRank(pvpRating, pvpRatingDeviation);
+	$: pvpRankProgress = getPvpNextRankProgress(pvpRating, pvpRatingDeviation);
+	$: showRatingUnlockProgress = pvpRating !== null
+		&& pvpRatingDeviation !== null
+		&& !isPvpRatingStable(pvpRatingDeviation);
 	$: pvpWinLossStats = getPvpWinLossStats(
 		matches.filter((match) => getPvpMode(match) === selectedMode),
 		currentUid
@@ -895,6 +908,14 @@
 		) / span;
 
 		return Math.round(Math.max(0, Math.min(1, progress)) * 100);
+	}
+
+	function rankConditionLabel(rank: PvpRankDefinition) {
+		const condition = getPvpRankCondition(rank);
+
+		return $_(`pvp.rules.conditions.${condition.key}`, {
+			values: condition.values
+		});
 	}
 
 	function updateInviteMatches(invites: PvpInvite[], nextMatch: PvpMatch) {
@@ -1979,6 +2000,10 @@
         <Trophy class="h-4 w-4" />
         {$_('pvp.tabs.leaderboard')}
       </Tabs.Trigger>
+      <Tabs.Trigger value="rules" class="pvp-tab-trigger">
+        <BookOpen class="h-4 w-4" />
+        {$_('pvp.tabs.rules')}
+      </Tabs.Trigger>
     </Tabs.List>
 
     <Tabs.Content value="weekly-race">
@@ -2129,6 +2154,43 @@
       />
     </Tabs.Content>
 
+    <Tabs.Content value="rules">
+      <section class="rules-section">
+        <Card.Root>
+          <Card.Header>
+            <Card.Title class="rules-title">
+              <BookOpen class="h-5 w-5" />
+              {$_('pvp.rules.title')}
+            </Card.Title>
+            <Card.Description>{$_('pvp.rules.description')}</Card.Description>
+          </Card.Header>
+          <Card.Content>
+            <div class="rules-note">{$_('pvp.rules.unlock_note')}</div>
+            <div
+              class="rank-rules-table"
+              role="table"
+              aria-label={$_('pvp.rules.title')}
+            >
+              <div class="rank-rules-row rank-rules-head" role="row">
+                <span role="columnheader">{$_('pvp.rules.rank')}</span>
+                <span role="columnheader">{$_('pvp.rules.condition')}</span>
+              </div>
+              {#each PVP_RANKS as rank}
+                <div class="rank-rules-row" role="row">
+                  <span role="cell">
+                    <span class="pvp-rank-preview" style={rank.badgeStyle}>
+                      {rank.label}
+                    </span>
+                  </span>
+                  <span role="cell">{rankConditionLabel(rank)}</span>
+                </div>
+              {/each}
+            </div>
+          </Card.Content>
+        </Card.Root>
+      </section>
+    </Tabs.Content>
+
     <Tabs.Content value="lobby">
       <PvpDialogs
         bind:matchDialogOpen
@@ -2215,10 +2277,10 @@
               </Card.Header>
               <Card.Content>
                 <div class="summary-stats">
-                  <div>
+                  <div style={pvpRank?.summaryStyle ?? ''}>
                     <span>{$_('pvp.current_elo')}</span>
                     <strong>{pvpRatingLabel}</strong>
-                    {#if pvpRating !== null && pvpRatingDeviation !== null && pvpRatingDeviation > PVP_UNCERTAIN_RATING_DEVIATION}
+                    {#if showRatingUnlockProgress}
                       <div class="rating-unlock-progress">
                         <div class="rating-unlock-progress-track">
                           <span style={`width: ${ratingUnlockProgress}%`}></span>
@@ -2231,6 +2293,28 @@
                                 }
                             })
                           }
+                        </small>
+                      </div>
+                    {:else if pvpRankProgress}
+                      <div class="rating-unlock-progress">
+                        <div class="rating-unlock-progress-track">
+                          <span
+                            style={`width: ${pvpRankProgress.progress}%; ${pvpRankProgress.currentRank.progressStyle}`}
+                          ></span>
+                        </div>
+                        <small>
+                          {#if pvpRankProgress.nextRank}
+                            {
+                              $_('pvp.rank_progress_next', {
+                                  values: {
+                                      progress: pvpRankProgress.progress,
+                                      rank: pvpRankProgress.nextRank.label
+                                  }
+                              })
+                            }
+                          {:else}
+                            {$_('pvp.rank_progress_max')}
+                          {/if}
                         </small>
                       </div>
                     {/if}
@@ -2697,6 +2781,71 @@ h1 {
   padding-inline: 12px;
 }
 
+.rules-section {
+  margin-bottom: 20px;
+}
+
+:global(.rules-title) {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rules-note {
+  margin-bottom: 14px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--muted) / 0.28);
+  padding: 12px 14px;
+  color: hsl(var(--muted-foreground));
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.rank-rules-table {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+}
+
+.rank-rules-row {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  border-top: 1px solid hsl(var(--border));
+  padding: 10px 14px;
+}
+
+.rank-rules-row:first-child {
+  border-top: 0;
+}
+
+.rank-rules-head {
+  min-height: 38px;
+  background: hsl(var(--muted) / 0.35);
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.pvp-rank-preview {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  min-height: 22px;
+  border-radius: 5px;
+  padding-inline: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 .history-toolbar {
   margin-bottom: 20px;
 }
@@ -3118,6 +3267,16 @@ h1 {
   :global(.mode-filter-list) {
     width: 100%;
     min-width: 0;
+  }
+
+  :global(.pvp-tab-list) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .rank-rules-row {
+    grid-template-columns: 86px minmax(0, 1fr);
   }
 }
 

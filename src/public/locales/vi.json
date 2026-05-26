@@ -355,7 +355,8 @@
             "history": "Lịch sử",
             "weekly_race": "Đua tuần",
             "clan_race": "Đua hội",
-            "leaderboard": "Bảng xếp hạng"
+            "leaderboard": "Bảng xếp hạng",
+            "rules": "Luật"
         },
         "leaderboard": {
             "title": "Bảng xếp hạng PvP",
@@ -438,6 +439,20 @@
         "elo_needs_recent_match": "Chơi một trận xếp hạng để hiện Elo",
         "rating_established": "Elo đã ổn định",
         "rating_unlock_progress": "{progress}% để mở khóa hạng",
+        "rank_progress_next": "{progress}% tới {rank}",
+        "rank_progress_max": "Đã đạt hạng cao nhất",
+        "rules": {
+            "title": "Luật hạng PvP",
+            "description": "Hạng mở khóa sau khi Elo PvP của chế độ đó đã ổn định.",
+            "unlock_note": "Classic và Platformer dùng Elo riêng. Huy hiệu hạng xuất hiện khi độ lệch Elo của chế độ đó dưới 150.",
+            "rank": "Hạng",
+            "condition": "Điều kiện",
+            "conditions": {
+                "less": "Elo dưới {rating}",
+                "range": "Elo {min}-{max}",
+                "at_least": "Elo từ {rating}"
+            }
+        },
         "ranked": "Xếp hạng",
         "unranked": "Không xếp hạng",
         "match_type": "Loại trận",

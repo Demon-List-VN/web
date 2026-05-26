@@ -4,6 +4,7 @@
 	import * as Card from '$lib/components/ui/card';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import type { PvpLeaderboardPlayer, PvpMode } from '$lib/client/pvp';
+	import { resolvePvpRankBadge } from '$lib/utils/pvpRank';
 	import { _ } from 'svelte-i18n';
 	import { RefreshCw, Trophy } from 'lucide-svelte';
 
@@ -81,7 +82,12 @@
             <div class="leaderboard-row" role="row">
               <span class="leaderboard-rank" role="cell">#{player.rank}</span>
               <span class="leaderboard-player" role="cell">
-                <PlayerLink {player} showAvatar truncate={28} />
+                <PlayerLink
+                  {player}
+                  rankBadge={resolvePvpRankBadge(player, mode)}
+                  showAvatar
+                  truncate={28}
+                />
               </span>
               <span class="leaderboard-rating" role="cell">{
                 player.pvpRating

@@ -27,6 +27,7 @@
 		isPvpMatchConfirmedByBoth,
 		type PvpMatch
 	} from '$lib/client/pvp';
+	import { resolvePvpRankBadge } from '$lib/utils/pvpRank';
 	import { _ } from 'svelte-i18n';
 	import { ArrowRight, Clock, Gauge, Swords, Trophy } from 'lucide-svelte';
 
@@ -205,6 +206,7 @@
           {#if !shouldMaskParticipant(titleLeft) && getPvpParticipantPlayer(titleLeft)?.uid}
             <PlayerLink
               player={getPvpParticipantPlayer(titleLeft)}
+              rankBadge={resolvePvpRankBadge(getPvpParticipantPlayer(titleLeft), matchMode)}
               truncate={18}
             />
           {:else}
@@ -216,6 +218,7 @@
           {#if !shouldMaskParticipant(titleRight) && getPvpParticipantPlayer(titleRight)?.uid}
             <PlayerLink
               player={getPvpParticipantPlayer(titleRight)}
+              rankBadge={resolvePvpRankBadge(getPvpParticipantPlayer(titleRight), matchMode)}
               truncate={18}
             />
           {:else}
@@ -259,7 +262,12 @@
       {#if shouldMaskParticipant(opponent)}
         <strong>{participantName(opponent)}</strong>
       {:else if opponentPlayer?.uid}
-        <PlayerLink player={opponentPlayer} showAvatar truncate={24} />
+        <PlayerLink
+          player={opponentPlayer}
+          rankBadge={resolvePvpRankBadge(opponentPlayer, matchMode)}
+          showAvatar
+          truncate={24}
+        />
       {:else}
         <strong>{$_('pvp.waiting_opponent')}</strong>
       {/if}

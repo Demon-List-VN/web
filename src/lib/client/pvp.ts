@@ -35,9 +35,13 @@ export type PvpPlayer = {
     pvpRatingVolatility?: number | null;
     pvp_rating_volatility?: number | null;
     pvpPlatformerRating?: number | null;
+    pvp_platformer_rating?: number | null;
     pvpPlatformerRatedMatchCount?: number | null;
+    pvp_platformer_rated_match_count?: number | null;
     pvpPlatformerStartingRating?: number | null;
+    pvp_platformer_starting_rating?: number | null;
     pvpPlatformerRatingInitializedAt?: string | null;
+    pvp_platformer_rating_initialized_at?: string | null;
     pvpPlatformerRatingDeviation?: number | null;
     pvp_platformer_rating_deviation?: number | null;
     pvpPlatformerRatingVolatility?: number | null;
@@ -304,6 +308,7 @@ export type PvpMe = {
 
 export type PvpLeaderboardPlayer = PvpPlayer & {
     rank?: number;
+    mode?: PvpMode | string;
     pvpRating: number;
     pvpRatingDeviation?: number | null;
     pvpRatedMatchCount: number;

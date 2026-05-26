@@ -72,6 +72,7 @@
 		subscribeToPvpMatchDetail
 	} from '$lib/client/pvpRealtime';
 	import { playPvpBell } from '$lib/client/pvpSound';
+	import { resolvePvpRankBadge } from '$lib/utils/pvpRank';
 	import Chart from 'chart.js/auto';
 	import { onDestroy, onMount, tick } from 'svelte';
 	import { toast } from 'svelte-sonner';
@@ -2515,6 +2516,7 @@
                           {#if !participantMasked && participantPlayer?.uid}
                             <PlayerLink
                               player={participantPlayer}
+                              rankBadge={resolvePvpRankBadge(participantPlayer, matchMode)}
                               truncate={26}
                             />
                           {:else}
@@ -2908,6 +2910,7 @@
                             {#if !participantMasked && participantPlayer?.uid}
                               <PlayerLink
                                 player={participantPlayer}
+                                rankBadge={resolvePvpRankBadge(participantPlayer, matchMode)}
                                 truncate={22}
                               />
                             {:else}
@@ -3176,6 +3179,7 @@
                             {#if !participantMasked && participantPlayer?.uid}
                               <PlayerLink
                                 player={participantPlayer}
+                                rankBadge={resolvePvpRankBadge(participantPlayer, matchMode)}
                                 truncate={22}
                               />
                             {:else}

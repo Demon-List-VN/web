@@ -3,7 +3,8 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
 	import * as Tabs from '$lib/components/ui/tabs';
-	import type { PvpPlayer, PvpWeeklyRace } from '$lib/client/pvp';
+	import type { PvpMode, PvpPlayer, PvpWeeklyRace } from '$lib/client/pvp';
+	import { resolvePvpRankBadge } from '$lib/utils/pvpRank';
 	import { _, locale } from 'svelte-i18n';
 	import { BookOpen, CalendarDays, RefreshCw, Trophy } from 'lucide-svelte';
 
@@ -14,6 +15,8 @@
 	export let error = '';
 	export let now = Date.now();
 	export let onRefresh: () => void | Promise<void>;
+
+	const WEEKLY_RACE_RANK_MODE: PvpMode = 'classic';
 
 	let activeTab = 'standings';
 
@@ -216,7 +219,12 @@
                   {/if}
                 </span>
                 <span class="leaderboard-player">
-                  <PlayerLink player={userPlayer} showAvatar truncate={28} />
+                  <PlayerLink
+                    player={userPlayer}
+                    rankBadge={resolvePvpRankBadge(userPlayer, WEEKLY_RACE_RANK_MODE)}
+                    showAvatar
+                    truncate={28}
+                  />
                 </span>
                 <strong>{userRaceRow.points}</strong>
                 <strong>{formatWinrate(userRaceRow.winrate)}</strong>
@@ -249,7 +257,12 @@
                         row.rank
                       }</span>
                     <span class="leaderboard-player" role="cell">
-                      <PlayerLink {player} showAvatar truncate={28} />
+                      <PlayerLink
+                        {player}
+                        rankBadge={resolvePvpRankBadge(player, WEEKLY_RACE_RANK_MODE)}
+                        showAvatar
+                        truncate={28}
+                      />
                     </span>
                     <span class="leaderboard-rating" role="cell">{
                       row.points
@@ -279,7 +292,12 @@
                     {@const player = rowPlayer(row)}
                     <div>
                       <span class="leaderboard-rank">#{row.rank}</span>
-                      <PlayerLink {player} showAvatar truncate={24} />
+                      <PlayerLink
+                        {player}
+                        rankBadge={resolvePvpRankBadge(player, WEEKLY_RACE_RANK_MODE)}
+                        showAvatar
+                        truncate={24}
+                      />
                       <strong>{row.points}</strong>
                     </div>
                   {/each}

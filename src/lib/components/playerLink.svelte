@@ -43,7 +43,7 @@
 		}
 		: null;
 	$: resolvedRankBadgeStyle = rankBadge
-		? `background: ${rankBadge.color}`
+		? (rankBadge.style ?? `background: ${rankBadge.color}`)
 		: builtInRankBadge?.title
 		? `background-color: ${builtInRankBadge.color}`
 		: '';
@@ -236,11 +236,17 @@
 }
 
 .rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: white;
   font-size: 10px;
+  min-width: 18px;
   width: fit-content;
   padding-inline: 5px;
   border-radius: 5px;
   font-weight: 600;
+  line-height: 1.45;
+  white-space: nowrap;
 }
 </style>

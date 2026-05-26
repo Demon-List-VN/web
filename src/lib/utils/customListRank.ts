@@ -10,6 +10,7 @@ export type PlayerLinkRankBadge = {
     label: string;
     name: string;
     color: string;
+    style?: string;
 };
 
 export function createEmptyCustomListRankBadge(): CustomListRankBadge {
