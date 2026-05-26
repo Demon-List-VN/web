@@ -15,6 +15,7 @@
 	import * as Alert from '$lib/components/ui/alert';
 	import * as Card from '$lib/components/ui/card';
 	import * as Drawer from '$lib/components/ui/drawer';
+	import { Switch } from '$lib/components/ui/switch';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import { isActive as isSupporterActive } from '$lib/client/isSupporterActive';
 	import {
@@ -158,6 +159,11 @@
 	let preferencesReady = false;
 	let desktopActivityTab = 'chat';
 	let mobileActivityTab = 'chat';
+	let compareGlobalDeathCount = true;
+	let globalDeathCount: number[] = Array(100)
+		.fill(0);
+	let globalDeathCountLoading = false;
+	let loadedGlobalDeathCountLevelId: number | null = null;
 	let banPickDeadlineTimeout: ReturnType<typeof setTimeout> | null = null;
 	let banPickDeadlineKey = '';
 	let mutualRequestExpiryTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -287,7 +293,16 @@
 		orderedParticipants,
 		matchMode
 	);
+	$: deathCountLevelId = getDeathCountLevelId(match);
 	$: deathCountChartData = getDeathCountChartData(orderedParticipants);
+	$: if (
+		compareGlobalDeathCount
+		&& deathCountLevelId
+		&& loadedGlobalDeathCountLevelId !== deathCountLevelId
+		&& !globalDeathCountLoading
+	) {
+		loadGlobalDeathCount(deathCountLevelId);
+	}
 	$: updateBanPickDeadlineCheck(
 		isBanPick,
 		banPick?.turnEndsAt,
@@ -429,6 +444,35 @@
 			);
 		} finally {
 			chatLoading = false;
+		}
+	}
+
+	async function loadGlobalDeathCount(levelId: number) {
+		globalDeathCountLoading = true;
+
+		try {
+			const response = await fetch(
+				`${import.meta.env.VITE_API_URL}/levels/${levelId}/deathCount`
+			);
+
+			if (!response.ok) {
+				throw new Error(await response.text() || 'Failed to load global death count');
+			}
+
+			const data = await response.json();
+			globalDeathCount = normalizeDeathCountArray(data?.count);
+			loadedGlobalDeathCountLevelId = levelId;
+		} catch (error) {
+			loadedGlobalDeathCountLevelId = levelId;
+			globalDeathCount = Array(100)
+				.fill(0);
+			toast.error(
+				error instanceof Error
+					? error.message
+					: $_('pvp.death_count.global_load_failed')
+			);
+		} finally {
+			globalDeathCountLoading = false;
 		}
 	}
 
@@ -2045,6 +2089,20 @@
 					borderColor: color
 				};
 			});
+		if (compareGlobalDeathCount) {
+			const color = chartColor('--secondary-foreground', '#52525b');
+
+			series.push({
+				label: $_('pvp.death_count.global_level'),
+				data: globalDeathCount,
+				backgroundColor: chartAlphaColor(
+					'--secondary-foreground',
+					0.45,
+					'rgba(82, 82, 91, 0.45)'
+				),
+				borderColor: color
+			});
+		}
 		const maxY = Math.max(1, ...series.flatMap((item) => item.data));
 
 		return {
@@ -2176,6 +2234,20 @@
 			barPercentage: 0.9,
 			categoryPercentage: 0.85
 		}));
+	}
+
+	function getDeathCountLevelId(currentMatch: PvpMatch | null = match) {
+		const id = Number(currentMatch?.levelId ?? visibleLevel?.id);
+
+		return Number.isFinite(id) && id > 0 ? id : null;
+	}
+
+	function normalizeDeathCountArray(value: unknown) {
+		return Array.from({ length: 100 }, (_, index) => {
+			const count = Number(Array.isArray(value) ? value[index] : 0);
+
+			return Number.isFinite(count) && count > 0 ? count : 0;
+		});
 	}
 
 	function dismissGeodeAlert() {
@@ -2755,6 +2827,19 @@
                       $_('pvp.death_count.description')
                     }</Card.Description>
                   </div>
+                  <label
+                    class="death-count-compare-toggle"
+                    for="desktop-global-death-count-toggle"
+                  >
+                    <Switch
+                      id="desktop-global-death-count-toggle"
+                      bind:checked={compareGlobalDeathCount}
+                      disabled={matchMode !== 'classic'
+                      || !deathCountLevelId
+                      || globalDeathCountLoading}
+                    />
+                    <span>{$_('pvp.death_count.compare_global')}</span>
+                  </label>
                 </div>
                 {#if matchMode === 'platformer'}
                   <div class="empty-state">
@@ -2819,6 +2904,25 @@
                         </div>
                       </div>
                     {/each}
+                    {#if compareGlobalDeathCount}
+                      <div class="death-count-card global-death-count-card">
+                        <div class="participant-identity">
+                          <div class="global-death-count-dot"></div>
+                          <div class="participant-name">
+                            <Badge variant="outline">
+                              {$_('pvp.death_count.global')}
+                            </Badge>
+                            <strong>{$_('pvp.death_count.global_level')}</strong>
+                          </div>
+                        </div>
+                        <div class="death-count-value">
+                          <strong>{
+                            globalDeathCount.reduce((total, count) => total + count, 0)
+                          }</strong>
+                          <span>{$_('pvp.death_count.count_label')}</span>
+                        </div>
+                      </div>
+                    {/if}
                   </div>
                   {#if deathCountChartData.hasPoints && desktopActivityTab === 'deaths'}
                     <div class="death-count-chart-canvas">
@@ -2992,6 +3096,19 @@
           <Tabs.Content value="deaths" class="mobile-tab-content">
             <div class="mobile-activity-body">
               <div class="death-count-panel">
+                <label
+                  class="death-count-compare-toggle mobile-death-count-compare-toggle"
+                  for="mobile-global-death-count-toggle"
+                >
+                  <Switch
+                    id="mobile-global-death-count-toggle"
+                    bind:checked={compareGlobalDeathCount}
+                    disabled={matchMode !== 'classic'
+                    || !deathCountLevelId
+                    || globalDeathCountLoading}
+                  />
+                  <span>{$_('pvp.death_count.compare_global')}</span>
+                </label>
                 {#if matchMode === 'platformer'}
                   <div class="empty-state">
                     {$_('pvp.death_count.platformer_empty')}
@@ -3055,6 +3172,25 @@
                         </div>
                       </div>
                     {/each}
+                    {#if compareGlobalDeathCount}
+                      <div class="death-count-card global-death-count-card">
+                        <div class="participant-identity">
+                          <div class="global-death-count-dot"></div>
+                          <div class="participant-name">
+                            <Badge variant="outline">
+                              {$_('pvp.death_count.global')}
+                            </Badge>
+                            <strong>{$_('pvp.death_count.global_level')}</strong>
+                          </div>
+                        </div>
+                        <div class="death-count-value">
+                          <strong>{
+                            globalDeathCount.reduce((total, count) => total + count, 0)
+                          }</strong>
+                          <span>{$_('pvp.death_count.count_label')}</span>
+                        </div>
+                      </div>
+                    {/if}
                   </div>
                   {#if deathCountChartData.hasPoints && mobileActivityTab === 'deaths'}
                     <div class="death-count-chart-canvas mobile-death-count-chart-canvas">
@@ -3489,6 +3625,22 @@
   gap: 12px;
 }
 
+.death-count-compare-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.mobile-death-count-compare-toggle {
+  justify-self: start;
+}
+
 .death-count-summary {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3502,6 +3654,18 @@
   border-radius: 8px;
   background: hsl(var(--muted) / 0.25);
   padding: 14px;
+}
+
+.global-death-count-card {
+  background: hsl(var(--secondary) / 0.45);
+}
+
+.global-death-count-dot {
+  width: 36px;
+  height: 36px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 999px;
+  background: hsl(var(--secondary-foreground) / 0.45);
 }
 
 .death-count-value {

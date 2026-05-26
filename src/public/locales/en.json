@@ -488,6 +488,10 @@
             "description": "Classic 1v1 deaths recorded during this match.",
             "empty": "No death count data yet.",
             "platformer_empty": "Death count is only tracked for classic matches.",
+            "compare_global": "Compare global",
+            "global": "Global",
+            "global_level": "Global level deaths",
+            "global_load_failed": "Failed to load global death count",
             "count_label": "deaths",
             "percent_axis": "Percent",
             "deaths_axis": "Deaths"

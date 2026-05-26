@@ -488,6 +488,10 @@
             "description": "Số lần chết classic 1v1 được ghi trong trận này.",
             "empty": "Chưa có dữ liệu số lần chết.",
             "platformer_empty": "Số lần chết chỉ được ghi cho trận classic.",
+            "compare_global": "So sánh global",
+            "global": "Global",
+            "global_level": "Số lần chết global của level",
+            "global_load_failed": "Không tải được số lần chết global",
             "count_label": "lần chết",
             "percent_axis": "Phần trăm",
             "deaths_axis": "Số lần chết"
