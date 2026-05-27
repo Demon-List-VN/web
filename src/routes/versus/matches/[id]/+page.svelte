@@ -5,6 +5,7 @@
 	import Ads from '$lib/components/ads.svelte';
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import BanPickPanel from './components/BanPickPanel.svelte';
+	import MatchReportDialog from './components/MatchReportDialog.svelte';
 	import MatchTopbar from './components/MatchTopbar.svelte';
 	import { user } from '$lib/client';
 	import supabase from '$lib/client/supabase';
@@ -64,6 +65,7 @@
 		type PvpBanPickAction,
 		type PvpMatch,
 		type PvpMatchMessage,
+		type PvpMatchReport,
 		type PvpMode,
 		type PvpParticipant
 	} from '$lib/client/pvp';
@@ -172,6 +174,8 @@
 	let mutualRequestExpiryKey = '';
 	let selectedBanLevelIds: number[] = [];
 	let selectedBanTurnKey = '';
+	let reportDialogOpen = false;
+	let locallyReportedMatchIds = new Set<string>();
 
 	$: matchId = $page.params.id;
 	$: isSpectateRoute = $page.url.searchParams.get('spectate') === '1';
@@ -233,6 +237,10 @@
 		0,
 		(endedMs ? endedMs + POST_MATCH_CHAT_GRACE_MS : now) - now
 	);
+	$: reportWindowRemainingMs = Math.max(
+		0,
+		(endedMs ? endedMs + POST_MATCH_CHAT_GRACE_MS : now) - now
+	);
 	$: acceptanceRemainingMs = Math.max(
 		0,
 		(getPvpMatchAcceptanceExpiresMs(match) ?? now) - now
@@ -246,6 +254,23 @@
 	$: canRematch = Boolean(
 		match && !isActive && selfParticipant && rematchOpponentUid
 	);
+	$: viewerReport = getPvpViewerReport(match);
+	$: hasReportedMatch = Boolean(
+		viewerReport
+		|| match?.reportedByViewer
+		|| match?.reported_by_viewer
+		|| (matchId && locallyReportedMatchIds.has(String(matchId)))
+	);
+	$: reportWindowOpen = Boolean(
+		match
+		&& ['completed', 'cancelled', 'disputed'].includes(status)
+		&& endedMs
+		&& reportWindowRemainingMs > 0
+	);
+	$: canReportMatch = reportWindowOpen
+		&& Boolean(selfParticipant)
+		&& !isSpectator
+		&& !hasReportedMatch;
 	$: canResign = ['in_progress', 'waiting_result'].includes(status)
 		&& remainingMs > 0
 		&& Boolean(selfParticipant);
@@ -961,6 +986,23 @@
 		}
 	}
 
+	function handleReportSubmitted(report: PvpMatchReport) {
+		if (!matchId) {
+			return;
+		}
+
+		locallyReportedMatchIds = new Set(locallyReportedMatchIds)
+			.add(String(matchId));
+
+		if (match) {
+			match = {
+				...match,
+				viewerReport: report,
+				reportedByViewer: true
+			};
+		}
+	}
+
 	async function sendChatMessage() {
 		if (!matchId || chatInputDisabled || actionLoading === 'send-chat' || isSpectator) {
 			return;
@@ -1546,6 +1588,10 @@
 
 	function sameUid(a: unknown, b: unknown) {
 		return Boolean(a && b && String(a) === String(b));
+	}
+
+	function getPvpViewerReport(currentMatch: PvpMatch | null | undefined) {
+		return currentMatch?.viewerReport ?? currentMatch?.viewer_report ?? null;
 	}
 
 	function getBanPickActionForLevel(levelId: number | null | undefined) {
@@ -2359,12 +2405,22 @@
     canRequestLevelChange={canRequestLevelChange && !levelChangeRequestedByUid}
     canRequestBanPickAbort={canRequestBanPickAbort && !banPickAbortRequestedByUid}
     {canResign}
+    canReport={canReportMatch}
+    reportSubmitted={hasReportedMatch}
     onToggleOpponentInfo={() => (hideOpponentInfo = !hideOpponentInfo)}
     onRequestRematch={requestRematch}
     onRequestLevelChange={requestLevelChange}
     onRequestBanPickAbort={requestBanPickAbort}
     onResign={resignMatch}
+    onReport={() => (reportDialogOpen = true)}
     onRefresh={refreshMatch}
+  />
+
+  <MatchReportDialog
+    bind:open={reportDialogOpen}
+    {matchId}
+    remainingMs={reportWindowRemainingMs}
+    onSubmitted={handleReportSubmitted}
   />
 
   <div class="pvp-match-ad-slot">

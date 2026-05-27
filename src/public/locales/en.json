@@ -332,6 +332,21 @@
         "ban_pick_abort_request_confirm": "Request to abort this match? The match will be cancelled only if your opponent agrees.",
         "ban_pick_abort_agree_confirm": "Agree to abort this match? This will cancel the match.",
         "resign_confirm": "Resign this match? Your opponent will receive the win.",
+        "report": {
+            "button": "Report",
+            "title": "Report match",
+            "description": "Choose a reason before the report window closes in {time}.",
+            "reason": "Reason",
+            "submit": "Submit report",
+            "submitted": "Reported",
+            "success": "Report submitted. Thank you.",
+            "failed": "Failed to submit report.",
+            "limit_hint": "You can report each match once.",
+            "reasons": {
+                "cheating": "Cheating",
+                "abusive_communication": "Abusive communication"
+            }
+        },
         "sign_in_title": "Sign in to enter 1v1 Versus",
         "sign_in_hint": "1v1 Versus matchmaking and invites are tied to your GDVN player account.",
         "options": "Options",

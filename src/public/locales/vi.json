@@ -332,6 +332,21 @@
         "ban_pick_abort_request_confirm": "Yêu cầu hủy trận này? Trận chỉ bị hủy nếu đối thủ đồng ý.",
         "ban_pick_abort_agree_confirm": "Đồng ý hủy trận này? Trận sẽ bị hủy.",
         "resign_confirm": "Đầu hàng trận này? Đối thủ của bạn sẽ được tính thắng.",
+        "report": {
+            "button": "Báo cáo",
+            "title": "Báo cáo trận đấu",
+            "description": "Chọn lý do trước khi cửa sổ báo cáo đóng sau {time}.",
+            "reason": "Lý do",
+            "submit": "Gửi báo cáo",
+            "submitted": "Đã báo cáo",
+            "success": "Đã gửi báo cáo. Cảm ơn bạn.",
+            "failed": "Gửi báo cáo thất bại.",
+            "limit_hint": "Bạn chỉ có thể báo cáo mỗi trận một lần.",
+            "reasons": {
+                "cheating": "Gian lận",
+                "abusive_communication": "Giao tiếp xúc phạm"
+            }
+        },
         "sign_in_title": "Đăng nhập để vào 1v1 Versus",
         "sign_in_hint": "Ghép trận và lời mời 1v1 Versus dùng tài khoản GDVN của bạn.",
         "options": "Tùy chọn",

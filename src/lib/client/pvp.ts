@@ -19,6 +19,7 @@ export type PvpInviteStatus =
     | 'cancelled'
     | string;
 export type PvpQueueStatus = 'idle' | 'searching' | 'matched' | 'cancelled' | 'expired' | string;
+export type PvpMatchReportReason = 'cheating' | 'abusive_communication';
 
 export type PvpPlayer = {
     uid?: string;
@@ -202,6 +203,10 @@ export type PvpMatch = {
     selectedLevel?: PvpLevel | null;
     banPick?: PvpBanPick | null;
     ban_pick?: PvpBanPick | null;
+    viewerReport?: PvpMatchReport | null;
+    viewer_report?: PvpMatchReport | null;
+    reportedByViewer?: boolean;
+    reported_by_viewer?: boolean;
     participants?: PvpParticipant[];
     results?: PvpResult[];
     [key: string]: unknown;
@@ -226,6 +231,17 @@ export type PvpMatchMessage = {
     player?: PvpPlayer | null;
     senderAnonymous?: boolean;
     sender_anonymous?: boolean;
+    [key: string]: unknown;
+};
+
+export type PvpMatchReport = {
+    id?: number | string;
+    matchId?: number | string;
+    match_id?: number | string;
+    uid?: string;
+    reason?: PvpMatchReportReason | string;
+    resolved?: boolean;
+    created_at?: string;
     [key: string]: unknown;
 };
 
@@ -791,6 +807,18 @@ export async function sendPvpMatchMessage(
         method: 'POST',
         token,
         body: { content }
+    });
+}
+
+export async function reportPvpMatch(
+    token: string | null | undefined,
+    id: number | string,
+    reason: PvpMatchReportReason
+) {
+    return pvpRequest<PvpMatchReport>(`/pvp/matches/${id}/report`, {
+        method: 'POST',
+        token,
+        body: { reason }
     });
 }
 

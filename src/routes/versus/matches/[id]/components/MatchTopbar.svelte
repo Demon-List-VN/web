@@ -2,12 +2,14 @@
 	import { Button } from '$lib/components/ui/button';
 	import {
 		ArrowLeft,
+		Check,
 		Eye,
 		EyeOff,
 		Flag,
 		Loader2,
 		RefreshCw,
 		Send,
+		ShieldAlert,
 		Shuffle,
 		X
 	} from 'lucide-svelte';
@@ -22,12 +24,15 @@
 	export let canRequestLevelChange = false;
 	export let canRequestBanPickAbort = false;
 	export let canResign = false;
+	export let canReport = false;
+	export let reportSubmitted = false;
 
 	export let onToggleOpponentInfo: () => void = () => {};
 	export let onRequestRematch: () => void = () => {};
 	export let onRequestLevelChange: () => void = () => {};
 	export let onRequestBanPickAbort: () => void = () => {};
 	export let onResign: () => void = () => {};
+	export let onReport: () => void = () => {};
 	export let onRefresh: () => void = () => {};
 </script>
 
@@ -112,6 +117,22 @@
             <Flag class="mr-2 h-4 w-4" />
           {/if}
           {$_('pvp.resign')}
+        </Button>
+      {/if}
+
+      {#if canReport || reportSubmitted}
+        <Button
+          variant="outline"
+          disabled={reportSubmitted || Boolean(actionLoading) || loading}
+          on:click={onReport}
+        >
+          {#if reportSubmitted}
+            <Check class="mr-2 h-4 w-4" />
+            {$_('pvp.report.submitted')}
+          {:else}
+            <ShieldAlert class="mr-2 h-4 w-4" />
+            {$_('pvp.report.button')}
+          {/if}
         </Button>
       {/if}
 
