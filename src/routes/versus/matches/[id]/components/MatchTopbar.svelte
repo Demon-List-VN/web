@@ -33,9 +33,9 @@
 
 <section class="match-topbar">
   <div>
-    <a class="back-link" href="/versus/matches">
+    <a class="back-link" href="/versus/play">
       <ArrowLeft class="h-4 w-4" />
-      {$_('pvp.matches_title')}
+      {$_('pvp.lobby_title')}
     </a>
     <h1>{title}</h1>
   </div>
