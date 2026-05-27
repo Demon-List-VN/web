@@ -93,6 +93,26 @@ export function resolvePlayerCardStatLineIds(
     return configured.filter((id) => summaryIds.has(id));
 }
 
+export function resolveDefaultPlayerCardStatLineIds(
+    listSummaries: PlayerRankedListSummary[]
+): number[] {
+    const summariesBySlug = new Map<string, PlayerRankedListSummary>();
+
+    for (const summary of listSummaries) {
+        const slug = summary.slug || summary.identifier;
+
+        if (!summary.isOfficial || !slug || summariesBySlug.has(slug)) {
+            continue;
+        }
+
+        summariesBySlug.set(slug, summary);
+    }
+
+    return DEFAULT_PLAYER_CARD_STAT_LINE_SLUGS
+        .map((slug) => summariesBySlug.get(slug)?.id)
+        .filter((id): id is number => typeof id === 'number' && Number.isFinite(id));
+}
+
 export function buildPlayerCardStatLineOptions(
     listSummaries: PlayerRankedListSummary[]
 ): PlayerCardStatLineOption[] {

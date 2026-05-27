@@ -27,12 +27,12 @@
 	} from '$lib/client/supporterTier';
 	import type { PlayerRankedListSummary } from '$lib/types/playerRankedList';
 	import {
-		DEFAULT_PLAYER_CARD_STAT_LINE_SLUGS,
 		normalizePlayerCardStatLines,
+		PLAYER_CARD_STAT_LINE_COUNT,
+		resolveDefaultPlayerCardStatLineIds,
 		resolvePlayerCardStatLineIds,
 		shouldShowPlayerCardEloStat,
-		shouldShowPlayerCardPvpEloStat,
-		type DefaultPlayerCardStatLineSlug
+		shouldShowPlayerCardPvpEloStat
 	} from '$lib/utils/playerCardStatLines';
 	import {
 		normalizeCustomListRankBadges,
@@ -72,31 +72,40 @@
 	$: exp = (cardPlayer?.exp ?? 0) + (cardPlayer?.extraExp ?? 0);
 	$: expLevel = getExpLevel(exp);
 	$: summaries = listSummaries ?? remoteSummaries;
+	$: hasLoadedListSummaries = listSummaries !== null || hasLoadedRemote;
 	$: configuredStatLineIds = hasKnownPlayerCardStatLines
 		? normalizePlayerCardStatLines(cardPlayer?.playerCardStatLines)
 		: [];
+	$: defaultStatLineIds = resolveDefaultPlayerCardStatLineIds(summaries);
 	$: showEloStat = shouldShowPlayerCardEloStat(cardPlayer?.overviewData);
 	$: showPvpEloStat = shouldShowPlayerCardPvpEloStat(cardPlayer?.overviewData);
+	$: contestEloValue = getContestEloValue(cardPlayer);
+	$: isContestEloLoading = active
+		&& Boolean(player?.uid)
+		&& contestEloValue === null
+		&& !settingsLoadFailed
+		&& (isLoadingPlayerSettings
+			|| (hydratedPlayer === null && !hasKnownPlayerCardStatLines));
+	$: contestTitle = contestEloValue === null
+		? null
+		: getTitle('elo', cardPlayer);
+	$: playerCardStyle = getPlayerCardStyle(cardPlayer);
 	$: hasConfiguredStatLines = hasKnownPlayerCardStatLines
 		&& configuredStatLineIds.length > 0;
 	$: effectiveStatLineIds = resolvePlayerCardStatLineIds(
-		configuredStatLineIds,
+		hasConfiguredStatLines ? configuredStatLineIds : defaultStatLineIds,
 		summaries
 	);
-	$: resolvedStatLines = hasConfiguredStatLines
-		? effectiveStatLineIds
-			.map((id) => resolvePlayerCardStatLine(id))
-			.filter((line): line is NonNullable<typeof line> => line !== null)
-		: DEFAULT_PLAYER_CARD_STAT_LINE_SLUGS.map((slug) =>
-			resolveDefaultPlayerCardStatLine(slug, $_)
-		);
+	$: resolvedStatLines = effectiveStatLineIds
+		.map((id) => resolvePlayerCardStatLine(id))
+		.filter((line): line is NonNullable<typeof line> => line !== null);
 	$: showStatLineSkeleton = active
 		&& ((!hasKnownPlayerCardStatLines && !settingsLoadFailed)
-			|| (hasConfiguredStatLines && listSummaries === null && !hasLoadedRemote
+			|| (Boolean(cardPlayer?.uid) && !hasLoadedListSummaries
 				&& !listLoadFailed));
 	$: statLineSkeletonCount = hasConfiguredStatLines
 		? configuredStatLineIds.length
-		: DEFAULT_PLAYER_CARD_STAT_LINE_SLUGS.length;
+		: PLAYER_CARD_STAT_LINE_COUNT;
 	$: statLineSkeletons = Array.from(
 		{ length: statLineSkeletonCount },
 		(_, index) => index
@@ -112,14 +121,13 @@
 	}
 	$: if (
 		active
-		&& hasConfiguredStatLines
 		&& listSummaries === null
-		&& cardPlayer?.uid
+		&& player?.uid
 		&& !hasLoadedRemote
 		&& !isLoadingLists
 		&& !listLoadFailed
 	) {
-		void loadPlayerRankedLists(cardPlayer.uid);
+		void loadPlayerRankedLists(player.uid);
 	}
 
 	async function loadPlayerCardSettings(uid: string) {
@@ -159,7 +167,13 @@
 			const response = await fetch(
 				`${import.meta.env.VITE_API_URL}/players/${uid}/lists`
 			);
-			remoteSummaries = await response.json();
+
+			if (!response.ok) {
+				throw new Error('Failed to load player ranked lists');
+			}
+
+			const summaries = await response.json();
+			remoteSummaries = Array.isArray(summaries) ? summaries : [];
 			hasLoadedRemote = true;
 		} catch {
 			listLoadFailed = true;
@@ -203,47 +217,84 @@
 		};
 	}
 
-	function resolveDefaultPlayerCardStatLine(
-		slug: DefaultPlayerCardStatLineSlug,
-		translate: (id: string) => string
-	) {
-		switch (slug) {
-			case 'pl':
-				return {
-					label: translate('player_card.plat_rating'),
-					value: formatScore(cardPlayer?.plRating ?? 0),
-					rank: formatRank(cardPlayer?.plrank),
-					valueStyle: '',
-					tooltip: null
-				};
-			case 'cl':
-				return {
-					label: translate('player_card.challenge_rating'),
-					value: formatScore(cardPlayer?.clRating ?? 0),
-					rank: formatRank(cardPlayer?.clrank),
-					valueStyle: '',
-					tooltip: null
-				};
-			case 'fl':
-				return {
-					label: translate('player_card.featured'),
-					value: formatScore(cardPlayer?.totalFLpt ?? 0),
-					rank: formatRank(cardPlayer?.flrank),
-					valueStyle: '',
-					tooltip: null
-				};
-			case 'dl':
-			default:
-				return {
-					label: translate('player_card.rating'),
-					value: formatScore(
-						cardPlayer?.rating ?? cardPlayer?.totalDLpt ?? 0
-					),
-					rank: formatRank(cardPlayer?.overallRank ?? cardPlayer?.dlrank),
-					valueStyle: '',
-					tooltip: null
-				};
+	function getContestEloValue(player: any) {
+		const value = player?.elo;
+
+		return value === null || value === undefined || value === ''
+			? null
+			: String(value);
+	}
+
+	function shouldDimContestElo(player: any) {
+		const matchCount = Number(player?.matchCount);
+
+		return Number.isFinite(matchCount) && matchCount < 5;
+	}
+
+	function getPlayerCardStyle(player: any) {
+		const styles: string[] = [];
+
+		if (player?.bgColor) {
+			styles.push(`background-color: ${player.bgColor}`);
+			styles.push('color: white');
 		}
+
+		if (player?.borderColor) {
+			styles.push(`border-color: ${player.borderColor}`);
+		}
+
+		return styles.join('; ');
+	}
+
+	function getOuterHeight(node: HTMLElement) {
+		return node.getBoundingClientRect().height;
+	}
+
+	function animateCardResize(node: HTMLElement) {
+		const content = node.firstElementChild as HTMLElement | null;
+
+		if (!content || typeof ResizeObserver === 'undefined' || !node.animate) {
+			return {};
+		}
+
+		const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+		let previousHeight = getOuterHeight(content);
+		let animation: Animation | null = null;
+
+		const observer = new ResizeObserver(() => {
+			const nextHeight = getOuterHeight(content);
+
+			if (
+				reduceMotion.matches || previousHeight === 0
+				|| Math.abs(nextHeight - previousHeight) < 1
+			) {
+				previousHeight = nextHeight;
+
+				return;
+			}
+
+			animation?.cancel();
+			animation = node.animate(
+				[
+					{ height: `${previousHeight}px` },
+					{ height: `${nextHeight}px` }
+				],
+				{
+					duration: 220,
+					easing: 'cubic-bezier(0.22, 1, 0.36, 1)'
+				}
+			);
+			previousHeight = nextHeight;
+		});
+
+		observer.observe(content);
+
+		return {
+			destroy() {
+				animation?.cancel();
+				observer.disconnect();
+			}
+		};
 	}
 
 	function getPvpRatingValue(player: any) {
@@ -275,13 +326,10 @@
 	}
 </script>
 
+<div class="playerCardFrame" use:animateCardResize>
 <div
-  class="relative z-0 overflow-hidden rounded-md border-[1px] p-[12px]"
-  style={cardPlayer.bgColor || cardPlayer.borderColor
-  ? `background-color: ${cardPlayer.bgColor}; border-color: ${cardPlayer.borderColor}; ${
-      cardPlayer.bgColor ? 'color: white' : ''
-  }`
-  : ''}
+  class="playerCardRoot relative z-0 overflow-hidden rounded-md border-[1px] p-[12px]"
+  style={playerCardStyle}
 >
   {#if isActive(cardPlayer.supporterUntil) && !isBannerFailedToLoad}
     <img
@@ -387,25 +435,33 @@
 
     {#if showEloStat}
       <div class="rating">
-        <Tooltip.Root>
-          <Tooltip.Trigger>
-            <div class="leftCol">
-              <div
-                class="title"
-                style={`background-color: ${getTitle('elo', cardPlayer)?.color}`}
-              >
-                {#if cardPlayer.matchCount < 5}
-                  <span class="opacity-50">{`${cardPlayer.elo}?`}</span>
-                {:else}
-                  {cardPlayer.elo}
-                {/if}
+        {#if isContestEloLoading}
+          <div class="leftCol">
+            <Skeleton class="h-[18px] w-[38px] rounded-[4px]" />
+          </div>
+        {:else}
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <div class="leftCol">
+                <div
+                  class="title"
+                  style={contestTitle?.color
+                  ? `background-color: ${contestTitle.color}`
+                  : ''}
+                >
+                  {#if shouldDimContestElo(cardPlayer) && contestEloValue !== null}
+                    <span class="opacity-50">{contestEloValue}?</span>
+                  {:else}
+                    {contestEloValue ?? '-'}
+                  {/if}
+                </div>
               </div>
-            </div>
-          </Tooltip.Trigger>
-          <Tooltip.Content>{
-            getTitle('elo', cardPlayer)?.fullTitle
-          }</Tooltip.Content>
-        </Tooltip.Root>
+            </Tooltip.Trigger>
+            {#if contestTitle?.fullTitle}
+              <Tooltip.Content>{contestTitle.fullTitle}</Tooltip.Content>
+            {/if}
+          </Tooltip.Root>
+        {/if}
         <div class="rankWrapper">{$_('player_card.contest')}</div>
       </div>
     {/if}
@@ -421,8 +477,20 @@
     {/if}
   </div>
 </div>
+</div>
 
 <style lang="scss">
+.playerCardFrame {
+  overflow: hidden;
+}
+
+.playerCardRoot {
+  transition:
+    background-color 260ms ease,
+    border-color 260ms ease,
+    color 260ms ease;
+}
+
 .bgGradient {
   margin-top: -50px;
   mask-image: linear-gradient(
@@ -537,5 +605,11 @@
   padding-inline: 5px;
   border-radius: 5px;
   font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .playerCardRoot {
+    transition: none;
+  }
 }
 </style>

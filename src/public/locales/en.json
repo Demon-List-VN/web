@@ -310,7 +310,7 @@
         "winner_named": "Winner: {name}",
         "geode_alert": {
             "title": "GDVN Geode mod required",
-            "description": "To play 1v1 Versus, install GDVN Geode mod version 5.0.3 or newer.",
+            "description": "To play 1v1 Versus, install GDVN Geode mod",
             "release_page": "Release page",
             "dismiss": "Dismiss"
         },

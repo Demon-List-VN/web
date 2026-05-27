@@ -310,7 +310,7 @@
         "winner_named": "Người thắng: {name}",
         "geode_alert": {
             "title": "Cần cài GDVN Geode mod",
-            "description": "Để chơi 1v1 Versus, hãy cài GDVN Geode mod phiên bản 5.0.3 trở lên.",
+            "description": "Để chơi 1v1 Versus, hãy cài GDVN Geode mod",
             "release_page": "Trang phát hành",
             "dismiss": "Đóng"
         },
