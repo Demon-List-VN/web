@@ -38,7 +38,6 @@
 		getPvpMessageSenderIsAnonymous,
 		getPvpOpponent,
 		getPvpParticipants,
-		getPvpDeathCount,
 		getPvpDeathCountArray,
 		getPvpParticipantIsAnonymous,
 		getPvpParticipantPlayer,
@@ -167,10 +166,14 @@
 	let mobileActivityTab = 'chat';
 	let compareGlobalDeathCount = true;
 	let deathCountShowRate = false;
+	let comparePlayerGlobalDeathCount = false;
 	let globalDeathCount: number[] = Array(100)
 		.fill(0);
 	let globalDeathCountLoading = false;
 	let loadedGlobalDeathCountLevelId: number | null = null;
+	let playerGlobalDeathCounts: Record<string, number[]> = {};
+	let playerGlobalDeathCountLoading = false;
+	let loadedPlayerGlobalDeathCountKey = '';
 	let banPickDeadlineTimeout: ReturnType<typeof setTimeout> | null = null;
 	let banPickDeadlineKey = '';
 	let mutualRequestExpiryTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -338,13 +341,27 @@
 		matchMode
 	);
 	$: deathCountLevelId = getDeathCountLevelId(match);
+	$: deathCountParticipantUids = getDeathCountParticipantUids(
+		orderedParticipants
+	);
+	$: playerGlobalDeathCountLoadKey = deathCountLevelId
+		&& deathCountParticipantUids.length > 0
+		? `${deathCountLevelId}:${deathCountParticipantUids.join(',')}`
+		: '';
+	$: playerGlobalDeathCountsReady = Boolean(
+		playerGlobalDeathCountLoadKey
+		&& loadedPlayerGlobalDeathCountKey === playerGlobalDeathCountLoadKey
+	);
 	$: deathCountChartData = getDeathCountChartData(
 		orderedParticipants,
 		compareGlobalDeathCount,
 		globalDeathCount,
 		hideOpponentInfo,
 		currentUid,
-		deathCountShowRate
+		deathCountShowRate,
+		comparePlayerGlobalDeathCount,
+		playerGlobalDeathCounts,
+		playerGlobalDeathCountsReady
 	);
 	$: if (
 		compareGlobalDeathCount
@@ -353,6 +370,19 @@
 		&& !globalDeathCountLoading
 	) {
 		loadGlobalDeathCount(deathCountLevelId);
+	}
+	$: if (
+		comparePlayerGlobalDeathCount
+		&& deathCountLevelId
+		&& playerGlobalDeathCountLoadKey
+		&& loadedPlayerGlobalDeathCountKey !== playerGlobalDeathCountLoadKey
+		&& !playerGlobalDeathCountLoading
+	) {
+		loadPlayerGlobalDeathCounts(
+			deathCountLevelId,
+			deathCountParticipantUids,
+			playerGlobalDeathCountLoadKey
+		);
 	}
 	$: updateBanPickDeadlineCheck(
 		isBanPick,
@@ -532,6 +562,58 @@
 			);
 		} finally {
 			globalDeathCountLoading = false;
+		}
+	}
+
+	async function loadPlayerGlobalDeathCounts(
+		levelId: number,
+		uids: string[],
+		loadKey: string
+	) {
+		playerGlobalDeathCountLoading = true;
+
+		try {
+			const entries = await Promise.all(
+				uids.map(async (uid) => {
+					const response = await fetch(
+						`${import.meta.env.VITE_API_URL}/deathCount/${
+							encodeURIComponent(uid)
+						}/${levelId}`
+					);
+
+					if (!response.ok) {
+						throw new Error(
+							await response.text() || 'Failed to load player global death count'
+						);
+					}
+
+					const data = await response.json();
+
+					return [uid, normalizeDeathCountArray(data?.count)] as const;
+				})
+			);
+
+			playerGlobalDeathCounts = {
+				...playerGlobalDeathCounts,
+				...Object.fromEntries(entries)
+			};
+			loadedPlayerGlobalDeathCountKey = loadKey;
+		} catch (error) {
+			playerGlobalDeathCounts = {
+				...playerGlobalDeathCounts,
+				...Object.fromEntries(
+					uids.map((uid) => [uid, Array(100)
+						.fill(0)])
+				)
+			};
+			loadedPlayerGlobalDeathCountKey = loadKey;
+			toast.error(
+				error instanceof Error
+					? error.message
+					: $_('pvp.death_count.player_global_load_failed')
+			);
+		} finally {
+			playerGlobalDeathCountLoading = false;
 		}
 	}
 
@@ -2161,7 +2243,10 @@
 		levelDeathCount = globalDeathCount,
 		maskOpponentInfo = hideOpponentInfo,
 		viewerUid = currentUid,
-		showRate = deathCountShowRate
+		showRate = deathCountShowRate,
+		usePlayerGlobalDeathCount = comparePlayerGlobalDeathCount,
+		playerDeathCounts = playerGlobalDeathCounts,
+		playerDeathCountsReady = playerGlobalDeathCountsReady
 	): DeathCountChartData {
 		const labels = Array.from({ length: 100 }, (_, index) => `${index}%`);
 		const series = items.slice(0, 2)
@@ -2169,7 +2254,14 @@
 				const color = index === 0
 					? chartColor('--primary', '#2563eb')
 					: chartColor('--destructive', '#dc2626');
-				const deathCounts = getPvpDeathCountArray(participant);
+				const uid = getPvpParticipantUid(participant);
+				const deathCounts = usePlayerGlobalDeathCount
+					? playerDeathCountsReady && uid
+						? playerDeathCounts[String(uid)] ?? Array(100)
+							.fill(0)
+						: Array(100)
+							.fill(0)
+					: getPvpDeathCountArray(participant);
 
 				return {
 					label: participantName(participant, maskOpponentInfo, viewerUid)
@@ -2384,6 +2476,31 @@
 				$_('pvp.death_count.count_label')
 			}`;
 		};
+	}
+
+	function getDeathCountParticipantUids(items: PvpParticipant[]) {
+		return Array.from(
+			new Set(
+				items
+					.slice(0, 2)
+					.map((participant) => getPvpParticipantUid(participant))
+					.filter((uid): uid is string => Boolean(uid))
+					.map((uid) => String(uid))
+			)
+		);
+	}
+
+	function getDisplayedParticipantDeathCount(participant: PvpParticipant) {
+		const uid = getPvpParticipantUid(participant);
+		const deathCounts = comparePlayerGlobalDeathCount
+			? playerGlobalDeathCountsReady && uid
+				? playerGlobalDeathCounts[String(uid)] ?? Array(100)
+					.fill(0)
+				: Array(100)
+					.fill(0)
+			: getPvpDeathCountArray(participant);
+
+		return deathCounts.reduce((total, count) => total + count, 0);
 	}
 
 	function getDeathCountLevelId(currentMatch: PvpMatch | null = match) {
@@ -3003,6 +3120,19 @@
                     </label>
                     <label
                       class="death-count-toggle"
+                      for="desktop-player-global-death-count-toggle"
+                    >
+                      <Switch
+                        id="desktop-player-global-death-count-toggle"
+                        bind:checked={comparePlayerGlobalDeathCount}
+                        disabled={matchMode !== 'classic'
+                        || !deathCountLevelId
+                        || playerGlobalDeathCountLoading}
+                      />
+                      <span>{$_('pvp.death_count.compare_player_global')}</span>
+                    </label>
+                    <label
+                      class="death-count-toggle"
                       for="desktop-global-death-count-toggle"
                     >
                       <Switch
@@ -3075,7 +3205,7 @@
                           </div>
                         </div>
                         <div class="death-count-value">
-                          <strong>{getPvpDeathCount(participant)}</strong>
+                          <strong>{getDisplayedParticipantDeathCount(participant)}</strong>
                           <span>{$_('pvp.death_count.count_label')}</span>
                         </div>
                       </div>
@@ -3287,6 +3417,19 @@
                   </label>
                   <label
                     class="death-count-toggle"
+                    for="mobile-player-global-death-count-toggle"
+                  >
+                    <Switch
+                      id="mobile-player-global-death-count-toggle"
+                      bind:checked={comparePlayerGlobalDeathCount}
+                      disabled={matchMode !== 'classic'
+                      || !deathCountLevelId
+                      || playerGlobalDeathCountLoading}
+                    />
+                    <span>{$_('pvp.death_count.compare_player_global')}</span>
+                  </label>
+                  <label
+                    class="death-count-toggle"
                     for="mobile-global-death-count-toggle"
                   >
                     <Switch
@@ -3358,7 +3501,7 @@
                           </div>
                         </div>
                         <div class="death-count-value">
-                          <strong>{getPvpDeathCount(participant)}</strong>
+                          <strong>{getDisplayedParticipantDeathCount(participant)}</strong>
                           <span>{$_('pvp.death_count.count_label')}</span>
                         </div>
                       </div>
