@@ -133,11 +133,13 @@
 		datasets: Array<{
 			label: string;
 			data: number[];
+			rawData: number[];
 			backgroundColor: string;
 			borderColor: string;
 		}>;
 		hasPoints: boolean;
 		maxY: number;
+		showRate: boolean;
 	};
 
 	let match: PvpMatch | null = null;
@@ -164,6 +166,7 @@
 	let desktopActivityTab = 'chat';
 	let mobileActivityTab = 'chat';
 	let compareGlobalDeathCount = true;
+	let deathCountShowRate = false;
 	let globalDeathCount: number[] = Array(100)
 		.fill(0);
 	let globalDeathCountLoading = false;
@@ -335,7 +338,14 @@
 		matchMode
 	);
 	$: deathCountLevelId = getDeathCountLevelId(match);
-	$: deathCountChartData = getDeathCountChartData(orderedParticipants);
+	$: deathCountChartData = getDeathCountChartData(
+		orderedParticipants,
+		compareGlobalDeathCount,
+		globalDeathCount,
+		hideOpponentInfo,
+		currentUid,
+		deathCountShowRate
+	);
 	$: if (
 		compareGlobalDeathCount
 		&& deathCountLevelId
@@ -2146,7 +2156,12 @@
 	}
 
 	function getDeathCountChartData(
-		items: PvpParticipant[] = orderedParticipants
+		items: PvpParticipant[] = orderedParticipants,
+		includeGlobal = compareGlobalDeathCount,
+		levelDeathCount = globalDeathCount,
+		maskOpponentInfo = hideOpponentInfo,
+		viewerUid = currentUid,
+		showRate = deathCountShowRate
 	): DeathCountChartData {
 		const labels = Array.from({ length: 100 }, (_, index) => `${index}%`);
 		const series = items.slice(0, 2)
@@ -2154,37 +2169,60 @@
 				const color = index === 0
 					? chartColor('--primary', '#2563eb')
 					: chartColor('--destructive', '#dc2626');
+				const deathCounts = getPvpDeathCountArray(participant);
 
 				return {
-					label: participantName(participant, hideOpponentInfo, currentUid)
+					label: participantName(participant, maskOpponentInfo, viewerUid)
 						?? '',
-					data: getPvpDeathCountArray(participant),
+					data: getPvpDeathCountChartValues(deathCounts, showRate),
+					rawData: deathCounts,
 					backgroundColor: color,
 					borderColor: color
 				};
 			});
-		if (compareGlobalDeathCount) {
-			const color = chartColor('--secondary-foreground', '#52525b');
+
+		if (includeGlobal) {
+			const color = chartColor('--pvp-global-death-count', '#2563eb');
 
 			series.push({
 				label: $_('pvp.death_count.global_level'),
-				data: globalDeathCount,
+				data: getPvpDeathCountChartValues(levelDeathCount, showRate),
+				rawData: levelDeathCount,
 				backgroundColor: chartAlphaColor(
-					'--secondary-foreground',
-					0.45,
-					'rgba(82, 82, 91, 0.45)'
+					'--pvp-global-death-count',
+					0.38,
+					'rgba(37, 99, 235, 0.38)'
 				),
 				borderColor: color
 			});
 		}
+
 		const maxY = Math.max(1, ...series.flatMap((item) => item.data));
 
 		return {
 			labels,
 			datasets: series,
-			hasPoints: series.some((item) => item.data.some((count) => count > 0)),
-			maxY
+			hasPoints: series.some((item) => item.rawData.some((count) => count > 0)),
+			maxY,
+			showRate
 		};
+	}
+
+	function getPvpDeathCountChartValues(deathCounts: number[], showRate: boolean) {
+		if (!showRate) {
+			return deathCounts;
+		}
+
+		const totalDeaths = deathCounts.reduce((total, count) => total + count, 0);
+
+		if (totalDeaths <= 0) {
+			return deathCounts.map(() => 0);
+		}
+
+		return deathCounts.map((count) =>
+			Number(((count / totalDeaths) * 100)
+				.toFixed(2))
+		);
 	}
 
 	function createDeathCountChart(
@@ -2207,6 +2245,12 @@
 				chart.data.labels = nextData.labels;
 				chart.data.datasets = getDeathCountChartDatasets(nextData);
 				chart.options.scales!.y!.max = nextData.maxY;
+				chart.options.scales!.y!.title!.text =
+					getDeathCountYAxisLabel(nextData);
+				chart.options.scales!.y!.ticks!.callback =
+					getDeathCountYAxisTick(nextData);
+				chart.options.plugins!.tooltip!.callbacks!.label =
+					getDeathCountTooltipLabel(nextData);
 				chart.update();
 			},
 			destroy() {
@@ -2256,7 +2300,7 @@
 						max: data.maxY,
 						title: {
 							display: true,
-							text: $_('pvp.death_count.deaths_axis'),
+							text: getDeathCountYAxisLabel(data),
 							color: chartColor('--muted-foreground', '#71717a')
 						},
 						border: {
@@ -2271,7 +2315,8 @@
 						},
 						ticks: {
 							color: chartColor('--muted-foreground', '#71717a'),
-							precision: 0
+							precision: data.showRate ? 2 : 0,
+							callback: getDeathCountYAxisTick(data)
 						}
 					}
 				},
@@ -2286,10 +2331,7 @@
 					},
 					tooltip: {
 						callbacks: {
-							label: (context) =>
-								`${context.dataset.label}: ${context.parsed.y} ${
-									$_('pvp.death_count.count_label')
-								}`
+							label: getDeathCountTooltipLabel(data)
 						}
 					}
 				}
@@ -2308,6 +2350,40 @@
 			barPercentage: 0.9,
 			categoryPercentage: 0.85
 		}));
+	}
+
+	function getDeathCountYAxisLabel(data: DeathCountChartData) {
+		return data.showRate
+			? $_('pvp.death_count.rate_axis')
+			: $_('pvp.death_count.deaths_axis');
+	}
+
+	function getDeathCountYAxisTick(data: DeathCountChartData) {
+		return (value: string | number) =>
+			data.showRate
+				? `${Number(value)
+					.toFixed(0)}%`
+				: `${value}`;
+	}
+
+	function getDeathCountTooltipLabel(data: DeathCountChartData) {
+		return (
+			context: { dataset: { label?: string; }; datasetIndex: number; dataIndex: number; parsed: { y: number; }; }
+		) => {
+			const rawCount = data.datasets[context.datasetIndex]?.rawData[
+				context.dataIndex
+			] ?? 0;
+
+			if (data.showRate) {
+				return `${context.dataset.label}: ${context.parsed.y.toFixed(2)}% (${
+					rawCount
+				} ${$_('pvp.death_count.count_label')})`;
+			}
+
+			return `${context.dataset.label}: ${rawCount} ${
+				$_('pvp.death_count.count_label')
+			}`;
+		};
 	}
 
 	function getDeathCountLevelId(currentMatch: PvpMatch | null = match) {
@@ -2912,19 +2988,33 @@
                       $_('pvp.death_count.description')
                     }</Card.Description>
                   </div>
-                  <label
-                    class="death-count-compare-toggle"
-                    for="desktop-global-death-count-toggle"
-                  >
-                    <Switch
-                      id="desktop-global-death-count-toggle"
-                      bind:checked={compareGlobalDeathCount}
-                      disabled={matchMode !== 'classic'
-                      || !deathCountLevelId
-                      || globalDeathCountLoading}
-                    />
-                    <span>{$_('pvp.death_count.compare_global')}</span>
-                  </label>
+                  <div class="death-count-controls">
+                    <label
+                      class="death-count-toggle"
+                      for="desktop-death-count-rate-toggle"
+                    >
+                      <span>{$_('pvp.death_count.count_mode')}</span>
+                      <Switch
+                        id="desktop-death-count-rate-toggle"
+                        bind:checked={deathCountShowRate}
+                        disabled={matchMode !== 'classic'}
+                      />
+                      <span>{$_('pvp.death_count.rate_mode')}</span>
+                    </label>
+                    <label
+                      class="death-count-toggle"
+                      for="desktop-global-death-count-toggle"
+                    >
+                      <Switch
+                        id="desktop-global-death-count-toggle"
+                        bind:checked={compareGlobalDeathCount}
+                        disabled={matchMode !== 'classic'
+                        || !deathCountLevelId
+                        || globalDeathCountLoading}
+                      />
+                      <span>{$_('pvp.death_count.compare_global')}</span>
+                    </label>
+                  </div>
                 </div>
                 {#if matchMode === 'platformer'}
                   <div class="empty-state">
@@ -3182,19 +3272,33 @@
           <Tabs.Content value="deaths" class="mobile-tab-content">
             <div class="mobile-activity-body">
               <div class="death-count-panel">
-                <label
-                  class="death-count-compare-toggle mobile-death-count-compare-toggle"
-                  for="mobile-global-death-count-toggle"
-                >
-                  <Switch
-                    id="mobile-global-death-count-toggle"
-                    bind:checked={compareGlobalDeathCount}
-                    disabled={matchMode !== 'classic'
-                    || !deathCountLevelId
-                    || globalDeathCountLoading}
-                  />
-                  <span>{$_('pvp.death_count.compare_global')}</span>
-                </label>
+                <div class="death-count-controls mobile-death-count-controls">
+                  <label
+                    class="death-count-toggle"
+                    for="mobile-death-count-rate-toggle"
+                  >
+                    <span>{$_('pvp.death_count.count_mode')}</span>
+                    <Switch
+                      id="mobile-death-count-rate-toggle"
+                      bind:checked={deathCountShowRate}
+                      disabled={matchMode !== 'classic'}
+                    />
+                    <span>{$_('pvp.death_count.rate_mode')}</span>
+                  </label>
+                  <label
+                    class="death-count-toggle"
+                    for="mobile-global-death-count-toggle"
+                  >
+                    <Switch
+                      id="mobile-global-death-count-toggle"
+                      bind:checked={compareGlobalDeathCount}
+                      disabled={matchMode !== 'classic'
+                      || !deathCountLevelId
+                      || globalDeathCountLoading}
+                    />
+                    <span>{$_('pvp.death_count.compare_global')}</span>
+                  </label>
+                </div>
                 {#if matchMode === 'platformer'}
                   <div class="empty-state">
                     {$_('pvp.death_count.platformer_empty')}
@@ -3712,7 +3816,15 @@
   gap: 12px;
 }
 
-.death-count-compare-toggle {
+.death-count-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px 14px;
+}
+
+.death-count-toggle {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -3724,8 +3836,9 @@
   white-space: nowrap;
 }
 
-.mobile-death-count-compare-toggle {
-  justify-self: start;
+.mobile-death-count-controls {
+  justify-content: flex-start;
+  justify-self: stretch;
 }
 
 .death-count-summary {
@@ -3744,15 +3857,16 @@
 }
 
 .global-death-count-card {
-  background: hsl(var(--secondary) / 0.45);
+  background: rgba(37, 99, 235, 0.08);
+  border-color: rgba(37, 99, 235, 0.35);
 }
 
 .global-death-count-dot {
   width: 36px;
   height: 36px;
-  border: 1px solid hsl(var(--border));
+  border: 1px solid #2563eb;
   border-radius: 999px;
-  background: hsl(var(--secondary-foreground) / 0.45);
+  background: rgba(37, 99, 235, 0.38);
 }
 
 .death-count-value {

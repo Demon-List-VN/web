@@ -528,8 +528,11 @@
             "global": "Global",
             "global_level": "Global level deaths",
             "global_load_failed": "Failed to load global death count",
+            "count_mode": "Count",
+            "rate_mode": "Rate",
             "count_label": "deaths",
             "percent_axis": "Percent",
+            "rate_axis": "Death share (%)",
             "deaths_axis": "Deaths"
         },
         "system_sender": "Versus",
