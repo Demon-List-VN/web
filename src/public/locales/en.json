@@ -1622,6 +1622,7 @@
             "created_challenges": "Created Challenges",
             "community_posts": "Posts",
             "pvp_matches": "PvP Matches",
+            "xp_log": "XP Log",
             "convictions": "Convictions",
             "records": "Records",
             "verified_records": "Verified records",
@@ -1671,17 +1672,31 @@
             "total_created_challenges": "Total created challenges",
             "total_convictions": "Total convictions",
             "total_pvp_matches": "Total PvP matches",
+            "total_xp_logs": "Total XP logs",
             "match": "Match",
             "elo": "ELO",
             "elo_before": "ELO before",
             "elo_diff": "ELO diff",
-            "current_elo": "Current ELO"
+            "current_elo": "Current ELO",
+            "reason": "Reason",
+            "diff": "Diff",
+            "new_xp": "New XP"
         },
         "no_events": "No events participated yet",
         "no_created_challenges": "No created challenges yet",
         "no_community_posts": "No community posts yet",
         "no_pvp_matches": "No ranked PvP matches yet",
+        "no_xp_log": "No XP log yet",
         "no_convictions": "No convictions yet",
+        "xp_log": {
+            "reasons": {
+                "pvp_match_win": "PvP match win",
+                "pvp_match_loss": "PvP match loss",
+                "record_manual_100": "100% record accepted",
+                "challenge_submission_accepted": "Challenge submission accepted",
+                "unknown": "XP change"
+            }
+        },
         "convictions": {
             "content": "Content",
             "credit_reduce": "Credit Reduce",

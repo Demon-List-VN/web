@@ -6,36 +6,20 @@ interface ExpLevel {
 }
 
 export function getExpLevel(exp: number) {
+    const normalizedExp = Math.max(0, Math.floor(Number(exp) || 0));
+    const level = Math.floor(normalizedExp / 100) + 1;
+    const lowerBound = (level - 1) * 100;
+    const upperBound = level * 100;
     const res: ExpLevel = {
-        level: 0,
-        lowerBound: 0,
-        upperBound: 0,
+        level,
+        lowerBound,
+        upperBound,
         progress: 0
     };
 
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-        if (res.level == 0) {
-            res.upperBound = 50;
-        } else if (res.level <= 5) {
-            res.lowerBound = res.upperBound;
-            res.upperBound = Math.round(res.upperBound * 2);
-        } else if (res.level <= 50) {
-            res.lowerBound = res.upperBound;
-            res.upperBound = Math.round(res.upperBound * 1.15);
-        } else {
-            res.lowerBound = res.upperBound;
-            res.upperBound = Math.round(res.upperBound * 1.05);
-        }
-
-        res.level++;
-
-        if (res.lowerBound <= exp && exp < res.upperBound) {
-            break;
-        }
-    }
-
-    res.progress = Math.round(((exp - res.lowerBound) / (res.upperBound - res.lowerBound)) * 1000)
+    res.progress = Math.round(
+        ((normalizedExp - res.lowerBound) / (res.upperBound - res.lowerBound)) * 1000
+    )
         / 10;
 
     return res;

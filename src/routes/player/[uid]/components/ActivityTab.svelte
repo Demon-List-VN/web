@@ -4,6 +4,7 @@
 	import CreatedChallengesTab from '../tabs/CreatedChallengesTab.svelte';
 	import ConvictionsTab from '../tabs/ConvictionsTab.svelte';
 	import PvpMatchesTab from '../tabs/PvpMatchesTab.svelte';
+	import XpLogTab from '../tabs/XpLogTab.svelte';
 	import { _ } from 'svelte-i18n';
 
 	export let userID: string;
@@ -16,6 +17,7 @@
         $_('player.tabs.community_posts')
       }</Tabs.Trigger>
       <Tabs.Trigger value="pvp">{$_('player.tabs.pvp_matches')}</Tabs.Trigger>
+      <Tabs.Trigger value="xp">{$_('player.tabs.xp_log')}</Tabs.Trigger>
       <Tabs.Trigger value="challenges">{
         $_('player.tabs.created_challenges')
       }</Tabs.Trigger>
@@ -28,6 +30,9 @@
     </Tabs.Content>
     <Tabs.Content value="pvp" class="w-full">
       <PvpMatchesTab {userID} />
+    </Tabs.Content>
+    <Tabs.Content value="xp" class="w-full">
+      <XpLogTab {userID} />
     </Tabs.Content>
     <Tabs.Content value="challenges" class="w-full">
       <CreatedChallengesTab {userID} />
