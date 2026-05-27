@@ -3222,8 +3222,8 @@ h1 {
 
 .required-submission-content {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 12px;
 }
 
