@@ -291,6 +291,11 @@
 			requiredSubmission?.id ?? ''
 		}`
 		: '/submit';
+	$: requiredSubmissionLevelUrl = requiredSubmissionLevelId
+		? `/level/${requiredSubmissionLevelId}`
+		: null;
+	$: requiredSubmissionLevelLabel =
+		requiredSubmissionLevel?.name || `#${requiredSubmissionLevelId ?? ''}`;
 	$: incomingPending = lobby.incomingInvites.filter(
 		(invite) =>
 			getPvpStatus(invite) === 'pending'
@@ -2420,12 +2425,17 @@
                   {
                     $_('pvp.required_submission.description', {
                         values: {
-                            level:
-                              requiredSubmissionLevel?.name
-                              || `#${requiredSubmissionLevelId ?? ''}`
+                            level: ''
                         }
                     })
                   }
+                  {#if requiredSubmissionLevelUrl}
+                    <a href={requiredSubmissionLevelUrl} class="required-level-link">
+                      {requiredSubmissionLevelLabel}
+                    </a>
+                  {:else}
+                    {requiredSubmissionLevelLabel}
+                  {/if}
                 </span>
                 <Button href={requiredSubmissionUrl} size="sm">
                   {$_('pvp.required_submission.submit')}
@@ -3229,6 +3239,13 @@ h1 {
 
 .required-submission-content span {
   line-height: 1.45;
+}
+
+.required-level-link {
+  color: hsl(var(--primary));
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .matchmaking-skeleton {
