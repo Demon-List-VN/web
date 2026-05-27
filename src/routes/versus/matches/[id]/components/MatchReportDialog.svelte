@@ -56,7 +56,7 @@
 				await $user.token(),
 				matchId,
 				reason,
-				descriptionRequired ? trimmedDescription : null
+				trimmedDescription || null
 			);
 			onSubmitted(report);
 			toast.success($_('pvp.report.success'));
@@ -130,20 +130,18 @@
         </RadioGroup.Root>
       </div>
 
-      {#if descriptionRequired}
-        <div class="report-details">
-          <label class="report-label" for="pvp-report-details">
-            {$_('pvp.report.details')}
-          </label>
-          <Textarea
-            id="pvp-report-details"
-            bind:value={description}
-            rows={3}
-            placeholder={$_('pvp.report.details_placeholder')}
-            required
-          />
-        </div>
-      {/if}
+      <div class="report-details">
+        <label class="report-label" for="pvp-report-details">
+          {$_('pvp.report.details')}
+        </label>
+        <Textarea
+          id="pvp-report-details"
+          bind:value={description}
+          rows={3}
+          placeholder={$_('pvp.report.details_placeholder')}
+          required={descriptionRequired}
+        />
+      </div>
 
       <p>{$_('pvp.report.limit_hint')}</p>
     </div>

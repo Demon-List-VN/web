@@ -246,6 +246,29 @@ export type PvpMatchReport = {
     [key: string]: unknown;
 };
 
+export type AdminPvpReportEvidence = {
+    report: PvpMatchReport;
+    reporter: PvpPlayer | null;
+    reportedPlayer: PvpPlayer | null;
+    reportedParticipant: PvpParticipant | null;
+    match: PvpMatch | null;
+    messages: PvpMatchMessage[];
+};
+
+export type AdminPvpReportPlayerCount = {
+    uid: string | null;
+    player: PvpPlayer | null;
+    reportCount: number;
+    unresolvedCount: number;
+};
+
+export type AdminPvpReportsResponse = {
+    days: 7 | 14 | 30 | null;
+    since: string | null;
+    playerCounts: AdminPvpReportPlayerCount[];
+    reports: AdminPvpReportEvidence[];
+};
+
 export type PvpInvite = {
     id?: number | string;
     inviteId?: number | string;
@@ -624,6 +647,48 @@ export async function cancelAdminPvpRequiredSubmission(
 ) {
     return pvpRequest<PvpRequiredSubmission>(`/pvp/admin/required-submissions/${id}`, {
         method: 'DELETE',
+        token
+    });
+}
+
+export async function getAdminPvpReports(
+    token: string | null | undefined,
+    options: { days?: 7 | 14 | 30 | number | string | null; } = {}
+) {
+    const params = new URLSearchParams();
+
+    if (options.days) {
+        params.set('days', String(options.days));
+    }
+
+    const query = params.toString();
+
+    return pvpRequest<AdminPvpReportsResponse>(
+        `/pvp/admin/reports${query ? `?${query}` : ''}`,
+        { token }
+    );
+}
+
+export async function resolveAdminPvpReportsByPlayerReason(
+    token: string | null | undefined,
+    payload: { uid: string; reason: PvpMatchReportReason | string; }
+) {
+    return pvpRequest<{ resolvedCount: number; reportIds: number[]; }>(
+        '/pvp/admin/reports/resolve',
+        {
+            method: 'POST',
+            token,
+            body: payload
+        }
+    );
+}
+
+export async function resolveAdminPvpReport(
+    token: string | null | undefined,
+    id: number | string
+) {
+    return pvpRequest<PvpMatchReport>(`/pvp/admin/reports/${id}/resolve`, {
+        method: 'POST',
         token
     });
 }
