@@ -292,6 +292,24 @@ export type PvpMatchmakingRequest = {
     [key: string]: unknown;
 };
 
+export type PvpRequiredSubmission = {
+    id?: number | string;
+    uid?: string;
+    levelId?: number;
+    levelID?: number;
+    level_id?: number;
+    level?: PvpLevel | null;
+    levels?: PvpLevel | null;
+    note?: string | null;
+    createdAt?: string | null;
+    created_at?: string | null;
+    resolvedAt?: string | null;
+    resolved_at?: string | null;
+    cancelledAt?: string | null;
+    cancelled_at?: string | null;
+    [key: string]: unknown;
+};
+
 export type PvpRatingState = {
     mode?: PvpMode | string;
     pvpRating?: number | null;
@@ -319,6 +337,7 @@ export type PvpMe = {
     pvpPlatformerRatingInitialized?: boolean;
     activeMatch: PvpMatch | null;
     matchmaking: PvpMatchmakingRequest | null;
+    requiredSubmission?: PvpRequiredSubmission | null;
     incomingInvites: PvpInvite[];
     outgoingInvites: PvpInvite[];
 };
@@ -500,6 +519,9 @@ export function normalizePvpMe(payload: any): PvpMe {
             ?? payload?.matchmaking_request
             ?? payload?.queue
             ?? null,
+        requiredSubmission: payload?.requiredSubmission
+            ?? payload?.required_submission
+            ?? null,
         incomingInvites: payload?.incomingInvites
             ?? payload?.incoming_invites
             ?? payload?.receivedInvites
@@ -558,6 +580,49 @@ export async function checkPvpMatchmaking(token?: string | null) {
 
 export async function cancelPvpMatchmaking(token?: string | null) {
     return pvpRequest<PvpMatchmakingRequest | null>('/pvp/matchmaking', {
+        method: 'DELETE',
+        token
+    });
+}
+
+export async function getAdminPvpRequiredSubmissions(
+    token: string | null | undefined,
+    options: { uid?: string | null; status?: 'open' | 'resolved' | 'cancelled'; } = {}
+) {
+    const params = new URLSearchParams();
+
+    if (options.uid) {
+        params.set('uid', options.uid);
+    }
+
+    if (options.status) {
+        params.set('status', options.status);
+    }
+
+    const query = params.toString();
+
+    return pvpRequest<PvpRequiredSubmission[]>(
+        `/pvp/admin/required-submissions${query ? `?${query}` : ''}`,
+        { token }
+    );
+}
+
+export async function createAdminPvpRequiredSubmission(
+    token: string | null | undefined,
+    payload: { uid: string; levelId: number; note?: string | null; }
+) {
+    return pvpRequest<PvpRequiredSubmission>('/pvp/admin/required-submissions', {
+        method: 'POST',
+        token,
+        body: payload
+    });
+}
+
+export async function cancelAdminPvpRequiredSubmission(
+    token: string | null | undefined,
+    id: number | string
+) {
+    return pvpRequest<PvpRequiredSubmission>(`/pvp/admin/required-submissions/${id}`, {
         method: 'DELETE',
         token
     });
@@ -860,6 +925,26 @@ export function getPvpLevel(match: PvpMatch | null | undefined): PvpLevel | null
         match?.level ?? match?.levels ?? match?.selectedLevel ?? (match?.matchLevel as PvpLevel)
             ?? null
     );
+}
+
+export function getPvpRequiredSubmissionLevel(
+    requirement: PvpRequiredSubmission | null | undefined
+): PvpLevel | null {
+    return requirement?.level ?? requirement?.levels ?? null;
+}
+
+export function getPvpRequiredSubmissionLevelId(
+    requirement: PvpRequiredSubmission | null | undefined
+) {
+    const value = requirement?.levelId
+        ?? requirement?.levelID
+        ?? requirement?.level_id
+        ?? requirement?.level?.id
+        ?? requirement?.levels?.id
+        ?? null;
+    const levelId = Number(value);
+
+    return Number.isInteger(levelId) && levelId > 0 ? levelId : null;
 }
 
 export function getPvpBanPick(match: PvpMatch | null | undefined): PvpBanPick | null {

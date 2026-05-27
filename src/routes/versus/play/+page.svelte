@@ -36,6 +36,8 @@
 		getPvpMatch,
 		getPvpMatches,
 		getPvpLeaderboard,
+		getPvpRequiredSubmissionLevel,
+		getPvpRequiredSubmissionLevelId,
 		getPvpWeeklyRace,
 		getPvpMatchStartMs,
 		getPvpParticipantRatingAfter,
@@ -96,6 +98,7 @@
 		LogIn,
 		RefreshCw,
 		Send,
+		ShieldAlert,
 		Swords,
 		Trophy,
 		UserCheck,
@@ -131,6 +134,7 @@
 	let lobby: PvpMe = {
 		activeMatch: null,
 		matchmaking: null,
+		requiredSubmission: null,
 		incomingInvites: [],
 		outgoingInvites: []
 	};
@@ -279,6 +283,14 @@
 		?? lobby.matchmaking?.created_at;
 	$: queueElapsedMs = getElapsedMs(queueStartedAt, now);
 	$: showSlowSearchAlert = isSearching && queueElapsedMs >= 90 * 1000;
+	$: requiredSubmission = lobby.requiredSubmission ?? null;
+	$: requiredSubmissionLevel = getPvpRequiredSubmissionLevel(requiredSubmission);
+	$: requiredSubmissionLevelId = getPvpRequiredSubmissionLevelId(requiredSubmission);
+	$: requiredSubmissionUrl = requiredSubmissionLevelId
+		? `/submit?levelId=${requiredSubmissionLevelId}&pvpRequirement=${
+			requiredSubmission?.id ?? ''
+		}`
+		: '/submit';
 	$: incomingPending = lobby.incomingInvites.filter(
 		(invite) =>
 			getPvpStatus(invite) === 'pending'
@@ -293,9 +305,10 @@
 	$: controlsDisabled = Boolean(
 		checkingLobby || activeMatch || isSearching || actionLoading
 	);
+	$: matchmakingDisabled = controlsDisabled || Boolean(requiredSubmission);
 	$: updateActiveMatchRealtime($user.loggedIn, getLobbyRealtimeMatchIds());
 	$: updatePendingConfirmRealtime($user.loggedIn, pendingMatchId);
-	$: updateMatchmakingCheckPolling($user.loggedIn, isSearching);
+	$: updateMatchmakingCheckPolling($user.loggedIn, isSearching && !requiredSubmission);
 	$: autoRedirectToActiveMatch(activeMatch);
 
 	$: if (
@@ -309,6 +322,7 @@
 		lobby = {
 			activeMatch: null,
 			matchmaking: null,
+			requiredSubmission: null,
 			incomingInvites: [],
 			outgoingInvites: []
 		};
@@ -2396,6 +2410,31 @@
           </Collapsible.Root>
         </section>
 
+        {#if requiredSubmission && !activeMatch}
+          <Alert.Root class="pvp-required-submission-alert">
+            <ShieldAlert class="h-4 w-4" />
+            <Alert.Title>{$_('pvp.required_submission.title')}</Alert.Title>
+            <Alert.Description>
+              <div class="required-submission-content">
+                <span>
+                  {
+                    $_('pvp.required_submission.description', {
+                        values: {
+                            level:
+                              requiredSubmissionLevel?.name
+                              || `#${requiredSubmissionLevelId ?? ''}`
+                        }
+                    })
+                  }
+                </span>
+                <Button href={requiredSubmissionUrl} size="sm">
+                  {$_('pvp.required_submission.submit')}
+                </Button>
+              </div>
+            </Alert.Description>
+          </Alert.Root>
+        {/if}
+
         <section class="control-grid">
           <Card.Root>
             <Card.Header>
@@ -2517,7 +2556,7 @@
                   {$_('pvp.cancel_search')}
                 </Button>
               {:else}
-                <Button disabled={controlsDisabled} on:click={startQueue}>
+                <Button disabled={matchmakingDisabled} on:click={startQueue}>
                   {#if actionLoading === 'matchmaking'}
                     <Loader2 class="mr-2 h-4 w-4 animate-spin" />
                   {:else}
@@ -3174,6 +3213,21 @@ h1 {
   padding: 10px 12px;
   color: hsl(var(--foreground));
   font-size: 13px;
+  line-height: 1.45;
+}
+
+:global(.pvp-required-submission-alert) {
+  margin-bottom: 16px;
+}
+
+.required-submission-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.required-submission-content span {
   line-height: 1.45;
 }
 

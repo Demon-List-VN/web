@@ -313,6 +313,11 @@
             "release_page": "Release page",
             "dismiss": "Dismiss"
         },
+        "required_submission": {
+            "title": "Manual submission required",
+            "description": "Submit and receive manual acceptance for {level} before continuing PvP matchmaking.",
+            "submit": "Submit record"
+        },
         "active_match": "Active match",
         "enter_match": "Enter match",
         "rejoin_ongoing_match": "Rejoin ongoing match",
@@ -672,6 +677,35 @@
             "ban_pick_abort_failed": "Failed to request match abort.",
             "resign_success": "You resigned from the match.",
             "resign_failed": "Failed to resign match."
+        }
+    },
+    "admin_pvp_required_submission": {
+        "title": "PvP Required Submission",
+        "description": "Force a player to submit and manually pass a specific classic level before they can continue PvP matchmaking.",
+        "player": "Player",
+        "player_placeholder": "Search player...",
+        "level_id": "Level ID",
+        "note": "Admin note",
+        "note_placeholder": "Optional internal reason",
+        "active_requirement": "Active requirement",
+        "active_requirement_body": "This player is already required to submit {level}.",
+        "cancel": "Cancel requirement",
+        "confirm_cancel": "Cancel this PvP required submission?",
+        "loading": "Checking player and level...",
+        "platformer": "Platformer",
+        "classic": "Classic",
+        "already_completed": "Manual 100% exists",
+        "create": "Require submission",
+        "errors": {
+            "level_not_found": "Level not found.",
+            "platformer": "Only classic levels can be required."
+        },
+        "toast": {
+            "load_failed": "Failed to load PvP requirement.",
+            "created": "PvP required submission created.",
+            "create_failed": "Failed to create PvP required submission.",
+            "cancelled": "PvP required submission cancelled.",
+            "cancel_failed": "Failed to cancel PvP required submission."
         }
     },
     "dropdown": {

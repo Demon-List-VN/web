@@ -106,6 +106,7 @@
 			items: [
 				{ name: 'Submission', href: '/admin/submission' },
 				{ name: 'Level Submissions', href: '/admin/levelSubmissions' },
+				{ name: 'PvP Required Submission', href: '/admin/pvpRequiredSubmission' },
 				{ name: 'Add Record', href: '/admin/addRecord' }
 			]
 		},

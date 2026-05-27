@@ -313,6 +313,11 @@
             "release_page": "Trang phát hành",
             "dismiss": "Đóng"
         },
+        "required_submission": {
+            "title": "Cần nộp record đã xác minh",
+            "description": "Hãy nộp và được duyệt thủ công record cho {level} trước khi tiếp tục ghép trận PvP.",
+            "submit": "Nộp record"
+        },
         "active_match": "Trận đang diễn ra",
         "enter_match": "Vào trận",
         "rejoin_ongoing_match": "Vào lại trận đang diễn ra",
@@ -672,6 +677,35 @@
             "ban_pick_abort_failed": "Yêu cầu hủy trận thất bại.",
             "resign_success": "Bạn đã đầu hàng trận đấu.",
             "resign_failed": "Đầu hàng trận đấu thất bại."
+        }
+    },
+    "admin_pvp_required_submission": {
+        "title": "Yêu cầu nộp record PvP",
+        "description": "Buộc người chơi nộp và được duyệt thủ công một level classic cụ thể trước khi tiếp tục ghép trận PvP.",
+        "player": "Người chơi",
+        "player_placeholder": "Tìm người chơi...",
+        "level_id": "Level ID",
+        "note": "Ghi chú admin",
+        "note_placeholder": "Lý do nội bộ tuỳ chọn",
+        "active_requirement": "Yêu cầu đang mở",
+        "active_requirement_body": "Người chơi này đang bị yêu cầu nộp {level}.",
+        "cancel": "Hủy yêu cầu",
+        "confirm_cancel": "Hủy yêu cầu nộp record PvP này?",
+        "loading": "Đang kiểm tra người chơi và level...",
+        "platformer": "Platformer",
+        "classic": "Classic",
+        "already_completed": "Đã có 100% xác minh",
+        "create": "Tạo yêu cầu",
+        "errors": {
+            "level_not_found": "Không tìm thấy level.",
+            "platformer": "Chỉ có thể yêu cầu level classic."
+        },
+        "toast": {
+            "load_failed": "Không tải được yêu cầu PvP.",
+            "created": "Đã tạo yêu cầu nộp record PvP.",
+            "create_failed": "Không tạo được yêu cầu nộp record PvP.",
+            "cancelled": "Đã hủy yêu cầu nộp record PvP.",
+            "cancel_failed": "Không hủy được yêu cầu nộp record PvP."
         }
     },
     "dropdown": {
