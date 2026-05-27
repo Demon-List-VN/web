@@ -202,17 +202,6 @@
 		if ($user.data?.recordCount !== 0) {
 			return;
 		}
-
-		notifications = [
-			{
-				content: $locale == 'en'
-					? 'Beat Platinum Adventure (or any level in the list) to fully unlock your account'
-					: 'Đánh bại Platinum Adventure (hoặc bất cứ level nào trong list) để mở khóa toàn bộ tài khoản',
-				redirect: '/level/5904109',
-				timestamp: new Date()
-					.toISOString()
-			}
-		];
 	}
 
 	function timeSince(date: any) {
