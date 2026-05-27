@@ -548,6 +548,8 @@
             "progress_platformer": "{player} reached {progress} checkpoints.",
             "match_end_win": "{winner} won the match. Chat will remain open for {minutes} minutes, then it will be disabled.",
             "match_end_draw": "The match ended in a draw. Chat will remain open for {minutes} minutes, then it will be disabled.",
+            "match_cancelled": "The match was cancelled. Chat will remain open for {minutes} minutes, then it will be disabled.",
+            "match_cancelled_platformer_hard_timeout": "The platformer match ran longer than 2 hours and was cancelled. Chat will remain open for {minutes} minutes, then it will be disabled.",
             "resignation_win": "{resigning} resigned. {winner} won the match. Chat will remain open for {minutes} minutes, then it will be disabled.",
             "resignation_end": "{resigning} resigned. The match ended. Chat will remain open for {minutes} minutes, then it will be disabled.",
             "level_change_requested": "{requester} requested a level change. The level will change if the opponent agrees.",
@@ -648,7 +650,8 @@
             "resignation": "Resignation",
             "forfeit": "Forfeit",
             "ban_pick_abort": "Mutual abort",
-            "acceptance_timeout": "Acceptance timeout"
+            "acceptance_timeout": "Acceptance timeout",
+            "platformer_hard_timeout": "Platformer timeout"
         },
         "toast": {
             "load_failed": "Failed to load 1v1 Versus data.",

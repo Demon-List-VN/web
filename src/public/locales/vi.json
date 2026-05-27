@@ -548,6 +548,8 @@
             "progress_platformer": "{player} đã đạt {progress} checkpoint.",
             "match_end_win": "{winner} đã thắng trận. Chat sẽ mở thêm {minutes} phút rồi bị tắt.",
             "match_end_draw": "Trận đấu kết thúc với kết quả hòa. Chat sẽ mở thêm {minutes} phút rồi bị tắt.",
+            "match_cancelled": "Trận đấu đã bị hủy. Chat sẽ mở thêm {minutes} phút rồi bị tắt.",
+            "match_cancelled_platformer_hard_timeout": "Trận platformer kéo dài hơn 2 giờ nên đã bị hủy. Chat sẽ mở thêm {minutes} phút rồi bị tắt.",
             "resignation_win": "{resigning} đã đầu hàng. {winner} đã thắng trận. Chat sẽ mở thêm {minutes} phút rồi bị tắt.",
             "resignation_end": "{resigning} đã đầu hàng. Trận đấu kết thúc. Chat sẽ mở thêm {minutes} phút rồi bị tắt.",
             "level_change_requested": "{requester} đã yêu cầu đổi level. Level sẽ đổi nếu đối thủ đồng ý.",
@@ -648,7 +650,8 @@
             "resignation": "Đầu hàng",
             "forfeit": "Bỏ cuộc",
             "ban_pick_abort": "Cùng hủy trận",
-            "acceptance_timeout": "Hết giờ xác nhận"
+            "acceptance_timeout": "Hết giờ xác nhận",
+            "platformer_hard_timeout": "Platformer quá 2 giờ"
         },
         "toast": {
             "load_failed": "Tải dữ liệu 1v1 Versus thất bại.",

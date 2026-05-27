@@ -1839,6 +1839,15 @@
 				: $_('pvp.system_message.match_end_draw', { values: { minutes } });
 		}
 
+		if (kind === 'match_cancelled') {
+			const reason = metadataText(metadata, 'reason');
+			content = reason === 'platformer_hard_timeout'
+				? $_('pvp.system_message.match_cancelled_platformer_hard_timeout', {
+					values: { minutes }
+				})
+				: $_('pvp.system_message.match_cancelled', { values: { minutes } });
+		}
+
 		if (kind === 'resignation') {
 			const winnerUid = metadataText(metadata, 'winnerUid');
 			const resigning = systemParticipantName(
