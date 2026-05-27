@@ -7,7 +7,6 @@
 		EyeOff,
 		Flag,
 		Loader2,
-		RefreshCw,
 		Send,
 		ShieldAlert,
 		Shuffle,
@@ -33,7 +32,6 @@
 	export let onRequestBanPickAbort: () => void = () => {};
 	export let onResign: () => void = () => {};
 	export let onReport: () => void = () => {};
-	export let onRefresh: () => void = () => {};
 </script>
 
 <section class="match-topbar">
@@ -105,21 +103,6 @@
         </Button>
       {/if}
 
-      {#if canResign}
-        <Button
-          variant="destructive"
-          disabled={Boolean(actionLoading) || loading}
-          on:click={onResign}
-        >
-          {#if actionLoading === 'resign-match'}
-            <Loader2 class="mr-2 h-4 w-4 animate-spin" />
-          {:else}
-            <Flag class="mr-2 h-4 w-4" />
-          {/if}
-          {$_('pvp.resign')}
-        </Button>
-      {/if}
-
       {#if canReport || reportSubmitted}
         <Button
           variant="outline"
@@ -136,10 +119,20 @@
         </Button>
       {/if}
 
-      <Button variant="outline" disabled={loading} on:click={onRefresh}>
-        <RefreshCw class={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-        {$_('pvp.refresh')}
-      </Button>
+      {#if canResign}
+        <Button
+          variant="destructive"
+          disabled={Boolean(actionLoading) || loading}
+          on:click={onResign}
+        >
+          {#if actionLoading === 'resign-match'}
+            <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+          {:else}
+            <Flag class="mr-2 h-4 w-4" />
+          {/if}
+          {$_('pvp.resign')}
+        </Button>
+      {/if}
     </div>
   {/if}
 </section>

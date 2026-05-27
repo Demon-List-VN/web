@@ -336,7 +336,11 @@
             "button": "Báo cáo",
             "title": "Báo cáo trận đấu",
             "description": "Chọn lý do trước khi cửa sổ báo cáo đóng sau {time}.",
+            "description_active": "Chọn lý do. Bạn có thể báo cáo đến 3 phút sau khi trận kết thúc.",
             "reason": "Lý do",
+            "details": "Chi tiết",
+            "details_placeholder": "Hãy cho chúng tôi biết chuyện gì đã xảy ra.",
+            "details_required": "Vui lòng nhập chi tiết khi chọn lý do khác.",
             "submit": "Gửi báo cáo",
             "submitted": "Đã báo cáo",
             "success": "Đã gửi báo cáo. Cảm ơn bạn.",
@@ -344,7 +348,8 @@
             "limit_hint": "Bạn chỉ có thể báo cáo mỗi trận một lần.",
             "reasons": {
                 "cheating": "Gian lận",
-                "abusive_communication": "Giao tiếp xúc phạm"
+                "abusive_communication": "Giao tiếp xúc phạm",
+                "other": "Khác"
             }
         },
         "sign_in_title": "Đăng nhập để vào 1v1 Versus",

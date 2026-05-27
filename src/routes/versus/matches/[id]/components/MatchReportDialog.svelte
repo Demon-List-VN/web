@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
+	import { Textarea } from '$lib/components/ui/textarea';
 	import * as Dialog from '$lib/components/ui/dialog';
-	import * as Select from '$lib/components/ui/select';
+	import * as RadioGroup from '$lib/components/ui/radio-group';
 	import { user } from '$lib/client';
 	import {
 		reportPvpMatch,
@@ -15,27 +16,48 @@
 	export let open = false;
 	export let matchId: number | string | null | undefined = null;
 	export let remainingMs = 0;
+	export let deadlineKnown = true;
 	export let onSubmitted: (report: PvpMatchReport) => void = () => {};
 
 	let reason: PvpMatchReportReason = 'cheating';
+	let description = '';
 	let submitting = false;
 	let wasOpen = false;
 
 	$: if (open && !wasOpen) {
 		reason = 'cheating';
+		description = '';
 	}
 
 	$: wasOpen = open;
+	$: descriptionRequired = reason === 'other';
+	$: submitDisabled = submitting
+		|| !matchId
+		|| (deadlineKnown && remainingMs <= 0)
+		|| (descriptionRequired && !description.trim());
 
 	async function submitReport() {
 		if (!matchId || submitting) {
 			return;
 		}
 
+		const trimmedDescription = description.trim();
+
+		if (descriptionRequired && !trimmedDescription) {
+			toast.error($_('pvp.report.details_required'));
+
+			return;
+		}
+
 		submitting = true;
 
 		try {
-			const report = await reportPvpMatch(await $user.token(), matchId, reason);
+			const report = await reportPvpMatch(
+				await $user.token(),
+				matchId,
+				reason,
+				descriptionRequired ? trimmedDescription : null
+			);
 			onSubmitted(report);
 			toast.success($_('pvp.report.success'));
 			open = false;
@@ -45,14 +67,6 @@
 			);
 		} finally {
 			submitting = false;
-		}
-	}
-
-	function handleReasonChange(item: { value?: unknown; } | null | undefined) {
-		const nextReason = String(item?.value || '');
-
-		if (nextReason === 'cheating' || nextReason === 'abusive_communication') {
-			reason = nextReason;
 		}
 	}
 
@@ -74,37 +88,63 @@
         {$_('pvp.report.title')}
       </Dialog.Title>
       <Dialog.Description>
-        {
-          $_('pvp.report.description', {
-            values: { time: formatDuration(remainingMs) }
-          })
-        }
+        {#if deadlineKnown}
+          {
+            $_('pvp.report.description', {
+              values: { time: formatDuration(remainingMs) }
+            })
+          }
+        {:else}
+          {$_('pvp.report.description_active')}
+        {/if}
       </Dialog.Description>
     </Dialog.Header>
 
     <div class="report-form">
-      <label class="report-label" for="pvp-report-reason">
+      <span class="report-label">
         {$_('pvp.report.reason')}
-      </label>
-      <Select.Root
-        selected={{
-          value: reason,
-          label: $_(`pvp.report.reasons.${reason}`)
-        }}
-        onSelectedChange={handleReasonChange}
-      >
-        <Select.Trigger id="pvp-report-reason">
-          <Select.Value placeholder={$_('pvp.report.reasons.cheating')} />
-        </Select.Trigger>
-        <Select.Content>
-          <Select.Item value="cheating">
-            {$_('pvp.report.reasons.cheating')}
-          </Select.Item>
-          <Select.Item value="abusive_communication">
-            {$_('pvp.report.reasons.abusive_communication')}
-          </Select.Item>
-        </Select.Content>
-      </Select.Root>
+      </span>
+      <div class="report-reasons">
+        <RadioGroup.Root bind:value={reason}>
+          <label class="report-reason" for="pvp-report-cheating">
+            <RadioGroup.Item id="pvp-report-cheating" value="cheating" />
+            <span>
+              {$_('pvp.report.reasons.cheating')}
+            </span>
+          </label>
+          <label class="report-reason" for="pvp-report-abusive">
+            <RadioGroup.Item
+              id="pvp-report-abusive"
+              value="abusive_communication"
+            />
+            <span>
+              {$_('pvp.report.reasons.abusive_communication')}
+            </span>
+          </label>
+          <label class="report-reason" for="pvp-report-other">
+            <RadioGroup.Item id="pvp-report-other" value="other" />
+            <span>
+              {$_('pvp.report.reasons.other')}
+            </span>
+          </label>
+        </RadioGroup.Root>
+      </div>
+
+      {#if descriptionRequired}
+        <div class="report-details">
+          <label class="report-label" for="pvp-report-details">
+            {$_('pvp.report.details')}
+          </label>
+          <Textarea
+            id="pvp-report-details"
+            bind:value={description}
+            rows={3}
+            placeholder={$_('pvp.report.details_placeholder')}
+            required
+          />
+        </div>
+      {/if}
+
       <p>{$_('pvp.report.limit_hint')}</p>
     </div>
 
@@ -114,7 +154,7 @@
       </Button>
       <Button
         variant="destructive"
-        disabled={submitting || !matchId || remainingMs <= 0}
+        disabled={submitDisabled}
         on:click={submitReport}
       >
         {#if submitting}
@@ -135,12 +175,38 @@
 
 .report-form {
   display: grid;
-  gap: 8px;
+  gap: 12px;
 }
 
 .report-label {
   font-size: 13px;
   font-weight: 600;
+}
+
+.report-reasons,
+.report-details {
+  display: grid;
+  gap: 8px;
+}
+
+.report-reasons :global([role="radiogroup"]) {
+  display: grid;
+  gap: 8px;
+}
+
+.report-reason {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.report-reason:hover {
+  background: hsl(var(--muted) / 0.55);
 }
 
 .report-form p {

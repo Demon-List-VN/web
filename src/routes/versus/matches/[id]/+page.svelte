@@ -232,14 +232,20 @@
 		currentUid
 	);
 	$: remainingMs = Math.max(0, (getPvpMatchEndMs(match) ?? now) - now);
+	$: reportEndMs = getPvpMatchEndMs(match);
 	$: endedMs = getTimeMs(match?.endedAt);
 	$: postMatchChatRemainingMs = Math.max(
 		0,
 		(endedMs ? endedMs + POST_MATCH_CHAT_GRACE_MS : now) - now
 	);
+	$: reportDeadlineMs = endedMs
+		? endedMs + POST_MATCH_CHAT_GRACE_MS
+		: reportEndMs
+		? reportEndMs + POST_MATCH_CHAT_GRACE_MS
+		: null;
 	$: reportWindowRemainingMs = Math.max(
 		0,
-		(endedMs ? endedMs + POST_MATCH_CHAT_GRACE_MS : now) - now
+		(reportDeadlineMs ?? (now + POST_MATCH_CHAT_GRACE_MS)) - now
 	);
 	$: acceptanceRemainingMs = Math.max(
 		0,
@@ -261,10 +267,14 @@
 		|| match?.reported_by_viewer
 		|| (matchId && locallyReportedMatchIds.has(String(matchId)))
 	);
+	$: activeReportableMatch = ['ban_pick', 'in_progress', 'waiting_result']
+		.includes(status);
 	$: reportWindowOpen = Boolean(
 		match
-		&& ['completed', 'cancelled', 'disputed'].includes(status)
-		&& endedMs
+		&& (
+			activeReportableMatch
+			|| (['completed', 'cancelled', 'disputed'].includes(status) && endedMs)
+		)
 		&& reportWindowRemainingMs > 0
 	);
 	$: canReportMatch = reportWindowOpen
@@ -2413,13 +2423,13 @@
     onRequestBanPickAbort={requestBanPickAbort}
     onResign={resignMatch}
     onReport={() => (reportDialogOpen = true)}
-    onRefresh={refreshMatch}
   />
 
   <MatchReportDialog
     bind:open={reportDialogOpen}
     {matchId}
     remainingMs={reportWindowRemainingMs}
+    deadlineKnown={Boolean(reportDeadlineMs)}
     onSubmitted={handleReportSubmitted}
   />
 

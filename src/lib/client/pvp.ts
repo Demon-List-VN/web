@@ -19,7 +19,7 @@ export type PvpInviteStatus =
     | 'cancelled'
     | string;
 export type PvpQueueStatus = 'idle' | 'searching' | 'matched' | 'cancelled' | 'expired' | string;
-export type PvpMatchReportReason = 'cheating' | 'abusive_communication';
+export type PvpMatchReportReason = 'cheating' | 'abusive_communication' | 'other';
 
 export type PvpPlayer = {
     uid?: string;
@@ -240,6 +240,7 @@ export type PvpMatchReport = {
     match_id?: number | string;
     uid?: string;
     reason?: PvpMatchReportReason | string;
+    description?: string | null;
     resolved?: boolean;
     created_at?: string;
     [key: string]: unknown;
@@ -813,12 +814,13 @@ export async function sendPvpMatchMessage(
 export async function reportPvpMatch(
     token: string | null | undefined,
     id: number | string,
-    reason: PvpMatchReportReason
+    reason: PvpMatchReportReason,
+    description?: string | null
 ) {
     return pvpRequest<PvpMatchReport>(`/pvp/matches/${id}/report`, {
         method: 'POST',
         token,
-        body: { reason }
+        body: { reason, description }
     });
 }
 

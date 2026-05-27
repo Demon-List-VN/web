@@ -336,7 +336,11 @@
             "button": "Report",
             "title": "Report match",
             "description": "Choose a reason before the report window closes in {time}.",
+            "description_active": "Choose a reason. Reports stay open until 3 minutes after the match ends.",
             "reason": "Reason",
+            "details": "Details",
+            "details_placeholder": "Tell us what happened.",
+            "details_required": "Please enter details for other reports.",
             "submit": "Submit report",
             "submitted": "Reported",
             "success": "Report submitted. Thank you.",
@@ -344,7 +348,8 @@
             "limit_hint": "You can report each match once.",
             "reasons": {
                 "cheating": "Cheating",
-                "abusive_communication": "Abusive communication"
+                "abusive_communication": "Abusive communication",
+                "other": "Other"
             }
         },
         "sign_in_title": "Sign in to enter 1v1 Versus",
