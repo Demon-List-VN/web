@@ -179,7 +179,7 @@
       </span>
       <ArrowUpRight class="h-4 w-4" />
     </a>
-    <a href="/submit" class="quickLink">
+    <a href="/submit/record" class="quickLink">
       <ClipboardCheck class="h-5 w-5" />
       <span>
         <strong>{$_('discord_bot.quick.submit.title')}</strong>

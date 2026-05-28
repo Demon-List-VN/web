@@ -1,460 +1,30 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button/index.js';
-	import { user } from '$lib/client';
+	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { locale, _ } from 'svelte-i18n';
-	import { toast } from 'svelte-sonner';
-	import { fly } from 'svelte/transition';
-	import { ArrowLeft } from 'lucide-svelte';
+	import { ArrowLeft, ClipboardCheck, ListPlus } from 'lucide-svelte';
 
-	import SubmitStepper from '$lib/components/submit/SubmitStepper.svelte';
-	import StepRules from '$lib/components/submit/StepRules.svelte';
-	import StepLevelId from '$lib/components/submit/StepLevelId.svelte';
-	import StepConfirmLevel from '$lib/components/submit/StepConfirmLevel.svelte';
-	import StepRequiredFields from '$lib/components/submit/StepRequiredFields.svelte';
-	import StepOptionalFields from '$lib/components/submit/StepOptionalFields.svelte';
-	import StepSubmitReview from '$lib/components/submit/StepSubmitReview.svelte';
-	import SubmitResult from '$lib/components/submit/SubmitResult.svelte';
-	import {
-		createDefaultState,
-		getSteps,
-		getMs,
-		validTime,
-		type SubmitState
-	} from '$lib/components/submit/submitState';
+	function preserveSearch(path: string) {
+		const search = $page.url.search;
 
-	let state: SubmitState = createDefaultState($user.data?.uid || '');
-	let submitted = false;
-	let direction = 1;
-	type EligibleListEntry = {
-		id: number;
-		slug?: string | null;
-		title: string;
-		description: string;
-		mode: 'rating' | 'top';
-		isPlatformer: boolean;
-		isOfficial?: boolean;
-		topEnabled?: boolean;
-		recordFilterPlatform?: 'any' | 'pc' | 'mobile' | null;
-		recordFilterMinRefreshRate?: number | null;
-		recordFilterMaxRefreshRate?: number | null;
-		recordFilterAcceptanceStatus?: 'manual' | 'auto' | 'any' | null;
-		recordFilterManualAcceptanceOnly?: boolean | null;
-		ownerData?: any | null;
-		eligible?: boolean | null;
-		item?: {
-			created_at?: string;
-			rating?: number | null;
-			position?: number | null;
-			minProgress?: number | null;
-			videoID?: string | null;
-		} | null;
-	};
-	let eligibleLists: EligibleListEntry[] = [];
-	let eligibleListsLoading = false;
-	let eligibleListsError = '';
-	let eligibleListsRequestKey = '';
-	let eligibleListsRequestToken = 0;
-
-	$: steps = getSteps(state.type)
-		.map((s) => {
-			const labels: Record<string, { vi: string; en: string; }> = {
-				Rules: { vi: 'Lưu ý', en: 'Rules' },
-				Level: { vi: 'Level', en: 'Level' },
-				Confirm: { vi: 'Xác nhận', en: 'Confirm' },
-				Details: { vi: 'Chi tiết', en: 'Details' },
-				Optional: { vi: 'Tùy chọn', en: 'Optional' },
-				Review: { vi: 'Xem lại', en: 'Review' }
-			};
-
-			return labels[s] ? ($locale == 'vi' ? labels[s].vi : labels[s].en) : s;
-		});
-	$: isLastStep = state.step === steps.length - 1;
-
-	function t(vi: string, en: string) {
-		return $locale == 'vi' ? vi : en;
-	}
-
-	function getEligibleProgress(
-		type: SubmitState['type'],
-		apiLevel: any,
-		time: SubmitState['time'],
-		progress: number
-	) {
-		if (type !== 'record') {
-			return null;
-		}
-
-		if (apiLevel?.length == 5) {
-			return validTime(time) ? getMs(time) : null;
-		}
-
-		const progressValue = Number(progress);
-
-		return Number.isFinite(progressValue) ? progressValue : null;
-	}
-
-	function getActiveEligibleLevelId(
-		type: SubmitState['type'],
-		selectedVariantId: number | null,
-		apiLevel: any,
-		levelid: number
-	) {
-		if (type !== 'record') {
-			return null;
-		}
-
-		const candidateLevelId = selectedVariantId ?? apiLevel?.id ?? levelid;
-		const levelId = Number(candidateLevelId);
-
-		if (!Number.isInteger(levelId) || levelId <= 0) {
-			return null;
-		}
-
-		return levelId;
-	}
-
-	async function loadEligibleLists(
-		levelId: number,
-		progress: number | null,
-		requestKey: string
-	) {
-		const requestToken = ++eligibleListsRequestToken;
-		eligibleListsLoading = true;
-		eligibleListsError = '';
-
-		try {
-			const headers: HeadersInit = {};
-
-			if ($user.loggedIn) {
-				headers.Authorization = `Bearer ${await $user.token()}`;
-			}
-
-			const params = new URLSearchParams();
-
-			if (progress != null) {
-				params.set('progress', String(progress));
-			}
-
-			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/lists/levels/${levelId}/eligible${
-					params.size ? `?${params.toString()}` : ''
-				}`,
-				{ headers }
-			);
-			const payload = await res.json()
-				.catch(() => null);
-
-			if (
-				requestToken !== eligibleListsRequestToken
-				|| eligibleListsRequestKey !== requestKey
-			) {
-				return;
-			}
-
-			if (!res.ok) {
-				throw new Error(
-					payload?.error
-					|| t(
-						'Không thể tải danh sách đủ điều kiện',
-						'Failed to load eligible lists'
-					)
-				);
-			}
-
-			eligibleLists = Array.isArray(payload) ? payload : [];
-		} catch (error) {
-			if (
-				requestToken !== eligibleListsRequestToken
-				|| eligibleListsRequestKey !== requestKey
-			) {
-				return;
-			}
-
-			eligibleLists = [];
-			eligibleListsError = error instanceof Error
-				? error.message
-				: t(
-					'Không thể tải danh sách đủ điều kiện',
-					'Failed to load eligible lists'
-				);
-		} finally {
-			if (
-				requestToken === eligibleListsRequestToken
-				&& eligibleListsRequestKey === requestKey
-			) {
-				eligibleListsLoading = false;
-			}
-		}
-	}
-
-	$: activeEligibleProgress = getEligibleProgress(
-		state.type,
-		state.apiLevel,
-		state.time,
-		state.progress
-	);
-	$: activeEligibleLevelId = getActiveEligibleLevelId(
-		state.type,
-		state.selectedVariantId,
-		state.apiLevel,
-		state.levelid
-	);
-	$: shouldLoadEligibleLists = state.type === 'record'
-		&& state.step === steps.length - 1
-		&& activeEligibleLevelId !== null
-		&& activeEligibleProgress !== null;
-
-	$: {
-		const progress = activeEligibleProgress;
-		const levelId = activeEligibleLevelId;
-		const canLoadEligibleLists = shouldLoadEligibleLists && levelId !== null
-			&& progress !== null;
-
-		if (!canLoadEligibleLists) {
-			eligibleLists = [];
-			eligibleListsLoading = false;
-			eligibleListsError = '';
-			eligibleListsRequestKey = '';
-		} else {
-			const requestKey = `${levelId}:${progress}`;
-
-			if (eligibleListsRequestKey !== requestKey) {
-				eligibleListsRequestKey = requestKey;
-				eligibleLists = [];
-				eligibleListsError = '';
-				loadEligibleLists(levelId, progress, requestKey);
-			}
-		}
+		return search ? `${path}${search}` : path;
 	}
 
 	onMount(() => {
 		const params = $page.url.searchParams;
-		const levelId = params.get('levelId');
 
-		if (levelId) {
-			const id = parseInt(levelId);
-
-			if (!isNaN(id)) {
-				state.levelid = id;
-				state.step = 1;
-			}
+		if (params.get('type') === 'record' || params.has('levelId')) {
+			void goto(preserveSearch('/submit/record'), { replaceState: true });
 		}
 	});
 
-	async function fetchLevel() {
-		const levelId = state.levelid;
-
-		try {
-			state.level = await (await fetch(
-				`${import.meta.env.VITE_API_URL}/levels/${levelId}`
-			)).json();
-		} catch {
-			state.level = null;
-		}
-
-		state.apiLevel = await (
-			await fetch(
-				`${import.meta.env.VITE_API_URL}/levels/${levelId}?fromGD=1`
-			)
-		).json();
-
-		state.levelVariants = [];
-		state.selectedVariantId = null;
-
-		try {
-			const varRes = await fetch(
-				`${import.meta.env.VITE_API_URL}/levels/${levelId}/variants`
-			);
-
-			if (varRes.ok) {
-				state.levelVariants = await varRes.json();
-			}
-		} catch {}
+	function chooseRecordFlow() {
+		void goto('/submit/record');
 	}
 
-	function next() {
-		if (state.step === 1) {
-			const levelId = state.levelid;
-
-			if (!levelId || isNaN(levelId)) {
-				toast.error(
-					t(
-						'Vui lòng nhập Level ID hợp lệ',
-						'Please enter a valid Level ID'
-					)
-				);
-
-				return;
-			}
-
-			state.apiLevel = null;
-			fetchLevel()
-				.catch(() => {
-					toast.error(t('Level ID không hợp lệ', 'Invalid level ID'));
-					state.step--;
-					state = state;
-				});
-		}
-
-		// Record: validate step 3 (required fields)
-		if (state.step === 3) {
-			const isPlatformer = state.apiLevel?.length == 5;
-
-			if (isPlatformer) {
-				if (!validTime(state.time)) {
-					toast.error(t('Thời gian không hợp lệ', 'Invalid time'));
-
-					return;
-				}
-			} else {
-				if (!state.progress) {
-					toast.error(
-						t(
-							'Vui lòng điền đầy đủ các trường bắt buộc',
-							'Please fill in all required fields'
-						)
-					);
-
-					return;
-				}
-			}
-
-			if (!state.refreshRate || !state.videoLink || !state.mobile) {
-				toast.error(
-					t(
-						'Vui lòng điền đầy đủ các trường bắt buộc',
-						'Please fill in all required fields'
-					)
-				);
-
-				return;
-			}
-
-			if (state.level) {
-				const needsRaw = (!state.level.flTop || state.level.rating)
-					&& !(state.level.isChallenge && state.level.rating < 2600);
-
-				if (needsRaw && !state.raw) {
-					toast.error(
-						t(
-							'Vui lòng điền đầy đủ các trường bắt buộc',
-							'Please fill in all required fields'
-						)
-					);
-
-					return;
-				}
-			} else if (!state.raw) {
-				toast.error(
-					t(
-						'Vui lòng điền đầy đủ các trường bắt buộc',
-						'Please fill in all required fields'
-					)
-				);
-
-				return;
-			}
-
-			if (state.raw && state.raw === state.videoLink) {
-				toast.error(
-					t(
-						'Video thô không được trùng với video hoàn thành',
-						'Raw is not completion video.'
-					)
-				);
-
-				return;
-			}
-		}
-
-		if (state.step === steps.length - 1) {
-			submitRecord();
-
-			return;
-		}
-
-		direction = 1;
-		state.step++;
-		state = state;
-	}
-
-	function back() {
-		if (state.step > 0) {
-			direction = -1;
-			state.step--;
-			state = state;
-		}
-	}
-
-	async function submitRecord() {
-		submitted = true;
-		state.sendStatus = 0;
-		state = state;
-
-		const submitData: any = {
-			levelid: state.levelid,
-			userid: $user.data.uid,
-			progress: state.apiLevel?.length == 5
-				? getMs(state.time)
-				: state.progress,
-			refreshRate: state.refreshRate,
-			videoLink: state.videoLink,
-			raw: state.raw,
-			mobile: state.mobile?.value ?? null,
-			suggestedRating: state.suggestedRating,
-			comment: state.comment
-		};
-
-		if (state.selectedVariantId) {
-			submitData.levelid = state.selectedVariantId;
-		}
-
-		state.submitId = new Date()
-			.getTime();
-
-		try {
-			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/submission?id=${state.submitId}`,
-				{
-					method: 'POST',
-					body: JSON.stringify(submitData),
-					headers: {
-						Authorization: `Bearer ${await $user.token()}`,
-						'Content-Type': 'application/json'
-					}
-				}
-			);
-
-			state.sendStatus = res.ok ? 1 : 2;
-
-			const responseText = await res.text();
-			state.errorResponse = responseText;
-
-			try {
-				const resJson = JSON.parse(responseText);
-				state.submitLog = resJson.logs || [];
-				state.errorMessage = $locale == 'vi' ? resJson.vi : resJson.en;
-			} catch {
-				state.errorMessage = responseText;
-			}
-		} catch (err) {
-			state.sendStatus = 2;
-			state.errorMessage = String(err);
-		}
-
-		state = state;
-	}
-
-	function resetForm() {
-		state = createDefaultState($user.data?.uid || '');
-		submitted = false;
-		direction = 1;
-		eligibleLists = [];
-		eligibleListsLoading = false;
-		eligibleListsError = '';
-		eligibleListsRequestKey = '';
+	function chooseChallengeListFlow() {
+		void goto('/lists/cl/submit');
 	}
 </script>
 
@@ -463,131 +33,79 @@
 </svelte:head>
 
 <div class="submit-page">
-  {#if !$user.loggedIn}
-    <div class="auth-prompt">
-      <h2>{$locale == 'vi' ? 'Đăng nhập để nộp' : 'Sign in to submit'}</h2>
-      <p class="text-muted">
-        {
-          $locale == 'vi'
-          ? 'Bạn cần đăng nhập để nộp record.'
-          : 'You need to sign in to submit a record.'
-        }
-      </p>
-    </div>
-  {:else}
-    <div class="submit-container">
-      <a href="/" class="back-link">
-        <ArrowLeft size={16} />
-        <span>{$locale == 'vi' ? 'Trang chủ' : 'Home'}</span>
-      </a>
+  <div class="submit-container">
+    <a href="/" class="back-link">
+      <ArrowLeft size={16} />
+      <span>{$locale == 'vi' ? 'Trang chủ' : 'Home'}</span>
+    </a>
 
-      <div class="submit-card">
-        {#if !submitted}
-          <SubmitStepper {steps} currentStep={state.step} />
+    <div class="submit-card">
+      <div class="flow-select">
+        <div class="flow-select-header">
+          <p class="eyebrow">
+            {$locale == 'vi' ? 'Nộp bài' : 'Submit'}
+          </p>
+          <h1>
+            {
+              $locale == 'vi'
+              ? 'Bạn muốn nộp gì?'
+              : 'What do you want to submit?'
+            }
+          </h1>
+        </div>
 
-          <div class="step-wrapper">
-            {#key state.step}
-              <div
-                class="step-animate"
-                in:fly={{ x: direction * 40, duration: 250, delay: 100 }}
-                out:fly={{ x: direction * -40, duration: 150 }}
-              >
-                {#if state.step === 0}
-                  <StepRules submissionType={state.type} />
-                {:else if state.step === 1}
-                  <StepLevelId
-                    bind:levelId={state.levelid}
-                    submissionType="record"
-                  />
-                {:else if state.step === 2}
-                  <StepConfirmLevel
-                    apiLevel={state.apiLevel}
-                    level={state.level}
-                    levelVariants={state.levelVariants}
-                    bind:selectedVariantId={state.selectedVariantId}
-                  />
-                {:else if state.step === 3}
-                  <StepRequiredFields
-                    apiLevel={state.apiLevel}
-                    level={state.level}
-                    bind:progress={state.progress}
-                    bind:refreshRate={state.refreshRate}
-                    bind:videoLink={state.videoLink}
-                    bind:raw={state.raw}
-                    bind:mobile={state.mobile}
-                    bind:time={state.time}
-                  />
-                {:else if state.step === 4}
-                  <StepOptionalFields
-                    apiLevel={state.apiLevel}
-                    progress={state.progress}
-                    bind:suggestedRating={state.suggestedRating}
-                    bind:comment={state.comment}
-                  />
-                {:else if state.step === 5}
-                  <StepSubmitReview
-                    levelId={state.levelid}
-                    selectedVariantId={state.selectedVariantId}
-                    apiLevel={state.apiLevel}
-                    level={state.level}
-                    progress={state.progress}
-                    refreshRate={state.refreshRate}
-                    videoLink={state.videoLink}
-                    raw={state.raw}
-                    mobile={state.mobile}
-                    time={state.time}
-                    suggestedRating={state.suggestedRating}
-                    comment={state.comment}
-                    lists={eligibleLists}
-                    loading={eligibleListsLoading}
-                    errorMessage={eligibleListsError}
-                  />
-                {/if}
-              </div>
-            {/key}
-          </div>
+        <div class="flow-options">
+          <button
+            type="button"
+            class="flow-option"
+            on:click={chooseRecordFlow}
+          >
+            <span class="option-icon">
+              <ClipboardCheck size={22} />
+            </span>
+            <span class="option-copy">
+              <span class="option-title">
+                {$locale == 'vi' ? 'Nộp record' : 'Submit record'}
+              </span>
+              <span class="option-description">
+                {
+                  $locale == 'vi'
+                  ? 'Gửi record hoàn thành hoặc progress cho một level.'
+                  : 'Send a completion or progress record for a level.'
+                }
+              </span>
+            </span>
+          </button>
 
-          <div class="step-footer">
-            {#if state.step > 0}
-              <Button variant="outline" class="footer-btn" on:click={back}>
-                {$_('submit.back')}
-              </Button>
-            {:else}
-              <div />
-            {/if}
-            <Button class="footer-btn" on:click={next}>
-              {#if isLastStep}
-                {$_('submit.button')}
-              {:else}
-                {$_('submit.next')}
-              {/if}
-            </Button>
-          </div>
-        {:else}
-          <SubmitResult
-            sendStatus={state.sendStatus}
-            errorMessage={state.errorMessage}
-            errorResponse={state.errorResponse}
-            submitLog={state.submitLog}
-            submitId={state.submitId}
-            submission={{
-                levelid: state.levelid,
-                progress: state.progress,
-                refreshRate: state.refreshRate,
-                videoLink: state.videoLink,
-                raw: state.raw,
-                mobile: state.mobile,
-                suggestedRating: state.suggestedRating,
-                comment: state.comment
-            }}
-            apiLevel={state.apiLevel}
-            time={state.time}
-            onReset={resetForm}
-          />
-        {/if}
+          <button
+            type="button"
+            class="flow-option"
+            on:click={chooseChallengeListFlow}
+          >
+            <span class="option-icon">
+              <ListPlus size={22} />
+            </span>
+            <span class="option-copy">
+              <span class="option-title">
+                {
+                  $locale == 'vi'
+                  ? 'Nộp level cho Challenge List'
+                  : 'Submit challenge list level'
+                }
+              </span>
+              <span class="option-description">
+                {
+                  $locale == 'vi'
+                  ? 'Gửi level vào luồng duyệt của Challenge List.'
+                  : 'Send a level to the Challenge List submission flow.'
+                }
+              </span>
+            </span>
+          </button>
+        </div>
       </div>
     </div>
-  {/if}
+  </div>
 </div>
 
 <style lang="scss">
@@ -596,26 +114,6 @@
   padding: 24px 16px;
   display: flex;
   justify-content: center;
-}
-
-.auth-prompt {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  text-align: center;
-  padding: 60px 20px;
-
-  h2 {
-    font-size: 20px;
-    font-weight: 600;
-  }
-
-  .text-muted {
-    font-size: 14px;
-    color: hsl(var(--muted-foreground));
-  }
 }
 
 .submit-container {
@@ -653,32 +151,103 @@
   }
 }
 
-.step-wrapper {
-  position: relative;
-  min-height: 200px;
-  overflow: hidden;
-}
-
-.step-animate {
-  width: 100%;
-}
-
-.step-footer {
+.flow-select {
   display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 24px;
-  padding-top: 16px;
-  border-top: 1px solid hsl(var(--border));
+  flex-direction: column;
+  gap: 20px;
 }
 
-.step-footer :global(.footer-btn) {
-  min-width: 100px;
+.flow-select-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  .eyebrow {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0;
+    color: hsl(var(--muted-foreground));
+    text-transform: uppercase;
+  }
+
+  h1 {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+}
+
+.flow-options {
+  display: grid;
+  gap: 12px;
+}
+
+.flow-option {
+  width: 100%;
+  min-height: 92px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:hover,
+  &:focus-visible {
+    border-color: hsl(var(--primary));
+    background: hsl(var(--accent) / 0.45);
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.12);
+    outline: none;
+  }
+}
+
+.option-icon {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: hsl(var(--primary) / 0.1);
+  color: hsl(var(--primary));
+}
+
+.option-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.option-title {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.option-description {
+  font-size: 13px;
+  line-height: 1.45;
+  color: hsl(var(--muted-foreground));
 }
 
 @media (max-width: 480px) {
-  .step-footer :global(.footer-btn) {
-    flex: 1;
+  .flow-select-header h1 {
+    font-size: 21px;
+  }
+
+  .flow-option {
+    align-items: flex-start;
+    min-height: 0;
   }
 }
 </style>

@@ -287,10 +287,10 @@
 	$: requiredSubmissionLevel = getPvpRequiredSubmissionLevel(requiredSubmission);
 	$: requiredSubmissionLevelId = getPvpRequiredSubmissionLevelId(requiredSubmission);
 	$: requiredSubmissionUrl = requiredSubmissionLevelId
-		? `/submit?levelId=${requiredSubmissionLevelId}&pvpRequirement=${
+		? `/submit/record?levelId=${requiredSubmissionLevelId}&pvpRequirement=${
 			requiredSubmission?.id ?? ''
 		}`
-		: '/submit';
+		: '/submit/record';
 	$: requiredSubmissionLevelUrl = requiredSubmissionLevelId
 		? `/level/${requiredSubmissionLevelId}`
 		: null;
