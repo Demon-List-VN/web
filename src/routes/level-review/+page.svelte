@@ -37,6 +37,9 @@
 	let briefReview = '';
 	let reviewFile: File | null = null;
 	let completed = false;
+	let dashboard: any = null;
+	let dashboardLoading = false;
+	let dashboardLoaded = false;
 
 	$: canReview = $user.loggedIn && ($user.data?.isAdmin || $user.data?.isLevelReviewer);
 	$: selectedLevel = submission?.level ?? submission?.levels ?? null;
@@ -50,6 +53,9 @@
 			? { uid: submission.userId, name: submission.userId }
 			: null
 	);
+	$: if (canReview && !dashboardLoaded && !dashboardLoading) {
+		void loadDashboard();
+	}
 
 	function areaLabel(area: string) {
 		const labels: Record<string, string> = {
@@ -75,6 +81,24 @@
 		const remainder = value % 60;
 
 		return minutes > 0 ? `${minutes}m ${remainder}s` : `${remainder}s`;
+	}
+
+	function formatVND(value: number) {
+		return new Intl.NumberFormat('vi-VN', {
+			style: 'currency',
+			currency: 'VND',
+			maximumFractionDigits: 0
+		})
+			.format(value || 0);
+	}
+
+	function formatDate(value: string | null | undefined) {
+		if (!value) {
+			return '-';
+		}
+
+		return new Date(value)
+			.toLocaleString('vi-VN');
 	}
 
 	function getYouTubeVideoId(value: string) {
@@ -114,6 +138,34 @@
 		}
 	}
 
+	async function loadDashboard() {
+		dashboardLoading = true;
+
+		try {
+			const response = await fetch(
+				`${import.meta.env.VITE_API_URL}/level-feedback-submissions/reviewer-dashboard`,
+				{
+					headers: {
+						Authorization: `Bearer ${await $user.token()}`
+					}
+				}
+			);
+			const payload = await response.json()
+				.catch(() => null);
+
+			if (!response.ok) {
+				throw new Error(payload?.message || $_('level_review.errors.dashboard_failed'));
+			}
+
+			dashboard = payload;
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : $_('level_review.errors.dashboard_failed'));
+		} finally {
+			dashboardLoaded = true;
+			dashboardLoading = false;
+		}
+	}
+
 	async function retrieveSubmission() {
 		loading = true;
 		completed = false;
@@ -137,6 +189,7 @@
 			submission = payload;
 			briefReview = payload?.briefReview || '';
 			reviewFile = null;
+			await loadDashboard();
 		} catch (error) {
 			submission = null;
 			toast.error(error instanceof Error ? error.message : $_('level_review.errors.retrieve_failed'));
@@ -207,6 +260,7 @@
 			submission = payload;
 			completed = true;
 			reviewFile = null;
+			await loadDashboard();
 			toast.success($_('level_review.review_submitted'));
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : $_('level_review.errors.submit_failed'));
@@ -251,6 +305,61 @@
       </Button>
     </section>
 
+    <section class="income-dashboard">
+      <div class="stat-card">
+        <span>{$_('level_review.dashboard_total_earned')}</span>
+        <b>{formatVND(dashboard?.totalEarned || 0)}</b>
+      </div>
+      <div class="stat-card">
+        <span>{$_('level_review.dashboard_completed')}</span>
+        <b>{dashboard?.completedReviews || 0}</b>
+      </div>
+      <div class="stat-card">
+        <span>{$_('level_review.dashboard_pending')}</span>
+        <b>{dashboard?.assignedPendingReviews || 0}</b>
+      </div>
+      <Button variant="outline" disabled={dashboardLoading} on:click={loadDashboard}>
+        {#if dashboardLoading}
+          <Loader2 class="mr-2 spin" size={16} />
+        {/if}
+        {$_('level_review.dashboard_refresh')}
+      </Button>
+    </section>
+
+    {#if dashboard?.submissions?.length}
+      <Card.Root>
+        <Card.Header>
+          <Card.Title>{$_('level_review.dashboard_reviews')}</Card.Title>
+          <Card.Description>{$_('level_review.dashboard_reviews_description')}</Card.Description>
+        </Card.Header>
+        <Card.Content class="income-list">
+          {#each dashboard.submissions as item}
+            <div class="income-row">
+              <div>
+                <b>{item.level?.name || $_('level_review.level_fallback', { values: { id: item.levelId } })}</b>
+                <span>{formatDate(item.reviewedAt || item.assignedAt)}</span>
+              </div>
+              <Badge variant={item.status === 'reviewed' ? 'default' : 'secondary'}>
+                {item.status}
+              </Badge>
+              <div>
+                <span>{$_('level_review.dashboard_paid')}</span>
+                <b>{formatVND(item.paidAmount || 0)}</b>
+              </div>
+              <div>
+                <span>{$_('level_review.dashboard_cut')}</span>
+                <b>{formatVND(item.platformCutAmount || 0)}</b>
+              </div>
+              <div>
+                <span>{$_('level_review.dashboard_payout')}</span>
+                <b>{formatVND(item.reviewerPayoutAmount || 0)}</b>
+              </div>
+            </div>
+          {/each}
+        </Card.Content>
+      </Card.Root>
+    {/if}
+
     {#if completed}
       <div class="success-banner">
         <CheckCircle2 size={18} />
@@ -284,6 +393,10 @@
               {#if submitterPlayer}
                 <PlayerLink player={submitterPlayer} />
               {/if}
+            </div>
+            <div class="detail-row">
+              <span>{$_('level_review.expected_payout')}</span>
+              <b>{formatVND(submission.reviewerPayoutAmount || 0)}</b>
             </div>
             <div class="detail-stack">
               <span>{$_('level_review.requested_review')}</span>
@@ -405,6 +518,55 @@
     margin: 6px 0 0;
     color: hsl(var(--muted-foreground));
     max-width: 680px;
+  }
+}
+
+.income-dashboard {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.stat-card {
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  padding: 14px;
+  display: grid;
+  gap: 6px;
+
+  span {
+    color: hsl(var(--muted-foreground));
+    font-size: 13px;
+  }
+
+  b {
+    font-size: 20px;
+  }
+}
+
+:global(.income-list) {
+  display: grid;
+  gap: 10px;
+}
+
+.income-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto repeat(3, minmax(110px, auto));
+  gap: 12px;
+  align-items: center;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  padding: 12px;
+
+  > div {
+    display: grid;
+    gap: 4px;
+  }
+
+  span {
+    color: hsl(var(--muted-foreground));
+    font-size: 12px;
   }
 }
 
@@ -547,6 +709,11 @@ input[type="file"] {
   .overview {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .income-dashboard,
+  .income-row {
+    grid-template-columns: 1fr;
   }
 
   .review-grid {

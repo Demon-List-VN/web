@@ -21,6 +21,16 @@
 		tooltip?: string;
 	};
 
+	type Pricing = {
+		categoryAmount: number;
+		lengthAmount: number;
+		grossAmount: number;
+		discountAmount: number;
+		paidAmount: number;
+		platformCutAmount: number;
+		reviewerPayoutAmount: number;
+	};
+
 	let step = 0;
 	let levelid = NaN;
 	let apiLevel: any = null;
@@ -31,18 +41,21 @@
 	let lengthSeconds = '';
 	let videoLink = '';
 	let submitterNote = '';
+	let pricing: Pricing | null = null;
 	let levelLoading = false;
+	let quoteLoading = false;
 	let submitting = false;
 	let submitted = false;
 
 	$: steps = [
 		$_('submit.level_feedback.step_level'),
 		$_('submit.level_feedback.step_confirm'),
-		$_('submit.level_feedback.step_request')
+		$_('submit.level_feedback.step_request'),
+		$_('submit.level_feedback.step_payment')
 	];
 	$: selectedLevelId = selectedVariantId ?? levelid;
 	$: numericLengthSeconds = Number(lengthSeconds);
-	$: hasValidLengthSeconds = Number.isInteger(numericLengthSeconds) && numericLengthSeconds > 0;
+	$: hasValidLengthSeconds = Number.isInteger(numericLengthSeconds) && numericLengthSeconds >= 30;
 	$: canSubmitFeedback = requestAreas.length > 0 && hasValidLengthSeconds;
 	$: requestAreaOptions = [
 		{
@@ -60,6 +73,8 @@
 	] satisfies RequestArea[];
 
 	function setArea(area: string, checked: boolean) {
+		pricing = null;
+
 		if (requestAreaOptions.find((option) => option.id === area)?.disabled) {
 			requestAreas = requestAreas.filter((item) => item !== area);
 
@@ -75,6 +90,25 @@
 		if (!requestAreas.includes(area)) {
 			requestAreas = [...requestAreas, area];
 		}
+	}
+
+	function formatVND(value: number) {
+		return new Intl.NumberFormat('vi-VN', {
+			style: 'currency',
+			currency: 'VND',
+			maximumFractionDigits: 0
+		})
+			.format(value || 0);
+	}
+
+	function feedbackPayload() {
+		return {
+			levelId: selectedLevelId,
+			requestAreas,
+			lengthSeconds: numericLengthSeconds,
+			videoLink,
+			submitterNote
+		};
 	}
 
 	function getYouTubeVideoId(value: string) {
@@ -165,12 +199,57 @@
 			return;
 		}
 
+		if (step === 2) {
+			if (!validateRequest()) {
+				return;
+			}
+
+			await loadPricing();
+
+			if (pricing) {
+				step = 3;
+			}
+
+			return;
+		}
+
 		await submitFeedback();
 	}
 
 	function back() {
 		if (step > 0) {
 			step -= 1;
+		}
+	}
+
+	async function loadPricing() {
+		quoteLoading = true;
+		pricing = null;
+
+		try {
+			const response = await fetch(
+				`${import.meta.env.VITE_API_URL}/level-feedback-submissions/quote`,
+				{
+					method: 'POST',
+					headers: {
+						Authorization: `Bearer ${await $user.token()}`,
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify(feedbackPayload())
+				}
+			);
+			const payload = await response.json()
+				.catch(() => null);
+
+			if (!response.ok) {
+				throw new Error(payload?.message || $_('submit.level_feedback.errors.quote_failed'));
+			}
+
+			pricing = payload?.pricing ?? null;
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : $_('submit.level_feedback.errors.quote_failed'));
+		} finally {
+			quoteLoading = false;
 		}
 	}
 
@@ -207,20 +286,14 @@
 
 		try {
 			const response = await fetch(
-				`${import.meta.env.VITE_API_URL}/level-feedback-submissions`,
+				`${import.meta.env.VITE_API_URL}/level-feedback-submissions/checkout`,
 				{
 					method: 'POST',
 					headers: {
 						Authorization: `Bearer ${await $user.token()}`,
 						'Content-Type': 'application/json'
 					},
-					body: JSON.stringify({
-						levelId: selectedLevelId,
-						requestAreas,
-						lengthSeconds: numericLengthSeconds,
-						videoLink,
-						submitterNote
-					})
+					body: JSON.stringify(feedbackPayload())
 				}
 			);
 			const payload = await response.json()
@@ -228,6 +301,12 @@
 
 			if (!response.ok) {
 				throw new Error(payload?.message || $_('submit.level_feedback.errors.submit_failed'));
+			}
+
+			if (payload?.checkoutUrl) {
+				window.location.href = payload.checkoutUrl;
+
+				return;
 			}
 
 			submitted = true;
@@ -279,6 +358,7 @@
                 lengthSeconds = '';
                 videoLink = '';
                 submitterNote = '';
+                pricing = null;
                 submitted = false;
             }}>
               {$_('submit.level_feedback.submit_another')}
@@ -314,7 +394,7 @@
               targetLabel={$_('submit.level_feedback.target_label')}
             />
           {/if}
-        {:else}
+        {:else if step === 2}
           <div class="request-step">
             <div class="field">
               <Label>{$_('submit.level_feedback.area_question')}</Label>
@@ -369,9 +449,10 @@
               <Input
                 id="length-seconds"
                 type="number"
-                min="1"
+                min="30"
                 inputmode="numeric"
                 bind:value={lengthSeconds}
+                on:input={() => (pricing = null)}
                 placeholder="90"
               />
             </div>
@@ -398,17 +479,58 @@
               />
             </div>
           </div>
+        {:else}
+          <div class="payment-step">
+            <div class="payment-card">
+              <div>
+                <p class="eyebrow">{$_('submit.level_feedback.payment_title')}</p>
+                <h2>{$_('submit.level_feedback.payment_heading')}</h2>
+              </div>
+
+              {#if quoteLoading}
+                <div class="loading-inline">
+                  <Loader2 class="spin" size={18} />
+                  <span>{$_('submit.level_feedback.loading_price')}</span>
+                </div>
+              {:else if pricing}
+                <div class="price-list">
+                  <div class="price-row">
+                    <span>{$_('submit.level_feedback.price_categories')}</span>
+                    <b>{formatVND(pricing.categoryAmount)}</b>
+                  </div>
+                  <div class="price-row">
+                    <span>{$_('submit.level_feedback.price_length')}</span>
+                    <b>{formatVND(pricing.lengthAmount)}</b>
+                  </div>
+                  {#if pricing.discountAmount > 0}
+                    <div class="price-row muted">
+                      <span>{$_('submit.level_feedback.price_discount')}</span>
+                      <b>-{formatVND(pricing.discountAmount)}</b>
+                    </div>
+                  {/if}
+                  <div class="price-row total">
+                    <span>{$_('submit.level_feedback.price_total')}</span>
+                    <b>{formatVND(pricing.paidAmount)}</b>
+                  </div>
+                </div>
+              {:else}
+                <Button variant="outline" disabled={quoteLoading} on:click={loadPricing}>
+                  {$_('submit.level_feedback.refresh_price')}
+                </Button>
+              {/if}
+            </div>
+          </div>
         {/if}
 
         <div class="footer-actions">
-          <Button variant="outline" disabled={step === 0 || submitting} on:click={back}>
+          <Button variant="outline" disabled={step === 0 || submitting || quoteLoading} on:click={back}>
             {$_('submit.back')}
           </Button>
-          <Button disabled={submitting || levelLoading || (step === steps.length - 1 && !canSubmitFeedback)} on:click={next}>
-            {#if submitting}
+          <Button disabled={submitting || levelLoading || quoteLoading || (step === 2 && !canSubmitFeedback) || (step === steps.length - 1 && !pricing)} on:click={next}>
+            {#if submitting || quoteLoading}
               <Loader2 class="mr-2 spin" size={16} />
             {/if}
-            {step === steps.length - 1 ? $_('submit.level_feedback.submit_request') : $_('submit.level_feedback.continue')}
+            {step === steps.length - 1 ? $_('submit.level_feedback.pay_and_submit') : $_('submit.level_feedback.continue')}
           </Button>
         </div>
       {/if}
@@ -502,6 +624,63 @@ h1 {
 .request-step {
   display: grid;
   gap: 18px;
+}
+
+.payment-step {
+  display: grid;
+  gap: 16px;
+}
+
+.payment-card {
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  padding: 16px;
+  display: grid;
+  gap: 16px;
+
+  h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+  }
+}
+
+.loading-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: hsl(var(--muted-foreground));
+}
+
+.price-list {
+  display: grid;
+  gap: 10px;
+}
+
+.price-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+
+  span {
+    color: hsl(var(--muted-foreground));
+  }
+
+  &.muted {
+    font-size: 13px;
+  }
+
+  &.total {
+    border-top: 1px solid hsl(var(--border));
+    padding-top: 12px;
+    font-size: 16px;
+
+    span,
+    b {
+      color: hsl(var(--foreground));
+    }
+  }
 }
 
 .field {
