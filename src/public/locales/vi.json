@@ -1753,6 +1753,8 @@
             "event_rating": "Biểu đồ điểm cuộc thi",
             "no_event_data": "Chưa có lịch sử điểm cuộc thi xếp hạng",
             "no_pvp_data": "Chưa có trận PvP xếp hạng",
+            "pvp_manual_verification_title": "Đang chờ xác minh thủ công",
+            "pvp_manual_verification_description": "Người chơi này đang chờ xác minh thủ công cho {level}. Biểu đồ Elo PvP sẽ bị ẩn cho đến khi yêu cầu được xử lý.",
             "pvp_graph_unstable": "Elo của người chơi cần ổn định trước khi hiện biểu đồ Elo PvP."
         }
     },

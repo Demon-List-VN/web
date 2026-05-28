@@ -10,11 +10,14 @@
 		getPvpMode,
 		getPvpSelfParticipant,
 		getPvpStatus,
+		getPvpRequiredSubmissionLevel,
+		getPvpRequiredSubmissionLevelId,
 		getPvpVisibleRatingLabel,
 		isPvpMatchRanked,
 		isPvpRatingStable,
 		type PvpMatch,
-		type PvpMode
+		type PvpMode,
+		type PvpRequiredSubmission
 	} from '$lib/client/pvp';
 	import Heatmap from '$lib/components/heatmap.svelte';
 	import * as Card from '$lib/components/ui/card';
@@ -41,6 +44,7 @@
 		LineChart,
 		ListChecks,
 		Medal,
+		ShieldAlert,
 		Trophy,
 		Zap
 	} from 'lucide-svelte';
@@ -138,6 +142,20 @@
 	$: exp = player.exp + player.extraExp;
 	$: expLevel = getExpLevel(exp);
 	$: contestTitle = getTitle('elo', player);
+	$: pvpRequiredSubmission = (
+		player?.pvpRequiredSubmission
+		?? player?.pvp_required_submission
+		?? data.pvpRequiredSubmission
+		?? null
+	) as PvpRequiredSubmission | null;
+	$: pvpRequiredSubmissionLevel = getPvpRequiredSubmissionLevel(
+		pvpRequiredSubmission
+	);
+	$: pvpRequiredSubmissionLevelId = getPvpRequiredSubmissionLevelId(
+		pvpRequiredSubmission
+	);
+	$: pvpRequiredSubmissionLevelLabel = pvpRequiredSubmissionLevel?.name
+		|| (pvpRequiredSubmissionLevelId ? `#${pvpRequiredSubmissionLevelId}` : '-');
 	let selectedPvpMode: PvpMode = 'classic';
 	$: pvpRating = getPvpRatingForMode(player, selectedPvpMode);
 	$: pvpRatedMatchCount = getPvpRatedMatchCount(player, selectedPvpMode);
@@ -635,24 +653,42 @@
       <Card.Content class="space-y-4">
         <div class="rating-value-row pvp-rating-row">
           <div class="pvp-rating-main">
-            {#if pvpRank}
+            {#if pvpRank && !pvpRequiredSubmission}
               <span class="pvp-rank-badge" style={pvpRank.badgeStyle}>
                 {pvpRank.label}
               </span>
             {/if}
-            <strong class="rating-value">{formatPvpRating()}</strong>
+            {#if !pvpRequiredSubmission}
+              <strong class="rating-value">{formatPvpRating()}</strong>
+            {/if}
           </div>
           <div class="pvp-rating-meta">
-            <span>
-              {$_('player.overview.rank')}: {pvpRank?.label ?? $_('pvp.unranked')}
-            </span>
-            <span>
-              {pvpRatedMatchCount ?? 0}
-              {$_('player.overview.rated_matches')}
-            </span>
+            {#if !pvpRequiredSubmission}
+              <span>
+                {$_('player.overview.rank')}: {pvpRank?.label ?? $_('pvp.unranked')}
+              </span>
+              <span>
+                {pvpRatedMatchCount ?? 0}
+                {$_('player.overview.rated_matches')}
+              </span>
+            {/if}
           </div>
         </div>
-        {#if pvpGraphDisabled}
+        {#if pvpRequiredSubmission}
+          <div class="empty-panel graph-empty pvp-verification-panel">
+            <ShieldAlert class="h-5 w-5" />
+            <div>
+              <strong>{
+                $_('player.overview.pvp_manual_verification_title')
+              }</strong>
+              <span>{
+                $_('player.overview.pvp_manual_verification_description', {
+                  values: { level: pvpRequiredSubmissionLevelLabel }
+                })
+              }</span>
+            </div>
+          </div>
+        {:else if pvpGraphDisabled}
           <div class="empty-panel graph-empty">
             <LineChart class="h-5 w-5" />
             <span>{$_('player.overview.pvp_graph_unstable')}</span>
@@ -1163,6 +1199,34 @@
 
 .empty-panel.graph-empty {
   min-height: 220px;
+}
+
+.pvp-verification-panel {
+  align-items: center;
+  padding: 18px;
+}
+
+.pvp-verification-panel :global(svg) {
+  color: hsl(38, 92%, 50%);
+}
+
+.pvp-verification-panel div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+}
+
+.pvp-verification-panel strong {
+  color: hsl(var(--foreground));
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.pvp-verification-panel span {
+  color: hsl(var(--muted-foreground));
+  line-height: 1.35;
 }
 
 @media screen and (max-width: 1180px) {

@@ -1754,6 +1754,8 @@
             "event_rating": "Contest Rating Chart",
             "no_event_data": "No ranked contest history yet",
             "no_pvp_data": "No ranked PvP matches yet",
+            "pvp_manual_verification_title": "Waiting for manual verification",
+            "pvp_manual_verification_description": "This player is waiting for manual verification for {level}. The PvP Elo graph is hidden until the requirement is resolved.",
             "pvp_graph_unstable": "This player's rating needs to stabilize before the PvP Elo graph is shown."
         }
     },

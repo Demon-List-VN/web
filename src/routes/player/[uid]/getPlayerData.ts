@@ -182,6 +182,7 @@ export async function getPlayerData(player: any, fetch: any, url: URL) {
 
     return {
         player,
+        pvpRequiredSubmission: player?.pvpRequiredSubmission ?? player?.pvp_required_submission ?? null,
         listSummaries,
         selectedList,
         playerRecords,
