@@ -5,6 +5,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Textarea } from '$lib/components/ui/textarea';
+	import * as Tooltip from '$lib/components/ui/tooltip';
 	import SubmitStepper from '$lib/components/submit/SubmitStepper.svelte';
 	import StepLevelId from '$lib/components/submit/StepLevelId.svelte';
 	import StepConfirmLevel from '$lib/components/submit/StepConfirmLevel.svelte';
@@ -16,6 +17,8 @@
 		id: string;
 		label: string;
 		description: string;
+		disabled?: boolean;
+		tooltip?: string;
 	};
 
 	let step = 0;
@@ -24,7 +27,7 @@
 	let level: any = null;
 	let levelVariants: any[] = [];
 	let selectedVariantId: number | null = null;
-	let requestAreas: string[] = ['gameplay'];
+	let requestAreas: string[] = ['deco'];
 	let lengthSeconds = '';
 	let videoLink = '';
 	let submitterNote = '';
@@ -45,7 +48,9 @@
 		{
 			id: 'gameplay',
 			label: $_('submit.level_feedback.areas.gameplay.label'),
-			description: $_('submit.level_feedback.areas.gameplay.description')
+			description: $_('submit.level_feedback.areas.gameplay.description'),
+			disabled: true,
+			tooltip: 'Available soon'
 		},
 		{
 			id: 'deco',
@@ -55,6 +60,12 @@
 	] satisfies RequestArea[];
 
 	function setArea(area: string, checked: boolean) {
+		if (requestAreaOptions.find((option) => option.id === area)?.disabled) {
+			requestAreas = requestAreas.filter((item) => item !== area);
+
+			return;
+		}
+
 		if (!checked) {
 			requestAreas = requestAreas.filter((item) => item !== area);
 
@@ -264,7 +275,7 @@
                 level = null;
                 levelVariants = [];
                 selectedVariantId = null;
-                requestAreas = ['gameplay'];
+                requestAreas = ['deco'];
                 lengthSeconds = '';
                 videoLink = '';
                 submitterNote = '';
@@ -309,20 +320,44 @@
               <Label>{$_('submit.level_feedback.area_question')}</Label>
               <div class="area-grid">
                 {#each requestAreaOptions as area}
-                  <label
-                    class="area-option"
-                    class:selected={requestAreas.includes(area.id)}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={requestAreas.includes(area.id)}
-                      on:change={(event) => setArea(area.id, event.currentTarget.checked)}
-                    />
-                    <span class="area-copy">
-                      <span>{area.label}</span>
-                      <small>{area.description}</small>
-                    </span>
-                  </label>
+                  {#if area.disabled}
+                    <Tooltip.Root>
+                      <Tooltip.Trigger>
+                        <label
+                          class="area-option disabled"
+                          title={area.tooltip}
+                          aria-disabled="true"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={false}
+                            disabled
+                            on:change={(event) => setArea(area.id, event.currentTarget.checked)}
+                          />
+                          <span class="area-copy">
+                            <span>{area.label}</span>
+                            <small>{area.description}</small>
+                          </span>
+                        </label>
+                      </Tooltip.Trigger>
+                      <Tooltip.Content>{area.tooltip}</Tooltip.Content>
+                    </Tooltip.Root>
+                  {:else}
+                    <label
+                      class="area-option"
+                      class:selected={requestAreas.includes(area.id)}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={requestAreas.includes(area.id)}
+                        on:change={(event) => setArea(area.id, event.currentTarget.checked)}
+                      />
+                      <span class="area-copy">
+                        <span>{area.label}</span>
+                        <small>{area.description}</small>
+                      </span>
+                    </label>
+                  {/if}
                 {/each}
               </div>
             </div>
@@ -525,6 +560,21 @@ h1 {
 
   &.selected {
     box-shadow: 0 0 0 3px hsl(var(--primary) / 0.12);
+  }
+
+  &.disabled {
+    cursor: not-allowed;
+    opacity: 0.58;
+
+    input {
+      cursor: not-allowed;
+    }
+
+    &:hover {
+      border-color: hsl(var(--border));
+      background: hsl(var(--background));
+      box-shadow: none;
+    }
   }
 }
 
