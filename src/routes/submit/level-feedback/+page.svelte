@@ -26,6 +26,7 @@
 	let selectedVariantId: number | null = null;
 	let requestAreas: string[] = ['gameplay'];
 	let lengthSeconds = '';
+	let videoLink = '';
 	let submitterNote = '';
 	let levelLoading = false;
 	let submitting = false;
@@ -63,6 +64,11 @@
 		if (!requestAreas.includes(area)) {
 			requestAreas = [...requestAreas, area];
 		}
+	}
+
+	function getYouTubeVideoId(value: string) {
+		return value.trim()
+			.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([A-Za-z0-9_-]{11})/)?.[1] ?? null;
 	}
 
 	async function fetchStoredLevel(levelId: number) {
@@ -172,6 +178,12 @@
 			return false;
 		}
 
+		if (videoLink.trim() && !getYouTubeVideoId(videoLink)) {
+			toast.error($_('submit.level_feedback.errors.video_link_invalid'));
+
+			return false;
+		}
+
 		return true;
 	}
 
@@ -195,6 +207,7 @@
 						levelId: selectedLevelId,
 						requestAreas,
 						lengthSeconds: numericLengthSeconds,
+						videoLink,
 						submitterNote
 					})
 				}
@@ -253,6 +266,7 @@
                 selectedVariantId = null;
                 requestAreas = ['gameplay'];
                 lengthSeconds = '';
+                videoLink = '';
                 submitterNote = '';
                 submitted = false;
             }}>
@@ -335,6 +349,17 @@
                 rows={4}
                 maxlength={1000}
                 placeholder={$_('submit.level_feedback.note_placeholder')}
+              />
+            </div>
+
+            <div class="field">
+              <Label for="video-link">{$_('submit.level_feedback.video_link')}</Label>
+              <Input
+                id="video-link"
+                type="url"
+                bind:value={videoLink}
+                maxlength={500}
+                placeholder={$_('submit.level_feedback.video_link_placeholder')}
               />
             </div>
           </div>

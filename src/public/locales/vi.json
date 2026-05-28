@@ -743,6 +743,8 @@
         "submitted_by": "Người nộp",
         "requested_review": "Hạng mục cần review",
         "submitter_note": "Ghi chú của người nộp",
+        "video_link": "Video đã gửi",
+        "video_embed_title": "Video level đã gửi",
         "write_review": "Viết review",
         "write_review_description": "Review ngắn sẽ hiện trực tiếp trong Bản nộp của tôi. File review chi tiết là bắt buộc.",
         "brief_review": "Review ngắn",
@@ -825,6 +827,8 @@
             "length_seconds": "Độ dài level (giây)",
             "note": "Ghi chú thêm",
             "note_placeholder": "Nêu rõ phần bạn đang phân vân hoặc muốn reviewer tập trung.",
+            "video_link": "Link video YouTube",
+            "video_link_placeholder": "https://youtube.com/watch?v=...",
             "submit_request": "Gửi yêu cầu",
             "continue": "Tiếp tục",
             "areas": {
@@ -858,6 +862,7 @@
                 "load_level_failed": "Không tải được level này",
                 "area_required": "Chọn ít nhất một hạng mục review",
                 "length_required": "Nhập độ dài level hợp lệ theo giây",
+                "video_link_invalid": "Nhập link video YouTube hợp lệ",
                 "submit_failed": "Không thể gửi yêu cầu"
             }
         },

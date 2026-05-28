@@ -15,6 +15,7 @@
 	import { onMount } from 'svelte';
 	import type { PageData } from './$types';
 	import Ads from '$lib/components/ads.svelte';
+	import PlayerLink from '$lib/components/playerLink.svelte';
 	import { _ } from 'svelte-i18n';
 	import { EllipsisIcon, FileText, SkipForward } from 'lucide-svelte';
 
@@ -195,6 +196,14 @@
 	function formatSubmissionDate(value: string) {
 		return new Date(value)
 			.toLocaleString('vi-VN');
+	}
+
+	function feedbackReviewerPlayer(submission: any) {
+		return submission.reviewer ?? (
+			submission.reviewerId
+				? { uid: submission.reviewerId, name: submission.reviewerId }
+				: null
+		);
 	}
 </script>
 
@@ -472,13 +481,14 @@
                   {/if}
                 </Card.Content>
                 <Card.Footer class="flex justify-between items-center">
-                  <span class="reviewer-name">
-                    {#if submission.reviewer}
-                      {$_('submissions.feedback_reviewer')}: {submission.reviewer.name || submission.reviewer.uid}
+                  <div class="reviewer-name">
+                    {#if feedbackReviewerPlayer(submission)}
+                      {$_('submissions.feedback_reviewer')}:
+                      <PlayerLink player={feedbackReviewerPlayer(submission)} />
                     {:else}
                       {$_('submissions.feedback_reviewer')}: -
                     {/if}
-                  </span>
+                  </div>
                   {#if submission.reviewFileUrl}
                     <Button
                       variant="outline"
@@ -555,6 +565,9 @@
 }
 
 .reviewer-name {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 13px;
   color: hsl(var(--muted-foreground));
 }

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Title from '$lib/components/Title.svelte';
+	import PlayerLink from '$lib/components/playerLink.svelte';
 	import { user } from '$lib/client';
 	import { upload } from '$lib/client/storage';
 	import { Badge } from '$lib/components/ui/badge';
@@ -42,6 +43,13 @@
 	$: requestAreas = Array.isArray(submission?.requestAreas)
 		? submission.requestAreas
 		: [];
+	$: videoId = getYouTubeVideoId(submission?.videoLink || '');
+	$: canSubmitReview = briefReview.trim().length > 0 && Boolean(reviewFile);
+	$: submitterPlayer = submission?.submitter ?? (
+		submission?.userId
+			? { uid: submission.userId, name: submission.userId }
+			: null
+	);
 
 	function areaLabel(area: string) {
 		const labels: Record<string, string> = {
@@ -67,6 +75,11 @@
 		const remainder = value % 60;
 
 		return minutes > 0 ? `${minutes}m ${remainder}s` : `${remainder}s`;
+	}
+
+	function getYouTubeVideoId(value: string) {
+		return value.trim()
+			.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([A-Za-z0-9_-]{11})/)?.[1] ?? null;
 	}
 
 	function fileExtension(file: File) {
@@ -268,9 +281,9 @@
             </div>
             <div class="detail-row">
               <span>{$_('level_review.submitted_by')}</span>
-              <a href={`/player/${submission.userId}`}>
-                {submission.submitter?.name || submission.userId}
-              </a>
+              {#if submitterPlayer}
+                <PlayerLink player={submitterPlayer} />
+              {/if}
             </div>
             <div class="detail-stack">
               <span>{$_('level_review.requested_review')}</span>
@@ -284,6 +297,23 @@
               <div class="detail-stack">
                 <span>{$_('level_review.submitter_note')}</span>
                 <p>{submission.submitterNote}</p>
+              </div>
+            {/if}
+            {#if videoId}
+              <div class="detail-stack">
+                <span>{$_('level_review.video_link')}</span>
+                <div class="video-embed">
+                  <iframe
+                    title={$_('level_review.video_embed_title')}
+                    src={`https://www.youtube.com/embed/${videoId}`}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowfullscreen
+                  />
+                </div>
+                <a class="video-link" href={submission.videoLink} target="_blank" rel="noreferrer">
+                  {submission.videoLink}
+                  <ExternalLink size={13} />
+                </a>
               </div>
             {/if}
           </Card.Content>
@@ -327,7 +357,7 @@
             </div>
           </Card.Content>
           <Card.Footer class="justify-end">
-            <Button disabled={submitting || completed} on:click={submitReview}>
+            <Button disabled={submitting || completed || !canSubmitReview} on:click={submitReview}>
               {#if submitting}
                 <Loader2 class="mr-2 spin" size={16} />
               {/if}
@@ -427,6 +457,32 @@
     margin: 0;
     line-height: 1.6;
   }
+}
+
+.video-embed {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--muted) / 0.2);
+
+  iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+}
+
+.video-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  color: hsl(var(--primary));
+  font-size: 13px;
 }
 
 .area-list {

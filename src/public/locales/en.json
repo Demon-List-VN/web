@@ -743,6 +743,8 @@
         "submitted_by": "Submitted by",
         "requested_review": "Requested review",
         "submitter_note": "Submitter note",
+        "video_link": "Submitted video",
+        "video_embed_title": "Submitted level video",
         "write_review": "Write review",
         "write_review_description": "The brief review is shown directly in My Submissions. The detailed file is required.",
         "brief_review": "Brief review",
@@ -825,6 +827,8 @@
             "length_seconds": "Level length in seconds",
             "note": "Additional note",
             "note_placeholder": "Mention what you are unsure about or want the reviewer to focus on.",
+            "video_link": "YouTube video link",
+            "video_link_placeholder": "https://youtube.com/watch?v=...",
             "submit_request": "Submit request",
             "continue": "Continue",
             "areas": {
@@ -858,6 +862,7 @@
                 "load_level_failed": "Unable to load this level",
                 "area_required": "Select at least one review area",
                 "length_required": "Enter a valid level length in seconds",
+                "video_link_invalid": "Enter a valid YouTube video link",
                 "submit_failed": "Failed to submit request"
             }
         },
