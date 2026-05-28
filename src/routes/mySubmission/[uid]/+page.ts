@@ -11,6 +11,7 @@ export async function load({ params, fetch }: Parameters<PageLoad>[0]) {
 
     return {
         records,
-        levelSubmissions
+        levelSubmissions,
+        feedbackSubmissions: []
     };
 }

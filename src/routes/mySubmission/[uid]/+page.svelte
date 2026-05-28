@@ -12,15 +12,34 @@
 	import CrossCircled from 'svelte-radix/CrossCircled.svelte';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
+	import { onMount } from 'svelte';
 	import type { PageData } from './$types';
 	import Ads from '$lib/components/ads.svelte';
 	import { _ } from 'svelte-i18n';
-	import { EllipsisIcon, SkipForward } from 'lucide-svelte';
+	import { EllipsisIcon, FileText, SkipForward } from 'lucide-svelte';
 
 	export let data: PageData;
 	let alertOpened = false;
 	let lvID: number;
 	let recID: number | null = null;
+	let feedbackSubmissions: any[] = data.feedbackSubmissions || [];
+	let feedbackLoading = false;
+	let feedbackLoaded = false;
+
+	onMount(() => {
+		const unsubscribe = user.subscribe((currentUser) => {
+			if (
+				currentUser.loggedIn
+				&& currentUser.data?.uid == $page.params.uid
+				&& !feedbackLoaded
+			) {
+				feedbackLoaded = true;
+				void loadFeedbackSubmissions();
+			}
+		});
+
+		return () => unsubscribe();
+	});
 
 	function getTimeString(ms: number) {
 		const minutes = Math.floor(ms / 60000);
@@ -98,6 +117,85 @@
 			boosting = boosting.filter((x) => x !== levelid);
 		}
 	}
+
+	async function loadFeedbackSubmissions() {
+		feedbackLoading = true;
+
+		try {
+			const response = await fetch(
+				`${import.meta.env.VITE_API_URL}/level-feedback-submissions/my`,
+				{
+					headers: {
+						Authorization: `Bearer ${await $user.token()}`
+					}
+				}
+			);
+
+			if (!response.ok) {
+				throw new Error($_('submissions.feedback_load_failed'));
+			}
+
+			feedbackSubmissions = await response.json();
+		} catch {
+			toast.error($_('submissions.feedback_load_failed'));
+		} finally {
+			feedbackLoading = false;
+		}
+	}
+
+	function feedbackAreaLabel(area: string) {
+		const labels: Record<string, string> = {
+			gameplay: $_('submit.level_feedback.areas.gameplay.label'),
+			deco: $_('submit.level_feedback.areas.deco.label'),
+			optimization: $_('submit.level_feedback.areas.optimization.label'),
+			balancing: $_('submit.level_feedback.areas.balancing.label'),
+			bugs: $_('submit.level_feedback.areas.bugs.label'),
+			system: $_('submit.level_feedback.areas.system.label')
+		};
+
+		return labels[area] || area;
+	}
+
+	function feedbackStatusLabel(status: string) {
+		const labels: Record<string, string> = {
+			pending: $_('submissions.feedback_status.pending'),
+			assigned: $_('submissions.feedback_status.assigned'),
+			reviewed: $_('submissions.feedback_status.reviewed'),
+			cancelled: $_('submissions.feedback_status.cancelled')
+		};
+
+		return labels[status] || status;
+	}
+
+	function feedbackStatusVariant(status: string) {
+		if (status === 'reviewed') {
+			return 'default';
+		}
+
+		if (status === 'cancelled') {
+			return 'destructive';
+		}
+
+		return 'outline';
+	}
+
+	function formatFeedbackLength(seconds: number) {
+		const value = Number(seconds);
+
+		if (!Number.isFinite(value)) {
+			return '-';
+		}
+
+		const minutes = Math.floor(value / 60);
+		const remainder = value % 60;
+
+		return minutes > 0 ? `${minutes}m ${remainder}s` : `${remainder}s`;
+	}
+
+	function formatSubmissionDate(value: string) {
+		return new Date(value)
+			.toLocaleString('vi-VN');
+	}
 </script>
 
 <svelte:head>
@@ -136,6 +234,9 @@
             Level ({data.levelSubmissions.length})
           </Tabs.Trigger>
         {/if}
+        <Tabs.Trigger value="feedback">
+          {$_('submissions.feedback_tab')} ({feedbackSubmissions.length})
+        </Tabs.Trigger>
       </Tabs.List>
 
       <!-- Records Tab -->
@@ -316,6 +417,84 @@
           </div>
         </Tabs.Content>
       {/if}
+
+      <Tabs.Content value="feedback">
+        {#if feedbackLoading}
+          <div class="feedback-empty">
+            <FileText size={22} />
+            <span>{$_('submissions.feedback_loading')}</span>
+          </div>
+        {:else if feedbackSubmissions.length === 0}
+          <div class="feedback-empty">
+            <FileText size={22} />
+            <span>{$_('submissions.feedback_empty')}</span>
+          </div>
+        {:else}
+          <div class="feedback-list">
+            {#each feedbackSubmissions as submission}
+              <Card.Root>
+                <Card.Header>
+                  <div class="feedback-card-header">
+                    <div>
+                      <Card.Title>
+                        <a
+                          href={`/level/${submission.levelId}`}
+                          data-sveltekit-preload-data="tap"
+                        >
+                          {submission.level?.name || submission.levels?.name || submission.levelId}
+                        </a>
+                      </Card.Title>
+                      <Card.Description>
+                        {formatSubmissionDate(submission.created_at)} · {
+                          formatFeedbackLength(submission.lengthSeconds)
+                        }
+                      </Card.Description>
+                    </div>
+                    <Badge variant={feedbackStatusVariant(submission.status)}>
+                      {feedbackStatusLabel(submission.status)}
+                    </Badge>
+                  </div>
+                </Card.Header>
+                <Card.Content class="feedback-card-body">
+                  <div class="feedback-areas">
+                    {#each submission.requestAreas || [] as area}
+                      <Badge variant="secondary">{feedbackAreaLabel(area)}</Badge>
+                    {/each}
+                  </div>
+                  {#if submission.submitterNote}
+                    <p class="feedback-note">{submission.submitterNote}</p>
+                  {/if}
+                  {#if submission.briefReview}
+                    <div class="review-box">
+                      <strong>{$_('submissions.feedback_brief_review')}</strong>
+                      <p>{submission.briefReview}</p>
+                    </div>
+                  {/if}
+                </Card.Content>
+                <Card.Footer class="flex justify-between items-center">
+                  <span class="reviewer-name">
+                    {#if submission.reviewer}
+                      {$_('submissions.feedback_reviewer')}: {submission.reviewer.name || submission.reviewer.uid}
+                    {:else}
+                      {$_('submissions.feedback_reviewer')}: -
+                    {/if}
+                  </span>
+                  {#if submission.reviewFileUrl}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      on:click={() => window.open(submission.reviewFileUrl, '_blank')}
+                    >
+                      <ExternalLink size={14} />
+                      {$_('submissions.feedback_file_review')}
+                    </Button>
+                  {/if}
+                </Card.Footer>
+              </Card.Root>
+            {/each}
+          </div>
+        {/if}
+      </Tabs.Content>
     </Tabs.Root>
   </div>
 {/if}
@@ -333,6 +512,61 @@
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 12px;
   padding-block: 16px;
+}
+
+.feedback-list {
+  display: grid;
+  gap: 12px;
+  padding-block: 16px;
+}
+
+.feedback-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+:global(.feedback-card-body) {
+  display: grid;
+  gap: 12px;
+}
+
+.feedback-areas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.feedback-note,
+.review-box p {
+  margin: 0;
+  color: hsl(var(--muted-foreground));
+  line-height: 1.6;
+}
+
+.review-box {
+  display: grid;
+  gap: 6px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  padding: 12px;
+  background: hsl(var(--muted) / 0.12);
+}
+
+.reviewer-name {
+  font-size: 13px;
+  color: hsl(var(--muted-foreground));
+}
+
+.feedback-empty {
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  color: hsl(var(--muted-foreground));
 }
 
 .actions {

@@ -15,6 +15,7 @@
 		ShoppingBag,
 		Users,
 		Shield,
+		MessageSquareText,
 		LogOut
 	} from 'lucide-svelte';
 
@@ -129,6 +130,12 @@
         <button class="popover-item" on:click={() => navigate('/overwatch')}>
           <Shield size={16} />
           <span>{$_('dropdown.overwatch')}</span>
+        </button>
+      {/if}
+      {#if $user.data.isLevelReviewer || $user.data.isAdmin}
+        <button class="popover-item" on:click={() => navigate('/level-review')}>
+          <MessageSquareText size={16} />
+          <span>{$_('dropdown.level_review')}</span>
         </button>
       {/if}
     </div>

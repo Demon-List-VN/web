@@ -721,8 +721,45 @@
         "clan": "Clan",
         "compare": "Compare Players",
         "overwatch": "Overwatch",
+        "level_review": "Level Review",
         "sign_out": "Sign out",
         "inventory": "Inventory"
+    },
+    "level_review": {
+        "page_title": "Level Review",
+        "title": "Level Review",
+        "access_title": "Reviewer access required",
+        "access_description": "Your account must have level reviewer access to review submitted levels.",
+        "queue_eyebrow": "Level feedback queue",
+        "heading": "Review submitted levels",
+        "description": "Retrieve one level at a time, review the requested areas, then submit a short summary and a detailed review file.",
+        "retrieve": "Retrieve level",
+        "completed_banner": "Review submitted. Retrieve another level when ready.",
+        "review_submitted": "Review submitted",
+        "level_fallback": "Level #{id}",
+        "by_creator": "by {creator}",
+        "unknown": "Unknown",
+        "level_id": "Level ID",
+        "submitted_by": "Submitted by",
+        "requested_review": "Requested review",
+        "submitter_note": "Submitter note",
+        "write_review": "Write review",
+        "write_review_description": "The brief review is shown directly in My Submissions. The detailed file is required.",
+        "brief_review": "Brief review",
+        "brief_placeholder": "Summarize the most important feedback.",
+        "review_file": "Detailed review file",
+        "review_file_placeholder": "Choose PDF, text, image, or zip file",
+        "submit_review": "Submit review",
+        "empty": "Retrieve a level to start reviewing.",
+        "errors": {
+            "file_required": "Detailed review file is required",
+            "file_too_large": "Detailed review file must be at most 20MB",
+            "file_type": "Detailed review file type is not allowed",
+            "none_available": "No level feedback submission available",
+            "retrieve_failed": "Failed to retrieve submission",
+            "brief_required": "Brief review is required",
+            "submit_failed": "Failed to submit review"
+        }
     },
     "inventory": {
         "page_title": "Inventory - Geometry Dash Việt Nam",
@@ -758,6 +795,72 @@
         "next": "Next",
         "back": "Back",
         "close": "Close",
+        "flow": {
+            "home": "Home",
+            "eyebrow": "Submit",
+            "title": "What do you want to submit?",
+            "record_title": "Submit record",
+            "record_description": "Send a completion or progress record for a level.",
+            "challenge_title": "Submit challenge list level",
+            "challenge_description": "Send a level to the Challenge List submission flow.",
+            "feedback_title": "Submit level for feedback",
+            "feedback_description": "Get feedback on gameplay, deco, and other parts of your level."
+        },
+        "level_feedback": {
+            "title": "Submit level for feedback",
+            "page_title": "Submit level for feedback",
+            "headline": "Submit level for feedback",
+            "signed_out_title": "Sign in required",
+            "signed_out_description": "You need to sign in to submit a level for feedback.",
+            "success_title": "Feedback request submitted",
+            "success_description": "A reviewer will receive your level from the queue. The result will appear in My Submissions.",
+            "view_submissions": "View submissions",
+            "submit_another": "Submit another",
+            "loading_level": "Loading level...",
+            "target_label": "feedback reviewers",
+            "step_level": "Level",
+            "step_confirm": "Confirm",
+            "step_request": "Request",
+            "area_question": "What should the reviewer check?",
+            "length_seconds": "Level length in seconds",
+            "note": "Additional note",
+            "note_placeholder": "Mention what you are unsure about or want the reviewer to focus on.",
+            "submit_request": "Submit request",
+            "continue": "Continue",
+            "areas": {
+                "gameplay": {
+                    "label": "Gameplay",
+                    "description": "Flow, sync, balancing, and play feel."
+                },
+                "deco": {
+                    "label": "Deco",
+                    "description": "Colors, block design, backgrounds, and effects."
+                },
+                "optimization": {
+                    "label": "Optimization",
+                    "description": "Lag, object density, LDM, and performance."
+                },
+                "balancing": {
+                    "label": "Balancing",
+                    "description": "Difficulty spikes, choke points, and consistency."
+                },
+                "bugs": {
+                    "label": "Bugs",
+                    "description": "Gameplay bugs, skips, softlocks, and trigger issues."
+                },
+                "system": {
+                    "label": "System",
+                    "description": "Mechanics, trigger systems, and level logic."
+                }
+            },
+            "errors": {
+                "invalid_level": "Please enter a valid Level ID",
+                "load_level_failed": "Unable to load this level",
+                "area_required": "Select at least one review area",
+                "length_required": "Enter a valid level length in seconds",
+                "submit_failed": "Failed to submit request"
+            }
+        },
         "attention": {
             "title": "Attention"
         },
@@ -1317,7 +1420,20 @@
             "title": "Cancel submission?",
             "description": "This action cannot be undone."
         },
-        "queue": "Queue"
+        "queue": "Queue",
+        "feedback_tab": "Feedback",
+        "feedback_loading": "Loading feedback submissions...",
+        "feedback_empty": "No level feedback submissions yet.",
+        "feedback_load_failed": "Failed to load feedback submissions",
+        "feedback_brief_review": "Brief review",
+        "feedback_reviewer": "Reviewer",
+        "feedback_file_review": "File review",
+        "feedback_status": {
+            "pending": "Pending",
+            "assigned": "In review",
+            "reviewed": "Reviewed",
+            "cancelled": "Cancelled"
+        }
     },
     "home": {
         "newest_dl": "Newest levels from Demon List",

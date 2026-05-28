@@ -11,7 +11,7 @@ export async function upload(path: string, data: any, token: string) {
     await fetch(url, {
         method: 'PUT',
         headers: {
-            'Content-Type': 'text/plain'
+            'Content-Type': data?.type || (typeof data === 'string' ? 'text/plain' : 'application/octet-stream')
         },
         body: data
     });

@@ -2,8 +2,13 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
-	import { locale, _ } from 'svelte-i18n';
-	import { ArrowLeft, ClipboardCheck, ListPlus } from 'lucide-svelte';
+	import { _ } from 'svelte-i18n';
+	import {
+		ArrowLeft,
+		ClipboardCheck,
+		ListPlus,
+		MessageSquareText
+	} from 'lucide-svelte';
 
 	function preserveSearch(path: string) {
 		const search = $page.url.search;
@@ -26,6 +31,10 @@
 	function chooseChallengeListFlow() {
 		void goto('/lists/cl/submit');
 	}
+
+	function chooseLevelFeedbackFlow() {
+		void goto('/submit/level-feedback');
+	}
 </script>
 
 <svelte:head>
@@ -36,22 +45,16 @@
   <div class="submit-container">
     <a href="/" class="back-link">
       <ArrowLeft size={16} />
-      <span>{$locale == 'vi' ? 'Trang chủ' : 'Home'}</span>
+      <span>{$_('submit.flow.home')}</span>
     </a>
 
     <div class="submit-card">
       <div class="flow-select">
         <div class="flow-select-header">
           <p class="eyebrow">
-            {$locale == 'vi' ? 'Nộp bài' : 'Submit'}
+            {$_('submit.flow.eyebrow')}
           </p>
-          <h1>
-            {
-              $locale == 'vi'
-              ? 'Bạn muốn nộp gì?'
-              : 'What do you want to submit?'
-            }
-          </h1>
+          <h1>{$_('submit.flow.title')}</h1>
         </div>
 
         <div class="flow-options">
@@ -65,14 +68,10 @@
             </span>
             <span class="option-copy">
               <span class="option-title">
-                {$locale == 'vi' ? 'Nộp record' : 'Submit record'}
+                {$_('submit.flow.record_title')}
               </span>
               <span class="option-description">
-                {
-                  $locale == 'vi'
-                  ? 'Gửi record hoàn thành hoặc progress cho một level.'
-                  : 'Send a completion or progress record for a level.'
-                }
+                {$_('submit.flow.record_description')}
               </span>
             </span>
           </button>
@@ -87,18 +86,28 @@
             </span>
             <span class="option-copy">
               <span class="option-title">
-                {
-                  $locale == 'vi'
-                  ? 'Nộp level cho Challenge List'
-                  : 'Submit challenge list level'
-                }
+                {$_('submit.flow.challenge_title')}
               </span>
               <span class="option-description">
-                {
-                  $locale == 'vi'
-                  ? 'Gửi level vào luồng duyệt của Challenge List.'
-                  : 'Send a level to the Challenge List submission flow.'
-                }
+                {$_('submit.flow.challenge_description')}
+              </span>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            class="flow-option"
+            on:click={chooseLevelFeedbackFlow}
+          >
+            <span class="option-icon">
+              <MessageSquareText size={22} />
+            </span>
+            <span class="option-copy">
+              <span class="option-title">
+                {$_('submit.flow.feedback_title')}
+              </span>
+              <span class="option-description">
+                {$_('submit.flow.feedback_description')}
               </span>
             </span>
           </button>

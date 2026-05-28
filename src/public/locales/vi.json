@@ -721,8 +721,45 @@
         "clan": "Hội",
         "compare": "So sánh người chơi",
         "overwatch": "Overwatch",
+        "level_review": "Level Review",
         "sign_out": "Đăng xuất",
         "inventory": "Kho đồ"
+    },
+    "level_review": {
+        "page_title": "Level Review",
+        "title": "Level Review",
+        "access_title": "Cần quyền reviewer",
+        "access_description": "Tài khoản của bạn cần quyền level reviewer để review level đã nộp.",
+        "queue_eyebrow": "Hàng chờ feedback level",
+        "heading": "Review level đã nộp",
+        "description": "Nhận từng level một, review các hạng mục được yêu cầu, rồi gửi tóm tắt ngắn và file review chi tiết.",
+        "retrieve": "Nhận level",
+        "completed_banner": "Đã gửi review. Nhận level khác khi bạn sẵn sàng.",
+        "review_submitted": "Đã gửi review",
+        "level_fallback": "Level #{id}",
+        "by_creator": "bởi {creator}",
+        "unknown": "Không rõ",
+        "level_id": "Level ID",
+        "submitted_by": "Người nộp",
+        "requested_review": "Hạng mục cần review",
+        "submitter_note": "Ghi chú của người nộp",
+        "write_review": "Viết review",
+        "write_review_description": "Review ngắn sẽ hiện trực tiếp trong Bản nộp của tôi. File review chi tiết là bắt buộc.",
+        "brief_review": "Review ngắn",
+        "brief_placeholder": "Tóm tắt những góp ý quan trọng nhất.",
+        "review_file": "File review chi tiết",
+        "review_file_placeholder": "Chọn file PDF, text, ảnh hoặc zip",
+        "submit_review": "Gửi review",
+        "empty": "Nhận một level để bắt đầu review.",
+        "errors": {
+            "file_required": "Bắt buộc có file review chi tiết",
+            "file_too_large": "File review chi tiết tối đa 20MB",
+            "file_type": "Loại file review chi tiết không được hỗ trợ",
+            "none_available": "Không có level feedback submission nào",
+            "retrieve_failed": "Không nhận được submission",
+            "brief_required": "Bắt buộc có review ngắn",
+            "submit_failed": "Không gửi được review"
+        }
     },
     "inventory": {
         "page_title": "Kho đồ - Geometry Dash Việt Nam",
@@ -758,6 +795,72 @@
         "next": "Tiếp",
         "back": "Trước",
         "close": "Đóng",
+        "flow": {
+            "home": "Trang chủ",
+            "eyebrow": "Nộp bài",
+            "title": "Bạn muốn nộp gì?",
+            "record_title": "Nộp record",
+            "record_description": "Gửi record hoàn thành hoặc progress cho một level.",
+            "challenge_title": "Nộp level cho Challenge List",
+            "challenge_description": "Gửi level vào luồng duyệt của Challenge List.",
+            "feedback_title": "Gửi level để nhận feedback",
+            "feedback_description": "Nhận góp ý về gameplay, deco và các phần khác của level."
+        },
+        "level_feedback": {
+            "title": "Gửi level để nhận feedback",
+            "page_title": "Gửi level để nhận feedback",
+            "headline": "Gửi level để nhận feedback",
+            "signed_out_title": "Cần đăng nhập",
+            "signed_out_description": "Bạn cần đăng nhập để gửi level lấy feedback.",
+            "success_title": "Đã gửi yêu cầu feedback",
+            "success_description": "Reviewer sẽ nhận level của bạn trong hàng chờ. Kết quả sẽ xuất hiện trong Bản nộp của tôi.",
+            "view_submissions": "Xem bài nộp",
+            "submit_another": "Gửi level khác",
+            "loading_level": "Đang tải level...",
+            "target_label": "feedback reviewer",
+            "step_level": "Level",
+            "step_confirm": "Xác nhận",
+            "step_request": "Yêu cầu",
+            "area_question": "Bạn muốn reviewer xem phần nào?",
+            "length_seconds": "Độ dài level (giây)",
+            "note": "Ghi chú thêm",
+            "note_placeholder": "Nêu rõ phần bạn đang phân vân hoặc muốn reviewer tập trung.",
+            "submit_request": "Gửi yêu cầu",
+            "continue": "Tiếp tục",
+            "areas": {
+                "gameplay": {
+                    "label": "Gameplay",
+                    "description": "Cảm giác chơi, flow, sync, balancing."
+                },
+                "deco": {
+                    "label": "Deco",
+                    "description": "Màu sắc, block design, background, hiệu ứng."
+                },
+                "optimization": {
+                    "label": "Tối ưu",
+                    "description": "Lag, object density, LDM, hiệu năng."
+                },
+                "balancing": {
+                    "label": "Cân bằng",
+                    "description": "Độ khó giữa các đoạn và chokepoint."
+                },
+                "bugs": {
+                    "label": "Bug",
+                    "description": "Bug gameplay, skip, softlock, lỗi trigger."
+                },
+                "system": {
+                    "label": "System",
+                    "description": "Cơ chế, trigger system, logic trong level."
+                }
+            },
+            "errors": {
+                "invalid_level": "Vui lòng nhập Level ID hợp lệ",
+                "load_level_failed": "Không tải được level này",
+                "area_required": "Chọn ít nhất một hạng mục review",
+                "length_required": "Nhập độ dài level hợp lệ theo giây",
+                "submit_failed": "Không thể gửi yêu cầu"
+            }
+        },
         "attention": {
             "title": "Lưu ý"
         },
@@ -1316,7 +1419,20 @@
             "title": "Huỷ bản nộp?",
             "description": "Hành động này không thể hoàn tác."
         },
-        "queue": "Số thứ tự"
+        "queue": "Số thứ tự",
+        "feedback_tab": "Feedback",
+        "feedback_loading": "Đang tải feedback submissions...",
+        "feedback_empty": "Chưa có level feedback submission.",
+        "feedback_load_failed": "Không tải được feedback submissions",
+        "feedback_brief_review": "Review ngắn",
+        "feedback_reviewer": "Reviewer",
+        "feedback_file_review": "File review",
+        "feedback_status": {
+            "pending": "Chờ nhận",
+            "assigned": "Đang review",
+            "reviewed": "Đã có feedback",
+            "cancelled": "Đã hủy"
+        }
     },
     "home": {
         "newest_dl": "Levels mới nhất từ Demon List",
