@@ -522,7 +522,9 @@
             "empty": "No progress events yet.",
             "time_axis": "Time",
             "progress_axis": "Progress",
-            "checkpoints_axis": "Checkpoints"
+            "checkpoints_axis": "Checkpoints",
+            "normal_mode": "Normal",
+            "practice_mode": "Practice"
         },
         "death_count": {
             "title": "Deaths",
@@ -546,6 +548,7 @@
         "system_message": {
             "progress": "{player} reached {progress}% progress.",
             "progress_platformer": "{player} reached {progress} checkpoints.",
+            "play_mode": "{player} switched to {mode} mode.",
             "match_end_win": "{winner} won the match. Chat will remain open for {minutes} minutes, then it will be disabled.",
             "match_end_draw": "The match ended in a draw. Chat will remain open for {minutes} minutes, then it will be disabled.",
             "match_cancelled": "The match was cancelled. Chat will remain open for {minutes} minutes, then it will be disabled.",

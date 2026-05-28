@@ -66,6 +66,7 @@
 		type PvpMatchMessage,
 		type PvpMatchReport,
 		type PvpMode,
+		type PvpPlayMode,
 		type PvpParticipant
 	} from '$lib/client/pvp';
 	import {
@@ -109,7 +110,28 @@
 	type ProgressGraphPoint = {
 		x: number;
 		y: number;
+		timeMs?: number;
+		isModeSegment?: boolean;
+		modeLabel?: string;
+		modeTimeRange?: string;
+	};
+
+	type ProgressGraphModeEvent = {
+		uid: string;
+		playMode: PvpPlayMode;
+		x: number;
 		timeMs: number;
+	};
+
+	type ProgressGraphModeSegment = {
+		uid: string;
+		label: string;
+		playMode: PvpPlayMode;
+		modeLabel: string;
+		color: string;
+		startX: number;
+		endX: number;
+		y: number;
 	};
 
 	type ProgressGraphSeries = {
@@ -120,9 +142,11 @@
 
 	type ProgressGraphData = {
 		series: ProgressGraphSeries[];
+		modeSegments: ProgressGraphModeSegment[];
 		hasPoints: boolean;
 		minX: number;
 		maxX: number;
+		minY: number;
 		maxY: number;
 		mode: PvpMode;
 	};
@@ -338,7 +362,10 @@
 	$: progressGraphData = getProgressGraphData(
 		messages,
 		orderedParticipants,
-		matchMode
+		matchMode,
+		match,
+		now,
+		status
 	);
 	$: deathCountLevelId = getDeathCountLevelId(match);
 	$: deathCountParticipantUids = getDeathCountParticipantUids(
@@ -1512,6 +1539,39 @@
 		};
 	}
 
+	function playModeMessageEvent(message: PvpMatchMessage): {
+		uid: string;
+		playMode: PvpPlayMode;
+		timeMs: number;
+		elapsedMs: number | null;
+	} | null {
+		if (
+			message.type !== 'system' || messageMetadataKind(message) !== 'play_mode'
+		) {
+			return null;
+		}
+
+		const metadata = messageMetadata(message);
+		const uid = metadataText(metadata, 'uid');
+		const playMode: PvpPlayMode | null = metadataText(metadata, 'playMode') === 'practice'
+			? 'practice'
+			: metadataText(metadata, 'playMode') === 'normal'
+			? 'normal'
+			: null;
+		const timeMs = getTimeMs(message.created_at);
+
+		if (!uid || !playMode || !timeMs) {
+			return null;
+		}
+
+		return {
+			uid,
+			playMode,
+			timeMs,
+			elapsedMs: metadataNumber(metadata, 'elapsedMs')
+		};
+	}
+
 	function isLevelChangedMessage(message: PvpMatchMessage) {
 		return message.type === 'system'
 			&& messageMetadataKind(message) === 'level_changed';
@@ -1535,7 +1595,10 @@
 	function getProgressGraphData(
 		sourceMessages: PvpMatchMessage[],
 		items: PvpParticipant[] = orderedParticipants,
-		mode: PvpMode = matchMode
+		mode: PvpMode = matchMode,
+		sourceMatch: PvpMatch | null = match,
+		nowMs = now,
+		matchStatus = status
 	): ProgressGraphData {
 		const progressMessages = messagesAfterLatestLevelChange(sourceMessages);
 		const series = items.slice(0, 2)
@@ -1559,7 +1622,7 @@
 			)
 			.sort((a, b) => a.timeMs - b.timeMs);
 
-		const origin = getPvpMatchStartMs(match)
+		const origin = getPvpMatchStartMs(sourceMatch)
 			?? parsed.reduce<number | null>(
 				(earliest, entry) =>
 					earliest === null || entry.timeMs < earliest
@@ -1568,6 +1631,31 @@
 				null
 			)
 			?? 0;
+		const matchEndMs = getPvpMatchEndMs(sourceMatch);
+		const liveEndMs = ['in_progress', 'waiting_result'].includes(matchStatus)
+			? nowMs
+			: matchEndMs ?? nowMs;
+		const modeEvents = progressMessages
+			.map((message) => playModeMessageEvent(message))
+			.filter((
+				entry
+			): entry is NonNullable<ReturnType<typeof playModeMessageEvent>> =>
+				Boolean(entry)
+			)
+			.map((entry) => ({
+				uid: entry.uid,
+				playMode: entry.playMode,
+				timeMs: entry.timeMs,
+				x: Math.max(
+					0,
+					Math.round(
+						Number.isFinite(Number(entry.elapsedMs))
+							? Number(entry.elapsedMs) / 1000
+							: (entry.timeMs - origin) / 1000
+					)
+				)
+			}))
+			.sort((a, b) => a.x - b.x || a.timeMs - b.timeMs);
 
 		for (const entry of parsed) {
 			const target = series.find((item) => item.uid === entry.uid);
@@ -1585,6 +1673,7 @@
 
 		const maxX = Math.max(
 			60,
+			Math.round(Math.max(0, liveEndMs - origin) / 1000),
 			...series.flatMap((item) => item.points.map((point) => point.x))
 		);
 		const maxProgress = Math.max(
@@ -1592,15 +1681,126 @@
 			...series.flatMap((item) => item.points.map((point) => point.y))
 		);
 		const maxY = mode === 'platformer' ? Math.max(1, maxProgress) : 100;
+		const modeLaneGap = maxY * 0.06;
+		const modeLaneOne = -modeLaneGap;
+		const modeLaneTwo = -modeLaneGap * 2;
+		const modeTimelineAvailable = [
+			'in_progress',
+			'waiting_result',
+			'completed',
+			'cancelled',
+			'disputed'
+		].includes(matchStatus)
+			|| modeEvents.length > 0
+			|| parsed.length > 0;
+		const modeSegments = modeTimelineAvailable
+			? getProgressGraphModeSegments(
+				series,
+				modeEvents,
+				maxX,
+				[modeLaneOne, modeLaneTwo]
+			)
+			: [];
+		const minY = modeSegments.length > 0 ? -modeLaneGap * 2.75 : 0;
 
 		return {
 			series: series.map(({ uid, ...item }) => item),
-			hasPoints: series.some((item) => item.points.length > 0),
+			modeSegments,
+			hasPoints: series.some((item) => item.points.length > 0)
+				|| modeSegments.length > 0,
 			minX: 0,
 			maxX,
+			minY,
 			maxY,
 			mode
 		};
+	}
+
+	function getProgressGraphModeSegments(
+		series: Array<ProgressGraphSeries & { uid: string | null; }>,
+		modeEvents: ProgressGraphModeEvent[],
+		maxX: number,
+		lanes: number[]
+	): ProgressGraphModeSegment[] {
+		return series.flatMap((item, index) => {
+			if (!item.uid || !item.label) {
+				return [];
+			}
+
+			const events = modeEvents.filter((event) => event.uid === item.uid);
+			const segments: ProgressGraphModeSegment[] = [];
+			let currentMode: PvpPlayMode = 'normal';
+			let currentStart = 0;
+
+			for (const event of events) {
+				if (event.x < currentStart) {
+					continue;
+				}
+
+				if (event.playMode === currentMode) {
+					continue;
+				}
+
+				if (event.x > currentStart) {
+					segments.push(
+						createProgressGraphModeSegment(
+							item.uid,
+							item.label,
+							currentMode,
+							currentStart,
+							event.x,
+							lanes[index] ?? lanes[0]
+						)
+					);
+				}
+
+				currentMode = event.playMode;
+				currentStart = event.x;
+			}
+
+			if (maxX > currentStart) {
+				segments.push(
+					createProgressGraphModeSegment(
+						item.uid,
+						item.label,
+						currentMode,
+						currentStart,
+						maxX,
+						lanes[index] ?? lanes[0]
+					)
+				);
+			}
+
+			return segments;
+		});
+	}
+
+	function createProgressGraphModeSegment(
+		uid: string,
+		label: string,
+		playMode: PvpPlayMode,
+		startX: number,
+		endX: number,
+		y: number
+	): ProgressGraphModeSegment {
+		return {
+			uid,
+			label,
+			playMode,
+			modeLabel: playModeLabel(playMode),
+			color: playMode === 'practice'
+				? chartColor('--warning', '#f59e0b')
+				: chartColor('--muted-foreground', '#64748b'),
+			startX,
+			endX,
+			y
+		};
+	}
+
+	function playModeLabel(playMode: PvpPlayMode) {
+		return playMode === 'practice'
+			? $_('pvp.progress_graph.practice_mode')
+			: $_('pvp.progress_graph.normal_mode');
 	}
 
 	function participantProgressBarWidth(participant: PvpParticipant) {
@@ -1828,6 +2028,18 @@
 					}
 				);
 			}
+		}
+
+		if (kind === 'play_mode') {
+			const playMode = metadataText(metadata, 'playMode') === 'practice'
+				? 'practice'
+				: 'normal';
+			content = $_('pvp.system_message.play_mode', {
+				values: {
+					player: systemParticipantName(metadataText(metadata, 'uid')),
+					mode: playModeLabel(playMode)
+				}
+			});
 		}
 
 		if (kind === 'match_end') {
@@ -2115,13 +2327,18 @@
 				chart.data.datasets = getProgressChartDatasets(nextData);
 				chart.options.scales!.x!.min = nextData.minX;
 				chart.options.scales!.x!.max = nextData.maxX;
+				chart.options.scales!.y!.min = nextData.minY;
 				chart.options.scales!.y!.max = nextData.maxY;
 				chart.options.scales!.y!.title!.text =
 					nextData.mode === 'platformer'
 						? $_('pvp.progress_graph.checkpoints_axis')
 						: $_('pvp.progress_graph.progress_axis');
 				chart.options.scales!.y!.ticks!.callback = (value) =>
-					nextData.mode === 'platformer' ? String(value) : `${value}%`;
+					Number(value) < 0
+						? ''
+						: nextData.mode === 'platformer'
+						? String(value)
+						: `${value}%`;
 				chart.options.plugins!.tooltip!.callbacks!.label =
 					getProgressTooltipLabel(nextData);
 				chart.update();
@@ -2168,7 +2385,7 @@
 						}
 					},
 					y: {
-						min: 0,
+						min: data.minY,
 						max: data.maxY,
 						title: {
 							display: true,
@@ -2191,7 +2408,9 @@
 							color: chartColor('--muted-foreground', '#71717a'),
 							callback: (
 								value
-							) => (data.mode === 'platformer'
+							) => Number(value) < 0
+								? ''
+								: (data.mode === 'platformer'
 								? String(value)
 								: `${value}%`),
 							precision: 0
@@ -2204,7 +2423,10 @@
 							color: chartColor('--foreground', '#18181b'),
 							usePointStyle: true,
 							boxWidth: 8,
-							boxHeight: 8
+							boxHeight: 8,
+							filter: (legendItem, chartData) =>
+								!((chartData.datasets[legendItem.datasetIndex ?? -1] as any)
+									?.isModeSegment)
 						}
 					},
 					tooltip: {
@@ -2222,7 +2444,7 @@
 	}
 
 	function getProgressChartDatasets(data: ProgressGraphData) {
-		return data.series.map((item) => ({
+		const progressDatasets = data.series.map((item) => ({
 			label: item.label,
 			data: item.points,
 			borderColor: item.color,
@@ -2236,14 +2458,61 @@
 			pointRadius: 3,
 			pointHoverRadius: 6
 		}));
+
+		const modeDatasets = data.modeSegments.map((segment) => ({
+			label: segment.label,
+			data: [
+				modeSegmentPoint(segment, segment.startX),
+				modeSegmentPoint(segment, segment.endX)
+			],
+			borderColor: segment.color,
+			backgroundColor: segment.color,
+			borderWidth: 8,
+			borderCapStyle: 'butt' as const,
+			fill: false,
+			tension: 0,
+			pointRadius: 0,
+			pointHoverRadius: 5,
+			pointHitRadius: 10,
+			isModeSegment: true
+		}));
+
+		return [...progressDatasets, ...modeDatasets];
+	}
+
+	function modeSegmentPoint(
+		segment: ProgressGraphModeSegment,
+		x: number
+	): ProgressGraphPoint {
+		return {
+			x,
+			y: segment.y,
+			isModeSegment: true,
+			modeLabel: segment.modeLabel,
+			modeTimeRange: `${formatDuration(segment.startX * 1000)} - ${
+				formatDuration(segment.endX * 1000)
+			}`
+		};
 	}
 
 	function getProgressTooltipLabel(data: ProgressGraphData) {
 		return (
-			context: { dataset: { label?: string; }; parsed: { y: number; }; }
-		) => `${context.dataset.label}: ${
-			formatPvpProgressValue(context.parsed.y, data.mode)
-		}`;
+			context: {
+				dataset: { label?: string; isModeSegment?: boolean; };
+				parsed: { y: number; };
+				raw?: unknown;
+			}
+		) => {
+			const raw = context.raw as ProgressGraphPoint | undefined;
+
+			return raw?.isModeSegment
+				? `${context.dataset.label}: ${raw.modeLabel ?? ''} ${
+					raw.modeTimeRange ? `(${raw.modeTimeRange})` : ''
+				}`
+				: `${context.dataset.label}: ${
+					formatPvpProgressValue(context.parsed.y, data.mode)
+				}`;
+		};
 	}
 
 	function getDeathCountChartData(

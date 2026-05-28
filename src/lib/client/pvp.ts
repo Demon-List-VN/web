@@ -1,5 +1,6 @@
 export type PvpDifficulty = 'easy' | 'medium' | 'hard';
 export type PvpMode = 'classic' | 'platformer';
+export type PvpPlayMode = 'normal' | 'practice';
 
 export type PvpMatchStatus =
     | 'pending'
@@ -939,6 +940,25 @@ export async function sendPvpMatchMessage(
         token,
         body: { content }
     });
+}
+
+export async function sendPvpPlayMode(
+    token: string | null | undefined,
+    id: number | string,
+    playMode: PvpPlayMode,
+    elapsedMs?: number | null
+) {
+    return pvpRequest<{ playMode: PvpPlayMode; changed: boolean; }>(
+        `/pvp/matches/${id}/play-mode`,
+        {
+            method: 'PUT',
+            token,
+            body: {
+                playMode,
+                ...(elapsedMs === null || elapsedMs === undefined ? {} : { elapsedMs })
+            }
+        }
+    );
 }
 
 export async function reportPvpMatch(

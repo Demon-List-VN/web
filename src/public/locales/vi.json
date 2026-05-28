@@ -522,7 +522,9 @@
             "empty": "Chưa có sự kiện tiến độ.",
             "time_axis": "Thời gian",
             "progress_axis": "Tiến độ",
-            "checkpoints_axis": "Checkpoint"
+            "checkpoints_axis": "Checkpoint",
+            "normal_mode": "Thường",
+            "practice_mode": "Luyện tập"
         },
         "death_count": {
             "title": "Số lần chết",
@@ -546,6 +548,7 @@
         "system_message": {
             "progress": "{player} đã đạt {progress}% tiến độ.",
             "progress_platformer": "{player} đã đạt {progress} checkpoint.",
+            "play_mode": "{player} đã chuyển sang chế độ {mode}.",
             "match_end_win": "{winner} đã thắng trận. Chat sẽ mở thêm {minutes} phút rồi bị tắt.",
             "match_end_draw": "Trận đấu kết thúc với kết quả hòa. Chat sẽ mở thêm {minutes} phút rồi bị tắt.",
             "match_cancelled": "Trận đấu đã bị hủy. Chat sẽ mở thêm {minutes} phút rồi bị tắt.",
