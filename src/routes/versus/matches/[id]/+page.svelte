@@ -1631,10 +1631,10 @@
 				null
 			)
 			?? 0;
-		const matchEndMs = getPvpMatchEndMs(sourceMatch);
+		const matchEndMs = getProgressGraphEndMs(sourceMatch, matchStatus, nowMs);
 		const liveEndMs = ['in_progress', 'waiting_result'].includes(matchStatus)
 			? nowMs
-			: matchEndMs ?? nowMs;
+			: matchEndMs;
 		const modeEvents = progressMessages
 			.map((message) => playModeMessageEvent(message))
 			.filter((
@@ -1673,7 +1673,8 @@
 
 		const maxX = Math.max(
 			60,
-			Math.round(Math.max(0, liveEndMs - origin) / 1000),
+			Math.round(Math.max(0, (liveEndMs ?? origin) - origin) / 1000),
+			...modeEvents.map((event) => event.x),
 			...series.flatMap((item) => item.points.map((point) => point.x))
 		);
 		const maxProgress = Math.max(
@@ -1714,6 +1715,29 @@
 			maxY,
 			mode
 		};
+	}
+
+	function getProgressGraphEndMs(
+		sourceMatch: PvpMatch | null,
+		matchStatus: string,
+		nowMs: number
+	) {
+		if (['in_progress', 'waiting_result'].includes(matchStatus)) {
+			return nowMs;
+		}
+
+		if (!['pending', 'ban_pick'].includes(matchStatus)) {
+			return getTimeMs(
+				sourceMatch?.endedAt
+					?? sourceMatch?.ratingAppliedAt
+					?? sourceMatch?.rating_applied_at
+					?? sourceMatch?.completedAt
+					?? sourceMatch?.endAt
+			)
+				?? null;
+		}
+
+		return getPvpMatchEndMs(sourceMatch) ?? nowMs;
 	}
 
 	function getProgressGraphModeSegments(
