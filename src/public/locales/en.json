@@ -1534,6 +1534,16 @@
             "server_cost": "Server Cost",
             "help_reach": "Help us keep the lights on"
         },
+        "level_feedback_promo": {
+            "title": "Level Feedback",
+            "price": "From 10,000đ",
+            "description": "Get clear deco feedback from a GDVN reviewer.",
+            "feature_category": "Review by the category you choose",
+            "feature_price": "Just 5k VND for each 30s",
+            "feature_discount": "10,000đ off your first request",
+            "cta": "Submit level",
+            "preview_label": "Deco Review"
+        },
         "features": {
             "title": "Explore Premium Features",
             "supporter_title": "Supporter",

@@ -14,7 +14,7 @@
 	import OnboardingProgress from '$lib/components/homepage/OnboardingProgress.svelte';
 	import OnboardingModal from '$lib/components/OnboardingModal.svelte';
 	import PvpOneVsOnePromo from '$lib/components/homepage/PvpOneVsOnePromo.svelte';
-	import RecordCardPromo from '$lib/components/homepage/RecordCardPromo.svelte';
+	import LevelFeedbackPromo from '$lib/components/homepage/LevelFeedbackPromo.svelte';
 
 	export let data: any;
 
@@ -91,7 +91,7 @@
   <!-- Top promos -->
   <div class="promoRow">
     <PvpOneVsOnePromo />
-    <RecordCardPromo />
+    <LevelFeedbackPromo />
   </div>
 
   <!-- Onboarding progress banner (new users only) -->
@@ -175,13 +175,13 @@
   }
 
   @media screen and (max-width: 1180px) {
-    :global(.record-card-promo),
+    :global(.level-feedback-promo),
     :global(.pvp-one-v-one-promo) {
       flex-direction: column;
       align-items: stretch;
     }
 
-    :global(.record-card-promo .demo-card-wrap),
+    :global(.level-feedback-promo .feedback-preview),
     :global(.pvp-one-v-one-promo .arena-preview) {
       width: 100%;
     }

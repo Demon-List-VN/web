@@ -1533,6 +1533,16 @@
             "server_cost": "Chi phí máy chủ",
             "help_reach": "Giúp chúng tôi duy trì server"
         },
+        "level_feedback_promo": {
+            "title": "Feedback Level",
+            "price": "Từ 10,000đ",
+            "description": "Nhận góp ý deco rõ ràng từ reviewer của GDVN.",
+            "feature_category": "Review theo hạng mục bạn chọn",
+            "feature_price": "Chỉ 5k VND cho mỗi 30 giây",
+            "feature_discount": "Giảm 10,000đ cho lần đầu",
+            "cta": "Gửi level",
+            "preview_label": "Review Deco"
+        },
         "features": {
             "title": "Khám phá tính năng Premium",
             "supporter_title": "Supporter",
