@@ -12,6 +12,7 @@
 	import supabase from '$lib/client/supabase';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
 	import { Switch } from '$lib/components/ui/switch/index.js';
 	import * as Alert from '$lib/components/ui/alert';
 	import * as Card from '$lib/components/ui/card';
@@ -23,7 +24,10 @@
 		acceptPvpMatch,
 		cancelPvpMatchmaking,
 		checkPvpMatchmaking,
+		acceptPvpRoomInvite,
 		declinePvpInvite,
+		declinePvpRoomInvite,
+		createPvpRoom,
 		getPvpClanWeeklyRace,
 		getPvpInviteExpiresMs,
 		getPvpInvite,
@@ -31,6 +35,7 @@
 		getPvpMatchEndMs,
 		getPvpInviteId,
 		getPvpMatchedMatchId,
+		getPvpRoomsOverview,
 		getPvpMode,
 		getPvpMatchId,
 		getPvpMatch,
@@ -54,6 +59,7 @@
 		isPvpMatchConfirmedByBoth,
 		isPvpMatchRanked,
 		isPvpRatingStable,
+		joinPvpRoom,
 		sendPvpInvite,
 		startPvpMatchmaking,
 		type PvpClan,
@@ -64,6 +70,9 @@
 		type PvpMatchmakingRequest,
 		type PvpMe,
 		type PvpMode,
+		type PvpRoom,
+		type PvpRoomInvite,
+		type PvpRoomsOverview,
 		type PvpWeeklyRace,
 		PVP_UNCERTAIN_RATING_DEVIATION,
 		PVP_DEFAULT_RATING_DEVIATION
@@ -96,6 +105,9 @@
 		History,
 		Loader2,
 		LogIn,
+		Lock,
+		Globe2,
+		Plus,
 		RefreshCw,
 		Send,
 		ShieldAlert,
@@ -156,6 +168,13 @@
 		previousLeaderboard: [],
 		currentClan: null
 	};
+	let roomsOverview: PvpRoomsOverview = {
+		publicRooms: [],
+		joinedRooms: [],
+		invites: []
+	};
+	let roomName = '';
+	let roomVisibility: 'public' | 'private' = 'public';
 	let activePvpTab = 'lobby';
 	let eloGraphFilter: (typeof ELO_GRAPH_FILTERS)[number]['key'] = '25';
 	let summaryOpen = false;
@@ -167,6 +186,7 @@
 	let weeklyRaceError = '';
 	let clanRaceLoading = true;
 	let clanRaceError = '';
+	let roomsLoading = false;
 	let actionLoading = '';
 	let initializedForUid = '';
 	let cleanupRealtime: (() => Promise<void>) | null = null;
@@ -332,6 +352,11 @@
 			outgoingInvites: []
 		};
 		matches = [];
+		roomsOverview = {
+			publicRooms: [],
+			joinedRooms: [],
+			invites: []
+		};
 		initializedForUid = '';
 		lobbyReady = false;
 		matchHistoryLoading = false;
@@ -415,6 +440,7 @@
 			await Promise.all([
 				refreshLobby(),
 				refreshMatchHistory(),
+				refreshRooms(),
 				refreshWeeklyRace(),
 				refreshClanRace()
 			]);
@@ -465,6 +491,24 @@
 			);
 		} finally {
 			matchHistoryLoading = false;
+		}
+	}
+
+	async function refreshRooms() {
+		if (!$user.loggedIn) {
+			return;
+		}
+
+		roomsLoading = true;
+
+		try {
+			roomsOverview = await getPvpRoomsOverview(await $user.token());
+		} catch (error) {
+			toast.error(
+				error instanceof Error ? error.message : $_('pvp.rooms.load_failed')
+			);
+		} finally {
+			roomsLoading = false;
 		}
 	}
 
@@ -634,6 +678,12 @@
 			if (inviteId) {
 				scheduleFetchInvite(inviteId, event.scope);
 			}
+
+			return;
+		}
+
+		if (['room', 'roomMember', 'roomInvite', 'roomMessage'].includes(event.scope)) {
+			scheduleRealtimeTask('rooms', refreshRooms);
 
 			return;
 		}
@@ -1413,6 +1463,112 @@
 		}
 	}
 
+	function getRoomId(room: PvpRoom | PvpRoomInvite | null | undefined) {
+		const value = (room as PvpRoom | undefined)?.id
+			?? (room as PvpRoomInvite | undefined)?.roomId
+			?? null;
+
+		return value === undefined || value === null ? null : value;
+	}
+
+	function getRoomTitle(room: PvpRoom | null | undefined) {
+		return room?.name || $_('pvp.rooms.untitled');
+	}
+
+	async function createRoom() {
+		const name = roomName.trim();
+
+		if (!name) {
+			toast.error($_('pvp.rooms.name_required'));
+
+			return;
+		}
+
+		actionLoading = 'create-room';
+
+		try {
+			const room = await createPvpRoom(await $user.token(), {
+				name,
+				visibility: roomVisibility
+			});
+			roomName = '';
+			roomVisibility = 'public';
+			await refreshRooms();
+			goto(`/versus/rooms/${room.id}`);
+		} catch (error) {
+			toast.error(
+				error instanceof Error ? error.message : $_('pvp.rooms.create_failed')
+			);
+		} finally {
+			actionLoading = '';
+		}
+	}
+
+	async function joinRoom(room: PvpRoom) {
+		const roomId = getRoomId(room);
+
+		if (!roomId) {
+			return;
+		}
+
+		actionLoading = `join-room-${roomId}`;
+
+		try {
+			await joinPvpRoom(await $user.token(), roomId);
+			await refreshRooms();
+			goto(`/versus/rooms/${roomId}`);
+		} catch (error) {
+			toast.error(
+				error instanceof Error ? error.message : $_('pvp.rooms.join_failed')
+			);
+		} finally {
+			actionLoading = '';
+		}
+	}
+
+	async function acceptRoomInvite(invite: PvpRoomInvite) {
+		const inviteId = invite.id;
+
+		if (!inviteId) {
+			return;
+		}
+
+		actionLoading = `accept-room-${inviteId}`;
+
+		try {
+			const room = await acceptPvpRoomInvite(await $user.token(), inviteId);
+			await refreshRooms();
+			goto(`/versus/rooms/${room.id}`);
+		} catch (error) {
+			toast.error(
+				error instanceof Error ? error.message : $_('pvp.rooms.accept_failed')
+			);
+		} finally {
+			actionLoading = '';
+		}
+	}
+
+	async function declineRoomInvite(invite: PvpRoomInvite) {
+		const inviteId = invite.id;
+
+		if (!inviteId) {
+			return;
+		}
+
+		actionLoading = `decline-room-${inviteId}`;
+
+		try {
+			await declinePvpRoomInvite(await $user.token(), inviteId);
+			await refreshRooms();
+		} catch (error) {
+			toast.error(
+				error instanceof Error ? error.message : $_('pvp.rooms.decline_failed')
+			);
+		} finally {
+			actionLoading = '';
+		}
+	}
+
 	async function acceptInvite(invite: PvpInvite) {
 		const inviteId = getPvpInviteId(invite);
 
@@ -2003,6 +2159,10 @@
         <Swords class="h-4 w-4" />
         {$_('pvp.tabs.lobby')}
       </Tabs.Trigger>
+      <Tabs.Trigger value="rooms" class="pvp-tab-trigger">
+        <Users class="h-4 w-4" />
+        {$_('pvp.tabs.rooms')}
+      </Tabs.Trigger>
       <Tabs.Trigger value="history" class="pvp-tab-trigger">
         <History class="h-4 w-4" />
         {$_('pvp.tabs.history')}
@@ -2208,6 +2368,221 @@
           </Card.Content>
         </Card.Root>
       </section>
+    </Tabs.Content>
+
+    <Tabs.Content value="rooms">
+      {#if !$user.checked}
+        <Card.Root class="state-panel">
+          <Card.Content class="state-content">
+            <Loader2 class="h-5 w-5 animate-spin" />
+            <span>{$_('general.loading')}</span>
+          </Card.Content>
+        </Card.Root>
+      {:else if !$user.loggedIn}
+        <Card.Root class="state-panel">
+          <Card.Content class="auth-content">
+            <div>
+              <h2>{$_('pvp.sign_in_title')}</h2>
+              <p>{$_('pvp.sign_in_hint')}</p>
+            </div>
+            <Button on:click={signIn}>
+              <LogIn class="mr-2 h-4 w-4" />
+              {$_('nav.sign_in')}
+            </Button>
+          </Card.Content>
+        </Card.Root>
+      {:else}
+        <section class="rooms-toolbar">
+          <div>
+            <h2>{$_('pvp.rooms.title')}</h2>
+          </div>
+          <Button variant="outline" disabled={roomsLoading} on:click={refreshRooms}>
+            <RefreshCw class={`mr-2 h-4 w-4 ${roomsLoading ? 'animate-spin' : ''}`} />
+            {$_('pvp.refresh')}
+          </Button>
+        </section>
+
+        <section class="room-create-panel">
+          <Card.Root>
+            <Card.Header>
+              <Card.Title>{$_('pvp.rooms.create')}</Card.Title>
+            </Card.Header>
+            <Card.Content class="room-create-form">
+              <Input
+                bind:value={roomName}
+                maxlength={64}
+                placeholder={$_('pvp.rooms.name_placeholder')}
+              />
+              <div class="room-visibility-toggle">
+                <button
+                  type="button"
+                  class:active={roomVisibility === 'public'}
+                  on:click={() => (roomVisibility = 'public')}
+                >
+                  <Globe2 class="h-4 w-4" />
+                  {$_('pvp.rooms.public')}
+                </button>
+                <button
+                  type="button"
+                  class:active={roomVisibility === 'private'}
+                  on:click={() => (roomVisibility = 'private')}
+                >
+                  <Lock class="h-4 w-4" />
+                  {$_('pvp.rooms.private')}
+                </button>
+              </div>
+              <Button disabled={Boolean(actionLoading) || !roomName.trim()} on:click={createRoom}>
+                {#if actionLoading === 'create-room'}
+                  <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+                {:else}
+                  <Plus class="mr-2 h-4 w-4" />
+                {/if}
+                {$_('pvp.rooms.create')}
+              </Button>
+            </Card.Content>
+          </Card.Root>
+        </section>
+
+        <section class="room-section">
+          <div class="match-section-title">
+            <h2>{$_('pvp.rooms.joined')}</h2>
+          </div>
+          {#if roomsOverview.joinedRooms.length === 0}
+            <div class="empty-state">{$_('pvp.rooms.no_joined')}</div>
+          {:else}
+            <div class="room-grid">
+              {#each roomsOverview.joinedRooms as room}
+                {@const activeRoomMatchId = getPvpMatchId(room.activeMatch)}
+                <Card.Root class="room-card">
+                  <Card.Header>
+                    <Card.Title>{getRoomTitle(room)}</Card.Title>
+                    <Card.Description>
+                      {room.activeMemberCount ?? room.memberCount ?? 0}
+                      {$_('pvp.rooms.players')}
+                    </Card.Description>
+                  </Card.Header>
+                  <Card.Content class="room-card-content">
+                    <div class="room-card-badges">
+                      <Badge variant="outline">
+                        {room.visibility === 'private'
+                          ? $_('pvp.rooms.private')
+                          : $_('pvp.rooms.public')}
+                      </Badge>
+                      {#if room.viewerRole === 'host'}
+                        <Badge>{$_('pvp.rooms.host')}</Badge>
+                      {/if}
+                      {#if activeRoomMatchId}
+                        <Badge variant="secondary">{$_('pvp.rooms.active_match')}</Badge>
+                      {/if}
+                    </div>
+                    <div class="room-card-actions">
+                      <Button href={`/versus/rooms/${room.id}`} variant="outline">
+                        {$_('pvp.rooms.open')}
+                      </Button>
+                      {#if activeRoomMatchId}
+                        <Button href={`/versus/matches/${activeRoomMatchId}`}>
+                          {$_('pvp.enter_match')}
+                        </Button>
+                      {/if}
+                    </div>
+                  </Card.Content>
+                </Card.Root>
+              {/each}
+            </div>
+          {/if}
+        </section>
+
+        <section class="room-section">
+          <div class="match-section-title">
+            <h2>{$_('pvp.rooms.invites')}</h2>
+          </div>
+          {#if roomsOverview.invites.length === 0}
+            <div class="empty-state">{$_('pvp.rooms.no_invites')}</div>
+          {:else}
+            <div class="invite-list">
+              {#each roomsOverview.invites as invite}
+                <div class="invite-row">
+                  <div>
+                    <strong>{getRoomTitle(invite.room)}</strong>
+                    <span>{invite.inviter?.name ?? $_('pvp.rooms.host')}</span>
+                  </div>
+                  <div class="invite-actions">
+                    <span class="timer">{remainingLabel(getPvpInviteExpiresMs(invite), now)}</span>
+                    <Button
+                      size="sm"
+                      disabled={Boolean(actionLoading)}
+                      on:click={() => acceptRoomInvite(invite)}
+                    >
+                      {#if actionLoading === `accept-room-${invite.id}`}
+                        <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+                      {/if}
+                      {$_('pvp.accept')}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={Boolean(actionLoading)}
+                      on:click={() => declineRoomInvite(invite)}
+                    >
+                      {$_('pvp.decline')}
+                    </Button>
+                  </div>
+                </div>
+              {/each}
+            </div>
+          {/if}
+        </section>
+
+        <section class="room-section">
+          <div class="match-section-title">
+            <h2>{$_('pvp.rooms.public_rooms')}</h2>
+          </div>
+          {#if roomsOverview.publicRooms.length === 0}
+            <div class="empty-state">{$_('pvp.rooms.no_public')}</div>
+          {:else}
+            <div class="room-grid">
+              {#each roomsOverview.publicRooms as room}
+                {@const alreadyJoined = roomsOverview.joinedRooms.some((joined) =>
+                    String(joined.id) === String(room.id)
+                )}
+                <Card.Root class="room-card">
+                  <Card.Header>
+                    <Card.Title>{getRoomTitle(room)}</Card.Title>
+                    <Card.Description>
+                      {room.activeMemberCount ?? room.memberCount ?? 0}
+                      {$_('pvp.rooms.players')}
+                    </Card.Description>
+                  </Card.Header>
+                  <Card.Content class="room-card-content">
+                    <div class="room-card-badges">
+                      <Badge variant="outline">{$_('pvp.rooms.public')}</Badge>
+                      {#if room.activeMatch}
+                        <Badge variant="secondary">{$_('pvp.rooms.active_match')}</Badge>
+                      {/if}
+                    </div>
+                    <div class="room-card-actions">
+                      <Button href={`/versus/rooms/${room.id}`} variant="outline">
+                        {$_('pvp.rooms.open')}
+                      </Button>
+                      {#if !alreadyJoined}
+                        <Button
+                          disabled={Boolean(actionLoading)}
+                          on:click={() => joinRoom(room)}
+                        >
+                          {#if actionLoading === `join-room-${room.id}`}
+                            <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+                          {/if}
+                          {$_('pvp.rooms.join')}
+                        </Button>
+                      {/if}
+                    </div>
+                  </Card.Content>
+                </Card.Root>
+              {/each}
+            </div>
+          {/if}
+        </section>
+      {/if}
     </Tabs.Content>
 
     <Tabs.Content value="lobby">
@@ -2734,11 +3109,15 @@
 .arena-topbar,
 :global(.auth-content),
 .history-toolbar,
+.rooms-toolbar,
 .history-actions,
 .match-section-title,
 .section-heading,
 .queue-status,
-.invite-actions {
+.invite-actions,
+.room-card-actions,
+.room-card-badges,
+.room-visibility-toggle {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2909,7 +3288,8 @@ h1 {
   margin-bottom: 20px;
 }
 
-.history-toolbar h2 {
+.history-toolbar h2,
+.rooms-toolbar h2 {
   margin: 0;
   font-size: 1.5rem;
   font-weight: 750;
@@ -2939,6 +3319,68 @@ h1 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
+}
+
+.rooms-toolbar,
+.room-create-panel,
+.room-section {
+  margin-bottom: 20px;
+}
+
+:global(.room-create-form) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.room-visibility-toggle {
+  justify-content: flex-start;
+  gap: 4px;
+  min-height: 38px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--muted) / 0.28);
+  padding: 3px;
+}
+
+.room-visibility-toggle button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  padding: 0 10px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.room-visibility-toggle button.active {
+  background: hsl(var(--background));
+  box-shadow: 0 0 0 1px hsl(var(--border));
+}
+
+.room-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+:global(.room-card) {
+  overflow: hidden;
+}
+
+:global(.room-card-content) {
+  display: grid;
+  gap: 14px;
+}
+
+.room-card-badges,
+.room-card-actions {
+  flex-wrap: wrap;
+  justify-content: flex-start;
 }
 
 :global(.auth-content) h2 {
@@ -3334,7 +3776,9 @@ h1 {
 @media (max-width: 980px) {
   .control-grid,
   .invite-grid,
-  .match-grid {
+  .match-grid,
+  .room-grid,
+  :global(.room-create-form) {
     grid-template-columns: 1fr;
   }
 }
@@ -3348,9 +3792,13 @@ h1 {
   .arena-topbar,
   :global(.auth-content),
   .history-toolbar,
+  .rooms-toolbar,
   .history-actions,
   .invite-row,
-  .invite-actions {
+  .invite-actions,
+  .room-card-actions,
+  .room-card-badges,
+  .room-visibility-toggle {
     align-items: stretch;
     flex-direction: column;
   }

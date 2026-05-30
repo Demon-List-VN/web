@@ -182,10 +182,14 @@
 				action === 'accept' ? $_('general.accept') : $_('general.reject')
 			);
 
-			if (
-				action === 'accept' && notification.metadata?.type === 'pvp_invite'
-			) {
+			if (action === 'accept' && notification.metadata?.type === 'pvp_invite') {
 				await goto('/versus/play');
+			}
+
+			if (action === 'accept' && notification.metadata?.type === 'pvp_room_invite') {
+				const roomId = notification.metadata?.roomId;
+
+				await goto(roomId ? `/versus/rooms/${roomId}` : '/versus/play');
 			}
 		} catch (error) {
 			toast.error(

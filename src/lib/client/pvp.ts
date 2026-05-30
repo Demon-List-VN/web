@@ -1,6 +1,8 @@
 export type PvpDifficulty = 'easy' | 'medium' | 'hard';
 export type PvpMode = 'classic' | 'platformer';
 export type PvpPlayMode = 'normal' | 'practice';
+export type PvpRoomVisibility = 'public' | 'private';
+export type PvpRoomCompletionRuleType = 'count' | 'percentage';
 
 export type PvpMatchStatus =
     | 'pending'
@@ -88,6 +90,8 @@ export type PvpResult = {
     time_reached_progress?: number | null;
     submittedAt?: string | null;
     submitted_at?: string | null;
+    completedAt?: string | null;
+    completed_at?: string | null;
     player?: PvpPlayer | null;
     players?: PvpPlayer | null;
     anonymous?: boolean;
@@ -190,6 +194,15 @@ export type PvpMatch = {
     ban_pick_abort_request_expires_at?: string | null;
     ratingAppliedAt?: string | null;
     rating_applied_at?: string | null;
+    roomId?: number | string | null;
+    room_id?: number | string | null;
+    room?: PvpRoom | null;
+    completionRuleType?: PvpRoomCompletionRuleType | string | null;
+    completion_rule_type?: PvpRoomCompletionRuleType | string | null;
+    completionRuleValue?: number | null;
+    completion_rule_value?: number | null;
+    timeLimitSeconds?: number | null;
+    time_limit_seconds?: number | null;
     startedAt?: string | null;
     startsAt?: string | null;
     started_at?: string | null;
@@ -292,6 +305,78 @@ export type PvpInvite = {
     inviteeAnonymous?: boolean;
     match?: PvpMatch | null;
     [key: string]: unknown;
+};
+
+export type PvpRoomMember = {
+    id?: number | string;
+    roomId?: number | string;
+    uid?: string;
+    role?: 'host' | 'member' | string;
+    status?: 'active' | 'left' | 'kicked' | string;
+    joinedAt?: string | null;
+    joined_at?: string | null;
+    leftAt?: string | null;
+    left_at?: string | null;
+    player?: PvpPlayer | null;
+    players?: PvpPlayer | null;
+    [key: string]: unknown;
+};
+
+export type PvpRoomMessage = {
+    id?: number | string;
+    roomId?: number | string;
+    senderUid?: string | null;
+    type?: 'user' | 'system' | string;
+    content?: string;
+    metadata?: Record<string, unknown> | null;
+    created_at?: string;
+    sender?: PvpPlayer | null;
+    player?: PvpPlayer | null;
+    [key: string]: unknown;
+};
+
+export type PvpRoom = {
+    id?: number | string;
+    name?: string;
+    visibility?: PvpRoomVisibility | string;
+    isPrivate?: boolean;
+    status?: 'active' | 'closed' | string;
+    hostUid?: string;
+    host?: PvpPlayer | null;
+    inviteToken?: string | null;
+    inviteUrl?: string | null;
+    memberCount?: number;
+    activeMemberCount?: number;
+    viewerRole?: 'host' | 'member' | null | string;
+    viewerMembership?: PvpRoomMember | null;
+    members?: PvpRoomMember[];
+    pendingInvites?: PvpRoomInvite[];
+    activeMatch?: PvpMatch | null;
+    history?: PvpMatch[];
+    created_at?: string;
+    updated_at?: string;
+    [key: string]: unknown;
+};
+
+export type PvpRoomInvite = {
+    id?: number | string;
+    roomId?: number | string;
+    inviterUid?: string;
+    inviteeUid?: string;
+    status?: PvpInviteStatus;
+    expiresAt?: string | null;
+    expires_at?: string | null;
+    created_at?: string;
+    inviter?: PvpPlayer | null;
+    invitee?: PvpPlayer | null;
+    room?: PvpRoom | null;
+    [key: string]: unknown;
+};
+
+export type PvpRoomsOverview = {
+    publicRooms: PvpRoom[];
+    joinedRooms: PvpRoom[];
+    invites: PvpRoomInvite[];
 };
 
 export type PvpMatchmakingRequest = {
@@ -728,6 +813,170 @@ export async function getPvpInvite(token: string | null | undefined, id: number 
     return pvpRequest<PvpInvite | null>(`/pvp/invites/${id}`, { token });
 }
 
+export async function getPvpRoomsOverview(token?: string | null) {
+    return pvpRequest<PvpRoomsOverview>('/pvp/rooms', { token });
+}
+
+export async function createPvpRoom(
+    token: string | null | undefined,
+    payload: { name: string; visibility?: PvpRoomVisibility | string; }
+) {
+    return pvpRequest<PvpRoom>('/pvp/rooms', {
+        method: 'POST',
+        token,
+        body: payload
+    });
+}
+
+export async function getPvpRoom(
+    token: string | null | undefined,
+    id: number | string,
+    options: { token?: string | null; } = {}
+) {
+    const params = new URLSearchParams();
+
+    if (options.token) {
+        params.set('token', options.token);
+    }
+
+    const query = params.toString();
+
+    return pvpRequest<PvpRoom>(`/pvp/rooms/${id}${query ? `?${query}` : ''}`, { token });
+}
+
+export async function joinPvpRoom(
+    token: string | null | undefined,
+    id: number | string,
+    inviteToken?: string | null
+) {
+    return pvpRequest<PvpRoom>(`/pvp/rooms/${id}/join`, {
+        method: 'POST',
+        token,
+        body: inviteToken ? { token: inviteToken } : {}
+    });
+}
+
+export async function leavePvpRoom(token: string | null | undefined, id: number | string) {
+    return pvpRequest<{ left: boolean; roomId: number | string; closed?: boolean; }>(
+        `/pvp/rooms/${id}/leave`,
+        {
+            method: 'POST',
+            token
+        }
+    );
+}
+
+export async function invitePvpRoomPlayer(
+    token: string | null | undefined,
+    id: number | string,
+    uid: string
+) {
+    return pvpRequest<PvpRoomInvite>(`/pvp/rooms/${id}/invites`, {
+        method: 'POST',
+        token,
+        body: { uid }
+    });
+}
+
+export async function acceptPvpRoomInvite(
+    token: string | null | undefined,
+    id: number | string
+) {
+    return pvpRequest<PvpRoom>(`/pvp/rooms/invites/${id}/accept`, {
+        method: 'POST',
+        token
+    });
+}
+
+export async function declinePvpRoomInvite(
+    token: string | null | undefined,
+    id: number | string
+) {
+    return pvpRequest<{ declined: boolean; inviteId: number | string; }>(
+        `/pvp/rooms/invites/${id}/decline`,
+        {
+            method: 'POST',
+            token
+        }
+    );
+}
+
+export async function kickPvpRoomMember(
+    token: string | null | undefined,
+    id: number | string,
+    uid: string
+) {
+    return pvpRequest<PvpRoom>(`/pvp/rooms/${id}/members/${encodeURIComponent(uid)}/kick`, {
+        method: 'POST',
+        token
+    });
+}
+
+export async function startPvpRoomMatch(
+    token: string | null | undefined,
+    id: number | string,
+    payload: {
+        levelId: number | string;
+        timeLimitSeconds?: number | string | null;
+        timeLimitMinutes?: number | string | null;
+        completionRuleType?: PvpRoomCompletionRuleType | string;
+        completionRuleValue?: number | string | null;
+    }
+) {
+    return pvpRequest<PvpMatch>(`/pvp/rooms/${id}/start-match`, {
+        method: 'POST',
+        token,
+        body: payload
+    });
+}
+
+export async function getPvpRoomMessages(
+    token: string | null | undefined,
+    id: number | string,
+    options: { afterId?: number | string | null; limit?: number | string | null; } = {}
+) {
+    const params = new URLSearchParams();
+
+    if (options.afterId !== undefined && options.afterId !== null && options.afterId !== '') {
+        params.set('afterId', String(options.afterId));
+    }
+
+    if (options.limit !== undefined && options.limit !== null && options.limit !== '') {
+        params.set('limit', String(options.limit));
+    }
+
+    const query = params.toString();
+    const payload = await pvpRequest<
+        PvpRoomMessage[] | { messages?: PvpRoomMessage[]; data?: PvpRoomMessage[]; }
+    >(`/pvp/rooms/${id}/messages${query ? `?${query}` : ''}`, { token });
+
+    if (Array.isArray(payload)) {
+        return payload;
+    }
+
+    if (Array.isArray(payload?.messages)) {
+        return payload.messages;
+    }
+
+    if (Array.isArray(payload?.data)) {
+        return payload.data;
+    }
+
+    return [];
+}
+
+export async function sendPvpRoomMessage(
+    token: string | null | undefined,
+    id: number | string,
+    content: string
+) {
+    return pvpRequest<PvpRoomMessage>(`/pvp/rooms/${id}/messages`, {
+        method: 'POST',
+        token,
+        body: { content }
+    });
+}
+
 export async function getPvpMatches(token?: string | null) {
     return normalizePvpMatches(await pvpRequest('/pvp/matches', { token }));
 }
@@ -978,6 +1227,22 @@ export function getPvpMatchId(match: PvpMatch | null | undefined) {
     return match?.id ?? match?.matchId ?? null;
 }
 
+export function getPvpMatchRoomId(match: PvpMatch | null | undefined) {
+    return match?.roomId ?? match?.room_id ?? match?.room?.id ?? null;
+}
+
+export function getPvpMatchRoom(match: PvpMatch | null | undefined) {
+    return match?.room ?? null;
+}
+
+export function isPvpCustomRoomMatch(match: PvpMatch | null | undefined) {
+    return Boolean(getPvpMatchRoomId(match));
+}
+
+export function getPvpMatchRoomName(match: PvpMatch | null | undefined) {
+    return match?.room?.name ?? null;
+}
+
 export function getPvpInviteId(invite: PvpInvite | null | undefined) {
     return invite?.id ?? invite?.inviteId ?? null;
 }
@@ -1073,6 +1338,19 @@ export function getPvpParticipantPlayer(
     }
 
     return participant?.player ?? participant?.players ?? null;
+}
+
+export function getPvpParticipantDisplayName(
+    participant: PvpParticipant | PvpResult | null | undefined,
+    fallback = 'Player'
+) {
+    const player = getPvpParticipantPlayer(participant);
+    const rawName = participant
+        ? (participant.name ?? participant.displayName ?? player?.name)
+        : null;
+    const name = typeof rawName === 'string' ? rawName.trim() : '';
+
+    return name || player?.name || getPvpParticipantUid(participant) || fallback;
 }
 
 export function getPvpParticipantIsAnonymous(
@@ -1196,6 +1474,36 @@ export function getPvpTimeReachedMs(participant: PvpParticipant | PvpResult | nu
     return Number.isFinite(Number(value)) ? Number(value) : null;
 }
 
+export function getPvpParticipantsSortedByProgress(
+    participants: PvpParticipant[],
+    mode: PvpMode = 'classic'
+) {
+    return [...participants].sort((a, b) => {
+        const progressDelta = getPvpProgress(b) - getPvpProgress(a);
+
+        if (progressDelta) {
+            return progressDelta;
+        }
+
+        const aTime = getPvpTimeReachedMs(a);
+        const bTime = getPvpTimeReachedMs(b);
+
+        if (aTime === null && bTime === null) {
+            return 0;
+        }
+
+        if (aTime === null) {
+            return 1;
+        }
+
+        if (bTime === null) {
+            return -1;
+        }
+
+        return aTime - bTime;
+    });
+}
+
 export function getPvpWinnerUid(match: PvpMatch | null | undefined) {
     if (!match) {
         return null;
@@ -1250,7 +1558,7 @@ export function getPvpBanPickAbortRequestExpiresMs(match: PvpMatch | null | unde
 }
 
 export function getPvpInviteExpiresMs(
-    invite: PvpInvite | PvpMatchmakingRequest | null | undefined
+    invite: PvpInvite | PvpRoomInvite | PvpMatchmakingRequest | null | undefined
 ) {
     return getTimeMs(invite?.expiresAt ?? invite?.expires_at);
 }

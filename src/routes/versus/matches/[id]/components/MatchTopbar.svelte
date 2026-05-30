@@ -15,10 +15,13 @@
 	import { _ } from 'svelte-i18n';
 
 	export let title = '';
+	export let backHref = '/versus/play';
+	export let backLabel = '';
 	export let loggedIn = false;
 	export let loading = false;
 	export let actionLoading = '';
 	export let hideOpponentInfo = false;
+	export let showOpponentInfoToggle = true;
 	export let canRematch = false;
 	export let canRequestLevelChange = false;
 	export let canRequestBanPickAbort = false;
@@ -36,28 +39,30 @@
 
 <section class="match-topbar">
   <div>
-    <a class="back-link" href="/versus/play">
+    <a class="back-link" href={backHref}>
       <ArrowLeft class="h-4 w-4" />
-      {$_('pvp.lobby_title')}
+      {backLabel || $_('pvp.lobby_title')}
     </a>
     <h1>{title}</h1>
   </div>
 
   {#if loggedIn}
     <div class="topbar-actions">
-      <Button
-        variant="outline"
-        aria-pressed={hideOpponentInfo}
-        on:click={onToggleOpponentInfo}
-      >
-        {#if hideOpponentInfo}
-          <Eye class="mr-2 h-4 w-4" />
-          {$_('pvp.show_opponent_info')}
-        {:else}
-          <EyeOff class="mr-2 h-4 w-4" />
-          {$_('pvp.hide_opponent_info')}
-        {/if}
-      </Button>
+      {#if showOpponentInfoToggle}
+        <Button
+          variant="outline"
+          aria-pressed={hideOpponentInfo}
+          on:click={onToggleOpponentInfo}
+        >
+          {#if hideOpponentInfo}
+            <Eye class="mr-2 h-4 w-4" />
+            {$_('pvp.show_opponent_info')}
+          {:else}
+            <EyeOff class="mr-2 h-4 w-4" />
+            {$_('pvp.hide_opponent_info')}
+          {/if}
+        </Button>
+      {/if}
 
       {#if canRematch}
         <Button

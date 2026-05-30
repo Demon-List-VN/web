@@ -11,6 +11,7 @@
 		getPvpOpponent,
 		getPvpParticipants,
 		getPvpParticipantIsAnonymous,
+		getPvpParticipantDisplayName,
 		getPvpParticipantPlayer,
 		getPvpParticipantUid,
 		getPvpProgress,
@@ -21,9 +22,12 @@
 		getPvpVisibleParticipantRating,
 		getPvpVisibleParticipantRatingLabel,
 		getPvpParticipantRatingDiff,
+		getPvpParticipantsSortedByProgress,
 		getPvpWinnerUid,
+		getPvpMatchRoomName,
 		formatPvpProgressValue,
 		isPvpMatchRanked,
+		isPvpCustomRoomMatch,
 		isActivePvpMatch,
 		isPvpMatchConfirmedByBoth,
 		type PvpMatch
@@ -51,8 +55,11 @@
 	$: selfProgress = getPvpProgress(self);
 	$: opponentProgress = getPvpProgress(opponent);
 	$: matchMode = getPvpMode(match);
+	$: isRoomMatch = isPvpCustomRoomMatch(match) || participants.length > 2;
+	$: sortedParticipants = getPvpParticipantsSortedByProgress(participants, matchMode);
+	$: roomTitle = getPvpMatchRoomName(match) || $_('pvp.rooms.custom_room');
 	$: progressBarMax = matchMode === 'platformer'
-		? Math.max(1, selfProgress, opponentProgress)
+		? Math.max(1, ...participants.map((participant) => getPvpProgress(participant)))
 		: 100;
 	$: opponentPlayer = getPvpParticipantPlayer(opponent);
 	$: winnerUid = getPvpWinnerUid(match);
@@ -145,7 +152,9 @@
 
 		const player = getPvpParticipantPlayer(participant);
 
-		return player?.name || (participant ? null : $_('pvp.waiting_opponent'));
+		return player?.name || (participant
+			? getPvpParticipantDisplayName(participant, $_('pvp.rooms.player'))
+			: $_('pvp.waiting_opponent'));
 	}
 
 	function participantIsAnonymous(participant: typeof titleLeft) {
@@ -227,32 +236,39 @@
     <div>
       <div class="match-title">
         <Swords class="h-4 w-4" />
-        <span class="match-title-name">
-          {#if !shouldMaskParticipant(titleLeft) && getPvpParticipantPlayer(titleLeft)?.uid}
-            <PlayerLink
-              player={getPvpParticipantPlayer(titleLeft)}
-              rankBadge={resolvePvpRankBadge(getPvpParticipantPlayer(titleLeft), matchMode)}
-              truncate={18}
-            />
-          {:else}
-            {participantName(titleLeft)}
-          {/if}
-        </span>
-        <span class="versus">vs</span>
-        <span class="match-title-name">
-          {#if !shouldMaskParticipant(titleRight) && getPvpParticipantPlayer(titleRight)?.uid}
-            <PlayerLink
-              player={getPvpParticipantPlayer(titleRight)}
-              rankBadge={resolvePvpRankBadge(getPvpParticipantPlayer(titleRight), matchMode)}
-              truncate={18}
-            />
-          {:else}
-            {participantName(titleRight)}
-          {/if}
-        </span>
+        {#if isRoomMatch}
+          <span class="match-title-name">{roomTitle}</span>
+          <span class="versus">{participants.length} {$_('pvp.rooms.players')}</span>
+        {:else}
+          <span class="match-title-name">
+            {#if !shouldMaskParticipant(titleLeft) && getPvpParticipantPlayer(titleLeft)?.uid}
+              <PlayerLink
+                player={getPvpParticipantPlayer(titleLeft)}
+                rankBadge={resolvePvpRankBadge(getPvpParticipantPlayer(titleLeft), matchMode)}
+                truncate={18}
+              />
+            {:else}
+              {participantName(titleLeft)}
+            {/if}
+          </span>
+          <span class="versus">vs</span>
+          <span class="match-title-name">
+            {#if !shouldMaskParticipant(titleRight) && getPvpParticipantPlayer(titleRight)?.uid}
+              <PlayerLink
+                player={getPvpParticipantPlayer(titleRight)}
+                rankBadge={resolvePvpRankBadge(getPvpParticipantPlayer(titleRight), matchMode)}
+                truncate={18}
+              />
+            {:else}
+              {participantName(titleRight)}
+            {/if}
+          </span>
+        {/if}
       </div>
       <Card.Description>
-        {#if shouldShowLevel && level?.name}
+        {#if isRoomMatch}
+          {$_('pvp.unranked')} - {$_('pvp.rooms.custom_room')}
+        {:else if shouldShowLevel && level?.name}
           {level.name}
           {#if level.creator || level.author}
             <span>{$_('head.labels.by')} {level.creator || level.author}</span>
@@ -282,87 +298,124 @@
   </Card.Header>
 
   <Card.Content class="match-card-content">
-    <div class="opponent-row">
-      <span>{$_('pvp.opponent')}</span>
-      {#if shouldMaskParticipant(opponent)}
-        <strong>{participantName(opponent)}</strong>
-      {:else if opponentPlayer?.uid}
-        <PlayerLink
-          player={opponentPlayer}
-          rankBadge={resolvePvpRankBadge(opponentPlayer, matchMode)}
-          showAvatar
-          truncate={24}
-        />
-      {:else}
-        <strong>{$_('pvp.waiting_opponent')}</strong>
-      {/if}
-    </div>
-
-    <div class="progress-grid">
-      <div>
-        <div class="progress-label">
-          <span>
-            {$_('pvp.you')}
-            {#if ratingLabel(self) !== null}
-              <small>{
-                $_('pvp.pvp_rating_short', { values: { rating: ratingLabel(self) } })
-              }</small>
-            {/if}
-          </span>
-          <strong>{formatPvpProgressValue(selfProgress, matchMode)}</strong>
-        </div>
-        <div class="progress-track">
-          <div
-            class="progress-bar self"
-            style={`width: ${progressBarWidth(selfProgress)}%;`}
+    {#if isRoomMatch}
+      <div class="room-player-list">
+        {#each sortedParticipants as participant}
+          {@const player = getPvpParticipantPlayer(participant)}
+          {@const progress = getPvpProgress(participant)}
+          <div class="room-player-row">
+            <div class="room-player-main">
+              {#if !shouldMaskParticipant(participant) && player?.uid}
+                <PlayerLink
+                  player={player}
+                  rankBadge={resolvePvpRankBadge(player, matchMode)}
+                  showAvatar
+                  truncate={24}
+                />
+              {:else}
+                <strong>{participantName(participant)}</strong>
+              {/if}
+              {#if getPvpParticipantUid(participant) === currentUid}
+                <Badge variant="secondary">{$_('pvp.you')}</Badge>
+              {/if}
+            </div>
+            <strong>{formatPvpProgressValue(progress, matchMode)}</strong>
+            <div class="progress-track">
+              <div
+                class="progress-bar self"
+                style={`width: ${progressBarWidth(progress)}%;`}
+              />
+            </div>
+            <span class="time-mark">
+              <Gauge class="h-3.5 w-3.5" />
+              {formatDuration(getPvpTimeReachedMs(participant))}
+            </span>
+          </div>
+        {/each}
+      </div>
+    {:else}
+      <div class="opponent-row">
+        <span>{$_('pvp.opponent')}</span>
+        {#if shouldMaskParticipant(opponent)}
+          <strong>{participantName(opponent)}</strong>
+        {:else if opponentPlayer?.uid}
+          <PlayerLink
+            player={opponentPlayer}
+            rankBadge={resolvePvpRankBadge(opponentPlayer, matchMode)}
+            showAvatar
+            truncate={24}
           />
-        </div>
-        <span class="time-mark">
-          <Gauge class="h-3.5 w-3.5" />
-          {formatDuration(getPvpTimeReachedMs(self))}
-          {#if ranked && ratingDiffLabel(self)}
-            <strong
-              class:positive={Number(getPvpParticipantRatingDiff(self)) > 0}
-              class="rating-diff"
-            >
-              {ratingDiffLabel(self)}
-            </strong>
-          {/if}
-        </span>
+          {:else}
+          <strong>{$_('pvp.waiting_opponent')}</strong>
+        {/if}
       </div>
 
-      <div>
-        <div class="progress-label">
-          <span>
-            {$_('pvp.rival')}
-            {#if ratingLabel(opponent) !== null}
-              <small>{
-                $_('pvp.pvp_rating_short', { values: { rating: ratingLabel(opponent) } })
-              }</small>
+      <div class="progress-grid">
+        <div>
+          <div class="progress-label">
+            <span>
+              {$_('pvp.you')}
+              {#if ratingLabel(self) !== null}
+                <small>{
+                  $_('pvp.pvp_rating_short', { values: { rating: ratingLabel(self) } })
+                }</small>
+              {/if}
+            </span>
+            <strong>{formatPvpProgressValue(selfProgress, matchMode)}</strong>
+          </div>
+          <div class="progress-track">
+            <div
+              class="progress-bar self"
+              style={`width: ${progressBarWidth(selfProgress)}%;`}
+            />
+          </div>
+          <span class="time-mark">
+            <Gauge class="h-3.5 w-3.5" />
+            {formatDuration(getPvpTimeReachedMs(self))}
+            {#if ranked && ratingDiffLabel(self)}
+              <strong
+                class:positive={Number(getPvpParticipantRatingDiff(self)) > 0}
+                class="rating-diff"
+              >
+                {ratingDiffLabel(self)}
+              </strong>
             {/if}
           </span>
-          <strong>{formatPvpProgressValue(opponentProgress, matchMode)}</strong>
         </div>
-        <div class="progress-track">
-          <div
-            class="progress-bar rival"
-            style={`width: ${progressBarWidth(opponentProgress)}%;`}
-          />
+
+        <div>
+          <div class="progress-label">
+            <span>
+              {$_('pvp.rival')}
+              {#if ratingLabel(opponent) !== null}
+                <small>{
+                  $_('pvp.pvp_rating_short', { values: { rating: ratingLabel(opponent) } })
+                }</small>
+              {/if}
+            </span>
+            <strong>{formatPvpProgressValue(opponentProgress, matchMode)}</strong>
+          </div>
+          <div class="progress-track">
+            <div
+              class="progress-bar rival"
+              style={`width: ${progressBarWidth(opponentProgress)}%;`}
+            />
+          </div>
+          <span class="time-mark">
+            <Gauge class="h-3.5 w-3.5" />
+            {formatDuration(getPvpTimeReachedMs(opponent))}
+            {#if ranked && ratingDiffLabel(opponent)}
+              <strong
+                class:positive={Number(getPvpParticipantRatingDiff(opponent)) > 0}
+                class="rating-diff"
+              >
+                {ratingDiffLabel(opponent)}
+              </strong>
+            {/if}
+          </span>
         </div>
-        <span class="time-mark">
-          <Gauge class="h-3.5 w-3.5" />
-          {formatDuration(getPvpTimeReachedMs(opponent))}
-          {#if ranked && ratingDiffLabel(opponent)}
-            <strong
-              class:positive={Number(getPvpParticipantRatingDiff(opponent)) > 0}
-              class="rating-diff"
-            >
-              {ratingDiffLabel(opponent)}
-            </strong>
-          {/if}
-        </span>
       </div>
-    </div>
+    {/if}
   </Card.Content>
 
   <Card.Footer class="match-card-footer">
@@ -406,7 +459,8 @@
 .detail-link,
 .time-mark,
 .opponent-row,
-.progress-label {
+.progress-label,
+.room-player-main {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -444,6 +498,27 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
+}
+
+.room-player-list {
+  display: grid;
+  gap: 12px;
+}
+
+.room-player-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 12px;
+  align-items: center;
+}
+
+.room-player-main {
+  min-width: 0;
+}
+
+.room-player-row .progress-track,
+.room-player-row .time-mark {
+  grid-column: 1 / -1;
 }
 
 .progress-label {

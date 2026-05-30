@@ -39,9 +39,13 @@
 		getPvpOpponent,
 		getPvpParticipants,
 		getPvpDeathCountArray,
+		getPvpMatchRoomId,
+		getPvpMatchRoomName,
 		getPvpParticipantIsAnonymous,
+		getPvpParticipantDisplayName,
 		getPvpParticipantPlayer,
 		getPvpParticipantUid,
+		getPvpParticipantsSortedByProgress,
 		getPvpProgress,
 		getPvpResultReason,
 		getPvpSelfParticipant,
@@ -54,6 +58,7 @@
 		formatPvpProgressValue,
 		hasPvpParticipantAccepted,
 		isPvpMatchRanked,
+		isPvpCustomRoomMatch,
 		isActivePvpMatch,
 		isPvpMatchConfirmedByBoth,
 		requestPvpBanPickAbort,
@@ -247,8 +252,18 @@
 	$: visibleLevel = levelConfirmed && !isBanPick ? level : null;
 	$: levelVideoId = getYouTubeVideoId(visibleLevel?.videoID);
 	$: participants = getPvpParticipants(match);
-	$: matchTitle = getMatchTitle(participants, hideOpponentInfo, currentUid);
-	$: orderedParticipants = orderParticipants(participants, currentUid);
+	$: isRoomMatch = isPvpCustomRoomMatch(match);
+	$: roomId = getPvpMatchRoomId(match);
+	$: roomName = getPvpMatchRoomName(match);
+	$: effectiveHideOpponentInfo = isRoomMatch ? false : hideOpponentInfo;
+	$: matchTitle = isRoomMatch
+		? `${roomName || $_('pvp.rooms.custom_room')} match`
+		: getMatchTitle(participants, effectiveHideOpponentInfo, currentUid);
+	$: matchBackHref = isRoomMatch && roomId ? `/versus/rooms/${roomId}` : '/versus/play';
+	$: matchBackLabel = isRoomMatch ? $_('pvp.rooms.room') : $_('pvp.lobby_title');
+	$: orderedParticipants = isRoomMatch || participants.length > 2
+		? getPvpParticipantsSortedByProgress(participants, matchMode)
+		: orderParticipants(participants, currentUid);
 	$: winnerUid = getPvpWinnerUid(match);
 	$: resultReason = getPvpResultReason(match);
 	$: ranked = isPvpMatchRanked(match);
@@ -258,7 +273,7 @@
 		status,
 		winnerUid,
 		participants,
-		hideOpponentInfo,
+		effectiveHideOpponentInfo,
 		currentUid
 	);
 	$: remainingMs = Math.max(0, (getPvpMatchEndMs(match) ?? now) - now);
@@ -288,7 +303,7 @@
 	$: rematchOpponent = getPvpOpponent(match, currentUid);
 	$: rematchOpponentUid = getPvpParticipantUid(rematchOpponent);
 	$: canRematch = Boolean(
-		match && !isActive && selfParticipant && rematchOpponentUid
+		match && !isRoomMatch && !isActive && selfParticipant && rematchOpponentUid
 	);
 	$: viewerReport = getPvpViewerReport(match);
 	$: hasReportedMatch = Boolean(
@@ -312,6 +327,7 @@
 		&& !isSpectator
 		&& !hasReportedMatch;
 	$: canResign = ['in_progress', 'waiting_result'].includes(status)
+		&& !isRoomMatch
 		&& remainingMs > 0
 		&& Boolean(selfParticipant);
 	$: levelChangeRequestedByUid = getPvpLevelChangeRequestedByUid(match);
@@ -324,6 +340,7 @@
 		&& levelChangeRequestRemainingMs > 0;
 	$: levelChangeUsed = Boolean(match?.levelChangedAt ?? match?.level_changed_at);
 	$: canRequestLevelChange = ['in_progress', 'waiting_result'].includes(status)
+		&& !isRoomMatch
 		&& matchMode !== 'platformer'
 		&& remainingMs > 0
 		&& Boolean(selfParticipant)
@@ -338,7 +355,7 @@
 		&& banPickAbortRequestRemainingMs > 0;
 	$: banPickAbortRequestedBySelf = Boolean(currentUid)
 		&& String(banPickAbortRequestedByUid || '') === String(currentUid);
-	$: canRequestBanPickAbort = isBanPick && Boolean(selfParticipant);
+	$: canRequestBanPickAbort = isBanPick && !isRoomMatch && Boolean(selfParticipant);
 	$: chatOpenDuringMatch = ['in_progress', 'waiting_result'].includes(status)
 		&& remainingMs > 0;
 	$: chatOpenDuringBanPick = isBanPick;
@@ -383,7 +400,7 @@
 		orderedParticipants,
 		compareGlobalDeathCount,
 		globalDeathCount,
-		hideOpponentInfo,
+		effectiveHideOpponentInfo,
 		currentUid,
 		deathCountShowRate,
 		comparePlayerGlobalDeathCount,
@@ -1292,7 +1309,9 @@
 
 		const player = getPvpParticipantPlayer(participant);
 
-		return player?.name || null;
+		return player?.name || (participant
+			? getPvpParticipantDisplayName(participant, $_('pvp.rooms.player'))
+			: null);
 	}
 
 	function participantIsAnonymous(
@@ -1308,6 +1327,10 @@
 		infoConfirmed: boolean = playerInfoConfirmed
 	) {
 		const uid = getPvpParticipantUid(participant);
+
+		if (isRoomMatch) {
+			return false;
+		}
 
 		if (participant && !infoConfirmed) {
 			return true;
@@ -1406,6 +1429,10 @@
 		participant: PvpParticipant,
 		viewerUid: string | null | undefined = currentUid
 	) {
+		if (isRoomMatch && getPvpParticipantUid(participant) !== viewerUid) {
+			return $_('pvp.rooms.player');
+		}
+
 		return getPvpParticipantUid(participant) === viewerUid
 			? $_('pvp.you')
 			: $_('pvp.rival');
@@ -1729,10 +1756,10 @@
 		if (!['pending', 'ban_pick'].includes(matchStatus)) {
 			return getTimeMs(
 				sourceMatch?.endedAt
-					?? sourceMatch?.ratingAppliedAt
-					?? sourceMatch?.rating_applied_at
-					?? sourceMatch?.completedAt
-					?? sourceMatch?.endAt
+				?? sourceMatch?.ratingAppliedAt
+				?? sourceMatch?.rating_applied_at
+				?? sourceMatch?.completedAt
+				?? sourceMatch?.endAt
 			)
 				?? null;
 		}
@@ -2902,10 +2929,13 @@
 
   <MatchTopbar
     title={matchTitle}
+    backHref={matchBackHref}
+    backLabel={matchBackLabel}
     loggedIn={$user.loggedIn}
     {loading}
     {actionLoading}
     {hideOpponentInfo}
+    showOpponentInfoToggle={!isRoomMatch}
     {canRematch}
     canRequestLevelChange={canRequestLevelChange && !levelChangeRequestedByUid}
     canRequestBanPickAbort={canRequestBanPickAbort && !banPickAbortRequestedByUid}
@@ -3014,7 +3044,7 @@
               {#if orderedParticipants.length === 0}
                 <div class="empty-state">{$_('pvp.waiting_opponent')}</div>
               {:else}
-                <div class="side-grid">
+                <div class:multi-player-grid={isRoomMatch || orderedParticipants.length > 2} class="side-grid">
                   {#each orderedParticipants as participant, index}
                     {@const participantPlayer = getPvpParticipantPlayer(participant)}
                     {@const participantMasked = shouldMaskParticipant(
@@ -3301,8 +3331,8 @@
                       {@const senderUid = messageSenderUid(message)}
                       {@const senderName = messageSenderName(
                           message,
-                          hideOpponentInfo,
-                          currentUid,
+		effectiveHideOpponentInfo,
+		currentUid,
                           participants,
                           senderUid
                       )}
@@ -4048,6 +4078,10 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
+}
+
+.side-grid.multi-player-grid {
+  grid-template-columns: 1fr;
 }
 
 .timer-display {

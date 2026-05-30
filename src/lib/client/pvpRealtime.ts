@@ -8,7 +8,11 @@ export type PvpRealtimeScope =
     | 'result'
     | 'match'
     | 'message'
-    | 'banPick';
+    | 'banPick'
+    | 'room'
+    | 'roomMember'
+    | 'roomInvite'
+    | 'roomMessage';
 
 export type PvpRealtimeEvent = {
     scope: PvpRealtimeScope;
@@ -95,6 +99,74 @@ export function subscribeToPvpLobby(uid: string, callback: RealtimeCallback) {
             'pvpMatchParticipants',
             `uid=eq.${uid}`,
             'participant',
+            callback,
+            ['INSERT', 'UPDATE']
+        ),
+        subscribeToTable(
+            `pvp-lobby-room-members-${uid}`,
+            'pvpRoomMembers',
+            `uid=eq.${uid}`,
+            'roomMember',
+            callback,
+            ['INSERT', 'UPDATE']
+        ),
+        subscribeToTable(
+            `pvp-lobby-room-invites-${uid}`,
+            'pvpRoomInvites',
+            `inviteeUid=eq.${uid}`,
+            'roomInvite',
+            callback,
+            ['INSERT', 'UPDATE']
+        )
+    ];
+
+    return () => removeChannels(channels);
+}
+
+export function subscribeToPvpRoom(roomId: number | string, callback: RealtimeCallback) {
+    if (roomId === null || roomId === undefined || roomId === '') {
+        return () => Promise.resolve();
+    }
+
+    const id = String(roomId);
+    const channels = [
+        subscribeToTable(
+            `pvp-room-${id}`,
+            'pvpRooms',
+            `id=eq.${id}`,
+            'room',
+            callback,
+            'UPDATE'
+        ),
+        subscribeToTable(
+            `pvp-room-members-${id}`,
+            'pvpRoomMembers',
+            `roomId=eq.${id}`,
+            'roomMember',
+            callback,
+            ['INSERT', 'UPDATE']
+        ),
+        subscribeToTable(
+            `pvp-room-invites-${id}`,
+            'pvpRoomInvites',
+            `roomId=eq.${id}`,
+            'roomInvite',
+            callback,
+            ['INSERT', 'UPDATE']
+        ),
+        subscribeToTable(
+            `pvp-room-messages-${id}`,
+            'pvpRoomMessages',
+            `roomId=eq.${id}`,
+            'roomMessage',
+            callback,
+            'INSERT'
+        ),
+        subscribeToTable(
+            `pvp-room-matches-${id}`,
+            'pvpMatches',
+            `roomId=eq.${id}`,
+            'match',
             callback,
             ['INSERT', 'UPDATE']
         )

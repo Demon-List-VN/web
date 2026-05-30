@@ -44,7 +44,7 @@ export function isActionableNotification(notification: UserNotification) {
     const type = notification.metadata?.type;
 
     return (
-        (type === 'friend_request' || type === 'pvp_invite')
+        (type === 'friend_request' || type === 'pvp_invite' || type === 'pvp_room_invite')
         && Boolean(actionEndpoint(notification, 'accept'))
         && Boolean(actionEndpoint(notification, 'reject'))
     );
