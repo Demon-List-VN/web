@@ -427,9 +427,9 @@
 		startRequeueFromUrl();
 	}
 
-	$: if (browser && loadedLeaderboardMode !== leaderboardMode) {
-		loadedLeaderboardMode = leaderboardMode;
-		refreshLeaderboard(leaderboardMode);
+	$: leaderboardRequestKey = `${leaderboardMode}:${leaderboardPage}`;
+	$: if (browser && loadedLeaderboardKey !== leaderboardRequestKey) {
+		refreshLeaderboard(leaderboardMode, leaderboardPage);
 	}
 
 	onDestroy(() => {
