@@ -60,26 +60,7 @@
   >
     <!-- Header -->
     <div class="popover-header">
-      {#if isActive($user.data.supporterUntil)}
-        <PlayerCard player={$user.data} />
-      {:else}
-        <div class="user-header">
-          <Avatar.Root>
-            <Avatar.Image
-              class="object-cover"
-              src={`https://cdn.gdvn.net/avatars/${$user.data.uid}.jpg?version=${$user.data.avatarVersion}`}
-              alt=""
-            />
-            <Avatar.Fallback>{$user.data.name[0]}</Avatar.Fallback>
-          </Avatar.Root>
-          <div>
-            <div class="font-semibold text-sm">{$user.data.name}</div>
-            <div class="text-xs text-muted-foreground">
-              UID: {$user.data.uid}
-            </div>
-          </div>
-        </div>
-      {/if}
+      <PlayerCard player={$user.data} />
     </div>
 
     {#if isActive($user.data.supporterUntil)}
@@ -88,6 +69,10 @@
           supporterUntil={$user.data.supporterUntil}
           compact
         />
+      </div>
+    {:else}
+      <div class="tier-progress-wrap">
+        <SupporterTierProgress preview compact />
       </div>
     {/if}
 
@@ -161,12 +146,6 @@
 <style lang="scss">
 .popover-header {
   padding: 12px;
-}
-
-.user-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
 }
 
 .tier-progress-wrap {
