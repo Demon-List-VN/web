@@ -111,9 +111,9 @@
 	$: sharedLevelId = getRoomSelectedLevelId(room);
 	$: selectedLevelVideoId = getYouTubeVideoId(
 		selectedLevel?.videoID
-			?? selectedLevel?.videoId
-			?? selectedLevel?.video
-			?? selectedLevel?.videoUrl
+		?? selectedLevel?.videoId
+		?? selectedLevel?.video
+		?? selectedLevel?.videoUrl
 	);
 	$: startDisabled = Boolean(actionLoading)
 		|| !isHost
@@ -657,7 +657,8 @@
 	}
 
 	function getYouTubeVideoId(value: unknown) {
-		const raw = String(value ?? '').trim();
+		const raw = String(value ?? '')
+			.trim();
 
 		if (!raw) {
 			return null;
@@ -796,7 +797,7 @@
 </script>
 
 <svelte:head>
-  <title>{room?.name ?? $_('pvp.rooms.room')} | GDDP</title>
+  <title>{room?.name ?? $_('pvp.rooms.room')} - Geometry Dash Việt Nam</title>
 </svelte:head>
 
 <main class="room-page">
