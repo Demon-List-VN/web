@@ -35,11 +35,13 @@
 		type PvpRoomMessage
 	} from '$lib/client/pvp';
 	import {
+		broadcastPvpRoomEnded,
 		setPvpRealtimeAuth,
-		subscribeToPvpRoom
+		subscribeToPvpRoom,
+		type PvpRealtimeEvent
 	} from '$lib/client/pvpRealtime';
 	import { resolvePvpRankBadge } from '$lib/utils/pvpRank';
-	import { onDestroy, tick } from 'svelte';
+	import { onDestroy, onMount, tick } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { _ } from 'svelte-i18n';
 	import {
@@ -60,6 +62,19 @@
 
 	const MESSAGE_FETCH_LIMIT = 100;
 	const REALTIME_COALESCE_MS = 200;
+	const ROOM_MATCH_CONFIG_STORAGE_KEY = 'pvp.room.matchConfig.v1';
+
+	type CompletionRuleType = 'count' | 'percentage';
+	type ScoringMode = 'progress' | 'score';
+	type StoredRoomMatchConfig = {
+		startTimeLimitMinutes?: number | string;
+		startTimeLimitSeconds?: number | string;
+		completionRuleType?: CompletionRuleType | string;
+		completionRuleValue?: number | string;
+		scoringMode?: ScoringMode | string;
+		targetScoreEnabled?: boolean;
+		targetScore?: number | string;
+	};
 
 	let room: PvpRoom | null = null;
 	let messages: PvpRoomMessage[] = [];
@@ -81,15 +96,16 @@
 	let selectedLevelError = '';
 	let startTimeLimitMinutes = 15;
 	let startTimeLimitSeconds = 0;
-	let completionRuleType: 'count' | 'percentage' = 'percentage';
-	let completionRuleValue = 100;
-	let scoringMode: 'progress' | 'score' = 'progress';
+	let completionRuleType: CompletionRuleType = 'count';
+	let completionRuleValue = 1;
+	let scoringMode: ScoringMode = 'progress';
 	let targetScoreEnabled = false;
 	let targetScore = 1000;
 	let loading = false;
 	let messagesLoading = false;
 	let actionLoading = '';
 	let initializedFor = '';
+	let redirectingToLobby = false;
 	let cleanupRealtime: (() => Promise<void>) | null = null;
 	let scheduledRefresh: ReturnType<typeof setTimeout> | null = null;
 
@@ -156,6 +172,10 @@
 		initializedFor = '';
 	}
 
+	onMount(() => {
+		loadSavedMatchConfig();
+	});
+
 	onDestroy(() => {
 		cleanupRealtime?.();
 
@@ -183,9 +203,7 @@
 				await loadMessages();
 			}
 
-			cleanupRealtime = subscribeToPvpRoom(id, () => {
-				scheduleRefresh();
-			});
+			cleanupRealtime = subscribeToPvpRoom(id, handleRoomRealtimeEvent);
 		} catch (error) {
 			toast.error(
 				error instanceof Error ? error.message : $_('pvp.rooms.load_failed')
@@ -206,6 +224,54 @@
 				await loadMessages({ incremental: true });
 			}
 		}, REALTIME_COALESCE_MS);
+	}
+
+	function handleRoomRealtimeEvent(event: PvpRealtimeEvent) {
+		if (shouldRedirectToLobbyForRoomEvent(event)) {
+			redirectToLobby();
+
+			return;
+		}
+
+		scheduleRefresh();
+	}
+
+	function shouldRedirectToLobbyForRoomEvent(event: PvpRealtimeEvent) {
+		const row = realtimeRow(event);
+
+		if (event.scope === 'roomBroadcast') {
+			const payload = event.payload?.payload ?? event.payload ?? {};
+
+			return String(payload.roomId ?? '') === String(roomId ?? '');
+		}
+
+		if (event.scope === 'room') {
+			return String(row?.id ?? '') === String(roomId ?? '')
+				&& row?.status === 'closed';
+		}
+
+		if (event.scope === 'roomMember') {
+			return row?.uid === currentUid
+				&& String(row?.roomId ?? row?.room_id ?? '') === String(roomId ?? '')
+				&& (row?.status === 'left' || row?.status === 'kicked');
+		}
+
+		return false;
+	}
+
+	function realtimeRow(event: PvpRealtimeEvent) {
+		return event.payload?.new ?? event.payload?.old ?? {};
+	}
+
+	function redirectToLobby() {
+		if (redirectingToLobby) {
+			return;
+		}
+
+		redirectingToLobby = true;
+		endRoomDialogOpen = false;
+		forceStartDialogOpen = false;
+		goto('/versus/play');
 	}
 
 	async function loadRoom() {
@@ -312,8 +378,15 @@
 
 		try {
 			await endPvpRoom(await $user.token(), id);
+
+			try {
+				await broadcastPvpRoomEnded(id, { endedByUid: currentUid });
+			} catch (error) {
+				console.warn('Failed to broadcast ended PvP room', error);
+			}
+
 			endRoomDialogOpen = false;
-			goto('/versus/play');
+			redirectToLobby();
 		} catch (error) {
 			toast.error(
 				error instanceof Error ? error.message : $_('pvp.rooms.end_failed')
@@ -630,11 +703,11 @@
 		startMatch(false);
 	}
 
-	function setCompletionRule(nextType: 'count' | 'percentage') {
+	function setCompletionRule(nextType: CompletionRuleType) {
 		completionRuleType = nextType;
 		completionRuleValue = nextType === 'percentage'
 			? 100
-			: Math.min(Math.max(1, Number(completionRuleValue) || 1), Math.max(1, memberCount));
+			: 1;
 	}
 
 	async function startMatch(forceStart = false) {
@@ -647,6 +720,9 @@
 		actionLoading = 'start-match';
 
 		try {
+			completionRuleValue = normalizedCompletionRuleValue();
+			targetScore = normalizedTargetScore();
+
 			const match = await startPvpRoomMatch(await $user.token(), id, {
 				levelId: sharedLevelId,
 				timeLimitSeconds: totalStartTimeLimitSeconds(),
@@ -657,6 +733,7 @@
 				forceStart
 			});
 
+			saveMatchConfig();
 			forceStartDialogOpen = false;
 			goto(`/versus/matches/${getPvpMatchId(match)}`);
 		} catch (error) {
@@ -665,6 +742,74 @@
 			);
 		} finally {
 			actionLoading = '';
+		}
+	}
+
+	function loadSavedMatchConfig() {
+		if (!browser) {
+			return;
+		}
+
+		try {
+			const raw = localStorage.getItem(ROOM_MATCH_CONFIG_STORAGE_KEY);
+
+			if (!raw) {
+				return;
+			}
+
+			const config = JSON.parse(raw) as StoredRoomMatchConfig | null;
+
+			if (!config || typeof config !== 'object') {
+				return;
+			}
+
+			startTimeLimitMinutes = normalizedInteger(
+				config.startTimeLimitMinutes,
+				0,
+				120,
+				startTimeLimitMinutes
+			);
+			startTimeLimitSeconds = normalizedInteger(
+				config.startTimeLimitSeconds,
+				0,
+				59,
+				startTimeLimitSeconds
+			);
+			completionRuleType = config.completionRuleType === 'percentage'
+				? 'percentage'
+				: 'count';
+			completionRuleValue = normalizedCompletionRuleValue(
+				completionRuleType,
+				config.completionRuleValue,
+				false
+			);
+			scoringMode = config.scoringMode === 'score' ? 'score' : 'progress';
+			targetScoreEnabled = Boolean(config.targetScoreEnabled);
+			targetScore = normalizedTargetScore(config.targetScore);
+		} catch {
+			return;
+		}
+	}
+
+	function saveMatchConfig() {
+		if (!browser) {
+			return;
+		}
+
+		try {
+			const config: StoredRoomMatchConfig = {
+				startTimeLimitMinutes: normalizedInteger(startTimeLimitMinutes, 0, 120, 15),
+				startTimeLimitSeconds: normalizedInteger(startTimeLimitSeconds, 0, 59, 0),
+				completionRuleType,
+				completionRuleValue: normalizedCompletionRuleValue(),
+				scoringMode,
+				targetScoreEnabled,
+				targetScore: normalizedTargetScore()
+			};
+
+			localStorage.setItem(ROOM_MATCH_CONFIG_STORAGE_KEY, JSON.stringify(config));
+		} catch {
+			return;
 		}
 	}
 
@@ -679,10 +824,40 @@
 		);
 	}
 
-	function normalizedTargetScore() {
-		const value = Number(targetScore);
+	function normalizedCompletionRuleValue(
+		type: CompletionRuleType = completionRuleType,
+		value: unknown = completionRuleValue,
+		clampToMembers = true
+	) {
+		const numberValue = Number(value);
+		const fallback = type === 'percentage' ? 100 : 1;
+		const rounded = Number.isFinite(numberValue) ? Math.floor(numberValue) : fallback;
+		const upperBound = type === 'percentage'
+			? 100
+			: clampToMembers
+			? Math.max(1, memberCount)
+			: Number.POSITIVE_INFINITY;
 
-		return Math.max(1, Math.min(100000, Number.isFinite(value) ? Math.floor(value) : 1000));
+		return Math.max(1, Math.min(upperBound, rounded));
+	}
+
+	function normalizedInteger(value: unknown, min: number, max: number, fallback: number) {
+		const numberValue = Number(value);
+
+		if (!Number.isFinite(numberValue)) {
+			return fallback;
+		}
+
+		return Math.max(min, Math.min(max, Math.floor(numberValue)));
+	}
+
+	function normalizedTargetScore(value: unknown = targetScore) {
+		const numberValue = Number(value);
+
+		return Math.max(
+			1,
+			Math.min(100000, Number.isFinite(numberValue) ? Math.floor(numberValue) : 1000)
+		);
 	}
 
 	function getRoomSelectedLevelId(value: PvpRoom | null | undefined) {
@@ -807,6 +982,10 @@
 
 	function memberName(member: NonNullable<PvpRoom['members']>[number]) {
 		return member.player?.name ?? member.players?.name ?? member.uid ?? $_('pvp.rooms.player');
+	}
+
+	function memberPlayer(member: PvpRoom['viewerMembership'] | NonNullable<PvpRoom['members']>[number] | null | undefined) {
+		return member?.player ?? member?.players ?? null;
 	}
 
 	function roomMemberReady(member: PvpRoom['viewerMembership'] | NonNullable<PvpRoom['members']>[number] | null | undefined) {
@@ -1092,12 +1271,13 @@
           </Card.Header>
           <Card.Content class="member-list">
             {#each activeMembers as member}
+              {@const player = memberPlayer(member)}
               <div class:ready-member={roomMemberReady(member)} class="member-row">
                 <div class="member-identity">
-                  {#if member.player?.uid}
+                  {#if player?.uid && player?.name}
                     <PlayerLink
-                      player={member.player}
-                      rankBadge={resolvePvpRankBadge(member.player)}
+                      {player}
+                      rankBadge={resolvePvpRankBadge(player)}
                       showAvatar
                       truncate={24}
                     />
@@ -1240,7 +1420,7 @@
         {#if isHost}
           <Card.Root>
             <Card.Header>
-              <Card.Title>{$_('pvp.rooms.start_match')}</Card.Title>
+              <Card.Title>{$_('pvp.rooms.match_config')}</Card.Title>
               <Card.Description>
                 {allMembersReady
                   ? $_('pvp.rooms.all_ready')
@@ -1292,7 +1472,7 @@
                   </button>
                 </div>
               </div>
-                            <div class="field-group">
+              <div class="field-group">
                 <Label for="room-completion-value">{$_('pvp.rooms.completion_value')}</Label>
                 <div class="input-with-unit">
                   <Input
@@ -1403,6 +1583,23 @@
           <AlertDialog.Description>
             {$_('pvp.rooms.force_start_description', { values: { count: unreadyMembers.length } })}
           </AlertDialog.Description>
+          <div class="unready-member-list" role="list" aria-label={$_('pvp.rooms.unready_players')}>
+            {#each unreadyMembers as member}
+              {@const player = memberPlayer(member)}
+              <div class="unready-member-row" role="listitem">
+                {#if player?.uid && player?.name}
+                  <PlayerLink
+                    {player}
+                    rankBadge={resolvePvpRankBadge(player)}
+                    showAvatar
+                    truncate={24}
+                  />
+                {:else}
+                  <strong>{memberName(member)}</strong>
+                {/if}
+              </div>
+            {/each}
+          </div>
         </AlertDialog.Header>
         <AlertDialog.Footer>
           <AlertDialog.Cancel>{$_('general.cancel')}</AlertDialog.Cancel>
@@ -1567,6 +1764,22 @@ h1 {
 .member-row.ready-member {
   border-color: hsl(142 70% 45% / 0.75);
   box-shadow: 0 0 0 1px hsl(142 70% 45% / 0.12);
+}
+
+.unready-member-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.unready-member-row {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--muted) / 0.28);
+  padding: 8px 10px;
 }
 
 .member-identity {
