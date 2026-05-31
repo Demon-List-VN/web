@@ -313,6 +313,11 @@ export type PvpRoomMember = {
     uid?: string;
     role?: 'host' | 'member' | string;
     status?: 'active' | 'left' | 'kicked' | string;
+    ready?: boolean;
+    isReady?: boolean;
+    is_ready?: boolean;
+    readyAt?: string | null;
+    ready_at?: string | null;
     joinedAt?: string | null;
     joined_at?: string | null;
     leftAt?: string | null;
@@ -341,6 +346,10 @@ export type PvpRoom = {
     visibility?: PvpRoomVisibility | string;
     isPrivate?: boolean;
     status?: 'active' | 'closed' | string;
+    selectedLevelId?: number | string | null;
+    selected_level_id?: number | string | null;
+    levelId?: number | string | null;
+    level_id?: number | string | null;
     hostUid?: string;
     host?: PvpPlayer | null;
     inviteToken?: string | null;
@@ -866,6 +875,32 @@ export async function leavePvpRoom(token: string | null | undefined, id: number 
     );
 }
 
+export async function updatePvpRoom(
+    token: string | null | undefined,
+    id: number | string,
+    payload: {
+        name?: string;
+        visibility?: PvpRoomVisibility | string;
+        selectedLevelId?: number | string | null;
+    }
+) {
+    return pvpRequest<PvpRoom>(`/pvp/rooms/${id}`, {
+        method: 'PATCH',
+        token,
+        body: payload
+    });
+}
+
+export async function endPvpRoom(token: string | null | undefined, id: number | string) {
+    return pvpRequest<{ closed: boolean; roomId: number | string; }>(
+        `/pvp/rooms/${id}/end`,
+        {
+            method: 'POST',
+            token
+        }
+    );
+}
+
 export async function invitePvpRoomPlayer(
     token: string | null | undefined,
     id: number | string,
@@ -912,6 +947,32 @@ export async function kickPvpRoomMember(
     });
 }
 
+export async function transferPvpRoomHost(
+    token: string | null | undefined,
+    id: number | string,
+    uid: string
+) {
+    return pvpRequest<PvpRoom>(
+        `/pvp/rooms/${id}/members/${encodeURIComponent(uid)}/transfer-host`,
+        {
+            method: 'POST',
+            token
+        }
+    );
+}
+
+export async function setPvpRoomReady(
+    token: string | null | undefined,
+    id: number | string,
+    ready: boolean
+) {
+    return pvpRequest<PvpRoom>(`/pvp/rooms/${id}/ready`, {
+        method: 'POST',
+        token,
+        body: { ready }
+    });
+}
+
 export async function startPvpRoomMatch(
     token: string | null | undefined,
     id: number | string,
@@ -921,6 +982,7 @@ export async function startPvpRoomMatch(
         timeLimitMinutes?: number | string | null;
         completionRuleType?: PvpRoomCompletionRuleType | string;
         completionRuleValue?: number | string | null;
+        forceStart?: boolean;
     }
 ) {
     return pvpRequest<PvpMatch>(`/pvp/rooms/${id}/start-match`, {
