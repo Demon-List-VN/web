@@ -39,7 +39,7 @@
 		getPvpMatchId,
 		getPvpMatch,
 		getPvpMatches,
-		getPvpLeaderboard,
+		getPvpLeaderboardPage,
 		getPvpRequiredSubmissionLevel,
 		getPvpRequiredSubmissionLevelId,
 		getPvpWeeklyRace,
@@ -123,6 +123,7 @@
 	const PVP_LAST_AUTO_REDIRECTED_MATCH_KEY =
 		'gdvn:pvp-last-auto-redirected-match-id';
 	const REALTIME_COALESCE_MS = 200;
+	const PVP_STANDINGS_PAGE_SIZE = 50;
 	const PVP_MODES: PvpMode[] = ['classic', 'platformer'];
 	const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://gdvn.net').replace(
 		/\/$/,
@@ -150,6 +151,8 @@
 	};
 	let matches: PvpMatch[] = [];
 	let leaderboard: PvpLeaderboardPlayer[] = [];
+	let leaderboardPage = 1;
+	let leaderboardTotal = 0;
 	let weeklyRace: PvpWeeklyRace = {
 		week: null,
 		currentWeek: null,
@@ -158,6 +161,8 @@
 		previousLeaderboard: [],
 		currentPlayer: null
 	};
+	let weeklyRacePage = 1;
+	let weeklyRaceTotal = 0;
 	let clanRace: PvpClanWeeklyRace = {
 		week: null,
 		currentWeek: null,
@@ -166,6 +171,8 @@
 		previousLeaderboard: [],
 		currentClan: null
 	};
+	let clanRacePage = 1;
+	let clanRaceTotal = 0;
 	let roomsOverview: PvpRoomsOverview = {
 		publicRooms: [],
 		joinedRooms: [],
@@ -206,7 +213,7 @@
 	let locallyAcceptedPendingMatchIds = new Set<string>();
 	let keydownHandler: ((e: KeyboardEvent) => void) | null = null;
 	let matchmakingCheckTimer: ReturnType<typeof setInterval> | null = null;
-	let loadedLeaderboardMode: PvpMode | '' = '';
+	let loadedLeaderboardKey = '';
 
 	$: currentUid = $user.data?.uid;
 	$: activeMatch = lobby.activeMatch && isActivePvpMatch(lobby.activeMatch)
@@ -405,9 +412,10 @@
 		localStorage.setItem(PVP_HIDE_OPPONENT_INFO_KEY, String(hideOpponentInfo));
 	}
 
-	$: if (browser && loadedLeaderboardMode !== leaderboardMode) {
-		loadedLeaderboardMode = leaderboardMode;
-		refreshLeaderboard(leaderboardMode);
+	$: leaderboardLoadKey = `${leaderboardMode}:${leaderboardPage}`;
+	$: if (browser && loadedLeaderboardKey !== leaderboardLoadKey) {
+		loadedLeaderboardKey = leaderboardLoadKey;
+		refreshLeaderboard(leaderboardMode, leaderboardPage);
 	}
 
 	onDestroy(() => {
@@ -513,46 +521,73 @@
 		}
 	}
 
-	async function refreshLeaderboard(mode: PvpMode = leaderboardMode) {
+	async function refreshLeaderboard(
+		mode: PvpMode = leaderboardMode,
+		page = leaderboardPage
+	) {
+		const requestKey = `${mode}:${page}`;
+
+		if (mode === leaderboardMode && page === leaderboardPage) {
+			loadedLeaderboardKey = requestKey;
+		}
+
 		leaderboardLoading = true;
 		leaderboardError = '';
 
 		try {
-			const nextLeaderboard = await getPvpLeaderboard(50, mode);
+			const nextLeaderboard = await getPvpLeaderboardPage(
+				page,
+				PVP_STANDINGS_PAGE_SIZE,
+				mode
+			);
 
-			if (mode !== leaderboardMode) {
+			if (mode !== leaderboardMode || page !== leaderboardPage) {
 				return;
 			}
 
-			leaderboard = nextLeaderboard;
+			leaderboard = nextLeaderboard.data;
+			leaderboardTotal = nextLeaderboard.total;
 		} catch (error) {
-			if (mode !== leaderboardMode) {
+			if (mode !== leaderboardMode || page !== leaderboardPage) {
 				return;
 			}
 
 			leaderboard = [];
+			leaderboardTotal = 0;
 			leaderboardError = error instanceof Error
 				? error.message
 				: $_('pvp.toast.leaderboard_failed');
 		} finally {
-			if (mode === leaderboardMode) {
+			if (mode === leaderboardMode && page === leaderboardPage) {
 				leaderboardLoading = false;
 			}
 		}
 	}
 
-	async function refreshWeeklyRace() {
+	async function refreshWeeklyRace(page = weeklyRacePage) {
 		weeklyRaceLoading = true;
 		weeklyRaceError = '';
 
 		try {
 			const nextWeeklyRace = await getPvpWeeklyRace(
 				'current',
-				50,
-				currentUid
+				PVP_STANDINGS_PAGE_SIZE,
+				currentUid,
+				page
 			);
+
+			if (page !== weeklyRacePage) {
+				return;
+			}
+
 			weeklyRace = nextWeeklyRace;
+			weeklyRaceTotal = nextWeeklyRace.pagination?.total
+				?? nextWeeklyRace.leaderboard.length;
 		} catch (error) {
+			if (page !== weeklyRacePage) {
+				return;
+			}
+
 			weeklyRace = {
 				week: null,
 				currentWeek: null,
@@ -561,26 +596,41 @@
 				previousLeaderboard: [],
 				currentPlayer: null
 			};
+			weeklyRaceTotal = 0;
 			weeklyRaceError = error instanceof Error
 				? error.message
 				: $_('pvp.toast.weekly_race_failed');
 		} finally {
-			weeklyRaceLoading = false;
+			if (page === weeklyRacePage) {
+				weeklyRaceLoading = false;
+			}
 		}
 	}
 
-	async function refreshClanRace() {
+	async function refreshClanRace(page = clanRacePage) {
 		clanRaceLoading = true;
 		clanRaceError = '';
 
 		try {
 			const nextClanRace = await getPvpClanWeeklyRace(
 				'current',
-				50,
-				$user.data?.clan ?? null
+				PVP_STANDINGS_PAGE_SIZE,
+				$user.data?.clan ?? null,
+				page
 			);
+
+			if (page !== clanRacePage) {
+				return;
+			}
+
 			clanRace = nextClanRace;
+			clanRaceTotal = nextClanRace.pagination?.total
+				?? nextClanRace.leaderboard.length;
 		} catch (error) {
+			if (page !== clanRacePage) {
+				return;
+			}
+
 			clanRace = {
 				week: null,
 				currentWeek: null,
@@ -589,12 +639,33 @@
 				previousLeaderboard: [],
 				currentClan: null
 			};
+			clanRaceTotal = 0;
 			clanRaceError = error instanceof Error
 				? error.message
 				: $_('pvp.toast.clan_race_failed');
 		} finally {
-			clanRaceLoading = false;
+			if (page === clanRacePage) {
+				clanRaceLoading = false;
+			}
 		}
+	}
+
+	function setWeeklyRacePage(page: number) {
+		if (page === weeklyRacePage) {
+			return;
+		}
+
+		weeklyRacePage = page;
+		void refreshWeeklyRace(page);
+	}
+
+	function setClanRacePage(page: number) {
+		if (page === clanRacePage) {
+			return;
+		}
+
+		clanRacePage = page;
+		void refreshClanRace(page);
 	}
 
 	function scheduleRealtimeTask(key: string, task: () => Promise<void>) {
@@ -1626,8 +1697,10 @@
 		}
 	}
 
-	function handleRoomCardKeydown(event: KeyboardEvent, room: PvpRoom) {
-		if (event.key !== 'Enter' && event.key !== ' ') {
+	function handleRoomCardKeydown(event: Event, room: PvpRoom) {
+		const key = (event as KeyboardEvent).key;
+
+		if (key !== 'Enter' && key !== ' ') {
 			return;
 		}
 
@@ -2277,8 +2350,12 @@
         currentPlayer={$user.data ?? null}
         loading={weeklyRaceLoading}
         error={weeklyRaceError}
+        page={weeklyRacePage}
+        total={weeklyRaceTotal}
+        pageSize={PVP_STANDINGS_PAGE_SIZE}
         {now}
         onRefresh={refreshWeeklyRace}
+        onPageChange={setWeeklyRacePage}
       />
     </Tabs.Content>
 
@@ -2288,8 +2365,12 @@
         currentClan={currentUserClan}
         loading={clanRaceLoading}
         error={clanRaceError}
+        page={clanRacePage}
+        total={clanRaceTotal}
+        pageSize={PVP_STANDINGS_PAGE_SIZE}
         {now}
         onRefresh={refreshClanRace}
+        onPageChange={setClanRacePage}
       />
     </Tabs.Content>
 
@@ -2411,10 +2492,17 @@
         mode={leaderboardMode}
         loading={leaderboardLoading}
         error={leaderboardError}
+        page={leaderboardPage}
+        total={leaderboardTotal}
+        pageSize={PVP_STANDINGS_PAGE_SIZE}
         onModeChange={(mode) => {
             leaderboardMode = mode;
+            leaderboardPage = 1;
         }}
         onRefresh={refreshLeaderboard}
+        onPageChange={(page) => {
+            leaderboardPage = page;
+        }}
       />
     </Tabs.Content>
 

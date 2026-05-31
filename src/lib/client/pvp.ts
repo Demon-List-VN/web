@@ -233,6 +233,13 @@ export type PvpMatchesPage = {
     limit: number;
 };
 
+export type PvpPagination = {
+    total: number;
+    page: number;
+    limit: number;
+    hasMore: boolean;
+};
+
 export type PvpMatchMessage = {
     id?: number | string;
     matchId?: number | string;
@@ -468,6 +475,10 @@ export type PvpLeaderboardPlayer = PvpPlayer & {
     pvpRatedMatchCount: number;
 };
 
+export type PvpLeaderboardPage = PvpPagination & {
+    data: PvpLeaderboardPlayer[];
+};
+
 export type PvpWeeklyRaceWeek = {
     id?: number;
     weekStartAt?: string | null;
@@ -499,6 +510,7 @@ export type PvpWeeklyRace = {
     leaderboard: PvpWeeklyRacePlayer[];
     previousLeaderboard: PvpWeeklyRacePlayer[];
     currentPlayer?: PvpWeeklyRacePlayer | null;
+    pagination?: PvpPagination | null;
 };
 
 export type PvpClan = {
@@ -533,6 +545,7 @@ export type PvpClanWeeklyRace = {
     leaderboard: PvpClanWeeklyRaceClan[];
     previousLeaderboard: PvpClanWeeklyRaceClan[];
     currentClan?: PvpClanWeeklyRaceClan | null;
+    pagination?: PvpPagination | null;
 };
 
 export const PVP_ACTIVE_MATCH_STATUSES = ['pending', 'ban_pick', 'in_progress', 'waiting_result'];
@@ -671,6 +684,36 @@ export function normalizePvpMatches(payload: any): PvpMatch[] {
     }
 
     return [];
+}
+
+function normalizePvpPagination(
+    payload: any,
+    fallbackPage: number,
+    fallbackLimit: number,
+    dataLength: number
+): PvpPagination {
+    const page = Number(payload?.page);
+    const limit = Number(payload?.limit);
+    const total = Number(payload?.total ?? payload?.count);
+    const normalizedPage = Number.isFinite(page) && page > 0
+        ? Math.floor(page)
+        : fallbackPage;
+    const normalizedLimit = Number.isFinite(limit) && limit > 0
+        ? Math.floor(limit)
+        : fallbackLimit;
+    const normalizedTotal = Number.isFinite(total) && total >= 0
+        ? Math.floor(total)
+        : dataLength;
+    const rawHasMore = payload?.hasMore ?? payload?.has_more;
+
+    return {
+        page: normalizedPage,
+        limit: normalizedLimit,
+        total: normalizedTotal,
+        hasMore: typeof rawHasMore === 'boolean'
+            ? rawHasMore
+            : normalizedPage * normalizedLimit < normalizedTotal
+    };
 }
 
 export async function getPvpMe(token?: string | null) {
@@ -1060,10 +1103,45 @@ export async function getPvpLeaderboard(limit = 50, mode: PvpMode = 'classic') {
     return [];
 }
 
+export async function getPvpLeaderboardPage(
+    page = 1,
+    limit = 50,
+    mode: PvpMode = 'classic'
+): Promise<PvpLeaderboardPage> {
+    const params = new URLSearchParams({
+        limit: String(limit),
+        mode,
+        page: String(page)
+    });
+    const payload = await pvpRequest<
+        PvpLeaderboardPlayer[] | {
+            data?: PvpLeaderboardPlayer[];
+            total?: number;
+            count?: number;
+            page?: number;
+            limit?: number;
+            hasMore?: boolean;
+            has_more?: boolean;
+        }
+    >(`/pvp/leaderboard?${params}`);
+    const data = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.data)
+            ? payload.data
+            : [];
+    const pagination = normalizePvpPagination(payload, page, limit, data.length);
+
+    return {
+        data,
+        ...pagination
+    };
+}
+
 export async function getPvpWeeklyRace(
     week: 'current' | 'previous' | string = 'current',
     limit = 50,
-    uid?: string | null
+    uid?: string | null,
+    page?: number | string | null
 ) {
     const params = new URLSearchParams({ week, limit: String(limit) });
 
@@ -1071,28 +1149,43 @@ export async function getPvpWeeklyRace(
         params.set('uid', uid);
     }
 
+    if (page !== undefined && page !== null && page !== '') {
+        params.set('page', String(page));
+    }
+
     const payload = await pvpRequest<PvpWeeklyRace | { data?: PvpWeeklyRace; }>(
         `/pvp/weekly-race?${params}`
     );
 
     const race = ('data' in payload && payload.data ? payload.data : payload) as PvpWeeklyRace;
+    const leaderboard = Array.isArray(race.leaderboard) ? race.leaderboard : [];
+    const pagination = page !== undefined && page !== null && page !== ''
+        ? normalizePvpPagination(
+            race.pagination ?? race,
+            Number(page) || 1,
+            limit,
+            leaderboard.length
+        )
+        : race.pagination ?? null;
 
     return {
         week: race.week ?? null,
         currentWeek: race.currentWeek ?? null,
         previousWeek: race.previousWeek ?? null,
-        leaderboard: Array.isArray(race.leaderboard) ? race.leaderboard : [],
+        leaderboard,
         previousLeaderboard: Array.isArray(race.previousLeaderboard)
             ? race.previousLeaderboard
             : [],
-        currentPlayer: race.currentPlayer ?? null
+        currentPlayer: race.currentPlayer ?? null,
+        pagination
     };
 }
 
 export async function getPvpClanWeeklyRace(
     week: 'current' | 'previous' | string = 'current',
     limit = 50,
-    clanId?: number | string | null
+    clanId?: number | string | null,
+    page?: number | string | null
 ) {
     const params = new URLSearchParams({ week, limit: String(limit) });
 
@@ -1100,21 +1193,35 @@ export async function getPvpClanWeeklyRace(
         params.set('clanId', String(clanId));
     }
 
+    if (page !== undefined && page !== null && page !== '') {
+        params.set('page', String(page));
+    }
+
     const payload = await pvpRequest<PvpClanWeeklyRace | { data?: PvpClanWeeklyRace; }>(
         `/pvp/clan-weekly-race?${params}`
     );
 
     const race = ('data' in payload && payload.data ? payload.data : payload) as PvpClanWeeklyRace;
+    const leaderboard = Array.isArray(race.leaderboard) ? race.leaderboard : [];
+    const pagination = page !== undefined && page !== null && page !== ''
+        ? normalizePvpPagination(
+            race.pagination ?? race,
+            Number(page) || 1,
+            limit,
+            leaderboard.length
+        )
+        : race.pagination ?? null;
 
     return {
         week: race.week ?? null,
         currentWeek: race.currentWeek ?? null,
         previousWeek: race.previousWeek ?? null,
-        leaderboard: Array.isArray(race.leaderboard) ? race.leaderboard : [],
+        leaderboard,
         previousLeaderboard: Array.isArray(race.previousLeaderboard)
             ? race.previousLeaderboard
             : [],
-        currentClan: race.currentClan ?? null
+        currentClan: race.currentClan ?? null,
+        pagination
     };
 }
 

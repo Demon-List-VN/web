@@ -2,6 +2,7 @@
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
+	import * as Pagination from '$lib/components/ui/pagination';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import type { PvpLeaderboardPlayer, PvpMode } from '$lib/client/pvp';
 	import { resolvePvpRankBadge } from '$lib/utils/pvpRank';
@@ -14,8 +15,15 @@
 	export let mode: PvpMode = 'classic';
 	export let loading = false;
 	export let error = '';
+	export let page = 1;
+	export let total = 0;
+	export let pageSize = 50;
 	export let onModeChange: (mode: PvpMode) => void | Promise<void>;
 	export let onRefresh: () => void | Promise<void>;
+	export let onPageChange: (page: number) => void | Promise<void>;
+
+	$: pageCount = Math.max(1, Math.ceil(total / pageSize));
+	$: showPagination = total > pageSize || page > 1;
 </script>
 
 <section class="leaderboard-section">
@@ -96,6 +104,50 @@
             </div>
           {/each}
         </div>
+        {#if showPagination}
+          <div class="pagination-wrap">
+            <Pagination.Root
+              count={total}
+              perPage={pageSize}
+              {page}
+              let:pages
+              let:currentPage
+            >
+              <Pagination.Content>
+                <Pagination.Item>
+                  <Pagination.PrevButton
+                    disabled={currentPage <= 1 || loading}
+                    on:click={() => onPageChange?.(currentPage - 1)}
+                  />
+                </Pagination.Item>
+                {#each pages as p (p.key)}
+                  {#if p.type === 'ellipsis'}
+                    <Pagination.Item>
+                      <Pagination.Ellipsis />
+                    </Pagination.Item>
+                  {:else}
+                    <Pagination.Item isVisible={currentPage === p.value}>
+                      <Pagination.Link
+                        page={p}
+                        isActive={currentPage === p.value}
+                        disabled={loading}
+                        on:click={() => onPageChange?.(p.value)}
+                      >
+                        {p.value}
+                      </Pagination.Link>
+                    </Pagination.Item>
+                  {/if}
+                {/each}
+                <Pagination.Item>
+                  <Pagination.NextButton
+                    disabled={currentPage >= pageCount || loading}
+                    on:click={() => onPageChange?.(currentPage + 1)}
+                  />
+                </Pagination.Item>
+              </Pagination.Content>
+            </Pagination.Root>
+          </div>
+        {/if}
       {/if}
     </Card.Content>
   </Card.Root>
@@ -202,6 +254,10 @@
   );
   background-size: 200% 100%;
   animation: pvp-skeleton 1.2s ease-in-out infinite;
+}
+
+.pagination-wrap {
+  margin-top: 14px;
 }
 
 .empty-state {
