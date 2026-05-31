@@ -17,6 +17,7 @@
 	import * as Tabs from '$lib/components/ui/tabs';
 	import {
 		endPvpRoom,
+		endPvpRoomMatch,
 		getPvpMatchId,
 		getPvpRoom,
 		getPvpRoomMessages,
@@ -34,11 +35,13 @@
 		type PvpRoomMessage
 	} from '$lib/client/pvp';
 	import {
+		broadcastPvpRoomEnded,
 		setPvpRealtimeAuth,
-		subscribeToPvpRoom
+		subscribeToPvpRoom,
+		type PvpRealtimeEvent
 	} from '$lib/client/pvpRealtime';
 	import { resolvePvpRankBadge } from '$lib/utils/pvpRank';
-	import { onDestroy, tick } from 'svelte';
+	import { onDestroy, onMount, tick } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { _ } from 'svelte-i18n';
 	import {
@@ -59,6 +62,19 @@
 
 	const MESSAGE_FETCH_LIMIT = 100;
 	const REALTIME_COALESCE_MS = 200;
+	const ROOM_MATCH_CONFIG_STORAGE_KEY = 'pvp.room.matchConfig.v1';
+
+	type CompletionRuleType = 'count' | 'percentage';
+	type ScoringMode = 'progress' | 'score';
+	type StoredRoomMatchConfig = {
+		startTimeLimitMinutes?: number | string;
+		startTimeLimitSeconds?: number | string;
+		completionRuleType?: CompletionRuleType | string;
+		completionRuleValue?: number | string;
+		scoringMode?: ScoringMode | string;
+		targetScoreEnabled?: boolean;
+		targetScore?: number | string;
+	};
 
 	let room: PvpRoom | null = null;
 	let messages: PvpRoomMessage[] = [];
@@ -80,12 +96,16 @@
 	let selectedLevelError = '';
 	let startTimeLimitMinutes = 15;
 	let startTimeLimitSeconds = 0;
-	let completionRuleType: 'count' | 'percentage' = 'percentage';
-	let completionRuleValue = 100;
+	let completionRuleType: CompletionRuleType = 'count';
+	let completionRuleValue = 1;
+	let scoringMode: ScoringMode = 'progress';
+	let targetScoreEnabled = false;
+	let targetScore = 1000;
 	let loading = false;
 	let messagesLoading = false;
 	let actionLoading = '';
 	let initializedFor = '';
+	let redirectingToLobby = false;
 	let cleanupRealtime: (() => Promise<void>) | null = null;
 	let scheduledRefresh: ReturnType<typeof setTimeout> | null = null;
 
@@ -115,10 +135,16 @@
 		?? selectedLevel?.video
 		?? selectedLevel?.videoUrl
 	);
+	$: selectedLevelIsPlatformer = Boolean(selectedLevel?.isPlatformer);
 	$: startDisabled = Boolean(actionLoading)
 		|| !isHost
+		|| Boolean(activeMatchId)
 		|| !sharedLevelId
-		|| memberCount < 2;
+		|| memberCount < 2
+		|| (scoringMode === 'score' && selectedLevelIsPlatformer);
+	$: if (selectedLevelIsPlatformer && scoringMode === 'score') {
+		scoringMode = 'progress';
+	}
 	$: if (roomEditKey && roomEditKey !== syncedEditRoomKey && activeRoomTab !== 'edit') {
 		syncEditRoomDetails();
 	}
@@ -145,6 +171,10 @@
 		messages = [];
 		initializedFor = '';
 	}
+
+	onMount(() => {
+		loadSavedMatchConfig();
+	});
 
 	onDestroy(() => {
 		cleanupRealtime?.();
@@ -173,9 +203,7 @@
 				await loadMessages();
 			}
 
-			cleanupRealtime = subscribeToPvpRoom(id, () => {
-				scheduleRefresh();
-			});
+			cleanupRealtime = subscribeToPvpRoom(id, handleRoomRealtimeEvent);
 		} catch (error) {
 			toast.error(
 				error instanceof Error ? error.message : $_('pvp.rooms.load_failed')
@@ -196,6 +224,54 @@
 				await loadMessages({ incremental: true });
 			}
 		}, REALTIME_COALESCE_MS);
+	}
+
+	function handleRoomRealtimeEvent(event: PvpRealtimeEvent) {
+		if (shouldRedirectToLobbyForRoomEvent(event)) {
+			redirectToLobby();
+
+			return;
+		}
+
+		scheduleRefresh();
+	}
+
+	function shouldRedirectToLobbyForRoomEvent(event: PvpRealtimeEvent) {
+		const row = realtimeRow(event);
+
+		if (event.scope === 'roomBroadcast') {
+			const payload = event.payload?.payload ?? event.payload ?? {};
+
+			return String(payload.roomId ?? '') === String(roomId ?? '');
+		}
+
+		if (event.scope === 'room') {
+			return String(row?.id ?? '') === String(roomId ?? '')
+				&& row?.status === 'closed';
+		}
+
+		if (event.scope === 'roomMember') {
+			return row?.uid === currentUid
+				&& String(row?.roomId ?? row?.room_id ?? '') === String(roomId ?? '')
+				&& (row?.status === 'left' || row?.status === 'kicked');
+		}
+
+		return false;
+	}
+
+	function realtimeRow(event: PvpRealtimeEvent) {
+		return event.payload?.new ?? event.payload?.old ?? {};
+	}
+
+	function redirectToLobby() {
+		if (redirectingToLobby) {
+			return;
+		}
+
+		redirectingToLobby = true;
+		endRoomDialogOpen = false;
+		forceStartDialogOpen = false;
+		goto('/versus/play');
 	}
 
 	async function loadRoom() {
@@ -232,6 +308,7 @@
 			messages = options.incremental
 				? mergeMessages(messages, nextMessages)
 				: nextMessages;
+			await scrollChatToBottom();
 		} catch (error) {
 			toast.error(
 				error instanceof Error ? error.message : $_('pvp.rooms.chat_load_failed')
@@ -301,8 +378,36 @@
 
 		try {
 			await endPvpRoom(await $user.token(), id);
+
+			try {
+				await broadcastPvpRoomEnded(id, { endedByUid: currentUid });
+			} catch (error) {
+				console.warn('Failed to broadcast ended PvP room', error);
+			}
+
 			endRoomDialogOpen = false;
-			goto('/versus/play');
+			redirectToLobby();
+		} catch (error) {
+			toast.error(
+				error instanceof Error ? error.message : $_('pvp.rooms.end_failed')
+			);
+		} finally {
+			actionLoading = '';
+		}
+	}
+
+	async function endActiveMatch() {
+		const id = roomId;
+
+		if (!id || !activeMatchId) {
+			return;
+		}
+
+		actionLoading = 'end-match';
+
+		try {
+			room = await endPvpRoomMatch(await $user.token(), id);
+			toast.success('Match ended');
 		} catch (error) {
 			toast.error(
 				error instanceof Error ? error.message : $_('pvp.rooms.end_failed')
@@ -574,6 +679,7 @@
 			const message = await sendPvpRoomMessage(await $user.token(), id, content);
 			messages = mergeMessages(messages, [message]);
 			chatDraft = '';
+			await scrollChatToBottom('smooth');
 		} catch (error) {
 			toast.error(
 				error instanceof Error ? error.message : $_('pvp.rooms.chat_send_failed')
@@ -597,11 +703,11 @@
 		startMatch(false);
 	}
 
-	function setCompletionRule(nextType: 'count' | 'percentage') {
+	function setCompletionRule(nextType: CompletionRuleType) {
 		completionRuleType = nextType;
 		completionRuleValue = nextType === 'percentage'
 			? 100
-			: Math.min(Math.max(1, Number(completionRuleValue) || 1), Math.max(1, memberCount));
+			: 1;
 	}
 
 	async function startMatch(forceStart = false) {
@@ -614,14 +720,20 @@
 		actionLoading = 'start-match';
 
 		try {
+			completionRuleValue = normalizedCompletionRuleValue();
+			targetScore = normalizedTargetScore();
+
 			const match = await startPvpRoomMatch(await $user.token(), id, {
 				levelId: sharedLevelId,
 				timeLimitSeconds: totalStartTimeLimitSeconds(),
 				completionRuleType,
 				completionRuleValue,
+				scoringMode,
+				targetScore: scoringMode === 'score' && targetScoreEnabled ? normalizedTargetScore() : null,
 				forceStart
 			});
 
+			saveMatchConfig();
 			forceStartDialogOpen = false;
 			goto(`/versus/matches/${getPvpMatchId(match)}`);
 		} catch (error) {
@@ -633,6 +745,74 @@
 		}
 	}
 
+	function loadSavedMatchConfig() {
+		if (!browser) {
+			return;
+		}
+
+		try {
+			const raw = localStorage.getItem(ROOM_MATCH_CONFIG_STORAGE_KEY);
+
+			if (!raw) {
+				return;
+			}
+
+			const config = JSON.parse(raw) as StoredRoomMatchConfig | null;
+
+			if (!config || typeof config !== 'object') {
+				return;
+			}
+
+			startTimeLimitMinutes = normalizedInteger(
+				config.startTimeLimitMinutes,
+				0,
+				120,
+				startTimeLimitMinutes
+			);
+			startTimeLimitSeconds = normalizedInteger(
+				config.startTimeLimitSeconds,
+				0,
+				59,
+				startTimeLimitSeconds
+			);
+			completionRuleType = config.completionRuleType === 'percentage'
+				? 'percentage'
+				: 'count';
+			completionRuleValue = normalizedCompletionRuleValue(
+				completionRuleType,
+				config.completionRuleValue,
+				false
+			);
+			scoringMode = config.scoringMode === 'score' ? 'score' : 'progress';
+			targetScoreEnabled = Boolean(config.targetScoreEnabled);
+			targetScore = normalizedTargetScore(config.targetScore);
+		} catch {
+			return;
+		}
+	}
+
+	function saveMatchConfig() {
+		if (!browser) {
+			return;
+		}
+
+		try {
+			const config: StoredRoomMatchConfig = {
+				startTimeLimitMinutes: normalizedInteger(startTimeLimitMinutes, 0, 120, 15),
+				startTimeLimitSeconds: normalizedInteger(startTimeLimitSeconds, 0, 59, 0),
+				completionRuleType,
+				completionRuleValue: normalizedCompletionRuleValue(),
+				scoringMode,
+				targetScoreEnabled,
+				targetScore: normalizedTargetScore()
+			};
+
+			localStorage.setItem(ROOM_MATCH_CONFIG_STORAGE_KEY, JSON.stringify(config));
+		} catch {
+			return;
+		}
+	}
+
 	function totalStartTimeLimitSeconds() {
 		const minutes = Number(startTimeLimitMinutes);
 		const seconds = Number(startTimeLimitSeconds);
@@ -641,6 +821,42 @@
 			1,
 			(Math.max(0, Number.isFinite(minutes) ? Math.floor(minutes) : 0) * 60)
 				+ Math.max(0, Number.isFinite(seconds) ? Math.floor(seconds) : 0)
+		);
+	}
+
+	function normalizedCompletionRuleValue(
+		type: CompletionRuleType = completionRuleType,
+		value: unknown = completionRuleValue,
+		clampToMembers = true
+	) {
+		const numberValue = Number(value);
+		const fallback = type === 'percentage' ? 100 : 1;
+		const rounded = Number.isFinite(numberValue) ? Math.floor(numberValue) : fallback;
+		const upperBound = type === 'percentage'
+			? 100
+			: clampToMembers
+			? Math.max(1, memberCount)
+			: Number.POSITIVE_INFINITY;
+
+		return Math.max(1, Math.min(upperBound, rounded));
+	}
+
+	function normalizedInteger(value: unknown, min: number, max: number, fallback: number) {
+		const numberValue = Number(value);
+
+		if (!Number.isFinite(numberValue)) {
+			return fallback;
+		}
+
+		return Math.max(min, Math.min(max, Math.floor(numberValue)));
+	}
+
+	function normalizedTargetScore(value: unknown = targetScore) {
+		const numberValue = Number(value);
+
+		return Math.max(
+			1,
+			Math.min(100000, Number.isFinite(numberValue) ? Math.floor(numberValue) : 1000)
 		);
 	}
 
@@ -700,10 +916,14 @@
 		}
 
 		lastMessageScrollKey = latestKey;
+		await scrollChatToBottom(messages.length > 1 ? 'smooth' : 'auto');
+	}
+
+	async function scrollChatToBottom(behavior: ScrollBehavior = 'auto') {
 		await tick();
 		chatScrollEl?.scrollTo({
 			top: chatScrollEl.scrollHeight,
-			behavior: messages.length > 1 ? 'smooth' : 'auto'
+			behavior
 		});
 	}
 
@@ -762,6 +982,10 @@
 
 	function memberName(member: NonNullable<PvpRoom['members']>[number]) {
 		return member.player?.name ?? member.players?.name ?? member.uid ?? $_('pvp.rooms.player');
+	}
+
+	function memberPlayer(member: PvpRoom['viewerMembership'] | NonNullable<PvpRoom['members']>[number] | null | undefined) {
+		return member?.player ?? member?.players ?? null;
 	}
 
 	function roomMemberReady(member: PvpRoom['viewerMembership'] | NonNullable<PvpRoom['members']>[number] | null | undefined) {
@@ -889,7 +1113,22 @@
       <section class="room-section">
         <div class="section-heading">
           <h2>{$_('pvp.rooms.active_match')}</h2>
-          <a href={`/versus/matches/${activeMatchId}`}>{$_('pvp.enter_match')}</a>
+          <div class="section-actions">
+            {#if isHost}
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={Boolean(actionLoading)}
+                on:click={endActiveMatch}
+              >
+                {#if actionLoading === 'end-match'}
+                  <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+                {/if}
+                End match
+              </Button>
+            {/if}
+            <a href={`/versus/matches/${activeMatchId}`}>{$_('pvp.enter_match')}</a>
+          </div>
         </div>
         <MatchCard
           match={room.activeMatch}
@@ -1032,12 +1271,13 @@
           </Card.Header>
           <Card.Content class="member-list">
             {#each activeMembers as member}
-              <div class="member-row">
+              {@const player = memberPlayer(member)}
+              <div class:ready-member={roomMemberReady(member)} class="member-row">
                 <div class="member-identity">
-                  {#if member.player?.uid}
+                  {#if player?.uid && player?.name}
                     <PlayerLink
-                      player={member.player}
-                      rankBadge={resolvePvpRankBadge(member.player)}
+                      {player}
+                      rankBadge={resolvePvpRankBadge(player)}
                       showAvatar
                       truncate={24}
                     />
@@ -1049,7 +1289,8 @@
                       <Crown class="mr-1 h-3.5 w-3.5" />
                       {$_('pvp.rooms.host')}
                     </Badge>
-                  {:else if roomMemberReady(member)}
+                  {/if}
+                  {#if roomMemberReady(member)}
                     <Badge variant="secondary">
                       <CheckCircle2 class="mr-1 h-3.5 w-3.5" />
                       {$_('pvp.rooms.ready')}
@@ -1179,7 +1420,7 @@
         {#if isHost}
           <Card.Root>
             <Card.Header>
-              <Card.Title>{$_('pvp.rooms.start_match')}</Card.Title>
+              <Card.Title>{$_('pvp.rooms.match_config')}</Card.Title>
               <Card.Description>
                 {allMembersReady
                   ? $_('pvp.rooms.all_ready')
@@ -1244,6 +1485,60 @@
                   <span>{completionRuleType === 'percentage' ? '%' : $_('pvp.rooms.players')}</span>
                 </div>
               </div>
+              <div class="field-group">
+                <Label>Scoring mode</Label>
+                <div class="completion-toggle">
+                  <button
+                    type="button"
+                    class:active={scoringMode === 'progress'}
+                    on:click={() => (scoringMode = 'progress')}
+                  >
+                    Progress
+                  </button>
+                  <button
+                    type="button"
+                    class:active={scoringMode === 'score'}
+                    disabled={selectedLevelIsPlatformer}
+                    on:click={() => (scoringMode = 'score')}
+                  >
+                    Score
+                  </button>
+                </div>
+                {#if selectedLevelIsPlatformer}
+                  <small class="field-hint">Score mode is only supported on classic levels.</small>
+                {/if}
+              </div>
+              {#if scoringMode === 'score'}
+                <div class="field-group">
+                  <Label>Target score</Label>
+                  <div class="completion-toggle">
+                    <button
+                      type="button"
+                      class:active={!targetScoreEnabled}
+                      on:click={() => (targetScoreEnabled = false)}
+                    >
+                      Unlimited
+                    </button>
+                    <button
+                      type="button"
+                      class:active={targetScoreEnabled}
+                      on:click={() => (targetScoreEnabled = true)}
+                    >
+                      Target
+                    </button>
+                  </div>
+                  {#if targetScoreEnabled}
+                    <Input
+                      bind:value={targetScore}
+                      min="1"
+                      max="100000"
+                      type="number"
+                      aria-label="Target score"
+                    />
+                  {/if}
+                </div>
+              {/if}
+
               <Button disabled={startDisabled} on:click={requestStartMatch}>
                 {#if actionLoading === 'start-match'}
                   <Loader2 class="mr-2 h-4 w-4 animate-spin" />
@@ -1288,6 +1583,23 @@
           <AlertDialog.Description>
             {$_('pvp.rooms.force_start_description', { values: { count: unreadyMembers.length } })}
           </AlertDialog.Description>
+          <div class="unready-member-list" role="list" aria-label={$_('pvp.rooms.unready_players')}>
+            {#each unreadyMembers as member}
+              {@const player = memberPlayer(member)}
+              <div class="unready-member-row" role="listitem">
+                {#if player?.uid && player?.name}
+                  <PlayerLink
+                    {player}
+                    rankBadge={resolvePvpRankBadge(player)}
+                    showAvatar
+                    truncate={24}
+                  />
+                {:else}
+                  <strong>{memberName(member)}</strong>
+                {/if}
+              </div>
+            {/each}
+          </div>
         </AlertDialog.Header>
         <AlertDialog.Footer>
           <AlertDialog.Cancel>{$_('general.cancel')}</AlertDialog.Cancel>
@@ -1328,6 +1640,7 @@
 .room-topbar,
 .room-top-actions,
 .section-heading,
+.section-actions,
 .member-row,
 .member-identity,
 .chat-compose,
@@ -1442,13 +1755,31 @@ h1 {
 
 .member-row {
   min-height: 44px;
-  border-bottom: 1px solid hsl(var(--border));
-  padding-bottom: 10px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--card));
+  padding: 10px;
 }
 
-.member-row:last-child {
-  border-bottom: 0;
-  padding-bottom: 0;
+.member-row.ready-member {
+  border-color: hsl(142 70% 45% / 0.75);
+  box-shadow: 0 0 0 1px hsl(142 70% 45% / 0.12);
+}
+
+.unready-member-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.unready-member-row {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--muted) / 0.28);
+  padding: 8px 10px;
 }
 
 .member-identity {
@@ -1480,9 +1811,9 @@ h1 {
 }
 
 :global(.room-chat-panel.room-chat-panel) {
-  grid-template-rows: minmax(0, 1fr) auto;
-  height: calc(100vh - 190px);
-  max-height: calc(100vh - 190px);
+  grid-template-rows: auto auto;
+  height: fit-content;
+  max-height: min(72vh, 680px);
   padding-top: 16px;
 }
 
@@ -1569,7 +1900,7 @@ h1 {
 
 .message-list {
   min-height: 0;
-  max-height: none;
+  max-height: min(54vh, 520px);
   overflow: auto;
 }
 
@@ -1628,6 +1959,16 @@ h1 {
   box-shadow: 0 0 0 1px hsl(var(--border));
 }
 
+.completion-toggle button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.field-hint {
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+}
+
 .section-heading h2 {
   margin: 0;
   font-size: 1.25rem;
@@ -1674,7 +2015,6 @@ h1 {
   }
 
   :global(.room-chat-panel.room-chat-panel) {
-    height: min(72vh, 680px);
     max-height: min(72vh, 680px);
   }
 }

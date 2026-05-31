@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import Ads from '$lib/components/ads.svelte';
 	import PlayerSelector from '$lib/components/playerSelector.svelte';
 	import MatchCard from '$lib/components/pvp/MatchCard.svelte';
@@ -214,6 +215,7 @@
 	let keydownHandler: ((e: KeyboardEvent) => void) | null = null;
 	let matchmakingCheckTimer: ReturnType<typeof setInterval> | null = null;
 	let loadedLeaderboardKey = '';
+	let handledRequeueUrl = '';
 
 	$: currentUid = $user.data?.uid;
 	$: activeMatch = lobby.activeMatch && isActivePvpMatch(lobby.activeMatch)
@@ -412,10 +414,22 @@
 		localStorage.setItem(PVP_HIDE_OPPONENT_INFO_KEY, String(hideOpponentInfo));
 	}
 
-	$: leaderboardLoadKey = `${leaderboardMode}:${leaderboardPage}`;
-	$: if (browser && loadedLeaderboardKey !== leaderboardLoadKey) {
-		loadedLeaderboardKey = leaderboardLoadKey;
-		refreshLeaderboard(leaderboardMode, leaderboardPage);
+	$: if (
+		browser
+		&& anonymousModeReady
+		&& lobbyReady
+		&& $user.checked
+		&& $user.loggedIn
+		&& $page.url.searchParams.get('requeue') === '1'
+		&& handledRequeueUrl !== $page.url.href
+	) {
+		handledRequeueUrl = $page.url.href;
+		startRequeueFromUrl();
+	}
+
+	$: if (browser && loadedLeaderboardMode !== leaderboardMode) {
+		loadedLeaderboardMode = leaderboardMode;
+		refreshLeaderboard(leaderboardMode);
 	}
 
 	onDestroy(() => {
@@ -1462,6 +1476,32 @@
 		});
 	}
 
+	async function startRequeueFromUrl() {
+		const mode = $page.url.searchParams.get('mode');
+		const anonymous = $page.url.searchParams.get('anonymous');
+
+		if (mode === 'classic' || mode === 'platformer') {
+			selectedMode = mode;
+		}
+
+		if (anonymous === '1' || anonymous === '0') {
+			anonymousMode = anonymous === '1';
+		}
+
+		activePvpTab = 'lobby';
+		await goto('/versus/play', {
+			replaceState: true,
+			noScroll: true,
+			keepFocus: true
+		});
+
+		if (isSearching || getPvpMatchedMatchId(lobby.matchmaking)) {
+			return;
+		}
+
+		await startQueue();
+	}
+
 	async function startQueue() {
 		if (currentRoom) {
 			toast.error($_('pvp.rooms.queue_blocked'));
@@ -1697,14 +1737,17 @@
 		}
 	}
 
-	function handleRoomCardKeydown(event: Event, room: PvpRoom) {
-		const key = (event as KeyboardEvent).key;
+	function handleRoomCardKeydown(
+		event: KeyboardEvent | CustomEvent<KeyboardEvent>,
+		room: PvpRoom
+	) {
+		const keyboardEvent = 'key' in event ? event : event.detail;
 
-		if (key !== 'Enter' && key !== ' ') {
+		if (keyboardEvent.key !== 'Enter' && keyboardEvent.key !== ' ') {
 			return;
 		}
 
-		event.preventDefault();
+		keyboardEvent.preventDefault();
 		joinRoom(room);
 	}
 
@@ -2293,7 +2336,7 @@
   </div>
 
   <Tabs.Root bind:value={activePvpTab}>
-    <Tabs.List class="py-[22px] pvp-main-tab-list" aria-label={$_('pvp.tabs.label')}>
+    <Tabs.List class="py-[22px]" aria-label={$_('pvp.tabs.label')}>
       <button
         type="button"
         class="pvp-main-tab"
@@ -2315,7 +2358,7 @@
     </Tabs.List>
 
     {#if activePvpTab !== 'rooms'}
-      <Tabs.List class="py-[14px] pvp-sub-tab-list" aria-label={$_('pvp.tabs.matchmaking')}>
+      <Tabs.List class="py-[22px]" aria-label={$_('pvp.tabs.matchmaking')}>
         <Tabs.Trigger value="lobby" class="pvp-tab-trigger">
           <Swords class="h-4 w-4" />
           {$_('pvp.tabs.lobby')}
@@ -3385,7 +3428,7 @@ h1 {
   padding-inline: 14px;
   color: hsl(var(--muted-foreground));
   font-size: 14px;
-  font-weight: 650;
+  font-weight: 500;
 }
 
 .pvp-main-tab.active {

@@ -3,6 +3,7 @@ export type PvpMode = 'classic' | 'platformer';
 export type PvpPlayMode = 'normal' | 'practice';
 export type PvpRoomVisibility = 'public' | 'private';
 export type PvpRoomCompletionRuleType = 'count' | 'percentage';
+export type PvpRoomScoringMode = 'progress' | 'score';
 
 export type PvpMatchStatus =
     | 'pending'
@@ -201,6 +202,10 @@ export type PvpMatch = {
     completion_rule_type?: PvpRoomCompletionRuleType | string | null;
     completionRuleValue?: number | null;
     completion_rule_value?: number | null;
+    scoringMode?: PvpRoomScoringMode | string | null;
+    scoring_mode?: PvpRoomScoringMode | string | null;
+    targetScore?: number | null;
+    target_score?: number | null;
     timeLimitSeconds?: number | null;
     time_limit_seconds?: number | null;
     startedAt?: string | null;
@@ -1025,6 +1030,8 @@ export async function startPvpRoomMatch(
         timeLimitMinutes?: number | string | null;
         completionRuleType?: PvpRoomCompletionRuleType | string;
         completionRuleValue?: number | string | null;
+        scoringMode?: PvpRoomScoringMode | string;
+        targetScore?: number | string | null;
         forceStart?: boolean;
     }
 ) {
@@ -1032,6 +1039,13 @@ export async function startPvpRoomMatch(
         method: 'POST',
         token,
         body: payload
+    });
+}
+
+export async function endPvpRoomMatch(token: string | null | undefined, id: number | string) {
+    return pvpRequest<PvpRoom>(`/pvp/rooms/${id}/end-match`, {
+        method: 'POST',
+        token
     });
 }
 
@@ -1614,7 +1628,12 @@ export function getPvpDeathCountEntries(
         .filter((entry) => entry.count > 0);
 }
 
-export function formatPvpProgressValue(value: number, mode: PvpMode = 'classic') {
+export function formatPvpProgressValue(
+    value: number,
+    mode: PvpMode = 'classic',
+    scoringMode: PvpRoomScoringMode | string = 'progress',
+    targetScore?: number | string | null
+) {
     if (mode === 'platformer') {
         return `${Math.max(0, Math.floor(value))} PT`;
     }
@@ -1623,6 +1642,14 @@ export function formatPvpProgressValue(value: number, mode: PvpMode = 'classic')
         ? String(value)
         : value.toFixed(2)
             .replace(/\.?0+$/, '');
+
+    if (scoringMode === 'score') {
+        const target = Number(targetScore);
+
+        return Number.isFinite(target) && target > 0
+            ? `${progress}/${Math.floor(target)}`
+            : progress;
+    }
 
     return `${progress}%`;
 }

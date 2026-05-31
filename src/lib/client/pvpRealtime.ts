@@ -12,7 +12,8 @@ export type PvpRealtimeScope =
     | 'room'
     | 'roomMember'
     | 'roomInvite'
-    | 'roomMessage';
+    | 'roomMessage'
+    | 'roomBroadcast';
 
 export type PvpRealtimeEvent = {
     scope: PvpRealtimeScope;
@@ -21,6 +22,26 @@ export type PvpRealtimeEvent = {
 
 type RealtimePostgresChangeEvent = '*' | 'INSERT' | 'UPDATE' | 'DELETE';
 type RealtimeCallback = (event: PvpRealtimeEvent) => void | Promise<void>;
+const activeRoomChannels = new Map<string, ReturnType<typeof supabase.channel>>();
+
+function pvpRoomChannelName(roomId: number | string) {
+    return `pvp-room-${roomId}`;
+}
+
+async function sendPvpRoomEndedBroadcast(
+    channel: ReturnType<typeof supabase.channel>,
+    roomId: string,
+    payload: Record<string, unknown>
+) {
+    await channel.send({
+        type: 'broadcast',
+        event: 'room_ended',
+        payload: {
+            ...payload,
+            roomId
+        }
+    });
+}
 
 function subscribeToTable(
     channelName: string,
@@ -129,15 +150,27 @@ export function subscribeToPvpRoom(roomId: number | string, callback: RealtimeCa
     }
 
     const id = String(roomId);
+    const roomChannel = supabase.channel(pvpRoomChannelName(id));
+    roomChannel.on(
+        'postgres_changes',
+        {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'pvpRooms',
+            filter: `id=eq.${id}`
+        } as any,
+        (payload) => {
+            callback({ scope: 'room', payload });
+        }
+    );
+    roomChannel.on('broadcast', { event: 'room_ended' }, (payload) => {
+        callback({ scope: 'roomBroadcast', payload });
+    });
+    roomChannel.subscribe();
+    activeRoomChannels.set(id, roomChannel);
+
     const channels = [
-        subscribeToTable(
-            `pvp-room-${id}`,
-            'pvpRooms',
-            `id=eq.${id}`,
-            'room',
-            callback,
-            'UPDATE'
-        ),
+        roomChannel,
         subscribeToTable(
             `pvp-room-members-${id}`,
             'pvpRoomMembers',
@@ -172,7 +205,47 @@ export function subscribeToPvpRoom(roomId: number | string, callback: RealtimeCa
         )
     ];
 
-    return () => removeChannels(channels);
+    return () => {
+        if (activeRoomChannels.get(id) === roomChannel) {
+            activeRoomChannels.delete(id);
+        }
+
+        return removeChannels(channels);
+    };
+}
+
+export async function broadcastPvpRoomEnded(roomId: number | string, payload: Record<string, unknown> = {}) {
+    if (roomId === null || roomId === undefined || roomId === '') {
+        return;
+    }
+
+    const id = String(roomId);
+    const activeChannel = activeRoomChannels.get(id);
+
+    if (activeChannel) {
+        await sendPvpRoomEndedBroadcast(activeChannel, id, payload);
+
+        return;
+    }
+
+    const channel = supabase.channel(pvpRoomChannelName(id));
+
+    try {
+        await new Promise<void>((resolve) => {
+            const timeout = setTimeout(resolve, 2000);
+
+            channel.subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    clearTimeout(timeout);
+                    resolve();
+                }
+            });
+        });
+
+        await sendPvpRoomEndedBroadcast(channel, id, payload);
+    } finally {
+        await supabase.removeChannel(channel);
+    }
 }
 
 export function subscribeToPvpMatches(uid: string, callback: RealtimeCallback) {

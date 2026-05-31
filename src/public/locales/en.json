@@ -324,6 +324,7 @@
         "view_match": "View match",
         "refresh": "Refresh",
         "rematch": "Rematch",
+        "requeue": "Requeue",
         "resign": "Resign",
         "request_level_change": "Change level",
         "agree_level_change": "Agree level change",
@@ -332,6 +333,8 @@
         "request_expires_in": "Expires in {time}.",
         "request_expired": "Expired",
         "request_ban_pick_abort": "Abort match",
+        "abort_room_match": "Abort match",
+        "abort_room_match_confirm": "End this room match now? Current standings will be used as the result.",
         "agree_ban_pick_abort": "Agree abort",
         "ban_pick_abort_waiting": "Waiting for abort",
         "ban_pick_abort_request_confirm": "Request to abort this match? The match will be cancelled only if your opponent agrees.",
@@ -436,6 +439,7 @@
             "invite_link_copied": "Invite link copied.",
             "end_room": "End room",
             "end_room_description": "End this room and kick every player back to the Versus lobby?",
+            "match_config": "Match config",
             "start_match": "Start match",
             "level_selection": "Level selection",
             "level_id": "Level ID",
@@ -457,6 +461,7 @@
             "rule_percentage": "Finish percent",
             "force_start_title": "Force start match?",
             "force_start_description": "{count} player(s) are not ready. They will stay waiting in the room lobby.",
+            "unready_players": "Unready players",
             "force_start": "Force start",
             "chat_placeholder": "Message the room",
             "no_messages": "No room messages yet.",
@@ -620,6 +625,7 @@
             "empty": "No progress events yet.",
             "time_axis": "Time",
             "progress_axis": "Progress",
+            "score_axis": "Score",
             "checkpoints_axis": "Checkpoints",
             "normal_mode": "Normal",
             "practice_mode": "Practice"
@@ -645,6 +651,7 @@
         "system_sender": "Versus",
         "system_message": {
             "progress": "{player} reached {progress}% progress.",
+            "progress_score": "{player} reached {score} score.",
             "progress_platformer": "{player} reached {progress} checkpoints.",
             "play_mode": "{player} switched to {mode} mode.",
             "match_end_win": "{winner} won the match. Chat will remain open for {minutes} minutes, then it will be disabled.",
@@ -751,6 +758,8 @@
             "resignation": "Resignation",
             "forfeit": "Forfeit",
             "ban_pick_abort": "Mutual abort",
+            "host_ended": "Ended by host",
+            "score": "Score",
             "acceptance_timeout": "Acceptance timeout",
             "platformer_hard_timeout": "Platformer timeout"
         },
@@ -779,6 +788,8 @@
             "ban_pick_abort_requested": "Abort request sent.",
             "ban_pick_abort_success": "Match cancelled.",
             "ban_pick_abort_failed": "Failed to request match abort.",
+            "room_match_abort_success": "Room match aborted.",
+            "room_match_abort_failed": "Failed to abort room match.",
             "resign_success": "You resigned from the match.",
             "resign_failed": "Failed to resign match."
         }
