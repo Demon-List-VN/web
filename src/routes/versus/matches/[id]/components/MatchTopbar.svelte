@@ -7,7 +7,7 @@
 		EyeOff,
 		Flag,
 		Loader2,
-		Send,
+		RotateCcw,
 		ShieldAlert,
 		Shuffle,
 		X
@@ -22,7 +22,7 @@
 	export let actionLoading = '';
 	export let hideOpponentInfo = false;
 	export let showOpponentInfoToggle = true;
-	export let canRematch = false;
+	export let canRequeue = false;
 	export let canRequestLevelChange = false;
 	export let canRequestBanPickAbort = false;
 	export let canResign = false;
@@ -30,7 +30,7 @@
 	export let reportSubmitted = false;
 
 	export let onToggleOpponentInfo: () => void = () => {};
-	export let onRequestRematch: () => void = () => {};
+	export let onRequeue: () => void = () => {};
 	export let onRequestLevelChange: () => void = () => {};
 	export let onRequestBanPickAbort: () => void = () => {};
 	export let onResign: () => void = () => {};
@@ -64,17 +64,17 @@
         </Button>
       {/if}
 
-      {#if canRematch}
+      {#if canRequeue}
         <Button
           disabled={Boolean(actionLoading) || loading}
-          on:click={onRequestRematch}
+          on:click={onRequeue}
         >
-          {#if actionLoading === 'rematch'}
+          {#if actionLoading === 'requeue'}
             <Loader2 class="mr-2 h-4 w-4 animate-spin" />
           {:else}
-            <Send class="mr-2 h-4 w-4" />
+            <RotateCcw class="mr-2 h-4 w-4" />
           {/if}
-          {$_('pvp.rematch')}
+          {$_('pvp.requeue')}
         </Button>
       {/if}
 

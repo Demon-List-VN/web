@@ -324,6 +324,7 @@
         "view_match": "View match",
         "refresh": "Refresh",
         "rematch": "Rematch",
+        "requeue": "Requeue",
         "resign": "Resign",
         "request_level_change": "Change level",
         "agree_level_change": "Agree level change",

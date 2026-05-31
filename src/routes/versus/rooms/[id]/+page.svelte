@@ -82,6 +82,9 @@
 	let startTimeLimitSeconds = 0;
 	let completionRuleType: 'count' | 'percentage' = 'percentage';
 	let completionRuleValue = 100;
+	let scoringMode: 'progress' | 'score' = 'progress';
+	let targetScoreEnabled = false;
+	let targetScore = 1000;
 	let loading = false;
 	let messagesLoading = false;
 	let actionLoading = '';
@@ -619,6 +622,8 @@
 				timeLimitSeconds: totalStartTimeLimitSeconds(),
 				completionRuleType,
 				completionRuleValue,
+				scoringMode,
+				targetScore: scoringMode === 'score' && targetScoreEnabled ? normalizedTargetScore() : null,
 				forceStart
 			});
 
@@ -642,6 +647,12 @@
 			(Math.max(0, Number.isFinite(minutes) ? Math.floor(minutes) : 0) * 60)
 				+ Math.max(0, Number.isFinite(seconds) ? Math.floor(seconds) : 0)
 		);
+	}
+
+	function normalizedTargetScore() {
+		const value = Number(targetScore);
+
+		return Math.max(1, Math.min(100000, Number.isFinite(value) ? Math.floor(value) : 1000));
 	}
 
 	function getRoomSelectedLevelId(value: PvpRoom | null | undefined) {
@@ -1231,7 +1242,7 @@
                   </button>
                 </div>
               </div>
-              <div class="field-group">
+                            <div class="field-group">
                 <Label for="room-completion-value">{$_('pvp.rooms.completion_value')}</Label>
                 <div class="input-with-unit">
                   <Input
@@ -1244,6 +1255,56 @@
                   <span>{completionRuleType === 'percentage' ? '%' : $_('pvp.rooms.players')}</span>
                 </div>
               </div>
+              <div class="field-group">
+                <Label>Scoring mode</Label>
+                <div class="completion-toggle">
+                  <button
+                    type="button"
+                    class:active={scoringMode === 'progress'}
+                    on:click={() => (scoringMode = 'progress')}
+                  >
+                    Progress
+                  </button>
+                  <button
+                    type="button"
+                    class:active={scoringMode === 'score'}
+                    on:click={() => (scoringMode = 'score')}
+                  >
+                    Score
+                  </button>
+                </div>
+              </div>
+              {#if scoringMode === 'score'}
+                <div class="field-group">
+                  <Label>Target score</Label>
+                  <div class="completion-toggle">
+                    <button
+                      type="button"
+                      class:active={!targetScoreEnabled}
+                      on:click={() => (targetScoreEnabled = false)}
+                    >
+                      Unlimited
+                    </button>
+                    <button
+                      type="button"
+                      class:active={targetScoreEnabled}
+                      on:click={() => (targetScoreEnabled = true)}
+                    >
+                      Target
+                    </button>
+                  </div>
+                  {#if targetScoreEnabled}
+                    <Input
+                      bind:value={targetScore}
+                      min="1"
+                      max="100000"
+                      type="number"
+                      aria-label="Target score"
+                    />
+                  {/if}
+                </div>
+              {/if}
+
               <Button disabled={startDisabled} on:click={requestStartMatch}>
                 {#if actionLoading === 'start-match'}
                   <Loader2 class="mr-2 h-4 w-4 animate-spin" />

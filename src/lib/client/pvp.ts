@@ -3,6 +3,7 @@ export type PvpMode = 'classic' | 'platformer';
 export type PvpPlayMode = 'normal' | 'practice';
 export type PvpRoomVisibility = 'public' | 'private';
 export type PvpRoomCompletionRuleType = 'count' | 'percentage';
+export type PvpRoomScoringMode = 'progress' | 'score';
 
 export type PvpMatchStatus =
     | 'pending'
@@ -201,6 +202,10 @@ export type PvpMatch = {
     completion_rule_type?: PvpRoomCompletionRuleType | string | null;
     completionRuleValue?: number | null;
     completion_rule_value?: number | null;
+    scoringMode?: PvpRoomScoringMode | string | null;
+    scoring_mode?: PvpRoomScoringMode | string | null;
+    targetScore?: number | null;
+    target_score?: number | null;
     timeLimitSeconds?: number | null;
     time_limit_seconds?: number | null;
     startedAt?: string | null;
@@ -1025,6 +1030,8 @@ export async function startPvpRoomMatch(
         timeLimitMinutes?: number | string | null;
         completionRuleType?: PvpRoomCompletionRuleType | string;
         completionRuleValue?: number | string | null;
+        scoringMode?: PvpRoomScoringMode | string;
+        targetScore?: number | string | null;
         forceStart?: boolean;
     }
 ) {
@@ -1614,7 +1621,11 @@ export function getPvpDeathCountEntries(
         .filter((entry) => entry.count > 0);
 }
 
-export function formatPvpProgressValue(value: number, mode: PvpMode = 'classic') {
+export function formatPvpProgressValue(
+    value: number,
+    mode: PvpMode = 'classic',
+    scoringMode: PvpRoomScoringMode | string = 'progress'
+) {
     if (mode === 'platformer') {
         return `${Math.max(0, Math.floor(value))} PT`;
     }
@@ -1624,7 +1635,7 @@ export function formatPvpProgressValue(value: number, mode: PvpMode = 'classic')
         : value.toFixed(2)
             .replace(/\.?0+$/, '');
 
-    return `${progress}%`;
+    return scoringMode === 'score' ? progress : `${progress}%`;
 }
 
 export function getPvpProgressUnit(mode: PvpMode = 'classic') {

@@ -36,7 +36,6 @@
 		getPvpMode,
 		getPvpMatchStartMs,
 		getPvpMessageSenderIsAnonymous,
-		getPvpOpponent,
 		getPvpParticipants,
 		getPvpDeathCountArray,
 		getPvpMatchRoomId,
@@ -64,7 +63,6 @@
 		requestPvpBanPickAbort,
 		requestPvpMatchLevelChange,
 		resignPvpMatch,
-		sendPvpInvite,
 		sendPvpMatchMessage,
 		type PvpBanPickAction,
 		type PvpMatch,
@@ -300,10 +298,8 @@
 	$: selfParticipant = getPvpSelfParticipant(match, currentUid);
 	$: selfAccepted = hasPvpParticipantAccepted(selfParticipant)
 		|| (matchId ? locallyAcceptedMatchIds.has(String(matchId)) : false);
-	$: rematchOpponent = getPvpOpponent(match, currentUid);
-	$: rematchOpponentUid = getPvpParticipantUid(rematchOpponent);
-	$: canRematch = Boolean(
-		match && !isRoomMatch && !isActive && selfParticipant && rematchOpponentUid
+	$: canRequeue = Boolean(
+		match && !isRoomMatch && !isActive && selfParticipant && !isSpectator
 	);
 	$: viewerReport = getPvpViewerReport(match);
 	$: hasReportedMatch = Boolean(
@@ -1098,35 +1094,20 @@
 		}
 	}
 
-	async function requestRematch() {
+	async function requeue() {
 		if (!match || actionLoading || isSpectator) {
 			return;
 		}
 
-		const inviteeUid = String(rematchOpponentUid || '');
-
-		if (!inviteeUid) {
-			toast.error($_('pvp.toast.rematch_failed'));
-
-			return;
-		}
-
-		actionLoading = 'rematch';
+		actionLoading = 'requeue';
 
 		try {
-			await sendPvpInvite(await $user.token(), {
-				inviteeUid,
-				anonymous: getPvpParticipantIsAnonymous(selfParticipant),
-				mode: matchMode
+			const params = new URLSearchParams({
+				requeue: '1',
+				mode: matchMode,
+				anonymous: getPvpParticipantIsAnonymous(selfParticipant) ? '1' : '0'
 			});
-			toast.success($_('pvp.toast.rematch_sent'));
-			await goto('/versus/play');
-		} catch (error) {
-			toast.error(
-				error instanceof Error
-					? error.message
-					: $_('pvp.toast.rematch_failed')
-			);
+			await goto(`/versus/play?${params.toString()}`);
 		} finally {
 			actionLoading = '';
 		}
@@ -2936,14 +2917,14 @@
     {actionLoading}
     {hideOpponentInfo}
     showOpponentInfoToggle={!isRoomMatch}
-    {canRematch}
+    {canRequeue}
     canRequestLevelChange={canRequestLevelChange && !levelChangeRequestedByUid}
     canRequestBanPickAbort={canRequestBanPickAbort && !banPickAbortRequestedByUid}
     {canResign}
     canReport={canReportMatch}
     reportSubmitted={hasReportedMatch}
     onToggleOpponentInfo={() => (hideOpponentInfo = !hideOpponentInfo)}
-    onRequestRematch={requestRematch}
+    onRequeue={requeue}
     onRequestLevelChange={requestLevelChange}
     onRequestBanPickAbort={requestBanPickAbort}
     onResign={resignMatch}
