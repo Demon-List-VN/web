@@ -25,6 +25,7 @@
 	export let canRequeue = false;
 	export let canRequestLevelChange = false;
 	export let canRequestBanPickAbort = false;
+	export let canAbortRoomMatch = false;
 	export let canResign = false;
 	export let canReport = false;
 	export let reportSubmitted = false;
@@ -33,6 +34,7 @@
 	export let onRequeue: () => void = () => {};
 	export let onRequestLevelChange: () => void = () => {};
 	export let onRequestBanPickAbort: () => void = () => {};
+	export let onAbortRoomMatch: () => void = () => {};
 	export let onResign: () => void = () => {};
 	export let onReport: () => void = () => {};
 </script>
@@ -105,6 +107,21 @@
             <X class="mr-2 h-4 w-4" />
           {/if}
           {$_('pvp.request_ban_pick_abort')}
+        </Button>
+      {/if}
+
+      {#if canAbortRoomMatch}
+        <Button
+          variant="destructive"
+          disabled={Boolean(actionLoading) || loading}
+          on:click={onAbortRoomMatch}
+        >
+          {#if actionLoading === 'abort-room-match'}
+            <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+          {:else}
+            <X class="mr-2 h-4 w-4" />
+          {/if}
+          {$_('pvp.abort_room_match')}
         </Button>
       {/if}
 

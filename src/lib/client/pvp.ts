@@ -1042,6 +1042,13 @@ export async function startPvpRoomMatch(
     });
 }
 
+export async function endPvpRoomMatch(token: string | null | undefined, id: number | string) {
+    return pvpRequest<PvpRoom>(`/pvp/rooms/${id}/end-match`, {
+        method: 'POST',
+        token
+    });
+}
+
 export async function getPvpRoomMessages(
     token: string | null | undefined,
     id: number | string,
@@ -1624,7 +1631,8 @@ export function getPvpDeathCountEntries(
 export function formatPvpProgressValue(
     value: number,
     mode: PvpMode = 'classic',
-    scoringMode: PvpRoomScoringMode | string = 'progress'
+    scoringMode: PvpRoomScoringMode | string = 'progress',
+    targetScore?: number | string | null
 ) {
     if (mode === 'platformer') {
         return `${Math.max(0, Math.floor(value))} PT`;
@@ -1635,7 +1643,15 @@ export function formatPvpProgressValue(
         : value.toFixed(2)
             .replace(/\.?0+$/, '');
 
-    return scoringMode === 'score' ? progress : `${progress}%`;
+    if (scoringMode === 'score') {
+        const target = Number(targetScore);
+
+        return Number.isFinite(target) && target > 0
+            ? `${progress}/${Math.floor(target)}`
+            : progress;
+    }
+
+    return `${progress}%`;
 }
 
 export function getPvpProgressUnit(mode: PvpMode = 'classic') {

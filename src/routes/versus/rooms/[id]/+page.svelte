@@ -17,6 +17,7 @@
 	import * as Tabs from '$lib/components/ui/tabs';
 	import {
 		endPvpRoom,
+		endPvpRoomMatch,
 		getPvpMatchId,
 		getPvpRoom,
 		getPvpRoomMessages,
@@ -118,10 +119,16 @@
 		?? selectedLevel?.video
 		?? selectedLevel?.videoUrl
 	);
+	$: selectedLevelIsPlatformer = Boolean(selectedLevel?.isPlatformer);
 	$: startDisabled = Boolean(actionLoading)
 		|| !isHost
+		|| Boolean(activeMatchId)
 		|| !sharedLevelId
-		|| memberCount < 2;
+		|| memberCount < 2
+		|| (scoringMode === 'score' && selectedLevelIsPlatformer);
+	$: if (selectedLevelIsPlatformer && scoringMode === 'score') {
+		scoringMode = 'progress';
+	}
 	$: if (roomEditKey && roomEditKey !== syncedEditRoomKey && activeRoomTab !== 'edit') {
 		syncEditRoomDetails();
 	}
@@ -235,6 +242,7 @@
 			messages = options.incremental
 				? mergeMessages(messages, nextMessages)
 				: nextMessages;
+			await scrollChatToBottom();
 		} catch (error) {
 			toast.error(
 				error instanceof Error ? error.message : $_('pvp.rooms.chat_load_failed')
@@ -306,6 +314,27 @@
 			await endPvpRoom(await $user.token(), id);
 			endRoomDialogOpen = false;
 			goto('/versus/play');
+		} catch (error) {
+			toast.error(
+				error instanceof Error ? error.message : $_('pvp.rooms.end_failed')
+			);
+		} finally {
+			actionLoading = '';
+		}
+	}
+
+	async function endActiveMatch() {
+		const id = roomId;
+
+		if (!id || !activeMatchId) {
+			return;
+		}
+
+		actionLoading = 'end-match';
+
+		try {
+			room = await endPvpRoomMatch(await $user.token(), id);
+			toast.success('Match ended');
 		} catch (error) {
 			toast.error(
 				error instanceof Error ? error.message : $_('pvp.rooms.end_failed')
@@ -577,6 +606,7 @@
 			const message = await sendPvpRoomMessage(await $user.token(), id, content);
 			messages = mergeMessages(messages, [message]);
 			chatDraft = '';
+			await scrollChatToBottom('smooth');
 		} catch (error) {
 			toast.error(
 				error instanceof Error ? error.message : $_('pvp.rooms.chat_send_failed')
@@ -711,10 +741,14 @@
 		}
 
 		lastMessageScrollKey = latestKey;
+		await scrollChatToBottom(messages.length > 1 ? 'smooth' : 'auto');
+	}
+
+	async function scrollChatToBottom(behavior: ScrollBehavior = 'auto') {
 		await tick();
 		chatScrollEl?.scrollTo({
 			top: chatScrollEl.scrollHeight,
-			behavior: messages.length > 1 ? 'smooth' : 'auto'
+			behavior
 		});
 	}
 
@@ -900,7 +934,22 @@
       <section class="room-section">
         <div class="section-heading">
           <h2>{$_('pvp.rooms.active_match')}</h2>
-          <a href={`/versus/matches/${activeMatchId}`}>{$_('pvp.enter_match')}</a>
+          <div class="section-actions">
+            {#if isHost}
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={Boolean(actionLoading)}
+                on:click={endActiveMatch}
+              >
+                {#if actionLoading === 'end-match'}
+                  <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+                {/if}
+                End match
+              </Button>
+            {/if}
+            <a href={`/versus/matches/${activeMatchId}`}>{$_('pvp.enter_match')}</a>
+          </div>
         </div>
         <MatchCard
           match={room.activeMatch}
@@ -1043,7 +1092,7 @@
           </Card.Header>
           <Card.Content class="member-list">
             {#each activeMembers as member}
-              <div class="member-row">
+              <div class:ready-member={roomMemberReady(member)} class="member-row">
                 <div class="member-identity">
                   {#if member.player?.uid}
                     <PlayerLink
@@ -1060,7 +1109,8 @@
                       <Crown class="mr-1 h-3.5 w-3.5" />
                       {$_('pvp.rooms.host')}
                     </Badge>
-                  {:else if roomMemberReady(member)}
+                  {/if}
+                  {#if roomMemberReady(member)}
                     <Badge variant="secondary">
                       <CheckCircle2 class="mr-1 h-3.5 w-3.5" />
                       {$_('pvp.rooms.ready')}
@@ -1268,11 +1318,15 @@
                   <button
                     type="button"
                     class:active={scoringMode === 'score'}
+                    disabled={selectedLevelIsPlatformer}
                     on:click={() => (scoringMode = 'score')}
                   >
                     Score
                   </button>
                 </div>
+                {#if selectedLevelIsPlatformer}
+                  <small class="field-hint">Score mode is only supported on classic levels.</small>
+                {/if}
               </div>
               {#if scoringMode === 'score'}
                 <div class="field-group">
@@ -1389,6 +1443,7 @@
 .room-topbar,
 .room-top-actions,
 .section-heading,
+.section-actions,
 .member-row,
 .member-identity,
 .chat-compose,
@@ -1503,13 +1558,15 @@ h1 {
 
 .member-row {
   min-height: 44px;
-  border-bottom: 1px solid hsl(var(--border));
-  padding-bottom: 10px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--card));
+  padding: 10px;
 }
 
-.member-row:last-child {
-  border-bottom: 0;
-  padding-bottom: 0;
+.member-row.ready-member {
+  border-color: hsl(142 70% 45% / 0.75);
+  box-shadow: 0 0 0 1px hsl(142 70% 45% / 0.12);
 }
 
 .member-identity {
@@ -1541,9 +1598,9 @@ h1 {
 }
 
 :global(.room-chat-panel.room-chat-panel) {
-  grid-template-rows: minmax(0, 1fr) auto;
-  height: calc(100vh - 190px);
-  max-height: calc(100vh - 190px);
+  grid-template-rows: auto auto;
+  height: fit-content;
+  max-height: min(72vh, 680px);
   padding-top: 16px;
 }
 
@@ -1630,7 +1687,7 @@ h1 {
 
 .message-list {
   min-height: 0;
-  max-height: none;
+  max-height: min(54vh, 520px);
   overflow: auto;
 }
 
@@ -1689,6 +1746,16 @@ h1 {
   box-shadow: 0 0 0 1px hsl(var(--border));
 }
 
+.completion-toggle button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.field-hint {
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+}
+
 .section-heading h2 {
   margin: 0;
   font-size: 1.25rem;
@@ -1735,7 +1802,6 @@ h1 {
   }
 
   :global(.room-chat-panel.room-chat-panel) {
-    height: min(72vh, 680px);
     max-height: min(72vh, 680px);
   }
 }

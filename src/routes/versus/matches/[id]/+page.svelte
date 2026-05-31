@@ -22,6 +22,7 @@
 	import {
 		acceptPvpMatch,
 		banPvpMatchLevel,
+		endPvpRoomMatch,
 		getPvpBanPick,
 		getPvpMatchMessages,
 		getPvpLevel,
@@ -70,6 +71,7 @@
 		type PvpMatchReport,
 		type PvpMode,
 		type PvpPlayMode,
+		type PvpRoomScoringMode,
 		type PvpParticipant
 	} from '$lib/client/pvp';
 	import {
@@ -152,6 +154,8 @@
 		minY: number;
 		maxY: number;
 		mode: PvpMode;
+		scoringMode: PvpRoomScoringMode | string;
+		targetScore: number | string | null;
 	};
 
 	type DeathCountChartData = {
@@ -217,6 +221,8 @@
 	$: currentUid = $user.data?.uid;
 	$: status = getPvpStatus(match);
 	$: matchMode = getPvpMode(match);
+	$: scoringMode = match?.scoringMode ?? match?.scoring_mode ?? 'progress';
+	$: targetScore = match?.targetScore ?? match?.target_score ?? null;
 	$: level = getPvpLevel(match);
 	$: banPick = getPvpBanPick(match);
 	$: banPickActions = Array.isArray(banPick?.actions) ? banPick.actions : [];
@@ -253,6 +259,7 @@
 	$: isRoomMatch = isPvpCustomRoomMatch(match);
 	$: roomId = getPvpMatchRoomId(match);
 	$: roomName = getPvpMatchRoomName(match);
+	$: roomHostUid = match?.room?.hostUid ?? match?.room?.host_uid ?? null;
 	$: effectiveHideOpponentInfo = isRoomMatch ? false : hideOpponentInfo;
 	$: matchTitle = isRoomMatch
 		? `${roomName || $_('pvp.rooms.custom_room')} match`
@@ -352,6 +359,10 @@
 	$: banPickAbortRequestedBySelf = Boolean(currentUid)
 		&& String(banPickAbortRequestedByUid || '') === String(currentUid);
 	$: canRequestBanPickAbort = isBanPick && !isRoomMatch && Boolean(selfParticipant);
+	$: canAbortRoomMatch = isRoomMatch
+		&& ['in_progress', 'waiting_result'].includes(status)
+		&& !isSpectator
+		&& sameUid(roomHostUid, currentUid);
 	$: chatOpenDuringMatch = ['in_progress', 'waiting_result'].includes(status)
 		&& remainingMs > 0;
 	$: chatOpenDuringBanPick = isBanPick;
@@ -1094,6 +1105,33 @@
 		}
 	}
 
+	async function abortRoomMatch() {
+		if (!roomId || !canAbortRoomMatch || actionLoading || isSpectator) {
+			return;
+		}
+
+		if (!confirm($_('pvp.abort_room_match_confirm'))) {
+			return;
+		}
+
+		actionLoading = 'abort-room-match';
+
+		try {
+			await endPvpRoomMatch(await $user.token(), roomId);
+			await refreshMatch();
+			await refreshMessages({ incremental: true });
+			toast.success($_('pvp.toast.room_match_abort_success'));
+		} catch (error) {
+			toast.error(
+				error instanceof Error
+					? error.message
+					: $_('pvp.toast.room_match_abort_failed')
+			);
+		} finally {
+			actionLoading = '';
+		}
+	}
+
 	async function requeue() {
 		if (!match || actionLoading || isSpectator) {
 			return;
@@ -1521,7 +1559,8 @@
 
 	function progressMessageEvent(
 		message: PvpMatchMessage,
-		mode: PvpMode = matchMode
+		mode: PvpMode = matchMode,
+		currentScoringMode: PvpRoomScoringMode | string = scoringMode
 	) {
 		if (
 			message.type !== 'system' || messageMetadataKind(message) !== 'progress'
@@ -1530,6 +1569,9 @@
 		}
 
 		const metadata = messageMetadata(message);
+		const messageScoringMode = metadataText(metadata, 'scoringMode') === 'score'
+			? 'score'
+			: 'progress';
 		const uid = metadataText(metadata, 'uid');
 		const progress = metadataNumber(metadata, 'progress');
 		const timeMs = getTimeMs(message.created_at);
@@ -1538,10 +1580,16 @@
 			return null;
 		}
 
+		if (currentScoringMode === 'score' && messageScoringMode !== 'score') {
+			return null;
+		}
+
 		return {
 			uid,
 			progress: mode === 'platformer'
 				? Math.max(0, Math.floor(progress))
+				: currentScoringMode === 'score'
+				? Math.max(0, progress)
 				: Math.max(0, Math.min(100, progress)),
 			timeMs
 		};
@@ -1608,6 +1656,8 @@
 		nowMs = now,
 		matchStatus = status
 	): ProgressGraphData {
+		const currentScoringMode = sourceMatch?.scoringMode ?? sourceMatch?.scoring_mode ?? scoringMode;
+		const currentTargetScore = sourceMatch?.targetScore ?? sourceMatch?.target_score ?? targetScore;
 		const progressMessages = messagesAfterLatestLevelChange(sourceMessages);
 		const series = items.slice(0, 2)
 			.map((participant, index) => ({
@@ -1622,7 +1672,7 @@
 			}));
 
 		const parsed = progressMessages
-			.map((message) => progressMessageEvent(message, mode))
+			.map((message) => progressMessageEvent(message, mode, currentScoringMode))
 			.filter((
 				entry
 			): entry is NonNullable<ReturnType<typeof progressMessageEvent>> =>
@@ -1689,7 +1739,11 @@
 			0,
 			...series.flatMap((item) => item.points.map((point) => point.y))
 		);
-		const maxY = mode === 'platformer' ? Math.max(1, maxProgress) : 100;
+		const maxY = mode === 'platformer'
+			? Math.max(1, maxProgress)
+			: currentScoringMode === 'score'
+			? Math.max(1, Number(currentTargetScore) || 0, maxProgress)
+			: 100;
 		const modeLaneGap = maxY * 0.06;
 		const modeLaneOne = -modeLaneGap;
 		const modeLaneTwo = -modeLaneGap * 2;
@@ -1721,7 +1775,9 @@
 			maxX,
 			minY,
 			maxY,
-			mode
+			mode,
+			scoringMode: currentScoringMode,
+			targetScore: currentTargetScore
 		};
 	}
 
@@ -2046,16 +2102,29 @@
 				const mode = metadataText(metadata, 'mode') === 'platformer'
 					? 'platformer'
 					: matchMode;
+				const currentScoringMode = metadataText(metadata, 'scoringMode') === 'score'
+					? 'score'
+					: 'progress';
+				const currentTargetScore = metadataNumber(metadata, 'targetScore') ?? targetScore;
+				const formattedProgress = formatPvpProgressValue(
+					progress,
+					mode,
+					currentScoringMode,
+					currentTargetScore
+				);
 				content = $_(
 					mode === 'platformer'
 						? 'pvp.system_message.progress_platformer'
+						: currentScoringMode === 'score'
+						? 'pvp.system_message.progress_score'
 						: 'pvp.system_message.progress',
 					{
 						values: {
 							player: systemParticipantName(
 								metadataText(metadata, 'uid')
 							),
-							progress: compactNumber(progress)
+							progress: compactNumber(progress),
+							score: formattedProgress
 						}
 					}
 				);
@@ -2344,6 +2413,28 @@
 		return value ? `hsl(${value} / ${alpha})` : fallback;
 	}
 
+	function progressGraphYAxisLabel(data: ProgressGraphData) {
+		if (data.mode === 'platformer') {
+			return $_('pvp.progress_graph.checkpoints_axis');
+		}
+
+		return data.scoringMode === 'score'
+			? $_('pvp.progress_graph.score_axis')
+			: $_('pvp.progress_graph.progress_axis');
+	}
+
+	function progressGraphTickLabel(value: string | number, data: ProgressGraphData) {
+		if (Number(value) < 0) {
+			return '';
+		}
+
+		if (data.mode === 'platformer' || data.scoringMode === 'score') {
+			return String(value);
+		}
+
+		return `${value}%`;
+	}
+
 	function createProgressChart(node: HTMLCanvasElement, data: ProgressGraphData) {
 		let chart: Chart<'line', ProgressGraphPoint[], unknown> | null =
 			buildProgressChart(node, data);
@@ -2361,16 +2452,9 @@
 				chart.options.scales!.x!.max = nextData.maxX;
 				chart.options.scales!.y!.min = nextData.minY;
 				chart.options.scales!.y!.max = nextData.maxY;
-				chart.options.scales!.y!.title!.text =
-					nextData.mode === 'platformer'
-						? $_('pvp.progress_graph.checkpoints_axis')
-						: $_('pvp.progress_graph.progress_axis');
+				chart.options.scales!.y!.title!.text = progressGraphYAxisLabel(nextData);
 				chart.options.scales!.y!.ticks!.callback = (value) =>
-					Number(value) < 0
-						? ''
-						: nextData.mode === 'platformer'
-						? String(value)
-						: `${value}%`;
+					progressGraphTickLabel(value, nextData);
 				chart.options.plugins!.tooltip!.callbacks!.label =
 					getProgressTooltipLabel(nextData);
 				chart.update();
@@ -2421,9 +2505,7 @@
 						max: data.maxY,
 						title: {
 							display: true,
-							text: data.mode === 'platformer'
-								? $_('pvp.progress_graph.checkpoints_axis')
-								: $_('pvp.progress_graph.progress_axis'),
+							text: progressGraphYAxisLabel(data),
 							color: chartColor('--muted-foreground', '#71717a')
 						},
 						border: {
@@ -2440,11 +2522,7 @@
 							color: chartColor('--muted-foreground', '#71717a'),
 							callback: (
 								value
-							) => Number(value) < 0
-								? ''
-								: (data.mode === 'platformer'
-								? String(value)
-								: `${value}%`),
+							) => progressGraphTickLabel(value, data),
 							precision: 0
 						}
 					}
@@ -2537,13 +2615,15 @@
 		) => {
 			const raw = context.raw as ProgressGraphPoint | undefined;
 
-			return raw?.isModeSegment
-				? `${context.dataset.label}: ${raw.modeLabel ?? ''} ${
+			if (raw?.isModeSegment) {
+				return `${context.dataset.label}: ${raw.modeLabel ?? ''} ${
 					raw.modeTimeRange ? `(${raw.modeTimeRange})` : ''
-				}`
-				: `${context.dataset.label}: ${
-					formatPvpProgressValue(context.parsed.y, data.mode)
 				}`;
+			}
+
+			return `${context.dataset.label}: ${
+				formatPvpProgressValue(context.parsed.y, data.mode, scoringMode, targetScore)
+			}`;
 		};
 	}
 
@@ -2920,6 +3000,7 @@
     {canRequeue}
     canRequestLevelChange={canRequestLevelChange && !levelChangeRequestedByUid}
     canRequestBanPickAbort={canRequestBanPickAbort && !banPickAbortRequestedByUid}
+    {canAbortRoomMatch}
     {canResign}
     canReport={canReportMatch}
     reportSubmitted={hasReportedMatch}
@@ -2927,6 +3008,7 @@
     onRequeue={requeue}
     onRequestLevelChange={requestLevelChange}
     onRequestBanPickAbort={requestBanPickAbort}
+    onAbortRoomMatch={abortRoomMatch}
     onResign={resignMatch}
     onReport={() => (reportDialogOpen = true)}
   />
@@ -3117,7 +3199,12 @@
                       <div class="participant-progress">
                         <div class="progress-label">
                           <span>{
-                            formatPvpProgressValue(getPvpProgress(participant), matchMode)
+                            formatPvpProgressValue(
+                              getPvpProgress(participant),
+                              matchMode,
+                              scoringMode,
+                              targetScore
+                            )
                           }</span>
                           <span>
                             <Gauge class="h-3.5 w-3.5" />

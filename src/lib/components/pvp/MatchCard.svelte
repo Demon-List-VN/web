@@ -56,6 +56,7 @@
 	$: opponentProgress = getPvpProgress(opponent);
 	$: matchMode = getPvpMode(match);
 	$: scoringMode = match.scoringMode ?? match.scoring_mode ?? 'progress';
+	$: targetScore = match.targetScore ?? match.target_score ?? null;
 	$: isRoomMatch = isPvpCustomRoomMatch(match) || participants.length > 2;
 	$: sortedParticipants = getPvpParticipantsSortedByProgress(participants, matchMode);
 	$: roomTitle = getPvpMatchRoomName(match) || $_('pvp.rooms.custom_room');
@@ -63,7 +64,7 @@
 		? Math.max(1, ...participants.map((participant) => getPvpProgress(participant)))
 		: scoringMode === 'score'
 		? Math.max(
-			Number(match.targetScore ?? match.target_score ?? 0) || 0,
+			Number(targetScore) || 0,
 			1,
 			...participants.map((participant) => getPvpProgress(participant))
 		)
@@ -326,7 +327,7 @@
                 <Badge variant="secondary">{$_('pvp.you')}</Badge>
               {/if}
             </div>
-            <strong>{formatPvpProgressValue(progress, matchMode, scoringMode)}</strong>
+            <strong>{formatPvpProgressValue(progress, matchMode, scoringMode, targetScore)}</strong>
             <div class="progress-track">
               <div
                 class="progress-bar self"
@@ -368,7 +369,7 @@
                 }</small>
               {/if}
             </span>
-            <strong>{formatPvpProgressValue(selfProgress, matchMode, scoringMode)}</strong>
+            <strong>{formatPvpProgressValue(selfProgress, matchMode, scoringMode, targetScore)}</strong>
           </div>
           <div class="progress-track">
             <div
@@ -400,7 +401,7 @@
                 }</small>
               {/if}
             </span>
-            <strong>{formatPvpProgressValue(opponentProgress, matchMode, scoringMode)}</strong>
+            <strong>{formatPvpProgressValue(opponentProgress, matchMode, scoringMode, targetScore)}</strong>
           </div>
           <div class="progress-track">
             <div
