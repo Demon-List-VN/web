@@ -72,7 +72,7 @@
       </div>
     {:else}
       <div class="tier-progress-wrap">
-        <SupporterTierProgress preview compact />
+        <SupporterTierProgress preview compact nonSupporter />
       </div>
     {/if}
 

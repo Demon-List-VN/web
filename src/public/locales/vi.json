@@ -2145,6 +2145,7 @@
             "next_tier_in_days": "Cần thêm {days} ngày để đạt {tier}",
             "preview_start": "Bắt đầu từ 1 ngày",
             "preview_complete": "31 ngày để đạt Elite Supporter",
+            "non_supporter": "Non-Supporter",
             "names": {
                 "tier_1": "Supporter",
                 "tier_2": "Elite Supporter",

@@ -2125,6 +2125,7 @@
             "next_tier_in_days": "{days} more days to become {tier}",
             "preview_start": "Starts at 1 day",
             "preview_complete": "31 days to become Elite Supporter",
+            "non_supporter": "Non-Supporter",
             "names": {
                 "tier_1": "Supporter",
                 "tier_2": "Elite Supporter",

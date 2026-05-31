@@ -9,11 +9,15 @@
 	export let supporterUntil: string | null | undefined = null;
 	export let preview = false;
 	export let compact = false;
+	export let nonSupporter = false;
 
 	$: tierInfo = getSupporterTierInfo(supporterUntil);
 	$: previewTier = 1;
 	$: activeTier = tierInfo?.tier ?? previewTier;
-	$: label = $_(getTierNameKey(activeTier), { values: { tier: activeTier } });
+	$: isNonSupporterPreview = nonSupporter && !tierInfo;
+	$: label = isNonSupporterPreview
+		? $_('supporter.tiers.non_supporter')
+		: $_(getTierNameKey(activeTier), { values: { tier: activeTier } });
 	$: daysLeft = tierInfo?.daysLeft ?? 0;
 	$: progress = tierInfo?.progress ?? 0;
 	$: daysToNextTier = tierInfo?.daysToNextTier ?? 31;
@@ -52,9 +56,12 @@
     <div class="tier-header">
       <div>
         <div class="tier-kicker">{$_('supporter.tiers.title')}</div>
-        <div class="tier-name supporter-tier-text">{label}</div>
+        <div
+          class="tier-name"
+          class:supporter-tier-text={!isNonSupporterPreview}
+        >{label}</div>
       </div>
-      <div class="tier-pill">T{activeTier}</div>
+      <div class="tier-pill">{isNonSupporterPreview ? 'T0' : `T${activeTier}`}</div>
     </div>
 
     <div class="tier-progress">
