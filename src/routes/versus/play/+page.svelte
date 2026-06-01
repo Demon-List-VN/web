@@ -59,7 +59,6 @@
 		isPvpMatchConfirmedByBoth,
 		isPvpMatchRanked,
 		isPvpRatingStable,
-		joinPvpRoom,
 		leavePvpRoom,
 		sendPvpInvite,
 		startPvpMatchmaking,
@@ -1652,38 +1651,14 @@
 		}
 	}
 
-	async function joinRoom(room: PvpRoom) {
+	function viewRoom(room: PvpRoom) {
 		const roomId = getRoomId(room);
 
 		if (!roomId) {
 			return;
 		}
 
-		if (currentRoomId && String(currentRoomId) !== String(roomId)) {
-			toast.error($_('pvp.rooms.one_room_only'));
-
-			return;
-		}
-
-		if (currentRoomId && String(currentRoomId) === String(roomId)) {
-			goto(`/versus/rooms/${roomId}`);
-
-			return;
-		}
-
-		actionLoading = `join-room-${roomId}`;
-
-		try {
-			await joinPvpRoom(await $user.token(), roomId);
-			await refreshRooms();
-			goto(`/versus/rooms/${roomId}`);
-		} catch (error) {
-			toast.error(
-				error instanceof Error ? error.message : $_('pvp.rooms.join_failed')
-			);
-		} finally {
-			actionLoading = '';
-		}
+		goto(`/versus/rooms/${roomId}`);
 	}
 
 	async function acceptRoomInvite(invite: PvpRoomInvite) {
@@ -1748,7 +1723,7 @@
 		}
 
 		keyboardEvent.preventDefault();
-		joinRoom(room);
+		viewRoom(room);
 	}
 
 	async function acceptInvite(invite: PvpInvite) {
@@ -2643,7 +2618,7 @@
                   class="room-card current-room-card clickable-room-card"
                   role="button"
                   tabindex="0"
-                  on:click={() => joinRoom(room)}
+                  on:click={() => viewRoom(room)}
                   on:keydown={(event) => handleRoomCardKeydown(event, room)}
                 >
                   <Card.Header>
@@ -2741,7 +2716,7 @@
                   class="room-card clickable-room-card"
                   role="button"
                   tabindex="0"
-                  on:click={() => joinRoom(room)}
+                  on:click={() => viewRoom(room)}
                   on:keydown={(event) => handleRoomCardKeydown(event, room)}
                 >
                   <Card.Header>
@@ -2758,12 +2733,7 @@
                         <Badge variant="secondary">{$_('pvp.rooms.active_match')}</Badge>
                       {/if}
                     </div>
-                    {#if actionLoading === `join-room-${room.id}`}
-                      <div class="room-card-actions">
-                        <Loader2 class="h-4 w-4 animate-spin" />
-                        <span>{$_('pvp.rooms.join')}</span>
-                      </div>
-                    {:else if alreadyJoined}
+                    {#if alreadyJoined}
                       <div class="room-card-actions">
                         <span>{$_('pvp.rooms.current_room')}</span>
                       </div>
