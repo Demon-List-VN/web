@@ -3,6 +3,8 @@ import { isPvpRatingStable } from '$lib/client/pvp';
 import type { PlayerLinkRankBadge } from '$lib/utils/customListRank';
 
 export type PvpRankKey =
+    | 'D'
+    | 'D+'
     | 'C'
     | 'C+'
     | 'B'
@@ -41,7 +43,7 @@ export type PvpRankProgress = {
     progress: number;
 };
 
-const PVP_RANK_PROGRESS_MIN_RATING = 500;
+const PVP_RANK_PROGRESS_MIN_RATING = 0;
 
 function solidStyle(color: string, textColor = '#ffffff', shadow = '') {
     return `background: ${color}; color: ${textColor};${shadow}`;
@@ -49,9 +51,19 @@ function solidStyle(color: string, textColor = '#ffffff', shadow = '') {
 
 export const PVP_RANKS: PvpRankDefinition[] = [
     {
-        key: 'C',
-        label: 'C',
+        key: 'D',
+        label: 'D',
         min: null,
+        max: 499,
+        color: '#717783',
+        badgeStyle: solidStyle('#717783'),
+        progressStyle: 'background: #717783;',
+        summaryStyle: 'border-color: #717783;'
+    },
+    {
+        key: 'D+',
+        label: 'D+',
+        min: 500,
         max: 699,
         color: '#9CA3AF',
         badgeStyle: solidStyle('#9CA3AF'),
@@ -59,99 +71,109 @@ export const PVP_RANKS: PvpRankDefinition[] = [
         summaryStyle: 'border-color: #9CA3AF;'
     },
     {
+        key: 'C',
+        label: 'C',
+        min: 700,
+        max: 899,
+        color: '#6F9CAF',
+        badgeStyle: solidStyle('#6F9CAF'),
+        progressStyle: 'background: #6F9CAF;',
+        summaryStyle: 'border-color: #6F9CAF;'
+    },
+    {
         key: 'C+',
         label: 'C+',
-        min: 700,
-        max: 799,
-        color: '#94A3B8',
-        badgeStyle: solidStyle('#94A3B8'),
-        progressStyle: 'background: #94A3B8;',
-        summaryStyle: 'border-color: #94A3B8;'
+        min: 900,
+        max: 1049,
+        color: '#5795AF',
+        badgeStyle: solidStyle('#5795AF'),
+        progressStyle: 'background: #5795AF;',
+        summaryStyle: 'border-color: #5795AF;'
     },
     {
         key: 'B',
         label: 'B',
-        min: 800,
-        max: 899,
-        color: '#22C55E',
-        badgeStyle: solidStyle('#22C55E'),
-        progressStyle: 'background: #22C55E;',
-        summaryStyle: 'border-color: #22C55E;'
+        min: 1050,
+        max: 1199,
+        color: '#0284C7',
+        badgeStyle: solidStyle('#0284C7'),
+        progressStyle: 'background: #0284C7;',
+        summaryStyle: 'border-color: #0284C7;'
     },
     {
         key: 'B+',
         label: 'B+',
-        min: 900,
-        max: 999,
-        color: '#14B8A6',
-        badgeStyle: solidStyle('#14B8A6'),
-        progressStyle: 'background: #14B8A6;',
-        summaryStyle: 'border-color: #14B8A6;'
+        min: 1200,
+        max: 1349,
+        color: '#1D4ED8',
+        badgeStyle: solidStyle('#1D4ED8'),
+        progressStyle: 'background: #1D4ED8;',
+        summaryStyle: 'border-color: #1D4ED8;'
     },
     {
         key: 'A',
         label: 'A',
-        min: 1000,
-        max: 1149,
-        color: '#3B82F6',
-        badgeStyle: solidStyle('#3B82F6'),
-        progressStyle: 'background: #3B82F6;',
-        summaryStyle: 'border-color: #3B82F6;'
+        min: 1350,
+        max: 1499,
+        color: '#6D28D9',
+        badgeStyle: solidStyle('#6D28D9'),
+        progressStyle: 'background: #6D28D9;',
+        summaryStyle: 'border-color: #6D28D9;'
     },
     {
         key: 'A+',
         label: 'A+',
-        min: 1150,
-        max: 1299,
-        color: '#6366F1',
-        badgeStyle: solidStyle('#6366F1'),
-        progressStyle: 'background: #6366F1;',
-        summaryStyle: 'border-color: #6366F1;'
-    },
-    {
-        key: 'S',
-        label: 'S',
-        min: 1300,
-        max: 1449,
+        min: 1500,
+        max: 1699,
         color: '#A855F7',
         badgeStyle: solidStyle('#A855F7'),
         progressStyle: 'background: #A855F7;',
         summaryStyle: 'border-color: #A855F7;'
     },
     {
+        key: 'S',
+        label: 'S',
+        min: 1700,
+        max: 1799,
+        color: '#D94663',
+        badgeStyle: solidStyle('#D94663'),
+        progressStyle: 'background: #D94663;',
+        summaryStyle: 'border-color: #D94663;'
+    },
+    {
         key: 'S+',
         label: 'S+',
-        min: 1450,
-        max: 1599,
-        color: '#D946EF',
-        badgeStyle: solidStyle('#D946EF'),
-        progressStyle: 'background: #D946EF;',
-        summaryStyle: 'border-color: #D946EF;'
+        min: 1800,
+        max: 1899,
+        color: '#F04444',
+        badgeStyle: solidStyle('#F04444'),
+        progressStyle: 'background: #F04444;',
+        summaryStyle: 'border-color: #F04444;'
     },
     {
         key: 'SS',
         label: 'SS',
-        min: 1600,
-        max: 1799,
-        color: '#EF4444',
-        badgeStyle: solidStyle('#EF4444'),
-        progressStyle: 'background: #EF4444;',
-        summaryStyle: 'border-color: #EF4444;'
+        min: 1900,
+        max: 1999,
+        color: '#F5222D',
+        badgeStyle: solidStyle('#F5222D'),
+        progressStyle: 'background: #F5222D;',
+        summaryStyle: 'border-color: #F5222D;'
     },
     {
         key: 'SS+',
         label: 'SS+',
-        min: 1800,
-        max: 1999,
-        color: '#F97316',
-        badgeStyle: 'background: linear-gradient(135deg, #F97316, #FACC15); color: #111827;',
-        progressStyle: 'background: linear-gradient(90deg, #F97316, #FACC15);',
-        summaryStyle: 'border-color: #F97316; box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.22);'
+        min: 2000,
+        max: 2099,
+        color: '#FF1F2D',
+        badgeStyle: 'background: linear-gradient(135deg, #F5222D, #FF1F2D); color: #ffffff;',
+        progressStyle: 'background: linear-gradient(90deg, #F5222D, #FF1F2D);',
+        summaryStyle: 'border-color: #FF1F2D; box-shadow: 0 0 0 1px rgba(255, 31, 45, 0.22);'
     },
     {
         key: 'SSS',
         label: 'SSS',
-        min: 2000,
+        min: 2100,
         max: null,
         color: '#FACC15',
         badgeStyle:
