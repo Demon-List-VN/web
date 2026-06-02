@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { user } from '$lib/client';
+	import { showXpAwardToast } from '$lib/client/xpToast';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import SubmitStepper from '$lib/components/submit/SubmitStepper.svelte';
 	import StepLevelId from '$lib/components/submit/StepLevelId.svelte';
@@ -235,6 +236,7 @@
 
 			submissionResult = payload;
 			submitted = true;
+			showXpAwardToast(payload?.xpAward);
 		} catch (error) {
 			toast.error(
 				error instanceof Error

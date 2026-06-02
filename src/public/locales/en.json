@@ -308,7 +308,7 @@
         "winner": "Winner",
         "winner_named": "Winner: {name}",
         "xp_toast": {
-            "title": "Match complete - XP earned",
+            "title": "XP earned",
             "total_xp": "{xp} total XP",
             "level": "Level {level}",
             "level_up": "Level up to {level}",
@@ -1993,6 +1993,10 @@
                 "pvp_match_win": "PvP match win",
                 "pvp_match_loss": "PvP match loss",
                 "record_manual_100": "100% record accepted",
+                "record_submission": "Record submitted",
+                "record_submission_rejected": "Record rejected",
+                "challenge_submission": "Challenge submitted",
+                "challenge_submission_rejected": "Challenge rejected",
                 "challenge_submission_accepted": "Challenge submission accepted",
                 "unknown": "XP change"
             }

@@ -20,6 +20,10 @@
 		pvp_match_win: 'player.xp_log.reasons.pvp_match_win',
 		pvp_match_loss: 'player.xp_log.reasons.pvp_match_loss',
 		record_manual_100: 'player.xp_log.reasons.record_manual_100',
+		record_submission: 'player.xp_log.reasons.record_submission',
+		record_submission_rejected: 'player.xp_log.reasons.record_submission_rejected',
+		challenge_submission: 'player.xp_log.reasons.challenge_submission',
+		challenge_submission_rejected: 'player.xp_log.reasons.challenge_submission_rejected',
 		challenge_submission_accepted: 'player.xp_log.reasons.challenge_submission_accepted'
 	};
 

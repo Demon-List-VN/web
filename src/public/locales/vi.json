@@ -308,7 +308,7 @@
         "winner": "Người thắng",
         "winner_named": "Người thắng: {name}",
         "xp_toast": {
-            "title": "Trận đã kết thúc - nhận XP",
+            "title": "Nhận XP",
             "total_xp": "Tổng {xp} XP",
             "level": "Cấp {level}",
             "level_up": "Lên cấp {level}",
@@ -1992,6 +1992,10 @@
                 "pvp_match_win": "Thắng trận PvP",
                 "pvp_match_loss": "Thua trận PvP",
                 "record_manual_100": "Bản ghi 100% được duyệt",
+                "record_submission": "Nộp bản ghi",
+                "record_submission_rejected": "Bản ghi bị từ chối",
+                "challenge_submission": "Nộp Challenge",
+                "challenge_submission_rejected": "Challenge bị từ chối",
                 "challenge_submission_accepted": "Challenge được thêm vào danh sách",
                 "unknown": "Thay đổi XP"
             }

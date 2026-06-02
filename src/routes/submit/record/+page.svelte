@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { user } from '$lib/client';
+	import { showXpAwardToast } from '$lib/client/xpToast';
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { locale, _ } from 'svelte-i18n';
@@ -436,6 +437,10 @@
 				const resJson = JSON.parse(responseText);
 				state.submitLog = resJson.logs || [];
 				state.errorMessage = $locale == 'vi' ? resJson.vi : resJson.en;
+
+				if (res.ok) {
+					showXpAwardToast(resJson.xpAward);
+				}
 			} catch {
 				state.errorMessage = responseText;
 			}
