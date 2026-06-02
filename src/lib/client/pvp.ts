@@ -185,6 +185,16 @@ export type PvpEvent = {
     [key: string]: unknown;
 };
 
+export type AdminPvpEventPayload = {
+    title: string;
+    description?: string | null;
+    bannerUrl?: string | null;
+    listId: number;
+    startsAt: string;
+    endsAt?: string | null;
+    enabled?: boolean;
+};
+
 export type PvpMatch = {
     id?: number | string;
     matchId?: number | string;
@@ -832,6 +842,43 @@ export async function cancelAdminPvpRequiredSubmission(
     id: number | string
 ) {
     return pvpRequest<PvpRequiredSubmission>(`/pvp/admin/required-submissions/${id}`, {
+        method: 'DELETE',
+        token
+    });
+}
+
+export async function getAdminPvpEvents(token: string | null | undefined) {
+    return pvpRequest<PvpEvent[]>('/pvp/admin/events', { token });
+}
+
+export async function createAdminPvpEvent(
+    token: string | null | undefined,
+    payload: AdminPvpEventPayload
+) {
+    return pvpRequest<PvpEvent>('/pvp/admin/events', {
+        method: 'POST',
+        token,
+        body: payload
+    });
+}
+
+export async function updateAdminPvpEvent(
+    token: string | null | undefined,
+    id: number | string,
+    payload: Partial<AdminPvpEventPayload>
+) {
+    return pvpRequest<PvpEvent>(`/pvp/admin/events/${id}`, {
+        method: 'PATCH',
+        token,
+        body: payload
+    });
+}
+
+export async function deleteAdminPvpEvent(
+    token: string | null | undefined,
+    id: number | string
+) {
+    return pvpRequest<PvpEvent>(`/pvp/admin/events/${id}`, {
         method: 'DELETE',
         token
     });

@@ -107,6 +107,7 @@
 				{ name: 'Submission', href: '/admin/submission' },
 				{ name: 'Level Submissions', href: '/admin/levelSubmissions' },
 				{ name: 'PvP Required Submission', href: '/admin/pvpRequiredSubmission' },
+				{ name: 'PvP Events', href: '/admin/pvpEvents' },
 				{ name: 'PvP Reports', href: '/admin/pvpReports' },
 				{ name: 'Add Record', href: '/admin/addRecord' }
 			]
