@@ -65,7 +65,7 @@
 	const ROOM_MATCH_CONFIG_STORAGE_KEY = 'pvp.room.matchConfig.v1';
 
 	type CompletionRuleType = 'count' | 'percentage';
-	type ScoringMode = 'progress' | 'score';
+	type ScoringMode = 'progress' | 'score' | 'hp';
 	type StoredRoomMatchConfig = {
 		startTimeLimitMinutes?: number | string;
 		startTimeLimitSeconds?: number | string;
@@ -74,6 +74,8 @@
 		scoringMode?: ScoringMode | string;
 		targetScoreEnabled?: boolean;
 		targetScore?: number | string;
+		startingHp?: number | string;
+		finalizeAliveCount?: number | string;
 	};
 
 	let room: PvpRoom | null = null;
@@ -101,6 +103,8 @@
 	let scoringMode: ScoringMode = 'progress';
 	let targetScoreEnabled = false;
 	let targetScore = 1000;
+	let startingHp = 200;
+	let finalizeAliveCount = 1;
 	let loading = false;
 	let messagesLoading = false;
 	let actionLoading = '';
@@ -141,8 +145,8 @@
 		|| Boolean(activeMatchId)
 		|| !sharedLevelId
 		|| memberCount < 2
-		|| (scoringMode === 'score' && selectedLevelIsPlatformer);
-	$: if (selectedLevelIsPlatformer && scoringMode === 'score') {
+		|| (scoringMode !== 'progress' && selectedLevelIsPlatformer);
+	$: if (selectedLevelIsPlatformer && scoringMode !== 'progress') {
 		scoringMode = 'progress';
 	}
 	$: if (roomEditKey && roomEditKey !== syncedEditRoomKey && activeRoomTab !== 'edit') {
@@ -719,19 +723,23 @@
 
 		actionLoading = 'start-match';
 
-		try {
-			completionRuleValue = normalizedCompletionRuleValue();
-			targetScore = normalizedTargetScore();
+			try {
+				completionRuleValue = normalizedCompletionRuleValue();
+				targetScore = normalizedTargetScore();
+				startingHp = normalizedStartingHp();
+				finalizeAliveCount = normalizedFinalizeAliveCount();
 
-			const match = await startPvpRoomMatch(await $user.token(), id, {
-				levelId: sharedLevelId,
-				timeLimitSeconds: totalStartTimeLimitSeconds(),
-				completionRuleType,
-				completionRuleValue,
-				scoringMode,
-				targetScore: scoringMode === 'score' && targetScoreEnabled ? normalizedTargetScore() : null,
-				forceStart
-			});
+				const match = await startPvpRoomMatch(await $user.token(), id, {
+					levelId: sharedLevelId,
+					timeLimitSeconds: totalStartTimeLimitSeconds(),
+					completionRuleType,
+					completionRuleValue,
+					scoringMode,
+					targetScore: scoringMode === 'score' && targetScoreEnabled ? normalizedTargetScore() : null,
+					startingHp: scoringMode === 'hp' ? normalizedStartingHp() : null,
+					finalizeAliveCount: scoringMode === 'hp' ? normalizedFinalizeAliveCount() : null,
+					forceStart
+				});
 
 			saveMatchConfig();
 			forceStartDialogOpen = false;
@@ -783,11 +791,17 @@
 				config.completionRuleValue,
 				false
 			);
-			scoringMode = config.scoringMode === 'score' ? 'score' : 'progress';
-			targetScoreEnabled = Boolean(config.targetScoreEnabled);
-			targetScore = normalizedTargetScore(config.targetScore);
-		} catch {
-			return;
+				scoringMode = config.scoringMode === 'score'
+					? 'score'
+					: config.scoringMode === 'hp'
+					? 'hp'
+					: 'progress';
+				targetScoreEnabled = Boolean(config.targetScoreEnabled);
+				targetScore = normalizedTargetScore(config.targetScore);
+				startingHp = normalizedStartingHp(config.startingHp);
+				finalizeAliveCount = normalizedFinalizeAliveCount(config.finalizeAliveCount);
+			} catch {
+				return;
 		}
 	}
 
@@ -801,11 +815,13 @@
 				startTimeLimitMinutes: normalizedInteger(startTimeLimitMinutes, 0, 120, 15),
 				startTimeLimitSeconds: normalizedInteger(startTimeLimitSeconds, 0, 59, 0),
 				completionRuleType,
-				completionRuleValue: normalizedCompletionRuleValue(),
-				scoringMode,
-				targetScoreEnabled,
-				targetScore: normalizedTargetScore()
-			};
+					completionRuleValue: normalizedCompletionRuleValue(),
+					scoringMode,
+					targetScoreEnabled,
+					targetScore: normalizedTargetScore(),
+					startingHp: normalizedStartingHp(),
+					finalizeAliveCount: normalizedFinalizeAliveCount()
+				};
 
 			localStorage.setItem(ROOM_MATCH_CONFIG_STORAGE_KEY, JSON.stringify(config));
 		} catch {
@@ -857,6 +873,25 @@
 		return Math.max(
 			1,
 			Math.min(100000, Number.isFinite(numberValue) ? Math.floor(numberValue) : 1000)
+		);
+	}
+
+	function normalizedStartingHp(value: unknown = startingHp) {
+		const numberValue = Number(value);
+
+		return Math.max(
+			1,
+			Math.min(100000, Number.isFinite(numberValue) ? Math.floor(numberValue) : 200)
+		);
+	}
+
+	function normalizedFinalizeAliveCount(value: unknown = finalizeAliveCount) {
+		const numberValue = Number(value);
+		const max = Math.max(1, memberCount - 1);
+
+		return Math.max(
+			1,
+			Math.min(max, Number.isFinite(numberValue) ? Math.floor(numberValue) : 1)
 		);
 	}
 
@@ -1484,60 +1519,93 @@
                   />
                   <span>{completionRuleType === 'percentage' ? '%' : $_('pvp.rooms.players')}</span>
                 </div>
-              </div>
-              <div class="field-group">
-                <Label>Scoring mode</Label>
-                <div class="completion-toggle">
-                  <button
-                    type="button"
-                    class:active={scoringMode === 'progress'}
-                    on:click={() => (scoringMode = 'progress')}
-                  >
-                    Progress
-                  </button>
-                  <button
-                    type="button"
-                    class:active={scoringMode === 'score'}
-                    disabled={selectedLevelIsPlatformer}
-                    on:click={() => (scoringMode = 'score')}
-                  >
-                    Score
-                  </button>
-                </div>
-                {#if selectedLevelIsPlatformer}
-                  <small class="field-hint">Score mode is only supported on classic levels.</small>
-                {/if}
-              </div>
-              {#if scoringMode === 'score'}
-                <div class="field-group">
-                  <Label>Target score</Label>
-                  <div class="completion-toggle">
-                    <button
-                      type="button"
-                      class:active={!targetScoreEnabled}
-                      on:click={() => (targetScoreEnabled = false)}
-                    >
-                      Unlimited
-                    </button>
-                    <button
-                      type="button"
-                      class:active={targetScoreEnabled}
-                      on:click={() => (targetScoreEnabled = true)}
-                    >
-                      Target
-                    </button>
-                  </div>
-                  {#if targetScoreEnabled}
+	              </div>
+	              <div class="field-group">
+	                <Label>{$_('pvp.rooms.scoring_mode')}</Label>
+	                <div class="completion-toggle">
+	                  <button
+	                    type="button"
+	                    class:active={scoringMode === 'progress'}
+	                    on:click={() => (scoringMode = 'progress')}
+	                  >
+	                    {$_('pvp.rooms.mode_progress')}
+	                  </button>
+	                  <button
+	                    type="button"
+	                    class:active={scoringMode === 'score'}
+	                    disabled={selectedLevelIsPlatformer}
+	                    on:click={() => (scoringMode = 'score')}
+	                  >
+	                    {$_('pvp.rooms.mode_score')}
+	                  </button>
+	                  <button
+	                    type="button"
+	                    class:active={scoringMode === 'hp'}
+	                    disabled={selectedLevelIsPlatformer}
+	                    on:click={() => (scoringMode = 'hp')}
+	                  >
+	                    {$_('pvp.rooms.mode_hp')}
+	                  </button>
+	                </div>
+	                {#if selectedLevelIsPlatformer}
+	                  <small class="field-hint">{$_('pvp.rooms.score_hp_classic_only')}</small>
+	                {/if}
+	              </div>
+	              {#if scoringMode === 'score'}
+	                <div class="field-group">
+	                  <Label>{$_('pvp.rooms.target_score')}</Label>
+	                  <div class="completion-toggle">
+	                    <button
+	                      type="button"
+	                      class:active={!targetScoreEnabled}
+	                      on:click={() => (targetScoreEnabled = false)}
+	                    >
+	                      {$_('pvp.rooms.unlimited')}
+	                    </button>
+	                    <button
+	                      type="button"
+	                      class:active={targetScoreEnabled}
+	                      on:click={() => (targetScoreEnabled = true)}
+	                    >
+	                      {$_('pvp.rooms.target')}
+	                    </button>
+	                  </div>
+	                  {#if targetScoreEnabled}
                     <Input
                       bind:value={targetScore}
-                      min="1"
-                      max="100000"
-                      type="number"
-                      aria-label="Target score"
-                    />
-                  {/if}
-                </div>
-              {/if}
+	                      min="1"
+	                      max="100000"
+	                      type="number"
+	                      aria-label={$_('pvp.rooms.target_score')}
+	                    />
+	                  {/if}
+	                </div>
+	              {/if}
+	              {#if scoringMode === 'hp'}
+	                <div class="field-group">
+	                  <Label for="room-starting-hp">{$_('pvp.rooms.starting_hp')}</Label>
+	                  <Input
+	                    id="room-starting-hp"
+	                    bind:value={startingHp}
+	                    min="1"
+	                    max="100000"
+	                    type="number"
+	                  />
+	                </div>
+	                <div class="field-group">
+	                  <Label for="room-finalize-alive">{$_('pvp.rooms.finalize_alive_count')}</Label>
+	                  <div class="input-with-unit">
+	                    <Input
+	                      id="room-finalize-alive"
+	                      bind:value={finalizeAliveCount}
+	                      min="1"
+	                      max={Math.max(1, memberCount - 1)}
+	                      type="number"
+	                    />
+	                    <span>{$_('pvp.rooms.players')}</span>
+	                  </div>
+	                </div>
+	              {/if}
 
               <Button disabled={startDisabled} on:click={requestStartMatch}>
                 {#if actionLoading === 'start-match'}

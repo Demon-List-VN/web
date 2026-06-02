@@ -57,6 +57,7 @@
 	$: matchMode = getPvpMode(match);
 	$: scoringMode = match.scoringMode ?? match.scoring_mode ?? 'progress';
 	$: targetScore = match.targetScore ?? match.target_score ?? null;
+	$: startingHp = match.startingHp ?? match.starting_hp ?? null;
 	$: isRoomMatch = isPvpCustomRoomMatch(match) || participants.length > 2;
 	$: sortedParticipants = getPvpParticipantsSortedByProgress(participants, matchMode);
 	$: roomTitle = getPvpMatchRoomName(match) || $_('pvp.rooms.custom_room');
@@ -65,6 +66,12 @@
 		: scoringMode === 'score'
 		? Math.max(
 			Number(targetScore) || 0,
+			1,
+			...participants.map((participant) => getPvpProgress(participant))
+		)
+		: scoringMode === 'hp'
+		? Math.max(
+			Number(startingHp) || 0,
 			1,
 			...participants.map((participant) => getPvpProgress(participant))
 		)
@@ -331,7 +338,7 @@
                 <Badge variant="secondary">{$_('pvp.you')}</Badge>
               {/if}
             </div>
-            <strong>{formatPvpProgressValue(progress, matchMode, scoringMode, targetScore)}</strong>
+            <strong>{formatPvpProgressValue(progress, matchMode, scoringMode, targetScore, startingHp)}</strong>
             <div class="progress-track">
               <div
                 class="progress-bar self"
@@ -373,7 +380,7 @@
                 }</small>
               {/if}
             </span>
-            <strong>{formatPvpProgressValue(selfProgress, matchMode, scoringMode, targetScore)}</strong>
+            <strong>{formatPvpProgressValue(selfProgress, matchMode, scoringMode, targetScore, startingHp)}</strong>
           </div>
           <div class="progress-track">
             <div
@@ -405,7 +412,7 @@
                 }</small>
               {/if}
             </span>
-            <strong>{formatPvpProgressValue(opponentProgress, matchMode, scoringMode, targetScore)}</strong>
+            <strong>{formatPvpProgressValue(opponentProgress, matchMode, scoringMode, targetScore, startingHp)}</strong>
           </div>
           <div class="progress-track">
             <div

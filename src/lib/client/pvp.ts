@@ -4,7 +4,7 @@ export type PvpSelectionMode = PvpMode | 'event';
 export type PvpPlayMode = 'normal' | 'practice';
 export type PvpRoomVisibility = 'public' | 'private';
 export type PvpRoomCompletionRuleType = 'count' | 'percentage';
-export type PvpRoomScoringMode = 'progress' | 'score';
+export type PvpRoomScoringMode = 'progress' | 'score' | 'hp';
 
 export type PvpMatchStatus =
     | 'pending'
@@ -248,6 +248,10 @@ export type PvpMatch = {
     scoring_mode?: PvpRoomScoringMode | string | null;
     targetScore?: number | null;
     target_score?: number | null;
+    startingHp?: number | null;
+    starting_hp?: number | null;
+    finalizeAliveCount?: number | null;
+    finalize_alive_count?: number | null;
     timeLimitSeconds?: number | null;
     time_limit_seconds?: number | null;
     startedAt?: string | null;
@@ -1139,6 +1143,8 @@ export async function startPvpRoomMatch(
         completionRuleValue?: number | string | null;
         scoringMode?: PvpRoomScoringMode | string;
         targetScore?: number | string | null;
+        startingHp?: number | string | null;
+        finalizeAliveCount?: number | string | null;
         forceStart?: boolean;
     }
 ) {
@@ -1791,7 +1797,8 @@ export function formatPvpProgressValue(
     value: number,
     mode: PvpMode = 'classic',
     scoringMode: PvpRoomScoringMode | string = 'progress',
-    targetScore?: number | string | null
+    targetScore?: number | string | null,
+    startingHp?: number | string | null
 ) {
     if (mode === 'platformer') {
         return `${Math.max(0, Math.floor(value))} PT`;
@@ -1808,6 +1815,14 @@ export function formatPvpProgressValue(
         return Number.isFinite(target) && target > 0
             ? `${progress}/${Math.floor(target)}`
             : progress;
+    }
+
+    if (scoringMode === 'hp') {
+        const hp = Number(startingHp);
+
+        return Number.isFinite(hp) && hp > 0
+            ? `${progress}/${Math.floor(hp)} HP`
+            : `${progress} HP`;
     }
 
     return `${progress}%`;

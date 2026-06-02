@@ -156,6 +156,7 @@
 		mode: PvpMode;
 		scoringMode: PvpRoomScoringMode | string;
 		targetScore: number | string | null;
+		startingHp: number | string | null;
 	};
 
 	type DeathCountChartData = {
@@ -223,6 +224,7 @@
 	$: matchMode = getPvpMode(match);
 	$: scoringMode = match?.scoringMode ?? match?.scoring_mode ?? 'progress';
 	$: targetScore = match?.targetScore ?? match?.target_score ?? null;
+	$: startingHp = match?.startingHp ?? match?.starting_hp ?? null;
 	$: level = getPvpLevel(match);
 	$: banPick = getPvpBanPick(match);
 	$: banPickActions = Array.isArray(banPick?.actions) ? banPick.actions : [];
@@ -1564,6 +1566,10 @@
 		}
 	}
 
+	function normalizedScoringMode(value: unknown): PvpRoomScoringMode {
+		return value === 'score' || value === 'hp' ? value : 'progress';
+	}
+
 	function progressMessageEvent(
 		message: PvpMatchMessage,
 		mode: PvpMode = matchMode,
@@ -1576,9 +1582,7 @@
 		}
 
 		const metadata = messageMetadata(message);
-		const messageScoringMode = metadataText(metadata, 'scoringMode') === 'score'
-			? 'score'
-			: 'progress';
+		const messageScoringMode = normalizedScoringMode(metadataText(metadata, 'scoringMode'));
 		const uid = metadataText(metadata, 'uid');
 		const progress = metadataNumber(metadata, 'progress');
 		const timeMs = getTimeMs(message.created_at);
@@ -1587,17 +1591,20 @@
 			return null;
 		}
 
-		if (currentScoringMode === 'score' && messageScoringMode !== 'score') {
+		if (
+			(currentScoringMode === 'score' || currentScoringMode === 'hp')
+			&& messageScoringMode !== currentScoringMode
+		) {
 			return null;
 		}
 
 		return {
 			uid,
 			progress: mode === 'platformer'
-				? Math.max(0, Math.floor(progress))
-				: currentScoringMode === 'score'
-				? Math.max(0, progress)
-				: Math.max(0, Math.min(100, progress)),
+					? Math.max(0, Math.floor(progress))
+					: currentScoringMode === 'score' || currentScoringMode === 'hp'
+					? Math.max(0, progress)
+					: Math.max(0, Math.min(100, progress)),
 			timeMs
 		};
 	}
@@ -1663,8 +1670,11 @@
 		nowMs = now,
 		matchStatus = status
 	): ProgressGraphData {
-		const currentScoringMode = sourceMatch?.scoringMode ?? sourceMatch?.scoring_mode ?? scoringMode;
+		const currentScoringMode = normalizedScoringMode(
+			sourceMatch?.scoringMode ?? sourceMatch?.scoring_mode ?? scoringMode
+		);
 		const currentTargetScore = sourceMatch?.targetScore ?? sourceMatch?.target_score ?? targetScore;
+		const currentStartingHp = sourceMatch?.startingHp ?? sourceMatch?.starting_hp ?? startingHp;
 		const progressMessages = messagesAfterLatestLevelChange(sourceMessages);
 		const series = items.slice(0, 2)
 			.map((participant, index) => ({
@@ -1750,6 +1760,8 @@
 			? Math.max(1, maxProgress)
 			: currentScoringMode === 'score'
 			? Math.max(1, Number(currentTargetScore) || 0, maxProgress)
+			: currentScoringMode === 'hp'
+			? Math.max(1, Number(currentStartingHp) || 0, maxProgress)
 			: 100;
 		const modeLaneGap = maxY * 0.06;
 		const modeLaneOne = -modeLaneGap;
@@ -1781,11 +1793,12 @@
 			minX: 0,
 			maxX,
 			minY,
-			maxY,
-			mode,
-			scoringMode: currentScoringMode,
-			targetScore: currentTargetScore
-		};
+				maxY,
+				mode,
+				scoringMode: currentScoringMode,
+				targetScore: currentTargetScore,
+				startingHp: currentStartingHp
+			};
 	}
 
 	function getProgressGraphEndMs(
@@ -2109,22 +2122,24 @@
 				const mode = metadataText(metadata, 'mode') === 'platformer'
 					? 'platformer'
 					: matchMode;
-				const currentScoringMode = metadataText(metadata, 'scoringMode') === 'score'
-					? 'score'
-					: 'progress';
-				const currentTargetScore = metadataNumber(metadata, 'targetScore') ?? targetScore;
-				const formattedProgress = formatPvpProgressValue(
-					progress,
-					mode,
-					currentScoringMode,
-					currentTargetScore
-				);
-				content = $_(
-					mode === 'platformer'
-						? 'pvp.system_message.progress_platformer'
-						: currentScoringMode === 'score'
-						? 'pvp.system_message.progress_score'
-						: 'pvp.system_message.progress',
+					const currentScoringMode = normalizedScoringMode(metadataText(metadata, 'scoringMode'));
+					const currentTargetScore = metadataNumber(metadata, 'targetScore') ?? targetScore;
+					const currentStartingHp = metadataNumber(metadata, 'startingHp') ?? startingHp;
+					const formattedProgress = formatPvpProgressValue(
+						progress,
+						mode,
+						currentScoringMode,
+						currentTargetScore,
+						currentStartingHp
+					);
+					content = $_(
+						mode === 'platformer'
+							? 'pvp.system_message.progress_platformer'
+							: currentScoringMode === 'score'
+							? 'pvp.system_message.progress_score'
+							: currentScoringMode === 'hp'
+							? 'pvp.system_message.progress_hp'
+							: 'pvp.system_message.progress',
 					{
 						values: {
 							player: systemParticipantName(
@@ -2427,6 +2442,8 @@
 
 		return data.scoringMode === 'score'
 			? $_('pvp.progress_graph.score_axis')
+			: data.scoringMode === 'hp'
+			? $_('pvp.progress_graph.hp_axis')
 			: $_('pvp.progress_graph.progress_axis');
 	}
 
@@ -2437,6 +2454,10 @@
 
 		if (data.mode === 'platformer' || data.scoringMode === 'score') {
 			return String(value);
+		}
+
+		if (data.scoringMode === 'hp') {
+			return `${value} HP`;
 		}
 
 		return `${value}%`;
@@ -2629,7 +2650,13 @@
 			}
 
 			return `${context.dataset.label}: ${
-				formatPvpProgressValue(context.parsed.y, data.mode, scoringMode, targetScore)
+				formatPvpProgressValue(
+					context.parsed.y,
+					data.mode,
+					data.scoringMode,
+					data.targetScore,
+					data.startingHp
+				)
 			}`;
 		};
 	}
@@ -3207,11 +3234,12 @@
                         <div class="progress-label">
                           <span>{
                             formatPvpProgressValue(
-                              getPvpProgress(participant),
-                              matchMode,
-                              scoringMode,
-                              targetScore
-                            )
+	                              getPvpProgress(participant),
+	                              matchMode,
+	                              scoringMode,
+	                              targetScore,
+	                              startingHp
+	                            )
                           }</span>
                           <span>
                             <Gauge class="h-3.5 w-3.5" />
