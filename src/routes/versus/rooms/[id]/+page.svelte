@@ -723,23 +723,26 @@
 
 		actionLoading = 'start-match';
 
-			try {
+		try {
+			if (scoringMode !== 'hp') {
 				completionRuleValue = normalizedCompletionRuleValue();
-				targetScore = normalizedTargetScore();
-				startingHp = normalizedStartingHp();
-				finalizeAliveCount = normalizedFinalizeAliveCount();
+			}
 
-				const match = await startPvpRoomMatch(await $user.token(), id, {
-					levelId: sharedLevelId,
-					timeLimitSeconds: totalStartTimeLimitSeconds(),
-					completionRuleType,
-					completionRuleValue,
-					scoringMode,
-					targetScore: scoringMode === 'score' && targetScoreEnabled ? normalizedTargetScore() : null,
-					startingHp: scoringMode === 'hp' ? normalizedStartingHp() : null,
-					finalizeAliveCount: scoringMode === 'hp' ? normalizedFinalizeAliveCount() : null,
-					forceStart
-				});
+			targetScore = normalizedTargetScore();
+			startingHp = normalizedStartingHp();
+			finalizeAliveCount = normalizedFinalizeAliveCount();
+
+			const match = await startPvpRoomMatch(await $user.token(), id, {
+				levelId: sharedLevelId,
+				timeLimitSeconds: totalStartTimeLimitSeconds(),
+				completionRuleType: scoringMode === 'hp' ? undefined : completionRuleType,
+				completionRuleValue: scoringMode === 'hp' ? undefined : completionRuleValue,
+				scoringMode,
+				targetScore: scoringMode === 'score' && targetScoreEnabled ? normalizedTargetScore() : null,
+				startingHp: scoringMode === 'hp' ? normalizedStartingHp() : null,
+				finalizeAliveCount: scoringMode === 'hp' ? normalizedFinalizeAliveCount() : null,
+				forceStart
+			});
 
 			saveMatchConfig();
 			forceStartDialogOpen = false;
@@ -794,16 +797,16 @@
 				scoringMode = config.scoringMode === 'score'
 					? 'score'
 					: config.scoringMode === 'hp'
-					? 'hp'
-					: 'progress';
+						? 'hp'
+						: 'progress';
 				targetScoreEnabled = Boolean(config.targetScoreEnabled);
 				targetScore = normalizedTargetScore(config.targetScore);
 				startingHp = normalizedStartingHp(config.startingHp);
 				finalizeAliveCount = normalizedFinalizeAliveCount(config.finalizeAliveCount);
 			} catch {
 				return;
+			}
 		}
-	}
 
 	function saveMatchConfig() {
 		if (!browser) {
@@ -811,10 +814,10 @@
 		}
 
 		try {
-			const config: StoredRoomMatchConfig = {
-				startTimeLimitMinutes: normalizedInteger(startTimeLimitMinutes, 0, 120, 15),
-				startTimeLimitSeconds: normalizedInteger(startTimeLimitSeconds, 0, 59, 0),
-				completionRuleType,
+				const config: StoredRoomMatchConfig = {
+					startTimeLimitMinutes: normalizedInteger(startTimeLimitMinutes, 0, 120, 15),
+					startTimeLimitSeconds: normalizedInteger(startTimeLimitSeconds, 0, 59, 0),
+					completionRuleType,
 					completionRuleValue: normalizedCompletionRuleValue(),
 					scoringMode,
 					targetScoreEnabled,
@@ -1488,38 +1491,6 @@
                   </div>
                 </div>
               </div>
-              <div class="field-group">
-                <Label>{$_('pvp.rooms.completion_rule')}</Label>
-                <div class="completion-toggle">
-                  <button
-                    type="button"
-                    class:active={completionRuleType === 'count'}
-                    on:click={() => setCompletionRule('count')}
-                  >
-                    {$_('pvp.rooms.rule_count')}
-                  </button>
-                  <button
-                    type="button"
-                    class:active={completionRuleType === 'percentage'}
-                    on:click={() => setCompletionRule('percentage')}
-                  >
-                    {$_('pvp.rooms.rule_percentage')}
-                  </button>
-                </div>
-              </div>
-              <div class="field-group">
-                <Label for="room-completion-value">{$_('pvp.rooms.completion_value')}</Label>
-                <div class="input-with-unit">
-                  <Input
-                    id="room-completion-value"
-                    bind:value={completionRuleValue}
-                    min="1"
-                    max={completionRuleType === 'percentage' ? 100 : memberCount}
-                    type="number"
-                  />
-                  <span>{completionRuleType === 'percentage' ? '%' : $_('pvp.rooms.players')}</span>
-                </div>
-	              </div>
 	              <div class="field-group">
 	                <Label>{$_('pvp.rooms.scoring_mode')}</Label>
 	                <div class="completion-toggle">
@@ -1551,6 +1522,42 @@
 	                  <small class="field-hint">{$_('pvp.rooms.score_hp_classic_only')}</small>
 	                {/if}
 	              </div>
+
+	              {#if scoringMode !== 'hp'}
+	                <div class="field-group">
+	                  <Label>{$_('pvp.rooms.completion_rule')}</Label>
+	                  <div class="completion-toggle">
+	                    <button
+	                      type="button"
+	                      class:active={completionRuleType === 'count'}
+	                      on:click={() => setCompletionRule('count')}
+	                    >
+	                      {$_('pvp.rooms.rule_count')}
+	                    </button>
+	                    <button
+	                      type="button"
+	                      class:active={completionRuleType === 'percentage'}
+	                      on:click={() => setCompletionRule('percentage')}
+	                    >
+	                      {$_('pvp.rooms.rule_percentage')}
+	                    </button>
+	                  </div>
+	                </div>
+	                <div class="field-group">
+	                  <Label for="room-completion-value">{$_('pvp.rooms.completion_value')}</Label>
+	                  <div class="input-with-unit">
+	                    <Input
+	                      id="room-completion-value"
+	                      bind:value={completionRuleValue}
+	                      min="1"
+	                      max={completionRuleType === 'percentage' ? 100 : memberCount}
+	                      type="number"
+	                    />
+	                    <span>{completionRuleType === 'percentage' ? '%' : $_('pvp.rooms.players')}</span>
+	                  </div>
+	                </div>
+	              {/if}
+
 	              {#if scoringMode === 'score'}
 	                <div class="field-group">
 	                  <Label>{$_('pvp.rooms.target_score')}</Label>
@@ -1571,8 +1578,8 @@
 	                    </button>
 	                  </div>
 	                  {#if targetScoreEnabled}
-                    <Input
-                      bind:value={targetScore}
+	                    <Input
+	                      bind:value={targetScore}
 	                      min="1"
 	                      max="100000"
 	                      type="number"
@@ -1581,6 +1588,7 @@
 	                  {/if}
 	                </div>
 	              {/if}
+
 	              {#if scoringMode === 'hp'}
 	                <div class="field-group">
 	                  <Label for="room-starting-hp">{$_('pvp.rooms.starting_hp')}</Label>
