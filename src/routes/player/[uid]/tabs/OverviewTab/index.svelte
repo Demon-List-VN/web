@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { getTitle } from '$lib/client';
-	import { getExpLevel } from '$lib/client/getExpLevel';
+	import { getExpLevel, getLevelBadgeCounts } from '$lib/client/getExpLevel';
 	import {
 		getPvpParticipantRatingAfter,
 		getPvpParticipantRatingBefore,
@@ -63,8 +63,6 @@
 	const PVP_MODES: PvpMode[] = ['classic', 'platformer'];
 	const EXP_PER_LEVEL = 100;
 	const LEVELS_PER_EXP_STAR = 5;
-	const STARS_PER_DIAMOND = 5;
-	const DIAMONDS_PER_CROWN = 5;
 	const eloRankBands = [
 		{ min: 3500, max: Infinity, color: 'rgba(170, 0, 0, 0.15)' },
 		{ min: 3000, max: 3500, color: 'rgba(255, 51, 51, 0.15)' },
@@ -148,7 +146,7 @@
 		: null;
 	$: exp = player.exp + player.extraExp;
 	$: expLevel = getExpLevel(exp);
-	$: expTierCounts = getExpTierCounts(expLevel.level);
+	$: expTierCounts = getLevelBadgeCounts(expLevel.level);
 	$: nextStarProgress = getNextStarProgress(exp, expLevel.level);
 	$: contestTitle = getTitle('elo', player);
 	$: pvpRequiredSubmission = (
@@ -206,18 +204,6 @@
 		const normalizedLevel = Math.max(1, Math.floor(Number(level) || 1));
 
 		return (normalizedLevel - 1) * EXP_PER_LEVEL;
-	}
-
-	function getExpTierCounts(level: number) {
-		const normalizedLevel = Math.max(0, Math.floor(Number(level) || 0));
-		const totalStars = Math.floor(normalizedLevel / LEVELS_PER_EXP_STAR);
-		const totalDiamonds = Math.floor(totalStars / STARS_PER_DIAMOND);
-
-		return {
-			crowns: Math.floor(totalDiamonds / DIAMONDS_PER_CROWN),
-			diamonds: totalDiamonds % DIAMONDS_PER_CROWN,
-			stars: totalStars % STARS_PER_DIAMOND
-		};
 	}
 
 	function getNextStarProgress(exp: number, level: number) {

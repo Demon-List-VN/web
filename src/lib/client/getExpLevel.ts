@@ -84,7 +84,7 @@ export function getPlayerExpLevelStyle(
 
 export function getLevelBadgeCounts(level: number) {
     const normalizedLevel = Math.max(0, Math.floor(Number(level) || 0));
-    const totalStars = Math.floor(normalizedLevel / 10);
+    const totalStars = Math.floor(normalizedLevel / 5);
     const totalDiamonds = Math.floor(totalStars / 5);
 
     return {
