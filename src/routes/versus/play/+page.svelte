@@ -3017,33 +3017,36 @@
         {/if}
 
         {#if activePvpEvent}
-          <section
-            class="pvp-event-banner"
-            style={getPvpEventBannerUrl(activePvpEvent)
-              ? `background-image: linear-gradient(90deg, rgba(8, 12, 20, 0.88), rgba(8, 12, 20, 0.58)), url('${getPvpEventBannerUrl(activePvpEvent)}')`
-              : ''}
-          >
-            <div class="pvp-event-banner-main">
-              <Badge>{$_('pvp.event_mode')}</Badge>
-              <div>
-                <h2>{getPvpEventTitle(activePvpEvent)}</h2>
-                {#if activePvpEvent.description}
-                  <p>{activePvpEvent.description}</p>
-                {/if}
+          {#if getPvpEventBannerUrl(activePvpEvent)}
+            <img
+              class="pvp-event-banner-image"
+              src={getPvpEventBannerUrl(activePvpEvent)}
+              alt={getPvpEventTitle(activePvpEvent)}
+            />
+          {:else}
+            <section class="pvp-event-banner">
+              <div class="pvp-event-banner-main">
+                <Badge>{$_('pvp.event_mode')}</Badge>
+                <div>
+                  <h2>{getPvpEventTitle(activePvpEvent)}</h2>
+                  {#if activePvpEvent.description}
+                    <p>{activePvpEvent.description}</p>
+                  {/if}
+                </div>
               </div>
-            </div>
-            <div class="pvp-event-banner-meta">
-              <Badge variant="outline">
-                {$_(`pvp.mode.${activePvpEventBaseMode}`)}
-              </Badge>
-              {#if getPvpEventEndsMs(activePvpEvent)}
-                <span>{remainingLabel(getPvpEventEndsMs(activePvpEvent), now)}</span>
-              {/if}
-              <Button size="sm" variant="outline" href={getPvpEventListUrl(activePvpEvent)}>
-                {$_('pvp.event_view_pool')}
-              </Button>
-            </div>
-          </section>
+              <div class="pvp-event-banner-meta">
+                <Badge variant="outline">
+                  {$_(`pvp.mode.${activePvpEventBaseMode}`)}
+                </Badge>
+                {#if getPvpEventEndsMs(activePvpEvent)}
+                  <span>{remainingLabel(getPvpEventEndsMs(activePvpEvent), now)}</span>
+                {/if}
+                <Button size="sm" variant="outline" href={getPvpEventListUrl(activePvpEvent)}>
+                  {$_('pvp.event_view_pool')}
+                </Button>
+              </div>
+            </section>
+          {/if}
         {/if}
 
         <section class="rating-start-section">
@@ -3237,10 +3240,7 @@
               <Card.Title>{$_('pvp.options')}</Card.Title>
             </Card.Header>
             <Card.Content>
-              <div class="anonymous-row">
-                <div>
-                  <strong>{$_('pvp.mode_label')}</strong>
-                </div>
+              <div class="anonymous-row mode-toggle-row">
                 <div
                   class="mode-toggle-group"
                   aria-label={$_('pvp.mode_label')}
@@ -4068,10 +4068,17 @@ h1 {
   line-height: 1.35;
 }
 
+.mode-toggle-row {
+  border: 0;
+  padding: 0;
+}
+
 .mode-toggle-group {
-  display: inline-grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: grid;
+  grid-auto-columns: minmax(92px, 1fr);
+  grid-auto-flow: column;
   min-width: 190px;
+  width: 100%;
   overflow: hidden;
   border: 1px solid hsl(var(--border));
   border-radius: 8px;
@@ -4143,6 +4150,16 @@ h1 {
   background-size: cover;
   padding: 18px;
   color: hsl(var(--background));
+}
+
+.pvp-event-banner-image {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  margin-bottom: 16px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  object-fit: cover;
 }
 
 .pvp-event-banner-main,
@@ -4334,6 +4351,11 @@ h1 {
   }
 
   :global(.mode-filter-list) {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .mode-toggle-group {
     width: 100%;
     min-width: 0;
   }
