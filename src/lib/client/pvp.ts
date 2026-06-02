@@ -183,9 +183,26 @@ export type PvpEvent = {
     endsAt?: string | null;
     ends_at?: string | null;
     enabled?: boolean;
+    ranked?: boolean;
+    isRanked?: boolean;
+    is_ranked?: boolean;
     mode?: PvpMode | string;
     baseMode?: PvpMode | string;
     base_mode?: PvpMode | string;
+    completionRuleType?: PvpRoomCompletionRuleType | string | null;
+    completion_rule_type?: PvpRoomCompletionRuleType | string | null;
+    completionRuleValue?: number | null;
+    completion_rule_value?: number | null;
+    scoringMode?: PvpRoomScoringMode | string | null;
+    scoring_mode?: PvpRoomScoringMode | string | null;
+    targetScore?: number | null;
+    target_score?: number | null;
+    startingHp?: number | null;
+    starting_hp?: number | null;
+    finalizeAliveCount?: number | null;
+    finalize_alive_count?: number | null;
+    timeLimitSeconds?: number | null;
+    time_limit_seconds?: number | null;
     list?: Record<string, unknown> | null;
     lists?: Record<string, unknown> | null;
     [key: string]: unknown;
@@ -199,6 +216,14 @@ export type AdminPvpEventPayload = {
     startsAt: string;
     endsAt?: string | null;
     enabled?: boolean;
+    ranked?: boolean;
+    timeLimitSeconds?: number | null;
+    completionRuleType?: PvpRoomCompletionRuleType | string | null;
+    completionRuleValue?: number | null;
+    scoringMode?: PvpRoomScoringMode | string | null;
+    targetScore?: number | null;
+    startingHp?: number | null;
+    finalizeAliveCount?: number | null;
 };
 
 export type PvpMatch = {

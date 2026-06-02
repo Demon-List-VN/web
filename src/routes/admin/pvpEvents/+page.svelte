@@ -19,6 +19,8 @@
 	import { toast } from 'svelte-sonner';
 	import { CalendarDays, Loader2, Plus, RefreshCw, Save, Trash2, X } from 'lucide-svelte';
 
+	type CompletionRuleType = 'count' | 'percentage';
+	type ScoringMode = 'progress' | 'score' | 'hp';
 	type PvpEventForm = {
 		title: string;
 		description: string;
@@ -27,6 +29,16 @@
 		startsAt: string;
 		endsAt: string;
 		enabled: boolean;
+		ranked: boolean;
+		startTimeLimitMinutes: number;
+		startTimeLimitSeconds: number;
+		completionRuleType: CompletionRuleType;
+		completionRuleValue: number;
+		scoringMode: ScoringMode;
+		targetScoreEnabled: boolean;
+		targetScore: number;
+		startingHp: number;
+		finalizeAliveCount: number;
 	};
 
 	const emptyForm: PvpEventForm = {
@@ -36,7 +48,17 @@
 		listId: '',
 		startsAt: '',
 		endsAt: '',
-		enabled: true
+		enabled: true,
+		ranked: true,
+		startTimeLimitMinutes: 15,
+		startTimeLimitSeconds: 0,
+		completionRuleType: 'count',
+		completionRuleValue: 1,
+		scoringMode: 'progress',
+		targetScoreEnabled: false,
+		targetScore: 1000,
+		startingHp: 200,
+		finalizeAliveCount: 1
 	};
 
 	let events: PvpEvent[] = [];
@@ -133,6 +155,51 @@
 			: 'Classic';
 	}
 
+	function eventScoringMode(event: PvpEvent): ScoringMode {
+		const value = event.scoringMode ?? event.scoring_mode;
+
+		return value === 'score'
+			? 'score'
+			: value === 'hp'
+			? 'hp'
+			: 'progress';
+	}
+
+	function eventRanked(event: PvpEvent) {
+		return Boolean(event.ranked ?? event.isRanked ?? event.is_ranked ?? true);
+	}
+
+	function eventTimeLimitSeconds(event: PvpEvent) {
+		return normalizedInteger(event.timeLimitSeconds ?? event.time_limit_seconds, 1, 7200, 900);
+	}
+
+	function eventConfigSummary(event: PvpEvent) {
+		const scoringMode = eventScoringMode(event);
+		const timeLimitSeconds = eventTimeLimitSeconds(event);
+		const minutes = Math.floor(timeLimitSeconds / 60);
+		const seconds = timeLimitSeconds % 60;
+		const timeLabel = seconds ? `${minutes}m ${seconds}s` : `${minutes}m`;
+
+		if (scoringMode === 'score') {
+			const target = event.targetScore ?? event.target_score;
+
+			return `Score - ${timeLabel}${target ? ` - target ${target}` : ' - unlimited'}`;
+		}
+
+		if (scoringMode === 'hp') {
+			const hp = event.startingHp ?? event.starting_hp ?? 200;
+			const alive = event.finalizeAliveCount ?? event.finalize_alive_count ?? 1;
+
+			return `HP - ${timeLabel} - ${hp} HP - finalize ${alive} alive`;
+		}
+
+		const ruleType = event.completionRuleType ?? event.completion_rule_type;
+		const ruleValue = event.completionRuleValue ?? event.completion_rule_value ?? 1;
+		const ruleLabel = ruleType === 'percentage' ? `${ruleValue}%` : `${ruleValue} player`;
+
+		return `Progress - ${timeLabel} - ${ruleLabel}`;
+	}
+
 	function eventStatus(event: PvpEvent) {
 		if (!event.enabled) {
 			return 'Disabled';
@@ -164,6 +231,7 @@
 	function buildPayload(): AdminPvpEventPayload {
 		const startsAt = toIso(form.startsAt);
 		const endsAt = toIso(form.endsAt);
+		const scoringMode = normalizedScoringMode();
 
 		if (!startsAt) {
 			throw new Error('Start time is required.');
@@ -176,7 +244,15 @@
 			listId: formListId,
 			startsAt,
 			endsAt,
-			enabled: form.enabled
+			enabled: form.enabled,
+			ranked: form.ranked,
+			timeLimitSeconds: totalStartTimeLimitSeconds(),
+			completionRuleType: scoringMode === 'hp' ? null : form.completionRuleType,
+			completionRuleValue: scoringMode === 'hp' ? null : normalizedCompletionRuleValue(),
+			scoringMode,
+			targetScore: scoringMode === 'score' && form.targetScoreEnabled ? normalizedTargetScore() : null,
+			startingHp: scoringMode === 'hp' ? normalizedStartingHp() : null,
+			finalizeAliveCount: scoringMode === 'hp' ? normalizedFinalizeAliveCount() : null
 		};
 	}
 
@@ -194,8 +270,144 @@
 			listId: String(eventListId(event) || ''),
 			startsAt: toDatetimeLocal(event.startsAt ?? event.starts_at),
 			endsAt: toDatetimeLocal(event.endsAt ?? event.ends_at),
-			enabled: event.enabled !== false
+			enabled: event.enabled !== false,
+			ranked: eventRanked(event),
+			...formMatchConfigFromEvent(event)
 		};
+	}
+
+	function resetMatchConfig() {
+		form = {
+			...form,
+			startTimeLimitMinutes: emptyForm.startTimeLimitMinutes,
+			startTimeLimitSeconds: emptyForm.startTimeLimitSeconds,
+			ranked: emptyForm.ranked,
+			completionRuleType: emptyForm.completionRuleType,
+			completionRuleValue: emptyForm.completionRuleValue,
+			scoringMode: emptyForm.scoringMode,
+			targetScoreEnabled: emptyForm.targetScoreEnabled,
+			targetScore: emptyForm.targetScore,
+			startingHp: emptyForm.startingHp,
+			finalizeAliveCount: emptyForm.finalizeAliveCount
+		};
+	}
+
+	function formMatchConfigFromEvent(event: PvpEvent): Pick<
+		PvpEventForm,
+		| 'startTimeLimitMinutes'
+		| 'startTimeLimitSeconds'
+		| 'completionRuleType'
+		| 'completionRuleValue'
+		| 'scoringMode'
+		| 'targetScoreEnabled'
+		| 'targetScore'
+		| 'startingHp'
+		| 'finalizeAliveCount'
+	> {
+		const timeLimitSeconds = eventTimeLimitSeconds(event);
+		const completionRuleType = event.completionRuleType === 'percentage'
+			|| event.completion_rule_type === 'percentage'
+			? 'percentage'
+			: 'count';
+		const scoringMode = eventScoringMode(event);
+		const targetScore = event.targetScore ?? event.target_score;
+
+		return {
+			startTimeLimitMinutes: Math.floor(timeLimitSeconds / 60),
+			startTimeLimitSeconds: timeLimitSeconds % 60,
+			completionRuleType,
+			completionRuleValue: normalizedCompletionRuleValue(
+				completionRuleType,
+				event.completionRuleValue ?? event.completion_rule_value
+			),
+			scoringMode,
+			targetScoreEnabled: targetScore !== null && targetScore !== undefined,
+			targetScore: normalizedTargetScore(targetScore),
+			startingHp: normalizedStartingHp(event.startingHp ?? event.starting_hp),
+			finalizeAliveCount: normalizedFinalizeAliveCount(
+				event.finalizeAliveCount ?? event.finalize_alive_count
+			)
+		};
+	}
+
+	function setCompletionRule(nextType: CompletionRuleType) {
+		form = {
+			...form,
+			completionRuleType: nextType,
+			completionRuleValue: nextType === 'percentage' ? 100 : 1
+		};
+	}
+
+	function setScoringMode(nextMode: ScoringMode) {
+		form = {
+			...form,
+			scoringMode: nextMode
+		};
+	}
+
+	function totalStartTimeLimitSeconds() {
+		return Math.max(
+			1,
+			(normalizedInteger(form.startTimeLimitMinutes, 0, 120, 15) * 60)
+				+ normalizedInteger(form.startTimeLimitSeconds, 0, 59, 0)
+		);
+	}
+
+	function normalizedScoringMode(): ScoringMode {
+		return form.scoringMode === 'score'
+			? 'score'
+			: form.scoringMode === 'hp'
+			? 'hp'
+			: 'progress';
+	}
+
+	function normalizedCompletionRuleValue(
+		type: CompletionRuleType = form.completionRuleType,
+		value: unknown = form.completionRuleValue
+	) {
+		const numberValue = Number(value);
+		const fallback = type === 'percentage' ? 100 : 1;
+		const rounded = Number.isFinite(numberValue) ? Math.floor(numberValue) : fallback;
+		const upperBound = type === 'percentage' ? 100 : 2;
+
+		return Math.max(1, Math.min(upperBound, rounded));
+	}
+
+	function normalizedInteger(value: unknown, min: number, max: number, fallback: number) {
+		const numberValue = Number(value);
+
+		if (!Number.isFinite(numberValue)) {
+			return fallback;
+		}
+
+		return Math.max(min, Math.min(max, Math.floor(numberValue)));
+	}
+
+	function normalizedTargetScore(value: unknown = form.targetScore) {
+		const numberValue = Number(value);
+
+		return Math.max(
+			1,
+			Math.min(100000, Number.isFinite(numberValue) ? Math.floor(numberValue) : 1000)
+		);
+	}
+
+	function normalizedStartingHp(value: unknown = form.startingHp) {
+		const numberValue = Number(value);
+
+		return Math.max(
+			1,
+			Math.min(100000, Number.isFinite(numberValue) ? Math.floor(numberValue) : 200)
+		);
+	}
+
+	function normalizedFinalizeAliveCount(value: unknown = form.finalizeAliveCount) {
+		const numberValue = Number(value);
+
+		return Math.max(
+			1,
+			Math.min(100, Number.isFinite(numberValue) ? Math.floor(numberValue) : 1)
+		);
 	}
 
 	async function loadEvents() {
@@ -356,6 +568,182 @@
           <span>Enabled</span>
         </label>
 
+        <div class="match-config-panel">
+          <div class="section-head">
+            <div>
+              <h3>Match config</h3>
+              <p>Matches created from this event queue will use these rules.</p>
+            </div>
+            <Button variant="outline" size="sm" on:click={resetMatchConfig}>
+              Reset to Classic
+            </Button>
+          </div>
+
+          <div class="field">
+            <Label>Match length</Label>
+            <div class="time-grid">
+              <div class="input-with-unit">
+                <Input
+                  bind:value={form.startTimeLimitMinutes}
+                  min="0"
+                  max="120"
+                  type="number"
+                  aria-label="Minutes"
+                />
+                <span>min</span>
+              </div>
+              <div class="input-with-unit">
+                <Input
+                  bind:value={form.startTimeLimitSeconds}
+                  min="0"
+                  max="59"
+                  type="number"
+                  aria-label="Seconds"
+                />
+                <span>sec</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <Label>Rating</Label>
+            <div class="segmented-control two-option">
+              <button
+                type="button"
+                class:active={form.ranked}
+                on:click={() => (form.ranked = true)}
+              >
+                Ranked
+              </button>
+              <button
+                type="button"
+                class:active={!form.ranked}
+                on:click={() => (form.ranked = false)}
+              >
+                Unranked
+              </button>
+            </div>
+          </div>
+
+          <div class="field">
+            <Label>Scoring mode</Label>
+            <div class="segmented-control">
+              <button
+                type="button"
+                class:active={form.scoringMode === 'progress'}
+                on:click={() => setScoringMode('progress')}
+              >
+                Progress
+              </button>
+              <button
+                type="button"
+                class:active={form.scoringMode === 'score'}
+                on:click={() => setScoringMode('score')}
+              >
+                Score
+              </button>
+              <button
+                type="button"
+                class:active={form.scoringMode === 'hp'}
+                on:click={() => setScoringMode('hp')}
+              >
+                HP
+              </button>
+            </div>
+          </div>
+
+          {#if form.scoringMode !== 'hp'}
+            <div class="field">
+              <Label>Completion rule</Label>
+              <div class="segmented-control">
+                <button
+                  type="button"
+                  class:active={form.completionRuleType === 'count'}
+                  on:click={() => setCompletionRule('count')}
+                >
+                  Count
+                </button>
+                <button
+                  type="button"
+                  class:active={form.completionRuleType === 'percentage'}
+                  on:click={() => setCompletionRule('percentage')}
+                >
+                  Percentage
+                </button>
+              </div>
+            </div>
+            <div class="field">
+              <Label for="pvp-event-completion-value">Completion value</Label>
+              <div class="input-with-unit">
+                <Input
+                  id="pvp-event-completion-value"
+                  bind:value={form.completionRuleValue}
+                  min="1"
+                  max={form.completionRuleType === 'percentage' ? 100 : 2}
+                  type="number"
+                />
+                <span>{form.completionRuleType === 'percentage' ? '%' : 'players'}</span>
+              </div>
+            </div>
+          {/if}
+
+          {#if form.scoringMode === 'score'}
+            <div class="field">
+              <Label>Target score</Label>
+              <div class="segmented-control">
+                <button
+                  type="button"
+                  class:active={!form.targetScoreEnabled}
+                  on:click={() => (form.targetScoreEnabled = false)}
+                >
+                  Unlimited
+                </button>
+                <button
+                  type="button"
+                  class:active={form.targetScoreEnabled}
+                  on:click={() => (form.targetScoreEnabled = true)}
+                >
+                  Target
+                </button>
+              </div>
+              {#if form.targetScoreEnabled}
+                <Input
+                  bind:value={form.targetScore}
+                  min="1"
+                  max="100000"
+                  type="number"
+                  aria-label="Target score"
+                />
+              {/if}
+            </div>
+          {/if}
+
+          {#if form.scoringMode === 'hp'}
+            <div class="field two-col">
+              <div>
+                <Label for="pvp-event-starting-hp">Starting HP</Label>
+                <Input
+                  id="pvp-event-starting-hp"
+                  bind:value={form.startingHp}
+                  min="1"
+                  max="100000"
+                  type="number"
+                />
+              </div>
+              <div>
+                <Label for="pvp-event-finalize-alive">Finalize alive count</Label>
+                <Input
+                  id="pvp-event-finalize-alive"
+                  bind:value={form.finalizeAliveCount}
+                  min="1"
+                  max="100"
+                  type="number"
+                />
+              </div>
+            </div>
+          {/if}
+        </div>
+
         <div class="form-actions">
           <Button disabled={!canSave} on:click={saveEvent}>
             {#if saving}
@@ -405,6 +793,9 @@
                 <div class="badges">
                   <Badge variant={statusVariant(status)}>{status}</Badge>
                   <Badge variant="outline">{eventMode(event)}</Badge>
+                  <Badge variant={eventRanked(event) ? 'default' : 'secondary'}>
+                    {eventRanked(event) ? 'Ranked' : 'Unranked'}
+                  </Badge>
                 </div>
               </div>
             </Card.Header>
@@ -419,6 +810,8 @@
                 </span>
                 <span>Ends: {formatDate(event.endsAt ?? event.ends_at)}</span>
                 <span>List ID: {eventListId(event)}</span>
+                <span>{eventRanked(event) ? 'Ranked' : 'Unranked'}</span>
+                <span>Config: {eventConfigSummary(event)}</span>
               </div>
               {#if event.bannerUrl || event.banner_url}
                 <a href={event.bannerUrl ?? event.banner_url} target="_blank" rel="noreferrer">
@@ -513,6 +906,34 @@
   gap: 8px;
 }
 
+.match-config-panel {
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+}
+
+.section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.section-head h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.section-head p {
+  margin: 4px 0 0;
+  color: hsl(var(--muted-foreground));
+  font-size: 13px;
+  line-height: 1.4;
+}
+
 .two-col {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -536,6 +957,55 @@
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.time-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.input-with-unit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.input-with-unit span {
+  color: hsl(var(--muted-foreground));
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.segmented-control {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+}
+
+.segmented-control.two-option {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.segmented-control button {
+  min-height: 36px;
+  padding: 0 10px;
+  background: transparent;
+  border: 0;
+  border-right: 1px solid hsl(var(--border));
+  color: hsl(var(--muted-foreground));
+  font-weight: 700;
+}
+
+.segmented-control button:last-child {
+  border-right: 0;
+}
+
+.segmented-control button.active {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
 }
 
 .event-card-head {
@@ -588,8 +1058,14 @@
 }
 
 @media (max-width: 640px) {
-  .two-col {
+  .two-col,
+  .time-grid,
+  .section-head {
     grid-template-columns: 1fr;
+  }
+
+  .section-head {
+    display: grid;
   }
 }
 </style>
