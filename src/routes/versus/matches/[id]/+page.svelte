@@ -217,6 +217,7 @@
 	let selectedBanTurnKey = '';
 	let reportDialogOpen = false;
 	let locallyReportedMatchIds = new Set<string>();
+	let pendingXpToastMatch: PvpMatch | null = null;
 
 	$: matchId = $page.params.id;
 	$: isSpectateRoute = $page.url.searchParams.get('spectate') === '1';
@@ -475,6 +476,9 @@
 		ticker = setInterval(() => {
 			now = Date.now();
 		}, 1000);
+
+		window.addEventListener('focus', showPendingPvpXpToast);
+		document.addEventListener('visibilitychange', showPendingPvpXpToast);
 	});
 
 	$: if (preferencesReady) {
@@ -497,6 +501,11 @@
 
 		cleanupRealtime?.();
 		clearScheduledRealtimeTasks();
+
+		if (browser) {
+			window.removeEventListener('focus', showPendingPvpXpToast);
+			document.removeEventListener('visibilitychange', showPendingPvpXpToast);
+		}
 	});
 
 	async function initializeRealtime(id: string) {
@@ -914,7 +923,11 @@
 			return;
 		}
 
-		const award = getViewerXpAward(nextMatch);
+		queueOrShowPvpXpToast(nextMatch);
+	}
+
+	function queueOrShowPvpXpToast(currentMatch: PvpMatch) {
+		const award = getViewerXpAward(currentMatch);
 		const diff = Number(award?.diff);
 		const newXp = Number(award?.newXp);
 
@@ -922,20 +935,49 @@
 			return;
 		}
 
-		const toastKey = getPvpXpToastKey(nextMatch, award);
+		const toastKey = getPvpXpToastKey(currentMatch, award);
 
 		if (!toastKey || pvpXpToastWasShown(toastKey)) {
+			if (pendingXpToastMatch === currentMatch) {
+				pendingXpToastMatch = null;
+			}
+
 			return;
 		}
 
+		if (!canShowPvpXpToastNow()) {
+			pendingXpToastMatch = currentMatch;
+
+			return;
+		}
+
+		showPvpXpToast(award, toastKey);
+		pendingXpToastMatch = null;
+	}
+
+	function showPvpXpToast(award: PvpXpAward, toastKey: string) {
 		markPvpXpToastShown(toastKey);
 		syncUserXpFromAward(award);
 		toast.custom(PvpXpToast, {
 			componentProps: { award },
-			duration: 8000,
+			duration: Number.POSITIVE_INFINITY,
 			position: 'top-center',
 			unstyled: true
 		});
+	}
+
+	function showPendingPvpXpToast() {
+		if (!pendingXpToastMatch || !canShowPvpXpToastNow()) {
+			return;
+		}
+
+		queueOrShowPvpXpToast(pendingXpToastMatch);
+	}
+
+	function canShowPvpXpToastNow() {
+		return browser
+			&& document.visibilityState === 'visible'
+			&& document.hasFocus();
 	}
 
 	function getViewerXpAward(currentMatch: PvpMatch | null | undefined) {
@@ -1129,7 +1171,6 @@
 			const response = await resignPvpMatch(await $user.token(), matchId);
 			setMatch(response);
 			await refreshMessages({ incremental: true });
-			toast.success($_('pvp.toast.resign_success'));
 		} catch (error) {
 			toast.error(
 				error instanceof Error
@@ -1201,11 +1242,10 @@
 			);
 			setMatch(response);
 			await refreshMessages({ incremental: true });
-			toast.success(
-				response.status === 'cancelled'
-					? $_('pvp.toast.ban_pick_abort_success')
-					: $_('pvp.toast.ban_pick_abort_requested')
-			);
+
+			if (response.status !== 'cancelled') {
+				toast.success($_('pvp.toast.ban_pick_abort_requested'));
+			}
 		} catch (error) {
 			toast.error(
 				error instanceof Error
@@ -1232,7 +1272,6 @@
 			await endPvpRoomMatch(await $user.token(), roomId);
 			await refreshMatch();
 			await refreshMessages({ incremental: true });
-			toast.success($_('pvp.toast.room_match_abort_success'));
 		} catch (error) {
 			toast.error(
 				error instanceof Error
