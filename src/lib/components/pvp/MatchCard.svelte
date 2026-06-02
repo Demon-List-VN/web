@@ -74,6 +74,7 @@
 	$: resultReason = getPvpResultReason(match);
 	$: ranked = isPvpMatchRanked(match);
 	$: levelRating = getPvpLevelRating(match);
+	$: pvpEvent = match.pvpEvent ?? match.pvp_event ?? null;
 	$: remainingMs = Math.max(0, (getPvpMatchEndMs(match) ?? now) - now);
 	$: acceptanceRemainingMs = Math.max(
 		0,
@@ -288,6 +289,9 @@
     </div>
 
     <div class="match-badges">
+      {#if pvpEvent}
+        <Badge>{pvpEvent.title || $_('pvp.event_mode')}</Badge>
+      {/if}
       <Badge variant="outline">{$_(`pvp.mode.${matchMode}`)}</Badge>
       <Badge variant={ranked ? 'default' : 'secondary'}>
         {ranked ? $_('pvp.ranked') : $_('pvp.unranked')}

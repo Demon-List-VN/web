@@ -1,5 +1,6 @@
 export type PvpDifficulty = 'easy' | 'medium' | 'hard';
 export type PvpMode = 'classic' | 'platformer';
+export type PvpSelectionMode = PvpMode | 'event';
 export type PvpPlayMode = 'normal' | 'practice';
 export type PvpRoomVisibility = 'public' | 'private';
 export type PvpRoomCompletionRuleType = 'count' | 'percentage';
@@ -163,6 +164,27 @@ export type PvpBanPick = {
     [key: string]: unknown;
 };
 
+export type PvpEvent = {
+    id?: number | string;
+    title?: string;
+    description?: string | null;
+    bannerUrl?: string | null;
+    banner_url?: string | null;
+    listId?: number | string;
+    list_id?: number | string;
+    startsAt?: string | null;
+    starts_at?: string | null;
+    endsAt?: string | null;
+    ends_at?: string | null;
+    enabled?: boolean;
+    mode?: PvpMode | string;
+    baseMode?: PvpMode | string;
+    base_mode?: PvpMode | string;
+    list?: Record<string, unknown> | null;
+    lists?: Record<string, unknown> | null;
+    [key: string]: unknown;
+};
+
 export type PvpMatch = {
     id?: number | string;
     matchId?: number | string;
@@ -198,6 +220,10 @@ export type PvpMatch = {
     roomId?: number | string | null;
     room_id?: number | string | null;
     room?: PvpRoom | null;
+    pvpEventId?: number | string | null;
+    pvp_event_id?: number | string | null;
+    pvpEvent?: PvpEvent | null;
+    pvp_event?: PvpEvent | null;
     completionRuleType?: PvpRoomCompletionRuleType | string | null;
     completion_rule_type?: PvpRoomCompletionRuleType | string | null;
     completionRuleValue?: number | null;
@@ -306,6 +332,10 @@ export type PvpInvite = {
     from?: string;
     to?: string;
     matchId?: number | string | null;
+    pvpEventId?: number | string | null;
+    pvp_event_id?: number | string | null;
+    pvpEvent?: PvpEvent | null;
+    pvp_event?: PvpEvent | null;
     expiresAt?: string | null;
     expires_at?: string | null;
     created_at?: string;
@@ -410,6 +440,10 @@ export type PvpMatchmakingRequest = {
     anonymous?: boolean;
     matchId?: number | string | null;
     match?: PvpMatch | null;
+    pvpEventId?: number | string | null;
+    pvp_event_id?: number | string | null;
+    pvpEvent?: PvpEvent | null;
+    pvp_event?: PvpEvent | null;
     pvpRating?: number | null;
     searchStartedAt?: string | null;
     search_started_at?: string | null;
@@ -468,6 +502,8 @@ export type PvpMe = {
     activeMatch: PvpMatch | null;
     matchmaking: PvpMatchmakingRequest | null;
     requiredSubmission?: PvpRequiredSubmission | null;
+    activePvpEvent?: PvpEvent | null;
+    active_pvp_event?: PvpEvent | null;
     incomingInvites: PvpInvite[];
     outgoingInvites: PvpInvite[];
 };
@@ -658,6 +694,9 @@ export function normalizePvpMe(payload: any): PvpMe {
         requiredSubmission: payload?.requiredSubmission
             ?? payload?.required_submission
             ?? null,
+        activePvpEvent: payload?.activePvpEvent
+            ?? payload?.active_pvp_event
+            ?? null,
         incomingInvites: payload?.incomingInvites
             ?? payload?.incoming_invites
             ?? payload?.receivedInvites
@@ -725,10 +764,14 @@ export async function getPvpMe(token?: string | null) {
     return normalizePvpMe(await pvpRequest('/pvp/me', { token }));
 }
 
+export async function getActivePvpEvent() {
+    return pvpRequest<PvpEvent | null>('/pvp/event/active');
+}
+
 export async function startPvpMatchmaking(
     token: string | null | undefined,
     anonymous = false,
-    mode: PvpMode = 'classic'
+    mode: PvpSelectionMode = 'classic'
 ) {
     return pvpRequest<PvpMatchmakingRequest | PvpMe>('/pvp/matchmaking', {
         method: 'POST',
@@ -838,7 +881,7 @@ export async function resolveAdminPvpReport(
 
 export async function sendPvpInvite(
     token: string | null | undefined,
-    payload: { inviteeUid: string; anonymous?: boolean; mode?: PvpMode; }
+    payload: { inviteeUid: string; anonymous?: boolean; mode?: PvpSelectionMode; }
 ) {
     return pvpRequest<PvpInvite>('/pvp/invites', {
         method: 'POST',

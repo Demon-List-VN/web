@@ -70,6 +70,8 @@
 		type PvpMatchmakingRequest,
 		type PvpMe,
 		type PvpMode,
+		type PvpSelectionMode,
+		type PvpEvent,
 		type PvpRoom,
 		type PvpRoomInvite,
 		type PvpRoomsOverview,
@@ -136,7 +138,7 @@
 		{ key: 'all', limit: null }
 	] as const;
 	let selectedPlayer: any = null;
-	let selectedMode: PvpMode = 'classic';
+	let selectedMode: PvpSelectionMode = 'classic';
 	let historyMode: PvpMode = 'classic';
 	let leaderboardMode: PvpMode = 'classic';
 	let anonymousMode = false;
@@ -146,6 +148,7 @@
 		activeMatch: null,
 		matchmaking: null,
 		requiredSubmission: null,
+		activePvpEvent: null,
 		incomingInvites: [],
 		outgoingInvites: []
 	};
@@ -244,7 +247,12 @@
 			: false);
 	$: queueStatus = getPvpStatus(lobby.matchmaking, 'idle');
 	$: isSearching = queueStatus === 'searching';
-	$: selectedRatingState = getSelectedRatingState(lobby, selectedMode);
+	$: activePvpEvent = lobby.activePvpEvent ?? null;
+	$: activePvpEventBaseMode = getPvpEventBaseMode(activePvpEvent);
+	$: selectedBaseMode = selectedMode === 'event'
+		? activePvpEventBaseMode
+		: selectedMode;
+	$: selectedRatingState = getSelectedRatingState(lobby, selectedBaseMode);
 	$: pvpRating = selectedRatingState?.pvpRating ?? null;
 	$: pvpRatedMatchCount = selectedRatingState?.pvpRatedMatchCount ?? 0;
 	$: pvpRatingDeviation = getFiniteNumber(
@@ -262,7 +270,7 @@
 		ELO_GRAPH_FILTERS.find((filter) => filter.key === eloGraphFilter)
 		?? ELO_GRAPH_FILTERS[0];
 	$: eloGraphPoints = getEloGraphPoints(
-		matches.filter((match) => getPvpMode(match) === selectedMode),
+		matches.filter((match) => getPvpMode(match) === selectedBaseMode),
 		currentUid,
 		selectedEloFilter.limit
 	);
@@ -283,16 +291,16 @@
 		&& pvpRatingDeviation !== null
 		&& !isPvpRatingStable(pvpRatingDeviation);
 	$: pvpWinLossStats = getPvpWinLossStats(
-		matches.filter((match) => getPvpMode(match) === selectedMode),
+		matches.filter((match) => getPvpMode(match) === selectedBaseMode),
 		currentUid
 	);
 	$: currentWeeklyRacePoints = getCurrentWeeklyRacePoints(
 		weeklyRace,
 		currentUid,
-		matches.filter((match) => getPvpMode(match) === selectedMode)
+		matches.filter((match) => getPvpMode(match) === selectedBaseMode)
 	);
 	$: hasRecentLeaderboardMatch = hasRecentRatedPvpMatch(
-		matches.filter((match) => getPvpMode(match) === selectedMode),
+		matches.filter((match) => getPvpMode(match) === selectedBaseMode),
 		7
 	);
 	$: showLeaderboardStabilityNotice = pvpRatingInitialized
@@ -327,12 +335,12 @@
 	$: incomingPending = lobby.incomingInvites.filter(
 		(invite) =>
 			getPvpStatus(invite) === 'pending'
-				&& getPvpMode(invite) === selectedMode
+				&& inviteMatchesSelectedMode(invite, selectedMode, activePvpEvent)
 	);
 	$: outgoingVisible = lobby.outgoingInvites.filter(
 		(invite) =>
 			getPvpStatus(invite) === 'pending'
-				&& getPvpMode(invite) === selectedMode
+				&& inviteMatchesSelectedMode(invite, selectedMode, activePvpEvent)
 	);
 	$: checkingLobby = $user.checked && $user.loggedIn && !lobbyReady;
 	$: controlsDisabled = Boolean(
@@ -357,6 +365,7 @@
 			activeMatch: null,
 			matchmaking: null,
 			requiredSubmission: null,
+			activePvpEvent: null,
 			incomingInvites: [],
 			outgoingInvites: []
 		};
@@ -376,9 +385,13 @@
 		showGeodeAlert =
 			localStorage.getItem(PVP_GEODE_ALERT_DISMISSED_KEY) !== 'true';
 		anonymousMode = localStorage.getItem(PVP_ANONYMOUS_MODE_KEY) === 'true';
-		selectedMode = localStorage.getItem(PVP_SELECTED_MODE_KEY) === 'platformer'
-			? 'platformer'
-			: 'classic';
+		{
+			const savedMode = localStorage.getItem(PVP_SELECTED_MODE_KEY);
+			selectedMode = savedMode === 'event' || savedMode === 'platformer'
+				? savedMode
+				: 'classic';
+		}
+
 		hideOpponentInfo =
 			localStorage.getItem(PVP_HIDE_OPPONENT_INFO_KEY) === 'true';
 		anonymousModeReady = true;
@@ -411,6 +424,10 @@
 		localStorage.setItem(PVP_ANONYMOUS_MODE_KEY, String(anonymousMode));
 		localStorage.setItem(PVP_SELECTED_MODE_KEY, selectedMode);
 		localStorage.setItem(PVP_HIDE_OPPONENT_INFO_KEY, String(hideOpponentInfo));
+	}
+
+	$: if (selectedMode === 'event' && lobbyReady && !activePvpEvent) {
+		selectedMode = 'classic';
 	}
 
 	$: if (
@@ -737,6 +754,70 @@
 				pvpRatingInitialized: currentLobby.pvpRatingInitialized ?? false
 			}
 		);
+	}
+
+	function getPvpEventId(event: PvpEvent | null | undefined) {
+		const value = event?.id ?? null;
+		const id = Number(value);
+
+		return Number.isInteger(id) && id > 0 ? id : null;
+	}
+
+	function getPvpEventBaseMode(event: PvpEvent | null | undefined): PvpMode {
+		return event?.mode === 'platformer' || event?.baseMode === 'platformer'
+			|| event?.base_mode === 'platformer'
+			? 'platformer'
+			: 'classic';
+	}
+
+	function getPvpEventTitle(event: PvpEvent | null | undefined) {
+		return event?.title || $_('pvp.event_mode');
+	}
+
+	function getPvpEventBannerUrl(event: PvpEvent | null | undefined) {
+		return event?.bannerUrl ?? event?.banner_url ?? null;
+	}
+
+	function getPvpEventListUrl(event: PvpEvent | null | undefined) {
+		const list: any = event?.list ?? event?.lists ?? null;
+		const slug = typeof list?.slug === 'string' ? list.slug : '';
+		const id = event?.listId ?? event?.list_id ?? list?.id ?? null;
+
+		if (slug) {
+			return `/list/${slug}`;
+		}
+
+		return id ? `/lists/${id}` : '/lists';
+	}
+
+	function getPvpEventEndsMs(event: PvpEvent | null | undefined) {
+		const raw = event?.endsAt ?? event?.ends_at ?? null;
+		const ms = raw
+			? new Date(String(raw))
+				.getTime()
+			: NaN;
+
+		return Number.isFinite(ms) ? ms : null;
+	}
+
+	function getValueEventId(value: PvpInvite | PvpMatch | PvpMatchmakingRequest | null | undefined) {
+		const id = Number(value?.pvpEventId ?? value?.pvp_event_id ?? value?.pvpEvent?.id);
+
+		return Number.isInteger(id) && id > 0 ? id : null;
+	}
+
+	function inviteMatchesSelectedMode(
+		invite: PvpInvite,
+		mode: PvpSelectionMode,
+		event: PvpEvent | null | undefined
+	) {
+		if (mode === 'event') {
+			const activeEventId = getPvpEventId(event);
+
+			return Boolean(activeEventId && getValueEventId(invite) === activeEventId);
+		}
+
+		return getPvpMode(invite) === mode && !getValueEventId(invite);
 	}
 
 	function realtimeRow(event: PvpRealtimeEvent) {
@@ -1479,7 +1560,7 @@
 		const mode = $page.url.searchParams.get('mode');
 		const anonymous = $page.url.searchParams.get('anonymous');
 
-		if (mode === 'classic' || mode === 'platformer') {
+		if (mode === 'classic' || mode === 'platformer' || mode === 'event') {
 			selectedMode = mode;
 		}
 
@@ -1844,8 +1925,12 @@
 		return $_(`pvp.status.${status}`);
 	}
 
-	function selectMode(mode: PvpMode) {
+	function selectMode(mode: PvpSelectionMode) {
 		if (actionLoading || activeMatch || isSearching) {
+			return;
+		}
+
+		if (mode === 'event' && !activePvpEvent) {
 			return;
 		}
 
@@ -2797,6 +2882,36 @@
           </section>
         {/if}
 
+        {#if activePvpEvent}
+          <section
+            class="pvp-event-banner"
+            style={getPvpEventBannerUrl(activePvpEvent)
+              ? `background-image: linear-gradient(90deg, rgba(8, 12, 20, 0.88), rgba(8, 12, 20, 0.58)), url('${getPvpEventBannerUrl(activePvpEvent)}')`
+              : ''}
+          >
+            <div class="pvp-event-banner-main">
+              <Badge>{$_('pvp.event_mode')}</Badge>
+              <div>
+                <h2>{getPvpEventTitle(activePvpEvent)}</h2>
+                {#if activePvpEvent.description}
+                  <p>{activePvpEvent.description}</p>
+                {/if}
+              </div>
+            </div>
+            <div class="pvp-event-banner-meta">
+              <Badge variant="outline">
+                {$_(`pvp.mode.${activePvpEventBaseMode}`)}
+              </Badge>
+              {#if getPvpEventEndsMs(activePvpEvent)}
+                <span>{remainingLabel(getPvpEventEndsMs(activePvpEvent), now)}</span>
+              {/if}
+              <Button size="sm" variant="outline" href={getPvpEventListUrl(activePvpEvent)}>
+                {$_('pvp.event_view_pool')}
+              </Button>
+            </div>
+          </section>
+        {/if}
+
         <section class="rating-start-section">
           <Collapsible.Root bind:open={summaryOpen}>
             <Card.Root
@@ -3012,6 +3127,16 @@
                   >
                     {$_('pvp.mode.platformer')}
                   </button>
+                  {#if activePvpEvent}
+                    <button
+                      type="button"
+                      class:active={selectedMode === 'event'}
+                      disabled={Boolean(actionLoading || activeMatch || isSearching)}
+                      on:click={() => selectMode('event')}
+                    >
+                      {$_('pvp.mode.event')}
+                    </button>
+                  {/if}
                 </div>
               </div>
               <div class="anonymous-row">
@@ -3125,7 +3250,7 @@
                   <div class="queue-hint">{$_('pvp.rooms.queue_blocked')}</div>
                 {/if}
               {/if}
-              {#if selectedMode === 'platformer'}
+              {#if selectedBaseMode === 'platformer' && selectedMode !== 'event'}
                 <div class="platformer-pool-link" style="margin-top: 8px">
                   <Button
                     href="/lists/159"
@@ -3870,6 +3995,60 @@ h1 {
   margin-bottom: 16px;
 }
 
+.pvp-event-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 118px;
+  margin-bottom: 16px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background-color: hsl(var(--foreground));
+  background-position: center;
+  background-size: cover;
+  padding: 18px;
+  color: hsl(var(--background));
+}
+
+.pvp-event-banner-main,
+.pvp-event-banner-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pvp-event-banner-main {
+  min-width: 0;
+}
+
+.pvp-event-banner-main h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.pvp-event-banner-main p {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  margin: 4px 0 0;
+  max-width: 640px;
+  color: hsl(var(--background) / 0.82);
+  line-height: 1.45;
+}
+
+.pvp-event-banner-meta {
+  flex-shrink: 0;
+}
+
+.pvp-event-banner-meta span {
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .required-submission-content {
   display: flex;
   flex-direction: column;
@@ -4001,6 +4180,13 @@ h1 {
 
   .elo-graph-toolbar {
     align-items: stretch;
+    flex-direction: column;
+  }
+
+  .pvp-event-banner,
+  .pvp-event-banner-main,
+  .pvp-event-banner-meta {
+    align-items: flex-start;
     flex-direction: column;
   }
 

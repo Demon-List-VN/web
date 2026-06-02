@@ -15,6 +15,7 @@
 	export let onAcceptPendingMatch: () => void | Promise<void>;
 
 	$: pendingMatchMode = getPvpMode(pendingMatch);
+	$: pendingMatchEvent = pendingMatch?.pvpEvent ?? pendingMatch?.pvp_event ?? null;
 	$: pendingAcceptanceRemainingMs = Math.max(
 		0,
 		(getPvpMatchAcceptanceExpiresMs(pendingMatch) ?? now) - now
@@ -67,6 +68,12 @@
         <span>{$_('pvp.mode_label')}</span>
         <strong>{$_(`pvp.mode.${pendingMatchMode}`)}</strong>
       </div>
+      {#if pendingMatchEvent}
+        <div class="match-found-row">
+          <span>{$_('pvp.event_mode')}</span>
+          <strong>{pendingMatchEvent.title || $_('pvp.event_mode')}</strong>
+        </div>
+      {/if}
       <div class="match-found-row">
         <span>{$_('pvp.acceptance_timer')}</span>
         <strong>{
