@@ -150,11 +150,16 @@
 
     <div class="stat-item flex flex-col items-center gap-1 rounded-lg bg-muted/50 px-4 py-3">
       <span class="text-xs text-muted-foreground">{$_('player.level')}</span>
-      <span class="text-xl font-bold">{expLevel.level}</span>
+      <span class="text-xl font-bold" style={`color: ${expLevel.color};`}>{
+        expLevel.level
+      }</span>
       <Tooltip.Root>
         <Tooltip.Trigger class="w-full">
           <div class="exp-bar">
-            <div class="exp-fill" style={`width: ${expLevel.progress}%`} />
+            <div
+              class="exp-fill"
+              style={`width: ${expLevel.progress}%; background-color: ${expLevel.color};`}
+            />
           </div>
         </Tooltip.Trigger>
         <Tooltip.Content>

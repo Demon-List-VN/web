@@ -3,8 +3,10 @@
 	import * as Avatar from '$lib/components/ui/avatar';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import PlayerCard from '$lib/components/playerCard.svelte';
+	import PlayerLevelBadge from '$lib/components/PlayerLevelBadge.svelte';
 	import SupporterTierProgress from '$lib/components/SupporterTierProgress.svelte';
 	import { user } from '$lib/client';
+	import { getPlayerExpLevelStyle } from '$lib/client/getExpLevel';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import { goto } from '$app/navigation';
 	import { _ } from 'svelte-i18n';
@@ -22,6 +24,7 @@
 	export let signOut: () => void;
 
 	let open = false;
+	$: avatarLevelStyle = getPlayerExpLevelStyle($user.data);
 
 	function navigate(path: string) {
 		open = false;
@@ -34,23 +37,24 @@
     <Button
       variant="outline"
       size="icon"
-      class={`overflow-hidden rounded-full ${
-          isActive($user.data.supporterUntil) ? 'border-[2px] border-yellow-400' : ''
-      }`}
+      class="avatar-menu-button rounded-full"
       builders={[builder]}
     >
-      <Avatar.Root>
-        <Avatar.Image
-          class="object-cover"
-          src={`https://cdn.gdvn.net/avatars/${$user.data.uid}${
-              isActive($user.data.supporterUntil) && $user.data.isAvatarGif
-                  ? '.gif'
-                  : '.jpg'
-          }?version=${$user.data.avatarVersion}`}
-          alt=""
-        />
-        <Avatar.Fallback>{$user.data.name[0]}</Avatar.Fallback>
-      </Avatar.Root>
+      <span class="avatar-menu-frame" style={avatarLevelStyle}>
+        <Avatar.Root class="h-[28px] w-[28px]">
+          <Avatar.Image
+            class="object-cover"
+            src={`https://cdn.gdvn.net/avatars/${$user.data.uid}${
+                isActive($user.data.supporterUntil) && $user.data.isAvatarGif
+                    ? '.gif'
+                    : '.jpg'
+            }?version=${$user.data.avatarVersion}`}
+            alt=""
+          />
+          <Avatar.Fallback>{$user.data.name[0]}</Avatar.Fallback>
+        </Avatar.Root>
+        <PlayerLevelBadge player={$user.data} size="sm" />
+      </span>
     </Button>
   </Popover.Trigger>
   <Popover.Content
@@ -144,6 +148,20 @@
 </Popover.Root>
 
 <style lang="scss">
+:global(.avatar-menu-button) {
+  overflow: visible;
+}
+
+.avatar-menu-frame {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--player-level-color, transparent);
+  border-radius: 999px;
+  padding: 1px;
+}
+
 .popover-header {
   padding: 12px;
 }

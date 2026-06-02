@@ -261,6 +261,7 @@
               <PlayerLink
                 player={getPvpParticipantPlayer(titleLeft)}
                 rankBadge={resolvePvpRankBadge(getPvpParticipantPlayer(titleLeft), matchMode)}
+                showAvatar
                 truncate={18}
               />
             {:else}
@@ -273,6 +274,7 @@
               <PlayerLink
                 player={getPvpParticipantPlayer(titleRight)}
                 rankBadge={resolvePvpRankBadge(getPvpParticipantPlayer(titleRight), matchMode)}
+                showAvatar
                 truncate={18}
               />
             {:else}

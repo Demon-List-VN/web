@@ -91,7 +91,12 @@
 	}
 </script>
 
-<div class="pvp-xp-toast" role="status" aria-live="polite">
+<div
+  class="pvp-xp-toast"
+  style={`--xp-level-color: ${currentLevel.color};`}
+  role="status"
+  aria-live="polite"
+>
   <div class="toast-header">
     <div class="toast-icon">
       <Trophy class="h-5 w-5" />
@@ -176,8 +181,8 @@
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  background: hsl(var(--primary) / 0.12);
-  color: hsl(var(--primary));
+  background: hsl(var(--muted));
+  color: var(--xp-level-color);
 }
 
 .toast-title {
@@ -223,7 +228,7 @@
   align-items: baseline;
   justify-content: center;
   gap: 8px;
-  color: hsl(var(--primary));
+  color: var(--xp-level-color);
 }
 
 .xp-gain span {
@@ -243,6 +248,11 @@
   gap: 12px;
 }
 
+.level-meta span:first-child {
+  color: var(--xp-level-color);
+  font-weight: 700;
+}
+
 .toast-footer span:last-child {
   text-align: right;
 }
@@ -257,7 +267,7 @@
 .xp-fill {
   height: 100%;
   border-radius: inherit;
-  background: hsl(var(--primary));
+  background: var(--xp-level-color);
   transition: width 120ms linear;
 }
 </style>

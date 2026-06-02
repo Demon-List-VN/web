@@ -13,13 +13,11 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Textarea } from '$lib/components/ui/textarea';
-	import * as Avatar from '$lib/components/ui/avatar';
 	import * as Alert from '$lib/components/ui/alert';
 	import * as Card from '$lib/components/ui/card';
 	import * as Drawer from '$lib/components/ui/drawer';
 	import { Switch } from '$lib/components/ui/switch';
 	import * as Tabs from '$lib/components/ui/tabs';
-	import { isActive as isSupporterActive } from '$lib/client/isSupporterActive';
 	import {
 		acceptPvpMatch,
 		banPvpMatchLevel,
@@ -2526,26 +2524,6 @@
 		return `${diff > 0 ? '+' : ''}${Math.round(diff)}`;
 	}
 
-	function participantAvatarUrl(player: any) {
-		if (!player?.uid) {
-			return '';
-		}
-
-		const extension =
-			isSupporterActive(player.supporterUntil) && player.isAvatarGif
-				? 'gif'
-				: 'jpg';
-
-		return `https://cdn.gdvn.net/avatars/${player.uid}.${extension}?version=${player.avatarVersion}`;
-	}
-
-	function participantAvatarFallback(player: any) {
-		const name = String(player?.name || '')
-			.trim();
-
-		return name ? name[0].toUpperCase() : '?';
-	}
-
 	function chatPlaceholder() {
 		if (chatMuted) {
 			return $_('pvp.chat_muted_placeholder');
@@ -3332,28 +3310,18 @@
                       </div>
 
                       <div class="participant-identity">
-                        <Avatar.Root class="participant-avatar">
-                          {#if !participantMasked && participantPlayer?.uid}
-                            <Avatar.Image
-                              src={participantAvatarUrl(participantPlayer)}
-                              alt={participantPlayer.name || participantDisplayName}
-                            />
-                            <Avatar.Fallback>
-                              {participantAvatarFallback(participantPlayer)}
-                            </Avatar.Fallback>
-                          {:else}
-                            <Avatar.Fallback
-                              class="participant-avatar-placeholder"
-                            >
-                              <UserRound class="h-5 w-5" />
-                            </Avatar.Fallback>
-                          {/if}
-                        </Avatar.Root>
+                        {#if participantMasked || !participantPlayer?.uid}
+                          <span class="participant-avatar-placeholder">
+                            <UserRound class="h-5 w-5" />
+                          </span>
+                        {/if}
                         <div class="participant-name">
                           {#if !participantMasked && participantPlayer?.uid}
                             <PlayerLink
                               player={participantPlayer}
                               rankBadge={resolvePvpRankBadge(participantPlayer, matchMode)}
+                              showAvatar
+                              avatarSize={40}
                               truncate={26}
                             />
                           {:else}
@@ -3752,23 +3720,11 @@
                       )}
                       <div class="death-count-card">
                         <div class="participant-identity">
-                          <Avatar.Root class="participant-avatar">
-                            {#if !participantMasked && participantPlayer?.uid}
-                              <Avatar.Image
-                                src={participantAvatarUrl(participantPlayer)}
-                                alt={participantPlayer.name || participantDisplayName}
-                              />
-                              <Avatar.Fallback>
-                                {participantAvatarFallback(participantPlayer)}
-                              </Avatar.Fallback>
-                            {:else}
-                              <Avatar.Fallback
-                                class="participant-avatar-placeholder"
-                              >
-                                <UserRound class="h-5 w-5" />
-                              </Avatar.Fallback>
-                            {/if}
-                          </Avatar.Root>
+                          {#if participantMasked || !participantPlayer?.uid}
+                            <span class="participant-avatar-placeholder">
+                              <UserRound class="h-5 w-5" />
+                            </span>
+                          {/if}
                           <div class="participant-name">
                             <Badge
                               variant={getPvpParticipantUid(participant) === currentUid
@@ -3781,6 +3737,8 @@
                               <PlayerLink
                                 player={participantPlayer}
                                 rankBadge={resolvePvpRankBadge(participantPlayer, matchMode)}
+                                showAvatar
+                                avatarSize={40}
                                 truncate={22}
                               />
                             {:else}
@@ -4048,23 +4006,11 @@
                       )}
                       <div class="death-count-card">
                         <div class="participant-identity">
-                          <Avatar.Root class="participant-avatar">
-                            {#if !participantMasked && participantPlayer?.uid}
-                              <Avatar.Image
-                                src={participantAvatarUrl(participantPlayer)}
-                                alt={participantPlayer.name || participantDisplayName}
-                              />
-                              <Avatar.Fallback>
-                                {participantAvatarFallback(participantPlayer)}
-                              </Avatar.Fallback>
-                            {:else}
-                              <Avatar.Fallback
-                                class="participant-avatar-placeholder"
-                              >
-                                <UserRound class="h-5 w-5" />
-                              </Avatar.Fallback>
-                            {/if}
-                          </Avatar.Root>
+                          {#if participantMasked || !participantPlayer?.uid}
+                            <span class="participant-avatar-placeholder">
+                              <UserRound class="h-5 w-5" />
+                            </span>
+                          {/if}
                           <div class="participant-name">
                             <Badge
                               variant={getPvpParticipantUid(participant) === currentUid
@@ -4077,6 +4023,8 @@
                               <PlayerLink
                                 player={participantPlayer}
                                 rankBadge={resolvePvpRankBadge(participantPlayer, matchMode)}
+                                showAvatar
+                                avatarSize={40}
                                 truncate={22}
                               />
                             {:else}
@@ -4428,19 +4376,17 @@
   gap: 12px;
 }
 
-:global(.participant-avatar) {
+.participant-avatar-placeholder {
   width: 44px;
   height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid hsl(var(--border));
-}
-
-:global(.participant-avatar img) {
-  object-fit: cover;
-}
-
-:global(.participant-avatar-placeholder) {
+  border-radius: 999px;
   background: hsl(var(--muted));
   color: hsl(var(--muted-foreground));
+  flex: 0 0 auto;
 }
 
 .participant-name {
@@ -4451,6 +4397,7 @@
 }
 
 .participant-rating {
+  margin-left: 53px;
   color: hsl(var(--muted-foreground));
   font-size: 12px;
   font-weight: 650;

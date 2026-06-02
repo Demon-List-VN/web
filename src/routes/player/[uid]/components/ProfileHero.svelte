@@ -5,6 +5,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { toast } from 'svelte-sonner';
 	import { user } from '$lib/client';
+	import { getPlayerExpLevelStyle } from '$lib/client/getExpLevel';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import {
 		getSocialActivity,
@@ -27,6 +28,7 @@
 	import { _, locale } from 'svelte-i18n';
 	import { onDestroy } from 'svelte';
 	import SupporterBadge from './SupporterBadge.svelte';
+	import PlayerLevelBadge from '$lib/components/PlayerLevelBadge.svelte';
 
 	export let data: any;
 
@@ -44,6 +46,7 @@
 	$: isSupporter = isActive(player.supporterUntil);
 	$: supporterTier = getSupporterTier(player.supporterUntil);
 	$: supporterTierStyle = getSupporterTierStyle(supporterTier);
+	$: avatarLevelStyle = getPlayerExpLevelStyle(player);
 	$: avatarSrc = `https://cdn.gdvn.net/avatars/${player.uid}${
 		isSupporter && player.isAvatarGif ? '.gif' : '.jpg'
 	}?version=${player.avatarVersion}`;
@@ -158,7 +161,7 @@
 	}
 </script>
 
-<div class="hero-container relative overflow-hidden" style={getBgColor()}>
+<div class="hero-container relative" style={getBgColor()}>
   <!-- Banner -->
   <div class="banner-area relative h-[200px] sm:h-[250px] lg:h-[280px]">
     {#if isSupporter && !isBannerFailedToLoad}
@@ -180,28 +183,33 @@
   </div>
 
   <!-- Profile Info Overlay -->
-  <div class="profile-info relative z-10 mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8">
+  <div class="profile-info relative z-10 mx-auto max-w-[1200px] px-4 pb-4 sm:px-6 lg:px-8">
     <div
       class="flex flex-col items-center gap-4 sm:flex-row sm:items-end sm:gap-6"
       style="margin-top: -72px"
     >
       <!-- Avatar -->
-      <div
-        class="avatar-wrapper flex-shrink-0"
-        class:supporter-ring={isSupporter}
-      >
-        <Avatar.Root
-          class="h-36 w-36 border-4 border-background lg:h-44 lg:w-44"
-        >
-          <Avatar.Image
-            class="object-cover"
-            src={avatarSrc}
-            alt={player.name}
+      <div class="avatar-wrapper flex-shrink-0">
+        <div class="profile-avatar-frame" style={avatarLevelStyle}>
+          <Avatar.Root
+            class="profile-avatar-root h-36 w-36 overflow-visible border-4 lg:h-44 lg:w-44"
+          >
+            <Avatar.Image
+              class="rounded-full object-cover"
+              src={avatarSrc}
+              alt={player.name}
+            />
+            <Avatar.Fallback class="text-4xl lg:text-5xl">{
+              player.name[0]
+            }</Avatar.Fallback>
+          </Avatar.Root>
+          <PlayerLevelBadge
+            player={player}
+            size="lg"
+            iconSize={20}
+            class="profile-level-badge"
           />
-          <Avatar.Fallback class="text-4xl lg:text-5xl">{
-            player.name[0]
-          }</Avatar.Fallback>
-        </Avatar.Root>
+        </div>
       </div>
 
       <!-- Identity -->
@@ -336,6 +344,11 @@
 {/if}
 
 <style lang="scss">
+.hero-container {
+  overflow-x: hidden;
+  overflow-y: visible;
+}
+
 .banner-image {
   mask-image: linear-gradient(
     rgba(0, 0, 0, 1) 0%,
@@ -344,11 +357,35 @@
   );
 }
 
-.supporter-ring {
-  :global(.h-36),
-  :global(.h-44) {
-    border-color: #eab308;
-  }
+.profile-avatar-frame {
+  position: relative;
+  display: inline-flex;
+  overflow: visible;
+}
+
+.avatar-wrapper {
+  padding-bottom: 30px;
+}
+
+:global(.profile-avatar-root) {
+  border-color: var(--player-level-color, hsl(var(--background)));
+}
+
+:global(.profile-level-badge) {
+  bottom: -26px;
+  z-index: 20;
+  overflow: visible;
+  min-height: 34px;
+  min-width: 42px;
+  align-content: center;
+  padding: 7px 10px;
+  border-width: 2px;
+  background: hsl(var(--background) / 0.95);
+  line-height: 0;
+}
+
+:global(.profile-level-badge .badge-row) {
+  line-height: 0;
 }
 
 :global(.friend-action) {

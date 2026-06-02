@@ -9,13 +9,16 @@
 		getSupporterTier,
 		getSupporterTierStyle
 	} from '$lib/client/supporterTier';
+	import { getPlayerExpLevelStyle } from '$lib/client/getExpLevel';
 	import type { PlayerLinkRankBadge } from '$lib/utils/customListRank';
 	import { BadgeCheck, CheckCheck, Crown } from 'lucide-svelte';
 	import PlayerCard from '$lib/components/playerCard.svelte';
+	import PlayerLevelBadge from '$lib/components/PlayerLevelBadge.svelte';
 
 	export let player: any;
 	export let showTitle = false;
 	export let showAvatar = false;
+	export let avatarSize = 22;
 	export let titleType: string = 'dl';
 	export let truncate: number | null = null;
 	export let rankBadge: PlayerLinkRankBadge | null = null;
@@ -49,6 +52,7 @@
 		: '';
 	$: supporterTier = getSupporterTier(player?.supporterUntil);
 	$: supporterTierStyle = getSupporterTierStyle(supporterTier);
+	$: avatarLevelStyle = getPlayerExpLevelStyle(player);
 
 	function truncateText(str: string) {
 		if (!truncate) {
@@ -75,16 +79,26 @@
 
 <div class="wrapper">
   {#if showAvatar}
-    <Avatar.Root class="h-[30px] w-[30px]">
-      <Avatar.Image
-        class="playerAvatar"
-        src={`https://cdn.gdvn.net/avatars/${player.uid}${
-            isActive(player.supporterUntil) && player.isAvatarGif ? '.gif' : '.jpg'
-        }?version=${player.avatarVersion}`}
-        alt={player.name}
-      />
-      <Avatar.Fallback class="playerAvatar">{player.name[0]}</Avatar.Fallback>
-    </Avatar.Root>
+    <span class="player-link-avatar-frame" style={avatarLevelStyle}>
+      <Avatar.Root
+        class="player-link-avatar-root"
+        style={`width: ${avatarSize}px; height: ${avatarSize}px;`}
+      >
+        <Avatar.Image
+          class="playerAvatar"
+          style={`width: ${avatarSize}px; height: ${avatarSize}px;`}
+          src={`https://cdn.gdvn.net/avatars/${player.uid}${
+              isActive(player.supporterUntil) && player.isAvatarGif ? '.gif' : '.jpg'
+          }?version=${player.avatarVersion}`}
+          alt={player.name}
+        />
+        <Avatar.Fallback
+          class="playerAvatar"
+          style={`width: ${avatarSize}px; height: ${avatarSize}px;`}
+        >{player.name[0]}</Avatar.Fallback>
+      </Avatar.Root>
+      <PlayerLevelBadge {player} size="sm" />
+    </span>
   {/if}
   <Popover.Root bind:open={isPopoverOpen}>
     {#if resolvedRankBadge?.label}
@@ -196,6 +210,17 @@
   display: flex;
   align-items: center;
   gap: 7px;
+}
+
+.player-link-avatar-frame {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--player-level-color, transparent);
+  border-radius: 999px;
+  padding: 1px;
+  flex-shrink: 0;
 }
 
 .playerAvatar {

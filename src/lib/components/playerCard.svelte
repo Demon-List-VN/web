@@ -19,7 +19,11 @@
 	import { getPvpVisibleRatingLabel } from '$lib/client/pvp';
 	import { badgeVariants } from '$lib/components/ui/badge';
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import { getExpLevel } from '$lib/client/getExpLevel';
+	import {
+		getExpLevel,
+		getPlayerExpLevelStyle
+	} from '$lib/client/getExpLevel';
+	import PlayerLevelBadge from '$lib/components/PlayerLevelBadge.svelte';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import {
 		getSupporterTier,
@@ -71,6 +75,7 @@
 	$: hasKnownPlayerCardStatLines = Array.isArray(cardPlayer?.playerCardStatLines);
 	$: exp = (cardPlayer?.exp ?? 0) + (cardPlayer?.extraExp ?? 0);
 	$: expLevel = getExpLevel(exp);
+	$: avatarLevelStyle = getPlayerExpLevelStyle(cardPlayer);
 	$: summaries = listSummaries ?? remoteSummaries;
 	$: hasLoadedListSummaries = listSummaries !== null || hasLoadedRemote;
 	$: configuredStatLineIds = hasKnownPlayerCardStatLines
@@ -344,18 +349,21 @@
     />
   {/if}
   <div class="hoverName">
-    <Avatar.Root>
-      <Avatar.Image
-        class="object-cover"
-        src={`https://cdn.gdvn.net/avatars/${cardPlayer.uid}${
-            isActive(cardPlayer.supporterUntil) && cardPlayer.isAvatarGif
-                ? '.gif'
-                : '.jpg'
-        }`}
-        alt=""
-      />
-      <Avatar.Fallback>{cardPlayer.name[0]}</Avatar.Fallback>
-    </Avatar.Root>
+    <div class="player-card-avatar-frame" style={avatarLevelStyle}>
+      <Avatar.Root>
+        <Avatar.Image
+          class="object-cover"
+          src={`https://cdn.gdvn.net/avatars/${cardPlayer.uid}${
+              isActive(cardPlayer.supporterUntil) && cardPlayer.isAvatarGif
+                  ? '.gif'
+                  : '.jpg'
+          }`}
+          alt=""
+        />
+        <Avatar.Fallback>{cardPlayer.name[0]}</Avatar.Fallback>
+      </Avatar.Root>
+      <PlayerLevelBadge player={cardPlayer} />
+    </div>
     {#if cardPlayer.clan && isActive(cardPlayer.clans.boostedUntil)}
       <a
         href={`/clan/${cardPlayer.clan}`}
@@ -379,11 +387,14 @@
     <div class="rating">
       <div class="flex justify-center">
         <div class="leftCol">
-          <b>Lv.{expLevel.level}</b>
+          <b style={`color: ${expLevel.color};`}>Lv.{expLevel.level}</b>
         </div>
       </div>
       <div class="progressBar">
-        <div class="progress" style={`width: ${expLevel.progress}%`}>
+        <div
+          class="progress"
+          style={`width: ${expLevel.progress}%; background-color: ${expLevel.color};`}
+        >
           <b>{expLevel.progress}%</b>
         </div>
       </div>
@@ -521,6 +532,17 @@
   display: flex;
   align-items: center;
   gap: 7px;
+}
+
+.player-card-avatar-frame {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--player-level-color, transparent);
+  border-radius: 999px;
+  padding: 2px;
+  flex-shrink: 0;
 }
 
 .leftCol {

@@ -722,7 +722,9 @@
       </Card.Header>
       <Card.Content class="space-y-5">
         <div class="exp-value-row">
-          <strong>{$_('player.level')}.{expLevel.level}</strong>
+          <strong style={`color: ${expLevel.color};`}>{
+            $_('player.level')
+          }.{expLevel.level}</strong>
           <span>{exp}/{expLevel.upperBound} EXP</span>
         </div>
         <Tooltip.Root>
@@ -730,7 +732,7 @@
             <div class="progress-bar large">
               <div
                 class="progress-fill"
-                style={`width: ${expLevel.progress}%`}
+                style={`width: ${expLevel.progress}%; background-color: ${expLevel.color};`}
               />
             </div>
           </Tooltip.Trigger>

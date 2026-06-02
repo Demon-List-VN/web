@@ -170,13 +170,13 @@
             <Table.Cell class="font-medium">
               <div class="flex min-w-0 items-center gap-2">
                 {#if playerAData?.uid}
-                  <PlayerLink player={playerAData} truncate={18} />
+                  <PlayerLink player={playerAData} showAvatar truncate={18} />
                 {:else}
                   <span class="truncate">{participantText(playerA, 'Player A')}</span>
                 {/if}
                 <span class="shrink-0 text-muted-foreground">vs</span>
                 {#if playerBData?.uid}
-                  <PlayerLink player={playerBData} truncate={18} />
+                  <PlayerLink player={playerBData} showAvatar truncate={18} />
                 {:else}
                   <span class="truncate">{participantText(playerB, 'Player B')}</span>
                 {/if}

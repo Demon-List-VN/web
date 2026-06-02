@@ -23,6 +23,7 @@
 
 	let isBannerFailedToLoad = false;
 	const exp = data.owner ? data.players.exp + data.players.extraExp : 0;
+	const expLevel = getExpLevel(exp);
 	let editMode = false;
 	let previewMode = false;
 	let editedContent = data.content || '';
@@ -312,12 +313,15 @@
 							<div class="rating">
 								<div class="flex justify-center">
 									<div class="leftCol">
-										<b>Lv.{getExpLevel(exp).level}</b>
+										<b style={`color: ${expLevel.color};`}>Lv.{expLevel.level}</b>
 									</div>
 								</div>
 								<div class="progressBar">
-									<div class="progress" style={`width: ${getExpLevel(exp).progress}%`}>
-										<b>{getExpLevel(exp).progress}%</b>
+									<div
+										class="progress"
+										style={`width: ${expLevel.progress}%; background-color: ${expLevel.color};`}
+									>
+										<b>{expLevel.progress}%</b>
 									</div>
 								</div>
 							</div>
