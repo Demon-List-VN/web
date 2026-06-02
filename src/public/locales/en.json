@@ -377,7 +377,7 @@
             "event": "Event"
         },
         "event_mode": "Event",
-        "event_view_pool": "View event pool",
+        "event_view_pool": "Queue now",
         "view_platformer_pool": "View level pool",
         "tabs": {
             "label": "1v1 Versus sections",

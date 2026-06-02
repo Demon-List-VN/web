@@ -377,7 +377,7 @@
             "event": "Sự kiện"
         },
         "event_mode": "Sự kiện",
-        "event_view_pool": "Xem pool sự kiện",
+        "event_view_pool": "Queue now",
         "view_platformer_pool": "Xem danh sách Platformer",
         "tabs": {
             "label": "Mục 1v1 Versus",

@@ -889,18 +889,6 @@
 		return `background-image: url('${escapedUrl}')`;
 	}
 
-	function getPvpEventListUrl(event: PvpEvent | null | undefined) {
-		const list: any = event?.list ?? event?.lists ?? null;
-		const slug = typeof list?.slug === 'string' ? list.slug : '';
-		const id = event?.listId ?? event?.list_id ?? list?.id ?? null;
-
-		if (slug) {
-			return `/list/${slug}`;
-		}
-
-		return id ? `/lists/${id}` : '/lists';
-	}
-
 	function getPvpEventEndsMs(event: PvpEvent | null | undefined) {
 		const raw = event?.endsAt ?? event?.ends_at ?? null;
 		const ms = raw
@@ -1698,7 +1686,7 @@
 		await startQueue();
 	}
 
-	async function startQueue() {
+	async function startQueue(mode: PvpSelectionMode = selectedMode) {
 		if (currentRoom) {
 			toast.error($_('pvp.rooms.queue_blocked'));
 
@@ -1711,7 +1699,7 @@
 			const response = await startPvpMatchmaking(
 				await $user.token(),
 				anonymousMode,
-				selectedMode
+				mode
 			);
 			applyMatchmakingResponse(response);
 		} catch (error) {
@@ -1723,6 +1711,15 @@
 		} finally {
 			actionLoading = '';
 		}
+	}
+
+	async function startEventQueue() {
+		if (!activePvpEvent) {
+			return;
+		}
+
+		selectedMode = 'event';
+		await startQueue('event');
 	}
 
 	async function leaveRoomAndStartQueue() {
@@ -3080,7 +3077,15 @@
                     <strong>{eventCountdownLabel(getPvpEventEndsMs(activePvpEvent), now)}</strong>
                   </div>
                 {/if}
-                <Button size="sm" variant="outline" href={getPvpEventListUrl(activePvpEvent)}>
+                <Button
+                  size="sm"
+                  class="event-queue-button"
+                  disabled={controlsDisabled}
+                  on:click={startEventQueue}
+                >
+                  {#if actionLoading === 'matchmaking' && selectedMode === 'event'}
+                    <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+                  {/if}
                   {$_('pvp.event_view_pool')}
                 </Button>
               </div>
@@ -3401,7 +3406,7 @@
                   {$_('pvp.cancel_search')}
                 </Button>
               {:else}
-                <Button disabled={rankedQueueDisabled} on:click={startQueue}>
+                <Button disabled={rankedQueueDisabled} on:click={() => startQueue()}>
                   {#if actionLoading === 'matchmaking'}
                     <Loader2 class="mr-2 h-4 w-4 animate-spin" />
                   {:else}
@@ -4201,11 +4206,15 @@ h1 {
   justify-content: space-between;
   gap: 16px;
   width: min(100%, 920px);
-  border: 1px solid hsl(var(--border));
+  border: 1px solid hsl(var(--border) / 0.28);
   border-radius: 8px;
-  background: hsl(var(--background));
+  background: hsl(var(--background) / 0.24);
+  backdrop-filter: blur(26px) saturate(175%);
+  -webkit-backdrop-filter: blur(26px) saturate(175%);
   padding: 10px 12px;
-  box-shadow: 0 12px 30px hsl(var(--foreground) / 0.18);
+  box-shadow:
+    0 12px 30px hsl(var(--foreground) / 0.1),
+    inset 0 1px 0 hsl(var(--background) / 0.32);
 }
 
 .pvp-event-banner-main,
@@ -4272,6 +4281,17 @@ h1 {
 .pvp-event-banner :global(.border-input:hover) {
   background: hsl(var(--muted));
   color: hsl(var(--foreground));
+}
+
+.pvp-event-banner :global(.event-queue-button) {
+  background: hsl(var(--foreground));
+  color: hsl(var(--background));
+  box-shadow: 0 8px 18px hsl(var(--foreground) / 0.18);
+}
+
+.pvp-event-banner :global(.event-queue-button:hover) {
+  background: hsl(var(--foreground) / 0.86);
+  color: hsl(var(--background));
 }
 
 .required-submission-content {
