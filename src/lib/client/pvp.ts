@@ -183,6 +183,8 @@ export type PvpEvent = {
     endsAt?: string | null;
     ends_at?: string | null;
     enabled?: boolean;
+    levelSelectionMode?: 'random' | 'sbmm' | string;
+    level_selection_mode?: 'random' | 'sbmm' | string;
     ranked?: boolean;
     isRanked?: boolean;
     is_ranked?: boolean;
@@ -216,6 +218,7 @@ export type AdminPvpEventPayload = {
     startsAt: string;
     endsAt?: string | null;
     enabled?: boolean;
+    levelSelectionMode?: 'random' | 'sbmm';
     ranked?: boolean;
     timeLimitSeconds?: number | null;
     completionRuleType?: PvpRoomCompletionRuleType | string | null;

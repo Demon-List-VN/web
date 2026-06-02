@@ -21,6 +21,7 @@
 
 	type CompletionRuleType = 'count' | 'percentage';
 	type ScoringMode = 'progress' | 'score' | 'hp';
+	type LevelSelectionMode = 'random' | 'sbmm';
 	type PvpEventForm = {
 		title: string;
 		description: string;
@@ -29,6 +30,7 @@
 		startsAt: string;
 		endsAt: string;
 		enabled: boolean;
+		levelSelectionMode: LevelSelectionMode;
 		ranked: boolean;
 		startTimeLimitMinutes: number;
 		startTimeLimitSeconds: number;
@@ -49,6 +51,7 @@
 		startsAt: '',
 		endsAt: '',
 		enabled: true,
+		levelSelectionMode: 'random',
 		ranked: true,
 		startTimeLimitMinutes: 15,
 		startTimeLimitSeconds: 0,
@@ -169,6 +172,16 @@
 		return Boolean(event.ranked ?? event.isRanked ?? event.is_ranked ?? true);
 	}
 
+	function eventLevelSelectionMode(event: PvpEvent): LevelSelectionMode {
+		const value = event.levelSelectionMode ?? event.level_selection_mode;
+
+		return value === 'sbmm' ? 'sbmm' : 'random';
+	}
+
+	function eventLevelSelectionLabel(event: PvpEvent) {
+		return eventLevelSelectionMode(event) === 'sbmm' ? 'SBMM' : 'Random';
+	}
+
 	function eventTimeLimitSeconds(event: PvpEvent) {
 		return normalizedInteger(event.timeLimitSeconds ?? event.time_limit_seconds, 1, 7200, 900);
 	}
@@ -245,6 +258,7 @@
 			startsAt,
 			endsAt,
 			enabled: form.enabled,
+			levelSelectionMode: form.levelSelectionMode,
 			ranked: form.ranked,
 			timeLimitSeconds: totalStartTimeLimitSeconds(),
 			completionRuleType: scoringMode === 'hp' ? null : form.completionRuleType,
@@ -271,6 +285,7 @@
 			startsAt: toDatetimeLocal(event.startsAt ?? event.starts_at),
 			endsAt: toDatetimeLocal(event.endsAt ?? event.ends_at),
 			enabled: event.enabled !== false,
+			levelSelectionMode: eventLevelSelectionMode(event),
 			ranked: eventRanked(event),
 			...formMatchConfigFromEvent(event)
 		};
@@ -281,6 +296,7 @@
 			...form,
 			startTimeLimitMinutes: emptyForm.startTimeLimitMinutes,
 			startTimeLimitSeconds: emptyForm.startTimeLimitSeconds,
+			levelSelectionMode: emptyForm.levelSelectionMode,
 			ranked: emptyForm.ranked,
 			completionRuleType: emptyForm.completionRuleType,
 			completionRuleValue: emptyForm.completionRuleValue,
@@ -342,6 +358,13 @@
 		form = {
 			...form,
 			scoringMode: nextMode
+		};
+	}
+
+	function setLevelSelectionMode(nextMode: LevelSelectionMode) {
+		form = {
+			...form,
+			levelSelectionMode: nextMode
 		};
 	}
 
@@ -606,6 +629,26 @@
           </div>
 
           <div class="field">
+            <Label>Level selection</Label>
+            <div class="segmented-control two-option">
+              <button
+                type="button"
+                class:active={form.levelSelectionMode === 'random'}
+                on:click={() => setLevelSelectionMode('random')}
+              >
+                Random
+              </button>
+              <button
+                type="button"
+                class:active={form.levelSelectionMode === 'sbmm'}
+                on:click={() => setLevelSelectionMode('sbmm')}
+              >
+                SBMM
+              </button>
+            </div>
+          </div>
+
+          <div class="field">
             <Label>Rating</Label>
             <div class="segmented-control two-option">
               <button
@@ -796,6 +839,7 @@
                   <Badge variant={eventRanked(event) ? 'default' : 'secondary'}>
                     {eventRanked(event) ? 'Ranked' : 'Unranked'}
                   </Badge>
+                  <Badge variant="outline">{eventLevelSelectionLabel(event)}</Badge>
                 </div>
               </div>
             </Card.Header>
@@ -811,6 +855,7 @@
                 <span>Ends: {formatDate(event.endsAt ?? event.ends_at)}</span>
                 <span>List ID: {eventListId(event)}</span>
                 <span>{eventRanked(event) ? 'Ranked' : 'Unranked'}</span>
+                <span>Level selection: {eventLevelSelectionLabel(event)}</span>
                 <span>Config: {eventConfigSummary(event)}</span>
               </div>
               {#if event.bannerUrl || event.banner_url}
