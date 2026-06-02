@@ -387,6 +387,7 @@
             "custom_room": "Phòng tùy chỉnh",
             "history": "Lịch sử",
             "weekly_race": "Đua tuần",
+            "event_race": "Đua sự kiện",
             "clan_race": "Đua hội",
             "leaderboard": "Bảng xếp hạng",
             "rules": "Luật"
@@ -524,6 +525,14 @@
                 "reset_title": "Reset mỗi tuần",
                 "reset_description": "Bảng chốt vào cuối Chủ nhật và cuộc đua mới bắt đầu lúc 00:00 thứ Hai theo giờ Việt Nam."
             }
+        },
+        "event_race": {
+            "title": "Đua PvP sự kiện",
+            "description": "Thắng trận ghép sự kiện đang diễn ra để ghi điểm. Chỉ trận ghép Event được tính.",
+            "tabs_label": "Mục đua sự kiện",
+            "current_event": "Sự kiện hiện tại",
+            "ends_in": "Kết thúc sau",
+            "empty": "Chưa có trận thắng ghép sự kiện nào."
         },
         "clan_race": {
             "title": "Đua PvP theo hội",
@@ -770,6 +779,7 @@
             "load_failed": "Tải dữ liệu 1v1 Versus thất bại.",
             "leaderboard_failed": "Tải bảng xếp hạng PvP thất bại.",
             "weekly_race_failed": "Tải đua PvP hằng tuần thất bại.",
+            "event_race_failed": "Tải đua PvP sự kiện thất bại.",
             "clan_race_failed": "Tải đua PvP hằng tuần theo hội thất bại.",
             "select_difficulty": "Hãy chọn độ khó trước.",
             "select_player": "Hãy chọn người chơi trước.",

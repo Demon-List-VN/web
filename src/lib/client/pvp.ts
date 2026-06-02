@@ -555,6 +555,7 @@ export type PvpWeeklyRacePlayer = {
 
 export type PvpWeeklyRace = {
     mode?: PvpMode | string;
+    event?: PvpEvent | null;
     week: PvpWeeklyRaceWeek | null;
     currentWeek: PvpWeeklyRaceWeek | null;
     previousWeek: PvpWeeklyRaceWeek | null;
@@ -1273,6 +1274,58 @@ export async function getPvpWeeklyRace(
         : race.pagination ?? null;
 
     return {
+        mode: race.mode,
+        event: race.event ?? null,
+        week: race.week ?? null,
+        currentWeek: race.currentWeek ?? null,
+        previousWeek: race.previousWeek ?? null,
+        leaderboard,
+        previousLeaderboard: Array.isArray(race.previousLeaderboard)
+            ? race.previousLeaderboard
+            : [],
+        currentPlayer: race.currentPlayer ?? null,
+        pagination
+    };
+}
+
+export async function getPvpEventRace(
+    eventId?: number | string | null,
+    limit = 50,
+    uid?: string | null,
+    page?: number | string | null
+) {
+    const params = new URLSearchParams({ limit: String(limit) });
+
+    if (eventId) {
+        params.set('eventId', String(eventId));
+    }
+
+    if (uid) {
+        params.set('uid', uid);
+    }
+
+    if (page !== undefined && page !== null && page !== '') {
+        params.set('page', String(page));
+    }
+
+    const payload = await pvpRequest<PvpWeeklyRace | { data?: PvpWeeklyRace; }>(
+        `/pvp/event-race?${params}`
+    );
+
+    const race = ('data' in payload && payload.data ? payload.data : payload) as PvpWeeklyRace;
+    const leaderboard = Array.isArray(race.leaderboard) ? race.leaderboard : [];
+    const pagination = page !== undefined && page !== null && page !== ''
+        ? normalizePvpPagination(
+            race.pagination ?? race,
+            Number(page) || 1,
+            limit,
+            leaderboard.length
+        )
+        : race.pagination ?? null;
+
+    return {
+        mode: race.mode,
+        event: race.event ?? null,
         week: race.week ?? null,
         currentWeek: race.currentWeek ?? null,
         previousWeek: race.previousWeek ?? null,

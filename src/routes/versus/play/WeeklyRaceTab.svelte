@@ -20,6 +20,15 @@
 	export let now = Date.now();
 	export let onRefresh: () => void | Promise<void>;
 	export let onPageChange: (page: number) => void | Promise<void>;
+	export let title = '';
+	export let description = '';
+	export let tabsLabel = '';
+	export let rangeLabel = '';
+	export let countdownLabel = '';
+	export let emptyLabel = '';
+	export let tableLabel = '';
+	export let showTutorial = true;
+	export let showHistory = true;
 
 	const WEEKLY_RACE_RANK_MODE: PvpMode = 'classic';
 
@@ -31,6 +40,16 @@
 	$: userRaceRow = getUserRaceRow(weeklyRace, currentUid, currentPlayer);
 	$: pageCount = Math.max(1, Math.ceil(total / pageSize));
 	$: showPagination = total > pageSize || page > 1;
+	$: displayTitle = title || $_('pvp.weekly_race.title');
+	$: displayDescription = description || $_('pvp.weekly_race.description');
+	$: displayTabsLabel = tabsLabel || $_('pvp.weekly_race.tabs.label');
+	$: displayRangeLabel = rangeLabel || $_('pvp.weekly_race.current_week');
+	$: displayCountdownLabel = countdownLabel || $_('pvp.weekly_race.reset_in');
+	$: displayEmptyLabel = emptyLabel || $_('pvp.weekly_race.empty');
+	$: displayTableLabel = tableLabel || displayTitle;
+	$: if (!showTutorial && activeTab === 'tutorial') {
+		activeTab = 'standings';
+	}
 
 	function remainingLongLabel(targetMs: number | null, currentNow: number) {
 		if (!targetMs) {
@@ -156,11 +175,9 @@
         <div>
           <Card.Title class="weekly-race-title">
             <CalendarDays class="h-5 w-5" />
-            {$_('pvp.weekly_race.title')}
+            {displayTitle}
           </Card.Title>
-          <Card.Description>{
-            $_('pvp.weekly_race.description')
-          }</Card.Description>
+          <Card.Description>{displayDescription}</Card.Description>
         </div>
         <Button
           variant="ghost"
@@ -177,25 +194,27 @@
       <Tabs.Root bind:value={activeTab}>
         <Tabs.List
           class="weekly-race-tab-list py-[20px]"
-          aria-label={$_('pvp.weekly_race.tabs.label')}
+          aria-label={displayTabsLabel}
         >
           <Tabs.Trigger value="standings" class="weekly-race-tab-trigger">
             <Trophy class="h-4 w-4" />
             {$_('pvp.weekly_race.tabs.standings')}
           </Tabs.Trigger>
-          <Tabs.Trigger value="tutorial" class="weekly-race-tab-trigger">
-            <BookOpen class="h-4 w-4" />
-            {$_('pvp.weekly_race.tabs.tutorial')}
-          </Tabs.Trigger>
+          {#if showTutorial}
+            <Tabs.Trigger value="tutorial" class="weekly-race-tab-trigger">
+              <BookOpen class="h-4 w-4" />
+              {$_('pvp.weekly_race.tabs.tutorial')}
+            </Tabs.Trigger>
+          {/if}
         </Tabs.List>
         <Tabs.Content value="standings">
           <div class="weekly-race-meta">
             <div>
-              <span>{$_('pvp.weekly_race.current_week')}</span>
+              <span>{displayRangeLabel}</span>
               <strong>{weekRange}</strong>
             </div>
             <div>
-              <span>{$_('pvp.weekly_race.reset_in')}</span>
+              <span>{displayCountdownLabel}</span>
               <strong>{resetCountdown}</strong>
             </div>
           </div>
@@ -238,12 +257,12 @@
               </div>
             {/if}
             {#if weeklyRace.leaderboard.length === 0}
-              <div class="empty-state">{$_('pvp.weekly_race.empty')}</div>
+              <div class="empty-state">{displayEmptyLabel}</div>
             {:else}
               <div
                 class="leaderboard-table"
                 role="table"
-                aria-label={$_('pvp.weekly_race.title')}
+                aria-label={displayTableLabel}
               >
                 <div class="leaderboard-row leaderboard-head" role="row">
                   <span role="columnheader">{$_('pvp.leaderboard.rank')}</span>
@@ -325,7 +344,7 @@
             {/if}
           {/if}
 
-          {#if !loading && weeklyRace.previousWeek}
+          {#if showHistory && !loading && weeklyRace.previousWeek}
             <div class="weekly-race-history">
               <div class="section-heading inside">
                 <div>
@@ -358,25 +377,27 @@
           {/if}
         </Tabs.Content>
 
-        <Tabs.Content value="tutorial">
-          <div class="weekly-race-tutorial">
-            <div>
-              <span>1</span>
-              <strong>{$_('pvp.weekly_race.tutorial.queue_title')}</strong>
-              <p>{$_('pvp.weekly_race.tutorial.queue_description')}</p>
+        {#if showTutorial}
+          <Tabs.Content value="tutorial">
+            <div class="weekly-race-tutorial">
+              <div>
+                <span>1</span>
+                <strong>{$_('pvp.weekly_race.tutorial.queue_title')}</strong>
+                <p>{$_('pvp.weekly_race.tutorial.queue_description')}</p>
+              </div>
+              <div>
+                <span>2</span>
+                <strong>{$_('pvp.weekly_race.tutorial.score_title')}</strong>
+                <p>{$_('pvp.weekly_race.tutorial.score_description')}</p>
+              </div>
+              <div>
+                <span>3</span>
+                <strong>{$_('pvp.weekly_race.tutorial.reset_title')}</strong>
+                <p>{$_('pvp.weekly_race.tutorial.reset_description')}</p>
+              </div>
             </div>
-            <div>
-              <span>2</span>
-              <strong>{$_('pvp.weekly_race.tutorial.score_title')}</strong>
-              <p>{$_('pvp.weekly_race.tutorial.score_description')}</p>
-            </div>
-            <div>
-              <span>3</span>
-              <strong>{$_('pvp.weekly_race.tutorial.reset_title')}</strong>
-              <p>{$_('pvp.weekly_race.tutorial.reset_description')}</p>
-            </div>
-          </div>
-        </Tabs.Content>
+          </Tabs.Content>
+        {/if}
       </Tabs.Root>
     </Card.Content>
   </Card.Root>

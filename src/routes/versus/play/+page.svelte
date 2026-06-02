@@ -40,6 +40,7 @@
 		getPvpMatchId,
 		getPvpMatch,
 		getPvpMatches,
+		getPvpEventRace,
 		getPvpLeaderboardPage,
 		getPvpRequiredSubmissionLevel,
 		getPvpRequiredSubmissionLevelId,
@@ -166,6 +167,16 @@
 	};
 	let weeklyRacePage = 1;
 	let weeklyRaceTotal = 0;
+	let eventRace: PvpWeeklyRace = {
+		week: null,
+		currentWeek: null,
+		previousWeek: null,
+		leaderboard: [],
+		previousLeaderboard: [],
+		currentPlayer: null
+	};
+	let eventRacePage = 1;
+	let eventRaceTotal = 0;
 	let clanRace: PvpClanWeeklyRace = {
 		week: null,
 		currentWeek: null,
@@ -190,6 +201,8 @@
 	let leaderboardError = '';
 	let weeklyRaceLoading = true;
 	let weeklyRaceError = '';
+	let eventRaceLoading = false;
+	let eventRaceError = '';
 	let clanRaceLoading = true;
 	let clanRaceError = '';
 	let roomsLoading = false;
@@ -217,6 +230,7 @@
 	let keydownHandler: ((e: KeyboardEvent) => void) | null = null;
 	let matchmakingCheckTimer: ReturnType<typeof setInterval> | null = null;
 	let loadedLeaderboardKey = '';
+	let loadedEventRaceKey = '';
 	let handledRequeueUrl = '';
 
 	$: currentUid = $user.data?.uid;
@@ -248,6 +262,7 @@
 	$: queueStatus = getPvpStatus(lobby.matchmaking, 'idle');
 	$: isSearching = queueStatus === 'searching';
 	$: activePvpEvent = lobby.activePvpEvent ?? null;
+	$: activePvpEventId = getPvpEventId(activePvpEvent);
 	$: activePvpEventBaseMode = getPvpEventBaseMode(activePvpEvent);
 	$: selectedBaseMode = selectedMode === 'event'
 		? activePvpEventBaseMode
@@ -428,6 +443,33 @@
 
 	$: if (selectedMode === 'event' && lobbyReady && !activePvpEvent) {
 		selectedMode = 'classic';
+	}
+
+	$: if (activePvpTab === 'event-race' && !activePvpEventId) {
+		activePvpTab = 'lobby';
+	}
+
+	$: eventRaceRequestKey = activePvpEventId
+		? `${activePvpEventId}:${eventRacePage}:${currentUid ?? ''}`
+		: '';
+	$: if (browser && activePvpEventId && loadedEventRaceKey !== eventRaceRequestKey) {
+		loadedEventRaceKey = eventRaceRequestKey;
+		void refreshEventRace(eventRacePage, activePvpEventId);
+	}
+	$: if (!activePvpEventId && loadedEventRaceKey) {
+		loadedEventRaceKey = '';
+		eventRacePage = 1;
+		eventRaceTotal = 0;
+		eventRaceLoading = false;
+		eventRaceError = '';
+		eventRace = {
+			week: null,
+			currentWeek: null,
+			previousWeek: null,
+			leaderboard: [],
+			previousLeaderboard: [],
+			currentPlayer: null
+		};
 	}
 
 	$: if (
@@ -637,6 +679,53 @@
 		}
 	}
 
+	async function refreshEventRace(page = eventRacePage, eventId = activePvpEventId) {
+		if (!eventId) {
+			return;
+		}
+
+		eventRaceLoading = true;
+		eventRaceError = '';
+
+		try {
+			const nextEventRace = await getPvpEventRace(
+				eventId,
+				PVP_STANDINGS_PAGE_SIZE,
+				currentUid,
+				page
+			);
+
+			if (page !== eventRacePage || eventId !== activePvpEventId) {
+				return;
+			}
+
+			eventRace = nextEventRace;
+			eventRaceTotal = nextEventRace.pagination?.total
+				?? nextEventRace.leaderboard.length;
+		} catch (error) {
+			if (page !== eventRacePage || eventId !== activePvpEventId) {
+				return;
+			}
+
+			eventRace = {
+				week: null,
+				currentWeek: null,
+				previousWeek: null,
+				leaderboard: [],
+				previousLeaderboard: [],
+				currentPlayer: null
+			};
+			eventRaceTotal = 0;
+			eventRaceError = error instanceof Error
+				? error.message
+				: $_('pvp.toast.event_race_failed');
+		} finally {
+			if (page === eventRacePage && eventId === activePvpEventId) {
+				eventRaceLoading = false;
+			}
+		}
+	}
+
 	async function refreshClanRace(page = clanRacePage) {
 		clanRaceLoading = true;
 		clanRaceError = '';
@@ -687,6 +776,15 @@
 
 		weeklyRacePage = page;
 		void refreshWeeklyRace(page);
+	}
+
+	function setEventRacePage(page: number) {
+		if (page === eventRacePage) {
+			return;
+		}
+
+		eventRacePage = page;
+		void refreshEventRace(page, activePvpEventId);
 	}
 
 	function setClanRacePage(page: number) {
@@ -1016,6 +1114,11 @@
 		) {
 			upsertMatchHistory(nextMatch);
 			void refreshWeeklyRace();
+
+			if (activePvpEventId && getValueEventId(nextMatch) === activePvpEventId) {
+				void refreshEventRace(eventRacePage, activePvpEventId);
+			}
+
 			void refreshClanRace();
 		}
 	}
@@ -2431,6 +2534,12 @@
           <CalendarDays class="h-4 w-4" />
           {$_('pvp.tabs.weekly_race')}
         </Tabs.Trigger>
+        {#if activePvpEvent}
+          <Tabs.Trigger value="event-race" class="pvp-tab-trigger">
+            <Trophy class="h-4 w-4" />
+            {$_('pvp.tabs.event_race')}
+          </Tabs.Trigger>
+        {/if}
         <Tabs.Trigger value="clan-race" class="pvp-tab-trigger">
           <Users class="h-4 w-4" />
           {$_('pvp.tabs.clan_race')}
@@ -2459,6 +2568,31 @@
         {now}
         onRefresh={refreshWeeklyRace}
         onPageChange={setWeeklyRacePage}
+      />
+    </Tabs.Content>
+
+    <Tabs.Content value="event-race">
+      <WeeklyRaceTab
+        weeklyRace={eventRace}
+        currentUid={currentUid ?? null}
+        currentPlayer={$user.data ?? null}
+        loading={eventRaceLoading}
+        error={eventRaceError}
+        page={eventRacePage}
+        total={eventRaceTotal}
+        pageSize={PVP_STANDINGS_PAGE_SIZE}
+        {now}
+        onRefresh={() => refreshEventRace(eventRacePage, activePvpEventId)}
+        onPageChange={setEventRacePage}
+        title={$_('pvp.event_race.title')}
+        description={$_('pvp.event_race.description')}
+        tabsLabel={$_('pvp.event_race.tabs_label')}
+        rangeLabel={$_('pvp.event_race.current_event')}
+        countdownLabel={$_('pvp.event_race.ends_in')}
+        emptyLabel={$_('pvp.event_race.empty')}
+        tableLabel={$_('pvp.event_race.title')}
+        showTutorial={false}
+        showHistory={false}
       />
     </Tabs.Content>
 

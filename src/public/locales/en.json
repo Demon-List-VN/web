@@ -387,6 +387,7 @@
             "custom_room": "Custom room",
             "history": "History",
             "weekly_race": "Weekly Race",
+            "event_race": "Event Race",
             "clan_race": "Clan Race",
             "leaderboard": "Leaderboard",
             "rules": "Rules"
@@ -524,6 +525,14 @@
                 "reset_title": "Race resets weekly",
                 "reset_description": "The leaderboard finalizes at the end of Sunday and a new race starts Monday at 00:00 Vietnam time."
             }
+        },
+        "event_race": {
+            "title": "Event PvP Race",
+            "description": "Win active event queue matches to score during this event. Only Event matchmaking matches count.",
+            "tabs_label": "Event race sections",
+            "current_event": "Current event",
+            "ends_in": "Ends in",
+            "empty": "No event queue wins yet."
         },
         "clan_race": {
             "title": "Clan PvP Race",
@@ -770,6 +779,7 @@
             "load_failed": "Failed to load 1v1 Versus data.",
             "leaderboard_failed": "Failed to load PvP leaderboard.",
             "weekly_race_failed": "Failed to load weekly PvP race.",
+            "event_race_failed": "Failed to load event PvP race.",
             "clan_race_failed": "Failed to load weekly clan PvP race.",
             "select_difficulty": "Choose a difficulty first.",
             "select_player": "Choose a player first.",
