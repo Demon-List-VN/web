@@ -121,6 +121,8 @@
 
 	const PVP_GEODE_ALERT_DISMISSED_KEY = 'gdvn:pvp-geode-alert-dismissed';
 	const PVP_ANONYMOUS_MODE_KEY = 'gdvn:pvp-anonymous-mode';
+	const PVP_ANONYMOUS_REVEAL_AFTER_MATCH_END_KEY =
+		'gdvn:pvp-anonymous-reveal-after-match-end';
 	const PVP_SELECTED_MODE_KEY = 'gdvn:pvp-selected-mode';
 	const PVP_HIDE_OPPONENT_INFO_KEY = 'gdvn:pvp-hide-opponent-info';
 	const PVP_LAST_AUTO_REDIRECTED_MATCH_KEY =
@@ -143,6 +145,7 @@
 	let historyMode: PvpMode = 'classic';
 	let leaderboardMode: PvpMode = 'classic';
 	let anonymousMode = false;
+	let anonymousRevealAfterMatchEnd = false;
 	let hideOpponentInfo = false;
 	let anonymousModeReady = false;
 	let lobby: PvpMe = {
@@ -400,6 +403,8 @@
 		showGeodeAlert =
 			localStorage.getItem(PVP_GEODE_ALERT_DISMISSED_KEY) !== 'true';
 		anonymousMode = localStorage.getItem(PVP_ANONYMOUS_MODE_KEY) === 'true';
+		anonymousRevealAfterMatchEnd =
+			localStorage.getItem(PVP_ANONYMOUS_REVEAL_AFTER_MATCH_END_KEY) === 'true';
 		{
 			const savedMode = localStorage.getItem(PVP_SELECTED_MODE_KEY);
 			selectedMode = savedMode === 'event' || savedMode === 'platformer'
@@ -437,8 +442,16 @@
 
 	$: if (anonymousModeReady) {
 		localStorage.setItem(PVP_ANONYMOUS_MODE_KEY, String(anonymousMode));
+		localStorage.setItem(
+			PVP_ANONYMOUS_REVEAL_AFTER_MATCH_END_KEY,
+			String(anonymousMode && anonymousRevealAfterMatchEnd)
+		);
 		localStorage.setItem(PVP_SELECTED_MODE_KEY, selectedMode);
 		localStorage.setItem(PVP_HIDE_OPPONENT_INFO_KEY, String(hideOpponentInfo));
+	}
+
+	$: if (!anonymousMode && anonymousRevealAfterMatchEnd) {
+		anonymousRevealAfterMatchEnd = false;
 	}
 
 	$: if (selectedMode === 'event' && lobbyReady && !activePvpEvent) {
@@ -1619,7 +1632,8 @@
 				const response = await startPvpMatchmaking(
 					token,
 					anonymousMode,
-					getPvpMode(latestMatch)
+					getPvpMode(latestMatch),
+					anonymousRevealAfterMatchEnd
 				);
 				applyMatchmakingResponse(response);
 			}
@@ -1663,6 +1677,7 @@
 	async function startRequeueFromUrl() {
 		const mode = $page.url.searchParams.get('mode');
 		const anonymous = $page.url.searchParams.get('anonymous');
+		const reveal = $page.url.searchParams.get('reveal');
 
 		if (mode === 'classic' || mode === 'platformer' || mode === 'event') {
 			selectedMode = mode;
@@ -1670,6 +1685,10 @@
 
 		if (anonymous === '1' || anonymous === '0') {
 			anonymousMode = anonymous === '1';
+		}
+
+		if (reveal === '1' || reveal === '0') {
+			anonymousRevealAfterMatchEnd = reveal === '1';
 		}
 
 		activePvpTab = 'lobby';
@@ -1699,7 +1718,8 @@
 			const response = await startPvpMatchmaking(
 				await $user.token(),
 				anonymousMode,
-				mode
+				mode,
+				anonymousRevealAfterMatchEnd
 			);
 			applyMatchmakingResponse(response);
 		} catch (error) {
@@ -1782,6 +1802,7 @@
 			const invite = await sendPvpInvite(await $user.token(), {
 				inviteeUid: selectedPlayer.uid,
 				anonymous: anonymousMode,
+				anonymousRevealAfterMatchEnd,
 				mode: selectedMode
 			});
 			selectedPlayer = null;
@@ -1933,7 +1954,8 @@
 			const response = await acceptPvpInvite(
 				await $user.token(),
 				inviteId,
-				anonymousMode
+				anonymousMode,
+				anonymousRevealAfterMatchEnd
 			);
 			removeInvite(inviteId);
 			applyMatch(response as PvpMatch);
@@ -3329,6 +3351,20 @@
                   aria-label={$_('pvp.anonymous_mode')}
                 />
               </div>
+              {#if anonymousMode}
+                <div class="anonymous-row nested-option-row">
+                  <div>
+                    <strong>{$_('pvp.reveal_after_match_end')}</strong>
+                    <span>{$_('pvp.reveal_after_match_end_hint')}</span>
+                  </div>
+                  <Switch
+                    id="pvp-anonymous-reveal-after-match-end"
+                    bind:checked={anonymousRevealAfterMatchEnd}
+                    disabled={Boolean(actionLoading || activeMatch || isSearching)}
+                    aria-label={$_('pvp.reveal_after_match_end')}
+                  />
+                </div>
+              {/if}
               <div class="anonymous-row">
                 <div>
                   <strong>{$_('pvp.hide_opponent_info')}</strong>
@@ -4115,6 +4151,10 @@ h1 {
 .mode-toggle-row {
   border: 0;
   padding: 0;
+}
+
+.nested-option-row {
+  margin-left: 18px;
 }
 
 .mode-toggle-group {

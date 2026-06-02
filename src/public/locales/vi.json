@@ -710,6 +710,8 @@
         "timer_active": "Đang tính giờ",
         "anonymous_mode": "Chế độ ẩn danh",
         "anonymous_mode_hint": "Ẩn tên, avatar, hội và liên kết hồ sơ của bạn khi tìm thấy trận.",
+        "reveal_after_match_end": "Hiện sau khi trận kết thúc",
+        "reveal_after_match_end_hint": "Hiện danh tính của bạn sau khi trận hoàn tất, bị hủy hoặc bị xử tranh chấp.",
         "anonymous_player": "Người chơi ẩn danh",
         "hide_opponent_info": "Ẩn thông tin đối thủ",
         "hide_opponent_info_hint": "Che tên, avatar, hội và liên kết hồ sơ của đối thủ trên thiết bị này.",

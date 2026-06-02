@@ -1140,10 +1140,17 @@
 		actionLoading = 'requeue';
 
 		try {
+			const revealAfterMatchEnd = Boolean(
+				selfParticipant?.anonymousRevealAfterMatchEnd
+					?? selfParticipant?.anonymous_reveal_after_match_end
+			);
+			const anonymous = getPvpParticipantIsAnonymous(selfParticipant)
+				|| revealAfterMatchEnd;
 			const params = new URLSearchParams({
 				requeue: '1',
 				mode: matchMode,
-				anonymous: getPvpParticipantIsAnonymous(selfParticipant) ? '1' : '0'
+				anonymous: anonymous ? '1' : '0',
+				reveal: revealAfterMatchEnd ? '1' : '0'
 			});
 			await goto(`/versus/play?${params.toString()}`);
 		} finally {

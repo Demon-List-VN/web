@@ -710,6 +710,8 @@
         "timer_active": "Timer running",
         "anonymous_mode": "Anonymous mode",
         "anonymous_mode_hint": "Hide your player name, avatar, clan, and profile link once a match is found.",
+        "reveal_after_match_end": "Reveal after match end",
+        "reveal_after_match_end_hint": "Show your identity after the match is completed, cancelled, or disputed.",
         "anonymous_player": "Anonymous player",
         "hide_opponent_info": "Hide opponent info",
         "hide_opponent_info_hint": "Mask opponent names, avatars, clans, and profile links on this device.",

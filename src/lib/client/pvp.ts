@@ -54,6 +54,8 @@ export type PvpPlayer = {
     pvp_platformer_rating_volatility?: number | null;
     anonymous?: boolean;
     isAnonymous?: boolean;
+    anonymousRevealAfterMatchEnd?: boolean;
+    anonymous_reveal_after_match_end?: boolean;
     avatarVersion?: number;
     isAvatarGif?: boolean;
     supporterUntil?: string | null;
@@ -99,6 +101,8 @@ export type PvpResult = {
     anonymous?: boolean;
     isAnonymous?: boolean;
     is_anonymous?: boolean;
+    anonymousRevealAfterMatchEnd?: boolean;
+    anonymous_reveal_after_match_end?: boolean;
     [key: string]: unknown;
 };
 
@@ -111,6 +115,8 @@ export type PvpParticipant = {
     anonymous?: boolean;
     isAnonymous?: boolean;
     is_anonymous?: boolean;
+    anonymousRevealAfterMatchEnd?: boolean;
+    anonymous_reveal_after_match_end?: boolean;
     result?: PvpResult | null;
     progress?: number | null;
     bestProgress?: number | null;
@@ -355,6 +361,8 @@ export type PvpInvite = {
     toPlayer?: PvpPlayer | null;
     inviterAnonymous?: boolean;
     inviteeAnonymous?: boolean;
+    inviterAnonymousRevealAfterMatchEnd?: boolean;
+    inviteeAnonymousRevealAfterMatchEnd?: boolean;
     match?: PvpMatch | null;
     [key: string]: unknown;
 };
@@ -448,6 +456,7 @@ export type PvpMatchmakingRequest = {
     uid?: string;
     userId?: string;
     anonymous?: boolean;
+    anonymousRevealAfterMatchEnd?: boolean;
     matchId?: number | string | null;
     match?: PvpMatch | null;
     pvpEventId?: number | string | null;
@@ -782,12 +791,13 @@ export async function getActivePvpEvent() {
 export async function startPvpMatchmaking(
     token: string | null | undefined,
     anonymous = false,
-    mode: PvpSelectionMode = 'classic'
+    mode: PvpSelectionMode = 'classic',
+    anonymousRevealAfterMatchEnd = false
 ) {
     return pvpRequest<PvpMatchmakingRequest | PvpMe>('/pvp/matchmaking', {
         method: 'POST',
         token,
-        body: { anonymous, mode }
+        body: { anonymous, mode, anonymousRevealAfterMatchEnd }
     });
 }
 
@@ -929,7 +939,12 @@ export async function resolveAdminPvpReport(
 
 export async function sendPvpInvite(
     token: string | null | undefined,
-    payload: { inviteeUid: string; anonymous?: boolean; mode?: PvpSelectionMode; }
+    payload: {
+        inviteeUid: string;
+        anonymous?: boolean;
+        anonymousRevealAfterMatchEnd?: boolean;
+        mode?: PvpSelectionMode;
+    }
 ) {
     return pvpRequest<PvpInvite>('/pvp/invites', {
         method: 'POST',
@@ -941,12 +956,13 @@ export async function sendPvpInvite(
 export async function acceptPvpInvite(
     token: string | null | undefined,
     id: number | string,
-    anonymous = false
+    anonymous = false,
+    anonymousRevealAfterMatchEnd = false
 ) {
     return pvpRequest<PvpInvite | PvpMatch>(`/pvp/invites/${id}/accept`, {
         method: 'POST',
         token,
-        body: { anonymous }
+        body: { anonymous, anonymousRevealAfterMatchEnd }
     });
 }
 
