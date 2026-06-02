@@ -876,6 +876,19 @@
 		return event?.bannerUrl ?? event?.banner_url ?? null;
 	}
 
+	function getPvpEventBannerStyle(event: PvpEvent | null | undefined) {
+		const url = getPvpEventBannerUrl(event);
+
+		if (!url) {
+			return '';
+		}
+
+		const escapedUrl = url.replace(/\\/g, '\\\\')
+			.replace(/'/g, "\\'");
+
+		return `background-image: url('${escapedUrl}')`;
+	}
+
 	function getPvpEventListUrl(event: PvpEvent | null | undefined) {
 		const list: any = event?.list ?? event?.lists ?? null;
 		const slug = typeof list?.slug === 'string' ? list.slug : '';
@@ -2082,6 +2095,30 @@
 			.padStart(2, '0')}`;
 	}
 
+	function eventCountdownLabel(targetMs: number | null, currentNow: number) {
+		if (!targetMs) {
+			return '--';
+		}
+
+		const totalMinutes = Math.max(
+			0,
+			Math.ceil((targetMs - currentNow) / (1000 * 60))
+		);
+		const days = Math.floor(totalMinutes / (24 * 60));
+		const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+		const minutes = totalMinutes % 60;
+
+		if (days > 0) {
+			return `${days}d ${hours}h`;
+		}
+
+		if (hours > 0) {
+			return `${hours}h ${minutes}m`;
+		}
+
+		return `${minutes}m`;
+	}
+
 	function getFiniteNumber(value: unknown) {
 		const numberValue = Number(value);
 
@@ -3017,14 +3054,12 @@
         {/if}
 
         {#if activePvpEvent}
-          {#if getPvpEventBannerUrl(activePvpEvent)}
-            <img
-              class="pvp-event-banner-image"
-              src={getPvpEventBannerUrl(activePvpEvent)}
-              alt={getPvpEventTitle(activePvpEvent)}
-            />
-          {:else}
-            <section class="pvp-event-banner">
+          <section
+            class="pvp-event-banner"
+            class:has-image={Boolean(getPvpEventBannerUrl(activePvpEvent))}
+            style={getPvpEventBannerStyle(activePvpEvent)}
+          >
+            <div class="pvp-event-banner-pill">
               <div class="pvp-event-banner-main">
                 <Badge>{$_('pvp.event_mode')}</Badge>
                 <div>
@@ -3039,14 +3074,18 @@
                   {$_(`pvp.mode.${activePvpEventBaseMode}`)}
                 </Badge>
                 {#if getPvpEventEndsMs(activePvpEvent)}
-                  <span>{remainingLabel(getPvpEventEndsMs(activePvpEvent), now)}</span>
+                  <div class="pvp-event-countdown">
+                    <Clock class="h-4 w-4" />
+                    <span>{$_('pvp.event_race.ends_in')}</span>
+                    <strong>{eventCountdownLabel(getPvpEventEndsMs(activePvpEvent), now)}</strong>
+                  </div>
                 {/if}
                 <Button size="sm" variant="outline" href={getPvpEventListUrl(activePvpEvent)}>
                   {$_('pvp.event_view_pool')}
                 </Button>
               </div>
-            </section>
-          {/if}
+            </div>
+          </section>
         {/if}
 
         <section class="rating-start-section">
@@ -4138,28 +4177,35 @@ h1 {
 
 .pvp-event-banner {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  align-items: flex-end;
+  justify-content: center;
+  aspect-ratio: 6 / 1;
   min-height: 118px;
   margin-bottom: 16px;
   border: 1px solid hsl(var(--border));
   border-radius: 8px;
-  background-color: hsl(var(--foreground));
+  background-color: hsl(var(--muted));
   background-position: center;
   background-size: cover;
-  padding: 18px;
-  color: hsl(var(--background));
+  padding: 14px;
+  color: hsl(var(--foreground));
 }
 
-.pvp-event-banner-image {
-  display: block;
-  width: 100%;
-  max-height: 220px;
-  margin-bottom: 16px;
+.pvp-event-banner.has-image {
+  min-height: auto;
+}
+
+.pvp-event-banner-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: min(100%, 920px);
   border: 1px solid hsl(var(--border));
   border-radius: 8px;
-  object-fit: cover;
+  background: hsl(var(--background));
+  padding: 10px 12px;
+  box-shadow: 0 12px 30px hsl(var(--foreground) / 0.18);
 }
 
 .pvp-event-banner-main,
@@ -4187,7 +4233,7 @@ h1 {
   line-clamp: 2;
   margin: 4px 0 0;
   max-width: 640px;
-  color: hsl(var(--background) / 0.82);
+  color: hsl(var(--muted-foreground));
   line-height: 1.45;
 }
 
@@ -4195,9 +4241,37 @@ h1 {
   flex-shrink: 0;
 }
 
-.pvp-event-banner-meta span {
+.pvp-event-countdown {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 32px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 999px;
+  background: hsl(var(--muted) / 0.55);
+  padding: 6px 10px;
+}
+
+.pvp-event-countdown span {
   font-size: 13px;
   font-weight: 700;
+}
+
+.pvp-event-countdown strong {
+  font-size: 15px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.pvp-event-banner :global(.border-input) {
+  border-color: hsl(var(--border));
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+.pvp-event-banner :global(.border-input:hover) {
+  background: hsl(var(--muted));
+  color: hsl(var(--foreground));
 }
 
 .required-submission-content {
@@ -4334,11 +4408,15 @@ h1 {
     flex-direction: column;
   }
 
-  .pvp-event-banner,
+  .pvp-event-banner-pill,
   .pvp-event-banner-main,
   .pvp-event-banner-meta {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .pvp-event-banner-pill {
+    border-radius: 8px;
   }
 
   .summary-stats {
