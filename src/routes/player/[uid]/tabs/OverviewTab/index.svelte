@@ -41,10 +41,13 @@
 	import {
 		Activity,
 		CalendarClock,
+		Crown,
+		Diamond,
 		LineChart,
 		ListChecks,
 		Medal,
 		ShieldAlert,
+		Star,
 		Trophy,
 		Zap
 	} from 'lucide-svelte';
@@ -58,6 +61,10 @@
 
 	const INITIAL_EVENT_RATING = 1500;
 	const PVP_MODES: PvpMode[] = ['classic', 'platformer'];
+	const EXP_PER_LEVEL = 100;
+	const LEVELS_PER_EXP_STAR = 5;
+	const STARS_PER_DIAMOND = 5;
+	const DIAMONDS_PER_CROWN = 5;
 	const eloRankBands = [
 		{ min: 3500, max: Infinity, color: 'rgba(170, 0, 0, 0.15)' },
 		{ min: 3000, max: 3500, color: 'rgba(255, 51, 51, 0.15)' },
@@ -141,6 +148,8 @@
 		: null;
 	$: exp = player.exp + player.extraExp;
 	$: expLevel = getExpLevel(exp);
+	$: expTierCounts = getExpTierCounts(expLevel.level);
+	$: nextStarProgress = getNextStarProgress(exp, expLevel.level);
 	$: contestTitle = getTitle('elo', player);
 	$: pvpRequiredSubmission = (
 		player?.pvpRequiredSubmission
@@ -191,6 +200,48 @@
 		return typeof value === 'number' && Number.isFinite(value)
 			? `${value}%`
 			: '-';
+	}
+
+	function getLevelStartExp(level: number) {
+		const normalizedLevel = Math.max(1, Math.floor(Number(level) || 1));
+
+		return (normalizedLevel - 1) * EXP_PER_LEVEL;
+	}
+
+	function getExpTierCounts(level: number) {
+		const normalizedLevel = Math.max(0, Math.floor(Number(level) || 0));
+		const totalStars = Math.floor(normalizedLevel / LEVELS_PER_EXP_STAR);
+		const totalDiamonds = Math.floor(totalStars / STARS_PER_DIAMOND);
+
+		return {
+			crowns: Math.floor(totalDiamonds / DIAMONDS_PER_CROWN),
+			diamonds: totalDiamonds % DIAMONDS_PER_CROWN,
+			stars: totalStars % STARS_PER_DIAMOND
+		};
+	}
+
+	function getNextStarProgress(exp: number, level: number) {
+		const normalizedExp = Math.max(0, Math.floor(Number(exp) || 0));
+		const normalizedLevel = Math.max(1, Math.floor(Number(level) || 1));
+		const earnedStars = Math.floor(normalizedLevel / LEVELS_PER_EXP_STAR);
+		const currentStarLevel = earnedStars * LEVELS_PER_EXP_STAR;
+		const nextStarLevel = (earnedStars + 1) * LEVELS_PER_EXP_STAR;
+		const lowerBound = currentStarLevel > 0
+			? getLevelStartExp(currentStarLevel)
+			: 0;
+		const upperBound = getLevelStartExp(nextStarLevel);
+		const progress = upperBound > lowerBound
+			? Math.round(
+				((normalizedExp - lowerBound) / (upperBound - lowerBound)) * 1000
+			) / 10
+			: 100;
+
+		return {
+			targetLevel: nextStarLevel,
+			upperBound,
+			progress: Math.max(0, Math.min(100, progress)),
+			remainingExp: Math.max(0, upperBound - normalizedExp)
+		};
 	}
 
 	function formatPvpRating() {
@@ -727,23 +778,93 @@
           }.{expLevel.level}</strong>
           <span>{exp}/{expLevel.upperBound} EXP</span>
         </div>
-        <Tooltip.Root>
-          <Tooltip.Trigger class="w-full">
-            <div class="progress-bar large">
-              <div
-                class="progress-fill"
-                style={`width: ${expLevel.progress}%; background-color: ${expLevel.color};`}
-              />
-            </div>
-          </Tooltip.Trigger>
-          <Tooltip.Content>
-            <p>{exp}/{expLevel.upperBound} ({expLevel.progress}%)</p>
-            <p class="text-xs text-muted-foreground">
-              {expLevel.upperBound - exp}
-              {$_('player.exp_to_next')}
-            </p>
-          </Tooltip.Content>
-        </Tooltip.Root>
+        <div
+          class="exp-tier-strip"
+          aria-label={$_('player.overview.level_badges')}
+        >
+          <div class="exp-tier-chip" aria-label={`Crown: ${expTierCounts.crowns}`}>
+            <span class="exp-tier-icon exp-tier-icon--crown">
+              <Crown fill="currentColor" aria-hidden="true" />
+            </span>
+            <strong>{expTierCounts.crowns}</strong>
+          </div>
+          <div
+            class="exp-tier-chip"
+            aria-label={`Diamond: ${expTierCounts.diamonds}`}
+          >
+            <span class="exp-tier-icon exp-tier-icon--diamond">
+              <Diamond fill="currentColor" aria-hidden="true" />
+            </span>
+            <strong>{expTierCounts.diamonds}</strong>
+          </div>
+          <div class="exp-tier-chip" aria-label={`Star: ${expTierCounts.stars}`}>
+            <span class="exp-tier-icon exp-tier-icon--star">
+              <Star fill="currentColor" aria-hidden="true" />
+            </span>
+            <strong>{expTierCounts.stars}</strong>
+          </div>
+        </div>
+        <div class="next-star-progress">
+          <div class="next-star-heading">
+            <span class="next-star-label">
+              <span class="next-star-icon">
+                <Star fill="currentColor" aria-hidden="true" />
+              </span>
+              {$_('player.overview.next_star_level', {
+                values: { level: nextStarProgress.targetLevel }
+              })}
+            </span>
+            <strong>{exp}/{nextStarProgress.upperBound}</strong>
+          </div>
+          <Tooltip.Root>
+            <Tooltip.Trigger class="w-full">
+              <div class="progress-bar large">
+                <div
+                  class="progress-fill star-progress-fill"
+                  style={`width: ${nextStarProgress.progress}%;`}
+                />
+              </div>
+            </Tooltip.Trigger>
+            <Tooltip.Content>
+              <p>
+                {exp}/{nextStarProgress.upperBound}
+              </p>
+              <p class="text-xs text-muted-foreground">
+                {nextStarProgress.remainingExp}
+                {' '}
+                {$_('player.overview.exp_to_next_star')}
+              </p>
+            </Tooltip.Content>
+          </Tooltip.Root>
+        </div>
+        <div class="next-level-progress">
+          <div class="next-star-heading">
+            <span class="next-star-label">
+              {$_('player.overview.next_level', {
+                values: { level: expLevel.level + 1 }
+              })}
+            </span>
+            <strong>{exp}/{expLevel.upperBound}</strong>
+          </div>
+          <Tooltip.Root>
+            <Tooltip.Trigger class="w-full">
+              <div class="progress-bar large">
+                <div
+                  class="progress-fill"
+                  style={`width: ${expLevel.progress}%; background-color: ${expLevel.color};`}
+                />
+              </div>
+            </Tooltip.Trigger>
+            <Tooltip.Content>
+              <p>{exp}/{expLevel.upperBound}</p>
+              <p class="text-xs text-muted-foreground">
+                {expLevel.upperBound - exp}
+                {' '}
+                {$_('player.exp_to_next')}
+              </p>
+            </Tooltip.Content>
+          </Tooltip.Root>
+        </div>
         <div class="exp-detail-grid">
           <div>
             <span>EXP</span>
@@ -752,6 +873,10 @@
           <div>
             <span>{$_('player.exp_to_next')}</span>
             <strong>{expLevel.upperBound - exp}</strong>
+          </div>
+          <div>
+            <span>{$_('player.overview.exp_to_next_star')}</span>
+            <strong>{nextStarProgress.remainingExp}</strong>
           </div>
         </div>
       </Card.Content>
@@ -1035,9 +1160,110 @@
   height: 220px;
 }
 
+.exp-tier-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.exp-tier-chip {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--muted) / 0.35);
+  padding: 9px 10px;
+}
+
+.exp-tier-chip strong {
+  min-width: 1ch;
+  color: hsl(var(--foreground));
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.exp-tier-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
+.exp-tier-icon :global(svg),
+.next-star-icon :global(svg) {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.exp-tier-icon--crown {
+  color: #f5c542;
+}
+
+.exp-tier-icon--diamond {
+  color: #38bdf8;
+}
+
+.exp-tier-icon--star,
+.next-star-icon {
+  color: hsl(var(--foreground));
+}
+
+.next-star-progress,
+.next-level-progress {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.next-star-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.next-star-label {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+  overflow-wrap: anywhere;
+}
+
+.next-star-heading strong {
+  flex: 0 0 auto;
+  color: hsl(var(--foreground));
+}
+
+.next-star-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+}
+
+.star-progress-fill {
+  background: linear-gradient(90deg, #f59e0b, #facc15);
+}
+
 .exp-detail-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
   gap: 10px;
 }
 
@@ -1055,6 +1281,7 @@
   color: hsl(var(--muted-foreground));
   font-size: 12px;
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .exp-detail-grid strong {

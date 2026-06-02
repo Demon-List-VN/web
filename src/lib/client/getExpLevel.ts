@@ -85,20 +85,28 @@ export function getPlayerExpLevelStyle(
 export function getLevelBadgeCounts(level: number) {
     const normalizedLevel = Math.max(0, Math.floor(Number(level) || 0));
     const totalStars = Math.floor(normalizedLevel / 10);
+    const totalDiamonds = Math.floor(totalStars / 5);
 
     return {
-        crowns: Math.floor(totalStars / 100),
-        diamonds: Math.floor((totalStars % 100) / 10),
-        stars: totalStars % 10
+        crowns: Math.floor(totalDiamonds / 5),
+        diamonds: totalDiamonds % 5,
+        stars: totalStars % 5
     };
 }
 
-export function getLevelBadgeIcons(level: number): PlayerLevelBadgeIcon[] {
+export function getLevelBadgeIcons(level: number, showAllTiers = false): PlayerLevelBadgeIcon[] {
     const counts = getLevelBadgeCounts(level);
+    let visibleCounts = counts;
+
+    if (!showAllTiers && counts.crowns > 0) {
+        visibleCounts = { crowns: counts.crowns, diamonds: 0, stars: 0 };
+    } else if (!showAllTiers && counts.diamonds > 0) {
+        visibleCounts = { crowns: 0, diamonds: counts.diamonds, stars: 0 };
+    }
 
     return [
-        ...Array.from({ length: counts.crowns }, () => 'crown' as const),
-        ...Array.from({ length: counts.diamonds }, () => 'diamond' as const),
-        ...Array.from({ length: counts.stars }, () => 'star' as const)
+        ...Array.from({ length: visibleCounts.crowns }, () => 'crown' as const),
+        ...Array.from({ length: visibleCounts.diamonds }, () => 'diamond' as const),
+        ...Array.from({ length: visibleCounts.stars }, () => 'star' as const)
     ];
 }

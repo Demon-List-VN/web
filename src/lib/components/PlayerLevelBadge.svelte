@@ -12,6 +12,7 @@
 	export let color: string | null = null;
 	export let size: 'sm' | 'md' | 'lg' = 'md';
 	export let iconSize: number | null = null;
+	export let showAllTiers = false;
 	let className = '';
 	export { className as class };
 
@@ -20,10 +21,11 @@
 	$: resolvedColor = color
 		?? playerExpLevel?.color
 		?? (resolvedLevel > 0 ? getExpLevelColor(resolvedLevel).color : '');
-	$: icons = getLevelBadgeIcons(resolvedLevel);
+	$: icons = getLevelBadgeIcons(resolvedLevel, showAllTiers);
 	$: rows = chunkIcons(icons, 5);
 	$: visible = rows.length > 0 && Boolean(resolvedColor);
 	$: badgeIconSize = iconSize ?? getBadgeIconSize(size);
+	$: starColor = 'hsl(var(--foreground))';
 
 	function normalizeLevel(value: unknown) {
 		const parsed = Number(value);
@@ -53,7 +55,7 @@
 {#if visible}
   <span
     class={`player-level-badge player-level-badge--${size} ${className}`}
-    style={`--player-level-color: ${resolvedColor};`}
+    style={`--player-level-color: ${resolvedColor}; --badge-icon-size: ${badgeIconSize}px;`}
     aria-label={`Level ${resolvedLevel} badge`}
   >
     {#each rows as row}
@@ -61,25 +63,28 @@
         {#each row as icon}
           {#if icon === 'crown'}
             <Crown
-              class="badge-icon"
+              class="badge-icon badge-icon--crown"
               size={badgeIconSize}
-              fill="currentColor"
+              color="#f5c542"
+              fill="#f5c542"
               strokeWidth={2.3}
               aria-hidden="true"
             />
           {:else if icon === 'diamond'}
             <Diamond
-              class="badge-icon"
+              class="badge-icon badge-icon--diamond"
               size={badgeIconSize}
-              fill="currentColor"
+              color="#38bdf8"
+              fill="#38bdf8"
               strokeWidth={2.3}
               aria-hidden="true"
             />
           {:else}
             <Star
-              class="badge-icon"
+              class="badge-icon badge-icon--star"
               size={badgeIconSize}
-              fill="currentColor"
+              color={starColor}
+              fill={starColor}
               strokeWidth={2.3}
               aria-hidden="true"
             />
@@ -100,11 +105,14 @@
   display: grid;
   justify-items: center;
   gap: 1px;
+  width: max-content;
+  min-width: max-content;
   padding: 2px 4px;
   border: 1px solid hsl(var(--border));
   border-radius: 999px;
   background: hsl(var(--background) / 0.9);
   color: hsl(var(--foreground));
+  overflow: visible;
   pointer-events: none;
   transform: translateX(-50%);
 }
@@ -114,7 +122,8 @@
   align-items: center;
   justify-content: center;
   gap: 1px;
-  min-width: 0;
+  width: max-content;
+  min-width: max-content;
 }
 
 .badge-icon {
@@ -122,16 +131,27 @@
   height: var(--badge-icon-size);
   flex: 0 0 auto;
   color: inherit;
+  overflow: visible;
+}
+
+.badge-icon--crown {
+  color: #f5c542;
+}
+
+.badge-icon--diamond {
+  color: #7dd3fc;
+}
+
+.badge-icon--star {
+  color: hsl(var(--foreground));
 }
 
 .player-level-badge--sm {
-  --badge-icon-size: 9px;
   bottom: -5px;
   padding: 1px 3px;
 }
 
 .player-level-badge--lg {
-  --badge-icon-size: 16px;
   bottom: -9px;
   gap: 2px;
   padding: 3px 6px;
