@@ -20,12 +20,10 @@
 	import * as Tabs from '$lib/components/ui/tabs';
 	import Chart from 'chart.js/auto';
 	import {
-		acceptPvpInvite,
 		acceptPvpMatch,
 		cancelPvpMatchmaking,
 		checkPvpMatchmaking,
 		acceptPvpRoomInvite,
-		declinePvpInvite,
 		declinePvpRoomInvite,
 		createPvpRoom,
 		getPvpClanWeeklyRace,
@@ -114,7 +112,6 @@
 		ShieldAlert,
 		Swords,
 		Trophy,
-		UserCheck,
 		Users,
 		X
 	} from 'lucide-svelte';
@@ -350,16 +347,6 @@
 	$: activePublicRooms = roomsOverview.publicRooms.filter(isActiveRoom);
 	$: currentRoom = activeJoinedRooms[0] ?? null;
 	$: currentRoomId = getRoomId(currentRoom);
-	$: incomingPending = lobby.incomingInvites.filter(
-		(invite) =>
-			getPvpStatus(invite) === 'pending'
-				&& inviteMatchesSelectedMode(invite, selectedMode, activePvpEvent)
-	);
-	$: outgoingVisible = lobby.outgoingInvites.filter(
-		(invite) =>
-			getPvpStatus(invite) === 'pending'
-				&& inviteMatchesSelectedMode(invite, selectedMode, activePvpEvent)
-	);
 	$: checkingLobby = $user.checked && $user.loggedIn && !lobbyReady;
 	$: controlsDisabled = Boolean(
 		checkingLobby || activeMatch || isSearching || actionLoading
@@ -918,20 +905,6 @@
 		return Number.isInteger(id) && id > 0 ? id : null;
 	}
 
-	function inviteMatchesSelectedMode(
-		invite: PvpInvite,
-		mode: PvpSelectionMode,
-		event: PvpEvent | null | undefined
-	) {
-		if (mode === 'event') {
-			const activeEventId = getPvpEventId(event);
-
-			return Boolean(activeEventId && getValueEventId(invite) === activeEventId);
-		}
-
-		return getPvpMode(invite) === mode && !getValueEventId(invite);
-	}
-
 	function realtimeRow(event: PvpRealtimeEvent) {
 		return event.payload?.new ?? event.payload?.old ?? {};
 	}
@@ -1342,20 +1315,6 @@
 		);
 
 		return [invite, ...next].slice(0, 20);
-	}
-
-	function removeInvite(inviteId: number | string) {
-		const matchesId = (invite: PvpInvite) =>
-			String(getPvpInviteId(invite)) === String(inviteId);
-		lobby = {
-			...lobby,
-			incomingInvites: lobby.incomingInvites.filter((invite) =>
-				!matchesId(invite)
-			),
-			outgoingInvites: lobby.outgoingInvites.filter((invite) =>
-				!matchesId(invite)
-			)
-		};
 	}
 
 	function getLobbyRealtimeMatchIds() {
@@ -1942,35 +1901,6 @@
 		viewRoom(room);
 	}
 
-	async function acceptInvite(invite: PvpInvite) {
-		const inviteId = getPvpInviteId(invite);
-
-		if (!inviteId) {
-			return;
-		}
-
-		actionLoading = `accept-${inviteId}`;
-
-		try {
-			const response = await acceptPvpInvite(
-				await $user.token(),
-				inviteId,
-				anonymousMode,
-				anonymousRevealAfterMatchEnd
-			);
-			removeInvite(inviteId);
-			applyMatch(response as PvpMatch);
-		} catch (error) {
-			toast.error(
-				error instanceof Error
-					? error.message
-					: $_('pvp.toast.accept_failed')
-			);
-		} finally {
-			actionLoading = '';
-		}
-	}
-
 	async function acceptPendingMatch() {
 		if (!pendingMatchId || actionLoading || pendingSelfAccepted) {
 			return;
@@ -2032,29 +1962,6 @@
 		}
 	}
 
-	async function declineInvite(invite: PvpInvite) {
-		const inviteId = getPvpInviteId(invite);
-
-		if (!inviteId) {
-			return;
-		}
-
-		actionLoading = `decline-${inviteId}`;
-
-		try {
-			const invite = await declinePvpInvite(await $user.token(), inviteId);
-			applyInvite(invite, 'incomingInvite');
-		} catch (error) {
-			toast.error(
-				error instanceof Error
-					? error.message
-					: $_('pvp.toast.decline_failed')
-			);
-		} finally {
-			actionLoading = '';
-		}
-	}
-
 	function statusLabel(value: unknown) {
 		const status = String(value || 'pending');
 
@@ -2071,32 +1978,6 @@
 		}
 
 		selectedMode = mode;
-	}
-
-	function inviteName(invite: PvpInvite, direction: 'incoming' | 'outgoing') {
-		if (inviteAnonymous(invite, direction)) {
-			return $_(
-				'pvp.anonymous_player'
-			);
-		}
-
-		const player = direction === 'incoming'
-			? (invite.inviter ?? invite.fromPlayer)
-			: (invite.invitee ?? invite.toPlayer);
-
-		return (
-			player?.name || player?.uid
-			|| (direction === 'incoming' ? invite.from : invite.to) || '--'
-		);
-	}
-
-	function inviteAnonymous(
-		invite: PvpInvite,
-		direction: 'incoming' | 'outgoing'
-	) {
-		return direction === 'incoming'
-			? Boolean(invite.inviterAnonymous)
-			: Boolean(invite.inviteeAnonymous);
 	}
 
 	function remainingLabel(targetMs: number | null, currentNow: number) {
@@ -3504,110 +3385,6 @@
             </Card.Content>
           </Card.Root>
         </section>
-
-        <section class="invite-grid">
-          <Card.Root>
-            <Card.Header>
-              <Card.Title>{$_('pvp.incoming_invites')}</Card.Title>
-            </Card.Header>
-            <Card.Content>
-              {#if incomingPending.length === 0}
-                <div class="empty-state">{$_('pvp.no_incoming_invites')}</div>
-              {:else}
-                <div class="invite-list">
-                  {#each incomingPending as invite}
-                    <div class="invite-row">
-                      <div>
-                        <strong>{inviteName(invite, 'incoming')}</strong>
-                        <span>{$_('pvp.unranked')}</span>
-                      </div>
-                      <div class="invite-actions">
-                        <span class="timer">{
-                          remainingLabel(getPvpInviteExpiresMs(invite), now)
-                        }</span>
-                        <Button
-                          size="sm"
-                          disabled={Boolean(actionLoading)}
-                          on:click={() => acceptInvite(invite)}
-                        >
-                          {#if actionLoading === `accept-${getPvpInviteId(invite)}`}
-                            <Loader2 class="mr-2 h-4 w-4 animate-spin" />
-                          {:else}
-                            <UserCheck class="mr-2 h-4 w-4" />
-                          {/if}
-                          {$_('general.accept')}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={Boolean(actionLoading)}
-                          on:click={() => declineInvite(invite)}
-                        >
-                          {$_('general.reject')}
-                        </Button>
-                      </div>
-                    </div>
-                  {/each}
-                </div>
-              {/if}
-            </Card.Content>
-          </Card.Root>
-
-          <Card.Root>
-            <Card.Header>
-              <div class="section-heading inside">
-                <Card.Title>{$_('pvp.outgoing_invites')}</Card.Title>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  disabled={loading}
-                  on:click={refreshLobby}
-                  aria-label={$_('pvp.refresh')}
-                >
-                  <RefreshCw
-                    class={`h-4 w-4 ${loading ? 'animate-spin' : ''}`}
-                  />
-                </Button>
-              </div>
-            </Card.Header>
-            <Card.Content>
-              {#if outgoingVisible.length === 0}
-                <div class="empty-state">{$_('pvp.no_outgoing_invites')}</div>
-              {:else}
-                <div class="invite-list">
-                  {#each outgoingVisible as invite}
-                    <div class="invite-row">
-                      <div>
-                        <strong>{inviteName(invite, 'outgoing')}</strong>
-                        <span>{$_('pvp.unranked')}</span>
-                      </div>
-                      <div class="invite-actions">
-                        <Badge
-                          variant={getPvpStatus(invite) === 'pending' ? 'default' : 'secondary'}
-                        >
-                          {statusLabel(getPvpStatus(invite))}
-                        </Badge>
-                        {#if getPvpStatus(invite) === 'pending'}
-                          <span class="timer">{
-                            remainingLabel(getPvpInviteExpiresMs(invite), now)
-                          }</span>
-                        {/if}
-                        {#if getPvpMatchedMatchId(invite)}
-                          <a
-                            class="inline-link"
-                            href={`/versus/matches/${getPvpMatchedMatchId(invite)}`}
-                          >
-                            {$_('pvp.view_match')}
-                          </a>
-                        {/if}
-                      </div>
-                    </div>
-                  {/each}
-                </div>
-              {/if}
-            </Card.Content>
-          </Card.Root>
-        </section>
       {/if}
     </Tabs.Content>
   </Tabs.Root>
@@ -3929,13 +3706,6 @@
   grid-template-columns: 1.2fr 1fr 1fr;
   gap: 16px;
   align-items: stretch;
-}
-
-.invite-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-  margin-top: 16px;
 }
 
 :global(.summary-card.is-collapsed) {
@@ -4430,7 +4200,6 @@
 
 @media (max-width: 980px) {
   .control-grid,
-  .invite-grid,
   .match-grid,
   .room-grid {
     grid-template-columns: 1fr;
