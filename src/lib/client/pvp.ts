@@ -300,6 +300,8 @@ export type PvpMatch = {
     viewer_report?: PvpMatchReport | null;
     reportedByViewer?: boolean;
     reported_by_viewer?: boolean;
+    viewerXpAward?: PvpXpAward | null;
+    viewer_xp_award?: PvpXpAward | null;
     participants?: PvpParticipant[];
     results?: PvpResult[];
     [key: string]: unknown;
@@ -343,6 +345,18 @@ export type PvpMatchReport = {
     description?: string | null;
     resolved?: boolean;
     created_at?: string;
+    [key: string]: unknown;
+};
+
+export type PvpXpAward = {
+    id?: number | string;
+    created_at?: string;
+    reason?: 'pvp_match_win' | 'pvp_match_loss' | string;
+    diff?: number;
+    newXp?: number;
+    sourceType?: 'pvp_match' | string;
+    sourceId?: string;
+    metadata?: Record<string, unknown> | null;
     [key: string]: unknown;
 };
 

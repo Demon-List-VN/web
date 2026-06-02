@@ -307,6 +307,13 @@
         "match": "Match",
         "winner": "Winner",
         "winner_named": "Winner: {name}",
+        "xp_toast": {
+            "title": "Match complete - XP earned",
+            "total_xp": "{xp} total XP",
+            "level": "Level {level}",
+            "level_up": "Level up to {level}",
+            "progress": "{progress}% to next level"
+        },
         "geode_alert": {
             "title": "GDVN Geode mod required",
             "description": "To play 1v1 Versus, install GDVN Geode mod",

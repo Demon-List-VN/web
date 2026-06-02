@@ -307,6 +307,13 @@
         "match": "Trận",
         "winner": "Người thắng",
         "winner_named": "Người thắng: {name}",
+        "xp_toast": {
+            "title": "Trận đã kết thúc - nhận XP",
+            "total_xp": "Tổng {xp} XP",
+            "level": "Cấp {level}",
+            "level_up": "Lên cấp {level}",
+            "progress": "{progress}% tới cấp tiếp theo"
+        },
         "geode_alert": {
             "title": "Cần cài GDVN Geode mod",
             "description": "Để chơi 1v1 Versus, hãy cài GDVN Geode mod",

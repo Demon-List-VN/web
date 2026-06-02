@@ -7,6 +7,7 @@
 	import BanPickPanel from './components/BanPickPanel.svelte';
 	import MatchReportDialog from './components/MatchReportDialog.svelte';
 	import MatchTopbar from './components/MatchTopbar.svelte';
+	import PvpXpToast from '$lib/components/pvp/PvpXpToast.svelte';
 	import { user } from '$lib/client';
 	import supabase from '$lib/client/supabase';
 	import { Badge } from '$lib/components/ui/badge';
@@ -72,7 +73,8 @@
 		type PvpMode,
 		type PvpPlayMode,
 		type PvpRoomScoringMode,
-		type PvpParticipant
+		type PvpParticipant,
+		type PvpXpAward
 	} from '$lib/client/pvp';
 	import {
 		setPvpRealtimeAuth,
@@ -103,6 +105,7 @@
 	const PVP_GEODE_ALERT_DISMISSED_KEY = 'gdvn:pvp-geode-alert-dismissed';
 	const PVP_HIDE_OPPONENT_INFO_KEY = 'gdvn:pvp-hide-opponent-info';
 	const PVP_CHAT_MUTED_KEY = 'gdvn:pvp-chat-muted';
+	const PVP_XP_TOAST_SHOWN_KEY_PREFIX = 'gdvn:pvp-xp-toast-shown:';
 	const POST_MATCH_CHAT_GRACE_MS = 3 * 60 * 1000;
 	const REALTIME_COALESCE_MS = 200;
 	const MESSAGE_FETCH_LIMIT = 100;
@@ -539,12 +542,10 @@
 		loading = true;
 
 		try {
-			const previousMatch = match;
 			const nextMatch = isSpectateRoute
 				? await getSpectatablePvpMatch(await $user.token(), matchId)
 				: await getPvpMatch(await $user.token(), matchId);
-			handleMatchSound(previousMatch, nextMatch);
-			match = nextMatch;
+			setMatch(nextMatch);
 		} catch (error) {
 			toast.error(
 				error instanceof Error ? error.message : $_('pvp.toast.load_failed')
@@ -864,6 +865,14 @@
 		}
 	}
 
+	function setMatch(nextMatch: PvpMatch | null) {
+		const previousMatch = match;
+
+		handleMatchSound(previousMatch, nextMatch);
+		match = nextMatch;
+		showPvpXpToastIfNeeded(previousMatch, nextMatch);
+	}
+
 	function handleMatchSound(
 		previousMatch: PvpMatch | null,
 		nextMatch: PvpMatch | null
@@ -885,6 +894,107 @@
 			endedBellPlayedFor = String(id);
 			playPvpBell();
 		}
+	}
+
+	function showPvpXpToastIfNeeded(
+		previousMatch: PvpMatch | null,
+		nextMatch: PvpMatch | null
+	) {
+		if (
+			!browser || !previousMatch || isSpectateRoute
+			|| nextMatch?.viewerRole === 'spectator'
+		) {
+			return;
+		}
+
+		if (
+			getPvpStatus(previousMatch, '') === 'completed'
+			|| getPvpStatus(nextMatch, '') !== 'completed'
+		) {
+			return;
+		}
+
+		const award = getViewerXpAward(nextMatch);
+		const diff = Number(award?.diff);
+		const newXp = Number(award?.newXp);
+
+		if (!award || !Number.isFinite(diff) || diff <= 0 || !Number.isFinite(newXp)) {
+			return;
+		}
+
+		const toastKey = getPvpXpToastKey(nextMatch, award);
+
+		if (!toastKey || pvpXpToastWasShown(toastKey)) {
+			return;
+		}
+
+		markPvpXpToastShown(toastKey);
+		syncUserXpFromAward(award);
+		toast.custom(PvpXpToast, {
+			componentProps: { award },
+			duration: 8000,
+			position: 'top-center',
+			unstyled: true
+		});
+	}
+
+	function getViewerXpAward(currentMatch: PvpMatch | null | undefined) {
+		return currentMatch?.viewerXpAward ?? currentMatch?.viewer_xp_award ?? null;
+	}
+
+	function getPvpXpToastKey(
+		currentMatch: PvpMatch | null | undefined,
+		award: PvpXpAward
+	) {
+		if (award.id !== undefined && award.id !== null && award.id !== '') {
+			return `log:${award.id}`;
+		}
+
+		const sourceId = award.sourceId
+			?? (award.source_id as string | number | undefined)
+			?? getPvpMatchId(currentMatch);
+
+		if (sourceId === undefined || sourceId === null || sourceId === '') {
+			return '';
+		}
+
+		return `match:${sourceId}:${award.diff ?? ''}`;
+	}
+
+	function pvpXpToastWasShown(key: string) {
+		try {
+			return localStorage.getItem(`${PVP_XP_TOAST_SHOWN_KEY_PREFIX}${key}`)
+				=== 'true';
+		} catch {
+			return false;
+		}
+	}
+
+	function markPvpXpToastShown(key: string) {
+		try {
+			localStorage.setItem(`${PVP_XP_TOAST_SHOWN_KEY_PREFIX}${key}`, 'true');
+		} catch {
+			return;
+		}
+	}
+
+	function syncUserXpFromAward(award: PvpXpAward) {
+		const newXp = Number(award.newXp);
+
+		if (!Number.isFinite(newXp)) {
+			return;
+		}
+
+		user.update((current) => ({
+			...current,
+			data: current.data
+				? {
+					...current.data,
+					exp: Math.max(0, Math.trunc(newXp)),
+					extraExp: 0
+				}
+				: current.data
+		}));
 	}
 
 	async function acceptMatch() {
@@ -911,7 +1021,7 @@
 				.add(
 					matchKey
 				);
-			match = response;
+			setMatch(response);
 		} catch (error) {
 			locallyAcceptedMatchIds = new Set(
 				[...locallyAcceptedMatchIds].filter((id) => id !== matchKey)
@@ -989,7 +1099,7 @@
 				matchId,
 				selectedBanLevelIds
 			);
-			match = response;
+			setMatch(response);
 			selectedBanLevelIds = [];
 			await refreshMessages({ incremental: true });
 		} catch (error) {
@@ -1017,7 +1127,7 @@
 
 		try {
 			const response = await resignPvpMatch(await $user.token(), matchId);
-			match = response;
+			setMatch(response);
 			await refreshMessages({ incremental: true });
 			toast.success($_('pvp.toast.resign_success'));
 		} catch (error) {
@@ -1043,7 +1153,7 @@
 				await $user.token(),
 				matchId
 			);
-			match = response;
+			setMatch(response);
 			await refreshMessages({ incremental: true });
 			toast.success(
 				response.levelChangedAt || response.level_changed_at
@@ -1089,7 +1199,7 @@
 				await $user.token(),
 				matchId
 			);
-			match = response;
+			setMatch(response);
 			await refreshMessages({ incremental: true });
 			toast.success(
 				response.status === 'cancelled'
@@ -1169,11 +1279,11 @@
 			.add(String(matchId));
 
 		if (match) {
-			match = {
+			setMatch({
 				...match,
 				viewerReport: report,
 				reportedByViewer: true
-			};
+			});
 		}
 	}
 
