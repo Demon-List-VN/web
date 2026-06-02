@@ -1738,6 +1738,7 @@
 			return;
 		}
 
+		activePvpTab = 'lobby';
 		selectedMode = 'event';
 		await startQueue('event');
 	}
@@ -2546,13 +2547,55 @@
         <Swords class="h-4 w-4" />
         <span>{$_('pvp.arena')}</span>
       </div>
-      <h1>{$_('pvp.lobby_title')}</h1>
     </div>
   </section>
 
   <div class="pvp-ad-slot">
     <Ads dataAdFormat="auto" />
   </div>
+
+  {#if activePvpEvent && $user.checked && $user.loggedIn}
+    <section
+      class="pvp-event-banner"
+      class:has-image={Boolean(getPvpEventBannerUrl(activePvpEvent))}
+      style={getPvpEventBannerStyle(activePvpEvent)}
+    >
+      <div class="pvp-event-banner-pill">
+        <div class="pvp-event-banner-main">
+          <Badge>{$_('pvp.event_mode')}</Badge>
+          <div>
+            <h2>{getPvpEventTitle(activePvpEvent)}</h2>
+            {#if activePvpEvent.description}
+              <p>{activePvpEvent.description}</p>
+            {/if}
+          </div>
+        </div>
+        <div class="pvp-event-banner-meta">
+          <Badge variant="outline">
+            {$_(`pvp.mode.${activePvpEventBaseMode}`)}
+          </Badge>
+          {#if getPvpEventEndsMs(activePvpEvent)}
+            <div class="pvp-event-countdown">
+              <Clock class="h-4 w-4" />
+              <span>{$_('pvp.event_race.ends_in')}</span>
+              <strong>{eventCountdownLabel(getPvpEventEndsMs(activePvpEvent), now)}</strong>
+            </div>
+          {/if}
+          <Button
+            size="sm"
+            class="event-queue-button"
+            disabled={controlsDisabled}
+            on:click={startEventQueue}
+          >
+            {#if actionLoading === 'matchmaking' && selectedMode === 'event'}
+              <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+            {/if}
+            {$_('pvp.event_view_pool')}
+          </Button>
+        </div>
+      </div>
+    </section>
+  {/if}
 
   <Tabs.Root bind:value={activePvpTab}>
     <Tabs.List class="py-[22px]" aria-label={$_('pvp.tabs.label')}>
@@ -3069,49 +3112,6 @@
               {hideOpponentInfo}
               href={`/versus/matches/${getPvpMatchId(activeMatch)}`}
             />
-          </section>
-        {/if}
-
-        {#if activePvpEvent}
-          <section
-            class="pvp-event-banner"
-            class:has-image={Boolean(getPvpEventBannerUrl(activePvpEvent))}
-            style={getPvpEventBannerStyle(activePvpEvent)}
-          >
-            <div class="pvp-event-banner-pill">
-              <div class="pvp-event-banner-main">
-                <Badge>{$_('pvp.event_mode')}</Badge>
-                <div>
-                  <h2>{getPvpEventTitle(activePvpEvent)}</h2>
-                  {#if activePvpEvent.description}
-                    <p>{activePvpEvent.description}</p>
-                  {/if}
-                </div>
-              </div>
-              <div class="pvp-event-banner-meta">
-                <Badge variant="outline">
-                  {$_(`pvp.mode.${activePvpEventBaseMode}`)}
-                </Badge>
-                {#if getPvpEventEndsMs(activePvpEvent)}
-                  <div class="pvp-event-countdown">
-                    <Clock class="h-4 w-4" />
-                    <span>{$_('pvp.event_race.ends_in')}</span>
-                    <strong>{eventCountdownLabel(getPvpEventEndsMs(activePvpEvent), now)}</strong>
-                  </div>
-                {/if}
-                <Button
-                  size="sm"
-                  class="event-queue-button"
-                  disabled={controlsDisabled}
-                  on:click={startEventQueue}
-                >
-                  {#if actionLoading === 'matchmaking' && selectedMode === 'event'}
-                    <Loader2 class="mr-2 h-4 w-4 animate-spin" />
-                  {/if}
-                  {$_('pvp.event_view_pool')}
-                </Button>
-              </div>
-            </div>
           </section>
         {/if}
 
@@ -3639,13 +3639,6 @@
 
 .arena-topbar {
   margin-bottom: 24px;
-}
-
-h1 {
-  margin: 4px 0 0;
-  font-size: clamp(2rem, 4vw, 3.25rem);
-  font-weight: 800;
-  letter-spacing: 0;
 }
 
 .eyebrow,
