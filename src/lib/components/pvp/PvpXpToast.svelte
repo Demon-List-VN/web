@@ -94,7 +94,6 @@
 
 <div
   class="pvp-xp-toast"
-  style={`--xp-level-color: ${currentLevel.color};`}
   role="status"
   aria-live="polite"
 >
@@ -155,7 +154,7 @@
   width: min(92vw, 390px);
   display: grid;
   gap: 12px;
-  border: 1px solid hsl(var(--border));
+  border: 1px solid hsl(var(--foreground) / 0.18);
   border-radius: 8px;
   background: hsl(var(--background));
   box-shadow: 0 18px 45px rgb(0 0 0 / 28%);
@@ -182,8 +181,8 @@
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  background: hsl(var(--muted));
-  color: var(--xp-level-color);
+  background: hsl(var(--foreground));
+  color: hsl(var(--background));
 }
 
 .toast-title {
@@ -201,7 +200,7 @@
 .toast-title span,
 .toast-footer,
 .level-meta {
-  color: hsl(var(--muted-foreground));
+  color: hsl(var(--foreground) / 0.7);
   font-size: 12px;
 }
 
@@ -215,12 +214,12 @@
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: hsl(var(--muted-foreground));
+  color: hsl(var(--foreground) / 0.7);
   cursor: pointer;
 }
 
 .toast-close:hover {
-  background: hsl(var(--muted));
+  background: hsl(var(--foreground) / 0.1);
   color: hsl(var(--foreground));
 }
 
@@ -229,7 +228,7 @@
   align-items: baseline;
   justify-content: center;
   gap: 8px;
-  color: var(--xp-level-color);
+  color: hsl(var(--foreground));
 }
 
 .xp-gain span {
@@ -250,7 +249,7 @@
 }
 
 .level-meta span:first-child {
-  color: var(--xp-level-color);
+  color: hsl(var(--foreground));
   font-weight: 700;
 }
 
@@ -262,13 +261,13 @@
   height: 8px;
   overflow: hidden;
   border-radius: 999px;
-  background: hsl(var(--muted));
+  background: hsl(var(--foreground) / 0.14);
 }
 
 .xp-fill {
   height: 100%;
   border-radius: inherit;
-  background: var(--xp-level-color);
+  background: hsl(var(--foreground));
   transition: width 120ms linear;
 }
 </style>
