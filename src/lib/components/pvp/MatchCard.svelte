@@ -63,7 +63,7 @@
 	$: roomTitle = getPvpMatchRoomName(match) || $_('pvp.rooms.custom_room');
 	$: progressBarMax = matchMode === 'platformer'
 		? Math.max(1, ...participants.map((participant) => getPvpProgress(participant)))
-		: scoringMode === 'score'
+		: scoringMode === 'score' || scoringMode === 'powerup'
 		? Math.max(
 			Number(targetScore) || 0,
 			1,

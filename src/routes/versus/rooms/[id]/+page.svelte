@@ -65,7 +65,7 @@
 	const ROOM_MATCH_CONFIG_STORAGE_KEY = 'pvp.room.matchConfig.v1';
 
 	type CompletionRuleType = 'count' | 'percentage';
-	type ScoringMode = 'progress' | 'score' | 'hp';
+	type ScoringMode = 'progress' | 'score' | 'hp' | 'powerup';
 	type StoredRoomMatchConfig = {
 		startTimeLimitMinutes?: number | string;
 		startTimeLimitSeconds?: number | string;
@@ -738,7 +738,9 @@
 				completionRuleType: scoringMode === 'hp' ? undefined : completionRuleType,
 				completionRuleValue: scoringMode === 'hp' ? undefined : completionRuleValue,
 				scoringMode,
-				targetScore: scoringMode === 'score' && targetScoreEnabled ? normalizedTargetScore() : null,
+				targetScore: (scoringMode === 'score' || scoringMode === 'powerup') && targetScoreEnabled
+					? normalizedTargetScore()
+					: null,
 				startingHp: scoringMode === 'hp' ? normalizedStartingHp() : null,
 				finalizeAliveCount: scoringMode === 'hp' ? normalizedFinalizeAliveCount() : null,
 				forceStart
@@ -794,19 +796,21 @@
 				config.completionRuleValue,
 				false
 			);
-				scoringMode = config.scoringMode === 'score'
-					? 'score'
-					: config.scoringMode === 'hp'
-						? 'hp'
-						: 'progress';
-				targetScoreEnabled = Boolean(config.targetScoreEnabled);
-				targetScore = normalizedTargetScore(config.targetScore);
-				startingHp = normalizedStartingHp(config.startingHp);
-				finalizeAliveCount = normalizedFinalizeAliveCount(config.finalizeAliveCount);
-			} catch {
-				return;
-			}
+			scoringMode = config.scoringMode === 'score'
+				? 'score'
+				: config.scoringMode === 'hp'
+				? 'hp'
+				: config.scoringMode === 'powerup'
+				? 'powerup'
+				: 'progress';
+			targetScoreEnabled = Boolean(config.targetScoreEnabled);
+			targetScore = normalizedTargetScore(config.targetScore);
+			startingHp = normalizedStartingHp(config.startingHp);
+			finalizeAliveCount = normalizedFinalizeAliveCount(config.finalizeAliveCount);
+		} catch {
+			return;
 		}
+	}
 
 	function saveMatchConfig() {
 		if (!browser) {
@@ -814,17 +818,17 @@
 		}
 
 		try {
-				const config: StoredRoomMatchConfig = {
-					startTimeLimitMinutes: normalizedInteger(startTimeLimitMinutes, 0, 120, 15),
-					startTimeLimitSeconds: normalizedInteger(startTimeLimitSeconds, 0, 59, 0),
-					completionRuleType,
-					completionRuleValue: normalizedCompletionRuleValue(),
-					scoringMode,
-					targetScoreEnabled,
-					targetScore: normalizedTargetScore(),
-					startingHp: normalizedStartingHp(),
-					finalizeAliveCount: normalizedFinalizeAliveCount()
-				};
+			const config: StoredRoomMatchConfig = {
+				startTimeLimitMinutes: normalizedInteger(startTimeLimitMinutes, 0, 120, 15),
+				startTimeLimitSeconds: normalizedInteger(startTimeLimitSeconds, 0, 59, 0),
+				completionRuleType,
+				completionRuleValue: normalizedCompletionRuleValue(),
+				scoringMode,
+				targetScoreEnabled,
+				targetScore: normalizedTargetScore(),
+				startingHp: normalizedStartingHp(),
+				finalizeAliveCount: normalizedFinalizeAliveCount()
+			};
 
 			localStorage.setItem(ROOM_MATCH_CONFIG_STORAGE_KEY, JSON.stringify(config));
 		} catch {
@@ -1491,129 +1495,137 @@
                   </div>
                 </div>
               </div>
-	              <div class="field-group">
-	                <Label>{$_('pvp.rooms.scoring_mode')}</Label>
-	                <div class="completion-toggle">
-	                  <button
-	                    type="button"
-	                    class:active={scoringMode === 'progress'}
-	                    on:click={() => (scoringMode = 'progress')}
-	                  >
-	                    {$_('pvp.rooms.mode_progress')}
-	                  </button>
-	                  <button
-	                    type="button"
-	                    class:active={scoringMode === 'score'}
-	                    disabled={selectedLevelIsPlatformer}
-	                    on:click={() => (scoringMode = 'score')}
-	                  >
-	                    {$_('pvp.rooms.mode_score')}
-	                  </button>
-	                  <button
-	                    type="button"
-	                    class:active={scoringMode === 'hp'}
-	                    disabled={selectedLevelIsPlatformer}
-	                    on:click={() => (scoringMode = 'hp')}
-	                  >
-	                    {$_('pvp.rooms.mode_hp')}
-	                  </button>
-	                </div>
-	                {#if selectedLevelIsPlatformer}
-	                  <small class="field-hint">{$_('pvp.rooms.score_hp_classic_only')}</small>
-	                {/if}
-	              </div>
+              <div class="field-group">
+                <Label>{$_('pvp.rooms.scoring_mode')}</Label>
+                <div class="completion-toggle">
+                  <button
+                    type="button"
+                    class:active={scoringMode === 'progress'}
+                    on:click={() => (scoringMode = 'progress')}
+                  >
+                    {$_('pvp.rooms.mode_progress')}
+                  </button>
+                  <button
+                    type="button"
+                    class:active={scoringMode === 'score'}
+                    disabled={selectedLevelIsPlatformer}
+                    on:click={() => (scoringMode = 'score')}
+                  >
+                    {$_('pvp.rooms.mode_score')}
+                  </button>
+                  <button
+                    type="button"
+                    class:active={scoringMode === 'hp'}
+                    disabled={selectedLevelIsPlatformer}
+                    on:click={() => (scoringMode = 'hp')}
+                  >
+                    {$_('pvp.rooms.mode_hp')}
+                  </button>
+                  <button
+                    type="button"
+                    class:active={scoringMode === 'powerup'}
+                    disabled={selectedLevelIsPlatformer}
+                    on:click={() => (scoringMode = 'powerup')}
+                  >
+                    {$_('pvp.rooms.mode_powerup')}
+                  </button>
+                </div>
+                {#if selectedLevelIsPlatformer}
+                  <small class="field-hint">{$_('pvp.rooms.score_hp_powerup_classic_only')}</small>
+                {/if}
+              </div>
 
-	              {#if scoringMode !== 'hp'}
-	                <div class="field-group">
-	                  <Label>{$_('pvp.rooms.completion_rule')}</Label>
-	                  <div class="completion-toggle">
-	                    <button
-	                      type="button"
-	                      class:active={completionRuleType === 'count'}
-	                      on:click={() => setCompletionRule('count')}
-	                    >
-	                      {$_('pvp.rooms.rule_count')}
-	                    </button>
-	                    <button
-	                      type="button"
-	                      class:active={completionRuleType === 'percentage'}
-	                      on:click={() => setCompletionRule('percentage')}
-	                    >
-	                      {$_('pvp.rooms.rule_percentage')}
-	                    </button>
-	                  </div>
-	                </div>
-	                <div class="field-group">
-	                  <Label for="room-completion-value">{$_('pvp.rooms.completion_value')}</Label>
-	                  <div class="input-with-unit">
-	                    <Input
-	                      id="room-completion-value"
-	                      bind:value={completionRuleValue}
-	                      min="1"
-	                      max={completionRuleType === 'percentage' ? 100 : memberCount}
-	                      type="number"
-	                    />
-	                    <span>{completionRuleType === 'percentage' ? '%' : $_('pvp.rooms.players')}</span>
-	                  </div>
-	                </div>
-	              {/if}
+              {#if scoringMode !== 'hp'}
+                <div class="field-group">
+                  <Label>{$_('pvp.rooms.completion_rule')}</Label>
+                  <div class="completion-toggle">
+                    <button
+                      type="button"
+                      class:active={completionRuleType === 'count'}
+                      on:click={() => setCompletionRule('count')}
+                    >
+                      {$_('pvp.rooms.rule_count')}
+                    </button>
+                    <button
+                      type="button"
+                      class:active={completionRuleType === 'percentage'}
+                      on:click={() => setCompletionRule('percentage')}
+                    >
+                      {$_('pvp.rooms.rule_percentage')}
+                    </button>
+                  </div>
+                </div>
+                <div class="field-group">
+                  <Label for="room-completion-value">{$_('pvp.rooms.completion_value')}</Label>
+                  <div class="input-with-unit">
+                    <Input
+                      id="room-completion-value"
+                      bind:value={completionRuleValue}
+                      min="1"
+                      max={completionRuleType === 'percentage' ? 100 : memberCount}
+                      type="number"
+                    />
+                    <span>{completionRuleType === 'percentage' ? '%' : $_('pvp.rooms.players')}</span>
+                  </div>
+                </div>
+              {/if}
 
-	              {#if scoringMode === 'score'}
-	                <div class="field-group">
-	                  <Label>{$_('pvp.rooms.target_score')}</Label>
-	                  <div class="completion-toggle">
-	                    <button
-	                      type="button"
-	                      class:active={!targetScoreEnabled}
-	                      on:click={() => (targetScoreEnabled = false)}
-	                    >
-	                      {$_('pvp.rooms.unlimited')}
-	                    </button>
-	                    <button
-	                      type="button"
-	                      class:active={targetScoreEnabled}
-	                      on:click={() => (targetScoreEnabled = true)}
-	                    >
-	                      {$_('pvp.rooms.target')}
-	                    </button>
-	                  </div>
-	                  {#if targetScoreEnabled}
-	                    <Input
-	                      bind:value={targetScore}
-	                      min="1"
-	                      max="100000"
-	                      type="number"
-	                      aria-label={$_('pvp.rooms.target_score')}
-	                    />
-	                  {/if}
-	                </div>
-	              {/if}
+              {#if scoringMode === 'score' || scoringMode === 'powerup'}
+                <div class="field-group">
+                  <Label>{$_('pvp.rooms.target_score')}</Label>
+                  <div class="completion-toggle">
+                    <button
+                      type="button"
+                      class:active={!targetScoreEnabled}
+                      on:click={() => (targetScoreEnabled = false)}
+                    >
+                      {$_('pvp.rooms.unlimited')}
+                    </button>
+                    <button
+                      type="button"
+                      class:active={targetScoreEnabled}
+                      on:click={() => (targetScoreEnabled = true)}
+                    >
+                      {$_('pvp.rooms.target')}
+                    </button>
+                  </div>
+                  {#if targetScoreEnabled}
+                    <Input
+                      bind:value={targetScore}
+                      min="1"
+                      max="100000"
+                      type="number"
+                      aria-label={$_('pvp.rooms.target_score')}
+                    />
+                  {/if}
+                </div>
+              {/if}
 
-	              {#if scoringMode === 'hp'}
-	                <div class="field-group">
-	                  <Label for="room-starting-hp">{$_('pvp.rooms.starting_hp')}</Label>
-	                  <Input
-	                    id="room-starting-hp"
-	                    bind:value={startingHp}
-	                    min="1"
-	                    max="100000"
-	                    type="number"
-	                  />
-	                </div>
-	                <div class="field-group">
-	                  <Label for="room-finalize-alive">{$_('pvp.rooms.finalize_alive_count')}</Label>
-	                  <div class="input-with-unit">
-	                    <Input
-	                      id="room-finalize-alive"
-	                      bind:value={finalizeAliveCount}
-	                      min="1"
-	                      max={Math.max(1, memberCount - 1)}
-	                      type="number"
-	                    />
-	                    <span>{$_('pvp.rooms.players')}</span>
-	                  </div>
-	                </div>
-	              {/if}
+              {#if scoringMode === 'hp'}
+                <div class="field-group">
+                  <Label for="room-starting-hp">{$_('pvp.rooms.starting_hp')}</Label>
+                  <Input
+                    id="room-starting-hp"
+                    bind:value={startingHp}
+                    min="1"
+                    max="100000"
+                    type="number"
+                  />
+                </div>
+                <div class="field-group">
+                  <Label for="room-finalize-alive">{$_('pvp.rooms.finalize_alive_count')}</Label>
+                  <div class="input-with-unit">
+                    <Input
+                      id="room-finalize-alive"
+                      bind:value={finalizeAliveCount}
+                      min="1"
+                      max={Math.max(1, memberCount - 1)}
+                      type="number"
+                    />
+                    <span>{$_('pvp.rooms.players')}</span>
+                  </div>
+                </div>
+              {/if}
 
               <Button disabled={startDisabled} on:click={requestStartMatch}>
                 {#if actionLoading === 'start-match'}

@@ -4,7 +4,25 @@ export type PvpSelectionMode = PvpMode | 'event';
 export type PvpPlayMode = 'normal' | 'practice';
 export type PvpRoomVisibility = 'public' | 'private';
 export type PvpRoomCompletionRuleType = 'count' | 'percentage';
-export type PvpRoomScoringMode = 'progress' | 'score' | 'hp';
+export type PvpRoomScoringMode = 'progress' | 'score' | 'hp' | 'powerup';
+export type PvpPowerupSkill = 'flashbang' | 'invisible' | 'shield';
+
+export type PvpPowerupState = {
+    matchId: number;
+    uid: string;
+    mana: number;
+    maxMana: number;
+    shieldExpiresAt?: string | null;
+    shieldCharges?: number;
+    shieldActive?: boolean;
+    skills?: Array<{
+        skill: PvpPowerupSkill;
+        cost: number;
+        durationMs: number;
+        effect: string;
+        harmful: boolean;
+    }>;
+};
 
 export type PvpMatchStatus =
     | 'pending'
@@ -1648,6 +1666,34 @@ export async function sendPvpPlayMode(
     );
 }
 
+export async function getPvpPowerupState(
+    token: string | null | undefined,
+    id: number | string
+) {
+    return pvpRequest<PvpPowerupState>(`/pvp/matches/${id}/powerups`, { token });
+}
+
+export async function castPvpPowerupSkill(
+    token: string | null | undefined,
+    id: number | string,
+    payload: {
+        skill: PvpPowerupSkill | string;
+        targetUid?: string | null;
+        randomTarget?: boolean;
+    }
+) {
+    return pvpRequest<{
+        skill: PvpPowerupSkill | string;
+        targetUid: string;
+        blocked: boolean;
+        state: PvpPowerupState;
+    }>(`/pvp/matches/${id}/powerups/cast`, {
+        method: 'POST',
+        token,
+        body: payload
+    });
+}
+
 export async function reportPvpMatch(
     token: string | null | undefined,
     id: number | string,
@@ -1899,7 +1945,7 @@ export function formatPvpProgressValue(
         : value.toFixed(2)
             .replace(/\.?0+$/, '');
 
-    if (scoringMode === 'score') {
+    if (scoringMode === 'score' || scoringMode === 'powerup') {
         const target = Number(targetScore);
 
         return Number.isFinite(target) && target > 0

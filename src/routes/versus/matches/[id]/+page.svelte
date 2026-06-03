@@ -187,6 +187,7 @@
 	let endedBellPlayedFor: string | null = null;
 	let showGeodeAlert = true;
 	let messages: PvpMatchMessage[] = [];
+	let visibleMessages: PvpMatchMessage[] = [];
 	let chatDraft = '';
 	let chatLoading = false;
 	let desktopChatScrollEl: HTMLDivElement | null = null;
@@ -227,6 +228,7 @@
 	$: scoringMode = match?.scoringMode ?? match?.scoring_mode ?? 'progress';
 	$: targetScore = match?.targetScore ?? match?.target_score ?? null;
 	$: startingHp = match?.startingHp ?? match?.starting_hp ?? null;
+	$: visibleMessages = messages.filter((message) => messageIsRevealed(message, now));
 	$: level = getPvpLevel(match);
 	$: banPick = getPvpBanPick(match);
 	$: banPickActions = Array.isArray(banPick?.actions) ? banPick.actions : [];
@@ -908,7 +910,7 @@
 		nextMatch: PvpMatch | null
 	) {
 		if (
-			!browser || !previousMatch || isSpectateRoute
+			!browser || !previousMatch || !nextMatch || isSpectateRoute
 			|| nextMatch?.viewerRole === 'spectator'
 		) {
 			return;
@@ -1291,7 +1293,7 @@
 		try {
 			const revealAfterMatchEnd = Boolean(
 				selfParticipant?.anonymousRevealAfterMatchEnd
-					?? selfParticipant?.anonymous_reveal_after_match_end
+				?? selfParticipant?.anonymous_reveal_after_match_end
 			);
 			const anonymous = getPvpParticipantIsAnonymous(selfParticipant)
 				|| revealAfterMatchEnd;
@@ -1638,6 +1640,25 @@
 		return metadataText(messageMetadata(message), 'kind');
 	}
 
+	function messageRevealAtMs(message: PvpMatchMessage) {
+		const revealAt = metadataText(messageMetadata(message), 'revealAt');
+
+		if (!revealAt) {
+			return null;
+		}
+
+		const ms = new Date(revealAt)
+			.getTime();
+
+		return Number.isFinite(ms) ? ms : null;
+	}
+
+	function messageIsRevealed(message: PvpMatchMessage, nowMs = now) {
+		const revealAtMs = messageRevealAtMs(message);
+
+		return revealAtMs === null || revealAtMs <= nowMs;
+	}
+
 	function systemMessageActionLabel(message: PvpMatchMessage) {
 		if (message.type !== 'system') {
 			return '';
@@ -1714,7 +1735,13 @@
 	}
 
 	function normalizedScoringMode(value: unknown): PvpRoomScoringMode {
-		return value === 'score' || value === 'hp' ? value : 'progress';
+		return value === 'score' || value === 'hp' || value === 'powerup'
+			? value
+			: 'progress';
+	}
+
+	function isScoreLikeScoringMode(value: PvpRoomScoringMode | string) {
+		return value === 'score' || value === 'powerup';
 	}
 
 	function progressMessageEvent(
@@ -1739,7 +1766,7 @@
 		}
 
 		if (
-			(currentScoringMode === 'score' || currentScoringMode === 'hp')
+			(isScoreLikeScoringMode(currentScoringMode) || currentScoringMode === 'hp')
 			&& messageScoringMode !== currentScoringMode
 		) {
 			return null;
@@ -1748,10 +1775,10 @@
 		return {
 			uid,
 			progress: mode === 'platformer'
-					? Math.max(0, Math.floor(progress))
-					: currentScoringMode === 'score' || currentScoringMode === 'hp'
-					? Math.max(0, progress)
-					: Math.max(0, Math.min(100, progress)),
+				? Math.max(0, Math.floor(progress))
+				: isScoreLikeScoringMode(currentScoringMode) || currentScoringMode === 'hp'
+				? Math.max(0, progress)
+				: Math.max(0, Math.min(100, progress)),
 			timeMs
 		};
 	}
@@ -1905,7 +1932,7 @@
 		);
 		const maxY = mode === 'platformer'
 			? Math.max(1, maxProgress)
-			: currentScoringMode === 'score'
+			: isScoreLikeScoringMode(currentScoringMode)
 			? Math.max(1, Number(currentTargetScore) || 0, maxProgress)
 			: currentScoringMode === 'hp'
 			? Math.max(1, Number(currentStartingHp) || 0, maxProgress)
@@ -1940,12 +1967,12 @@
 			minX: 0,
 			maxX,
 			minY,
-				maxY,
-				mode,
-				scoringMode: currentScoringMode,
-				targetScore: currentTargetScore,
-				startingHp: currentStartingHp
-			};
+			maxY,
+			mode,
+			scoringMode: currentScoringMode,
+			targetScore: currentTargetScore,
+			startingHp: currentStartingHp
+		};
 	}
 
 	function getProgressGraphEndMs(
@@ -2269,24 +2296,24 @@
 				const mode = metadataText(metadata, 'mode') === 'platformer'
 					? 'platformer'
 					: matchMode;
-					const currentScoringMode = normalizedScoringMode(metadataText(metadata, 'scoringMode'));
-					const currentTargetScore = metadataNumber(metadata, 'targetScore') ?? targetScore;
-					const currentStartingHp = metadataNumber(metadata, 'startingHp') ?? startingHp;
-					const formattedProgress = formatPvpProgressValue(
-						progress,
-						mode,
-						currentScoringMode,
-						currentTargetScore,
-						currentStartingHp
-					);
-					content = $_(
-						mode === 'platformer'
-							? 'pvp.system_message.progress_platformer'
-							: currentScoringMode === 'score'
-							? 'pvp.system_message.progress_score'
-							: currentScoringMode === 'hp'
-							? 'pvp.system_message.progress_hp'
-							: 'pvp.system_message.progress',
+				const currentScoringMode = normalizedScoringMode(metadataText(metadata, 'scoringMode'));
+				const currentTargetScore = metadataNumber(metadata, 'targetScore') ?? targetScore;
+				const currentStartingHp = metadataNumber(metadata, 'startingHp') ?? startingHp;
+				const formattedProgress = formatPvpProgressValue(
+					progress,
+					mode,
+					currentScoringMode,
+					currentTargetScore,
+					currentStartingHp
+				);
+				content = $_(
+					mode === 'platformer'
+						? 'pvp.system_message.progress_platformer'
+						: isScoreLikeScoringMode(currentScoringMode)
+						? 'pvp.system_message.progress_score'
+						: currentScoringMode === 'hp'
+						? 'pvp.system_message.progress_hp'
+						: 'pvp.system_message.progress',
 					{
 						values: {
 							player: systemParticipantName(
@@ -2308,6 +2335,38 @@
 				values: {
 					player: systemParticipantName(metadataText(metadata, 'uid')),
 					mode: playModeLabel(playMode)
+				}
+			});
+		}
+
+		if (kind === 'powerup_skill') {
+			const skill = metadataText(metadata, 'skill') === 'invisible'
+				? 'invisible'
+				: 'flashbang';
+			content = $_(`pvp.system_message.powerup_skill_${skill}`, {
+				values: {
+					caster: systemParticipantName(metadataText(metadata, 'casterUid')),
+					target: systemParticipantName(metadataText(metadata, 'targetUid'))
+				}
+			});
+		}
+
+		if (kind === 'powerup_blocked') {
+			const skill = metadataText(metadata, 'skill') === 'invisible'
+				? 'invisible'
+				: 'flashbang';
+			content = $_(`pvp.system_message.powerup_blocked_${skill}`, {
+				values: {
+					caster: systemParticipantName(metadataText(metadata, 'casterUid')),
+					target: systemParticipantName(metadataText(metadata, 'targetUid'))
+				}
+			});
+		}
+
+		if (kind === 'powerup_shield') {
+			content = $_('pvp.system_message.powerup_shield', {
+				values: {
+					player: systemParticipantName(metadataText(metadata, 'casterUid'))
 				}
 			});
 		}
@@ -2567,7 +2626,7 @@
 			return $_('pvp.progress_graph.checkpoints_axis');
 		}
 
-		return data.scoringMode === 'score'
+		return isScoreLikeScoringMode(data.scoringMode)
 			? $_('pvp.progress_graph.score_axis')
 			: data.scoringMode === 'hp'
 			? $_('pvp.progress_graph.hp_axis')
@@ -2579,7 +2638,7 @@
 			return '';
 		}
 
-		if (data.mode === 'platformer' || data.scoringMode === 'score') {
+		if (data.mode === 'platformer' || isScoreLikeScoringMode(data.scoringMode)) {
 			return String(value);
 		}
 
@@ -3351,12 +3410,12 @@
                         <div class="progress-label">
                           <span>{
                             formatPvpProgressValue(
-	                              getPvpProgress(participant),
-	                              matchMode,
-	                              scoringMode,
-	                              targetScore,
-	                              startingHp
-	                            )
+                              getPvpProgress(participant),
+                              matchMode,
+                              scoringMode,
+                              targetScore,
+                              startingHp
+                            )
                           }</span>
                           <span>
                             <Gauge class="h-3.5 w-3.5" />
@@ -3544,10 +3603,10 @@
                 <div class="chat-messages" bind:this={desktopChatScrollEl}>
                   {#if chatMuted}
                     <div class="empty-state">{$_('pvp.chat_muted_state')}</div>
-                  {:else if messages.length === 0}
+                  {:else if visibleMessages.length === 0}
                     <div class="empty-state">{$_('pvp.no_messages')}</div>
                   {:else}
-                    {#each messages as message}
+                    {#each visibleMessages as message}
                       {@const senderUid = messageSenderUid(message)}
                       {@const senderName = messageSenderName(
                           message,
@@ -3851,10 +3910,10 @@
               <div class="chat-messages" bind:this={mobileChatScrollEl}>
                 {#if chatMuted}
                   <div class="empty-state">{$_('pvp.chat_muted_state')}</div>
-                {:else if messages.length === 0}
+                {:else if visibleMessages.length === 0}
                   <div class="empty-state">{$_('pvp.no_messages')}</div>
                 {:else}
-                  {#each messages as message}
+                  {#each visibleMessages as message}
                     {@const senderUid = messageSenderUid(message)}
                     {@const senderName = messageSenderName(
                         message,
