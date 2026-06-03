@@ -20,7 +20,7 @@
 	import { CalendarDays, Loader2, Plus, RefreshCw, Save, Trash2, X } from 'lucide-svelte';
 
 	type CompletionRuleType = 'count' | 'percentage';
-	type ScoringMode = 'progress' | 'score' | 'hp';
+	type ScoringMode = 'progress' | 'score' | 'hp' | 'powerup';
 	type LevelSelectionMode = 'random' | 'sbmm';
 	type PvpEventForm = {
 		title: string;
@@ -165,6 +165,8 @@
 			? 'score'
 			: value === 'hp'
 			? 'hp'
+			: value === 'powerup'
+			? 'powerup'
 			: 'progress';
 	}
 
@@ -193,10 +195,11 @@
 		const seconds = timeLimitSeconds % 60;
 		const timeLabel = seconds ? `${minutes}m ${seconds}s` : `${minutes}m`;
 
-		if (scoringMode === 'score') {
+		if (scoringMode === 'score' || scoringMode === 'powerup') {
 			const target = event.targetScore ?? event.target_score;
+			const label = scoringMode === 'powerup' ? 'Powerup' : 'Score';
 
-			return `Score - ${timeLabel}${target ? ` - target ${target}` : ' - unlimited'}`;
+			return `${label} - ${timeLabel}${target ? ` - target ${target}` : ' - unlimited'}`;
 		}
 
 		if (scoringMode === 'hp') {
@@ -264,7 +267,9 @@
 			completionRuleType: scoringMode === 'hp' ? null : form.completionRuleType,
 			completionRuleValue: scoringMode === 'hp' ? null : normalizedCompletionRuleValue(),
 			scoringMode,
-			targetScore: scoringMode === 'score' && form.targetScoreEnabled ? normalizedTargetScore() : null,
+			targetScore: (scoringMode === 'score' || scoringMode === 'powerup') && form.targetScoreEnabled
+				? normalizedTargetScore()
+				: null,
 			startingHp: scoringMode === 'hp' ? normalizedStartingHp() : null,
 			finalizeAliveCount: scoringMode === 'hp' ? normalizedFinalizeAliveCount() : null
 		};
@@ -381,6 +386,8 @@
 			? 'score'
 			: form.scoringMode === 'hp'
 			? 'hp'
+			: form.scoringMode === 'powerup'
+			? 'powerup'
 			: 'progress';
 	}
 
@@ -670,7 +677,7 @@
 
           <div class="field">
             <Label>Mode</Label>
-            <div class="segmented-control">
+            <div class="segmented-control four-option">
               <button
                 type="button"
                 class:active={form.scoringMode === 'progress'}
@@ -691,6 +698,13 @@
                 on:click={() => setScoringMode('hp')}
               >
                 HP
+              </button>
+              <button
+                type="button"
+                class:active={form.scoringMode === 'powerup'}
+                on:click={() => setScoringMode('powerup')}
+              >
+                Powerup
               </button>
             </div>
           </div>
@@ -730,7 +744,7 @@
             </div>
           {/if}
 
-          {#if form.scoringMode === 'score'}
+          {#if form.scoringMode === 'score' || form.scoringMode === 'powerup'}
             <div class="field">
               <Label>Target score</Label>
               <div class="segmented-control">
@@ -1032,6 +1046,10 @@
 
 .segmented-control.two-option {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.segmented-control.four-option {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .segmented-control button {

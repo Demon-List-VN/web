@@ -424,7 +424,8 @@
             "scoring_hint": {
                 "progress": "Nếu chưa đạt điều kiện thắng, người có tiến độ cao nhất sẽ thắng.",
                 "score": "Người chơi đua điểm cao nhất trong thời gian giới hạn.",
-                "hp": "Giữ HP lâu hơn bằng cách sống sót khi chơi level."
+                "hp": "Giữ HP lâu hơn bằng cách sống sót khi chơi level.",
+                "powerup": "Người chơi nhận mana từ tiến độ khi chết và dùng powerup trong trận."
             }
         },
         "view_platformer_pool": "Xem danh sách Platformer",

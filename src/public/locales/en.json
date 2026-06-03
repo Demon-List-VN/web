@@ -424,7 +424,8 @@
             "scoring_hint": {
                 "progress": "Highest progress wins if nobody completes the win condition.",
                 "score": "Players race for the best score during the time limit.",
-                "hp": "Survive longer by protecting HP while playing the level."
+                "hp": "Survive longer by protecting HP while playing the level.",
+                "powerup": "Players earn mana from death progress and cast powerups during the match."
             }
         },
         "view_platformer_pool": "View level pool",

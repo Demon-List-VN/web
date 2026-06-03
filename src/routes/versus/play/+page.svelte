@@ -987,6 +987,8 @@
 			? 'score'
 			: value === 'hp'
 			? 'hp'
+			: value === 'powerup'
+			? 'powerup'
 			: 'progress';
 	}
 
@@ -1094,7 +1096,7 @@
 				value: getPvpEventCompletionLabel(event),
 				hint: $_('pvp.event_info.completion_hint')
 			});
-		} else if (scoringMode === 'score') {
+		} else if (scoringMode === 'score' || scoringMode === 'powerup') {
 			rows.push({
 				label: $_('pvp.rooms.target_score'),
 				value: Number.isFinite(targetScore) && targetScore > 0
@@ -1102,7 +1104,7 @@
 					: $_('pvp.rooms.unlimited'),
 				hint: $_('pvp.event_info.target_score_hint')
 			});
-		} else {
+		} else if (scoringMode === 'hp') {
 			rows.push(
 				{
 					label: $_('pvp.rooms.starting_hp'),
