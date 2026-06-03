@@ -144,6 +144,7 @@
 		{ key: '100', limit: 100 },
 		{ key: 'all', limit: null }
 	] as const;
+	type PvpNavGroup = 'play' | 'missions' | 'progress' | 'rankings' | 'info';
 	let selectedPlayer: any = null;
 	let selectedMode: PvpSelectionMode = 'classic';
 	let historyMode: PvpMode = 'classic';
@@ -364,6 +365,7 @@
 	);
 	$: matchmakingDisabled = controlsDisabled || Boolean(requiredSubmission);
 	$: rankedQueueDisabled = matchmakingDisabled || Boolean(currentRoom);
+	$: activePvpGroup = getActivePvpGroup(activePvpTab);
 	$: updateActiveMatchRealtime($user.loggedIn, getLobbyRealtimeMatchIds());
 	$: updatePendingConfirmRealtime($user.loggedIn, pendingMatchId);
 	$: updateMatchmakingCheckPolling($user.loggedIn, isSearching && !requiredSubmission);
@@ -952,6 +954,43 @@
 
 	function getPvpEventTitle(event: PvpEvent | null | undefined) {
 		return event?.title || $_('pvp.event_mode');
+	}
+
+	function getActivePvpGroup(tab: string): PvpNavGroup {
+		if (tab === 'missions') {
+			return 'missions';
+		}
+
+		if (tab === 'history') {
+			return 'progress';
+		}
+
+		if (
+			tab === 'leaderboard'
+			|| tab === 'weekly-race'
+			|| tab === 'event-race'
+			|| tab === 'clan-race'
+		) {
+			return 'rankings';
+		}
+
+		if (tab === 'rules') {
+			return 'info';
+		}
+
+		return 'play';
+	}
+
+	function selectPvpGroup(group: PvpNavGroup) {
+		activePvpTab = group === 'missions'
+			? 'missions'
+			: group === 'progress'
+			? 'history'
+			: group === 'rankings'
+			? 'leaderboard'
+			: group === 'info'
+			? 'rules'
+			: 'lobby';
 	}
 
 	function getPvpEventBannerUrl(event: PvpEvent | null | undefined) {
@@ -2573,65 +2612,100 @@
   {/if}
 
   <Tabs.Root bind:value={activePvpTab}>
-    <Tabs.List class="py-[22px]" aria-label={$_('pvp.tabs.label')}>
-      <button
-        type="button"
-        class="pvp-main-tab"
-        class:active={activePvpTab !== 'rooms'}
-        on:click={() => (activePvpTab = 'lobby')}
-      >
-        <Swords class="h-4 w-4" />
-        {$_('pvp.tabs.matchmaking')}
-      </button>
-      <button
-        type="button"
-        class="pvp-main-tab"
-        class:active={activePvpTab === 'rooms'}
-        on:click={() => (activePvpTab = 'rooms')}
-      >
-        <Users class="h-4 w-4" />
-        {$_('pvp.tabs.custom_room')}
-      </button>
-    </Tabs.List>
-
-    {#if activePvpTab !== 'rooms'}
-      <Tabs.List class="py-[22px]" aria-label={$_('pvp.tabs.matchmaking')}>
-        <Tabs.Trigger value="lobby" class="pvp-tab-trigger">
+    <nav class="pvp-nav" aria-label={$_('pvp.tabs.label')}>
+      <div class="pvp-primary-nav" role="list">
+        <button
+          type="button"
+          class="pvp-nav-group"
+          class:active={activePvpGroup === 'play'}
+          aria-pressed={activePvpGroup === 'play'}
+          on:click={() => selectPvpGroup('play')}
+        >
           <Swords class="h-4 w-4" />
-          {$_('pvp.tabs.lobby')}
-        </Tabs.Trigger>
-        <Tabs.Trigger value="history" class="pvp-tab-trigger">
-          <History class="h-4 w-4" />
-          {$_('pvp.tabs.history')}
-        </Tabs.Trigger>
-        <Tabs.Trigger value="missions" class="pvp-tab-trigger">
+          {$_('pvp.tabs.groups.play')}
+        </button>
+        <button
+          type="button"
+          class="pvp-nav-group"
+          class:active={activePvpGroup === 'missions'}
+          aria-pressed={activePvpGroup === 'missions'}
+          on:click={() => selectPvpGroup('missions')}
+        >
           <Target class="h-4 w-4" />
           {$_('pvp.tabs.missions')}
-        </Tabs.Trigger>
-        <Tabs.Trigger value="weekly-race" class="pvp-tab-trigger">
-          <CalendarDays class="h-4 w-4" />
-          {$_('pvp.tabs.weekly_race')}
-        </Tabs.Trigger>
-        {#if activePvpEvent}
-          <Tabs.Trigger value="event-race" class="pvp-tab-trigger">
-            <Trophy class="h-4 w-4" />
-            {$_('pvp.tabs.event_race')}
-          </Tabs.Trigger>
-        {/if}
-        <Tabs.Trigger value="clan-race" class="pvp-tab-trigger">
-          <Users class="h-4 w-4" />
-          {$_('pvp.tabs.clan_race')}
-        </Tabs.Trigger>
-        <Tabs.Trigger value="leaderboard" class="pvp-tab-trigger">
+        </button>
+        <button
+          type="button"
+          class="pvp-nav-group"
+          class:active={activePvpGroup === 'progress'}
+          aria-pressed={activePvpGroup === 'progress'}
+          on:click={() => selectPvpGroup('progress')}
+        >
+          <History class="h-4 w-4" />
+          {$_('pvp.tabs.groups.progress')}
+        </button>
+        <button
+          type="button"
+          class="pvp-nav-group"
+          class:active={activePvpGroup === 'rankings'}
+          aria-pressed={activePvpGroup === 'rankings'}
+          on:click={() => selectPvpGroup('rankings')}
+        >
           <Trophy class="h-4 w-4" />
-          {$_('pvp.tabs.leaderboard')}
-        </Tabs.Trigger>
-        <Tabs.Trigger value="rules" class="pvp-tab-trigger">
+          {$_('pvp.tabs.groups.rankings')}
+        </button>
+        <button
+          type="button"
+          class="pvp-nav-group"
+          class:active={activePvpGroup === 'info'}
+          aria-pressed={activePvpGroup === 'info'}
+          on:click={() => selectPvpGroup('info')}
+        >
           <BookOpen class="h-4 w-4" />
-          {$_('pvp.tabs.rules')}
-        </Tabs.Trigger>
-      </Tabs.List>
-    {/if}
+          {$_('pvp.tabs.groups.info')}
+        </button>
+      </div>
+
+      {#if activePvpGroup === 'play'}
+        <Tabs.List
+          class="pvp-secondary-tab-list"
+          aria-label={$_('pvp.tabs.groups.play_label')}
+        >
+          <Tabs.Trigger value="lobby" class="pvp-tab-trigger">
+            <Swords class="h-4 w-4" />
+            {$_('pvp.tabs.lobby')}
+          </Tabs.Trigger>
+          <Tabs.Trigger value="rooms" class="pvp-tab-trigger">
+            <Users class="h-4 w-4" />
+            {$_('pvp.tabs.custom_room')}
+          </Tabs.Trigger>
+        </Tabs.List>
+      {:else if activePvpGroup === 'rankings'}
+        <Tabs.List
+          class="pvp-secondary-tab-list"
+          aria-label={$_('pvp.tabs.groups.rankings_label')}
+        >
+          <Tabs.Trigger value="leaderboard" class="pvp-tab-trigger">
+            <Trophy class="h-4 w-4" />
+            {$_('pvp.tabs.leaderboard')}
+          </Tabs.Trigger>
+          <Tabs.Trigger value="weekly-race" class="pvp-tab-trigger">
+            <CalendarDays class="h-4 w-4" />
+            {$_('pvp.tabs.weekly_race')}
+          </Tabs.Trigger>
+          {#if activePvpEvent}
+            <Tabs.Trigger value="event-race" class="pvp-tab-trigger">
+              <Trophy class="h-4 w-4" />
+              {$_('pvp.tabs.event_race')}
+            </Tabs.Trigger>
+          {/if}
+          <Tabs.Trigger value="clan-race" class="pvp-tab-trigger">
+            <Users class="h-4 w-4" />
+            {$_('pvp.tabs.clan_race')}
+          </Tabs.Trigger>
+        </Tabs.List>
+      {/if}
+    </nav>
 
     <Tabs.Content value="missions">
       <PvpMissionsTab
@@ -3573,38 +3647,24 @@
   min-height: 160px;
 }
 
-:global(.pvp-tab-list) {
-  display: inline-flex;
-  width: auto;
-  height: auto;
+.pvp-nav {
+  display: grid;
+  gap: 10px;
   margin-bottom: 20px;
+}
+
+.pvp-primary-nav {
+  display: inline-grid;
+  grid-template-columns: repeat(5, minmax(0, auto));
+  width: fit-content;
   gap: 4px;
   border: 1px solid hsl(var(--border));
   border-radius: 8px;
   background: hsl(var(--muted) / 0.28);
-  padding-block: 20px !important;
-  padding-inline: 4px;
+  padding: 4px;
 }
 
-:global(.pvp-main-tab-list),
-:global(.pvp-sub-tab-list) {
-  display: inline-flex;
-  width: auto;
-  height: auto;
-  margin-bottom: 12px;
-  gap: 4px;
-  border: 1px solid hsl(var(--border));
-  border-radius: 8px;
-  background: hsl(var(--muted) / 0.28);
-  padding-block: 3px !important;
-  padding-inline: 4px;
-}
-
-:global(.pvp-sub-tab-list) {
-  margin-bottom: 20px;
-}
-
-.pvp-main-tab {
+.pvp-nav-group {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3616,21 +3676,43 @@
   padding-inline: 14px;
   color: hsl(var(--muted-foreground));
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
+  line-height: 1.1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
 }
 
-.pvp-main-tab.active {
+.pvp-nav-group:hover {
+  color: hsl(var(--foreground));
+}
+
+.pvp-nav-group.active {
   background: hsl(var(--background));
   color: hsl(var(--foreground));
   box-shadow: 0 1px 2px hsl(var(--foreground) / 0.08);
+}
+
+:global(.pvp-secondary-tab-list) {
+  display: inline-flex;
+  width: fit-content;
+  height: auto;
+  gap: 4px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--muted) / 0.18);
+  padding: 4px;
 }
 
 :global(.pvp-tab-trigger) {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 36px;
-  padding-inline: 14px;
+  min-height: 34px;
+  padding-inline: 12px;
 }
 
 :global(.mode-filter-list) {
@@ -4369,10 +4451,25 @@
     min-width: 0;
   }
 
-  :global(.pvp-tab-list) {
+  .pvp-primary-nav {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     width: 100%;
+  }
+
+  .pvp-nav-group {
+    padding-inline: 10px;
+  }
+
+  :global(.pvp-secondary-tab-list) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  :global(.pvp-tab-trigger) {
+    width: 100%;
+    white-space: normal;
   }
 
   .rank-rules-row {

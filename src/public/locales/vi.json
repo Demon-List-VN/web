@@ -388,6 +388,14 @@
         "view_platformer_pool": "Xem danh sách Platformer",
         "tabs": {
             "label": "Mục 1v1 Versus",
+            "groups": {
+                "play": "Chơi",
+                "progress": "Lịch sử",
+                "rankings": "Xếp hạng",
+                "info": "Thông tin",
+                "play_label": "Mục chơi",
+                "rankings_label": "Mục xếp hạng"
+            },
             "lobby": "Sảnh",
             "matchmaking": "Ghép trận",
             "rooms": "Phòng",

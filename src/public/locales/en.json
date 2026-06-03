@@ -388,6 +388,14 @@
         "view_platformer_pool": "View level pool",
         "tabs": {
             "label": "1v1 Versus sections",
+            "groups": {
+                "play": "Play",
+                "progress": "History",
+                "rankings": "Rankings",
+                "info": "Info",
+                "play_label": "Play sections",
+                "rankings_label": "Rankings sections"
+            },
             "lobby": "Lobby",
             "matchmaking": "Matchmaking",
             "rooms": "Rooms",
