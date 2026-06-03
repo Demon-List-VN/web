@@ -103,6 +103,8 @@
 		isMirror?: boolean;
 		isPlatformer: boolean;
 		isOfficial?: boolean;
+		itemSort?: 'mode_default' | 'created_at';
+		itemSortAscending?: boolean;
 		levelSubmissionEnabled?: boolean;
 		staffListEnabled?: boolean;
 		logoUrl?: string | null;
@@ -215,17 +217,45 @@
 		tagIds: string | null;
 	};
 
-	let filters: LevelFilters = {
-		topStart: null,
-		topEnd: null,
-		ratingMin: null,
-		ratingMax: null,
-		nameSearch: '',
-		creatorSearch: '',
-		sortBy: null,
-		ascending: true,
-		tagIds: null
-	};
+	function getListFilterSortBy(currentList: CustomList | null) {
+		return currentList?.itemSort === 'created_at' ? 'created_at' : 'mode_default';
+	}
+
+	function getListItemSortAscending(currentList: CustomList | null) {
+		if (typeof currentList?.itemSortAscending === 'boolean') {
+			return currentList.itemSortAscending;
+		}
+
+		if (currentList?.itemSort === 'created_at') {
+			return true;
+		}
+
+		return currentList?.mode === 'top';
+	}
+
+	function getDefaultLevelFilters(currentList: CustomList | null): LevelFilters {
+		return {
+			topStart: null,
+			topEnd: null,
+			ratingMin: null,
+			ratingMax: null,
+			nameSearch: '',
+			creatorSearch: '',
+			sortBy: getListFilterSortBy(currentList),
+			ascending: getListItemSortAscending(currentList),
+			tagIds: null
+		};
+	}
+
+	function getItemSortQueryValue(sortBy: string | null) {
+		if (!sortBy) {
+			return null;
+		}
+
+		return sortBy === 'created_at' ? 'created_at' : 'mode_default';
+	}
+
+	let filters: LevelFilters = getDefaultLevelFilters(list);
 	$: listSlug = list?.slug || (list?.id ? String(list.id) : $page.params.id);
 	$: canonicalUrl = `${siteUrl}/lists/${listSlug}`;
 	$: listTitle = list
@@ -698,6 +728,11 @@
 			start: String(start),
 			end: String(end)
 		});
+		const itemSort = getItemSortQueryValue(filters.sortBy);
+
+		if (itemSort) {
+			params.set('itemSort', itemSort);
+		}
 
 		if (filters.topStart) {
 			params.set('topMin', filters.topStart);
@@ -727,7 +762,7 @@
 			params.set('tagIds', filters.tagIds);
 		}
 
-		if (hasActiveFilters()) {
+		if (itemSort || hasActiveFilters()) {
 			params.set('ascending', String(filters.ascending));
 		}
 
@@ -865,6 +900,7 @@
 			list = await fetchListDetail(0, LEVELS_PAGE_SIZE - 1, {
 				Authorization: `Bearer ${await $user.token()}`
 			});
+			filters = getDefaultLevelFilters(list);
 			loadingError = '';
 			listLevelsError = '';
 		} catch (error) {
@@ -947,8 +983,8 @@
 			ratingMax: event.detail.ratingMax ?? null,
 			nameSearch: event.detail.nameSearch ?? '',
 			creatorSearch: event.detail.creatorSearch ?? '',
-			sortBy: event.detail.sortBy ?? null,
-			ascending: event.detail.ascending ?? true,
+			sortBy: event.detail.sortBy ?? getListFilterSortBy(list),
+			ascending: event.detail.ascending ?? getListItemSortAscending(list),
 			tagIds: event.detail.tagIds ?? null
 		};
 
@@ -1602,7 +1638,13 @@
 						<Badge variant="outline">{list.levelCount}</Badge>
 					</div>
 
-					<ListFilter listType="cl" on:filter={handleFilterChange} />
+						<ListFilter
+							listType="cl"
+							modeDefaultSortBy="mode_default"
+							defaultSortBy={getListFilterSortBy(list)}
+							defaultAscending={getListItemSortAscending(list)}
+							on:filter={handleFilterChange}
+						/>
 
 					{#if listItems.length === 0}
 						<div class="emptyState slim">

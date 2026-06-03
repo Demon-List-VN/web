@@ -204,6 +204,7 @@
 		topEnabled?: boolean;
 		isMirror?: boolean;
 		itemSort?: 'mode_default' | 'created_at';
+		itemSortAscending?: boolean;
 		visibility: 'private' | 'unlisted' | 'public';
 		mode: 'rating' | 'top';
 		levelCount: number;
@@ -340,6 +341,7 @@
 		logoUrl: string;
 		topEnabled: boolean;
 		itemSort: 'mode_default' | 'created_at';
+		itemSortAscending: boolean;
 		visibility: 'private' | 'unlisted' | 'public';
 		tags: string[];
 		mode: 'rating' | 'top';
@@ -465,6 +467,7 @@
 	const CSV_IMPORT_RATE_LIMIT_TIMEOUT_MS = 15000;
 	const CUSTOM_LIST_BATCH_SAVE_TARGET_BYTES = 80 * 1024;
 	const DEFAULT_ITEM_SORT: 'mode_default' | 'created_at' = 'mode_default';
+	const DEFAULT_ITEM_SORT_ASCENDING = false;
 	const LEVELS_PAGE_SIZE = 50;
 	const LEVEL_AUDIT_MUTABLE_FIELDS: Array<keyof LevelItemPatch> = [
 		'rating',
@@ -505,6 +508,7 @@
 		logoUrl: '',
 		topEnabled: true,
 		itemSort: 'mode_default' as 'mode_default' | 'created_at',
+		itemSortAscending: DEFAULT_ITEM_SORT_ASCENDING,
 		visibility: 'private' as 'private' | 'unlisted' | 'public',
 		tags: '',
 		mode: 'rating' as 'rating' | 'top',
@@ -827,6 +831,22 @@
 		return status === 'manual';
 	}
 
+	function getCustomListItemSortAscending(currentList: CustomList | null) {
+		if (typeof currentList?.itemSortAscending === 'boolean') {
+			return currentList.itemSortAscending;
+		}
+
+		if (currentList?.itemSort === 'created_at') {
+			return true;
+		}
+
+		if (currentList?.mode === 'top') {
+			return true;
+		}
+
+		return DEFAULT_ITEM_SORT_ASCENDING;
+	}
+
 	function getInitialManageTab(): ManageTab {
 		const requestedTab = $page.url.searchParams.get('tab');
 
@@ -880,6 +900,7 @@
 		editForm.logoUrl = list.logoUrl || '';
 		editForm.topEnabled = list.topEnabled ?? true;
 		editForm.itemSort = list.itemSort || 'mode_default';
+		editForm.itemSortAscending = getCustomListItemSortAscending(list);
 		editForm.visibility = list.visibility;
 		editForm.tags = list.tags.join(', ');
 		editForm.mode = list.mode;
@@ -942,6 +963,7 @@
 			logoUrl: currentList.logoUrl || '',
 			topEnabled: currentList.topEnabled ?? true,
 			itemSort: currentList.itemSort || DEFAULT_ITEM_SORT,
+			itemSortAscending: getCustomListItemSortAscending(currentList),
 			visibility: currentList.visibility,
 			tags: currentList.tags,
 			mode: currentList.mode,
@@ -975,6 +997,7 @@
 			logoUrl: currentForm.logoUrl,
 			topEnabled: currentForm.topEnabled,
 			itemSort: currentForm.itemSort || DEFAULT_ITEM_SORT,
+			itemSortAscending: currentForm.itemSortAscending,
 			visibility: currentForm.visibility,
 			tags: parseTags(currentForm.tags),
 			mode: currentForm.mode,
@@ -1078,6 +1101,7 @@
 		if (
 			!currentList || currentList.mode !== 'top'
 			|| currentList.itemSort === 'created_at'
+			|| currentList.itemSortAscending === false
 		) {
 			return sortLevelItemsForDisplay(items, currentList);
 		}
@@ -1106,6 +1130,7 @@
 		currentList: CustomList | null
 	) {
 		const itemSort = currentList?.itemSort || DEFAULT_ITEM_SORT;
+		const ascending = getCustomListItemSortAscending(currentList);
 
 		return [...items].sort((left, right) => {
 			if (itemSort === 'created_at') {
@@ -1115,10 +1140,10 @@
 						.getTime();
 
 				if (createdAtDifference !== 0) {
-					return createdAtDifference;
+					return ascending ? createdAtDifference : -createdAtDifference;
 				}
 
-				return left.id - right.id;
+				return ascending ? left.id - right.id : right.id - left.id;
 			}
 
 			if (currentList?.mode === 'top') {
@@ -1147,14 +1172,16 @@
 				}
 
 				if (leftPosition !== rightPosition) {
-					return leftPosition - rightPosition;
+					return ascending
+						? leftPosition - rightPosition
+						: rightPosition - leftPosition;
 				}
 			} else {
 				const leftRating = left.rating ?? 5;
 				const rightRating = right.rating ?? 5;
 
 				if (leftRating !== rightRating) {
-					return rightRating - leftRating;
+					return ascending ? leftRating - rightRating : rightRating - leftRating;
 				}
 			}
 
@@ -1207,7 +1234,8 @@
 	function normalizeMutationListPayload(payload: CustomList) {
 		return {
 			...payload,
-			itemSort: editForm.itemSort || list?.itemSort || DEFAULT_ITEM_SORT
+			itemSort: editForm.itemSort || list?.itemSort || DEFAULT_ITEM_SORT,
+			itemSortAscending: editForm.itemSortAscending
 		};
 	}
 
@@ -1247,7 +1275,11 @@
 		top: number,
 		inputIndex: number
 	) {
-		if (!list || list.mode !== 'top' || !Number.isInteger(top) || top < 1) {
+		if (
+			!list || list.mode !== 'top'
+			|| list.itemSortAscending === false
+			|| !Number.isInteger(top) || top < 1
+		) {
 			return;
 		}
 
@@ -2281,6 +2313,7 @@
 			logoUrl: editForm.logoUrl,
 			topEnabled: editForm.topEnabled,
 			itemSort: editForm.itemSort,
+			itemSortAscending: editForm.itemSortAscending,
 			visibility: editForm.visibility,
 			tags: parseTags(editForm.tags),
 			mode: editForm.mode,
@@ -3813,6 +3846,10 @@
 			return $_('custom_lists.detail.edit.item_sort_label');
 		}
 
+		if (field === 'itemSortAscending') {
+			return $_('custom_lists.detail.edit.item_sort_direction_label');
+		}
+
 		return field;
 	}
 
@@ -3856,6 +3893,12 @@
 			return value === 'created_at'
 				? $_('custom_lists.detail.edit.item_sort_created_at')
 				: $_('custom_lists.detail.edit.item_sort_mode_default');
+		}
+
+		if (field === 'itemSortAscending' && typeof value === 'boolean') {
+			return value
+				? $_('custom_lists.detail.edit.item_sort_ascending')
+				: $_('custom_lists.detail.edit.item_sort_descending');
 		}
 
 		if (field === 'recordFilterPlatform' && typeof value === 'string') {

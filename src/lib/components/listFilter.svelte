@@ -12,6 +12,9 @@
 	import { _ } from 'svelte-i18n';
 
 	export let listType: 'dl' | 'pl' | 'fl' | 'cl' = 'dl';
+	export let defaultAscending: boolean | null = null;
+	export let defaultSortBy: string | null = null;
+	export let modeDefaultSortBy: string | null = null;
 
 	let topStart = '';
 	let topEnd = '';
@@ -19,12 +22,12 @@
 	let ratingMax = '';
 	let nameSearch = '';
 	let creatorSearch = '';
-	let sortBy = '';
+	let sortBy = defaultSortBy ?? '';
 	let isPinned = false;
 	let isCollapsed = true;
 	let applying = false;
 	let applyRequestId = 0;
-	let ascending = listType !== 'cl';
+	let ascending = getDefaultAscending();
 
 	// Tag system
 	interface LevelTag {
@@ -56,8 +59,18 @@
 	}
 
 	$: defaultTopColumn = listType === 'fl' ? 'flTop' : 'dlTop';
+	$: topSortValue = modeDefaultSortBy ?? defaultTopColumn;
+	$: sortOptions = [
+		{ value: topSortValue, label: $_('list_filter.sort_by_top') },
+		{ value: 'created_at', label: $_('list_filter.sort_by_date') }
+	];
+	$: selectedSortOption = sortOptions.find((option) => option.value === sortBy);
 
 	const dispatch = createEventDispatcher();
+
+	function getDefaultAscending() {
+		return defaultAscending ?? listType !== 'cl';
+	}
 
 	function togglePin() {
 		isPinned = !isPinned;
@@ -101,8 +114,8 @@
 		ratingMax = '';
 		nameSearch = '';
 		creatorSearch = '';
-		sortBy = '';
-		ascending = listType !== 'cl';
+		sortBy = defaultSortBy ?? '';
+		ascending = getDefaultAscending();
 		selectedTagIds = [];
 
 		dispatch('filter', {
@@ -112,7 +125,7 @@
 			ratingMax: null,
 			nameSearch: '',
 			creatorSearch: '',
-			sortBy: defaultTopColumn,
+			sortBy: sortBy.trim() === '' ? topSortValue : sortBy,
 			ascending,
 			tagIds: null
 		});
@@ -221,6 +234,7 @@
             <div class="filterGroup">
               <Label for="sortBy">{$_('list_filter.sort_by')}</Label>
               <Select.Root
+                selected={selectedSortOption}
                 onSelectedChange={(v) => {
                     sortBy = v?.value ? String(v.value) : '';
                 }}
@@ -229,12 +243,11 @@
                   <Select.Value placeholder={$_('list_filter.sort_by_date')} />
                 </Select.Trigger>
                 <Select.Content>
-                  <Select.Item value={defaultTopColumn}>{
-                    $_('list_filter.sort_by_top')
-                  }</Select.Item>
-                  <Select.Item value="created_at">{
-                    $_('list_filter.sort_by_date')
-                  }</Select.Item>
+                  {#each sortOptions as option}
+                    <Select.Item value={option.value} label={option.label}>{
+                      option.label
+                    }</Select.Item>
+                  {/each}
                 </Select.Content>
               </Select.Root>
             </div>

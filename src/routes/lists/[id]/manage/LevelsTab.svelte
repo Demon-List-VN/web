@@ -209,6 +209,7 @@
 		&& allLevelsLoaded
 		&& list?.mode === 'top'
 		&& list?.itemSort !== 'created_at'
+		&& list?.itemSortAscending !== false
 		&& !savingReorder
 		&& !levelDeletionDraftIds.length
 		&& !getPendingAdditionCount(list);
@@ -498,6 +499,7 @@
 
 	function sortItemsForDisplay(items: any[], currentList: any) {
 		const itemSort = currentList?.itemSort || 'mode_default';
+		const ascending = getItemSortAscending(currentList);
 
 		return [...items].sort((left, right) => {
 			if (itemSort === 'created_at') {
@@ -524,10 +526,10 @@
 							.getTime();
 
 					if (createdAtDifference !== 0) {
-						return createdAtDifference;
+						return ascending ? createdAtDifference : -createdAtDifference;
 					}
 
-					return left.id - right.id;
+					return ascending ? left.id - right.id : right.id - left.id;
 				}
 
 				if (leftPosition == null) {
@@ -539,14 +541,16 @@
 				}
 
 				if (leftPosition !== rightPosition) {
-					return leftPosition - rightPosition;
+					return ascending
+						? leftPosition - rightPosition
+						: rightPosition - leftPosition;
 				}
 			} else {
 				const leftRating = left.rating ?? 5;
 				const rightRating = right.rating ?? 5;
 
 				if (leftRating !== rightRating) {
-					return rightRating - leftRating;
+					return ascending ? leftRating - rightRating : rightRating - leftRating;
 				}
 			}
 
@@ -561,6 +565,18 @@
 
 			return left.id - right.id;
 		});
+	}
+
+	function getItemSortAscending(currentList: any) {
+		if (typeof currentList?.itemSortAscending === 'boolean') {
+			return currentList.itemSortAscending;
+		}
+
+		if (currentList?.itemSort === 'created_at') {
+			return true;
+		}
+
+		return currentList?.mode === 'top';
 	}
 
 	function getCombinedLevelItems(

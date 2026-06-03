@@ -16,6 +16,8 @@
 		ListOrdered,
 		Layers,
 		Clock,
+		ArrowUp,
+		ArrowDown,
 		Gamepad2,
 		Footprints
 	} from 'lucide-svelte';
@@ -32,6 +34,7 @@
 		visibility: Visibility | null;
 		mode: Mode | null;
 		itemSort: ItemSort | null;
+		itemSortAscending: boolean | null;
 		listType: ListType | null;
 		tagsInput: string;
 	} = {
@@ -40,6 +43,7 @@
 		visibility: null,
 		mode: null,
 		itemSort: null,
+		itemSortAscending: null,
 		listType: null,
 		tagsInput: ''
 	};
@@ -87,6 +91,12 @@
 			return;
 		}
 
+		if (form.itemSortAscending === null) {
+			toast.error($_('custom_lists.new.sort_direction_required'));
+
+			return;
+		}
+
 		if (!form.listType) {
 			toast.error('Please choose a list type');
 
@@ -102,6 +112,7 @@
 				visibility: form.visibility,
 				mode: form.mode,
 				itemSort: form.itemSort,
+				itemSortAscending: form.itemSortAscending,
 				isPlatformer: form.listType === 'platformer'
 			};
 
@@ -266,6 +277,30 @@
               on:click={() => (form.itemSort = 'created_at')}
             >
               <Clock size={16} /> Date added
+            </button>
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="fieldLabel">{
+            $_('custom_lists.new.sort_direction_label')
+          } <span class="required">*</span></span>
+          <div class="optionRow">
+            <button
+              type="button"
+              class="optionBtn"
+              class:selected={form.itemSortAscending === true}
+              on:click={() => (form.itemSortAscending = true)}
+            >
+              <ArrowUp size={16} /> {$_('custom_lists.new.sort_direction_ascending')}
+            </button>
+            <button
+              type="button"
+              class="optionBtn"
+              class:selected={form.itemSortAscending === false}
+              on:click={() => (form.itemSortAscending = false)}
+            >
+              <ArrowDown size={16} /> {$_('custom_lists.new.sort_direction_descending')}
             </button>
           </div>
         </div>

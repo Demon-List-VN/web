@@ -490,6 +490,14 @@
 			return $_('custom_lists.detail.edit.mode_label');
 		}
 
+		if (field === 'itemSort') {
+			return $_('custom_lists.detail.edit.item_sort_label');
+		}
+
+		if (field === 'itemSortAscending') {
+			return $_('custom_lists.detail.edit.item_sort_direction_label');
+		}
+
 		if (field === 'rankBadges') {
 			return $_('custom_lists.detail.edit.rank_badges_label');
 		}
@@ -548,6 +556,18 @@
 			return value === 'rating'
 				? $_('custom_lists.detail.edit.mode_rating')
 				: $_('custom_lists.detail.edit.mode_top');
+		}
+
+		if (field === 'itemSort' && typeof value === 'string') {
+			return value === 'created_at'
+				? $_('custom_lists.detail.edit.item_sort_created_at')
+				: $_('custom_lists.detail.edit.item_sort_mode_default');
+		}
+
+		if (field === 'itemSortAscending' && typeof value === 'boolean') {
+			return value
+				? $_('custom_lists.detail.edit.item_sort_ascending')
+				: $_('custom_lists.detail.edit.item_sort_descending');
 		}
 
 		if (field === 'isPlatformer' && typeof value === 'boolean') {

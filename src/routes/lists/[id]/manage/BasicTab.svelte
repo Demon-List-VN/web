@@ -2,7 +2,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Switch } from '$lib/components/ui/switch';
-	import { EyeOff, Globe2, ListOrdered, Lock, Star } from 'lucide-svelte';
+	import { ArrowDown, ArrowUp, EyeOff, Globe2, ListOrdered, Lock, Star } from 'lucide-svelte';
 	import { _ } from 'svelte-i18n';
 
 	export let editForm: any;
@@ -245,6 +245,34 @@
           {/each}
         </div>
         <p class="hint">{$_('custom_lists.detail.edit.item_sort_hint')}</p>
+      </div>
+      <div class="field">
+        <span class="fieldLabel">{
+          $_('custom_lists.detail.edit.item_sort_direction_label')
+        }</span>
+        <div class="optionRow">
+          <button
+            type="button"
+            class="optionBtn"
+            class:selected={editForm.itemSortAscending === true}
+            on:click={() => (editForm.itemSortAscending = true)}
+          >
+            <ArrowUp class="h-3.5 w-3.5" />
+            {$_('custom_lists.detail.edit.item_sort_ascending')}
+          </button>
+          <button
+            type="button"
+            class="optionBtn"
+            class:selected={editForm.itemSortAscending === false}
+            on:click={() => (editForm.itemSortAscending = false)}
+          >
+            <ArrowDown class="h-3.5 w-3.5" />
+            {$_('custom_lists.detail.edit.item_sort_descending')}
+          </button>
+        </div>
+        <p class="hint">
+          {$_('custom_lists.detail.edit.item_sort_direction_hint')}
+        </p>
       </div>
       <div class="field">
         <label for="list-tags">{
