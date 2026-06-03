@@ -1970,13 +1970,36 @@
 		return `${skill}:${randomTarget ? 'random' : targetUid || 'self'}`;
 	}
 
-	function canCastPowerup(skill: PowerupSkillConfig) {
-		const cost = Number(skill.cost) || 0;
+	function powerupSkillCost(skill: PowerupSkillConfig) {
+		const cost = Math.floor(Number(skill.cost));
 
-		return canUsePowerups
-			&& !powerupCastLoading
-			&& powerupMana >= cost
-			&& (!skill.harmful || powerupTargets.length > 0);
+		return Number.isFinite(cost) && cost > 0 ? cost : 0;
+	}
+
+	function isShieldPowerupSkill(skill: PowerupSkillConfig) {
+		return skill.skill === 'shield';
+	}
+
+	function isPowerupSkillHarmful(skill: PowerupSkillConfig) {
+		return !isShieldPowerupSkill(skill) && skill.harmful === true;
+	}
+
+	function canCastPowerup(skill: PowerupSkillConfig) {
+		const cost = powerupSkillCost(skill);
+
+		if (
+			!canUsePowerups
+			|| powerupCastLoading
+			|| powerupMana < cost
+		) {
+			return false;
+		}
+
+		if (isShieldPowerupSkill(skill)) {
+			return !powerupState?.shieldActive;
+		}
+
+		return !isPowerupSkillHarmful(skill) || powerupTargets.length > 0;
 	}
 
 	function progressMessageEvent(
@@ -3766,6 +3789,7 @@
 
                   <div class="powerup-skill-grid">
                     {#each powerupSkills() as skill}
+                      {@const skillCost = powerupSkillCost(skill)}
                       <div class="powerup-skill-card">
                         <div class="powerup-skill-heading">
                           <span class="powerup-skill-icon">
@@ -3794,7 +3818,7 @@
                             </Badge>
                           {/if}
                         </div>
-                        {#if skill.harmful}
+                        {#if isPowerupSkillHarmful(skill)}
                           {#if powerupTargets.length}
                             <div class="powerup-target-actions">
                               {#each powerupTargets as target}
@@ -3855,16 +3879,14 @@
                           {/if}
                         {:else}
                           {@const castKey = powerupActionKey(
-                            skill.skill,
-                            currentUid
+                            skill.skill
                           )}
                           <Button
                             type="button"
                             size="sm"
                             disabled={!canCastPowerup(skill)}
                             on:click={() => castPowerupSkill(
-                              skill.skill,
-                              currentUid
+                              skill.skill
                             )}
                           >
                             {#if powerupCastLoading === castKey}
@@ -3875,10 +3897,10 @@
                             {$_('pvp.powerups.cast')}
                           </Button>
                         {/if}
-                        {#if powerupMana < Number(skill.cost || 0)}
+                        {#if powerupMana < skillCost}
                           <small class="powerup-unavailable">
                             {$_('pvp.powerups.not_enough_mana', {
-                              values: { cost: skill.cost }
+                              values: { cost: skillCost }
                             })}
                           </small>
                         {/if}
