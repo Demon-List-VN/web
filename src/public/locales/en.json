@@ -385,6 +385,43 @@
         },
         "event_mode": "Event",
         "event_view_pool": "Queue now",
+        "event_info": {
+            "aria_label": "View event details",
+            "description": "Event rules and match settings before you queue.",
+            "about": "About this event",
+            "no_description": "No extra description has been added for this event yet.",
+            "config_hint": "These settings apply to every match queued from this banner.",
+            "mode_hint": "This decides whether the match uses classic progress or platformer checkpoints.",
+            "ranked_hint": "Results count toward event play and your PvP rating.",
+            "unranked_hint": "Results count for the event without changing your PvP rating.",
+            "match_length_hint": "The match ends when this timer runs out or the event win condition is met.",
+            "completion_hint": "The match can finish early when this condition is reached.",
+            "target_score_hint": "Higher score wins. A target can end the match early when set.",
+            "starting_hp_hint": "Each player starts with this much HP.",
+            "finalize_alive_hint": "The match can end once only this many players are still alive.",
+            "duration_minutes_seconds": "{minutes}m {seconds}s",
+            "duration_minutes": "{minutes}m",
+            "duration_seconds": "{seconds}s",
+            "completion_count": "First {count} player(s) to finish",
+            "completion_percentage": "Reach {percent}% progress",
+            "target_score": "{score} points",
+            "hp_value": "{hp} HP",
+            "alive_count": "{count} alive",
+            "ends_in": "Ends in {time}",
+            "level_selection": {
+                "random": "Random",
+                "sbmm": "Skill matched"
+            },
+            "level_selection_hint": {
+                "random": "A level is picked from the event pool.",
+                "sbmm": "A level is picked from the event pool near player skill."
+            },
+            "scoring_hint": {
+                "progress": "Highest progress wins if nobody completes the win condition.",
+                "score": "Players race for the best score during the time limit.",
+                "hp": "Survive longer by protecting HP while playing the level."
+            }
+        },
         "view_platformer_pool": "View level pool",
         "tabs": {
             "label": "1v1 Versus sections",

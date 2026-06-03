@@ -385,6 +385,43 @@
         },
         "event_mode": "Sự kiện",
         "event_view_pool": "Queue now",
+        "event_info": {
+            "aria_label": "Xem chi tiết sự kiện",
+            "description": "Luật sự kiện và thiết lập trận trước khi ghép.",
+            "about": "Giới thiệu sự kiện",
+            "no_description": "Sự kiện này chưa có mô tả bổ sung.",
+            "config_hint": "Các thiết lập này áp dụng cho mọi trận ghép từ banner này.",
+            "mode_hint": "Quyết định trận dùng tiến độ classic hay checkpoint platformer.",
+            "ranked_hint": "Kết quả được tính cho sự kiện và Elo PvP của bạn.",
+            "unranked_hint": "Kết quả được tính cho sự kiện nhưng không đổi Elo PvP.",
+            "match_length_hint": "Trận kết thúc khi hết giờ hoặc đạt điều kiện thắng của sự kiện.",
+            "completion_hint": "Trận có thể kết thúc sớm khi đạt điều kiện này.",
+            "target_score_hint": "Điểm cao hơn sẽ thắng. Nếu có mục tiêu, trận có thể kết thúc sớm.",
+            "starting_hp_hint": "Mỗi người chơi bắt đầu với lượng HP này.",
+            "finalize_alive_hint": "Trận có thể kết thúc khi chỉ còn từng này người sống.",
+            "duration_minutes_seconds": "{minutes} phút {seconds} giây",
+            "duration_minutes": "{minutes} phút",
+            "duration_seconds": "{seconds} giây",
+            "completion_count": "{count} người hoàn thành đầu tiên",
+            "completion_percentage": "Đạt {percent}% tiến độ",
+            "target_score": "{score} điểm",
+            "hp_value": "{hp} HP",
+            "alive_count": "{count} còn sống",
+            "ends_in": "Còn {time}",
+            "level_selection": {
+                "random": "Ngẫu nhiên",
+                "sbmm": "Theo kỹ năng"
+            },
+            "level_selection_hint": {
+                "random": "Level được chọn từ pool sự kiện.",
+                "sbmm": "Level được chọn từ pool sự kiện gần trình độ người chơi."
+            },
+            "scoring_hint": {
+                "progress": "Nếu chưa đạt điều kiện thắng, người có tiến độ cao nhất sẽ thắng.",
+                "score": "Người chơi đua điểm cao nhất trong thời gian giới hạn.",
+                "hp": "Giữ HP lâu hơn bằng cách sống sót khi chơi level."
+            }
+        },
         "view_platformer_pool": "Xem danh sách Platformer",
         "tabs": {
             "label": "Mục 1v1 Versus",

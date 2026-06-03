@@ -15,6 +15,7 @@
 	import { showXpAwardToast } from '$lib/client/xpToast';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
+	import * as Dialog from '$lib/components/ui/dialog';
 	import { Switch } from '$lib/components/ui/switch/index.js';
 	import * as Alert from '$lib/components/ui/alert';
 	import * as Card from '$lib/components/ui/card';
@@ -110,6 +111,7 @@
 		Eye,
 		EyeOff,
 		History,
+		Info,
 		Loader2,
 		LogIn,
 		Plus,
@@ -233,6 +235,7 @@
 	let endedMatchBellIds = new Set<string>();
 	let matchDialogOpen = false;
 	let showGeodeAlert = true;
+	let eventInfoDialogOpen = false;
 	let currentUserClan: PvpClan | null = null;
 	let lobbyReady = false;
 	let pendingDialogTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -957,6 +960,164 @@
 
 	function getPvpEventTitle(event: PvpEvent | null | undefined) {
 		return event?.title || $_('pvp.event_mode');
+	}
+
+	function getPvpEventDescription(event: PvpEvent | null | undefined) {
+		const description = typeof event?.description === 'string'
+			? event.description.trim()
+			: '';
+
+		return description || $_('pvp.event_info.no_description');
+	}
+
+	function isPvpEventRanked(event: PvpEvent | null | undefined) {
+		return Boolean(event?.ranked ?? event?.isRanked ?? event?.is_ranked ?? true);
+	}
+
+	function getPvpEventLevelSelectionMode(event: PvpEvent | null | undefined) {
+		const value = event?.levelSelectionMode ?? event?.level_selection_mode;
+
+		return value === 'sbmm' ? 'sbmm' : 'random';
+	}
+
+	function getPvpEventScoringMode(event: PvpEvent | null | undefined) {
+		const value = event?.scoringMode ?? event?.scoring_mode;
+
+		return value === 'score'
+			? 'score'
+			: value === 'hp'
+			? 'hp'
+			: 'progress';
+	}
+
+	function getPvpEventTimeLimitSeconds(event: PvpEvent | null | undefined) {
+		return normalizedInteger(event?.timeLimitSeconds ?? event?.time_limit_seconds, 1, 7200, 900);
+	}
+
+	function getPvpEventCompletionRuleType(event: PvpEvent | null | undefined) {
+		const value = event?.completionRuleType ?? event?.completion_rule_type;
+
+		return value === 'percentage' ? 'percentage' : 'count';
+	}
+
+	function getPvpEventCompletionRuleValue(event: PvpEvent | null | undefined) {
+		const value = event?.completionRuleValue ?? event?.completion_rule_value;
+		const numberValue = Number(value);
+		const fallback = getPvpEventCompletionRuleType(event) === 'percentage' ? 100 : 1;
+
+		if (!Number.isFinite(numberValue)) {
+			return fallback;
+		}
+
+		return Math.max(1, Math.floor(numberValue));
+	}
+
+	function formatPvpEventDuration(totalSeconds: number) {
+		const minutes = Math.floor(totalSeconds / 60);
+		const seconds = totalSeconds % 60;
+
+		if (minutes > 0 && seconds > 0) {
+			return $_('pvp.event_info.duration_minutes_seconds', {
+				values: { minutes, seconds }
+			});
+		}
+
+		if (minutes > 0) {
+			return $_('pvp.event_info.duration_minutes', {
+				values: { minutes }
+			});
+		}
+
+		return $_('pvp.event_info.duration_seconds', {
+			values: { seconds }
+		});
+	}
+
+	function getPvpEventCompletionLabel(event: PvpEvent | null | undefined) {
+		const value = getPvpEventCompletionRuleValue(event);
+
+		if (getPvpEventCompletionRuleType(event) === 'percentage') {
+			return $_('pvp.event_info.completion_percentage', {
+				values: { percent: value }
+			});
+		}
+
+		return $_('pvp.event_info.completion_count', {
+			values: { count: value }
+		});
+	}
+
+	function getPvpEventConfigRows(event: PvpEvent | null | undefined) {
+		const scoringMode = getPvpEventScoringMode(event);
+		const levelSelectionMode = getPvpEventLevelSelectionMode(event);
+		const targetScore = Number(event?.targetScore ?? event?.target_score ?? 0);
+		const startingHp = normalizedInteger(event?.startingHp ?? event?.starting_hp, 1, 100000, 200);
+		const finalizeAliveCount = normalizedInteger(
+			event?.finalizeAliveCount ?? event?.finalize_alive_count,
+			1,
+			100,
+			1
+		);
+		const rows = [
+			{
+				label: $_('pvp.mode_label'),
+				value: $_(`pvp.mode.${getPvpEventBaseMode(event)}`),
+				hint: $_('pvp.event_info.mode_hint')
+			},
+			{
+				label: $_('pvp.match_type'),
+				value: isPvpEventRanked(event) ? $_('pvp.ranked') : $_('pvp.unranked'),
+				hint: isPvpEventRanked(event)
+					? $_('pvp.event_info.ranked_hint')
+					: $_('pvp.event_info.unranked_hint')
+			},
+			{
+				label: $_('pvp.rooms.level_selection'),
+				value: $_(`pvp.event_info.level_selection.${levelSelectionMode}`),
+				hint: $_(`pvp.event_info.level_selection_hint.${levelSelectionMode}`)
+			},
+			{
+				label: $_('pvp.rooms.match_length'),
+				value: formatPvpEventDuration(getPvpEventTimeLimitSeconds(event)),
+				hint: $_('pvp.event_info.match_length_hint')
+			},
+			{
+				label: $_('pvp.rooms.scoring_mode'),
+				value: $_(`pvp.rooms.mode_${scoringMode}`),
+				hint: $_(`pvp.event_info.scoring_hint.${scoringMode}`)
+			}
+		];
+
+		if (scoringMode === 'progress') {
+			rows.push({
+				label: $_('pvp.rooms.completion_rule'),
+				value: getPvpEventCompletionLabel(event),
+				hint: $_('pvp.event_info.completion_hint')
+			});
+		} else if (scoringMode === 'score') {
+			rows.push({
+				label: $_('pvp.rooms.target_score'),
+				value: Number.isFinite(targetScore) && targetScore > 0
+					? $_('pvp.event_info.target_score', { values: { score: Math.floor(targetScore) } })
+					: $_('pvp.rooms.unlimited'),
+				hint: $_('pvp.event_info.target_score_hint')
+			});
+		} else {
+			rows.push(
+				{
+					label: $_('pvp.rooms.starting_hp'),
+					value: $_('pvp.event_info.hp_value', { values: { hp: startingHp } }),
+					hint: $_('pvp.event_info.starting_hp_hint')
+				},
+				{
+					label: $_('pvp.rooms.finalize_alive_count'),
+					value: $_('pvp.event_info.alive_count', { values: { count: finalizeAliveCount } }),
+					hint: $_('pvp.event_info.finalize_alive_hint')
+				}
+			);
+		}
+
+		return rows;
 	}
 
 	function getActivePvpGroup(tab: string): PvpNavGroup {
@@ -2162,6 +2323,16 @@
 		return Number.isFinite(numberValue) ? numberValue : null;
 	}
 
+	function normalizedInteger(value: unknown, min: number, max: number, fallback: number) {
+		const numberValue = Number(value);
+
+		if (!Number.isFinite(numberValue)) {
+			return fallback;
+		}
+
+		return Math.max(min, Math.min(max, Math.floor(numberValue)));
+	}
+
 	function elapsedLabel(startValue: unknown, currentNow: number) {
 		const totalSeconds = Math.max(
 			0,
@@ -2598,20 +2769,97 @@
               <strong>{eventCountdownLabel(getPvpEventEndsMs(activePvpEvent), now)}</strong>
             </div>
           {/if}
-          <Button
-            size="sm"
-            class="event-queue-button"
-            disabled={controlsDisabled}
-            on:click={startEventQueue}
-          >
-            {#if actionLoading === 'matchmaking' && selectedMode === 'event'}
-              <Loader2 class="mr-2 h-4 w-4 animate-spin" />
-            {/if}
-            {$_('pvp.event_view_pool')}
-          </Button>
+          <div class="pvp-event-actions">
+            <Button
+              size="sm"
+              class="event-queue-button"
+              disabled={controlsDisabled}
+              on:click={startEventQueue}
+            >
+              {#if actionLoading === 'matchmaking' && selectedMode === 'event'}
+                <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+              {/if}
+              {$_('pvp.event_view_pool')}
+            </Button>
+            <Button
+              size="icon"
+              variant="outline"
+              class="event-info-button"
+              aria-label={$_('pvp.event_info.aria_label')}
+              on:click={() => (eventInfoDialogOpen = true)}
+            >
+              <Info class="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
     </section>
+
+    <Dialog.Root bind:open={eventInfoDialogOpen}>
+      <Dialog.Content class="event-info-dialog">
+        <Dialog.Header>
+          <div class="event-info-title-row">
+            <span class="event-info-icon">
+              <Info class="h-5 w-5" />
+            </span>
+            <div>
+              <Dialog.Title>{getPvpEventTitle(activePvpEvent)}</Dialog.Title>
+              <Dialog.Description>
+                {$_('pvp.event_info.description')}
+              </Dialog.Description>
+            </div>
+          </div>
+        </Dialog.Header>
+
+        <div class="event-info-scroll">
+          <div class="event-info-body">
+            <section class="event-info-about">
+              <span>{$_('pvp.event_info.about')}</span>
+              <p>{getPvpEventDescription(activePvpEvent)}</p>
+            </section>
+
+            <div class="event-info-pills">
+              <Badge variant="outline">{$_(`pvp.mode.${activePvpEventBaseMode}`)}</Badge>
+              <Badge variant="outline">
+                {isPvpEventRanked(activePvpEvent) ? $_('pvp.ranked') : $_('pvp.unranked')}
+              </Badge>
+              {#if getPvpEventEndsMs(activePvpEvent)}
+                <Badge variant="outline">
+                  {$_('pvp.event_info.ends_in', {
+                    values: {
+                      time: eventCountdownLabel(getPvpEventEndsMs(activePvpEvent), now)
+                    }
+                  })}
+                </Badge>
+              {/if}
+            </div>
+
+            <section class="event-info-config">
+              <div class="event-info-section-header">
+                <strong>{$_('pvp.rooms.match_config')}</strong>
+                <span>{$_('pvp.event_info.config_hint')}</span>
+              </div>
+
+              <div class="event-info-grid">
+                {#each getPvpEventConfigRows(activePvpEvent) as row}
+                  <div class="event-info-row">
+                    <span>{row.label}</span>
+                    <strong>{row.value}</strong>
+                    <p>{row.hint}</p>
+                  </div>
+                {/each}
+              </div>
+            </section>
+          </div>
+        </div>
+
+        <Dialog.Footer class="event-info-footer">
+          <Button variant="outline" on:click={() => (eventInfoDialogOpen = false)}>
+            {$_('general.close')}
+          </Button>
+        </Dialog.Footer>
+      </Dialog.Content>
+    </Dialog.Root>
   {/if}
 
   <Tabs.Root bind:value={activePvpTab}>
@@ -4269,6 +4517,12 @@
   flex-shrink: 0;
 }
 
+.pvp-event-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .pvp-event-countdown {
   display: inline-flex;
   align-items: center;
@@ -4311,6 +4565,157 @@
 .pvp-event-banner :global(.event-queue-button:hover) {
   background: hsl(var(--foreground) / 0.86);
   color: hsl(var(--background));
+}
+
+.pvp-event-banner :global(.event-info-button) {
+  width: 32px;
+  height: 32px;
+  border-color: hsl(var(--border));
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+.pvp-event-banner :global(.event-info-button:hover) {
+  background: hsl(var(--muted));
+  color: hsl(var(--foreground));
+}
+
+:global(.event-info-dialog) {
+  display: flex;
+  flex-direction: column;
+  max-height: min(760px, calc(100vh - 32px));
+  max-width: 680px;
+  overflow: hidden;
+}
+
+.event-info-title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.event-info-icon {
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid hsl(var(--primary) / 0.2);
+  border-radius: 8px;
+  background: hsl(var(--primary) / 0.1);
+  color: hsl(var(--primary));
+}
+
+.event-info-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 18px 0;
+  padding-right: 4px;
+}
+
+.event-info-body {
+  display: grid;
+  gap: 16px;
+}
+
+.event-info-about {
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--muted) / 0.36);
+  padding: 14px;
+}
+
+.event-info-about span,
+.event-info-section-header span,
+.event-info-row span,
+.event-info-row p {
+  color: hsl(var(--muted-foreground));
+}
+
+.event-info-about span {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.event-info-about p {
+  margin: 0;
+  color: hsl(var(--foreground));
+  line-height: 1.55;
+}
+
+.event-info-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.event-info-config {
+  display: grid;
+  gap: 12px;
+}
+
+.event-info-section-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.event-info-section-header strong {
+  font-size: 1rem;
+}
+
+.event-info-section-header span {
+  max-width: 320px;
+  text-align: right;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.event-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.event-info-row {
+  display: grid;
+  gap: 5px;
+  min-height: 112px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--background));
+  padding: 12px;
+}
+
+.event-info-row span {
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.event-info-row strong {
+  overflow-wrap: anywhere;
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.event-info-row p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+:global(.event-info-footer) {
+  justify-content: flex-end;
+  border-top: 1px solid hsl(var(--border));
+  margin-top: 0;
+  padding-top: 14px;
 }
 
 .required-submission-content {
@@ -4455,6 +4860,29 @@
 
   .pvp-event-banner-pill {
     border-radius: 8px;
+  }
+
+  .pvp-event-actions {
+    width: 100%;
+  }
+
+  .pvp-event-actions :global(.event-queue-button) {
+    flex: 1;
+  }
+
+  .event-info-title-row,
+  .event-info-section-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .event-info-section-header span {
+    max-width: none;
+    text-align: left;
+  }
+
+  .event-info-grid {
+    grid-template-columns: 1fr;
   }
 
   .summary-stats {
