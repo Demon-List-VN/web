@@ -655,6 +655,31 @@ export type PvpClanWeeklyRace = {
     pagination?: PvpPagination | null;
 };
 
+export type PvpMissionPeriodType = 'daily' | 'weekly';
+export type PvpMissionMetric = 'loginDays' | 'matchesPlayed' | 'matchesWon';
+
+export type PvpMission = {
+    key: string;
+    periodType: PvpMissionPeriodType;
+    title: string;
+    description: string;
+    xp: number;
+    metric: PvpMissionMetric;
+    target: number;
+    progress: number;
+    completed: boolean;
+    claimed: boolean;
+    claimable: boolean;
+    periodKey: string;
+    resetAt: string;
+};
+
+export type PvpMissionClaimResponse = {
+    mission?: PvpMission;
+    xpAward?: PvpXpAward | null;
+    missions: PvpMission[];
+};
+
 export const PVP_ACTIVE_MATCH_STATUSES = ['pending', 'ban_pick', 'in_progress', 'waiting_result'];
 export const PVP_FINISHED_MATCH_STATUSES = ['completed', 'cancelled', 'disputed'];
 export const PVP_DIFFICULTIES: PvpDifficulty[] = ['easy', 'medium', 'hard'];
@@ -828,6 +853,27 @@ function normalizePvpPagination(
 
 export async function getPvpMe(token?: string | null) {
     return normalizePvpMe(await pvpRequest('/pvp/me', { token }));
+}
+
+export async function getPvpMissions(token?: string | null) {
+    return pvpRequest<PvpMission[]>('/pvp/missions', { token });
+}
+
+export async function recordPvpMissionVisit(token?: string | null) {
+    return pvpRequest<PvpMission[]>('/pvp/missions/visit', {
+        method: 'POST',
+        token
+    });
+}
+
+export async function claimPvpMission(token: string | null | undefined, missionKey: string) {
+    return pvpRequest<PvpMissionClaimResponse>(
+        `/pvp/missions/${encodeURIComponent(missionKey)}/claim`,
+        {
+            method: 'POST',
+            token
+        }
+    );
 }
 
 export async function getActivePvpEvent() {

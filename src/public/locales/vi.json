@@ -393,11 +393,63 @@
             "rooms": "Phòng",
             "custom_room": "Phòng tùy chỉnh",
             "history": "Lịch sử",
+            "missions": "Nhiệm vụ",
             "weekly_race": "Đua tuần",
             "event_race": "Đua sự kiện",
             "clan_race": "Đua hội",
             "leaderboard": "Bảng xếp hạng",
             "rules": "Luật"
+        },
+        "missions": {
+            "daily": "Nhiệm vụ hằng ngày",
+            "weekly": "Nhiệm vụ hằng tuần",
+            "resets_at": "Đặt lại {time}",
+            "sign_in": "Đăng nhập để xem nhiệm vụ PvP.",
+            "claim": "Nhận",
+            "claiming": "Đang nhận",
+            "claimed": "Đã nhận",
+            "locked": "Chưa mở",
+            "load_failed": "Tải nhiệm vụ PvP thất bại.",
+            "claim_failed": "Nhận nhiệm vụ thất bại.",
+            "claim_success": "Đã nhận +{xp} XP.",
+            "items": {
+                "daily_login": {
+                    "title": "Đăng nhập",
+                    "description": "Vào sảnh PvP."
+                },
+                "daily_play_1": {
+                    "title": "Chơi 1 trận PvP",
+                    "description": "Hoàn thành 1 trận PvP xếp hạng hoặc sự kiện."
+                },
+                "daily_play_3": {
+                    "title": "Chơi 3 trận PvP",
+                    "description": "Hoàn thành 3 trận PvP xếp hạng hoặc sự kiện."
+                },
+                "daily_win_1": {
+                    "title": "Thắng 1 trận PvP",
+                    "description": "Thắng 1 trận PvP xếp hạng hoặc sự kiện."
+                },
+                "weekly_login_4": {
+                    "title": "Đăng nhập 4 ngày",
+                    "description": "Vào sảnh PvP trong 4 ngày khác nhau của tuần này."
+                },
+                "weekly_login_7": {
+                    "title": "Đăng nhập 7 ngày",
+                    "description": "Vào sảnh PvP trong 7 ngày khác nhau của tuần này."
+                },
+                "weekly_play_15": {
+                    "title": "Chơi 15 trận PvP",
+                    "description": "Hoàn thành 15 trận PvP xếp hạng hoặc sự kiện trong tuần này."
+                },
+                "weekly_play_30": {
+                    "title": "Chơi 30 trận PvP",
+                    "description": "Hoàn thành 30 trận PvP xếp hạng hoặc sự kiện trong tuần này."
+                },
+                "weekly_win_10": {
+                    "title": "Thắng 10 trận PvP",
+                    "description": "Thắng 10 trận PvP xếp hạng hoặc sự kiện trong tuần này."
+                }
+            }
         },
         "accept": "Chấp nhận",
         "decline": "Từ chối",

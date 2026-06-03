@@ -393,11 +393,63 @@
             "rooms": "Rooms",
             "custom_room": "Custom room",
             "history": "History",
+            "missions": "Missions",
             "weekly_race": "Weekly Race",
             "event_race": "Event Race",
             "clan_race": "Clan Race",
             "leaderboard": "Leaderboard",
             "rules": "Rules"
+        },
+        "missions": {
+            "daily": "Daily missions",
+            "weekly": "Weekly missions",
+            "resets_at": "Resets {time}",
+            "sign_in": "Sign in to view PvP missions.",
+            "claim": "Claim",
+            "claiming": "Claiming",
+            "claimed": "Claimed",
+            "locked": "Locked",
+            "load_failed": "Failed to load PvP missions.",
+            "claim_failed": "Failed to claim mission.",
+            "claim_success": "Claimed +{xp} XP.",
+            "items": {
+                "daily_login": {
+                    "title": "Login",
+                    "description": "Visit the PvP lobby."
+                },
+                "daily_play_1": {
+                    "title": "Play 1 PvP match",
+                    "description": "Complete 1 ranked or event PvP match."
+                },
+                "daily_play_3": {
+                    "title": "Play 3 PvP matches",
+                    "description": "Complete 3 ranked or event PvP matches."
+                },
+                "daily_win_1": {
+                    "title": "Win 1 PvP match",
+                    "description": "Win 1 ranked or event PvP match."
+                },
+                "weekly_login_4": {
+                    "title": "Login for 4 days",
+                    "description": "Visit the PvP lobby on 4 different days this week."
+                },
+                "weekly_login_7": {
+                    "title": "Login for 7 days",
+                    "description": "Visit the PvP lobby on 7 different days this week."
+                },
+                "weekly_play_15": {
+                    "title": "Play 15 PvP matches",
+                    "description": "Complete 15 ranked or event PvP matches this week."
+                },
+                "weekly_play_30": {
+                    "title": "Play 30 PvP matches",
+                    "description": "Complete 30 ranked or event PvP matches this week."
+                },
+                "weekly_win_10": {
+                    "title": "Win 10 PvP matches",
+                    "description": "Win 10 ranked or event PvP matches this week."
+                }
+            }
         },
         "accept": "Accept",
         "decline": "Decline",

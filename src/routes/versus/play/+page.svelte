@@ -8,6 +8,7 @@
 	import ClanWeeklyRaceTab from './ClanWeeklyRaceTab.svelte';
 	import PvpDialogs from './PvpDialogs.svelte';
 	import PvpLeaderboardTab from './PvpLeaderboardTab.svelte';
+	import PvpMissionsTab from './PvpMissionsTab.svelte';
 	import WeeklyRaceTab from './WeeklyRaceTab.svelte';
 	import { user } from '$lib/client';
 	import supabase from '$lib/client/supabase';
@@ -22,6 +23,7 @@
 	import {
 		acceptPvpMatch,
 		cancelPvpMatchmaking,
+		claimPvpMission,
 		checkPvpMatchmaking,
 		acceptPvpRoomInvite,
 		declinePvpRoomInvite,
@@ -49,6 +51,7 @@
 		getPvpParticipantRatingDiff,
 		getPvpResultReason,
 		getPvpMe,
+		getPvpMissions,
 		getPvpStatus,
 		getPvpSelfParticipant,
 		getPvpWinnerUid,
@@ -59,6 +62,7 @@
 		isPvpMatchRanked,
 		isPvpRatingStable,
 		leavePvpRoom,
+		recordPvpMissionVisit,
 		sendPvpInvite,
 		startPvpMatchmaking,
 		type PvpClan,
@@ -68,6 +72,7 @@
 		type PvpMatch,
 		type PvpMatchmakingRequest,
 		type PvpMe,
+		type PvpMission,
 		type PvpMode,
 		type PvpSelectionMode,
 		type PvpEvent,
@@ -111,6 +116,7 @@
 		Send,
 		ShieldAlert,
 		Swords,
+		Target,
 		Trophy,
 		Users,
 		X
@@ -192,6 +198,7 @@
 		joinedRooms: [],
 		invites: []
 	};
+	let pvpMissions: PvpMission[] = [];
 	let activePvpTab = 'lobby';
 	let eloGraphFilter: (typeof ELO_GRAPH_FILTERS)[number]['key'] = '25';
 	let summaryOpen = false;
@@ -206,6 +213,9 @@
 	let clanRaceLoading = true;
 	let clanRaceError = '';
 	let roomsLoading = false;
+	let pvpMissionsLoading = false;
+	let pvpMissionsError = '';
+	let claimingPvpMissionKey = '';
 	let actionLoading = '';
 	let initializedForUid = '';
 	let cleanupRealtime: (() => Promise<void>) | null = null;
@@ -380,6 +390,10 @@
 			joinedRooms: [],
 			invites: []
 		};
+		pvpMissions = [];
+		pvpMissionsError = '';
+		pvpMissionsLoading = false;
+		claimingPvpMissionKey = '';
 		initializedForUid = '';
 		lobbyReady = false;
 		matchHistoryLoading = false;
@@ -522,6 +536,7 @@
 				refreshLobby(),
 				refreshMatchHistory(),
 				refreshRooms(),
+				recordMissionLobbyVisit(),
 				refreshWeeklyRace(),
 				refreshClanRace()
 			]);
@@ -590,6 +605,76 @@
 			);
 		} finally {
 			roomsLoading = false;
+		}
+	}
+
+	async function refreshPvpMissions() {
+		if (!$user.loggedIn) {
+			pvpMissions = [];
+
+			return;
+		}
+
+		pvpMissionsLoading = true;
+		pvpMissionsError = '';
+
+		try {
+			pvpMissions = await getPvpMissions(await $user.token());
+		} catch (error) {
+			pvpMissions = [];
+			pvpMissionsError = error instanceof Error
+				? error.message
+				: $_('pvp.missions.load_failed');
+		} finally {
+			pvpMissionsLoading = false;
+		}
+	}
+
+	async function recordMissionLobbyVisit() {
+		if (!$user.loggedIn) {
+			return;
+		}
+
+		pvpMissionsLoading = true;
+		pvpMissionsError = '';
+
+		try {
+			pvpMissions = await recordPvpMissionVisit(await $user.token());
+		} catch (error) {
+			pvpMissions = [];
+			pvpMissionsError = error instanceof Error
+				? error.message
+				: $_('pvp.missions.load_failed');
+		} finally {
+			pvpMissionsLoading = false;
+		}
+	}
+
+	async function handleClaimPvpMission(mission: PvpMission) {
+		if (!$user.loggedIn || !mission?.key || claimingPvpMissionKey) {
+			return;
+		}
+
+		claimingPvpMissionKey = mission.key;
+
+		try {
+			const response = await claimPvpMission(await $user.token(), mission.key);
+			pvpMissions = response.missions;
+			toast.success(
+				$_('pvp.missions.claim_success', {
+					values: { xp: mission.xp }
+				})
+			);
+			await $user.refresh();
+		} catch (error) {
+			toast.error(
+				error instanceof Error
+					? error.message
+					: $_('pvp.missions.claim_failed')
+			);
+			await refreshPvpMissions();
+		} finally {
+			claimingPvpMissionKey = '';
 		}
 	}
 
@@ -905,6 +990,14 @@
 		return Number.isInteger(id) && id > 0 ? id : null;
 	}
 
+	function isPvpMissionCountableMatch(match: PvpMatch | null | undefined) {
+		return Boolean(
+			match
+			&& !(match.roomId ?? match.room_id ?? match.room)
+			&& (isPvpMatchRanked(match) || getValueEventId(match))
+		);
+	}
+
 	function realtimeRow(event: PvpRealtimeEvent) {
 		return event.payload?.new ?? event.payload?.old ?? {};
 	}
@@ -1097,10 +1190,14 @@
 
 		if (
 			getPvpStatus(nextMatch, '') === 'completed'
-			&& isPvpMatchRanked(nextMatch)
+			&& isPvpMissionCountableMatch(nextMatch)
 		) {
 			upsertMatchHistory(nextMatch);
-			void refreshWeeklyRace();
+			void refreshPvpMissions();
+
+			if (isPvpMatchRanked(nextMatch)) {
+				void refreshWeeklyRace();
+			}
 
 			if (activePvpEventId && getValueEventId(nextMatch) === activePvpEventId) {
 				void refreshEventRace(eventRacePage, activePvpEventId);
@@ -2510,6 +2607,10 @@
           <History class="h-4 w-4" />
           {$_('pvp.tabs.history')}
         </Tabs.Trigger>
+        <Tabs.Trigger value="missions" class="pvp-tab-trigger">
+          <Target class="h-4 w-4" />
+          {$_('pvp.tabs.missions')}
+        </Tabs.Trigger>
         <Tabs.Trigger value="weekly-race" class="pvp-tab-trigger">
           <CalendarDays class="h-4 w-4" />
           {$_('pvp.tabs.weekly_race')}
@@ -2534,6 +2635,17 @@
         </Tabs.Trigger>
       </Tabs.List>
     {/if}
+
+    <Tabs.Content value="missions">
+      <PvpMissionsTab
+        missions={pvpMissions}
+        loading={pvpMissionsLoading}
+        error={pvpMissionsError}
+        loggedIn={$user.loggedIn}
+        claimingMissionKey={claimingPvpMissionKey}
+        onClaim={handleClaimPvpMission}
+      />
+    </Tabs.Content>
 
     <Tabs.Content value="weekly-race">
       <WeeklyRaceTab
