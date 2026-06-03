@@ -366,6 +366,9 @@
 	$: matchmakingDisabled = controlsDisabled || Boolean(requiredSubmission);
 	$: rankedQueueDisabled = matchmakingDisabled || Boolean(currentRoom);
 	$: activePvpGroup = getActivePvpGroup(activePvpTab);
+	$: unclaimedPvpMissionCount = pvpMissions.filter((mission) =>
+		!mission.claimed && (mission.claimable || mission.completed)
+	).length;
 	$: updateActiveMatchRealtime($user.loggedIn, getLobbyRealtimeMatchIds());
 	$: updatePendingConfirmRealtime($user.loggedIn, pendingMatchId);
 	$: updateMatchmakingCheckPolling($user.loggedIn, isSearching && !requiredSubmission);
@@ -2633,6 +2636,11 @@
         >
           <Target class="h-4 w-4" />
           {$_('pvp.tabs.missions')}
+          {#if unclaimedPvpMissionCount > 0}
+            <span class="pvp-nav-indicator">
+              {unclaimedPvpMissionCount > 9 ? '9+' : unclaimedPvpMissionCount}
+            </span>
+          {/if}
         </button>
         <button
           type="button"
@@ -3694,6 +3702,23 @@
   background: hsl(var(--background));
   color: hsl(var(--foreground));
   box-shadow: 0 1px 2px hsl(var(--foreground) / 0.08);
+}
+
+.pvp-nav-indicator {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  padding: 0 5px;
+  background: rgb(239 68 68);
+  color: white;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 0 0 2px hsl(var(--background));
 }
 
 :global(.pvp-secondary-tab-list) {
