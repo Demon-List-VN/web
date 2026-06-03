@@ -59,6 +59,8 @@ export type PvpPlayer = {
     avatarVersion?: number;
     isAvatarGif?: boolean;
     supporterUntil?: string | null;
+    exp?: number | null;
+    extraExp?: number | null;
     clan?: number | null;
     clans?: Record<string, unknown> | null;
     [key: string]: unknown;
