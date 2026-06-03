@@ -809,7 +809,7 @@
                 },
                 "invisible": {
                     "name": "Invisible",
-                    "description": "Ẩn chuyển động của bạn khỏi mục tiêu."
+                    "description": "Ẩn icon của mục tiêu."
                 },
                 "shield": {
                     "name": "Shield",
