@@ -2,7 +2,8 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import type { PvpMission } from '$lib/client/pvp';
+	import * as Tabs from '$lib/components/ui/tabs';
+	import type { PvpMission, PvpMissionPeriodType } from '$lib/client/pvp';
 	import { _ } from 'svelte-i18n';
 	import {
 		Check,
@@ -20,8 +21,22 @@
 	export let claimingMissionKey = '';
 	export let onClaim: (mission: PvpMission) => void | Promise<void> = () => {};
 
+	let activeMissionPeriod: PvpMissionPeriodType = 'daily';
+
 	$: dailyMissions = missions.filter((mission) => mission.periodType === 'daily');
 	$: weeklyMissions = missions.filter((mission) => mission.periodType === 'weekly');
+	$: missionPeriods = [
+		{
+			value: 'daily' as PvpMissionPeriodType,
+			labelKey: 'pvp.missions.daily',
+			missions: dailyMissions
+		},
+		{
+			value: 'weekly' as PvpMissionPeriodType,
+			labelKey: 'pvp.missions.weekly',
+			missions: weeklyMissions
+		}
+	];
 
 	function percent(mission: PvpMission) {
 		if (!mission.target) {
@@ -70,131 +85,83 @@
       </Card.Content>
     </Card.Root>
   {:else}
-    <section class="mission-period">
-      <div class="mission-period-heading">
-        <div>
-          <h2>{$_('pvp.missions.daily')}</h2>
-          <span>
-            <Clock class="h-4 w-4" />
-            {$_('pvp.missions.resets_at', { values: { time: resetLabel(dailyMissions) } })}
-          </span>
-        </div>
-      </div>
-      <div class="mission-list">
-        {#each dailyMissions as mission}
-          <Card.Root
-            class={`mission-card ${mission.completed && !mission.claimed ? 'complete' : ''} ${mission.claimed ? 'claimed' : ''}`}
-          >
-            <Card.Content class="mission-card-content">
-              <div class="mission-icon">
-                {#if mission.claimed}
-                  <Check class="h-5 w-5" />
-                {:else if mission.completed}
-                  <Sparkles class="h-5 w-5" />
-                {:else}
-                  <Target class="h-5 w-5" />
-                {/if}
-              </div>
-              <div class="mission-main">
-                <div class="mission-title-row">
-                  <strong>{$_(`pvp.missions.items.${mission.key}.title`)}</strong>
-                  <span>+{mission.xp} XP</span>
-                </div>
-                <p>{$_(`pvp.missions.items.${mission.key}.description`)}</p>
-                <div class="mission-progress">
-                  <div>
-                    <span style={`width: ${percent(mission)}%`}></span>
-                  </div>
-                  <small>{mission.progress}/{mission.target}</small>
-                </div>
-              </div>
-              <Button
-                class="mission-claim-button"
-                disabled={!mission.claimable || claimingMissionKey === mission.key}
-                variant={mission.claimed ? 'outline' : mission.claimable ? 'default' : 'outline'}
-                on:click={() => onClaim(mission)}
-              >
-                {#if claimingMissionKey === mission.key}
-                  <Loader2 class="mr-2 h-4 w-4 animate-spin" />
-                  {$_('pvp.missions.claiming')}
-                {:else if mission.claimed}
-                  <Check class="mr-2 h-4 w-4" />
-                  {$_('pvp.missions.claimed')}
-                {:else if mission.claimable}
-                  {$_('pvp.missions.claim')}
-                {:else}
-                  <Lock class="mr-2 h-4 w-4" />
-                  {$_('pvp.missions.locked')}
-                {/if}
-              </Button>
-            </Card.Content>
-          </Card.Root>
+    <Tabs.Root bind:value={activeMissionPeriod} class="mission-period-tabs">
+      <Tabs.List class="mission-period-tabs-list" aria-label={$_('pvp.tabs.missions')}>
+        {#each missionPeriods as period (period.value)}
+          <Tabs.Trigger value={period.value} class="mission-period-tab-trigger">
+            {$_(period.labelKey)}
+            <span class="mission-tab-count">{period.missions.length}</span>
+          </Tabs.Trigger>
         {/each}
-      </div>
-    </section>
+      </Tabs.List>
 
-    <section class="mission-period">
-      <div class="mission-period-heading">
-        <div>
-          <h2>{$_('pvp.missions.weekly')}</h2>
-          <span>
-            <Clock class="h-4 w-4" />
-            {$_('pvp.missions.resets_at', { values: { time: resetLabel(weeklyMissions) } })}
-          </span>
-        </div>
-      </div>
-      <div class="mission-list">
-        {#each weeklyMissions as mission}
-          <Card.Root
-            class={`mission-card ${mission.completed && !mission.claimed ? 'complete' : ''} ${mission.claimed ? 'claimed' : ''}`}
-          >
-            <Card.Content class="mission-card-content">
-              <div class="mission-icon">
-                {#if mission.claimed}
-                  <Check class="h-5 w-5" />
-                {:else if mission.completed}
-                  <Sparkles class="h-5 w-5" />
-                {:else}
-                  <Target class="h-5 w-5" />
-                {/if}
+      {#each missionPeriods as period (period.value)}
+        <Tabs.Content value={period.value} class="mission-period-tab-content">
+          <section class="mission-period">
+            <div class="mission-period-heading">
+              <div>
+                <h2>{$_(period.labelKey)}</h2>
+                <span>
+                  <Clock class="h-4 w-4" />
+                  {$_('pvp.missions.resets_at', { values: { time: resetLabel(period.missions) } })}
+                </span>
               </div>
-              <div class="mission-main">
-                <div class="mission-title-row">
-                  <strong>{$_(`pvp.missions.items.${mission.key}.title`)}</strong>
-                  <span>+{mission.xp} XP</span>
-                </div>
-                <p>{$_(`pvp.missions.items.${mission.key}.description`)}</p>
-                <div class="mission-progress">
-                  <div>
-                    <span style={`width: ${percent(mission)}%`}></span>
-                  </div>
-                  <small>{mission.progress}/{mission.target}</small>
-                </div>
-              </div>
-              <Button
-                class="mission-claim-button"
-                disabled={!mission.claimable || claimingMissionKey === mission.key}
-                variant={mission.claimed ? 'outline' : mission.claimable ? 'default' : 'outline'}
-                on:click={() => onClaim(mission)}
-              >
-                {#if claimingMissionKey === mission.key}
-                  <Loader2 class="mr-2 h-4 w-4 animate-spin" />
-                  {$_('pvp.missions.claiming')}
-                {:else if mission.claimed}
-                  <Check class="mr-2 h-4 w-4" />
-                  {$_('pvp.missions.claimed')}
-                {:else if mission.claimable}
-                  {$_('pvp.missions.claim')}
-                {:else}
-                  <Lock class="mr-2 h-4 w-4" />
-                  {$_('pvp.missions.locked')}
-                {/if}
-              </Button>
-            </Card.Content>
-          </Card.Root>
-        {/each}
-      </div>
-    </section>
+            </div>
+            <div class="mission-list">
+              {#each period.missions as mission (mission.key)}
+                <Card.Root
+                  class={`mission-card ${mission.completed && !mission.claimed ? 'complete' : ''} ${mission.claimed ? 'claimed' : ''}`}
+                >
+                  <Card.Content class="mission-card-content">
+                    <div class="mission-icon">
+                      {#if mission.claimed}
+                        <Check class="h-5 w-5" />
+                      {:else if mission.completed}
+                        <Sparkles class="h-5 w-5" />
+                      {:else}
+                        <Target class="h-5 w-5" />
+                      {/if}
+                    </div>
+                    <div class="mission-main">
+                      <div class="mission-title-row">
+                        <strong>{$_(`pvp.missions.items.${mission.key}.title`)}</strong>
+                        <span>+{mission.xp} XP</span>
+                      </div>
+                      <p>{$_(`pvp.missions.items.${mission.key}.description`)}</p>
+                      <div class="mission-progress">
+                        <div>
+                          <span style={`width: ${percent(mission)}%`}></span>
+                        </div>
+                        <small>{mission.progress}/{mission.target}</small>
+                      </div>
+                    </div>
+                    <Button
+                      class="mission-claim-button"
+                      disabled={!mission.claimable || claimingMissionKey === mission.key}
+                      variant={mission.claimed ? 'outline' : mission.claimable ? 'default' : 'outline'}
+                      on:click={() => onClaim(mission)}
+                    >
+                      {#if claimingMissionKey === mission.key}
+                        <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+                        {$_('pvp.missions.claiming')}
+                      {:else if mission.claimed}
+                        <Check class="mr-2 h-4 w-4" />
+                        {$_('pvp.missions.claimed')}
+                      {:else if mission.claimable}
+                        {$_('pvp.missions.claim')}
+                      {:else}
+                        <Lock class="mr-2 h-4 w-4" />
+                        {$_('pvp.missions.locked')}
+                      {/if}
+                    </Button>
+                  </Card.Content>
+                </Card.Root>
+              {/each}
+            </div>
+          </section>
+        </Tabs.Content>
+      {/each}
+    </Tabs.Root>
   {/if}
 </div>
 
@@ -207,6 +174,46 @@
 .mission-loading {
   display: grid;
   gap: 12px;
+}
+
+:global(.mission-period-tabs) {
+  display: grid;
+  gap: 16px;
+}
+
+:global(.mission-period-tabs-list) {
+  width: fit-content;
+  max-width: 100%;
+  height: auto;
+  flex-wrap: wrap;
+}
+
+:global(.mission-period-tab-trigger) {
+  min-height: 32px;
+  gap: 8px;
+}
+
+:global(.mission-period-tab-content) {
+  margin-top: 0;
+}
+
+.mission-tab-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: hsl(var(--background));
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+:global(.mission-period-tab-trigger[data-state='active']) .mission-tab-count {
+  background: rgb(34 197 94 / 0.16);
+  color: rgb(22 163 74);
 }
 
 :global(.mission-state) :global(.mission-state-content) {
