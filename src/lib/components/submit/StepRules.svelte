@@ -62,12 +62,12 @@
           <Gauge size={20} />
         </div>
         <div class="rule-text">
-          <h3>{t('Insane Demon trở lên', 'Insane Demon or above')}</h3>
+          <h3>{t('Mọi level đều có thể nộp', 'Any level can be submitted')}</h3>
           <p>
             {
               t(
-                  'Level phải là Insane Demon trở lên. Level chưa có trong danh sách cũng có thể nộp.',
-                  'Level must be Insane Demon or above. Levels not yet on the list can also be submitted.'
+                  'Bạn có thể nộp record cho mọi level hợp lệ trên Geometry Dash, kể cả level chưa có trong danh sách.',
+                  'You can submit a record for any valid Geometry Dash level, including levels not yet on the list.'
               )
             }
           </p>

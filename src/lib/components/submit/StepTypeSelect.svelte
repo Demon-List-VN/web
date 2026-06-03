@@ -25,8 +25,8 @@
         <p>
           {
             $locale == 'vi'
-            ? 'Nộp kết quả chơi level Insane Demon trở lên'
-            : 'Submit your completion of an Insane Demon or above level'
+            ? 'Nộp kết quả chơi bất kỳ level hợp lệ nào'
+            : 'Submit your completion of any valid level'
           }
         </p>
       </div>
