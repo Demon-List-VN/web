@@ -62,7 +62,7 @@ export function resolvePlayerRankedListSelection(
                 list.identifier === requestedIdentifier
                 || list.slug === requestedIdentifier
                 || String(list.id) === requestedIdentifier
-        ) || listSummaries[0]
+        ) || null
     );
 }
 

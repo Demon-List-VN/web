@@ -28,7 +28,12 @@
     },
     "list_selector": {
         "search_placeholder": "Search lists...",
-        "no_results": "No lists found"
+        "no_results": "No lists found",
+        "loading": "Loading lists...",
+        "clear": "Clear selection",
+        "starred": "Starred",
+        "official": "Official",
+        "verified": "Verified"
     },
     "head": {
         "site_name": "Geometry Dash Việt Nam",
@@ -2149,6 +2154,7 @@
             "unknown_level": "Unknown level",
             "no_ranked_lists": "No ranked-list stats yet.",
             "no_selected_list": "No ranked list selected",
+            "no_selected_list_rank": "This player has no ranked stats on the selected list yet.",
             "no_recent_records": "No accepted records yet.",
             "no_records": "No records yet",
             "no_data": "No data available",

@@ -61,14 +61,35 @@
 			(option) => option.id === selectedId
 		) ?? null;
 	$: filteredOptions = searchUrl
-		? searchResults
+		? trimmedQuery
+			? searchResults
+			: options
 		: normalizedQuery
 		? options.filter((option) => matchesQuery(option, normalizedQuery))
 		: options;
 	$: searchKey = `${searchUrl ?? ''}:${trimmedQuery}`;
-	$: if (browser && open && searchUrl && searchKey !== lastSearchKey) {
+	$: if (
+		browser
+		&& open
+		&& searchUrl
+		&& trimmedQuery.length >= minSearchLength
+		&& searchKey !== lastSearchKey
+	) {
 		lastSearchKey = searchKey;
 		scheduleSearch(trimmedQuery);
+	}
+	$: if (
+		browser
+		&& open
+		&& searchUrl
+		&& trimmedQuery.length < minSearchLength
+		&& (searchResults.length || isSearching || searchTimeout)
+	) {
+		searchRequestId += 1;
+		clearPendingSearch();
+		searchResults = [];
+		isSearching = false;
+		lastSearchKey = '';
 	}
 	$: if (browser && !open && (query || searchResults.length || isSearching)) {
 		clearSearchState();

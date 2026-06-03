@@ -28,7 +28,12 @@
     },
     "list_selector": {
         "search_placeholder": "Tìm danh sách...",
-        "no_results": "Không tìm thấy danh sách"
+        "no_results": "Không tìm thấy danh sách",
+        "loading": "Đang tải danh sách...",
+        "clear": "Xóa lựa chọn",
+        "starred": "Đã gắn sao",
+        "official": "Chính thức",
+        "verified": "Đã xác minh"
     },
     "head": {
         "site_name": "Geometry Dash Việt Nam",
@@ -2148,6 +2153,7 @@
             "unknown_level": "Level không rõ",
             "no_ranked_lists": "Chưa có chỉ số ranked list.",
             "no_selected_list": "Chưa chọn ranked list",
+            "no_selected_list_rank": "Người chơi này chưa có chỉ số xếp hạng ở danh sách đã chọn.",
             "no_recent_records": "Chưa có record được duyệt.",
             "no_records": "Chưa có bản ghi",
             "no_data": "Không có dữ liệu",
