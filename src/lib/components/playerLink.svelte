@@ -54,6 +54,28 @@
 	$: supporterTierStyle = getSupporterTierStyle(supporterTier);
 	$: avatarLevelStyle = getPlayerExpLevelStyle(player);
 
+	function getAvatarFallback(player: any) {
+		const firstName = `${player?.name ?? ''}`
+			.trim()
+			.split(/\s+/)[0] ?? '';
+
+		return firstName ? firstName[0].toUpperCase() : '?';
+	}
+
+	function getAvatarSrc(player: any) {
+		if (!player?.uid) {
+			return '';
+		}
+
+		const extension = isActive(player.supporterUntil) && player.isAvatarGif
+			? '.gif'
+			: '.jpg';
+
+		return `https://cdn.gdvn.net/avatars/${player.uid}${extension}?version=${
+			player.avatarVersion ?? 0
+		}`;
+	}
+
 	function truncateText(str: string) {
 		if (!truncate) {
 			return str;
@@ -86,16 +108,12 @@
       >
         <Avatar.Image
           class="playerAvatar"
-          style={`width: ${avatarSize}px; height: ${avatarSize}px;`}
-          src={`https://cdn.gdvn.net/avatars/${player.uid}${
-              isActive(player.supporterUntil) && player.isAvatarGif ? '.gif' : '.jpg'
-          }?version=${player.avatarVersion}`}
+          src={getAvatarSrc(player)}
           alt={player.name}
         />
         <Avatar.Fallback
           class="playerAvatar"
-          style={`width: ${avatarSize}px; height: ${avatarSize}px;`}
-        >{player.name[0]}</Avatar.Fallback>
+        >{getAvatarFallback(player)}</Avatar.Fallback>
       </Avatar.Root>
       <PlayerLevelBadge {player} size="sm" />
     </span>
@@ -224,8 +242,8 @@
 }
 
 .playerAvatar {
-  width: 22px;
-  height: 22px;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
