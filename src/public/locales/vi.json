@@ -572,7 +572,7 @@
             "completion_value": "Mục tiêu",
             "rule_count": "Số người hoàn thành",
             "rule_percentage": "Phần trăm hoàn thành",
-            "scoring_mode": "Chế độ tính điểm",
+            "scoring_mode": "Chế độ",
             "mode_progress": "Tiến độ",
             "mode_score": "Điểm",
             "mode_hp": "HP",
@@ -781,6 +781,41 @@
             "percent_axis": "Phần trăm",
             "rate_axis": "Tỷ lệ chết (%)",
             "deaths_axis": "Số lần chết"
+        },
+        "powerups": {
+            "title": "Powerup",
+            "description": "Dùng mana để cản đối thủ hoặc tự bảo vệ.",
+            "mana": "Mana",
+            "skill": "Kỹ năng",
+            "loading": "Đang tải powerup...",
+            "active_only": "Powerup chỉ dùng được khi trận đang diễn ra.",
+            "spectator": "Người xem không thể dùng powerup.",
+            "no_targets": "Không có mục tiêu hợp lệ.",
+            "cast": "Dùng",
+            "cast_on": "Dùng lên {target}",
+            "random_target": "Mục tiêu ngẫu nhiên",
+            "cost": "{cost} mana",
+            "duration": "{duration}s",
+            "shield_active": "Shield đang hoạt động",
+            "not_enough_mana": "Cần {cost} mana",
+            "state_failed": "Không tải được powerup",
+            "toast_cast": "Đã dùng {skill}.",
+            "toast_blocked": "Powerup đã bị Shield chặn.",
+            "toast_failed": "Không dùng được powerup",
+            "skills": {
+                "flashbang": {
+                    "name": "Flashbang",
+                    "description": "Làm mù mục tiêu trong chốc lát."
+                },
+                "invisible": {
+                    "name": "Invisible",
+                    "description": "Ẩn chuyển động của bạn khỏi mục tiêu."
+                },
+                "shield": {
+                    "name": "Shield",
+                    "description": "Chặn powerup bất lợi tiếp theo."
+                }
+            }
         },
         "system_sender": "Versus",
         "system_message": {

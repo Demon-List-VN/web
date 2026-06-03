@@ -572,7 +572,7 @@
             "completion_value": "Target",
             "rule_count": "Finish count",
             "rule_percentage": "Finish percent",
-            "scoring_mode": "Scoring mode",
+            "scoring_mode": "Mode",
             "mode_progress": "Progress",
             "mode_score": "Score",
             "mode_hp": "HP",
@@ -781,6 +781,41 @@
             "percent_axis": "Percent",
             "rate_axis": "Death share (%)",
             "deaths_axis": "Deaths"
+        },
+        "powerups": {
+            "title": "Powerups",
+            "description": "Spend mana to disrupt rivals or protect yourself.",
+            "mana": "Mana",
+            "skill": "Skill",
+            "loading": "Loading powerups...",
+            "active_only": "Powerups are available while the match is active.",
+            "spectator": "Spectators cannot cast powerups.",
+            "no_targets": "No valid targets.",
+            "cast": "Cast",
+            "cast_on": "Cast on {target}",
+            "random_target": "Random target",
+            "cost": "{cost} mana",
+            "duration": "{duration}s",
+            "shield_active": "Shield active",
+            "not_enough_mana": "Need {cost} mana",
+            "state_failed": "Failed to load powerups",
+            "toast_cast": "{skill} cast.",
+            "toast_blocked": "Powerup was blocked by Shield.",
+            "toast_failed": "Failed to cast powerup",
+            "skills": {
+                "flashbang": {
+                    "name": "Flashbang",
+                    "description": "Briefly blinds the target."
+                },
+                "invisible": {
+                    "name": "Invisible",
+                    "description": "Hides your movement from the target."
+                },
+                "shield": {
+                    "name": "Shield",
+                    "description": "Blocks the next harmful powerup."
+                }
+            }
         },
         "system_sender": "Versus",
         "system_message": {

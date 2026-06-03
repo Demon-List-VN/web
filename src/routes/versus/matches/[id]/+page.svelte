@@ -21,6 +21,7 @@
 	import {
 		acceptPvpMatch,
 		banPvpMatchLevel,
+		castPvpPowerupSkill,
 		endPvpRoomMatch,
 		getPvpBanPick,
 		getPvpMatchMessages,
@@ -45,6 +46,7 @@
 		getPvpParticipantPlayer,
 		getPvpParticipantUid,
 		getPvpParticipantsSortedByProgress,
+		getPvpPowerupState,
 		getPvpProgress,
 		getPvpResultReason,
 		getPvpSelfParticipant,
@@ -67,6 +69,8 @@
 		type PvpBanPickAction,
 		type PvpMatch,
 		type PvpMatchMessage,
+		type PvpPowerupSkill,
+		type PvpPowerupState,
 		type PvpMatchReport,
 		type PvpMode,
 		type PvpPlayMode,
@@ -93,11 +97,15 @@
 		MessageCircle,
 		Trophy,
 		Copy,
+		EyeOff,
 		Send,
+		Shield,
+		Target,
 		UserRound,
 		Volume2,
 		VolumeX,
-		X
+		X,
+		Zap
 	} from 'lucide-svelte';
 
 	const PVP_GEODE_ALERT_DISMISSED_KEY = 'gdvn:pvp-geode-alert-dismissed';
@@ -174,6 +182,8 @@
 		showRate: boolean;
 	};
 
+	type PowerupSkillConfig = NonNullable<PvpPowerupState['skills']>[number];
+
 	let match: PvpMatch | null = null;
 	let loading = false;
 	let initializedFor = '';
@@ -217,6 +227,11 @@
 	let reportDialogOpen = false;
 	let locallyReportedMatchIds = new Set<string>();
 	let pendingXpToastMatch: PvpMatch | null = null;
+	let powerupState: PvpPowerupState | null = null;
+	let powerupLoading = false;
+	let powerupCastLoading = '';
+	let loadedPowerupStateFor = '';
+	let powerupStateError = '';
 
 	$: matchId = $page.params.id;
 	$: isSpectateRoute = $page.url.searchParams.get('spectate') === '1';
@@ -311,6 +326,30 @@
 	$: selfParticipant = getPvpSelfParticipant(match, currentUid);
 	$: selfAccepted = hasPvpParticipantAccepted(selfParticipant)
 		|| (matchId ? locallyAcceptedMatchIds.has(String(matchId)) : false);
+	$: isPowerupMatch = normalizedScoringMode(scoringMode) === 'powerup';
+	$: powerupTargets = orderedParticipants.filter((participant) => {
+		const uid = getPvpParticipantUid(participant);
+
+		return Boolean(uid && uid !== currentUid);
+	});
+	$: canUsePowerups = isPowerupMatch
+		&& isActive
+		&& Boolean(selfParticipant)
+		&& !isSpectator;
+	$: powerupMana = Math.max(0, Math.floor(Number(powerupState?.mana) || 0));
+	$: powerupMaxMana = Math.max(
+		1,
+		Math.floor(Number(powerupState?.maxMana) || 100)
+	);
+	$: powerupManaPercent = Math.max(
+		0,
+		Math.min(100, (powerupMana / powerupMaxMana) * 100)
+	);
+	$: powerupStateKey = canUsePowerups
+		&& currentUid
+		&& matchId
+		? `${currentUid}:${matchId}`
+		: '';
 	$: canRequeue = Boolean(
 		match && !isRoomMatch && !isActive && selfParticipant && !isSpectator
 	);
@@ -455,6 +494,7 @@
 		levelChangeRequestActive ? levelChangeRequestExpiresMs : null,
 		banPickAbortRequestActive ? banPickAbortRequestExpiresMs : null
 	);
+	$: syncPowerupState(powerupStateKey);
 
 	$: if (
 		$user.checked
@@ -517,7 +557,10 @@
 			setPvpRealtimeAuth(token);
 			await Promise.all([
 				refreshMatch(),
-				isSpectator ? Promise.resolve() : refreshMessages()
+				isSpectator ? Promise.resolve() : refreshMessages(),
+				powerupStateKey
+					? refreshPowerupState({ key: powerupStateKey, silent: true })
+					: Promise.resolve()
 			]);
 
 			cleanupRealtime = subscribeToPvpMatchDetail(id, async (event) => {
@@ -530,11 +573,13 @@
 					}
 
 					scheduleRealtimeTask('match', refreshMatch);
+					schedulePowerupRefresh();
 
 					return;
 				}
 
 				scheduleRealtimeTask('match', refreshMatch);
+				schedulePowerupRefresh();
 			});
 		} catch (error) {
 			toast.error(
@@ -596,6 +641,125 @@
 			);
 		} finally {
 			chatLoading = false;
+		}
+	}
+
+	function syncPowerupState(key: string) {
+		if (!key) {
+			if (loadedPowerupStateFor || powerupState || powerupStateError) {
+				loadedPowerupStateFor = '';
+				powerupState = null;
+				powerupStateError = '';
+			}
+
+			return;
+		}
+
+		if (!powerupLoading && loadedPowerupStateFor !== key) {
+			void refreshPowerupState({ key });
+		}
+	}
+
+	function schedulePowerupRefresh() {
+		if (!powerupStateKey) {
+			return;
+		}
+
+		scheduleRealtimeTask(
+			'powerups',
+			() => refreshPowerupState({ key: powerupStateKey, silent: true })
+		);
+	}
+
+	async function refreshPowerupState(
+		options: { key?: string; silent?: boolean; } = {}
+	) {
+		const key = options.key || powerupStateKey;
+
+		if (!$user.loggedIn || !matchId || !key || isSpectator) {
+			return;
+		}
+
+		const requestMatchId = matchId;
+		loadedPowerupStateFor = key;
+
+		if (!options.silent) {
+			powerupLoading = true;
+		}
+
+		try {
+			const nextState = await getPvpPowerupState(
+				await $user.token(),
+				requestMatchId
+			);
+
+			if (powerupStateKey === key) {
+				powerupState = nextState;
+				powerupStateError = '';
+			}
+		} catch (error) {
+			if (powerupStateKey === key) {
+				powerupStateError = error instanceof Error
+					? error.message
+					: $_('pvp.powerups.state_failed');
+			}
+
+			if (!options.silent) {
+				toast.error(
+					error instanceof Error
+						? error.message
+						: $_('pvp.powerups.state_failed')
+				);
+			}
+		} finally {
+			if (!options.silent) {
+				powerupLoading = false;
+			}
+		}
+	}
+
+	async function castPowerupSkill(
+		skill: PvpPowerupSkill,
+		targetUid?: string | null,
+		randomTarget = false
+	) {
+		if (!matchId || !canUsePowerups || powerupCastLoading) {
+			return;
+		}
+
+		const actionKey = powerupActionKey(skill, targetUid, randomTarget);
+		powerupCastLoading = actionKey;
+
+		try {
+			const result = await castPvpPowerupSkill(
+				await $user.token(),
+				matchId,
+				{
+					skill,
+					...(targetUid ? { targetUid } : {}),
+					...(randomTarget ? { randomTarget: true } : {})
+				}
+			);
+
+			powerupState = result.state;
+			loadedPowerupStateFor = powerupStateKey;
+			await refreshMessages({ incremental: true });
+			toast.success(
+				result.blocked
+					? $_('pvp.powerups.toast_blocked')
+					: $_('pvp.powerups.toast_cast', {
+						values: { skill: powerupSkillName(skill) }
+					})
+			);
+		} catch (error) {
+			toast.error(
+				error instanceof Error ? error.message : $_('pvp.powerups.toast_failed')
+			);
+			await refreshPowerupState({ key: powerupStateKey, silent: true });
+		} finally {
+			if (powerupCastLoading === actionKey) {
+				powerupCastLoading = '';
+			}
 		}
 	}
 
@@ -1742,6 +1906,77 @@
 
 	function isScoreLikeScoringMode(value: PvpRoomScoringMode | string) {
 		return value === 'score' || value === 'powerup';
+	}
+
+	function powerupSkills() {
+		return powerupState?.skills ?? [];
+	}
+
+	function powerupSkillName(skill: unknown) {
+		const value = String(skill || '')
+			.trim()
+			.toLowerCase();
+
+		if (
+			value === 'flashbang'
+			|| value === 'invisible'
+			|| value === 'shield'
+		) {
+			return $_(`pvp.powerups.skills.${value}.name`);
+		}
+
+		return value || $_('pvp.powerups.skill');
+	}
+
+	function powerupSkillDescription(skill: unknown) {
+		const value = String(skill || '')
+			.trim()
+			.toLowerCase();
+
+		if (
+			value === 'flashbang'
+			|| value === 'invisible'
+			|| value === 'shield'
+		) {
+			return $_(`pvp.powerups.skills.${value}.description`);
+		}
+
+		return '';
+	}
+
+	function powerupDurationLabel(durationMs: unknown) {
+		const seconds = Number(durationMs) / 1000;
+
+		return Number.isFinite(seconds) && seconds > 0
+			? $_('pvp.powerups.duration', {
+				values: { duration: compactNumber(seconds) }
+			})
+			: '';
+	}
+
+	function powerupTargetName(participant: PvpParticipant) {
+		return participantName(
+			participant,
+			effectiveHideOpponentInfo,
+			currentUid
+		) || $_('pvp.rival');
+	}
+
+	function powerupActionKey(
+		skill: PvpPowerupSkill | string,
+		targetUid?: string | null,
+		randomTarget = false
+	) {
+		return `${skill}:${randomTarget ? 'random' : targetUid || 'self'}`;
+	}
+
+	function canCastPowerup(skill: PowerupSkillConfig) {
+		const cost = Number(skill.cost) || 0;
+
+		return canUsePowerups
+			&& !powerupCastLoading
+			&& powerupMana >= cost
+			&& (!skill.harmful || powerupTargets.length > 0);
 	}
 
 	function progressMessageEvent(
@@ -3481,6 +3716,180 @@
         {/if}
 
         <section class="detail-grid">
+          {#if isPowerupMatch}
+            <Card.Root class="powerup-card">
+              <Card.Header class="powerup-header">
+                <div>
+                  <Card.Title>{$_('pvp.powerups.title')}</Card.Title>
+                  <Card.Description>{$_('pvp.powerups.description')}</Card.Description>
+                </div>
+                {#if powerupLoading}
+                  <Loader2 class="h-4 w-4 animate-spin text-muted-foreground" />
+                {/if}
+              </Card.Header>
+              <Card.Content class="powerup-content">
+                {#if !canUsePowerups}
+                  <div class="empty-state">
+                    {isSpectator
+                      ? $_('pvp.powerups.spectator')
+                      : $_('pvp.powerups.active_only')}
+                  </div>
+                {:else if powerupStateError}
+                  <div class="empty-state">{powerupStateError}</div>
+                {:else if !powerupState}
+                  <div class="empty-state">
+                    <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+                    {$_('pvp.powerups.loading')}
+                  </div>
+                {:else}
+                  <div class="powerup-mana-panel">
+                    <div class="powerup-mana-row">
+                      <span>{$_('pvp.powerups.mana')}</span>
+                      <strong>{powerupMana}/{powerupMaxMana}</strong>
+                    </div>
+                    <div
+                      class="powerup-mana-track"
+                      aria-label={$_('pvp.powerups.mana')}
+                    >
+                      <div
+                        class="powerup-mana-fill"
+                        style={`width: ${powerupManaPercent}%;`}
+                      />
+                    </div>
+                    {#if powerupState.shieldActive}
+                      <Badge variant="secondary" class="powerup-shield-badge">
+                        <Shield class="h-3.5 w-3.5" />
+                        {$_('pvp.powerups.shield_active')}
+                      </Badge>
+                    {/if}
+                  </div>
+
+                  <div class="powerup-skill-grid">
+                    {#each powerupSkills() as skill}
+                      <div class="powerup-skill-card">
+                        <div class="powerup-skill-heading">
+                          <span class="powerup-skill-icon">
+                            {#if skill.skill === 'shield'}
+                              <Shield class="h-4 w-4" />
+                            {:else if skill.skill === 'invisible'}
+                              <EyeOff class="h-4 w-4" />
+                            {:else}
+                              <Zap class="h-4 w-4" />
+                            {/if}
+                          </span>
+                          <div>
+                            <strong>{powerupSkillName(skill.skill)}</strong>
+                            <span>{powerupSkillDescription(skill.skill)}</span>
+                          </div>
+                        </div>
+                        <div class="powerup-skill-meta">
+                          <Badge variant="outline">
+                            {$_('pvp.powerups.cost', {
+                              values: { cost: skill.cost }
+                            })}
+                          </Badge>
+                          {#if powerupDurationLabel(skill.durationMs)}
+                            <Badge variant="outline">
+                              {powerupDurationLabel(skill.durationMs)}
+                            </Badge>
+                          {/if}
+                        </div>
+                        {#if skill.harmful}
+                          {#if powerupTargets.length}
+                            <div class="powerup-target-actions">
+                              {#each powerupTargets as target}
+                                {@const targetUid = getPvpParticipantUid(target)}
+                                {@const castKey = powerupActionKey(
+                                  skill.skill,
+                                  targetUid
+                                )}
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  disabled={!targetUid || !canCastPowerup(skill)}
+                                  on:click={() => castPowerupSkill(
+                                    skill.skill,
+                                    targetUid
+                                  )}
+                                >
+                                  {#if powerupCastLoading === castKey}
+                                    <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+                                  {:else}
+                                    <Target class="mr-2 h-4 w-4" />
+                                  {/if}
+                                  {$_('pvp.powerups.cast_on', {
+                                    values: { target: powerupTargetName(target) }
+                                  })}
+                                </Button>
+                              {/each}
+                              {#if powerupTargets.length > 1}
+                                {@const randomKey = powerupActionKey(
+                                  skill.skill,
+                                  null,
+                                  true
+                                )}
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={!canCastPowerup(skill)}
+                                  on:click={() => castPowerupSkill(
+                                    skill.skill,
+                                    null,
+                                    true
+                                  )}
+                                >
+                                  {#if powerupCastLoading === randomKey}
+                                    <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+                                  {:else}
+                                    <Target class="mr-2 h-4 w-4" />
+                                  {/if}
+                                  {$_('pvp.powerups.random_target')}
+                                </Button>
+                              {/if}
+                            </div>
+                          {:else}
+                            <div class="powerup-unavailable">
+                              {$_('pvp.powerups.no_targets')}
+                            </div>
+                          {/if}
+                        {:else}
+                          {@const castKey = powerupActionKey(
+                            skill.skill,
+                            currentUid
+                          )}
+                          <Button
+                            type="button"
+                            size="sm"
+                            disabled={!canCastPowerup(skill)}
+                            on:click={() => castPowerupSkill(
+                              skill.skill,
+                              currentUid
+                            )}
+                          >
+                            {#if powerupCastLoading === castKey}
+                              <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+                            {:else}
+                              <Shield class="mr-2 h-4 w-4" />
+                            {/if}
+                            {$_('pvp.powerups.cast')}
+                          </Button>
+                        {/if}
+                        {#if powerupMana < Number(skill.cost || 0)}
+                          <small class="powerup-unavailable">
+                            {$_('pvp.powerups.not_enough_mana', {
+                              values: { cost: skill.cost }
+                            })}
+                          </small>
+                        {/if}
+                      </div>
+                    {/each}
+                  </div>
+                {/if}
+              </Card.Content>
+            </Card.Root>
+          {/if}
+
           <Card.Root>
             <Card.Header>
               <Card.Title>{$_('pvp.challenge_level')}</Card.Title>
@@ -4366,6 +4775,127 @@
   margin: 0;
   color: hsl(var(--muted-foreground));
   font-size: 14px;
+}
+
+:global(.powerup-header) {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+:global(.powerup-content) {
+  display: grid;
+  gap: 14px;
+}
+
+.powerup-mana-panel {
+  display: grid;
+  gap: 8px;
+}
+
+.powerup-mana-row,
+.powerup-skill-heading,
+.powerup-skill-meta,
+.powerup-target-actions,
+:global(.powerup-shield-badge) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.powerup-mana-row {
+  justify-content: space-between;
+  color: hsl(var(--muted-foreground));
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.powerup-mana-row strong {
+  color: hsl(var(--foreground));
+}
+
+.powerup-mana-track {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: hsl(var(--muted));
+}
+
+.powerup-mana-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #16a34a, #2563eb);
+  transition: width 180ms ease;
+}
+
+.powerup-skill-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.powerup-skill-card {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-width: 0;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--muted) / 0.22);
+  padding: 12px;
+}
+
+.powerup-skill-heading {
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.powerup-skill-heading div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.powerup-skill-heading strong {
+  line-height: 1.2;
+}
+
+.powerup-skill-heading span:not(.powerup-skill-icon) {
+  color: hsl(var(--muted-foreground));
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.powerup-skill-icon {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid hsl(var(--border));
+  border-radius: 999px;
+  background: hsl(var(--background));
+  color: hsl(var(--primary));
+}
+
+.powerup-skill-meta,
+.powerup-target-actions {
+  flex-wrap: wrap;
+}
+
+.powerup-target-actions :global(button),
+.powerup-skill-card > :global(button) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.powerup-unavailable {
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.35;
 }
 
 :global(.level-content) h2 {

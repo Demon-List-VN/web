@@ -669,7 +669,7 @@
           </div>
 
           <div class="field">
-            <Label>Scoring mode</Label>
+            <Label>Mode</Label>
             <div class="segmented-control">
               <button
                 type="button"
