@@ -11,6 +11,7 @@
 	const reasonLabelKeys: Record<string, string> = {
 		pvp_match_win: 'player.xp_log.reasons.pvp_match_win',
 		pvp_match_loss: 'player.xp_log.reasons.pvp_match_loss',
+		pvp_mission_claim: 'player.xp_log.reasons.pvp_mission_claim',
 		record_submission: 'player.xp_log.reasons.record_submission',
 		record_submission_rejected: 'player.xp_log.reasons.record_submission_rejected',
 		challenge_submission: 'player.xp_log.reasons.challenge_submission',

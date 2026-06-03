@@ -12,6 +12,7 @@
 	import WeeklyRaceTab from './WeeklyRaceTab.svelte';
 	import { user } from '$lib/client';
 	import supabase from '$lib/client/supabase';
+	import { showXpAwardToast } from '$lib/client/xpToast';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Switch } from '$lib/components/ui/switch/index.js';
@@ -660,11 +661,7 @@
 		try {
 			const response = await claimPvpMission(await $user.token(), mission.key);
 			pvpMissions = response.missions;
-			toast.success(
-				$_('pvp.missions.claim_success', {
-					values: { xp: mission.xp }
-				})
-			);
+			showXpAwardToast(response.xpAward);
 			await $user.refresh();
 		} catch (error) {
 			toast.error(

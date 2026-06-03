@@ -2043,6 +2043,7 @@
             "reasons": {
                 "pvp_match_win": "Thắng trận PvP",
                 "pvp_match_loss": "Thua trận PvP",
+                "pvp_mission_claim": "Nhiệm vụ PvP",
                 "record_manual_100": "Bản ghi 100% được duyệt",
                 "record_submission": "Nộp bản ghi",
                 "record_submission_rejected": "Bản ghi bị từ chối",

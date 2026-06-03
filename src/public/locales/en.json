@@ -2044,6 +2044,7 @@
             "reasons": {
                 "pvp_match_win": "PvP match win",
                 "pvp_match_loss": "PvP match loss",
+                "pvp_mission_claim": "PvP mission",
                 "record_manual_100": "100% record accepted",
                 "record_submission": "Record submitted",
                 "record_submission_rejected": "Record rejected",
