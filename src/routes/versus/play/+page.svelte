@@ -211,10 +211,10 @@
 		'tip_12'
 	] as const;
 	type PvpTip =
-		| { type: 'supporter'; key: (typeof PVP_SUPPORTER_TIP_KEYS)[number] }
-		| { type: 'shitpost'; key: (typeof PVP_SHITPOST_TIP_KEYS)[number] }
-		| { type: 'serious'; key: (typeof PVP_SERIOUS_TIP_KEYS)[number] }
-		| { type: 'discord' };
+		| { type: 'supporter'; key: (typeof PVP_SUPPORTER_TIP_KEYS)[number]; }
+		| { type: 'shitpost'; key: (typeof PVP_SHITPOST_TIP_KEYS)[number]; }
+		| { type: 'serious'; key: (typeof PVP_SERIOUS_TIP_KEYS)[number]; }
+		| { type: 'discord'; };
 	type PvpNavGroup = 'play' | 'missions' | 'progress' | 'rankings' | 'info';
 	let selectedPlayer: any = null;
 	let selectedMode: PvpSelectionMode = 'classic';
@@ -680,8 +680,8 @@
 		if (
 			roll <
 			PVP_SUPPORTER_TIP_CHANCE +
-				PVP_SHITPOST_TIP_CHANCE +
-				PVP_SERIOUS_TIP_CHANCE
+			PVP_SHITPOST_TIP_CHANCE +
+			PVP_SERIOUS_TIP_CHANCE
 		) {
 			currentPvpTip = {
 				type: 'serious',
@@ -4443,7 +4443,7 @@
 }
 
 :global(.pvp-tip-alert.is-serious) {
-  border-color: hsl(198 82% 52% / 0.72);
+  border-color: hsl(42 90% 54% / 0.75);
   background: hsl(198 82% 52% / 0.1);
 }
 
