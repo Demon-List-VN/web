@@ -1490,17 +1490,19 @@
 				: null
 			: lobby.activeMatch;
 
-		lobby = {
-			...lobby,
-			activeMatch: nextActiveMatch,
-			matchmaking: String(lobby.matchmaking?.matchId) === String(matchId)
-				? {
-					...lobby.matchmaking,
-					match: isActivePvpMatch(nextMatch) ? nextMatch : null
-				}
-				: lobby.matchmaking,
-			incomingInvites: updateInviteMatches(lobby.incomingInvites, nextMatch),
-			outgoingInvites: updateInviteMatches(lobby.outgoingInvites, nextMatch)
+			lobby = {
+				...lobby,
+				activeMatch: nextActiveMatch,
+				matchmaking: String(lobby.matchmaking?.matchId) === String(matchId)
+					? isActivePvpMatch(nextMatch)
+						? {
+							...lobby.matchmaking,
+							match: nextMatch
+						}
+						: null
+					: lobby.matchmaking,
+				incomingInvites: updateInviteMatches(lobby.incomingInvites, nextMatch),
+				outgoingInvites: updateInviteMatches(lobby.outgoingInvites, nextMatch)
 		};
 		handleLobbyMatchSounds(previousActiveMatch, lobby.activeMatch);
 
@@ -2056,27 +2058,19 @@
 
 			matchDialogOpen = false;
 
-			if (wasMatchmakingMatch) {
-				lobby = {
-					...lobby,
-					activeMatch:
+				if (wasMatchmakingMatch) {
+					lobby = {
+						...lobby,
+						activeMatch:
 						String(getPvpMatchId(lobby.activeMatch)) === matchKey
 							? null
 							: lobby.activeMatch,
 					matchmaking:
-						String(getPvpMatchedMatchId(lobby.matchmaking)) === matchKey
-							? null
-							: lobby.matchmaking
-				};
-
-				const response = await startPvpMatchmaking(
-					token,
-					anonymousMode,
-					getPvpMode(latestMatch),
-					anonymousRevealAfterMatchEnd
-				);
-				applyMatchmakingResponse(response);
-			}
+							String(getPvpMatchedMatchId(lobby.matchmaking)) === matchKey
+								? null
+								: lobby.matchmaking
+					};
+				}
 		} catch (error) {
 			toast.error(
 				error instanceof Error ? error.message : $_('pvp.toast.load_failed')
