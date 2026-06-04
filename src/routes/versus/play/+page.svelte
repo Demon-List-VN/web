@@ -4444,7 +4444,7 @@
 
 :global(.pvp-tip-alert.is-serious) {
   border-color: hsl(42 90% 54% / 0.75);
-  background: hsl(198 82% 52% / 0.1);
+  background: hsl(42 92% 55% / 0.1);
 }
 
 :global(.pvp-tip-alert.is-supporter) {
@@ -4454,7 +4454,7 @@
 
 :global(.pvp-tip-alert.is-discord) {
   border-color: hsl(235 86% 65% / 0.78);
-  background: hsl(235 86% 65% / 0.1);
+  background: #5865f21a;
 }
 
 :global(.pvp-tip-alert.is-shitpost .pvp-tip-icon) {
@@ -4462,7 +4462,7 @@
 }
 
 :global(.pvp-tip-alert.is-serious .pvp-tip-icon) {
-  color: hsl(198 82% 42%);
+  color: hsl(42 90% 42%);
 }
 
 :global(.pvp-tip-alert.is-supporter .pvp-tip-icon) {
