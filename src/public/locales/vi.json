@@ -406,6 +406,99 @@
         "refresh": "Tải lại",
         "rematch": "Tái đấu",
         "requeue": "Ghép trận lại",
+        "match_end_special": {
+            "cta": {
+                "requeue": "Queue tiếp ngay",
+                "donate": "Ủng hộ ngay",
+                "upgrade": "Nâng tier ngay"
+            },
+            "generic": {
+                "win": [
+                    "🔥 Thắng đẹp! Cú click cuối cùng quá uy tín, chuẩn sync không lệch một frame.",
+                    "⚔️ Chiến thắng hoàn toàn xứng đáng. Skill tay của bạn dạo này lên trình rõ rệt rồi đấy!",
+                    "⭐ Trận đấu kết thúc với phần thắng thuộc về bạn. Đúng là phong độ của dân chuyên trị Demon List VN.",
+                    "👑 Thắng rồi! Nhịp nhấp chuột chuẩn đét, mượt mà như lướt Wave 360Hz.",
+                    "🤝 GG! Một trận thắng thuyết phục, đối thủ chắc cũng phải nể phục trình tay của bạn.",
+                    "✨ Outplay hoàn toàn! Chiến thắng này chứng minh bạn đã làm chủ được nhịp độ trận đấu.",
+                    "🗿 Thắng trận giòn giã. Cứ giữ vững phong độ này thì không có cái map nào làm khó được bạn đâu."
+                ],
+                "lose": [
+                    "💀 Bạn thua. Choke ở những phần trăm cuối luôn là cảm giác đau đớn nhất.",
+                    "⚔️ Trận này chưa thuộc về bạn. Chắc do chưa warm-up kỹ, làm lại ván nữa phục thù nào!",
+                    "🗿 Kết quả chưa như ý. Không sao, Extreme Demon còn clear được thì trận này chỉ là bước đệm thôi.",
+                    "🤝 Thua trận này ta bày trận khác. Bấm queue tiếp luôn cho nóng, tay đang dẻo!",
+                    "✨ Chút xíu nữa là lật kèo được rồi. Thôi thì bấm nút Rematch ngay đi chứ còn đợi gì nữa!",
+                    "🔥 Trận đấu kết thúc nhưng kinh nghiệm đã thuộc về bạn. Ván sau vào nhịp là gỡ lại ngay.",
+                    "🎯 Hụt một nhịp click là đi cả sải. Rút kinh nghiệm ván này và phục thù ở lượt queue tới nhé."
+                ]
+            },
+            "supporter_contextual": {
+                "none_vs_none": {
+                    "win": [
+                        "🔥 Bạn thắng. Website Geometry Dash VN vẫn đang hoạt động nhờ sự ủng hộ từ cộng đồng.",
+                        "⚔️ Chiến thắng thuộc về bạn. Demon List VN luôn trân trọng mọi lượt queue của các bạn.",
+                        "🗿 Bạn thắng trận. Cảm ơn những người đã và đang âm thầm giữ lửa cho sân chơi này.",
+                        "🤝 Một trận đấu hay. Website này vẫn đang cố gắng tốt lên từng ngày.",
+                        "⭐ Kết quả đẹp. Cảm ơn bạn đã cùng xây dựng cộng đồng Geometry Dash VN."
+                    ],
+                    "lose": [
+                        "💀 Bạn thua. May là website vẫn còn hoạt động tốt để bạn phục thù ngay.",
+                        "⚔️ Trận này chưa thuộc về bạn. Demon List VN vẫn đang chờ bạn ở ván tiếp theo.",
+                        "🗿 Kết quả hơi buồn. Nhưng cảm ơn bạn đã là một phần của Geometry Dash VN.",
+                        "🤝 Queue lại nhé? Sự hiện diện của bạn là động lực để website tiếp tục duy trì.",
+                        "⭐ Đừng bỏ cuộc. Website này luôn rộng mở nhờ sự đóng góp của cả cộng đồng."
+                    ]
+                },
+                "none_vs_supporter": {
+                    "win": [
+                        "🔥 Bạn thắng. Cảm ơn đối thủ vì đã góp phần giúp Geometry Dash VN duy trì ổn định.",
+                        "⚔️ Chiến thắng thuộc về bạn. Thật tuyệt khi thấy sự giao lưu giữa các thành viên cộng đồng.",
+                        "⭐ Một trận đấu chất lượng với một người bạn đang đồng hành cùng Demon List VN.",
+                        "🗿 Kết quả thuộc về bạn. Sự đóng góp của đối thủ giúp website có thêm nhiều tính năng mới.",
+                        "🤝 Cảm ơn cả hai vì một trận đấu đẹp trên nền tảng Geometry Dash VN."
+                    ],
+                    "lose": [
+                        "💀 Bạn thua. Đối thủ của bạn là một trong những người đang giúp website duy trì server.",
+                        "⚔️ Trận này thuộc về đối thủ. Cảm ơn họ vì đã góp sức giữ lửa cho Demon List VN.",
+                        "⭐ Một người bạn đang đồng hành cùng sự phát triển của website vừa giành chiến thắng.",
+                        "🗿 Kết quả chưa ổn. Nhưng nhờ những người như đối thủ, website đang ngày càng ổn hơn.",
+                        "🤝 Trận đấu kết thúc. Cảm ơn sự đóng góp của đối thủ cho cộng đồng Geometry Dash VN."
+                    ]
+                },
+                "supporter_vs_none": {
+                    "win": [
+                        "🔥 Bạn thắng. Cảm ơn bạn rất nhiều vì đã giúp Geometry Dash VN duy trì hoạt động.",
+                        "⭐ Chiến thắng thuộc về bạn. Sự đồng hành của bạn là nền tảng cho sự phát triển của website.",
+                        "⚔️ Bạn vừa thắng trận. Cảm ơn vì đã luôn ủng hộ Demon List VN.",
+                        "👑 Kết quả đẹp cho một thành viên tích cực của cộng đồng.",
+                        "🤝 Cảm ơn bạn đã giúp những trận đấu như thế này có thể diễn ra mỗi ngày."
+                    ],
+                    "lose": [
+                        "💀 Bạn thua. Nhưng sự hỗ trợ của bạn cho Geometry Dash VN vẫn luôn được trân trọng.",
+                        "⭐ Trận này chưa thuộc về bạn. Cảm ơn bạn vẫn luôn đồng hành cùng Demon List VN.",
+                        "⚔️ Kết quả chưa đẹp. Nhưng đóng góp của bạn cho website thì luôn rất tuyệt vời.",
+                        "🗿 Queue tiếp đi! Cảm ơn bạn vì đã giúp server luôn sẵn sàng cho mọi người.",
+                        "🤝 Thắng hay thua, Geometry Dash VN luôn biết ơn sự ủng hộ của bạn."
+                    ]
+                },
+                "both_are_supporters": {
+                    "win": [
+                        "👑 Hai Supporter chạm trán! Bạn thắng. Muốn nổi bật hơn nữa? Thử khám phá các Tier cao hơn xem sao!",
+                        "🔥 Trận đấu đỉnh cao giữa những người chung tay giữ lửa cho Geometry Dash VN. Chiến thắng thuộc về bạn.",
+                        "⭐ Bạn thắng trận. Nâng cấp Tier để mở khóa thêm hiệu ứng và đặc quyền độc quyền trên Demon List VN nhé.",
+                        "⚔️ Cuộc gặp gỡ giữa hai người bạn đồng hành tích cực. Cảm ơn sự đóng góp của cả hai.",
+                        "✨ Thắng đẹp! Trận đấu của bạn trông sẽ ngầu hơn rất nhiều nếu sở hữu các custom từ Tier cao hơn."
+                    ],
+                    "lose": [
+                        "👑 Hai Supporter chạm trán! Trận này đối thủ tạm dẫn trước. Lên Tier cao hơn để lấy lại vị thế nào!",
+                        "💀 Kết quả chưa như ý, nhưng vị thế Supporter của bạn tại Geometry Dash VN luôn được trân trọng.",
+                        "⭐ Trận đấu khép lại giữa hai người bạn tâm huyết. Thử lên Tier tiếp theo để mở khóa thêm nhiều quyền lợi mới nhé.",
+                        "🗿 Queue tiếp phục thù thôi. Cảm ơn cả hai bạn đã cùng nhau giữ cho server luôn rực lửa.",
+                        "✨ Thua keo này bày keo khác. Đầu tư thêm một chút vào Tier cao hơn để nhận thêm các đặc quyền tùy biến khung/tên xem sao?"
+                    ]
+                }
+            }
+        },
         "resign": "Đầu hàng",
         "request_level_change": "Đổi level",
         "agree_level_change": "Đồng ý đổi level",

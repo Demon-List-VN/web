@@ -116,10 +116,30 @@
 	const REALTIME_COALESCE_MS = 200;
 	const MESSAGE_FETCH_LIMIT = 100;
 	const BAN_PICK_DEADLINE_SUBMIT_GRACE_MS = 1000;
+	const MATCH_END_SPECIAL_GENERIC_COUNTS = { win: 7, lose: 7 };
+	const MATCH_END_SPECIAL_SUPPORTER_COUNTS = { win: 5, lose: 5 };
+	const MATCH_END_SPECIAL_GENERIC_WEIGHTS = {
+		none_vs_none: 70,
+		none_vs_supporter: 50,
+		supporter_vs_none: 50,
+		both_are_supporters: 40
+	};
 	const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://gdvn.net').replace(
 		/\/$/,
 		''
 	);
+
+	type MatchEndSpecialResult = 'win' | 'lose';
+	type MatchEndSpecialScenario =
+		| 'none_vs_none'
+		| 'none_vs_supporter'
+		| 'supporter_vs_none'
+		| 'both_are_supporters';
+	type MatchEndSpecialPool = 'generic' | 'supporter_contextual';
+	type MatchEndSpecialAction =
+		| 'ACTION_REQUEUE'
+		| 'REDIRECT_TO_DONATE'
+		| 'REDIRECT_TO_UPGRADE';
 
 	type ProgressGraphPoint = {
 		x: number;
@@ -244,7 +264,6 @@
 	$: scoringMode = match?.scoringMode ?? match?.scoring_mode ?? 'progress';
 	$: targetScore = match?.targetScore ?? match?.target_score ?? null;
 	$: startingHp = match?.startingHp ?? match?.starting_hp ?? null;
-	$: visibleMessages = messages.filter((message) => messageIsRevealed(message, now));
 	$: level = getPvpLevel(match);
 	$: banPick = getPvpBanPick(match);
 	$: banPickActions = Array.isArray(banPick?.actions) ? banPick.actions : [];
@@ -325,6 +344,15 @@
 	);
 	$: isActive = isActivePvpMatch(match);
 	$: selfParticipant = getPvpSelfParticipant(match, currentUid);
+	$: visibleMessages = getVisibleMessages(
+		messages,
+		match,
+		status,
+		currentUid,
+		winnerUid,
+		participants,
+		now
+	);
 	$: selfAccepted = hasPvpParticipantAccepted(selfParticipant)
 		|| (matchId ? locallyAcceptedMatchIds.has(String(matchId)) : false);
 	$: isPowerupMatch = normalizedScoringMode(scoringMode) === 'powerup';
@@ -1856,12 +1884,224 @@
 		return revealAtMs === null || revealAtMs <= nowMs;
 	}
 
+	function getVisibleMessages(
+		sourceMessages: PvpMatchMessage[],
+		currentMatch: PvpMatch | null | undefined,
+		currentStatus: string,
+		viewerUid: string | null | undefined,
+		currentWinnerUid: string | null | undefined,
+		items: PvpParticipant[],
+		nowMs = now
+	) {
+		const revealed = sourceMessages.filter((message) =>
+			messageIsRevealed(message, nowMs)
+		);
+		const specialMessage = getMatchEndSpecialMessage(
+			currentMatch,
+			currentStatus,
+			viewerUid,
+			currentWinnerUid,
+			items,
+			nowMs
+		);
+
+		return specialMessage ? [...revealed, specialMessage] : revealed;
+	}
+
+	function getMatchEndSpecialMessage(
+		currentMatch: PvpMatch | null | undefined,
+		currentStatus: string,
+		viewerUid: string | null | undefined,
+		currentWinnerUid: string | null | undefined,
+		items: PvpParticipant[],
+		nowMs = now
+	): PvpMatchMessage | null {
+		const id = getPvpMatchId(currentMatch) ?? matchId;
+
+		if (
+			!id || currentStatus !== 'completed' || !viewerUid || !currentWinnerUid
+		) {
+			return null;
+		}
+
+		const matchParticipants = getMatchEndSpecialParticipants(
+			currentMatch,
+			items
+		);
+		const viewerParticipant = matchParticipants.find((item) =>
+			sameUid(getPvpParticipantUid(item), viewerUid)
+		);
+		const opponent = matchParticipants.find((item) =>
+			!sameUid(getPvpParticipantUid(item), viewerUid)
+		);
+
+		if (!viewerParticipant || !opponent) {
+			return null;
+		}
+
+		const result: MatchEndSpecialResult = sameUid(viewerUid, currentWinnerUid)
+			? 'win'
+			: 'lose';
+		const viewerIsSupporter = participantIsActiveSupporter(
+			viewerParticipant,
+			nowMs
+		);
+		const opponentIsSupporter = participantIsActiveSupporter(opponent, nowMs);
+		const scenario = getMatchEndSpecialScenario(
+			viewerIsSupporter,
+			opponentIsSupporter
+		);
+		const pool = getMatchEndSpecialPool(id, scenario);
+		const action = getMatchEndSpecialAction(pool, scenario);
+		const variantCount = pool === 'generic'
+			? MATCH_END_SPECIAL_GENERIC_COUNTS[result]
+			: MATCH_END_SPECIAL_SUPPORTER_COUNTS[result];
+		const variantIndex = seededIndex(`${id}:match-end-special:item`, variantCount);
+		const createdAt = currentMatch?.endedAt
+			?? currentMatch?.endsAt
+			?? currentMatch?.endAt
+			?? currentMatch?.startedAt
+			?? currentMatch?.created_at
+			?? new Date()
+				.toISOString();
+
+		return {
+			id: `match-end-special:${id}`,
+			matchId: id,
+			type: 'system',
+			created_at: createdAt,
+			metadata: {
+				kind: 'match_end_special',
+				viewerUid,
+				pool,
+				scenario,
+				result,
+				variantIndex,
+				action
+			}
+		};
+	}
+
+	function getMatchEndSpecialParticipants(
+		currentMatch: PvpMatch | null | undefined,
+		items: PvpParticipant[]
+	): PvpParticipant[] {
+		if (items.length > 0) {
+			return items;
+		}
+
+		const results = currentMatch?.results;
+
+		return Array.isArray(results) ? results : [];
+	}
+
+	function participantIsActiveSupporter(
+		participant: PvpParticipant | null | undefined,
+		nowMs = now
+	) {
+		const player = getPvpParticipantPlayer(participant);
+		const supporterUntil = String(
+			player?.supporterUntil
+			?? player?.supporter_until
+			?? ''
+		)
+			.trim();
+
+		if (!supporterUntil) {
+			return false;
+		}
+
+		const expiresMs = new Date(supporterUntil)
+			.getTime();
+
+		return Number.isFinite(expiresMs) && expiresMs > nowMs;
+	}
+
+	function getMatchEndSpecialScenario(
+		viewerIsSupporter: boolean,
+		opponentIsSupporter: boolean
+	): MatchEndSpecialScenario {
+		if (viewerIsSupporter && opponentIsSupporter) {
+			return 'both_are_supporters';
+		}
+
+		if (viewerIsSupporter) {
+			return 'supporter_vs_none';
+		}
+
+		if (opponentIsSupporter) {
+			return 'none_vs_supporter';
+		}
+
+		return 'none_vs_none';
+	}
+
+	function getMatchEndSpecialPool(
+		id: string | number,
+		scenario: MatchEndSpecialScenario
+	): MatchEndSpecialPool {
+		const genericWeight = MATCH_END_SPECIAL_GENERIC_WEIGHTS[scenario];
+		const roll = seededIndex(`${id}:match-end-special:pool`, 100);
+
+		return roll < genericWeight ? 'generic' : 'supporter_contextual';
+	}
+
+	function getMatchEndSpecialAction(
+		pool: MatchEndSpecialPool,
+		scenario: MatchEndSpecialScenario
+	): MatchEndSpecialAction {
+		if (pool === 'generic') {
+			return 'ACTION_REQUEUE';
+		}
+
+		return scenario === 'none_vs_none' || scenario === 'none_vs_supporter'
+			? 'REDIRECT_TO_DONATE'
+			: 'REDIRECT_TO_UPGRADE';
+	}
+
+	function seededIndex(seed: string, count: number) {
+		const normalizedCount = Math.max(1, Math.floor(count));
+
+		return stableHash(seed) % normalizedCount;
+	}
+
+	function stableHash(value: string) {
+		let hash = 2166136261;
+
+		for (let index = 0; index < value.length; index += 1) {
+			hash ^= value.charCodeAt(index);
+			hash = Math.imul(hash, 16777619);
+		}
+
+		return hash >>> 0;
+	}
+
 	function systemMessageActionLabel(message: PvpMatchMessage) {
 		if (message.type !== 'system') {
 			return '';
 		}
 
 		const metadata = messageMetadata(message);
+		const kind = messageMetadataKind(message);
+
+		if (kind === 'match_end_special') {
+			const action = metadataText(metadata, 'action');
+
+			if (action === 'REDIRECT_TO_DONATE') {
+				return $_('pvp.match_end_special.cta.donate');
+			}
+
+			if (action === 'REDIRECT_TO_UPGRADE') {
+				return $_('pvp.match_end_special.cta.upgrade');
+			}
+
+			if (action === 'ACTION_REQUEUE' && canRequeue) {
+				return $_('pvp.match_end_special.cta.requeue');
+			}
+
+			return '';
+		}
+
 		const requesterUid = metadataText(metadata, 'requesterUid');
 
 		if (
@@ -1869,8 +2109,6 @@
 		) {
 			return '';
 		}
-
-		const kind = messageMetadataKind(message);
 
 		if (
 			kind === 'level_change_requested'
@@ -1906,6 +2144,12 @@
 
 		const kind = messageMetadataKind(message);
 
+		if (kind === 'match_end_special') {
+			const action = metadataText(messageMetadata(message), 'action');
+
+			return action === 'ACTION_REQUEUE' && !canRequeue;
+		}
+
 		if (kind === 'level_change_requested') {
 			return !levelChangeRequestActive;
 		}
@@ -1928,6 +2172,20 @@
 
 		if (kind === 'ban_pick_abort_requested') {
 			void requestBanPickAbort();
+		}
+
+		if (kind === 'match_end_special') {
+			const action = metadataText(messageMetadata(message), 'action');
+
+			if (action === 'ACTION_REQUEUE') {
+				void requeue();
+
+				return;
+			}
+
+			if (action === 'REDIRECT_TO_DONATE' || action === 'REDIRECT_TO_UPGRADE') {
+				void goto('/supporter');
+			}
 		}
 	}
 
@@ -2826,10 +3084,46 @@
 			});
 		}
 
+		if (kind === 'match_end_special') {
+			const pool = metadataText(metadata, 'pool') === 'supporter_contextual'
+				? 'supporter_contextual'
+				: 'generic';
+			const result = metadataText(metadata, 'result') === 'lose'
+				? 'lose'
+				: 'win';
+			const variantIndex = Math.max(
+				0,
+				Math.floor(metadataNumber(metadata, 'variantIndex') ?? 0)
+			);
+
+			if (pool === 'supporter_contextual') {
+				const scenario = getValidMatchEndSpecialScenario(
+					metadataText(metadata, 'scenario')
+				);
+				content = $_(
+					`pvp.match_end_special.supporter_contextual.${scenario}.${result}.${variantIndex}`
+				);
+			} else {
+				content = $_(
+					`pvp.match_end_special.generic.${result}.${variantIndex}`
+				);
+			}
+		}
+
 		return redactHiddenOpponentInfo(
 			content || String(message.content || '')
 			|| $_('pvp.system_message.unknown')
 		);
+	}
+
+	function getValidMatchEndSpecialScenario(
+		value: string
+	): MatchEndSpecialScenario {
+		return value === 'none_vs_supporter'
+			|| value === 'supporter_vs_none'
+			|| value === 'both_are_supporters'
+			? value
+			: 'none_vs_none';
 	}
 
 	function messageSenderParticipantIsAnonymous(

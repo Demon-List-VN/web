@@ -406,6 +406,99 @@
         "refresh": "Refresh",
         "rematch": "Rematch",
         "requeue": "Requeue",
+        "match_end_special": {
+            "cta": {
+                "requeue": "Queue again",
+                "donate": "Support now",
+                "upgrade": "Upgrade tier"
+            },
+            "generic": {
+                "win": [
+                    "🔥 Clean win! That final click was frame-perfect.",
+                    "⚔️ A well-earned victory. Your hands are looking sharper lately.",
+                    "⭐ The match ends in your favor. Proper Demon List VN form.",
+                    "👑 You won! Smooth clicks, clean rhythm, pure 360Hz wave energy.",
+                    "🤝 GG! A convincing win, and your opponent probably felt that skill gap.",
+                    "✨ Complete outplay. This win proves you controlled the match tempo.",
+                    "🗿 A crisp match win. Keep this form and no map is stopping you."
+                ],
+                "lose": [
+                    "💀 You lost. Choking near the final percent always hurts the most.",
+                    "⚔️ This one was not yours. Maybe the warm-up was missing, run it back.",
+                    "🗿 Not the result you wanted. No worries, if you can clear Extreme Demons, this is just another step.",
+                    "🤝 Lose this round, set up the next. Queue again while your hands are still warm.",
+                    "✨ You were so close to turning it around. That rematch button is right there.",
+                    "🔥 The match ended, but the experience is yours. Next game, find the rhythm and take it back.",
+                    "🎯 One missed click can send everything sideways. Learn from this one and get revenge in the next queue."
+                ]
+            },
+            "supporter_contextual": {
+                "none_vs_none": {
+                    "win": [
+                        "🔥 You won. Geometry Dash VN stays online thanks to support from the community.",
+                        "⚔️ Victory is yours. Demon List VN appreciates every queue from players like you.",
+                        "🗿 You won the match. Thanks to everyone quietly helping keep this playground alive.",
+                        "🤝 A good match. This website is still trying to get better every day.",
+                        "⭐ Nice result. Thank you for being part of building the Geometry Dash VN community."
+                    ],
+                    "lose": [
+                        "💀 You lost. Good thing the site is still running smoothly for an immediate comeback.",
+                        "⚔️ This match was not yours. Demon List VN is waiting for you in the next game.",
+                        "🗿 Tough result, but thank you for being part of Geometry Dash VN.",
+                        "🤝 Queue again? Your presence helps keep the website moving.",
+                        "⭐ Do not give up. This site stays open because the whole community contributes."
+                    ]
+                },
+                "none_vs_supporter": {
+                    "win": [
+                        "🔥 You won. Thanks to your opponent for helping Geometry Dash VN stay stable.",
+                        "⚔️ Victory is yours. It is great to see community members meeting in matches like this.",
+                        "⭐ A quality match against someone supporting Demon List VN.",
+                        "🗿 The result belongs to you. Your opponent's support helps the site gain more features.",
+                        "🤝 Thanks to both players for a good match on Geometry Dash VN."
+                    ],
+                    "lose": [
+                        "💀 You lost. Your opponent is one of the people helping keep the servers running.",
+                        "⚔️ This one belongs to your opponent. Thanks to them for helping keep Demon List VN alive.",
+                        "⭐ Someone supporting the website's growth just took the win.",
+                        "🗿 Not the result you wanted, but thanks to people like your opponent, the site keeps improving.",
+                        "🤝 Match complete. Thanks to your opponent for supporting the Geometry Dash VN community."
+                    ]
+                },
+                "supporter_vs_none": {
+                    "win": [
+                        "🔥 You won. Thank you so much for helping keep Geometry Dash VN running.",
+                        "⭐ Victory is yours. Your support is part of the foundation for this website's growth.",
+                        "⚔️ You just won the match. Thanks for always supporting Demon List VN.",
+                        "👑 A strong result from an active member of the community.",
+                        "🤝 Thank you for helping matches like this happen every day."
+                    ],
+                    "lose": [
+                        "💀 You lost, but your support for Geometry Dash VN is still deeply appreciated.",
+                        "⭐ This one was not yours. Thank you for continuing to stand with Demon List VN.",
+                        "⚔️ Not the prettiest result, but your contribution to the website is still excellent.",
+                        "🗿 Queue again! Thanks for helping keep the server ready for everyone.",
+                        "🤝 Win or lose, Geometry Dash VN is grateful for your support."
+                    ]
+                },
+                "both_are_supporters": {
+                    "win": [
+                        "👑 Two Supporters met in battle! You won. Want to stand out even more? Try exploring higher tiers.",
+                        "🔥 A high-level match between people helping keep Geometry Dash VN alive. Victory is yours.",
+                        "⭐ You won the match. Upgrade your tier to unlock more effects and exclusive Demon List VN perks.",
+                        "⚔️ A meeting between two active supporters. Thank you both for contributing.",
+                        "✨ Clean win! Your matches can look even cooler with higher-tier custom perks."
+                    ],
+                    "lose": [
+                        "👑 Two Supporters met in battle! Your opponent takes this one. A higher tier might help you reclaim the spotlight.",
+                        "💀 Not the result you wanted, but your Supporter status at Geometry Dash VN is always appreciated.",
+                        "⭐ A match between two dedicated supporters comes to a close. Try the next tier for more new perks.",
+                        "🗿 Queue again for revenge. Thank you both for helping keep the server alive.",
+                        "✨ You lost this round, but there is always another. A higher tier unlocks more frame and name customization perks."
+                    ]
+                }
+            }
+        },
         "resign": "Resign",
         "request_level_change": "Change level",
         "agree_level_change": "Agree level change",
