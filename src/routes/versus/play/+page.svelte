@@ -11,12 +11,14 @@
 	import PvpMissionsTab from './PvpMissionsTab.svelte';
 	import WeeklyRaceTab from './WeeklyRaceTab.svelte';
 	import { user } from '$lib/client';
+	import { DISCORD_SERVER_INVITE_URL } from '$lib/client/discord';
 	import supabase from '$lib/client/supabase';
 	import { showXpAwardToast } from '$lib/client/xpToast';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Switch } from '$lib/components/ui/switch/index.js';
+	import DiscordLogo from '$lib/components/icons/DiscordLogo.svelte';
 	import * as Alert from '$lib/components/ui/alert';
 	import * as Card from '$lib/components/ui/card';
 	import * as Collapsible from '$lib/components/ui/collapsible';
@@ -149,7 +151,52 @@
 		{ key: 'all', limit: null }
 	] as const;
 	const PVP_SUPPORTER_TIP_CHANCE = 0.1;
-	const PVP_TIP_KEYS = [
+	const PVP_SHITPOST_TIP_CHANCE = 0.6;
+	const PVP_SERIOUS_TIP_CHANCE = 0.2;
+	const PVP_SUPPORTER_TIP_KEYS = ['tip_1', 'tip_2', 'tip_3', 'tip_4'] as const;
+	const PVP_SHITPOST_TIP_KEYS = [
+		'tip_1',
+		'tip_2',
+		'tip_3',
+		'tip_4',
+		'tip_5',
+		'tip_6',
+		'tip_7',
+		'tip_8',
+		'tip_9',
+		'tip_10',
+		'tip_11',
+		'tip_12',
+		'tip_13',
+		'tip_14',
+		'tip_15',
+		'tip_16',
+		'tip_17',
+		'tip_18',
+		'tip_19',
+		'tip_20',
+		'tip_21',
+		'tip_22',
+		'tip_23',
+		'tip_24',
+		'tip_25',
+		'tip_26',
+		'tip_27',
+		'tip_28',
+		'tip_29',
+		'tip_30',
+		'tip_31',
+		'tip_32',
+		'tip_33',
+		'tip_34',
+		'tip_35',
+		'tip_36',
+		'tip_37',
+		'tip_38',
+		'tip_39',
+		'tip_40'
+	] as const;
+	const PVP_SERIOUS_TIP_KEYS = [
 		'tip_1',
 		'tip_2',
 		'tip_3',
@@ -164,8 +211,10 @@
 		'tip_12'
 	] as const;
 	type PvpTip =
-		| { type: 'normal'; key: (typeof PVP_TIP_KEYS)[number] }
-		| { type: 'supporter' };
+		| { type: 'supporter'; key: (typeof PVP_SUPPORTER_TIP_KEYS)[number] }
+		| { type: 'shitpost'; key: (typeof PVP_SHITPOST_TIP_KEYS)[number] }
+		| { type: 'serious'; key: (typeof PVP_SERIOUS_TIP_KEYS)[number] }
+		| { type: 'discord' };
 	type PvpNavGroup = 'play' | 'missions' | 'progress' | 'rankings' | 'info';
 	let selectedPlayer: any = null;
 	let selectedMode: PvpSelectionMode = 'classic';
@@ -604,15 +653,48 @@
 	}
 
 	function pickPvpTip() {
-		if (Math.random() < PVP_SUPPORTER_TIP_CHANCE) {
-			currentPvpTip = { type: 'supporter' };
+		const roll = Math.random();
+
+		if (roll < PVP_SUPPORTER_TIP_CHANCE) {
+			currentPvpTip = {
+				type: 'supporter',
+				key: PVP_SUPPORTER_TIP_KEYS[
+					Math.floor(Math.random() * PVP_SUPPORTER_TIP_KEYS.length)
+				]
+			};
+
+			return;
+		}
+
+		if (roll < PVP_SUPPORTER_TIP_CHANCE + PVP_SHITPOST_TIP_CHANCE) {
+			currentPvpTip = {
+				type: 'shitpost',
+				key: PVP_SHITPOST_TIP_KEYS[
+					Math.floor(Math.random() * PVP_SHITPOST_TIP_KEYS.length)
+				]
+			};
+
+			return;
+		}
+
+		if (
+			roll <
+			PVP_SUPPORTER_TIP_CHANCE +
+				PVP_SHITPOST_TIP_CHANCE +
+				PVP_SERIOUS_TIP_CHANCE
+		) {
+			currentPvpTip = {
+				type: 'serious',
+				key: PVP_SERIOUS_TIP_KEYS[
+					Math.floor(Math.random() * PVP_SERIOUS_TIP_KEYS.length)
+				]
+			};
 
 			return;
 		}
 
 		currentPvpTip = {
-			type: 'normal',
-			key: PVP_TIP_KEYS[Math.floor(Math.random() * PVP_TIP_KEYS.length)]
+			type: 'discord'
 		};
 	}
 
@@ -3630,23 +3712,37 @@
         {#if currentPvpTip}
           <Alert.Root
             role="status"
-            class={`pvp-tip-alert ${currentPvpTip.type === 'supporter' ? 'is-supporter' : 'is-normal'}`}
+            class={`pvp-tip-alert is-${currentPvpTip.type}`}
           >
             <span class="pvp-tip-icon" aria-hidden="true">
               {#if currentPvpTip.type === 'supporter'}
                 <Heart class="h-4 w-4" />
+              {:else if currentPvpTip.type === 'discord'}
+                <DiscordLogo size={18} />
               {:else}
                 <Lightbulb class="h-4 w-4" />
               {/if}
             </span>
             <Alert.Description class="pvp-tip-description">
               {#if currentPvpTip.type === 'supporter'}
-                <span>{$_('pvp.tips.supporter_prefix')}</span>
+                <span>{$_(`pvp.tips.supporter.${currentPvpTip.key}`)}</span>
                 <a href="/supporter" class="pvp-tip-link">
                   {$_('pvp.tips.supporter_link')}
                 </a>
+              {:else if currentPvpTip.type === 'discord'}
+                <span>{$_('pvp.tips.discord.text')}</span>
+                <a
+                  href={DISCORD_SERVER_INVITE_URL}
+                  class="pvp-tip-link"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {$_('pvp.tips.discord.link')}
+                </a>
+              {:else if currentPvpTip.type === 'shitpost'}
+                {$_(`pvp.tips.shitpost.${currentPvpTip.key}`)}
               {:else}
-                {$_(`pvp.tips.items.${currentPvpTip.key}`)}
+                {$_(`pvp.tips.serious.${currentPvpTip.key}`)}
               {/if}
             </Alert.Description>
           </Alert.Root>
@@ -4341,9 +4437,14 @@
   display: block;
 }
 
-:global(.pvp-tip-alert.is-normal) {
+:global(.pvp-tip-alert.is-shitpost) {
   border-color: hsl(42 90% 54% / 0.75);
   background: hsl(42 92% 55% / 0.1);
+}
+
+:global(.pvp-tip-alert.is-serious) {
+  border-color: hsl(198 82% 52% / 0.72);
+  background: hsl(198 82% 52% / 0.1);
 }
 
 :global(.pvp-tip-alert.is-supporter) {
@@ -4351,17 +4452,32 @@
   background: hsl(333 84% 62% / 0.1);
 }
 
-:global(.pvp-tip-alert.is-normal .pvp-tip-icon) {
+:global(.pvp-tip-alert.is-discord) {
+  border-color: hsl(235 86% 65% / 0.78);
+  background: hsl(235 86% 65% / 0.1);
+}
+
+:global(.pvp-tip-alert.is-shitpost .pvp-tip-icon) {
   color: hsl(42 90% 42%);
+}
+
+:global(.pvp-tip-alert.is-serious .pvp-tip-icon) {
+  color: hsl(198 82% 42%);
 }
 
 :global(.pvp-tip-alert.is-supporter .pvp-tip-icon) {
   color: hsl(333 78% 56%);
 }
 
+:global(.pvp-tip-alert.is-discord .pvp-tip-icon) {
+  color: #5865f2;
+}
+
 :global(.pvp-tip-description) {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
   min-height: 20px;
   color: hsl(var(--foreground));
   line-height: 1.25;
@@ -4377,6 +4493,14 @@
 
 :global(.pvp-tip-link:hover) {
   color: hsl(var(--primary));
+}
+
+:global(.pvp-tip-alert.is-discord .pvp-tip-link) {
+  color: #5865f2;
+}
+
+:global(.pvp-tip-alert.is-discord .pvp-tip-link:hover) {
+  color: #4752c4;
 }
 
 .rating-unlock-progress {
