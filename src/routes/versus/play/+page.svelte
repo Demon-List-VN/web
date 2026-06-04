@@ -84,6 +84,7 @@
 		type PvpRoomInvite,
 		type PvpRoomsOverview,
 		type PvpWeeklyRace,
+		PvpClientError,
 		PVP_UNCERTAIN_RATING_DEVIATION,
 		PVP_DEFAULT_RATING_DEVIATION
 	} from '$lib/client/pvp';
@@ -317,6 +318,7 @@
 	let loadedLeaderboardKey = '';
 	let loadedEventRaceKey = '';
 	let handledRequeueUrl = '';
+	let activeMatchConflictToastShown = false;
 
 	$: currentUid = $user.data?.uid;
 	$: activeMatch = lobby.activeMatch && isActivePvpMatch(lobby.activeMatch)
@@ -345,7 +347,7 @@
 			? locallyAcceptedPendingMatchIds.has(pendingMatchKey)
 			: false);
 	$: queueStatus = getPvpStatus(lobby.matchmaking, 'idle');
-	$: isSearching = queueStatus === 'searching';
+	$: isSearching = queueStatus === 'searching' || queueStatus === 'matching';
 	$: activePvpEvent = lobby.activePvpEvent ?? null;
 	$: activePvpEventId = getPvpEventId(activePvpEvent);
 	$: activePvpEventBaseMode = getPvpEventBaseMode(activePvpEvent);
@@ -1407,7 +1409,7 @@
 		nextMatchmaking: PvpMatchmakingRequest | null | undefined
 	) {
 		const status = getPvpStatus(nextMatchmaking, 'idle');
-		const matchmaking = ['searching', 'matched'].includes(status)
+		const matchmaking = ['searching', 'matching', 'matched'].includes(status)
 			? (nextMatchmaking ?? null)
 			: null;
 		const queuedRating = Number(
@@ -1822,6 +1824,65 @@
 		matchmakingCheckTimer = null;
 	}
 
+	function isActivePvpMatchConflict(error: unknown) {
+		if (
+			error instanceof PvpClientError
+			&& error.status === 409
+			&& error.code === 'active_pvp_match'
+		) {
+			return true;
+		}
+
+		const message = error instanceof Error ? error.message.toLowerCase() : '';
+
+		return message.includes('already has an active pvp match')
+			|| message.includes('already in a match');
+	}
+
+	async function handleActivePvpMatchConflict(error: unknown) {
+		if (!isActivePvpMatchConflict(error)) {
+			return false;
+		}
+
+		matchDialogOpen = false;
+		lobby = {
+			...lobby,
+			activeMatch:
+				lobby.activeMatch && getPvpStatus(lobby.activeMatch) === 'pending'
+					? null
+					: lobby.activeMatch,
+			matchmaking: null
+		};
+		clearMatchmakingCheckPolling();
+
+		if (pendingDialogTimeout) {
+			clearTimeout(pendingDialogTimeout);
+			pendingDialogTimeout = null;
+		}
+
+		try {
+			await cancelPvpMatchmaking(await $user.token());
+		} catch {
+			// Refresh below is the source of truth if the queue was already gone.
+		}
+
+		await refreshLobby();
+
+		if (isPvpMatchConfirmedByBoth(lobby.activeMatch)) {
+			matchDialogOpen = false;
+			autoRedirectToActiveMatch(lobby.activeMatch);
+		}
+
+		if (!activeMatchConflictToastShown) {
+			activeMatchConflictToastShown = true;
+			toast.error(
+				error instanceof Error ? error.message : $_('pvp.toast.matchmaking_failed')
+			);
+		}
+
+		return true;
+	}
+
 	function applyMatchmakingResponse(response: PvpMatchmakingRequest | PvpMe) {
 		if ('activeMatch' in response || 'incomingInvites' in response) {
 			const nextLobby = response as PvpMe;
@@ -1848,6 +1909,10 @@
 			const response = await checkPvpMatchmaking(await $user.token());
 			applyMatchmakingResponse(response);
 		} catch (error) {
+			if (await handleActivePvpMatchConflict(error)) {
+				return;
+			}
+
 			const message = error instanceof Error
 				? error.message
 				: $_('pvp.toast.matchmaking_check_failed');
@@ -2087,6 +2152,7 @@
 			return;
 		}
 
+		activeMatchConflictToastShown = false;
 		actionLoading = 'matchmaking';
 
 		try {
@@ -2098,6 +2164,10 @@
 			);
 			applyMatchmakingResponse(response);
 		} catch (error) {
+			if (await handleActivePvpMatchConflict(error)) {
+				return;
+			}
+
 			toast.error(
 				error instanceof Error
 					? error.message
@@ -2347,18 +2417,7 @@
 				[...locallyAcceptedPendingMatchIds].filter((id) => id !== matchKey)
 			);
 
-			if (
-				error instanceof Error
-				&& error.message.toLowerCase()
-					.includes('already in a match')
-			) {
-				await refreshLobby();
-
-				if (isPvpMatchConfirmedByBoth(lobby.activeMatch)) {
-					matchDialogOpen = false;
-					autoRedirectToActiveMatch(lobby.activeMatch);
-				}
-
+			if (await handleActivePvpMatchConflict(error)) {
 				return;
 			}
 
@@ -2379,7 +2438,10 @@
 	}
 
 	function statusLabel(value: unknown) {
-		const status = String(value || 'pending');
+		const rawStatus = String(value || 'pending');
+		const status = rawStatus === 'matching'
+			? 'searching'
+			: rawStatus;
 
 		return $_(`pvp.status.${status}`);
 	}

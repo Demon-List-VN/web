@@ -41,7 +41,14 @@ export type PvpInviteStatus =
     | 'expired'
     | 'cancelled'
     | string;
-export type PvpQueueStatus = 'idle' | 'searching' | 'matched' | 'cancelled' | 'expired' | string;
+export type PvpQueueStatus =
+    | 'idle'
+    | 'searching'
+    | 'matching'
+    | 'matched'
+    | 'cancelled'
+    | 'expired'
+    | string;
 export type PvpMatchReportReason = 'cheating' | 'abusive_communication' | 'other';
 
 export type PvpPlayer = {
@@ -714,6 +721,20 @@ type PvpRequestInit = Omit<RequestInit, 'body'> & {
     body?: BodyInit | Record<string, unknown> | null;
 };
 
+export class PvpClientError extends Error {
+    status: number;
+    details: Record<string, unknown>;
+    code?: string;
+
+    constructor(status: number, message: string, details: Record<string, unknown> = {}) {
+        super(message);
+        this.name = 'PvpClientError';
+        this.status = status;
+        this.details = details;
+        this.code = typeof details.code === 'string' ? details.code : undefined;
+    }
+}
+
 async function pvpRequest<T>(path: string, options: PvpRequestInit = {}): Promise<T> {
     const headers = new Headers(options.headers);
     const body =
@@ -737,9 +758,11 @@ async function pvpRequest<T>(path: string, options: PvpRequestInit = {}): Promis
 
     if (!response.ok) {
         let message = `PvP request failed with ${response.status}`;
+        let details: Record<string, unknown> = {};
 
         try {
             const payload = await response.json();
+            details = payload && typeof payload === 'object' ? payload : {};
             message = payload?.error || payload?.message || message;
         } catch {
             try {
@@ -749,7 +772,7 @@ async function pvpRequest<T>(path: string, options: PvpRequestInit = {}): Promis
             }
         }
 
-        throw new Error(message);
+        throw new PvpClientError(response.status, message, details);
     }
 
     if (response.status === 204) {
