@@ -111,7 +111,9 @@
 		Eye,
 		EyeOff,
 		History,
+		Heart,
 		Info,
+		Lightbulb,
 		Loader2,
 		LogIn,
 		Plus,
@@ -146,6 +148,24 @@
 		{ key: '100', limit: 100 },
 		{ key: 'all', limit: null }
 	] as const;
+	const PVP_SUPPORTER_TIP_CHANCE = 0.1;
+	const PVP_TIP_KEYS = [
+		'tip_1',
+		'tip_2',
+		'tip_3',
+		'tip_4',
+		'tip_5',
+		'tip_6',
+		'tip_7',
+		'tip_8',
+		'tip_9',
+		'tip_10',
+		'tip_11',
+		'tip_12'
+	] as const;
+	type PvpTip =
+		| { type: 'normal'; key: (typeof PVP_TIP_KEYS)[number] }
+		| { type: 'supporter' };
 	type PvpNavGroup = 'play' | 'missions' | 'progress' | 'rankings' | 'info';
 	let selectedPlayer: any = null;
 	let selectedMode: PvpSelectionMode = 'classic';
@@ -236,6 +256,7 @@
 	let matchDialogOpen = false;
 	let showGeodeAlert = true;
 	let eventInfoDialogOpen = false;
+	let currentPvpTip: PvpTip | null = null;
 	let currentUserClan: PvpClan | null = null;
 	let lobbyReady = false;
 	let pendingDialogTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -572,6 +593,7 @@
 			const nextLobby = await getPvpMe(await $user.token());
 			handleLobbyMatchSounds(previousActiveMatch, nextLobby.activeMatch);
 			lobby = nextLobby;
+			pickPvpTip();
 		} catch (error) {
 			toast.error(
 				error instanceof Error ? error.message : $_('pvp.toast.load_failed')
@@ -579,6 +601,19 @@
 		} finally {
 			loading = false;
 		}
+	}
+
+	function pickPvpTip() {
+		if (Math.random() < PVP_SUPPORTER_TIP_CHANCE) {
+			currentPvpTip = { type: 'supporter' };
+
+			return;
+		}
+
+		currentPvpTip = {
+			type: 'normal',
+			key: PVP_TIP_KEYS[Math.floor(Math.random() * PVP_TIP_KEYS.length)]
+		};
 	}
 
 	async function refreshMatchHistory() {
@@ -3592,6 +3627,31 @@
           </Collapsible.Root>
         </section>
 
+        {#if currentPvpTip}
+          <Alert.Root
+            role="status"
+            class={`pvp-tip-alert ${currentPvpTip.type === 'supporter' ? 'is-supporter' : 'is-normal'}`}
+          >
+            <span class="pvp-tip-icon" aria-hidden="true">
+              {#if currentPvpTip.type === 'supporter'}
+                <Heart class="h-4 w-4" />
+              {:else}
+                <Lightbulb class="h-4 w-4" />
+              {/if}
+            </span>
+            <Alert.Description class="pvp-tip-description">
+              {#if currentPvpTip.type === 'supporter'}
+                <span>{$_('pvp.tips.supporter_prefix')}</span>
+                <a href="/supporter" class="pvp-tip-link">
+                  {$_('pvp.tips.supporter_link')}
+                </a>
+              {:else}
+                {$_(`pvp.tips.items.${currentPvpTip.key}`)}
+              {/if}
+            </Alert.Description>
+          </Alert.Root>
+        {/if}
+
         {#if requiredSubmission && !activeMatch}
           <Alert.Root class="pvp-required-submission-alert">
             <ShieldAlert class="h-4 w-4" />
@@ -4256,6 +4316,67 @@
   font-weight: 800;
   line-height: 1;
   white-space: nowrap;
+}
+
+:global(.pvp-tip-alert) {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: -2px 0 16px;
+  border-radius: 8px;
+  padding-block: 11px;
+  line-height: 1.45;
+}
+
+:global(.pvp-tip-icon) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+}
+
+:global(.pvp-tip-icon svg) {
+  display: block;
+}
+
+:global(.pvp-tip-alert.is-normal) {
+  border-color: hsl(42 90% 54% / 0.75);
+  background: hsl(42 92% 55% / 0.1);
+}
+
+:global(.pvp-tip-alert.is-supporter) {
+  border-color: hsl(333 84% 62% / 0.78);
+  background: hsl(333 84% 62% / 0.1);
+}
+
+:global(.pvp-tip-alert.is-normal .pvp-tip-icon) {
+  color: hsl(42 90% 42%);
+}
+
+:global(.pvp-tip-alert.is-supporter .pvp-tip-icon) {
+  color: hsl(333 78% 56%);
+}
+
+:global(.pvp-tip-description) {
+  display: flex;
+  align-items: center;
+  min-height: 20px;
+  color: hsl(var(--foreground));
+  line-height: 1.25;
+}
+
+:global(.pvp-tip-link) {
+  color: inherit;
+  font-weight: 700;
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+:global(.pvp-tip-link:hover) {
+  color: hsl(var(--primary));
 }
 
 .rating-unlock-progress {

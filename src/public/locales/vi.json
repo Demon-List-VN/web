@@ -330,6 +330,24 @@
             "description": "Hãy nộp và được duyệt thủ công record cho {level} trước khi tiếp tục ghép trận PvP.",
             "submit": "Nộp record"
         },
+        "tips": {
+            "items": {
+                "tip_1": "⚔️ Giữ bình tĩnh — một attempt tốt có thể lật ngược cả trận đấu.",
+                "tip_2": "🏆 Thắng trận nhận 15 XP, thua vẫn nhận 5 XP.",
+                "tip_3": "🎯 Consistency quan trọng hơn một pha progress may mắn.",
+                "tip_4": "💀 Choke 98% đau thật, nhưng đối thủ choke 99% còn đau hơn.",
+                "tip_5": "⭐ Hoàn thành nhiệm vụ hằng ngày để kiếm thêm XP.",
+                "tip_6": "📈 Rating phản ánh nhiều trận, không chỉ một lần thắng hoặc thua.",
+                "tip_7": "🛑 Đang tilt? Nghỉ một chút có thể cứu cả chuỗi trận sau.",
+                "tip_8": "🎮 PvP không chỉ là kỹ năng — tâm lý cũng quyết định kết quả.",
+                "tip_9": "🏁 Đến đoạn cuối rồi? Đừng nghĩ về chiến thắng, cứ chơi như attempt bình thường.",
+                "tip_10": "🔥 Chuỗi thắng bắt đầu từ việc giữ nhịp chơi ổn định.",
+                "tip_11": "🧩 Level khó trở nên dễ hơn khi bạn chia nhỏ từng đoạn để xử lý.",
+                "tip_12": "🧠 Đối thủ lớn nhất đôi khi không phải player bên kia, mà là cái đầu đang hoảng của bạn."
+            },
+            "supporter_prefix": "💖 Thích Versus? Trở thành Supporter để giúp GDVN phát triển - ",
+            "supporter_link": "Xem quyền lợi"
+        },
         "active_match": "Trận đang diễn ra",
         "enter_match": "Vào trận",
         "rejoin_ongoing_match": "Vào lại trận đang diễn ra",

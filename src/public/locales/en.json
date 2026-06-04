@@ -330,6 +330,24 @@
             "description": "Submit and receive manual acceptance for {level} before continuing PvP matchmaking.",
             "submit": "Submit record"
         },
+        "tips": {
+            "items": {
+                "tip_1": "⚔️ Stay calm — one good attempt can turn the whole match around.",
+                "tip_2": "🏆 Win a match to earn 15 XP; even a loss still gives 5 XP.",
+                "tip_3": "🎯 Consistency matters more than one lucky progress push.",
+                "tip_4": "💀 Choking at 98% hurts, but your opponent choking at 99% hurts even more.",
+                "tip_5": "⭐ Complete daily missions to earn extra XP.",
+                "tip_6": "📈 Rating reflects many matches, not just one win or loss.",
+                "tip_7": "🛑 Feeling tilted? Taking a short break can save the rest of your streak.",
+                "tip_8": "🎮 PvP is not just skill — mindset can decide the result too.",
+                "tip_9": "🏁 Reached the final stretch? Don't think about winning; play it like a normal attempt.",
+                "tip_10": "🔥 Win streaks start with keeping a steady rhythm.",
+                "tip_11": "🧩 Hard levels get easier when you split them into smaller sections.",
+                "tip_12": "🧠 Sometimes the biggest opponent is not the player across from you, but your own panicking mind."
+            },
+            "supporter_prefix": "💖 Love Versus? Become a Supporter to support GDVN development - ",
+            "supporter_link": "View benefit"
+        },
         "active_match": "Active match",
         "enter_match": "Enter match",
         "rejoin_ongoing_match": "Rejoin ongoing match",
