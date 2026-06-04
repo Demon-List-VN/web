@@ -426,18 +426,29 @@
             "title": "Report match",
             "description": "Choose a reason before the report window closes in {time}.",
             "description_active": "Choose a reason. Reports stay open until 3 minutes after the match ends.",
+            "target": "Report target",
+            "targets": {
+                "player": "Report player",
+                "level": "Report level"
+            },
             "reason": "Reason",
             "details": "Details",
             "details_placeholder": "Tell us what happened.",
             "details_required": "Please enter details for other reports.",
             "submit": "Submit report",
             "submitted": "Reported",
+            "already_submitted": "Already reported",
             "success": "Report submitted. Thank you.",
             "failed": "Failed to submit report.",
-            "limit_hint": "You can report each match once.",
+            "limit_hint": "You can report the player and level once per match.",
             "reasons": {
                 "cheating": "Cheating",
                 "abusive_communication": "Abusive communication",
+                "too_easy": "Too easy",
+                "too_difficult": "Too difficult",
+                "level_deleted": "Level deleted",
+                "secret_way": "Secret way",
+                "unenjoyable": "Unenjoyable",
                 "other": "Other"
             }
         },

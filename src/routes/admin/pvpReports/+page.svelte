@@ -11,6 +11,7 @@
 		type AdminPvpReportEvidence,
 		type AdminPvpReportsResponse,
 		type PvpMatchReportReason,
+		type PvpMatchReportTargetType,
 		type PvpPlayer
 	} from '$lib/client/pvp';
 	import { Badge } from '$lib/components/ui/badge';
@@ -30,12 +31,14 @@
 	type DateFilter = 'all' | 7 | 14 | 30;
 	type ResolveFilter = 'all' | 'open' | 'resolved';
 	type ReasonFilter = 'all' | PvpMatchReportReason;
+	type TargetFilter = 'all' | PvpMatchReportTargetType;
 
 	type ReportFilters = {
 		date: DateFilter;
 		reason: ReasonFilter;
 		reportedUid: string;
 		status: ResolveFilter;
+		target: TargetFilter;
 	};
 
 	const dateOptions: Array<{ value: DateFilter; label: string; }> = [
@@ -49,7 +52,12 @@
 		{ value: 'open', label: 'Unresolved' },
 		{ value: 'resolved', label: 'Resolved' }
 	];
-	const reasonOptions: Array<{ value: PvpMatchReportReason; label: string; color: string; }> = [
+	const targetOptions: Array<{ value: TargetFilter; label: string; }> = [
+		{ value: 'all', label: 'All targets' },
+		{ value: 'player', label: 'Player reports' },
+		{ value: 'level', label: 'Level reports' }
+	];
+	const playerReasonOptions: Array<{ value: PvpMatchReportReason; label: string; color: string; }> = [
 		{ value: 'cheating', label: 'Cheating', color: 'rgba(239, 68, 68, 0.72)' },
 		{
 			value: 'abusive_communication',
@@ -58,18 +66,31 @@
 		},
 		{ value: 'other', label: 'Other', color: 'rgba(59, 130, 246, 0.72)' }
 	];
+	const levelReasonOptions: Array<{ value: PvpMatchReportReason; label: string; color: string; }> = [
+		{ value: 'too_easy', label: 'Too easy', color: 'rgba(34, 197, 94, 0.72)' },
+		{ value: 'too_difficult', label: 'Too difficult', color: 'rgba(249, 115, 22, 0.72)' },
+		{ value: 'level_deleted', label: 'Level deleted', color: 'rgba(107, 114, 128, 0.72)' },
+		{ value: 'secret_way', label: 'Secret way', color: 'rgba(168, 85, 247, 0.72)' },
+		{ value: 'unenjoyable', label: 'Unenjoyable', color: 'rgba(20, 184, 166, 0.72)' }
+	];
+	const reasonOptions = [
+		...playerReasonOptions,
+		...levelReasonOptions
+	];
 
 	let draftFilters: ReportFilters = {
 		date: 'all',
 		reason: 'all',
 		reportedUid: 'all',
-		status: 'open'
+		status: 'open',
+		target: 'all'
 	};
 	let appliedFilters: ReportFilters = {
 		date: 'all',
 		reason: 'all',
 		reportedUid: 'all',
-		status: 'open'
+		status: 'open',
+		target: 'all'
 	};
 	let data: AdminPvpReportsResponse | null = null;
 	let loading = false;
@@ -81,7 +102,8 @@
 	$: selectedPlayerCount = playerCounts.find((count) => count.uid === appliedFilters.reportedUid) ?? null;
 	$: selectedPlayer = selectedPlayerCount?.player ?? null;
 	$: reportsForSelectedPlayer = reports.filter((item) =>
-		appliedFilters.reportedUid === 'all' || reportedUid(item) === appliedFilters.reportedUid
+		appliedFilters.reportedUid === 'all'
+			|| (reportTargetType(item) === 'player' && reportedUid(item) === appliedFilters.reportedUid)
 	);
 	$: visibleReports = reportsForSelectedPlayer
 		.filter((item) => matchesAppliedFilters(item))
@@ -178,16 +200,59 @@
 			?? String(value || 'Unknown');
 	}
 
+	function reportTargetType(item: AdminPvpReportEvidence): PvpMatchReportTargetType {
+		return (item.report?.targetType ?? item.report?.target_type ?? 'player') === 'level'
+			? 'level'
+			: 'player';
+	}
+
+	function formatTarget(item: AdminPvpReportEvidence) {
+		return reportTargetType(item) === 'level' ? 'Level' : 'Player';
+	}
+
+	function reportLevel(item: AdminPvpReportEvidence) {
+		return item.reportedLevel
+			?? item.match?.level
+			?? item.match?.levels
+			?? item.match?.selectedLevel
+			?? null;
+	}
+
+	function reportLevelId(item: AdminPvpReportEvidence) {
+		const level = reportLevel(item);
+
+		return item.report?.targetLevelId
+			?? item.report?.target_level_id
+			?? level?.id
+			?? item.match?.levelId
+			?? item.match?.level_id
+			?? null;
+	}
+
+	function levelLabel(item: AdminPvpReportEvidence) {
+		const level = reportLevel(item);
+		const id = reportLevelId(item);
+		const name = level?.name ? String(level.name) : null;
+
+		return name && id ? `${name} (#${id})` : name || (id ? `Level #${id}` : 'Unknown level');
+	}
+
 	function matchesAppliedFilters(item: AdminPvpReportEvidence) {
 		return matchesReportedPlayer(item)
 			&& matchesDate(item)
+			&& matchesTarget(item)
 			&& matchesReason(item)
 			&& matchesResolveStatus(item);
 	}
 
 	function matchesReportedPlayer(item: AdminPvpReportEvidence) {
 		return appliedFilters.reportedUid === 'all'
-			|| reportedUid(item) === appliedFilters.reportedUid;
+			|| (reportTargetType(item) === 'player' && reportedUid(item) === appliedFilters.reportedUid);
+	}
+
+	function matchesTarget(item: AdminPvpReportEvidence) {
+		return appliedFilters.target === 'all'
+			|| reportTargetType(item) === appliedFilters.target;
 	}
 
 	function matchesDate(item: AdminPvpReportEvidence) {
@@ -246,11 +311,10 @@
 		const counts = new Map<string, Record<string, number>>();
 
 		for (const label of labels) {
-			counts.set(label, {
-				cheating: 0,
-				abusive_communication: 0,
-				other: 0
-			});
+			counts.set(
+				label,
+				Object.fromEntries(reasonOptions.map((reason) => [reason.value, 0]))
+			);
 		}
 
 		for (const item of items) {
@@ -314,13 +378,18 @@
 		const counts: Record<PvpMatchReportReason, number> = {
 			cheating: 0,
 			abusive_communication: 0,
+			too_easy: 0,
+			too_difficult: 0,
+			level_deleted: 0,
+			secret_way: 0,
+			unenjoyable: 0,
 			other: 0
 		};
 
 		for (const item of items) {
 			const reason = item.report?.reason as PvpMatchReportReason;
 
-			if (!isReportResolved(item) && reason in counts) {
+			if (reportTargetType(item) === 'player' && !isReportResolved(item) && reason in counts) {
 				counts[reason] += 1;
 			}
 		}
@@ -425,6 +494,15 @@
           </label>
 
           <label class="selector">
+            <span>Target</span>
+            <select bind:value={draftFilters.target}>
+              {#each targetOptions as option}
+                <option value={option.value}>{option.label}</option>
+              {/each}
+            </select>
+          </label>
+
+          <label class="selector">
             <span>Reason</span>
             <select bind:value={draftFilters.reason}>
               <option value="all">All reasons</option>
@@ -455,7 +533,7 @@
 
         {#if appliedFilters.reportedUid !== 'all'}
           <div class="resolve-actions">
-            {#each reasonOptions as reason}
+            {#each playerReasonOptions as reason}
               <Button
                 variant="outline"
                 disabled={loading || resolvingKey === `reason:${reason.value}` || !unresolvedByReason[reason.value]}
@@ -522,7 +600,8 @@
             <table>
               <thead>
                 <tr>
-                  <th>Reported player</th>
+                  <th>Target</th>
+                  <th>Reported target</th>
                   <th>Reported by</th>
                   <th>Reason</th>
                   <th>Description</th>
@@ -535,8 +614,17 @@
               <tbody>
                 {#each visibleReports as item}
                   <tr>
+                    <td>{formatTarget(item)}</td>
                     <td>
-                      {#if item.reportedPlayer}
+                      {#if reportTargetType(item) === 'level'}
+                        {#if reportLevelId(item)}
+                          <a href={`/level/${reportLevelId(item)}`}>
+                            {levelLabel(item)}
+                          </a>
+                        {:else}
+                          {levelLabel(item)}
+                        {/if}
+                      {:else if item.reportedPlayer}
                         <PlayerLink player={item.reportedPlayer} truncate={22} />
                       {:else}
                         Unknown opponent

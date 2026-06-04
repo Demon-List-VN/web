@@ -7,6 +7,7 @@
 	import {
 		reportPvpMatch,
 		type PvpMatchReport,
+		type PvpMatchReportTargetType,
 		type PvpMatchReportReason
 	} from '$lib/client/pvp';
 	import { Loader2, ShieldAlert } from 'lucide-svelte';
@@ -15,25 +16,57 @@
 
 	export let open = false;
 	export let matchId: number | string | null | undefined = null;
+	export let reportedPlayer = false;
+	export let reportedLevel = false;
 	export let remainingMs = 0;
 	export let deadlineKnown = true;
 	export let onSubmitted: (report: PvpMatchReport) => void = () => {};
 
+	type ReportReasonOption = {
+		value: PvpMatchReportReason;
+		label: string;
+	};
+
+	const playerReasons: ReportReasonOption[] = [
+		{ value: 'cheating', label: 'pvp.report.reasons.cheating' },
+		{
+			value: 'abusive_communication',
+			label: 'pvp.report.reasons.abusive_communication'
+		},
+		{ value: 'other', label: 'pvp.report.reasons.other' }
+	];
+	const levelReasons: ReportReasonOption[] = [
+		{ value: 'too_easy', label: 'pvp.report.reasons.too_easy' },
+		{ value: 'too_difficult', label: 'pvp.report.reasons.too_difficult' },
+		{ value: 'level_deleted', label: 'pvp.report.reasons.level_deleted' },
+		{ value: 'secret_way', label: 'pvp.report.reasons.secret_way' },
+		{ value: 'unenjoyable', label: 'pvp.report.reasons.unenjoyable' },
+		{ value: 'other', label: 'pvp.report.reasons.other' }
+	];
+
+	let targetType: PvpMatchReportTargetType = 'player';
 	let reason: PvpMatchReportReason = 'cheating';
 	let description = '';
 	let submitting = false;
 	let wasOpen = false;
 
 	$: if (open && !wasOpen) {
-		reason = 'cheating';
+		targetType = !reportedPlayer ? 'player' : 'level';
+		reason = targetType === 'player' ? 'cheating' : 'too_easy';
 		description = '';
 	}
 
 	$: wasOpen = open;
+	$: reasonOptions = targetType === 'player' ? playerReasons : levelReasons;
+	$: if (!reasonOptions.some((option) => option.value === reason)) {
+		reason = reasonOptions[0]?.value ?? 'other';
+	}
 	$: descriptionRequired = reason === 'other';
 	$: submitDisabled = submitting
 		|| !matchId
 		|| (deadlineKnown && remainingMs <= 0)
+		|| (targetType === 'player' && reportedPlayer)
+		|| (targetType === 'level' && reportedLevel)
 		|| (descriptionRequired && !description.trim());
 
 	async function submitReport() {
@@ -55,6 +88,7 @@
 			const report = await reportPvpMatch(
 				await $user.token(),
 				matchId,
+				targetType,
 				reason,
 				trimmedDescription || null
 			);
@@ -102,31 +136,60 @@
 
     <div class="report-form">
       <span class="report-label">
+        {$_('pvp.report.target')}
+      </span>
+      <div class="report-reasons">
+        <RadioGroup.Root bind:value={targetType}>
+          <label
+            class="report-reason"
+            class:disabled={reportedPlayer}
+            for="pvp-report-target-player"
+          >
+            <RadioGroup.Item
+              id="pvp-report-target-player"
+              value="player"
+              disabled={reportedPlayer}
+            />
+            <span>{$_('pvp.report.targets.player')}</span>
+            {#if reportedPlayer}
+              <small>{$_('pvp.report.already_submitted')}</small>
+            {/if}
+          </label>
+          <label
+            class="report-reason"
+            class:disabled={reportedLevel}
+            for="pvp-report-target-level"
+          >
+            <RadioGroup.Item
+              id="pvp-report-target-level"
+              value="level"
+              disabled={reportedLevel}
+            />
+            <span>{$_('pvp.report.targets.level')}</span>
+            {#if reportedLevel}
+              <small>{$_('pvp.report.already_submitted')}</small>
+            {/if}
+          </label>
+        </RadioGroup.Root>
+      </div>
+
+      <span class="report-label">
         {$_('pvp.report.reason')}
       </span>
       <div class="report-reasons">
         <RadioGroup.Root bind:value={reason}>
-          <label class="report-reason" for="pvp-report-cheating">
-            <RadioGroup.Item id="pvp-report-cheating" value="cheating" />
-            <span>
-              {$_('pvp.report.reasons.cheating')}
-            </span>
-          </label>
-          <label class="report-reason" for="pvp-report-abusive">
-            <RadioGroup.Item
-              id="pvp-report-abusive"
-              value="abusive_communication"
-            />
-            <span>
-              {$_('pvp.report.reasons.abusive_communication')}
-            </span>
-          </label>
-          <label class="report-reason" for="pvp-report-other">
-            <RadioGroup.Item id="pvp-report-other" value="other" />
-            <span>
-              {$_('pvp.report.reasons.other')}
-            </span>
-          </label>
+          {#each reasonOptions as option (`${targetType}:${option.value}`)}
+            <label
+              class="report-reason"
+              for={`pvp-report-${targetType}-${option.value}`}
+            >
+              <RadioGroup.Item
+                id={`pvp-report-${targetType}-${option.value}`}
+                value={option.value}
+              />
+              <span>{$_(option.label)}</span>
+            </label>
+          {/each}
         </RadioGroup.Root>
       </div>
 
@@ -205,6 +268,17 @@
 
 .report-reason:hover {
   background: hsl(var(--muted) / 0.55);
+}
+
+.report-reason.disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.report-reason small {
+  margin-left: auto;
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
 }
 
 .report-form p {

@@ -426,18 +426,29 @@
             "title": "Báo cáo trận đấu",
             "description": "Chọn lý do trước khi cửa sổ báo cáo đóng sau {time}.",
             "description_active": "Chọn lý do. Bạn có thể báo cáo đến 3 phút sau khi trận kết thúc.",
+            "target": "Đối tượng báo cáo",
+            "targets": {
+                "player": "Báo cáo người chơi",
+                "level": "Báo cáo level"
+            },
             "reason": "Lý do",
             "details": "Chi tiết",
             "details_placeholder": "Hãy cho chúng tôi biết chuyện gì đã xảy ra.",
             "details_required": "Vui lòng nhập chi tiết khi chọn lý do khác.",
             "submit": "Gửi báo cáo",
             "submitted": "Đã báo cáo",
+            "already_submitted": "Đã báo cáo",
             "success": "Đã gửi báo cáo. Cảm ơn bạn.",
             "failed": "Gửi báo cáo thất bại.",
-            "limit_hint": "Bạn chỉ có thể báo cáo mỗi trận một lần.",
+            "limit_hint": "Bạn có thể báo cáo người chơi và level mỗi loại một lần trong mỗi trận.",
             "reasons": {
                 "cheating": "Gian lận",
                 "abusive_communication": "Giao tiếp xúc phạm",
+                "too_easy": "Quá dễ",
+                "too_difficult": "Quá khó",
+                "level_deleted": "Level đã bị xóa",
+                "secret_way": "Có đường bí mật",
+                "unenjoyable": "Không thú vị",
                 "other": "Khác"
             }
         },

@@ -6,6 +6,7 @@ export type PvpRoomVisibility = 'public' | 'private';
 export type PvpRoomCompletionRuleType = 'count' | 'percentage';
 export type PvpRoomScoringMode = 'progress' | 'score' | 'hp' | 'powerup';
 export type PvpPowerupSkill = 'flashbang' | 'invisible' | 'shield';
+export type PvpMatchReportTargetType = 'player' | 'level';
 
 export type PvpPowerupState = {
     matchId: number;
@@ -49,7 +50,15 @@ export type PvpQueueStatus =
     | 'cancelled'
     | 'expired'
     | string;
-export type PvpMatchReportReason = 'cheating' | 'abusive_communication' | 'other';
+export type PvpPlayerMatchReportReason = 'cheating' | 'abusive_communication' | 'other';
+export type PvpLevelMatchReportReason =
+    | 'too_easy'
+    | 'too_difficult'
+    | 'level_deleted'
+    | 'secret_way'
+    | 'unenjoyable'
+    | 'other';
+export type PvpMatchReportReason = PvpPlayerMatchReportReason | PvpLevelMatchReportReason;
 
 export type PvpPlayer = {
     uid?: string;
@@ -325,8 +334,18 @@ export type PvpMatch = {
     ban_pick?: PvpBanPick | null;
     viewerReport?: PvpMatchReport | null;
     viewer_report?: PvpMatchReport | null;
+    viewerPlayerReport?: PvpMatchReport | null;
+    viewer_player_report?: PvpMatchReport | null;
+    viewerLevelReport?: PvpMatchReport | null;
+    viewer_level_report?: PvpMatchReport | null;
+    viewerReports?: PvpMatchReport[];
+    viewer_reports?: PvpMatchReport[];
     reportedByViewer?: boolean;
     reported_by_viewer?: boolean;
+    reportedPlayerByViewer?: boolean;
+    reported_player_by_viewer?: boolean;
+    reportedLevelByViewer?: boolean;
+    reported_level_by_viewer?: boolean;
     viewerXpAward?: PvpXpAward | null;
     viewer_xp_award?: PvpXpAward | null;
     participants?: PvpParticipant[];
@@ -368,6 +387,10 @@ export type PvpMatchReport = {
     matchId?: number | string;
     match_id?: number | string;
     uid?: string;
+    targetType?: PvpMatchReportTargetType | string;
+    target_type?: PvpMatchReportTargetType | string;
+    targetLevelId?: number | string | null;
+    target_level_id?: number | string | null;
     reason?: PvpMatchReportReason | string;
     description?: string | null;
     resolved?: boolean;
@@ -391,6 +414,7 @@ export type AdminPvpReportEvidence = {
     report: PvpMatchReport;
     reporter: PvpPlayer | null;
     reportedPlayer: PvpPlayer | null;
+    reportedLevel?: PvpLevel | null;
     reportedParticipant: PvpParticipant | null;
     match: PvpMatch | null;
     messages: PvpMatchMessage[];
@@ -1720,13 +1744,14 @@ export async function castPvpPowerupSkill(
 export async function reportPvpMatch(
     token: string | null | undefined,
     id: number | string,
+    targetType: PvpMatchReportTargetType,
     reason: PvpMatchReportReason,
     description?: string | null
 ) {
     return pvpRequest<PvpMatchReport>(`/pvp/matches/${id}/report`, {
         method: 'POST',
         token,
-        body: { reason, description }
+        body: { targetType, reason, description }
     });
 }
 

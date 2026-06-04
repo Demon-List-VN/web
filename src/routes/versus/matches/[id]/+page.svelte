@@ -225,7 +225,8 @@
 	let selectedBanLevelIds: number[] = [];
 	let selectedBanTurnKey = '';
 	let reportDialogOpen = false;
-	let locallyReportedMatchIds = new Set<string>();
+	let locallyReportedPlayerMatchIds = new Set<string>();
+	let locallyReportedLevelMatchIds = new Set<string>();
 	let pendingXpToastMatch: PvpMatch | null = null;
 	let powerupState: PvpPowerupState | null = null;
 	let powerupLoading = false;
@@ -353,13 +354,23 @@
 	$: canRequeue = Boolean(
 		match && !isRoomMatch && !isActive && selfParticipant && !isSpectator
 	);
-	$: viewerReport = getPvpViewerReport(match);
-	$: hasReportedMatch = Boolean(
-		viewerReport
+	$: viewerPlayerReport = getPvpViewerReport(match, 'player');
+	$: viewerLevelReport = getPvpViewerReport(match, 'level');
+	$: hasReportedPlayer = Boolean(
+		viewerPlayerReport
 		|| match?.reportedByViewer
 		|| match?.reported_by_viewer
-		|| (matchId && locallyReportedMatchIds.has(String(matchId)))
+		|| match?.reportedPlayerByViewer
+		|| match?.reported_player_by_viewer
+		|| (matchId && locallyReportedPlayerMatchIds.has(String(matchId)))
 	);
+	$: hasReportedLevel = Boolean(
+		viewerLevelReport
+		|| match?.reportedLevelByViewer
+		|| match?.reported_level_by_viewer
+		|| (matchId && locallyReportedLevelMatchIds.has(String(matchId)))
+	);
+	$: hasReportedMatch = hasReportedPlayer && hasReportedLevel;
 	$: activeReportableMatch = ['ban_pick', 'in_progress', 'waiting_result']
 		.includes(status);
 	$: reportWindowOpen = Boolean(
@@ -1478,15 +1489,37 @@
 			return;
 		}
 
-		locallyReportedMatchIds = new Set(locallyReportedMatchIds)
-			.add(String(matchId));
+		const targetType = getPvpReportTargetType(report);
+
+		if (targetType === 'level') {
+			locallyReportedLevelMatchIds = new Set(locallyReportedLevelMatchIds)
+				.add(String(matchId));
+		} else {
+			locallyReportedPlayerMatchIds = new Set(locallyReportedPlayerMatchIds)
+				.add(String(matchId));
+		}
 
 		if (match) {
-			setMatch({
+			const nextMatch = {
 				...match,
-				viewerReport: report,
-				reportedByViewer: true
-			});
+				viewerReports: mergePvpViewerReports(match.viewerReports ?? match.viewer_reports ?? [], report)
+			};
+
+			if (targetType === 'level') {
+				setMatch({
+					...nextMatch,
+					viewerLevelReport: report,
+					reportedLevelByViewer: true
+				});
+			} else {
+				setMatch({
+					...nextMatch,
+					viewerReport: report,
+					viewerPlayerReport: report,
+					reportedByViewer: true,
+					reportedPlayerByViewer: true
+				});
+			}
 		}
 	}
 
@@ -2432,8 +2465,41 @@
 		return Boolean(a && b && String(a) === String(b));
 	}
 
-	function getPvpViewerReport(currentMatch: PvpMatch | null | undefined) {
-		return currentMatch?.viewerReport ?? currentMatch?.viewer_report ?? null;
+	function getPvpReportTargetType(report: PvpMatchReport | null | undefined) {
+		return (report?.targetType ?? report?.target_type ?? 'player') === 'level'
+			? 'level'
+			: 'player';
+	}
+
+	function getPvpViewerReport(
+		currentMatch: PvpMatch | null | undefined,
+		targetType: 'player' | 'level'
+	) {
+		if (targetType === 'player') {
+			return currentMatch?.viewerPlayerReport
+				?? currentMatch?.viewer_player_report
+				?? currentMatch?.viewerReport
+				?? currentMatch?.viewer_report
+				?? null;
+		}
+
+		return currentMatch?.viewerLevelReport
+			?? currentMatch?.viewer_level_report
+			?? (currentMatch?.viewerReports ?? currentMatch?.viewer_reports ?? [])
+				.find((report) => getPvpReportTargetType(report) === 'level')
+			?? null;
+	}
+
+	function mergePvpViewerReports(
+		reports: PvpMatchReport[],
+		nextReport: PvpMatchReport
+	) {
+		const targetType = getPvpReportTargetType(nextReport);
+		const filteredReports = reports.filter((report) =>
+			getPvpReportTargetType(report) !== targetType
+		);
+
+		return [...filteredReports, nextReport];
 	}
 
 	function getBanPickActionForLevel(levelId: number | null | undefined) {
@@ -3494,6 +3560,8 @@
   <MatchReportDialog
     bind:open={reportDialogOpen}
     {matchId}
+    reportedPlayer={hasReportedPlayer}
+    reportedLevel={hasReportedLevel}
     remainingMs={reportWindowRemainingMs}
     deadlineKnown={Boolean(reportDeadlineMs)}
     onSubmitted={handleReportSubmitted}
