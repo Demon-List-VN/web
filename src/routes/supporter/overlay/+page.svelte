@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
 	import { Trophy, HeartHandshake } from 'lucide-svelte';
-	import { isActive } from '$lib/client/isSupporterActive';
+	import PlayerLink from '$lib/components/playerLink.svelte';
 
 	export let data: any;
 
@@ -18,12 +18,12 @@
 			.toLocaleString('vi-VN')}₫`;
 	}
 
-	function avatarUrl(player: any) {
-		const extension = isActive(player?.supporterUntil) && player?.isAvatarGif
-			? 'gif'
-			: 'jpg';
+	function nameplateStyle(player: any) {
+		const bgColor = player?.bgColor || 'rgba(255, 255, 255, 0.08)';
+		const borderColor = player?.borderColor || 'rgba(255, 255, 255, 0.18)';
+		const color = player?.bgColor ? '#ffffff' : 'inherit';
 
-		return `https://cdn.gdvn.net/avatars/${player.uid}.${extension}?version=${player.avatarVersion}`;
+		return `background: ${bgColor}; border-color: ${borderColor}; color: ${color};`;
 	}
 
 	async function refreshOverlay() {
@@ -79,7 +79,18 @@
       </div>
       <div class="donationText">
         <span>New support</span>
-        <strong>{latestDonation.player?.name ?? 'GDVN Supporter'}</strong>
+        {#if latestDonation.player}
+          <div class="nameplate donationNameplate" style={nameplateStyle(latestDonation.player)}>
+            <PlayerLink
+              player={latestDonation.player}
+              showAvatar
+              avatarSize={42}
+              truncate={22}
+            />
+          </div>
+        {:else}
+          <strong>GDVN Supporter</strong>
+        {/if}
         <small>{formatPrice(latestDonation.amount)}</small>
         {#if latestDonation.message}
           <p>{latestDonation.message}</p>
@@ -97,11 +108,19 @@
       {#each topSupporters.slice(0, 3) as supporter, index}
         <div class="supporterRow">
           <div class="rank">#{index + 1}</div>
-          {#if supporter.player}
-            <img src={avatarUrl(supporter.player)} alt="" />
-          {/if}
           <div class="supporterMeta">
-            <strong>{supporter.player?.name ?? 'Supporter'}</strong>
+            {#if supporter.player}
+              <div class="nameplate" style={nameplateStyle(supporter.player)}>
+                <PlayerLink
+                  player={supporter.player}
+                  showAvatar
+                  avatarSize={34}
+                  truncate={18}
+                />
+              </div>
+            {:else}
+              <strong>Supporter</strong>
+            {/if}
             <small>{formatPrice(supporter.totalAmount ?? 0)}</small>
           </div>
         </div>
@@ -192,6 +211,52 @@
   }
 }
 
+.nameplate {
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  padding: 4px 8px;
+  color: white;
+  font-weight: 900;
+  line-height: 1.1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+}
+
+.nameplate :global(.wrapper) {
+  width: 100%;
+  min-width: 0;
+}
+
+.nameplate :global([data-popover-trigger]) {
+  width: 100%;
+  min-width: 0;
+}
+
+.nameplate :global([data-popover-trigger] > div) {
+  width: 100%;
+  min-width: 0;
+}
+
+.nameplate :global(a),
+.nameplate :global(button),
+.nameplate :global(span) {
+  min-width: 0;
+  overflow: hidden;
+  color: inherit;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.donationNameplate {
+  max-width: 100%;
+  font-size: 1.65rem;
+}
+
 .topPanel {
   position: absolute;
   top: 40px;
@@ -223,7 +288,7 @@
 
 .supporterRow {
   display: grid;
-  grid-template-columns: 44px 42px minmax(0, 1fr);
+  grid-template-columns: 44px minmax(0, 1fr);
   gap: 10px;
   align-items: center;
   min-height: 48px;
@@ -233,14 +298,6 @@
   color: #fbbf24;
   font-size: 1.05rem;
   font-weight: 900;
-}
-
-.supporterRow img {
-  width: 42px;
-  height: 42px;
-  border: 2px solid rgba(255, 255, 255, 0.22);
-  border-radius: 50%;
-  object-fit: cover;
 }
 
 .supporterMeta {
@@ -256,6 +313,11 @@
 
   strong {
     font-size: 1rem;
+  }
+
+  .nameplate {
+    max-width: 100%;
+    font-size: 0.98rem;
   }
 
   small {

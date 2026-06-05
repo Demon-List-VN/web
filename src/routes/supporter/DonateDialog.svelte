@@ -10,15 +10,15 @@
 	import { toast } from 'svelte-sonner';
 	import { get } from 'svelte/store';
 
-	const quickAmounts = [20000, 50000, 100000, 200000];
+	const quickAmounts = [5000, 10000, 500000, 1000000];
 
 	let open = false;
-	let amount = 50000;
+	let amount = 10000;
 	let message = '';
 	let loading = false;
 
-	$: normalizedAmount = Math.max(10000, Math.round(Number(amount) || 0));
-	$: canDonate = $user.loggedIn && normalizedAmount >= 10000 && !loading;
+	$: normalizedAmount = Math.max(5000, Math.round(Number(amount) || 0));
+	$: canDonate = $user.loggedIn && normalizedAmount >= 5000 && !loading;
 
 	function formatPrice(value: number) {
 		return value.toLocaleString('vi-VN');
@@ -91,8 +91,8 @@
           <Input
             id="donation-amount"
             type="number"
-            min="10000"
-            step="10000"
+            min="5000"
+            step="5000"
             bind:value={amount}
           />
           <span>VND</span>

@@ -2535,7 +2535,7 @@
             "message": "Message",
             "message_placeholder": "Say something nice for the stream...",
             "message_hint": "{count}/160 characters",
-            "proceed": "Donate with SePay",
+            "proceed": "Proceed to donate",
             "processing": "Creating checkout...",
             "login_required": "Please sign in before donating.",
             "error": "Failed to create donation."
