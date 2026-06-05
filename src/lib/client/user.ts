@@ -25,6 +25,45 @@ interface CachedUserData {
 
 const CACHE_KEY = 'dlvn_user_cache';
 
+async function fetchWithTimeout(
+    input: RequestInfo | URL,
+    init: RequestInit = {},
+    timeoutMs = 10000
+) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+        return await fetch(input, {
+            ...init,
+            signal: controller.signal
+        });
+    } finally {
+        clearTimeout(timeoutId);
+    }
+}
+
+function isCurrentPlayer(value: unknown): value is { uid: string | number; } {
+    return Boolean(
+        value
+            && typeof value === 'object'
+            && 'uid' in value
+            && (typeof (value as { uid?: unknown; }).uid === 'string'
+                || typeof (value as { uid?: unknown; }).uid === 'number')
+            && String((value as { uid: string | number; }).uid)
+                .trim()
+    );
+}
+
+function markLoggedOut() {
+    userData.data = undefined;
+    userData.ratings = [];
+    userData.loggedIn = false;
+    userData.checked = true;
+    clearCachedUserData();
+    user.set(userData);
+}
+
 function loadCachedUserData(): CachedUserData | null {
     if (typeof window === 'undefined') {
         return null;
@@ -78,17 +117,43 @@ function clearCachedUserData() {
 }
 
 async function fetchCurrentPlayer() {
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/me`, {
-        headers: {
-            Authorization: `Bearer ${await userData.token()}`
-        }
-    });
+    const response = await fetchWithTimeout(
+        `${import.meta.env.VITE_API_URL}/auth/me`,
+        {
+            headers: {
+                Authorization: `Bearer ${await userData.token()}`
+            }
+        },
+        15000
+    );
 
     if (!response.ok) {
         throw new Error(`Failed to fetch current user: ${response.status}`);
     }
 
-    return response.json();
+    const player = await response.json();
+
+    if (!isCurrentPlayer(player)) {
+        throw new Error('Current user profile is missing or invalid');
+    }
+
+    return player;
+}
+
+async function fetchCurrentPlayerRatings(userId: string) {
+    const response = await fetchWithTimeout(
+        `${import.meta.env.VITE_API_URL}/players/${userId}/records?ratingOnly=true`,
+        {},
+        7000
+    );
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch current user ratings: ${response.status}`);
+    }
+
+    const ratings = await response.json();
+
+    return Array.isArray(ratings) ? ratings : [];
 }
 
 async function addNewUser() {
@@ -98,13 +163,39 @@ async function addNewUser() {
         throw new Error(error.message);
     }
 
-    await fetch(`${import.meta.env.VITE_API_URL}/players`, {
-        method: 'POST',
-        headers: {
-            Authorization: `Bearer ${await userData.token()}`,
-            'Content-Type': 'application/json'
-        }
-    });
+    const response = await fetchWithTimeout(
+        `${import.meta.env.VITE_API_URL}/players`,
+        {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${await userData.token()}`,
+                'Content-Type': 'application/json'
+            }
+        },
+        10000
+    );
+
+    if (!response.ok && response.status !== 409) {
+        throw new Error(`Failed to create current user profile: ${response.status}`);
+    }
+}
+
+async function loadRemoteUser(userId: string) {
+    const player = await fetchCurrentPlayer();
+    let ratings: Rating[] = [];
+
+    try {
+        ratings = await fetchCurrentPlayerRatings(userId);
+    } catch (err) {
+        console.warn('Failed to load current user ratings:', err);
+    }
+
+    userData.data = player;
+    userData.ratings = ratings;
+    userData.loggedIn = true;
+    userData.checked = true;
+    saveCachedUserData(userId, userData.data, userData.ratings);
+    user.set(userData);
 }
 
 const userData: userType = {
@@ -136,10 +227,8 @@ const userData: userType = {
     refresh: async () => {
         const { data, error } = await supabase.auth.getUser();
 
-        if (error) {
-            userData.checked = true;
-            clearCachedUserData();
-            user.set(userData);
+        if (error || !data.user) {
+            markLoggedOut();
 
             return;
         }
@@ -147,57 +236,34 @@ const userData: userType = {
         const userId = data.user.id;
         const cachedData = loadCachedUserData();
 
-        if (cachedData && cachedData.userId === userId) {
+        if (
+            cachedData
+            && cachedData.userId === userId
+            && isCurrentPlayer(cachedData.data)
+        ) {
             userData.data = cachedData.data;
-            userData.ratings = cachedData.ratings;
+            userData.ratings = Array.isArray(cachedData.ratings)
+                ? cachedData.ratings
+                : [];
             userData.loggedIn = true;
             userData.checked = true;
             user.set(userData);
         }
 
-        const tmp = Promise.all([
-            fetchCurrentPlayer()
-                .then((res) => {
-                    userData.data = res;
-                }),
-            fetch(`${import.meta.env.VITE_API_URL}/players/${userId}/records?ratingOnly=true`)
-                .then((res) => res.json())
-                .then((res: any) => {
-                    userData.ratings = res;
-                })
-        ])
-            .then(() => {
-                userData.loggedIn = true;
-                userData.checked = true;
-                saveCachedUserData(userId, userData.data, userData.ratings);
-                user.set(userData);
-            })
-            .catch((_err) => {
-                addNewUser()
-                    .then(() => {
-                        Promise.all([
-                            fetchCurrentPlayer()
-                                .then((res) => {
-                                    userData.data = res;
-                                }),
-                            fetch(
-                                `${import.meta.env.VITE_API_URL}/players/${userId}/records?ratingOnly=true`
-                            )
-                                .then((res) => res.json())
-                                .then((res: any) => {
-                                    userData.ratings = res;
-                                })
-                        ])
-                            .then(() => {
-                                userData.loggedIn = true;
-                                userData.checked = true;
-                                saveCachedUserData(userId, userData.data, userData.ratings);
-                                user.set(userData);
-                            });
-                    });
-            });
+        try {
+            await loadRemoteUser(userId);
+        } catch (err) {
+            console.warn('Failed to load current user; trying profile creation:', err);
+            clearCachedUserData();
 
-        await tmp;
+            try {
+                await addNewUser();
+                await loadRemoteUser(userId);
+            } catch (retryErr) {
+                console.error('Failed to recover current user profile:', retryErr);
+                markLoggedOut();
+            }
+        }
     }
 };
 

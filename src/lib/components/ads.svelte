@@ -7,7 +7,9 @@
 	export let unit = 'auto';
 	let adPushed = false;
 
-	$: hidden = $user.checked ? $user.loggedIn && isActive($user.data.supporterUntil) : true;
+	$: hidden = $user.checked
+		? $user.loggedIn && isActive($user.data?.supporterUntil)
+		: true;
 
 	function pushAd() {
 		if (hidden || adPushed) {

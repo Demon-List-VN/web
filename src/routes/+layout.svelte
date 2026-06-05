@@ -233,7 +233,7 @@
 
 		user.subscribe((u) => {
 			const enabled = u.checked
-				&& (!u.loggedIn || !isActive(u.data.supporterUntil));
+				&& (!u.loggedIn || !isActive(u.data?.supporterUntil));
 
 			if (!adsScriptLoaded && enabled) {
 				adsScriptLoaded = true;
@@ -267,7 +267,7 @@
 		} else if (currentTheme !== 'light' && currentTheme !== 'dark') {
 			user.subscribe((u) => {
 				if (
-					u.checked && (!u.loggedIn || !isActive(u.data.supporterUntil))
+					u.checked && (!u.loggedIn || !isActive(u.data?.supporterUntil))
 				) {
 					setMode('dark');
 					setTheme('dark');

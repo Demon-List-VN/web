@@ -220,7 +220,7 @@
     <div class="nav-separator" />
 
     <!-- Supporter link -->
-    {#if $user.loggedIn && isActive($user.data.supporterUntil)}
+    {#if $user.loggedIn && isActive($user.data?.supporterUntil)}
       {#if showTooltip}
         <Tooltip.Root openDelay={0} closeDelay={0}>
           <Tooltip.Trigger asChild let:builder>

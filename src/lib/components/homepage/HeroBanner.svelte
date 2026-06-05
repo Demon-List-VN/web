@@ -5,7 +5,7 @@
 	import { _ } from 'svelte-i18n';
 	import { Sparkles, Crown, ArrowRight } from 'lucide-svelte';
 
-	$: isSupporter = $user.loggedIn && isActive($user.data.supporterUntil);
+	$: isSupporter = $user.loggedIn && isActive($user.data?.supporterUntil);
 	$: isLoggedIn = $user.loggedIn;
 	$: profileBannerUrl = $user.loggedIn && isSupporter && $user.data?.uid
 		? `https://cdn.gdvn.net/banners/${$user.data.uid}${
