@@ -936,7 +936,9 @@
             "hp_axis": "HP",
             "checkpoints_axis": "Checkpoints",
             "normal_mode": "Normal",
-            "practice_mode": "Practice"
+            "practice_mode": "Practice",
+            "flashbanged": "Flashbanged",
+            "invisible": "Invisible"
         },
         "death_count": {
             "title": "Deaths",

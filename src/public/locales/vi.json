@@ -936,7 +936,9 @@
             "hp_axis": "HP",
             "checkpoints_axis": "Checkpoint",
             "normal_mode": "Thường",
-            "practice_mode": "Luyện tập"
+            "practice_mode": "Luyện tập",
+            "flashbanged": "Bị Flashbang",
+            "invisible": "Đang Invisible"
         },
         "death_count": {
             "title": "Số lần chết",

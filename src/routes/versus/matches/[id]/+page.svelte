@@ -157,10 +157,28 @@
 		timeMs: number;
 	};
 
+	type ProgressGraphPowerupSkill = Extract<
+		PvpPowerupSkill,
+		'flashbang' | 'invisible'
+	>;
+
+	type ProgressGraphPowerupEffectEvent = {
+		uid: string;
+		skill: ProgressGraphPowerupSkill;
+		x: number;
+		endX: number;
+		timeMs: number;
+		durationMs: number;
+	};
+
+	type ProgressGraphSegmentKind = 'play_mode' | 'powerup_effect';
+
 	type ProgressGraphModeSegment = {
 		uid: string;
 		label: string;
-		playMode: PvpPlayMode;
+		kind: ProgressGraphSegmentKind;
+		playMode?: PvpPlayMode;
+		skill?: ProgressGraphPowerupSkill;
 		modeLabel: string;
 		color: string;
 		startX: number;
@@ -2365,6 +2383,42 @@
 		};
 	}
 
+	function powerupEffectMessageEvent(message: PvpMatchMessage): {
+		uid: string;
+		skill: ProgressGraphPowerupSkill;
+		timeMs: number;
+		durationMs: number;
+	} | null {
+		if (
+			message.type !== 'system'
+			|| messageMetadataKind(message) !== 'powerup_skill'
+		) {
+			return null;
+		}
+
+		const metadata = messageMetadata(message);
+		const skillText = metadataText(metadata, 'skill');
+		const skill: ProgressGraphPowerupSkill | null = skillText === 'flashbang'
+			? 'flashbang'
+			: skillText === 'invisible'
+			? 'invisible'
+			: null;
+		const uid = metadataText(metadata, 'targetUid');
+		const durationMs = metadataNumber(metadata, 'durationMs');
+		const timeMs = getTimeMs(message.created_at);
+
+		if (!uid || !skill || !timeMs || !durationMs || durationMs <= 0) {
+			return null;
+		}
+
+		return {
+			uid,
+			skill,
+			timeMs,
+			durationMs
+		};
+	}
+
 	function isLevelChangedMessage(message: PvpMatchMessage) {
 		return message.type === 'system'
 			&& messageMetadataKind(message) === 'level_changed';
@@ -2419,9 +2473,25 @@
 				Boolean(entry)
 			)
 			.sort((a, b) => a.timeMs - b.timeMs);
+		const rawPowerupEffectEvents = currentScoringMode === 'powerup'
+			? progressMessages
+				.map((message) => powerupEffectMessageEvent(message))
+				.filter((
+					entry
+				): entry is NonNullable<
+					ReturnType<typeof powerupEffectMessageEvent>
+				> => Boolean(entry))
+			: [];
 
 		const origin = getPvpMatchStartMs(sourceMatch)
 			?? parsed.reduce<number | null>(
+				(earliest, entry) =>
+					earliest === null || entry.timeMs < earliest
+						? entry.timeMs
+						: earliest,
+				null
+			)
+			?? rawPowerupEffectEvents.reduce<number | null>(
 				(earliest, entry) =>
 					earliest === null || entry.timeMs < earliest
 						? entry.timeMs
@@ -2454,6 +2524,22 @@
 				)
 			}))
 			.sort((a, b) => a.x - b.x || a.timeMs - b.timeMs);
+		const powerupEffectEvents: ProgressGraphPowerupEffectEvent[] =
+			rawPowerupEffectEvents
+				.map((entry) => {
+					const x = Math.max(
+						0,
+						(entry.timeMs - origin) / 1000
+					);
+					const durationSeconds = Math.max(0, entry.durationMs / 1000);
+
+					return {
+						...entry,
+						x,
+						endX: x + durationSeconds
+					};
+				})
+				.sort((a, b) => a.x - b.x || a.timeMs - b.timeMs);
 
 		for (const entry of parsed) {
 			const target = series.find((item) => item.uid === entry.uid);
@@ -2473,6 +2559,7 @@
 			60,
 			Math.round(Math.max(0, (liveEndMs ?? origin) - origin) / 1000),
 			...modeEvents.map((event) => event.x),
+			...powerupEffectEvents.map((event) => event.endX),
 			...series.flatMap((item) => item.points.map((point) => point.x))
 		);
 		const maxProgress = Math.max(
@@ -2489,6 +2576,8 @@
 		const modeLaneGap = maxY * 0.06;
 		const modeLaneOne = -modeLaneGap;
 		const modeLaneTwo = -modeLaneGap * 2;
+		const powerupLaneOne = -modeLaneGap * 3;
+		const powerupLaneTwo = -modeLaneGap * 4;
 		const modeTimelineAvailable = [
 			'in_progress',
 			'waiting_result',
@@ -2497,16 +2586,27 @@
 			'disputed'
 		].includes(matchStatus)
 			|| modeEvents.length > 0
+			|| powerupEffectEvents.length > 0
 			|| parsed.length > 0;
 		const modeSegments = modeTimelineAvailable
-			? getProgressGraphModeSegments(
-				series,
-				modeEvents,
-				maxX,
-				[modeLaneOne, modeLaneTwo]
-			)
+			? [
+				...getProgressGraphModeSegments(
+					series,
+					modeEvents,
+					maxX,
+					[modeLaneOne, modeLaneTwo]
+				),
+				...getProgressGraphPowerupEffectSegments(
+					series,
+					powerupEffectEvents,
+					maxX,
+					[powerupLaneOne, powerupLaneTwo]
+				)
+			]
 			: [];
-		const minY = modeSegments.length > 0 ? -modeLaneGap * 2.75 : 0;
+		const minY = modeSegments.length > 0
+			? Math.min(...modeSegments.map((segment) => segment.y)) - modeLaneGap * 0.75
+			: 0;
 
 		return {
 			series: series.map(({ uid, ...item }) => item),
@@ -2606,6 +2706,30 @@
 		});
 	}
 
+	function getProgressGraphPowerupEffectSegments(
+		series: Array<ProgressGraphSeries & { uid: string | null; }>,
+		events: ProgressGraphPowerupEffectEvent[],
+		maxX: number,
+		lanes: number[]
+	): ProgressGraphModeSegment[] {
+		return series.flatMap((item, index) => {
+			if (!item.uid || !item.label) {
+				return [];
+			}
+
+			return events
+				.filter((event) => event.uid === item.uid && event.endX > event.x)
+				.map((event) => createProgressGraphPowerupEffectSegment(
+					item.uid!,
+					item.label,
+					event.skill,
+					event.x,
+					Math.min(maxX, event.endX),
+					lanes[index] ?? lanes[0]
+				));
+		});
+	}
+
 	function createProgressGraphModeSegment(
 		uid: string,
 		label: string,
@@ -2617,6 +2741,7 @@
 		return {
 			uid,
 			label,
+			kind: 'play_mode',
 			playMode,
 			modeLabel: playModeLabel(playMode),
 			color: playMode === 'practice'
@@ -2628,10 +2753,39 @@
 		};
 	}
 
+	function createProgressGraphPowerupEffectSegment(
+		uid: string,
+		label: string,
+		skill: ProgressGraphPowerupSkill,
+		startX: number,
+		endX: number,
+		y: number
+	): ProgressGraphModeSegment {
+		return {
+			uid,
+			label,
+			kind: 'powerup_effect',
+			skill,
+			modeLabel: powerupEffectLabel(skill),
+			color: skill === 'flashbang'
+				? chartColor('--warning', '#eab308')
+				: chartColor('--info', '#0ea5e9'),
+			startX,
+			endX,
+			y
+		};
+	}
+
 	function playModeLabel(playMode: PvpPlayMode) {
 		return playMode === 'practice'
 			? $_('pvp.progress_graph.practice_mode')
 			: $_('pvp.progress_graph.normal_mode');
+	}
+
+	function powerupEffectLabel(skill: ProgressGraphPowerupSkill) {
+		return skill === 'flashbang'
+			? $_('pvp.progress_graph.flashbanged')
+			: $_('pvp.progress_graph.invisible');
 	}
 
 	function participantProgressBarWidth(participant: PvpParticipant) {
