@@ -10,7 +10,7 @@
 	import { toast } from 'svelte-sonner';
 	import { get } from 'svelte/store';
 
-	const quickAmounts = [5000, 10000, 500000, 1000000];
+	const quickAmounts = [5000, 10000, 50000, 100000, 200000, 500000, 1000000];
 
 	let open = false;
 	let amount = 10000;

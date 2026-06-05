@@ -1,21 +1,22 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
-	import { Trophy, HeartHandshake } from 'lucide-svelte';
+	import { fade } from 'svelte/transition';
+	import { Trophy } from 'lucide-svelte';
 	import PlayerLink from '$lib/components/playerLink.svelte';
 
 	export let data: any;
 
 	let overlay = data.overlay;
-	let latestDonationId = overlay?.latestDonation?.id ?? null;
-	let highlightDonation = false;
+	let latestEventId = overlay?.latestEvent?.id ?? null;
+	let visibleEvent: any = null;
 	let pollTimer: ReturnType<typeof setInterval> | null = null;
+	let hideTimer: ReturnType<typeof setTimeout> | null = null;
 
-	$: latestDonation = overlay?.latestDonation ?? null;
 	$: topSupporters = overlay?.topSupporters ?? [];
 
 	function formatPrice(value: number) {
 		return `${Math.round(value || 0)
-			.toLocaleString('vi-VN')}₫`;
+			.toLocaleString('vi-VN')}vnd`;
 	}
 
 	function nameplateStyle(player: any) {
@@ -38,6 +39,18 @@
 			});
 	}
 
+	function showEvent(event: any) {
+		visibleEvent = event;
+
+		if (hideTimer) {
+			clearTimeout(hideTimer);
+		}
+
+		hideTimer = setTimeout(() => {
+			visibleEvent = null;
+		}, 15000);
+	}
+
 	async function refreshOverlay() {
 		try {
 			const response = await fetch(
@@ -49,17 +62,14 @@
 			}
 
 			const nextOverlay = await response.json();
-			const nextDonationId = nextOverlay?.latestDonation?.id ?? null;
+			const nextEvent = nextOverlay?.latestEvent ?? null;
+			const nextEventId = nextEvent?.id ?? null;
 
-			if (nextDonationId && nextDonationId !== latestDonationId) {
-				highlightDonation = false;
+			if (nextEventId && nextEventId !== latestEventId) {
 				await Promise.resolve();
-				highlightDonation = true;
-				latestDonationId = nextDonationId;
+				latestEventId = nextEventId;
+				showEvent(nextEvent);
 				playDonationSound();
-				setTimeout(() => {
-					highlightDonation = false;
-				}, 5200);
 			}
 
 			overlay = nextOverlay;
@@ -76,46 +86,54 @@
 		if (pollTimer) {
 			clearInterval(pollTimer);
 		}
+
+		if (hideTimer) {
+			clearTimeout(hideTimer);
+		}
 	});
 </script>
 
 <svelte:head>
-  <title>GDVN Supporter Overlay</title>
+  <title>Overlay Ủng Hộ GDVN</title>
   <meta name="robots" content="noindex,nofollow" />
 </svelte:head>
 
 <main class="overlayShell">
-  {#if latestDonation}
-    <section class:pop={highlightDonation} class="latestDonation">
-      <div class="donationIcon">
-        <HeartHandshake size={28} />
-      </div>
-      <div class="donationText">
-        <span>New support</span>
-        {#if latestDonation.player}
-          <div class="nameplate donationNameplate" style={nameplateStyle(latestDonation.player)}>
-            <PlayerLink
-              player={latestDonation.player}
-              showAvatar
-              avatarSize={42}
-              truncate={22}
-            />
-          </div>
-        {:else}
-          <strong>GDVN Supporter</strong>
+  {#if visibleEvent}
+    <section
+      class="eventAlert"
+      in:fade={{ duration: 350 }}
+      out:fade={{ duration: 700 }}
+    >
+      {#if visibleEvent.player}
+        <PlayerLink
+          player={visibleEvent.player}
+          showAvatar
+          avatarSize={42}
+          truncate={22}
+        />
+      {:else}
+        <span>Người ủng hộ GDVN</span>
+      {/if}
+      {#if visibleEvent.type === 'supporter'}
+        <span> đã trở thành Supporter trong </span>
+        <span class="goldText">{visibleEvent.months ?? 1}</span>
+        <span> tháng</span>
+      {:else}
+        <span> đã donate </span>
+        <span class="goldText">{formatPrice(visibleEvent.amount ?? 0)}</span>
+        {#if visibleEvent.message}
+          <br />
+          <span class="donationMessage">{visibleEvent.message}</span>
         {/if}
-        <small>{formatPrice(latestDonation.amount)}</small>
-        {#if latestDonation.message}
-          <p>{latestDonation.message}</p>
-        {/if}
-      </div>
+      {/if}
     </section>
   {/if}
 
   <aside class="topPanel">
     <div class="panelTitle">
       <Trophy size={18} />
-      <span>Top Supporters</span>
+      <span>Top Ủng Hộ</span>
     </div>
     <div class="supporterList">
       {#each topSupporters.slice(0, 3) as supporter, index}
@@ -132,7 +150,7 @@
                 />
               </div>
             {:else}
-              <strong>Supporter</strong>
+              <strong>Người ủng hộ</strong>
             {/if}
             <small>{formatPrice(supporter.totalAmount ?? 0)}</small>
           </div>
@@ -158,70 +176,41 @@
   pointer-events: none;
 }
 
-.latestDonation {
+.eventAlert {
   position: absolute;
   left: 40px;
   bottom: 40px;
-  display: grid;
-  grid-template-columns: 58px minmax(0, 1fr);
-  width: min(560px, calc(100vw - 80px));
-  min-height: 104px;
-  gap: 16px;
-  align-items: center;
-  padding: 18px 20px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 8px;
-  background: rgba(10, 14, 24, 0.82);
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.38);
-  backdrop-filter: blur(14px);
+  width: min(780px, calc(100vw - 80px));
+  color: white;
+  font-size: 1.8rem;
+  font-weight: 900;
+  line-height: 1.35;
+  text-align: center;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
 }
 
-.latestDonation.pop {
-  animation: donationPop 5.2s ease both;
+.eventAlert :global(.wrapper) {
+  display: inline-flex;
+  max-width: 340px;
+  vertical-align: middle;
 }
 
-.donationIcon {
-  display: grid;
-  width: 58px;
-  height: 58px;
-  place-items: center;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #f59e0b, #ec4899);
+.eventAlert :global([data-popover-trigger]) {
+  color: inherit;
+  font: inherit;
 }
 
-.donationText {
-  min-width: 0;
+.goldText {
+  color: #fbbf24;
+}
 
-  span,
-  small {
-    display: block;
-    color: rgba(255, 255, 255, 0.72);
-    font-size: 0.9rem;
-    font-weight: 700;
-    text-transform: uppercase;
-  }
-
-  strong {
-    display: block;
-    overflow: hidden;
-    color: white;
-    font-size: 1.75rem;
-    line-height: 1.1;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  p {
-    display: -webkit-box;
-    margin-top: 6px;
-    overflow: hidden;
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 1rem;
-    line-height: 1.3;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-  }
+.donationMessage {
+  display: block;
+  margin-top: 8px;
+  text-align: center;
+  font-size: 1.15rem;
+  font-weight: 400;
+  line-height: 1.35;
 }
 
 .nameplate {
@@ -230,7 +219,7 @@
   max-width: 100%;
   min-width: 0;
   align-items: center;
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 8px;
   padding: 4px 8px;
@@ -243,11 +232,13 @@
 .nameplate :global(.wrapper) {
   width: 100%;
   min-width: 0;
+  overflow: visible;
 }
 
 .nameplate :global([data-popover-trigger]) {
   width: 100%;
   min-width: 0;
+  overflow: hidden;
 }
 
 .nameplate :global([data-popover-trigger] > div) {
@@ -255,9 +246,7 @@
   min-width: 0;
 }
 
-.nameplate :global(a),
-.nameplate :global(button),
-.nameplate :global(span) {
+.nameplate :global([data-popover-trigger] span) {
   min-width: 0;
   overflow: hidden;
   color: inherit;
@@ -265,9 +254,10 @@
   white-space: nowrap;
 }
 
-.donationNameplate {
-  max-width: 100%;
-  font-size: 1.65rem;
+.nameplate :global(a) {
+  flex: 0 0 auto;
+  color: inherit;
+  white-space: nowrap;
 }
 
 .topPanel {
@@ -340,28 +330,13 @@
   }
 }
 
-@keyframes donationPop {
-  0% {
-    opacity: 0;
-    transform: translateX(-30px) translateY(14px) scale(0.96);
-  }
-  12%,
-  88% {
-    opacity: 1;
-    transform: translateX(0) translateY(0) scale(1);
-  }
-  100% {
-    opacity: 0.9;
-    transform: translateX(0) translateY(0) scale(1);
-  }
-}
-
 @media (max-width: 760px) {
-  .latestDonation {
+  .eventAlert {
     left: 16px;
     right: 16px;
     bottom: 16px;
     width: auto;
+    font-size: 1.25rem;
   }
 
   .topPanel {
