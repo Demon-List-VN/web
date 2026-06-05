@@ -1478,7 +1478,10 @@
         "ago": "ago",
         "unread": "unread",
         "loading": "Loading...",
-        "close": "Close notification"
+        "close": "Close notification",
+        "user": "User",
+        "system": "System",
+        "mark_all_read": "Mark all as read"
     },
     "payment": {
         "recipent": {

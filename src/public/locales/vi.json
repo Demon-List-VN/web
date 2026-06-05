@@ -1477,7 +1477,10 @@
         "ago": "trước",
         "unread": "chưa đọc",
         "loading": "Đang tải...",
-        "close": "Đóng thông báo"
+        "close": "Đóng thông báo",
+        "user": "Cá nhân",
+        "system": "Hệ thống",
+        "mark_all_read": "Đánh dấu đã đọc"
     },
     "payment": {
         "recipent": {

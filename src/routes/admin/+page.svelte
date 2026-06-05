@@ -86,7 +86,7 @@
 					type: 'button'
 				},
 				{ name: 'API Tester', href: '/admin/api' },
-				{ name: 'Send Notification', href: '/admin/notification' }
+				{ name: 'Notification Manager', href: '/admin/notification' }
 			]
 		},
 		{

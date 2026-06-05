@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
-	import { Bell, ExternalLink, Inbox, Trash2, X } from 'lucide-svelte';
+	import { Bell, CheckCheck, ExternalLink, Inbox, Trash2, X } from 'lucide-svelte';
 	import * as Popover from '$lib/components/ui/popover';
 	import { Button } from '$lib/components/ui/button';
 	import { user } from '$lib/client';
@@ -13,22 +13,45 @@
 	import {
 		actionEndpoint,
 		isActionableNotification,
+		isExpiredSystemNotification,
+		markSystemNotificationRead,
 		notificationKey,
+		pruneSystemNotificationReadIds,
+		readSystemNotificationIds,
+		systemNotificationKey,
+		systemNotificationTimestamp,
+		writeSystemNotificationIds,
 		type NotificationAction,
 		type PopupNotification,
+		type SystemNotification,
 		type UserNotification
 	} from '$lib/components/notifications/notification';
 
 	const POPUP_DURATION_MS = 6000;
 
+	type NotificationTab = 'user' | 'system';
+
 	let notifications: UserNotification[] = [];
+	let systemNotifications: SystemNotification[] = [];
 	let popups: PopupNotification[] = [];
 	let activeUid = '';
+	let activeTab: NotificationTab = 'user';
 	let loading = false;
+	let systemLoading = false;
 	let clearing = false;
 	let actionLoading = '';
+	let systemReadIds = new Set<string>();
 	let cleanupRealtime: (() => Promise<void>) | null = null;
 	const popupTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
+
+	$: visibleSystemNotifications = systemNotifications.filter((notification) =>
+		!isExpiredSystemNotification(notification)
+	);
+	$: userUnreadCount = notifications.length;
+	$: systemUnreadCount = visibleSystemNotifications.filter((notification) =>
+		!systemReadIds.has(systemNotificationKey(notification))
+	).length;
+	$: totalUnreadCount = userUnreadCount + systemUnreadCount;
 
 	function normalizeRedirect(redirect?: string | null) {
 		if (!redirect) {
@@ -56,6 +79,21 @@
 			redirect: normalizeRedirect(notification.redirect),
 			timestamp: notification.timestamp ?? new Date()
 				.toISOString()
+		};
+	}
+
+	function normalizeSystemNotification(
+		notification: SystemNotification
+	): SystemNotification {
+		const timestamp = systemNotificationTimestamp(notification)
+			?? new Date()
+				.toISOString();
+
+		return {
+			...notification,
+			redirect: normalizeRedirect(notification.redirect),
+			created_at: timestamp,
+			timestamp
 		};
 	}
 
@@ -280,6 +318,47 @@
 		}
 	}
 
+	async function fetchSystemNotifications(uid: string) {
+		systemLoading = true;
+
+		try {
+			const token = await $user.token();
+
+			if (!token) {
+				systemNotifications = [];
+				systemReadIds = new Set();
+
+				return;
+			}
+
+			const response = await fetch(
+				`${import.meta.env.VITE_API_URL}/notifications/system`,
+				{
+					headers: {
+						Authorization: 'Bearer ' + token
+					}
+				}
+			);
+
+			if (!response.ok) {
+				throw new Error(`Failed to load system notifications: ${response.status}`);
+			}
+
+			const data = await response.json();
+			systemNotifications = Array.isArray(data)
+				? data
+					.map(normalizeSystemNotification)
+					.filter((notification) => !isExpiredSystemNotification(notification))
+				: [];
+			systemReadIds = pruneSystemNotificationReadIds(uid, systemNotifications);
+		} catch {
+			systemNotifications = [];
+			systemReadIds = readSystemNotificationIds(uid);
+		} finally {
+			systemLoading = false;
+		}
+	}
+
 	function closePopup(popupId: string) {
 		const timeout = popupTimeouts.get(popupId);
 
@@ -364,13 +443,42 @@
 		}
 	}
 
+	function markSystemRead(notification: SystemNotification) {
+		if (!activeUid) {
+			return;
+		}
+
+		systemReadIds = markSystemNotificationRead(activeUid, notification);
+	}
+
+	function markAllSystemRead() {
+		if (!activeUid) {
+			return;
+		}
+
+		const ids = new Set(systemReadIds);
+
+		visibleSystemNotifications.forEach((notification) => {
+			ids.add(systemNotificationKey(notification));
+		});
+		writeSystemNotificationIds(activeUid, ids);
+		systemReadIds = ids;
+	}
+
+	function isSystemRead(notification: SystemNotification) {
+		return systemReadIds.has(systemNotificationKey(notification));
+	}
+
 	$: if ($user.checked) {
 		const uid = $user.loggedIn ? ($user.data?.uid ?? '') : '';
 
 		if (uid !== activeUid) {
 			activeUid = uid;
 			notifications = [];
+			systemNotifications = [];
 			popups = [];
+			activeTab = 'user';
+			systemReadIds = uid ? readSystemNotificationIds(uid) : new Set();
 			popupTimeouts.forEach(clearTimeout);
 			popupTimeouts.clear();
 
@@ -381,6 +489,7 @@
 
 			if (uid) {
 				fetchNotifications(uid);
+				fetchSystemNotifications(uid);
 				setupRealtime(uid);
 			}
 		}
@@ -433,9 +542,9 @@
       aria-label={$_('notifications.title')}
     >
       <Bell size={18} />
-      {#if notifications.length != 0}
+      {#if totalUnreadCount != 0}
         <span class="notificationBadge">{
-          notifications.length > 9 ? '9+' : notifications.length
+          totalUnreadCount > 9 ? '9+' : totalUnreadCount
         }</span>
       {/if}
     </button>
@@ -444,37 +553,98 @@
     <div class="centerHeader">
       <div>
         <h4>{$_('notifications.title')}</h4>
-        <p>{notifications.length} {$_('notifications.unread')}</p>
+        <p>
+          {activeTab === 'user' ? userUnreadCount : systemUnreadCount}
+          {' '}
+          {$_('notifications.unread')}
+        </p>
       </div>
       <Button
         variant="ghost"
         size="icon"
         class="clearButton"
-        on:click={clear}
-        disabled={notifications.length === 0 || clearing}
+        on:click={activeTab === 'user' ? clear : markAllSystemRead}
+        disabled={activeTab === 'user'
+          ? notifications.length === 0 || clearing
+          : systemUnreadCount === 0}
+        aria-label={activeTab === 'user'
+          ? $_('notifications.clear_all')
+          : $_('notifications.mark_all_read')}
       >
-        <Trash2 size={16} />
+        {#if activeTab === 'user'}
+          <Trash2 size={16} />
+        {:else}
+          <CheckCheck size={16} />
+        {/if}
       </Button>
     </div>
 
-    {#if loading}
-      <div class="emptyState">
-        <Inbox size={22} />
-        <p>{$_('notifications.loading')}</p>
-      </div>
-    {:else if notifications.length == 0}
-      <div class="emptyState">
-        <Inbox size={22} />
-        <p>{$_('notifications.no_noti')}</p>
-      </div>
-    {:else}
-      <div class="notificationList">
-        {#each notifications as notification (notificationKey(notification))}
-          {#if isActionableNotification(notification)}
-            <div class="notificationItem actionableNotification">
-              <span class="itemDot"></span>
-              <span class="itemContent">
-                <a class="messageLink" href={notification.redirect || '#!'}>
+    <div class="notificationTabs" role="tablist" aria-label={$_('notifications.title')}>
+      <button
+        class:active={activeTab === 'user'}
+        type="button"
+        role="tab"
+        aria-selected={activeTab === 'user'}
+        on:click={() => (activeTab = 'user')}
+      >
+        <span>{$_('notifications.user')}</span>
+        {#if userUnreadCount > 0}
+          <span class="tabUnreadDot" aria-hidden="true"></span>
+        {/if}
+      </button>
+      <button
+        class:active={activeTab === 'system'}
+        type="button"
+        role="tab"
+        aria-selected={activeTab === 'system'}
+        on:click={() => (activeTab = 'system')}
+      >
+        <span>{$_('notifications.system')}</span>
+        {#if systemUnreadCount > 0}
+          <span class="tabUnreadDot" aria-hidden="true"></span>
+        {/if}
+      </button>
+    </div>
+
+    {#if activeTab === 'user'}
+      {#if loading}
+        <div class="emptyState">
+          <Inbox size={22} />
+          <p>{$_('notifications.loading')}</p>
+        </div>
+      {:else if notifications.length == 0}
+        <div class="emptyState">
+          <Inbox size={22} />
+          <p>{$_('notifications.no_noti')}</p>
+        </div>
+      {:else}
+        <div class="notificationList">
+          {#each notifications as notification (notificationKey(notification))}
+            {#if isActionableNotification(notification)}
+              <div class="notificationItem actionableNotification">
+                <span class="itemDot"></span>
+                <span class="itemContent">
+                  <a class="messageLink" href={notification.redirect || '#!'}>
+                    <span class="message">{notification.content}</span>
+                    <span class="meta">
+                      {timeSince(notification.timestamp)}
+                      {$_('notifications.ago')}
+                      {#if notification.redirect}
+                        <ExternalLink size={13} />
+                      {/if}
+                    </span>
+                  </a>
+                  <NotificationActions
+                    actionKey={notificationKey(notification)}
+                    {actionLoading}
+                    onAction={(event, action) => handleNotificationAction(event, notification, action)}
+                  />
+                </span>
+              </div>
+            {:else}
+              <a class="notificationItem" href={notification.redirect || '#!'}>
+                <span class="itemDot"></span>
+                <span class="itemContent">
                   <span class="message">{notification.content}</span>
                   <span class="meta">
                     {timeSince(notification.timestamp)}
@@ -483,29 +653,46 @@
                       <ExternalLink size={13} />
                     {/if}
                   </span>
-                </a>
-                <NotificationActions
-                  actionKey={notificationKey(notification)}
-                  {actionLoading}
-                  onAction={(event, action) => handleNotificationAction(event, notification, action)}
-                />
-              </span>
-            </div>
-          {:else}
-            <a class="notificationItem" href={notification.redirect || '#!'}>
-              <span class="itemDot"></span>
-              <span class="itemContent">
-                <span class="message">{notification.content}</span>
-                <span class="meta">
-                  {timeSince(notification.timestamp)}
-                  {$_('notifications.ago')}
-                  {#if notification.redirect}
-                    <ExternalLink size={13} />
-                  {/if}
                 </span>
+              </a>
+            {/if}
+          {/each}
+        </div>
+      {/if}
+    {:else if systemLoading}
+      <div class="emptyState">
+        <Inbox size={22} />
+        <p>{$_('notifications.loading')}</p>
+      </div>
+    {:else if visibleSystemNotifications.length == 0}
+      <div class="emptyState">
+        <Inbox size={22} />
+        <p>{$_('notifications.no_noti')}</p>
+      </div>
+    {:else}
+      <div class="notificationList">
+        {#each visibleSystemNotifications as notification (systemNotificationKey(notification))}
+          <a
+            class="notificationItem systemNotificationItem"
+            class:readNotification={isSystemRead(notification)}
+            href={notification.redirect || '#!'}
+            on:click={() => markSystemRead(notification)}
+          >
+            <span class="itemDot systemDot" class:readDot={isSystemRead(notification)}></span>
+            <span class="itemContent">
+              {#if notification.title}
+                <span class="messageTitle">{notification.title}</span>
+              {/if}
+              <span class="message">{notification.content}</span>
+              <span class="meta">
+                {timeSince(systemNotificationTimestamp(notification))}
+                {$_('notifications.ago')}
+                {#if notification.redirect}
+                  <ExternalLink size={13} />
+                {/if}
               </span>
-            </a>
-          {/if}
+            </span>
+          </a>
         {/each}
       </div>
     {/if}
@@ -591,6 +778,50 @@
   color: var(--textColor2);
 }
 
+.notificationTabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 8px;
+  border-bottom: 1px solid var(--border1);
+
+  button {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-width: 0;
+    height: 34px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--textColor2);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition:
+      background-color 0.12s ease,
+      border-color 0.12s ease,
+      color 0.12s ease;
+
+    &:hover,
+    &.active {
+      border-color: var(--border1);
+      background: hsl(var(--accent));
+      color: var(--textColor);
+    }
+  }
+}
+
+.tabUnreadDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #ef4444;
+  box-shadow: 0 0 0 2px rgb(239 68 68 / 18%);
+}
+
 .notificationList {
   max-height: min(440px, calc(100vh - 130px));
   overflow-y: auto;
@@ -631,10 +862,30 @@
   background: #38bdf8;
 }
 
+.systemDot {
+  background: #ef4444;
+}
+
+.readDot {
+  background: var(--border1);
+}
+
+.readNotification {
+  opacity: 0.68;
+}
+
 .itemContent {
   min-width: 0;
   display: grid;
   gap: 6px;
+}
+
+.messageTitle {
+  color: var(--textColor);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .message {
