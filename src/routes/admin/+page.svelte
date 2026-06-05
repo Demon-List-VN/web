@@ -144,7 +144,10 @@
 		{
 			title: 'Store & Revenue',
 			icon: '💰',
-			items: [{ name: 'Revenue Analytics', href: '/admin/revenue' }]
+			items: [
+				{ name: 'Revenue Analytics', href: '/admin/revenue' },
+				{ name: 'Donation Manager', href: '/admin/donations' }
+			]
 		},
 		{
 			title: 'Community',
