@@ -2547,7 +2547,19 @@
             "no_buyers_found": "Không tìm thấy người mua"
         },
         "direct_donation": "Donate",
-        "select_donate_method": "Lựa chọn phương thức ủng hộ"
+        "select_donate_method": "Lựa chọn phương thức ủng hộ",
+        "donation": {
+            "title": "Donate trực tiếp",
+            "description": "Donate một lần qua SePay và để lại lời nhắn hiển thị trên overlay stream.",
+            "amount": "Số tiền",
+            "message": "Lời nhắn",
+            "message_placeholder": "Gửi lời nhắn cho stream...",
+            "message_hint": "{count}/160 ký tự",
+            "proceed": "Donate qua SePay",
+            "processing": "Đang tạo thanh toán...",
+            "login_required": "Vui lòng đăng nhập trước khi donate.",
+            "error": "Không thể tạo thanh toán donate."
+        }
     },
     "admin_convictions": {
         "title": "Án tích người chơi",

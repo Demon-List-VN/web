@@ -2527,7 +2527,19 @@
             "no_buyers_found": "No buyers found"
         },
         "direct_donation": "Donate",
-        "select_donate_method": "Select donate method"
+        "select_donate_method": "Select donate method",
+        "donation": {
+            "title": "Donate directly",
+            "description": "Send a one-time donation through SePay and leave a message for the stream overlay.",
+            "amount": "Amount",
+            "message": "Message",
+            "message_placeholder": "Say something nice for the stream...",
+            "message_hint": "{count}/160 characters",
+            "proceed": "Donate with SePay",
+            "processing": "Creating checkout...",
+            "login_required": "Please sign in before donating.",
+            "error": "Failed to create donation."
+        }
     },
     "admin_convictions": {
         "title": "Player Convictions",

@@ -43,6 +43,7 @@
 	let hideNav = false;
 	let removePad = false;
 	let pathname = '';
+	let isSupporterOverlay = false;
 	let currentCustomLogoUrl = '';
 	let passwordSignInOpen = false;
 	let passwordSignInEmail = '';
@@ -114,6 +115,7 @@
 	}
 
 	$: pathname = $page.url.pathname;
+	$: isSupporterOverlay = $page.route.id === '/supporter/overlay';
 	$: ownSocialPresenceUid.set($user.loggedIn ? ($user.data?.uid ?? '') : '');
 	$: socialPresenceVisible.set(
 		$user.loggedIn ? $user.data?.socialPresenceVisible !== false : false
@@ -360,7 +362,7 @@
   </div>
 {/if}
 
-{#if !hideNav}
+{#if !hideNav && !isSupporterOverlay}
   <NavigationChrome
     bind:searchToggled
     navLogoSrc={$navLogoSrc}
@@ -375,12 +377,13 @@
 <!-- Main content wrapper -->
 <div
   class="layout-container"
-  class:has-sidebar={!hideNav}
-  class:no-pad={removePad}
+  class:has-sidebar={!hideNav && !isSupporterOverlay}
+  class:no-pad={removePad || isSupporterOverlay}
 >
   <slot />
 
-  <footer>
+  {#if !isSupporterOverlay}
+    <footer>
     <div class="footerFiller"></div>
     <p>
       © Copyright 2020-2025 gdvn.net.<br />
@@ -392,7 +395,8 @@
       <a href="/privacyPolicy">Privacy Policy</a>
       <a href="/tos">Terms of service</a>
     </div>
-  </footer>
+    </footer>
+  {/if}
 </div>
 
 <style lang="scss">
