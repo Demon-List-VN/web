@@ -2011,14 +2011,17 @@
 			}
 
 			const matchId = pendingMatchId;
-			const delay = Math.max(0, expires - Date.now());
-			pendingDialogTimeout = setTimeout(() => {
-				if (matchId) {
-					void handlePendingMatchExpired(matchId);
-				}
+			const delay = expires - Date.now();
 
-				pendingDialogTimeout = null;
-			}, delay);
+			if (delay > 0) {
+				pendingDialogTimeout = setTimeout(() => {
+					if (matchId) {
+						void handlePendingMatchExpired(matchId);
+					}
+
+					pendingDialogTimeout = null;
+				}, delay);
+			}
 		}
 	} else {
 		matchDialogOpen = false;
@@ -2056,21 +2059,25 @@
 				return;
 			}
 
+			if (getPvpStatus(latestMatch) === 'pending') {
+				return;
+			}
+
 			matchDialogOpen = false;
 
-				if (wasMatchmakingMatch) {
-					lobby = {
-						...lobby,
-						activeMatch:
+			if (wasMatchmakingMatch) {
+				lobby = {
+					...lobby,
+					activeMatch:
 						String(getPvpMatchId(lobby.activeMatch)) === matchKey
 							? null
 							: lobby.activeMatch,
 					matchmaking:
-							String(getPvpMatchedMatchId(lobby.matchmaking)) === matchKey
-								? null
-								: lobby.matchmaking
-					};
-				}
+						String(getPvpMatchedMatchId(lobby.matchmaking)) === matchKey
+							? null
+							: lobby.matchmaking
+				};
+			}
 		} catch (error) {
 			toast.error(
 				error instanceof Error ? error.message : $_('pvp.toast.load_failed')

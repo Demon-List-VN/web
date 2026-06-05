@@ -4066,7 +4066,7 @@
                     </Button>
                   {:else}
                     <Button
-                      disabled={Boolean(actionLoading) || acceptanceRemainingMs <= 0}
+                      disabled={Boolean(actionLoading)}
                       class="w-full"
                       on:click={acceptMatch}
                     >
