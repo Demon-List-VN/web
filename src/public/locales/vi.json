@@ -940,7 +940,8 @@
             "normal_mode": "Thường",
             "practice_mode": "Luyện tập",
             "flashbanged": "Bị Flashbang",
-            "invisible": "Đang Invisible"
+            "invisible": "Đang Invisible",
+            "double_click": "Double click"
         },
         "death_count": {
             "title": "Số lần chết",
@@ -992,6 +993,18 @@
                 "shield": {
                     "name": "Shield",
                     "description": "Chặn powerup bất lợi tiếp theo."
+                },
+                "pause": {
+                    "name": "Pause",
+                    "description": "Mở menu tạm dừng của đối thủ."
+                },
+                "double_click": {
+                    "name": "Double click",
+                    "description": "Trong 10 giây, mỗi hai lần bấm mới tính một lần."
+                },
+                "force_reset": {
+                    "name": "Force reset",
+                    "description": "Đưa đối thủ về 0% và không ghi nhận lượt chạy đó."
                 }
             }
         },
@@ -1004,8 +1017,14 @@
             "play_mode": "{player} đã chuyển sang chế độ {mode}.",
             "powerup_skill_flashbang": "{caster} đã dùng Flashbang lên {target}.",
             "powerup_skill_invisible": "{caster} đã dùng Invisible lên {target}.",
+            "powerup_skill_pause": "{caster} đã dùng Pause lên {target}.",
+            "powerup_skill_double_click": "{caster} đã dùng Double click lên {target}.",
+            "powerup_skill_force_reset": "{caster} đã dùng Force reset lên {target}.",
             "powerup_blocked_flashbang": "Shield của {target} đã chặn Flashbang của {caster}.",
             "powerup_blocked_invisible": "Shield của {target} đã chặn Invisible của {caster}.",
+            "powerup_blocked_pause": "Shield của {target} đã chặn Pause của {caster}.",
+            "powerup_blocked_double_click": "Shield của {target} đã chặn Double click của {caster}.",
+            "powerup_blocked_force_reset": "Shield của {target} đã chặn Force reset của {caster}.",
             "powerup_shield": "Shield của {player} đã kết thúc.",
             "match_end_win": "{winner} đã thắng trận. Chat sẽ mở thêm {minutes} phút rồi bị tắt.",
             "match_end_draw": "Trận đấu kết thúc với kết quả hòa. Chat sẽ mở thêm {minutes} phút rồi bị tắt.",

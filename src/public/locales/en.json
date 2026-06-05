@@ -940,7 +940,8 @@
             "normal_mode": "Normal",
             "practice_mode": "Practice",
             "flashbanged": "Flashbanged",
-            "invisible": "Invisible"
+            "invisible": "Invisible",
+            "double_click": "Double click"
         },
         "death_count": {
             "title": "Deaths",
@@ -992,6 +993,18 @@
                 "shield": {
                     "name": "Shield",
                     "description": "Blocks the next harmful powerup."
+                },
+                "pause": {
+                    "name": "Pause",
+                    "description": "Opens the opponent's pause menu."
+                },
+                "double_click": {
+                    "name": "Double click",
+                    "description": "Makes every second click count for 10 seconds."
+                },
+                "force_reset": {
+                    "name": "Force reset",
+                    "description": "Sends the opponent back to 0% without recording that run."
                 }
             }
         },
@@ -1004,8 +1017,14 @@
             "play_mode": "{player} switched to {mode} mode.",
             "powerup_skill_flashbang": "{caster} used Flashbang on {target}.",
             "powerup_skill_invisible": "{caster} used Invisible on {target}.",
+            "powerup_skill_pause": "{caster} used Pause on {target}.",
+            "powerup_skill_double_click": "{caster} used Double click on {target}.",
+            "powerup_skill_force_reset": "{caster} used Force reset on {target}.",
             "powerup_blocked_flashbang": "{target}'s Shield blocked {caster}'s Flashbang.",
             "powerup_blocked_invisible": "{target}'s Shield blocked {caster}'s Invisible.",
+            "powerup_blocked_pause": "{target}'s Shield blocked {caster}'s Pause.",
+            "powerup_blocked_double_click": "{target}'s Shield blocked {caster}'s Double click.",
+            "powerup_blocked_force_reset": "{target}'s Shield blocked {caster}'s Force reset.",
             "powerup_shield": "{player}'s Shield ended.",
             "match_end_win": "{winner} won the match. Chat will remain open for {minutes} minutes, then it will be disabled.",
             "match_end_draw": "The match ended in a draw. Chat will remain open for {minutes} minutes, then it will be disabled.",

@@ -96,6 +96,9 @@
 		Loader2,
 		LogIn,
 		MessageCircle,
+		MousePointerClick,
+		Pause,
+		RotateCcw,
 		Trophy,
 		Copy,
 		EyeOff,
@@ -160,7 +163,7 @@
 
 	type ProgressGraphPowerupSkill = Extract<
 		PvpPowerupSkill,
-		'flashbang' | 'invisible'
+		'flashbang' | 'invisible' | 'double_click'
 	>;
 
 	type ProgressGraphPowerupEffectEvent = {
@@ -2260,6 +2263,9 @@
 			value === 'flashbang'
 			|| value === 'invisible'
 			|| value === 'shield'
+			|| value === 'pause'
+			|| value === 'double_click'
+			|| value === 'force_reset'
 		) {
 			return $_(`pvp.powerups.skills.${value}.name`);
 		}
@@ -2276,6 +2282,9 @@
 			value === 'flashbang'
 			|| value === 'invisible'
 			|| value === 'shield'
+			|| value === 'pause'
+			|| value === 'double_click'
+			|| value === 'force_reset'
 		) {
 			return $_(`pvp.powerups.skills.${value}.description`);
 		}
@@ -2432,6 +2441,8 @@
 			? 'flashbang'
 			: skillText === 'invisible'
 			? 'invisible'
+			: skillText === 'double_click'
+			? 'double_click'
 			: null;
 		const uid = metadataText(metadata, 'targetUid');
 		const durationMs = metadataNumber(metadata, 'durationMs');
@@ -2815,7 +2826,25 @@
 	function powerupEffectLabel(skill: ProgressGraphPowerupSkill) {
 		return skill === 'flashbang'
 			? $_('pvp.progress_graph.flashbanged')
+			: skill === 'double_click'
+			? $_('pvp.progress_graph.double_click')
 			: $_('pvp.progress_graph.invisible');
+	}
+
+	function powerupSystemMessageSkill(skill: unknown) {
+		const value = String(skill || '')
+			.trim()
+			.toLowerCase();
+
+		return (
+			value === 'flashbang'
+			|| value === 'invisible'
+			|| value === 'pause'
+			|| value === 'double_click'
+			|| value === 'force_reset'
+		)
+			? value
+			: 'flashbang';
 	}
 
 	function participantProgressBarWidth(participant: PvpParticipant) {
@@ -3106,9 +3135,7 @@
 		}
 
 		if (kind === 'powerup_skill') {
-			const skill = metadataText(metadata, 'skill') === 'invisible'
-				? 'invisible'
-				: 'flashbang';
+			const skill = powerupSystemMessageSkill(metadataText(metadata, 'skill'));
 			content = $_(`pvp.system_message.powerup_skill_${skill}`, {
 				values: {
 					caster: systemParticipantName(metadataText(metadata, 'casterUid')),
@@ -3118,9 +3145,7 @@
 		}
 
 		if (kind === 'powerup_blocked') {
-			const skill = metadataText(metadata, 'skill') === 'invisible'
-				? 'invisible'
-				: 'flashbang';
+			const skill = powerupSystemMessageSkill(metadataText(metadata, 'skill'));
 			content = $_(`pvp.system_message.powerup_blocked_${skill}`, {
 				values: {
 					caster: systemParticipantName(metadataText(metadata, 'casterUid')),
@@ -4352,6 +4377,12 @@
                               <Shield class="h-4 w-4" />
                             {:else if skill.skill === 'invisible'}
                               <EyeOff class="h-4 w-4" />
+                            {:else if skill.skill === 'pause'}
+                              <Pause class="h-4 w-4" />
+                            {:else if skill.skill === 'double_click'}
+                              <MousePointerClick class="h-4 w-4" />
+                            {:else if skill.skill === 'force_reset'}
+                              <RotateCcw class="h-4 w-4" />
                             {:else}
                               <Zap class="h-4 w-4" />
                             {/if}

@@ -5,7 +5,13 @@ export type PvpPlayMode = 'normal' | 'practice';
 export type PvpRoomVisibility = 'public' | 'private';
 export type PvpRoomCompletionRuleType = 'count' | 'percentage';
 export type PvpRoomScoringMode = 'progress' | 'score' | 'hp' | 'powerup';
-export type PvpPowerupSkill = 'flashbang' | 'invisible' | 'shield';
+export type PvpPowerupSkill =
+    | 'flashbang'
+    | 'invisible'
+    | 'shield'
+    | 'pause'
+    | 'double_click'
+    | 'force_reset';
 export type PvpMatchReportTargetType = 'player' | 'level';
 
 export type PvpPowerupState = {
