@@ -3,28 +3,16 @@ interface ExpLevel {
     lowerBound: number;
     upperBound: number;
     progress: number;
-    hue: number;
     color: string;
 }
 
 export type PlayerLevelBadgeIcon = 'crown' | 'diamond' | 'star';
 
-const LEVEL_HUE_START = 108;
-const LEVEL_HUE_STEP = 3.6;
-const MAX_HUE = 360;
+const EXP_LEVEL_COLOR = 'hsl(var(--foreground))';
 
-function normalizeHue(hue: number) {
-    return Math.round((((hue % MAX_HUE) + MAX_HUE) % MAX_HUE) * 10) / 10;
-}
-
-export function getExpLevelColor(level: number) {
-    const normalizedLevel = Math.max(1, Math.floor(Number(level) || 1));
-    const hue = normalizeHue(LEVEL_HUE_START + (normalizedLevel - 1) * LEVEL_HUE_STEP);
-    const formattedHue = Number.isInteger(hue) ? String(hue) : hue.toFixed(1);
-
+export function getExpLevelColor(_level: number) {
     return {
-        hue,
-        color: `hsl(${formattedHue}, 100%, 50%)`
+        color: EXP_LEVEL_COLOR
     };
 }
 
@@ -39,7 +27,6 @@ export function getExpLevel(exp: number) {
         lowerBound,
         upperBound,
         progress: 0,
-        hue: levelColor.hue,
         color: levelColor.color
     };
 
@@ -72,14 +59,6 @@ export function getPlayerExpLevel(
     const exp = getPlayerExp(player);
 
     return exp === null ? null : getExpLevel(exp);
-}
-
-export function getPlayerExpLevelStyle(
-    player: { exp?: unknown; extraExp?: unknown; } | null | undefined
-) {
-    const expLevel = getPlayerExpLevel(player);
-
-    return expLevel ? `--player-level-color: ${expLevel.color};` : '';
 }
 
 export function getLevelBadgeCounts(level: number) {

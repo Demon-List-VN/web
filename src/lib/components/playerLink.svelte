@@ -9,7 +9,6 @@
 		getSupporterTier,
 		getSupporterTierStyle
 	} from '$lib/client/supporterTier';
-	import { getPlayerExpLevelStyle } from '$lib/client/getExpLevel';
 	import type { PlayerLinkRankBadge } from '$lib/utils/customListRank';
 	import { BadgeCheck, CheckCheck, Crown } from 'lucide-svelte';
 	import PlayerCard from '$lib/components/playerCard.svelte';
@@ -18,7 +17,7 @@
 	export let player: any;
 	export let showTitle = false;
 	export let showAvatar = false;
-	export let avatarSize = 22;
+	export let avatarSize = 26;
 	export let titleType: string = 'dl';
 	export let truncate: number | null = null;
 	export let rankBadge: PlayerLinkRankBadge | null = null;
@@ -52,8 +51,6 @@
 		: '';
 	$: supporterTier = getSupporterTier(player?.supporterUntil);
 	$: supporterTierStyle = getSupporterTierStyle(supporterTier);
-	$: avatarLevelStyle = getPlayerExpLevelStyle(player);
-
 	function getAvatarFallback(player: any) {
 		const firstName = `${player?.name ?? ''}`
 			.trim()
@@ -101,7 +98,7 @@
 
 <div class="wrapper">
   {#if showAvatar}
-    <span class="player-link-avatar-frame" style={avatarLevelStyle}>
+    <span class="player-link-avatar-frame">
       <Avatar.Root
         class="player-link-avatar-root"
         style={`width: ${avatarSize}px; height: ${avatarSize}px;`}
@@ -235,9 +232,6 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid var(--player-level-color, transparent);
-  border-radius: 999px;
-  padding: 1px;
   flex-shrink: 0;
 }
 

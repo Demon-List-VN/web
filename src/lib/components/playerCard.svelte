@@ -19,10 +19,7 @@
 	import { getPvpVisibleRatingLabel } from '$lib/client/pvp';
 	import { badgeVariants } from '$lib/components/ui/badge';
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import {
-		getExpLevel,
-		getPlayerExpLevelStyle
-	} from '$lib/client/getExpLevel';
+	import { getExpLevel } from '$lib/client/getExpLevel';
 	import PlayerLevelBadge from '$lib/components/PlayerLevelBadge.svelte';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import {
@@ -75,7 +72,6 @@
 	$: hasKnownPlayerCardStatLines = Array.isArray(cardPlayer?.playerCardStatLines);
 	$: exp = (cardPlayer?.exp ?? 0) + (cardPlayer?.extraExp ?? 0);
 	$: expLevel = getExpLevel(exp);
-	$: avatarLevelStyle = getPlayerExpLevelStyle(cardPlayer);
 	$: summaries = listSummaries ?? remoteSummaries;
 	$: hasLoadedListSummaries = listSummaries !== null || hasLoadedRemote;
 	$: configuredStatLineIds = hasKnownPlayerCardStatLines
@@ -349,7 +345,7 @@
     />
   {/if}
   <div class="hoverName">
-    <div class="player-card-avatar-frame" style={avatarLevelStyle}>
+    <div class="player-card-avatar-frame">
       <Avatar.Root>
         <Avatar.Image
           class="object-cover"
@@ -539,9 +535,6 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid var(--player-level-color, transparent);
-  border-radius: 999px;
-  padding: 2px;
   flex-shrink: 0;
 }
 

@@ -5,7 +5,6 @@
 	import { Button } from '$lib/components/ui/button';
 	import { toast } from 'svelte-sonner';
 	import { user } from '$lib/client';
-	import { getPlayerExpLevelStyle } from '$lib/client/getExpLevel';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import {
 		getSocialActivity,
@@ -46,7 +45,6 @@
 	$: isSupporter = isActive(player.supporterUntil);
 	$: supporterTier = getSupporterTier(player.supporterUntil);
 	$: supporterTierStyle = getSupporterTierStyle(supporterTier);
-	$: avatarLevelStyle = getPlayerExpLevelStyle(player);
 	$: avatarSrc = `https://cdn.gdvn.net/avatars/${player.uid}${
 		isSupporter && player.isAvatarGif ? '.gif' : '.jpg'
 	}?version=${player.avatarVersion}`;
@@ -190,9 +188,9 @@
     >
       <!-- Avatar -->
       <div class="avatar-wrapper flex-shrink-0">
-        <div class="profile-avatar-frame" style={avatarLevelStyle}>
+        <div class="profile-avatar-frame">
           <Avatar.Root
-            class="profile-avatar-root h-36 w-36 overflow-visible border-4 lg:h-44 lg:w-44"
+            class="profile-avatar-root h-36 w-36 overflow-visible lg:h-44 lg:w-44"
           >
             <Avatar.Image
               class="rounded-full object-cover"
@@ -365,10 +363,6 @@
 
 .avatar-wrapper {
   padding-bottom: 30px;
-}
-
-:global(.profile-avatar-root) {
-  border-color: var(--player-level-color, hsl(var(--background)));
 }
 
 :global(.profile-level-badge) {
