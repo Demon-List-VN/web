@@ -26,6 +26,18 @@
 		return `background: ${bgColor}; border-color: ${borderColor}; color: ${color};`;
 	}
 
+	function playDonationSound() {
+		if (typeof window === 'undefined') {
+			return;
+		}
+
+		const audio = new Audio('/sounds/donation.mp3');
+		audio.play()
+			.catch(() => {
+			// OBS/browser audio can be blocked until the source has interacted.
+			});
+	}
+
 	async function refreshOverlay() {
 		try {
 			const response = await fetch(
@@ -44,6 +56,7 @@
 				await Promise.resolve();
 				highlightDonation = true;
 				latestDonationId = nextDonationId;
+				playDonationSound();
 				setTimeout(() => {
 					highlightDonation = false;
 				}, 5200);
