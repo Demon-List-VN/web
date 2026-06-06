@@ -26,6 +26,7 @@
 	export let canRequestLevelChange = false;
 	export let canRequestBanPickAbort = false;
 	export let canAbortRoomMatch = false;
+	export let canAbortAsManager = false;
 	export let canResign = false;
 	export let canReport = false;
 	export let reportSubmitted = false;
@@ -35,6 +36,7 @@
 	export let onRequestLevelChange: () => void = () => {};
 	export let onRequestBanPickAbort: () => void = () => {};
 	export let onAbortRoomMatch: () => void = () => {};
+	export let onAbortAsManager: () => void = () => {};
 	export let onResign: () => void = () => {};
 	export let onReport: () => void = () => {};
 </script>
@@ -122,6 +124,21 @@
             <X class="mr-2 h-4 w-4" />
           {/if}
           {$_('pvp.abort_room_match')}
+        </Button>
+      {/if}
+
+      {#if canAbortAsManager}
+        <Button
+          variant="destructive"
+          disabled={Boolean(actionLoading) || loading}
+          on:click={onAbortAsManager}
+        >
+          {#if actionLoading === 'manager-abort-match'}
+            <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+          {:else}
+            <X class="mr-2 h-4 w-4" />
+          {/if}
+          {$_('pvp.manager_abort_match')}
         </Button>
       {/if}
 

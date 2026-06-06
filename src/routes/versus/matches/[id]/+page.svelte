@@ -19,6 +19,7 @@
 	import { Switch } from '$lib/components/ui/switch';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import {
+		abortPvpMatchAsManager,
 		acceptPvpMatch,
 		banPvpMatchLevel,
 		castPvpPowerupSkill,
@@ -465,6 +466,8 @@
 		&& ['in_progress', 'waiting_result'].includes(status)
 		&& !isSpectator
 		&& sameUid(roomHostUid, currentUid);
+	$: canAbortAsManager = Boolean($user.data?.isAdmin || $user.data?.isManager)
+		&& ['ban_pick', 'in_progress', 'waiting_result'].includes(status);
 	$: chatOpenDuringMatch = ['in_progress', 'waiting_result'].includes(status)
 		&& remainingMs > 0;
 	$: chatOpenDuringBanPick = isBanPick;
@@ -1498,6 +1501,33 @@
 				error instanceof Error
 					? error.message
 					: $_('pvp.toast.room_match_abort_failed')
+			);
+		} finally {
+			actionLoading = '';
+		}
+	}
+
+	async function abortMatchAsManager() {
+		if (!matchId || !canAbortAsManager || actionLoading) {
+			return;
+		}
+
+		if (!confirm($_('pvp.manager_abort_match_confirm'))) {
+			return;
+		}
+
+		actionLoading = 'manager-abort-match';
+
+		try {
+			const response = await abortPvpMatchAsManager(await $user.token(), matchId);
+			setMatch(response);
+			await refreshMessages({ incremental: true });
+			toast.success($_('pvp.toast.manager_match_abort_success'));
+		} catch (error) {
+			toast.error(
+				error instanceof Error
+					? error.message
+					: $_('pvp.toast.manager_match_abort_failed')
 			);
 		} finally {
 			actionLoading = '';
@@ -3118,11 +3148,18 @@
 
 		if (kind === 'match_cancelled') {
 			const reason = metadataText(metadata, 'reason');
-			content = reason === 'platformer_hard_timeout'
-				? $_('pvp.system_message.match_cancelled_platformer_hard_timeout', {
+
+			if (reason === 'platformer_hard_timeout') {
+				content = $_('pvp.system_message.match_cancelled_platformer_hard_timeout', {
 					values: { minutes }
-				})
-				: $_('pvp.system_message.match_cancelled', { values: { minutes } });
+				});
+			} else if (reason === 'manager_abort') {
+				content = $_('pvp.system_message.match_cancelled_manager_abort', {
+					values: { minutes }
+				});
+			} else {
+				content = $_('pvp.system_message.match_cancelled', { values: { minutes } });
+			}
 		}
 
 		if (kind === 'resignation') {
@@ -3993,6 +4030,7 @@
     canRequestLevelChange={canRequestLevelChange && !levelChangeRequestedByUid}
     canRequestBanPickAbort={canRequestBanPickAbort && !banPickAbortRequestedByUid}
     {canAbortRoomMatch}
+    {canAbortAsManager}
     {canResign}
     canReport={canReportMatch}
     reportSubmitted={hasReportedMatch}
@@ -4001,6 +4039,7 @@
     onRequestLevelChange={requestLevelChange}
     onRequestBanPickAbort={requestBanPickAbort}
     onAbortRoomMatch={abortRoomMatch}
+    onAbortAsManager={abortMatchAsManager}
     onResign={resignMatch}
     onReport={() => (reportDialogOpen = true)}
   />

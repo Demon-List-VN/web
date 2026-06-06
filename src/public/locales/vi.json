@@ -509,6 +509,8 @@
         "request_ban_pick_abort": "Hủy trận",
         "abort_room_match": "Hủy trận",
         "abort_room_match_confirm": "Kết thúc trận phòng này ngay? Kết quả hiện tại sẽ được dùng để tính thắng thua.",
+        "manager_abort_match": "Quản lý hủy",
+        "manager_abort_match_confirm": "Hủy trận này ngay? Trận sẽ bị hủy, không có người thắng, không tính rating hoặc XP.",
         "agree_ban_pick_abort": "Đồng ý hủy",
         "ban_pick_abort_waiting": "Đang chờ hủy trận",
         "ban_pick_abort_request_confirm": "Yêu cầu hủy trận này? Trận chỉ bị hủy nếu đối thủ đồng ý.",
@@ -1008,6 +1010,7 @@
             "match_end_win": "{winner} đã thắng trận. Chat sẽ mở thêm {minutes} phút rồi bị tắt.",
             "match_end_draw": "Trận đấu kết thúc với kết quả hòa. Chat sẽ mở thêm {minutes} phút rồi bị tắt.",
             "match_cancelled": "Trận đấu đã bị hủy. Chat sẽ mở thêm {minutes} phút rồi bị tắt.",
+            "match_cancelled_manager_abort": "Trận đấu đã bị quản lý hủy. Chat sẽ mở thêm {minutes} phút rồi bị tắt.",
             "match_cancelled_platformer_hard_timeout": "Trận platformer kéo dài hơn 2 giờ nên đã bị hủy. Chat sẽ mở thêm {minutes} phút rồi bị tắt.",
             "resignation_win": "{resigning} đã đầu hàng. {winner} đã thắng trận. Chat sẽ mở thêm {minutes} phút rồi bị tắt.",
             "resignation_end": "{resigning} đã đầu hàng. Trận đấu kết thúc. Chat sẽ mở thêm {minutes} phút rồi bị tắt.",
@@ -1145,6 +1148,8 @@
             "ban_pick_abort_failed": "Yêu cầu hủy trận thất bại.",
             "room_match_abort_success": "Đã hủy trận phòng.",
             "room_match_abort_failed": "Hủy trận phòng thất bại.",
+            "manager_match_abort_success": "Đã hủy trận.",
+            "manager_match_abort_failed": "Hủy trận thất bại.",
             "resign_success": "Bạn đã đầu hàng trận đấu.",
             "resign_failed": "Đầu hàng trận đấu thất bại."
         }

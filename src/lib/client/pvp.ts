@@ -1627,6 +1627,16 @@ export async function resignPvpMatch(token: string | null | undefined, id: numbe
     });
 }
 
+export async function abortPvpMatchAsManager(
+    token: string | null | undefined,
+    id: number | string
+) {
+    return pvpRequest<PvpMatch>(`/pvp/admin/matches/${id}/abort`, {
+        method: 'POST',
+        token
+    });
+}
+
 export async function requestPvpBanPickAbort(
     token: string | null | undefined,
     id: number | string

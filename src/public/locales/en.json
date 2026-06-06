@@ -509,6 +509,8 @@
         "request_ban_pick_abort": "Abort match",
         "abort_room_match": "Abort match",
         "abort_room_match_confirm": "End this room match now? Current standings will be used as the result.",
+        "manager_abort_match": "Manager abort",
+        "manager_abort_match_confirm": "Abort this match now? The match will be cancelled without a winner, rating, or XP rewards.",
         "agree_ban_pick_abort": "Agree abort",
         "ban_pick_abort_waiting": "Waiting for abort",
         "ban_pick_abort_request_confirm": "Request to abort this match? The match will be cancelled only if your opponent agrees.",
@@ -1008,6 +1010,7 @@
             "match_end_win": "{winner} won the match. Chat will remain open for {minutes} minutes, then it will be disabled.",
             "match_end_draw": "The match ended in a draw. Chat will remain open for {minutes} minutes, then it will be disabled.",
             "match_cancelled": "The match was cancelled. Chat will remain open for {minutes} minutes, then it will be disabled.",
+            "match_cancelled_manager_abort": "The match was aborted by a manager. Chat will remain open for {minutes} minutes, then it will be disabled.",
             "match_cancelled_platformer_hard_timeout": "The platformer match ran longer than 2 hours and was cancelled. Chat will remain open for {minutes} minutes, then it will be disabled.",
             "resignation_win": "{resigning} resigned. {winner} won the match. Chat will remain open for {minutes} minutes, then it will be disabled.",
             "resignation_end": "{resigning} resigned. The match ended. Chat will remain open for {minutes} minutes, then it will be disabled.",
@@ -1145,6 +1148,8 @@
             "ban_pick_abort_failed": "Failed to request match abort.",
             "room_match_abort_success": "Room match aborted.",
             "room_match_abort_failed": "Failed to abort room match.",
+            "manager_match_abort_success": "Match aborted.",
+            "manager_match_abort_failed": "Failed to abort match.",
             "resign_success": "You resigned from the match.",
             "resign_failed": "Failed to resign match."
         }
