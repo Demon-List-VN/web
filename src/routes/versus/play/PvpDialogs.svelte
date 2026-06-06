@@ -2,7 +2,13 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import type { PvpMatch } from '$lib/client/pvp';
-	import { getPvpMatchAcceptanceExpiresMs, getPvpMode } from '$lib/client/pvp';
+	import {
+		getPvpMatchAcceptanceExpiresMs,
+		getPvpMode,
+		getPvpParticipants,
+		hasPvpParticipantAccepted,
+		isPvpMatchRanked
+	} from '$lib/client/pvp';
 	import { _ } from 'svelte-i18n';
 	import { BellRing, Loader2, UserCheck } from 'lucide-svelte';
 
@@ -16,6 +22,10 @@
 
 	$: pendingMatchMode = getPvpMode(pendingMatch);
 	$: pendingMatchEvent = pendingMatch?.pvpEvent ?? pendingMatch?.pvp_event ?? null;
+	$: pendingParticipants = getPvpParticipants(pendingMatch);
+	$: pendingParticipantCount = Math.max(2, pendingParticipants.length);
+	$: acceptedParticipantCount = pendingParticipants.filter(hasPvpParticipantAccepted).length;
+	$: pendingMatchRanked = isPvpMatchRanked(pendingMatch);
 
 	function remainingLabel(targetMs: number | null, currentNow: number) {
 		if (!targetMs) {
@@ -49,14 +59,24 @@
       </div>
       <Dialog.Title>{$_('pvp.match_found_title')}</Dialog.Title>
       <Dialog.Description>
-        {$_('pvp.match_found_hint')}
+        {pendingParticipantCount > 2
+          ? $_('pvp.match_found_group_hint')
+          : $_('pvp.match_found_hint')}
       </Dialog.Description>
     </Dialog.Header>
 
     <div class="match-found-body">
       <div class="match-found-row">
         <span>{$_('pvp.match_type')}</span>
-        <strong>{$_('pvp.ranked')}</strong>
+        <strong>{pendingMatchRanked ? $_('pvp.ranked') : $_('pvp.unranked')}</strong>
+      </div>
+      <div class="match-found-row">
+        <span>{$_('pvp.rooms.players')}</span>
+        <strong>{pendingParticipantCount}</strong>
+      </div>
+      <div class="match-found-row">
+        <span>{$_('pvp.accepted_players')}</span>
+        <strong>{acceptedParticipantCount}/{pendingParticipantCount}</strong>
       </div>
       <div class="match-found-row">
         <span>{$_('pvp.mode_label')}</span>
@@ -80,7 +100,9 @@
       {#if pendingSelfAccepted}
         <Button disabled class="w-full">
           <Loader2 class="mr-2 h-4 w-4 animate-spin" />
-          {$_('pvp.waiting_for_acceptance')}
+          {pendingParticipantCount > 2
+            ? $_('pvp.waiting_for_group_acceptance')
+            : $_('pvp.waiting_for_acceptance')}
         </Button>
       {:else}
         <Button

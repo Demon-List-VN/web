@@ -5,7 +5,13 @@ export type PvpPlayMode = 'normal' | 'practice';
 export type PvpRoomVisibility = 'public' | 'private';
 export type PvpRoomCompletionRuleType = 'count' | 'percentage';
 export type PvpRoomScoringMode = 'progress' | 'score' | 'hp' | 'powerup';
-export type PvpPowerupSkill = 'flashbang' | 'invisible' | 'shield';
+export type PvpPowerupSkill =
+    | 'flashbang'
+    | 'invisible'
+    | 'shield'
+    | 'pause'
+    | 'double_click'
+    | 'force_reset';
 export type PvpMatchReportTargetType = 'player' | 'level';
 
 export type PvpPowerupState = {
@@ -16,6 +22,11 @@ export type PvpPowerupState = {
     shieldExpiresAt?: string | null;
     shieldCharges?: number;
     shieldActive?: boolean;
+    playerMana: Array<{
+        uid: string;
+        mana: number;
+        maxMana: number;
+    }>;
     skills?: Array<{
         skill: PvpPowerupSkill;
         cost: number;
@@ -239,6 +250,8 @@ export type PvpEvent = {
     starting_hp?: number | null;
     finalizeAliveCount?: number | null;
     finalize_alive_count?: number | null;
+    participantsPerMatch?: number | null;
+    participants_per_match?: number | null;
     timeLimitSeconds?: number | null;
     time_limit_seconds?: number | null;
     list?: Record<string, unknown> | null;
@@ -263,6 +276,7 @@ export type AdminPvpEventPayload = {
     targetScore?: number | null;
     startingHp?: number | null;
     finalizeAliveCount?: number | null;
+    participantsPerMatch?: number | null;
 };
 
 export type PvpMatch = {
@@ -565,6 +579,10 @@ export type PvpMatchmakingRequest = {
     search_started_at?: string | null;
     currentSearchRange?: number | null;
     current_search_range?: number | null;
+    matchedParticipantCount?: number | null;
+    matched_participant_count?: number | null;
+    targetParticipantCount?: number | null;
+    target_participant_count?: number | null;
     expiresAt?: string | null;
     expires_at?: string | null;
     created_at?: string;
@@ -1751,6 +1769,22 @@ export async function castPvpPowerupSkill(
     });
 }
 
+export async function setPvpPowerupManaAsManager(
+    token: string | null | undefined,
+    id: number | string,
+    uid: string,
+    mana: number
+) {
+    return pvpRequest<{ uid: string; mana: number; maxMana: number; }>(
+        `/pvp/admin/matches/${id}/powerups/mana`,
+        {
+            method: 'PATCH',
+            token,
+            body: { uid, mana }
+        }
+    );
+}
+
 export async function reportPvpMatch(
     token: string | null | undefined,
     id: number | string,
@@ -2270,7 +2304,7 @@ export function hasPvpParticipantAccepted(participant: PvpParticipant | null | u
     return Boolean(participant?.acceptedAt ?? participant?.accepted_at);
 }
 
-export function isPvpMatchConfirmedByBoth(match: PvpMatch | null | undefined) {
+export function isPvpMatchConfirmedByAll(match: PvpMatch | null | undefined) {
     if (!match) {
         return false;
     }
@@ -2284,6 +2318,10 @@ export function isPvpMatchConfirmedByBoth(match: PvpMatch | null | undefined) {
     return ['in_progress', 'waiting_result', 'completed', 'disputed'].includes(
         getPvpStatus(match, '')
     );
+}
+
+export function isPvpMatchConfirmedByBoth(match: PvpMatch | null | undefined) {
+    return isPvpMatchConfirmedByAll(match);
 }
 
 export function getTimeMs(value: unknown) {

@@ -574,6 +574,7 @@
             "mode_hint": "This decides whether the match uses classic progress or platformer checkpoints.",
             "ranked_hint": "Results count toward event play and your PvP rating.",
             "unranked_hint": "Results count for the event without changing your PvP rating.",
+            "participants_hint": "All matched players enter the same free-for-all event match.",
             "match_length_hint": "The match ends when this timer runs out or the event win condition is met.",
             "completion_hint": "The match can finish early when this condition is reached.",
             "target_score_hint": "Higher score wins. A target can end the match early when set.",
@@ -894,6 +895,7 @@
         "match_type": "Match type",
         "level_rating": "{rating}pt",
         "search_range": "Range ±{range}",
+        "queue_participants": "Matched {current}/{target} players",
         "copy_level_id": "Copy level ID",
         "choose_difficulty": "Options",
         "difficulty_band_hint": "Levels are selected from Challenge List `cl` by rating.",
@@ -930,17 +932,19 @@
         "live_progress": "Live progress",
         "progress_graph": {
             "title": "Progress graph",
-            "description": "Built from 1v1 Versus progress events.",
+            "description": "Player progress over the match timeline.",
             "empty": "No progress events yet.",
             "time_axis": "Time",
             "progress_axis": "Progress",
             "score_axis": "Score",
             "hp_axis": "HP",
             "checkpoints_axis": "Checkpoints",
+            "active_effects": "Active effects",
             "normal_mode": "Normal",
             "practice_mode": "Practice",
             "flashbanged": "Flashbanged",
-            "invisible": "Invisible"
+            "invisible": "Invisible",
+            "double_click": "Double click"
         },
         "death_count": {
             "title": "Deaths",
@@ -980,6 +984,11 @@
             "toast_cast": "{skill} cast.",
             "toast_blocked": "Powerup was blocked by Shield.",
             "toast_failed": "Failed to cast powerup",
+            "manager_mana_label": "Set mana for {player}",
+            "manager_mana_set_action": "Set",
+            "manager_mana_set": "Mana updated.",
+            "manager_mana_failed": "Failed to update mana",
+            "manager_mana_invalid": "Mana must be an integer from 0 to 100.",
             "skills": {
                 "flashbang": {
                     "name": "Flashbang",
@@ -992,6 +1001,18 @@
                 "shield": {
                     "name": "Shield",
                     "description": "Blocks the next harmful powerup."
+                },
+                "pause": {
+                    "name": "Pause",
+                    "description": "Opens the opponent's pause menu."
+                },
+                "double_click": {
+                    "name": "Double click",
+                    "description": "Makes every second click count for 10 seconds."
+                },
+                "force_reset": {
+                    "name": "Force reset",
+                    "description": "Resets the opponent unless they click 10 times within 2 seconds."
                 }
             }
         },
@@ -1004,9 +1025,16 @@
             "play_mode": "{player} switched to {mode} mode.",
             "powerup_skill_flashbang": "{caster} used Flashbang on {target}.",
             "powerup_skill_invisible": "{caster} used Invisible on {target}.",
+            "powerup_skill_pause": "{caster} used Pause on {target}.",
+            "powerup_skill_double_click": "{caster} used Double click on {target}.",
+            "powerup_skill_force_reset": "{caster} used Force reset on {target}.",
             "powerup_blocked_flashbang": "{target}'s Shield blocked {caster}'s Flashbang.",
             "powerup_blocked_invisible": "{target}'s Shield blocked {caster}'s Invisible.",
+            "powerup_blocked_pause": "{target}'s Shield blocked {caster}'s Pause.",
+            "powerup_blocked_double_click": "{target}'s Shield blocked {caster}'s Double click.",
+            "powerup_blocked_force_reset": "{target}'s Shield blocked {caster}'s Force reset.",
             "powerup_shield": "{player}'s Shield ended.",
+            "powerup_mana_set": "A manager set {player}'s mana to {mana}.",
             "match_end_win": "{winner} won the match. Chat will remain open for {minutes} minutes, then it will be disabled.",
             "match_end_draw": "The match ended in a draw. Chat will remain open for {minutes} minutes, then it will be disabled.",
             "match_cancelled": "The match was cancelled. Chat will remain open for {minutes} minutes, then it will be disabled.",
@@ -1077,9 +1105,12 @@
         "send_message": "Send message",
         "match_found_title": "Match found",
         "match_found_hint": "Confirm that you are ready. The match starts only after both players accept.",
+        "match_found_group_hint": "Confirm that you are ready. The match starts only after all players accept.",
         "accept_match": "Accept match",
         "acceptance_timer": "Accept within",
+        "accepted_players": "Accepted",
         "waiting_for_acceptance": "Waiting for opponent",
+        "waiting_for_group_acceptance": "Waiting for all players",
         "awaiting_acceptance_short": "Accept",
         "match_loading": "Loading match",
         "match_not_found": "Match not found.",

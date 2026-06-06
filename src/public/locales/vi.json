@@ -574,6 +574,7 @@
             "mode_hint": "Quyết định trận dùng tiến độ classic hay checkpoint platformer.",
             "ranked_hint": "Kết quả được tính cho sự kiện và Elo PvP của bạn.",
             "unranked_hint": "Kết quả được tính cho sự kiện nhưng không đổi Elo PvP.",
+            "participants_hint": "Tất cả người được ghép sẽ vào cùng một trận sự kiện tự do.",
             "match_length_hint": "Trận kết thúc khi hết giờ hoặc đạt điều kiện thắng của sự kiện.",
             "completion_hint": "Trận có thể kết thúc sớm khi đạt điều kiện này.",
             "target_score_hint": "Điểm cao hơn sẽ thắng. Nếu có mục tiêu, trận có thể kết thúc sớm.",
@@ -894,6 +895,7 @@
         "match_type": "Loại trận",
         "level_rating": "{rating}pt",
         "search_range": "Khoảng ±{range}",
+        "queue_participants": "Đã ghép {current}/{target} người chơi",
         "copy_level_id": "Sao chép ID level",
         "choose_difficulty": "Tùy chọn",
         "difficulty_band_hint": "Level được chọn từ Challenge List `cl` theo rating.",
@@ -930,17 +932,19 @@
         "live_progress": "Tiến độ trực tiếp",
         "progress_graph": {
             "title": "Biểu đồ tiến độ",
-            "description": "Tạo từ sự kiện tiến độ 1v1 Versus.",
+            "description": "Tiến độ người chơi trong suốt trận đấu.",
             "empty": "Chưa có sự kiện tiến độ.",
             "time_axis": "Thời gian",
             "progress_axis": "Tiến độ",
             "score_axis": "Điểm",
             "hp_axis": "HP",
             "checkpoints_axis": "Checkpoint",
+            "active_effects": "Hiệu ứng đang hoạt động",
             "normal_mode": "Thường",
             "practice_mode": "Luyện tập",
             "flashbanged": "Bị Flashbang",
-            "invisible": "Đang Invisible"
+            "invisible": "Đang Invisible",
+            "double_click": "Double click"
         },
         "death_count": {
             "title": "Số lần chết",
@@ -980,6 +984,11 @@
             "toast_cast": "Đã dùng {skill}.",
             "toast_blocked": "Powerup đã bị Shield chặn.",
             "toast_failed": "Không dùng được powerup",
+            "manager_mana_label": "Đặt mana cho {player}",
+            "manager_mana_set_action": "Đặt",
+            "manager_mana_set": "Đã cập nhật mana.",
+            "manager_mana_failed": "Không cập nhật được mana",
+            "manager_mana_invalid": "Mana phải là số nguyên từ 0 đến 100.",
             "skills": {
                 "flashbang": {
                     "name": "Flashbang",
@@ -992,6 +1001,18 @@
                 "shield": {
                     "name": "Shield",
                     "description": "Chặn powerup bất lợi tiếp theo."
+                },
+                "pause": {
+                    "name": "Pause",
+                    "description": "Mở menu tạm dừng của đối thủ."
+                },
+                "double_click": {
+                    "name": "Double click",
+                    "description": "Trong 10 giây, mỗi hai lần bấm mới tính một lần."
+                },
+                "force_reset": {
+                    "name": "Force reset",
+                    "description": "Reset đối thủ trừ khi họ bấm 10 lần trong vòng 2 giây."
                 }
             }
         },
@@ -1004,9 +1025,16 @@
             "play_mode": "{player} đã chuyển sang chế độ {mode}.",
             "powerup_skill_flashbang": "{caster} đã dùng Flashbang lên {target}.",
             "powerup_skill_invisible": "{caster} đã dùng Invisible lên {target}.",
+            "powerup_skill_pause": "{caster} đã dùng Pause lên {target}.",
+            "powerup_skill_double_click": "{caster} đã dùng Double click lên {target}.",
+            "powerup_skill_force_reset": "{caster} đã dùng Force reset lên {target}.",
             "powerup_blocked_flashbang": "Shield của {target} đã chặn Flashbang của {caster}.",
             "powerup_blocked_invisible": "Shield của {target} đã chặn Invisible của {caster}.",
+            "powerup_blocked_pause": "Shield của {target} đã chặn Pause của {caster}.",
+            "powerup_blocked_double_click": "Shield của {target} đã chặn Double click của {caster}.",
+            "powerup_blocked_force_reset": "Shield của {target} đã chặn Force reset của {caster}.",
             "powerup_shield": "Shield của {player} đã kết thúc.",
+            "powerup_mana_set": "Quản lý đã đặt mana của {player} thành {mana}.",
             "match_end_win": "{winner} đã thắng trận. Chat sẽ mở thêm {minutes} phút rồi bị tắt.",
             "match_end_draw": "Trận đấu kết thúc với kết quả hòa. Chat sẽ mở thêm {minutes} phút rồi bị tắt.",
             "match_cancelled": "Trận đấu đã bị hủy. Chat sẽ mở thêm {minutes} phút rồi bị tắt.",
@@ -1077,9 +1105,12 @@
         "send_message": "Gửi tin nhắn",
         "match_found_title": "Đã tìm thấy trận",
         "match_found_hint": "Xác nhận rằng bạn đã sẵn sàng. Trận chỉ bắt đầu khi cả hai người chơi đều chấp nhận.",
+        "match_found_group_hint": "Xác nhận rằng bạn đã sẵn sàng. Trận chỉ bắt đầu khi tất cả người chơi đều chấp nhận.",
         "accept_match": "Chấp nhận trận",
         "acceptance_timer": "Thời gian xác nhận",
+        "accepted_players": "Đã chấp nhận",
         "waiting_for_acceptance": "Đang chờ đối thủ",
+        "waiting_for_group_acceptance": "Đang chờ tất cả người chơi",
         "awaiting_acceptance_short": "Xác nhận",
         "match_loading": "Đang tải trận",
         "match_not_found": "Không tìm thấy trận.",

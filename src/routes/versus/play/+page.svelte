@@ -53,6 +53,7 @@
 		getPvpParticipantRatingAfter,
 		getPvpParticipantRatingBefore,
 		getPvpParticipantRatingDiff,
+		getPvpParticipants,
 		getPvpResultReason,
 		getPvpMe,
 		getPvpMissions,
@@ -62,7 +63,7 @@
 		getPvpVisibleRatingLabel,
 		hasPvpParticipantAccepted,
 		isActivePvpMatch,
-		isPvpMatchConfirmedByBoth,
+		isPvpMatchConfirmedByAll,
 		isPvpMatchRanked,
 		isPvpRatingStable,
 		leavePvpRoom,
@@ -336,7 +337,7 @@
 	);
 	$: pendingMatch = activeMatch
 		&& getPvpStatus(activeMatch) === 'pending'
-		&& !isPvpMatchConfirmedByBoth(activeMatch)
+		&& !isPvpMatchConfirmedByAll(activeMatch)
 		? activeMatch
 		: null;
 	$: pendingMatchId = getPvpMatchId(pendingMatch);
@@ -412,6 +413,10 @@
 		&& !hasRecentLeaderboardMatch;
 	$: currentSearchRange = lobby.matchmaking?.currentSearchRange
 		?? lobby.matchmaking?.current_search_range ?? null;
+	$: queueMatchedParticipantCount = getQueueMatchedParticipantCount(lobby.matchmaking);
+	$: queueTargetParticipantCount = getQueueTargetParticipantCount(lobby.matchmaking);
+	$: showQueueParticipantProgress = isSearching
+		&& queueTargetParticipantCount > 2;
 	$: queueStartedAt = lobby.matchmaking?.searchStartedAt
 		?? lobby.matchmaking?.search_started_at
 		?? lobby.matchmaking?.created_at;
@@ -1077,6 +1082,42 @@
 			: 'classic';
 	}
 
+	function getPvpEventParticipantsPerMatch(event: PvpEvent | null | undefined) {
+		const value = Number(
+			event?.participantsPerMatch ?? event?.participants_per_match ?? 2
+		);
+
+		return Number.isFinite(value) && value >= 2 ? Math.floor(value) : 2;
+	}
+
+	function getQueueTargetParticipantCount(
+		queue: PvpMatchmakingRequest | null | undefined
+	) {
+		const queueEvent = queue?.pvpEvent ?? queue?.pvp_event ?? activePvpEvent;
+		const value = Number(
+			queue?.targetParticipantCount
+			?? queue?.target_participant_count
+			?? getPvpEventParticipantsPerMatch(queueEvent)
+		);
+
+		return Number.isFinite(value) && value >= 2 ? Math.floor(value) : 2;
+	}
+
+	function getQueueMatchedParticipantCount(
+		queue: PvpMatchmakingRequest | null | undefined
+	) {
+		const match = queue?.match ?? null;
+		const participantCount = getPvpParticipants(match).length;
+		const value = Number(
+			queue?.matchedParticipantCount
+			?? queue?.matched_participant_count
+			?? (participantCount > 0 ? participantCount : 1)
+		);
+		const target = getQueueTargetParticipantCount(queue);
+
+		return Math.max(1, Math.min(target, Number.isFinite(value) ? Math.floor(value) : 1));
+	}
+
 	function getPvpEventTitle(event: PvpEvent | null | undefined) {
 		return event?.title || $_('pvp.event_mode');
 	}
@@ -1090,7 +1131,9 @@
 	}
 
 	function isPvpEventRanked(event: PvpEvent | null | undefined) {
-		return Boolean(event?.ranked ?? event?.isRanked ?? event?.is_ranked ?? true);
+		return getPvpEventParticipantsPerMatch(event) > 2
+			? false
+			: Boolean(event?.ranked ?? event?.isRanked ?? event?.is_ranked ?? true);
 	}
 
 	function getPvpEventLevelSelectionMode(event: PvpEvent | null | undefined) {
@@ -1191,6 +1234,11 @@
 				hint: isPvpEventRanked(event)
 					? $_('pvp.event_info.ranked_hint')
 					: $_('pvp.event_info.unranked_hint')
+			},
+			{
+				label: $_('pvp.rooms.players'),
+				value: String(getPvpEventParticipantsPerMatch(event)),
+				hint: $_('pvp.event_info.participants_hint')
 			},
 			{
 				label: $_('pvp.rooms.level_selection'),
@@ -1490,23 +1538,23 @@
 				: null
 			: lobby.activeMatch;
 
-			lobby = {
-				...lobby,
-				activeMatch: nextActiveMatch,
-				matchmaking: String(lobby.matchmaking?.matchId) === String(matchId)
-					? isActivePvpMatch(nextMatch)
-						? {
-							...lobby.matchmaking,
-							match: nextMatch
-						}
-						: null
-					: lobby.matchmaking,
-				incomingInvites: updateInviteMatches(lobby.incomingInvites, nextMatch),
-				outgoingInvites: updateInviteMatches(lobby.outgoingInvites, nextMatch)
+		lobby = {
+			...lobby,
+			activeMatch: nextActiveMatch,
+			matchmaking: String(lobby.matchmaking?.matchId) === String(matchId)
+				? isActivePvpMatch(nextMatch)
+					? {
+						...lobby.matchmaking,
+						match: nextMatch
+					}
+					: null
+				: lobby.matchmaking,
+			incomingInvites: updateInviteMatches(lobby.incomingInvites, nextMatch),
+			outgoingInvites: updateInviteMatches(lobby.outgoingInvites, nextMatch)
 		};
 		handleLobbyMatchSounds(previousActiveMatch, lobby.activeMatch);
 
-		if (nextActiveMatch && isPvpMatchConfirmedByBoth(nextActiveMatch)) {
+		if (nextActiveMatch && isPvpMatchConfirmedByAll(nextActiveMatch)) {
 			matchDialogOpen = false;
 			autoRedirectToActiveMatch(nextActiveMatch);
 		}
@@ -1864,13 +1912,11 @@
 
 		try {
 			await cancelPvpMatchmaking(await $user.token());
-		} catch {
-			// Refresh below is the source of truth if the queue was already gone.
-		}
+		} catch {}
 
 		await refreshLobby();
 
-		if (isPvpMatchConfirmedByBoth(lobby.activeMatch)) {
+		if (isPvpMatchConfirmedByAll(lobby.activeMatch)) {
 			matchDialogOpen = false;
 			autoRedirectToActiveMatch(lobby.activeMatch);
 		}
@@ -1966,7 +2012,7 @@
 			|| !matchId
 			|| !match
 			|| !isActivePvpMatch(match)
-			|| !isPvpMatchConfirmedByBoth(match)
+			|| !isPvpMatchConfirmedByAll(match)
 		) {
 			return;
 		}
@@ -2053,7 +2099,7 @@
 			const latestMatch = await getPvpMatch(token, matchId);
 			applyMatch(latestMatch);
 
-			if (isPvpMatchConfirmedByBoth(latestMatch)) {
+			if (isPvpMatchConfirmedByAll(latestMatch)) {
 				autoRedirectToActiveMatch(latestMatch);
 
 				return;
@@ -2409,7 +2455,7 @@
 				.add(matchKey);
 			applyMatch(response);
 
-			if (isPvpMatchConfirmedByBoth(response)) {
+			if (isPvpMatchConfirmedByAll(response)) {
 				matchDialogOpen = false;
 				autoRedirectToActiveMatch(response);
 			}
@@ -3962,6 +4008,18 @@
                       {
                         $_('pvp.search_range', {
                             values: { range: currentSearchRange }
+                        })
+                      }
+                    </span>
+                  {/if}
+                  {#if showQueueParticipantProgress}
+                    <span>
+                      {
+                        $_('pvp.queue_participants', {
+                            values: {
+                                current: queueMatchedParticipantCount,
+                                target: queueTargetParticipantCount
+                            }
                         })
                       }
                     </span>

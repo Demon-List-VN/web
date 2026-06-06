@@ -67,6 +67,7 @@
 		requestPvpMatchLevelChange,
 		resignPvpMatch,
 		sendPvpMatchMessage,
+		setPvpPowerupManaAsManager,
 		type PvpBanPickAction,
 		type PvpMatch,
 		type PvpMatchMessage,
@@ -96,6 +97,9 @@
 		Loader2,
 		LogIn,
 		MessageCircle,
+		MousePointerClick,
+		Pause,
+		RotateCcw,
 		Trophy,
 		Copy,
 		EyeOff,
@@ -125,6 +129,16 @@
 		supporter_vs_none: 50,
 		both_are_supporters: 40
 	};
+	const PROGRESS_GRAPH_COLORS = [
+		'#2563eb',
+		'#dc2626',
+		'#16a34a',
+		'#9333ea',
+		'#ea580c',
+		'#0891b2',
+		'#ca8a04',
+		'#db2777'
+	];
 	const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://gdvn.net').replace(
 		/\/$/,
 		''
@@ -160,7 +174,7 @@
 
 	type ProgressGraphPowerupSkill = Extract<
 		PvpPowerupSkill,
-		'flashbang' | 'invisible'
+		'flashbang' | 'invisible' | 'double_click'
 	>;
 
 	type ProgressGraphPowerupEffectEvent = {
@@ -188,6 +202,7 @@
 	};
 
 	type ProgressGraphSeries = {
+		uid?: string | null;
 		label: string;
 		color: string;
 		points: ProgressGraphPoint[];
@@ -272,6 +287,7 @@
 	let powerupCastLoading = '';
 	let loadedPowerupStateFor = '';
 	let powerupStateError = '';
+	let managerManaLoadingUid = '';
 
 	$: matchId = $page.params.id;
 	$: isSpectateRoute = $page.url.searchParams.get('spectate') === '1';
@@ -375,6 +391,7 @@
 	$: selfAccepted = hasPvpParticipantAccepted(selfParticipant)
 		|| (matchId ? locallyAcceptedMatchIds.has(String(matchId)) : false);
 	$: isPowerupMatch = normalizedScoringMode(scoringMode) === 'powerup';
+	$: isManagerViewer = Boolean($user.data?.isAdmin || $user.data?.isManager);
 	$: powerupTargets = orderedParticipants.filter((participant) => {
 		const uid = getPvpParticipantUid(participant);
 
@@ -384,16 +401,13 @@
 		&& isActive
 		&& Boolean(selfParticipant)
 		&& !isSpectator;
+	$: canManagePowerupMana = isPowerupMatch && isActive && isManagerViewer;
 	$: powerupMana = Math.max(0, Math.floor(Number(powerupState?.mana) || 0));
 	$: powerupMaxMana = Math.max(
 		1,
 		Math.floor(Number(powerupState?.maxMana) || 100)
 	);
-	$: powerupManaPercent = Math.max(
-		0,
-		Math.min(100, (powerupMana / powerupMaxMana) * 100)
-	);
-	$: powerupStateKey = canUsePowerups
+	$: powerupStateKey = (canUsePowerups || canManagePowerupMana)
 		&& currentUid
 		&& matchId
 		? `${currentUid}:${matchId}`
@@ -466,7 +480,7 @@
 		&& ['in_progress', 'waiting_result'].includes(status)
 		&& !isSpectator
 		&& sameUid(roomHostUid, currentUid);
-	$: canAbortAsManager = Boolean($user.data?.isAdmin || $user.data?.isManager)
+	$: canAbortAsManager = isManagerViewer
 		&& ['ban_pick', 'in_progress', 'waiting_result'].includes(status);
 	$: chatOpenDuringMatch = ['in_progress', 'waiting_result'].includes(status)
 		&& remainingMs > 0;
@@ -736,7 +750,12 @@
 	) {
 		const key = options.key || powerupStateKey;
 
-		if (!$user.loggedIn || !matchId || !key || isSpectator) {
+		if (
+			!$user.loggedIn
+			|| !matchId
+			|| !key
+			|| (isSpectator && !canManagePowerupMana)
+		) {
 			return;
 		}
 
@@ -820,6 +839,47 @@
 			if (powerupCastLoading === actionKey) {
 				powerupCastLoading = '';
 			}
+		}
+	}
+
+	async function setManagerMana(event: SubmitEvent, uid: string) {
+		event.preventDefault();
+
+		if (!matchId || !canManagePowerupMana || managerManaLoadingUid) {
+			return;
+		}
+
+		const form = event.currentTarget as HTMLFormElement;
+		const mana = Number(
+			new FormData(form)
+				.get('mana')
+		);
+
+		if (!Number.isInteger(mana) || mana < 0 || mana > 100) {
+			toast.error($_('pvp.powerups.manager_mana_invalid'));
+
+			return;
+		}
+
+		managerManaLoadingUid = uid;
+
+		try {
+			await setPvpPowerupManaAsManager(
+				await $user.token(),
+				matchId,
+				uid,
+				mana
+			);
+			await refreshPowerupState({ key: powerupStateKey, silent: true });
+			toast.success($_('pvp.powerups.manager_mana_set'));
+		} catch (error) {
+			toast.error(
+				error instanceof Error
+					? error.message
+					: $_('pvp.powerups.manager_mana_failed')
+			);
+		} finally {
+			managerManaLoadingUid = '';
 		}
 	}
 
@@ -2260,6 +2320,9 @@
 			value === 'flashbang'
 			|| value === 'invisible'
 			|| value === 'shield'
+			|| value === 'pause'
+			|| value === 'double_click'
+			|| value === 'force_reset'
 		) {
 			return $_(`pvp.powerups.skills.${value}.name`);
 		}
@@ -2276,6 +2339,9 @@
 			value === 'flashbang'
 			|| value === 'invisible'
 			|| value === 'shield'
+			|| value === 'pause'
+			|| value === 'double_click'
+			|| value === 'force_reset'
 		) {
 			return $_(`pvp.powerups.skills.${value}.description`);
 		}
@@ -2299,6 +2365,22 @@
 			effectiveHideOpponentInfo,
 			currentUid
 		) || $_('pvp.rival');
+	}
+
+	function participantPowerupMana(participant: PvpParticipant) {
+		const uid = getPvpParticipantUid(participant);
+		const state = powerupState?.playerMana?.find((item) => item.uid === uid);
+		const maxMana = Math.max(1, Math.floor(Number(state?.maxMana) || 100));
+		const mana = Math.max(
+			0,
+			Math.min(maxMana, Math.floor(Number(state?.mana) || 0))
+		);
+
+		return {
+			mana,
+			maxMana,
+			percent: Math.max(0, Math.min(100, (mana / maxMana) * 100))
+		};
 	}
 
 	function powerupActionKey(
@@ -2432,6 +2514,8 @@
 			? 'flashbang'
 			: skillText === 'invisible'
 			? 'invisible'
+			: skillText === 'double_click'
+			? 'double_click'
 			: null;
 		const uid = metadataText(metadata, 'targetUid');
 		const durationMs = metadataNumber(metadata, 'durationMs');
@@ -2483,17 +2567,19 @@
 		const currentTargetScore = sourceMatch?.targetScore ?? sourceMatch?.target_score ?? targetScore;
 		const currentStartingHp = sourceMatch?.startingHp ?? sourceMatch?.starting_hp ?? startingHp;
 		const progressMessages = messagesAfterLatestLevelChange(sourceMessages);
-		const series = items.slice(0, 2)
-			.map((participant, index) => ({
-				uid: getPvpParticipantUid(participant)
+		const series = items
+			.map((participant) => {
+				const participantUid = getPvpParticipantUid(participant)
 					? String(getPvpParticipantUid(participant))
-					: null,
-				label: participantName(participant, hideOpponentInfo, currentUid) ?? '',
-				color: index === 0
-					? chartColor('--primary', '#2563eb')
-					: chartColor('--destructive', '#dc2626'),
-				points: [] as ProgressGraphPoint[]
-			}));
+					: null;
+
+				return {
+					uid: participantUid,
+					label: participantName(participant, hideOpponentInfo, currentUid) ?? '',
+					color: progressGraphPlayerColor(participantUid),
+					points: [] as ProgressGraphPoint[]
+				};
+			});
 
 		const parsed = progressMessages
 			.map((message) => progressMessageEvent(message, mode, currentScoringMode))
@@ -2604,10 +2690,10 @@
 			? Math.max(1, Number(currentStartingHp) || 0, maxProgress)
 			: 100;
 		const modeLaneGap = maxY * 0.06;
-		const modeLaneOne = -modeLaneGap;
-		const modeLaneTwo = -modeLaneGap * 2;
-		const powerupLaneOne = -modeLaneGap * 3;
-		const powerupLaneTwo = -modeLaneGap * 4;
+		const modeLanes = series.map((_, index) => -modeLaneGap * (index + 1));
+		const powerupLanes = series.map(
+			(_, index) => -modeLaneGap * (series.length + index + 1)
+		);
 		const modeTimelineAvailable = [
 			'in_progress',
 			'waiting_result',
@@ -2624,13 +2710,13 @@
 					series,
 					modeEvents,
 					maxX,
-					[modeLaneOne, modeLaneTwo]
+					modeLanes
 				),
 				...getProgressGraphPowerupEffectSegments(
 					series,
 					powerupEffectEvents,
 					maxX,
-					[powerupLaneOne, powerupLaneTwo]
+					powerupLanes
 				)
 			]
 			: [];
@@ -2639,7 +2725,7 @@
 			: 0;
 
 		return {
-			series: series.map(({ uid, ...item }) => item),
+			series,
 			modeSegments,
 			hasPoints: series.some((item) => item.points.length > 0)
 				|| modeSegments.length > 0,
@@ -2815,7 +2901,25 @@
 	function powerupEffectLabel(skill: ProgressGraphPowerupSkill) {
 		return skill === 'flashbang'
 			? $_('pvp.progress_graph.flashbanged')
+			: skill === 'double_click'
+			? $_('pvp.progress_graph.double_click')
 			: $_('pvp.progress_graph.invisible');
+	}
+
+	function powerupSystemMessageSkill(skill: unknown) {
+		const value = String(skill || '')
+			.trim()
+			.toLowerCase();
+
+		return (
+			value === 'flashbang'
+			|| value === 'invisible'
+			|| value === 'pause'
+			|| value === 'double_click'
+			|| value === 'force_reset'
+		)
+			? value
+			: 'flashbang';
 	}
 
 	function participantProgressBarWidth(participant: PvpParticipant) {
@@ -3106,9 +3210,7 @@
 		}
 
 		if (kind === 'powerup_skill') {
-			const skill = metadataText(metadata, 'skill') === 'invisible'
-				? 'invisible'
-				: 'flashbang';
+			const skill = powerupSystemMessageSkill(metadataText(metadata, 'skill'));
 			content = $_(`pvp.system_message.powerup_skill_${skill}`, {
 				values: {
 					caster: systemParticipantName(metadataText(metadata, 'casterUid')),
@@ -3118,9 +3220,7 @@
 		}
 
 		if (kind === 'powerup_blocked') {
-			const skill = metadataText(metadata, 'skill') === 'invisible'
-				? 'invisible'
-				: 'flashbang';
+			const skill = powerupSystemMessageSkill(metadataText(metadata, 'skill'));
 			content = $_(`pvp.system_message.powerup_blocked_${skill}`, {
 				values: {
 					caster: systemParticipantName(metadataText(metadata, 'casterUid')),
@@ -3133,6 +3233,15 @@
 			content = $_('pvp.system_message.powerup_shield', {
 				values: {
 					player: systemParticipantName(metadataText(metadata, 'casterUid'))
+				}
+			});
+		}
+
+		if (kind === 'powerup_mana_set') {
+			content = $_('pvp.system_message.powerup_mana_set', {
+				values: {
+					player: systemParticipantName(metadataText(metadata, 'targetUid')),
+					mana: compactNumber(metadataNumber(metadata, 'mana') ?? 0)
 				}
 			});
 		}
@@ -3416,6 +3525,18 @@
 		return value ? `hsl(${value})` : fallback;
 	}
 
+	function progressGraphPlayerColor(uid: string | null) {
+		let hash = 0;
+
+		for (const character of uid || '') {
+			hash = ((hash << 5) - hash + character.charCodeAt(0)) | 0;
+		}
+
+		return PROGRESS_GRAPH_COLORS[
+			(hash >>> 0) % PROGRESS_GRAPH_COLORS.length
+		];
+	}
+
 	function chartAlphaColor(cssVariable: string, alpha: number, fallback: string) {
 		if (!browser) {
 			return fallback;
@@ -3470,7 +3591,23 @@
 					return;
 				}
 
+				const hiddenPlayerUids = new Set(
+					chart.data.datasets
+						.filter((dataset: any) =>
+							!dataset.isModeSegment
+								&& dataset.hidden
+								&& dataset.playerUid
+						)
+						.map((dataset: any) => dataset.playerUid)
+				);
 				chart.data.datasets = getProgressChartDatasets(nextData);
+
+				for (const dataset of chart.data.datasets as any[]) {
+					dataset.hidden = Boolean(
+						dataset.playerUid && hiddenPlayerUids.has(dataset.playerUid)
+					);
+				}
+
 				chart.options.scales!.x!.min = nextData.minX;
 				chart.options.scales!.x!.max = nextData.maxX;
 				chart.options.scales!.y!.min = nextData.minY;
@@ -3480,6 +3617,8 @@
 					progressGraphTickLabel(value, nextData);
 				chart.options.plugins!.tooltip!.callbacks!.label =
 					getProgressTooltipLabel(nextData);
+				chart.options.plugins!.tooltip!.callbacks!.afterBody =
+					getProgressTooltipEffects(nextData);
 				chart.update();
 			},
 			destroy() {
@@ -3500,7 +3639,8 @@
 				maintainAspectRatio: false,
 				animation: false,
 				interaction: {
-					mode: 'nearest',
+					mode: 'index',
+					axis: 'x',
 					intersect: false
 				},
 				scales: {
@@ -3552,6 +3692,27 @@
 				},
 				plugins: {
 					legend: {
+						onClick: (_event, legendItem, legend) => {
+							const chart = legend.chart;
+							const dataset = chart.data.datasets[
+								legendItem.datasetIndex ?? -1
+							] as any;
+							const playerUid = dataset?.playerUid;
+
+							if (!playerUid) {
+								return;
+							}
+
+							const hidden = !dataset.hidden;
+
+							for (const item of chart.data.datasets as any[]) {
+								if (item.playerUid === playerUid) {
+									item.hidden = hidden;
+								}
+							}
+
+							chart.update();
+						},
 						labels: {
 							color: chartColor('--foreground', '#18181b'),
 							usePointStyle: true,
@@ -3563,12 +3724,17 @@
 						}
 					},
 					tooltip: {
+						filter: (context) =>
+							!(context.dataset as any).isModeSegment,
+						itemSort: (left, right) =>
+							Number(right.parsed.y) - Number(left.parsed.y),
 						callbacks: {
 							title: (context) =>
 								formatDuration(
 									Number(context[0]?.parsed.x ?? 0) * 1000
 								),
-							label: getProgressTooltipLabel(data)
+							label: getProgressTooltipLabel(data),
+							afterBody: getProgressTooltipEffects(data)
 						}
 					}
 				}
@@ -3577,27 +3743,39 @@
 	}
 
 	function getProgressChartDatasets(data: ProgressGraphData) {
+		const timeline = [
+			0,
+			...data.series.flatMap((item) => item.points.map((point) => point.x)),
+			...data.modeSegments.flatMap((segment) => [
+				segment.startX,
+				segment.endX
+			]),
+			data.maxX
+		]
+			.filter((value, index, values) =>
+				Number.isFinite(value) && values.indexOf(value) === index
+			)
+			.sort((left, right) => left - right);
 		const progressDatasets = data.series.map((item) => ({
 			label: item.label,
-			data: item.points,
+			playerUid: item.uid,
+			data: progressGraphTimelinePoints(item.points, timeline),
 			borderColor: item.color,
 			backgroundColor: item.color,
 			borderWidth: 2,
 			fill: false,
+			stepped: 'after' as const,
 			tension: 0,
 			pointBackgroundColor: chartColor('--background', '#ffffff'),
 			pointBorderColor: item.color,
 			pointBorderWidth: 2,
-			pointRadius: 3,
+			pointRadius: 0,
 			pointHoverRadius: 6
 		}));
 
 		const modeDatasets = data.modeSegments.map((segment) => ({
 			label: segment.label,
-			data: [
-				modeSegmentPoint(segment, segment.startX),
-				modeSegmentPoint(segment, segment.endX)
-			],
+			data: progressGraphModeTimelinePoints(segment, timeline),
 			borderColor: segment.color,
 			backgroundColor: segment.color,
 			borderWidth: 8,
@@ -3607,10 +3785,41 @@
 			pointRadius: 0,
 			pointHoverRadius: 5,
 			pointHitRadius: 10,
+			playerUid: segment.uid,
 			isModeSegment: true
 		}));
 
 		return [...progressDatasets, ...modeDatasets];
+	}
+
+	function progressGraphTimelinePoints(
+		points: ProgressGraphPoint[],
+		timeline: number[]
+	) {
+		const sorted = [...points].sort((left, right) => left.x - right.x);
+		let pointIndex = 0;
+		let currentValue = 0;
+
+		return timeline.map((x) => {
+			while (pointIndex < sorted.length && sorted[pointIndex].x <= x) {
+				currentValue = sorted[pointIndex].y;
+				pointIndex += 1;
+			}
+
+			return { x, y: currentValue };
+		});
+	}
+
+	function progressGraphModeTimelinePoints(
+		segment: ProgressGraphModeSegment,
+		timeline: number[]
+	) {
+		return timeline.map((x) => ({
+			...modeSegmentPoint(segment, x),
+			y: x >= segment.startX && x <= segment.endX
+				? segment.y
+				: Number.NaN
+		}));
 	}
 
 	function modeSegmentPoint(
@@ -3653,6 +3862,78 @@
 					data.startingHp
 				)
 			}`;
+		};
+	}
+
+	function getProgressTooltipEffects(data: ProgressGraphData) {
+		return (context: Array<{
+			chart: { data: { datasets: unknown[]; }; };
+			datasetIndex: number;
+			parsed: { x: number; };
+		}>) => {
+			const x = Number(context[0]?.parsed.x);
+
+			if (!Number.isFinite(x)) {
+				return [];
+			}
+
+			const visiblePlayers = context
+				.map((item) => (
+					item.chart.data.datasets[item.datasetIndex] as {
+						label?: string;
+						playerUid?: string | null;
+					}
+				))
+				.filter((dataset): dataset is {
+					label?: string;
+					playerUid: string;
+				} => Boolean(dataset?.playerUid));
+			const visiblePlayerUids = new Set(
+				visiblePlayers.map((player) => player.playerUid)
+			);
+			const effectsByPlayer = new Map<string, {
+				label: string;
+				effects: Set<string>;
+			}>();
+
+			for (const segment of data.modeSegments) {
+				if (
+					segment.kind !== 'powerup_effect'
+					|| !visiblePlayerUids.has(segment.uid)
+					|| x < segment.startX
+					|| x > segment.endX
+				) {
+					continue;
+				}
+
+				const entry = effectsByPlayer.get(segment.uid) ?? {
+					label: segment.label,
+					effects: new Set<string>()
+				};
+				entry.effects.add(segment.modeLabel);
+				effectsByPlayer.set(segment.uid, entry);
+			}
+
+			if (!effectsByPlayer.size) {
+				return [];
+			}
+
+			return [
+				'',
+				$_('pvp.progress_graph.active_effects'),
+				...visiblePlayers
+					.map((player) => effectsByPlayer.get(player.playerUid))
+					.filter((entry): entry is {
+						label: string;
+						effects: Set<string>;
+					} => Boolean(entry))
+					.map((entry) =>
+						`${entry.label}: ${
+							Array.from(entry.effects)
+								.join(', ')
+						}`
+					)
+			];
 		};
 	}
 
@@ -4143,6 +4424,7 @@
                 <div class:multi-player-grid={isRoomMatch || orderedParticipants.length > 2} class="side-grid">
                   {#each orderedParticipants as participant, index}
                     {@const participantPlayer = getPvpParticipantPlayer(participant)}
+                    {@const participantUid = getPvpParticipantUid(participant) || ''}
                     {@const participantMasked = shouldMaskParticipant(
                         participant,
                         hideOpponentInfo,
@@ -4160,6 +4442,7 @@
                     )}
                     {@const participantRating = participantRatingLabel(participant)}
                     {@const participantRatingDiff = participantRatingDiffLabel(participant)}
+                    {@const participantMana = participantPowerupMana(participant)}
                     <div
                       class:left-side={index === 0}
                       class:right-side={index === 1}
@@ -4243,6 +4526,55 @@
                             />
                           </div>
                         {/if}
+                        {#if isPowerupMatch && powerupState}
+                          <div class="participant-mana">
+                            <div class="participant-mana-label">
+                              <span>{$_('pvp.powerups.mana')}</span>
+                              <strong>{participantMana.mana}/{participantMana.maxMana}</strong>
+                            </div>
+                            <div
+                              class="powerup-mana-track"
+                              aria-label={`${participantDisplayName} ${$_('pvp.powerups.mana')}`}
+                            >
+                              <div
+                                class="powerup-mana-fill"
+                                style={`width: ${participantMana.percent}%;`}
+                              />
+                            </div>
+                            {#if canManagePowerupMana}
+                              <form
+                                class="manager-mana-control"
+                                on:submit={(event) => setManagerMana(
+                                  event,
+                                  participantUid
+                                )}
+                              >
+                                <input
+                                  name="mana"
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  step="1"
+                                  value={participantMana.mana}
+                                  aria-label={$_('pvp.powerups.manager_mana_label', {
+                                    values: { player: participantDisplayName }
+                                  })}
+                                />
+                                <Button
+                                  type="submit"
+                                  size="sm"
+                                  disabled={Boolean(managerManaLoadingUid)}
+                                >
+                                  {#if managerManaLoadingUid === participantUid}
+                                    <Loader2 class="h-3.5 w-3.5 animate-spin" />
+                                  {:else}
+                                    {$_('pvp.powerups.manager_mana_set_action')}
+                                  {/if}
+                                </Button>
+                              </form>
+                            {/if}
+                          </div>
+                        {/if}
                       </div>
                     </div>
                   {/each}
@@ -4320,27 +4652,12 @@
                     {$_('pvp.powerups.loading')}
                   </div>
                 {:else}
-                  <div class="powerup-mana-panel">
-                    <div class="powerup-mana-row">
-                      <span>{$_('pvp.powerups.mana')}</span>
-                      <strong>{powerupMana}/{powerupMaxMana}</strong>
-                    </div>
-                    <div
-                      class="powerup-mana-track"
-                      aria-label={$_('pvp.powerups.mana')}
-                    >
-                      <div
-                        class="powerup-mana-fill"
-                        style={`width: ${powerupManaPercent}%;`}
-                      />
-                    </div>
-                    {#if powerupState.shieldActive}
-                      <Badge variant="secondary" class="powerup-shield-badge">
-                        <Shield class="h-3.5 w-3.5" />
-                        {$_('pvp.powerups.shield_active')}
-                      </Badge>
-                    {/if}
-                  </div>
+                  {#if powerupState.shieldActive}
+                    <Badge variant="secondary" class="powerup-shield-badge">
+                      <Shield class="h-3.5 w-3.5" />
+                      {$_('pvp.powerups.shield_active')}
+                    </Badge>
+                  {/if}
 
                   <div class="powerup-skill-grid">
                     {#each powerupSkills() as skill}
@@ -4352,6 +4669,12 @@
                               <Shield class="h-4 w-4" />
                             {:else if skill.skill === 'invisible'}
                               <EyeOff class="h-4 w-4" />
+                            {:else if skill.skill === 'pause'}
+                              <Pause class="h-4 w-4" />
+                            {:else if skill.skill === 'double_click'}
+                              <MousePointerClick class="h-4 w-4" />
+                            {:else if skill.skill === 'force_reset'}
+                              <RotateCcw class="h-4 w-4" />
                             {:else}
                               <Zap class="h-4 w-4" />
                             {/if}
@@ -5366,12 +5689,6 @@
   gap: 14px;
 }
 
-.powerup-mana-panel {
-  display: grid;
-  gap: 8px;
-}
-
-.powerup-mana-row,
 .powerup-skill-heading,
 .powerup-skill-meta,
 .powerup-target-actions,
@@ -5379,17 +5696,6 @@
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.powerup-mana-row {
-  justify-content: space-between;
-  color: hsl(var(--muted-foreground));
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.powerup-mana-row strong {
-  color: hsl(var(--foreground));
 }
 
 .powerup-mana-track {
@@ -5597,6 +5903,46 @@
   border-radius: inherit;
   background: hsl(var(--primary));
   transition: width 180ms ease;
+}
+
+.participant-mana {
+  display: grid;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.participant-mana-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.participant-mana-label strong {
+  color: hsl(var(--foreground));
+}
+
+.participant-mana .powerup-mana-track {
+  height: 7px;
+}
+
+.manager-mana-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.manager-mana-control input {
+  min-width: 0;
+  height: 32px;
+  border: 1px solid hsl(var(--input));
+  border-radius: 6px;
+  background: hsl(var(--background));
+  padding: 0 10px;
+  color: hsl(var(--foreground));
+  font-size: 13px;
 }
 
 .progress-graph-panel {

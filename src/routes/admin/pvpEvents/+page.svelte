@@ -17,7 +17,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { toast } from 'svelte-sonner';
-	import { CalendarDays, Loader2, Plus, RefreshCw, Save, Trash2, X } from 'lucide-svelte';
+	import { CalendarDays, Loader2, Plus, RefreshCw, Save, Trash2, Users, X } from 'lucide-svelte';
 
 	type CompletionRuleType = 'count' | 'percentage';
 	type ScoringMode = 'progress' | 'score' | 'hp' | 'powerup';
@@ -32,6 +32,7 @@
 		enabled: boolean;
 		levelSelectionMode: LevelSelectionMode;
 		ranked: boolean;
+		participantsPerMatch: number;
 		startTimeLimitMinutes: number;
 		startTimeLimitSeconds: number;
 		completionRuleType: CompletionRuleType;
@@ -53,6 +54,7 @@
 		enabled: true,
 		levelSelectionMode: 'random',
 		ranked: true,
+		participantsPerMatch: 2,
 		startTimeLimitMinutes: 15,
 		startTimeLimitSeconds: 0,
 		completionRuleType: 'count',
@@ -79,6 +81,9 @@
 		&& formListId > 0
 		&& Boolean(form.startsAt)
 		&& !saving;
+	$: if (normalizedParticipantsPerMatch() > 2 && form.ranked) {
+		form.ranked = false;
+	}
 
 	$: if ($user.data?.isAdmin && !initialized) {
 		initialized = true;
@@ -171,7 +176,25 @@
 	}
 
 	function eventRanked(event: PvpEvent) {
-		return Boolean(event.ranked ?? event.isRanked ?? event.is_ranked ?? true);
+		return eventParticipantsPerMatch(event) > 2
+			? false
+			: Boolean(event.ranked ?? event.isRanked ?? event.is_ranked ?? true);
+	}
+
+	function eventParticipantsPerMatch(event: PvpEvent) {
+		return normalizedParticipantsPerMatch(
+			event.participantsPerMatch ?? event.participants_per_match
+		);
+	}
+
+	function participantSizeLabel(count: number) {
+		return count === 2 ? '2 players' : `${count} players`;
+	}
+
+	function participantSizeSummary(count: number) {
+		return count === 2
+			? 'Standard 1v1 event matchmaking.'
+			: 'Group event matchmaking. These matches are always unranked.';
 	}
 
 	function eventLevelSelectionMode(event: PvpEvent): LevelSelectionMode {
@@ -195,25 +218,27 @@
 		const seconds = timeLimitSeconds % 60;
 		const timeLabel = seconds ? `${minutes}m ${seconds}s` : `${minutes}m`;
 
+		const participantLabel = participantSizeLabel(eventParticipantsPerMatch(event));
+
 		if (scoringMode === 'score' || scoringMode === 'powerup') {
 			const target = event.targetScore ?? event.target_score;
 			const label = scoringMode === 'powerup' ? 'Powerup' : 'Score';
 
-			return `${label} - ${timeLabel}${target ? ` - target ${target}` : ' - unlimited'}`;
+			return `${label} - ${timeLabel}${target ? ` - target ${target}` : ' - unlimited'} - ${participantLabel}`;
 		}
 
 		if (scoringMode === 'hp') {
 			const hp = event.startingHp ?? event.starting_hp ?? 200;
 			const alive = event.finalizeAliveCount ?? event.finalize_alive_count ?? 1;
 
-			return `HP - ${timeLabel} - ${hp} HP - finalize ${alive} alive`;
+			return `HP - ${timeLabel} - ${hp} HP - finalize ${alive} alive - ${participantLabel}`;
 		}
 
 		const ruleType = event.completionRuleType ?? event.completion_rule_type;
 		const ruleValue = event.completionRuleValue ?? event.completion_rule_value ?? 1;
 		const ruleLabel = ruleType === 'percentage' ? `${ruleValue}%` : `${ruleValue} player`;
 
-		return `Progress - ${timeLabel} - ${ruleLabel}`;
+		return `Progress - ${timeLabel} - ${ruleLabel} - ${participantLabel}`;
 	}
 
 	function eventStatus(event: PvpEvent) {
@@ -262,7 +287,8 @@
 			endsAt,
 			enabled: form.enabled,
 			levelSelectionMode: form.levelSelectionMode,
-			ranked: form.ranked,
+			ranked: normalizedParticipantsPerMatch() > 2 ? false : form.ranked,
+			participantsPerMatch: normalizedParticipantsPerMatch(),
 			timeLimitSeconds: totalStartTimeLimitSeconds(),
 			completionRuleType: scoringMode === 'hp' ? null : form.completionRuleType,
 			completionRuleValue: scoringMode === 'hp' ? null : normalizedCompletionRuleValue(),
@@ -292,6 +318,7 @@
 			enabled: event.enabled !== false,
 			levelSelectionMode: eventLevelSelectionMode(event),
 			ranked: eventRanked(event),
+			participantsPerMatch: eventParticipantsPerMatch(event),
 			...formMatchConfigFromEvent(event)
 		};
 	}
@@ -303,6 +330,7 @@
 			startTimeLimitSeconds: emptyForm.startTimeLimitSeconds,
 			levelSelectionMode: emptyForm.levelSelectionMode,
 			ranked: emptyForm.ranked,
+			participantsPerMatch: emptyForm.participantsPerMatch,
 			completionRuleType: emptyForm.completionRuleType,
 			completionRuleValue: emptyForm.completionRuleValue,
 			scoringMode: emptyForm.scoringMode,
@@ -398,9 +426,15 @@
 		const numberValue = Number(value);
 		const fallback = type === 'percentage' ? 100 : 1;
 		const rounded = Number.isFinite(numberValue) ? Math.floor(numberValue) : fallback;
-		const upperBound = type === 'percentage' ? 100 : 2;
+		const upperBound = type === 'percentage' ? 100 : normalizedParticipantsPerMatch();
 
 		return Math.max(1, Math.min(upperBound, rounded));
+	}
+
+	function normalizedParticipantsPerMatch(value: unknown = form.participantsPerMatch) {
+		const numberValue = Number(value);
+
+		return Math.max(2, Number.isFinite(numberValue) ? Math.floor(numberValue) : 2);
 	}
 
 	function normalizedInteger(value: unknown, min: number, max: number, fallback: number) {
@@ -433,10 +467,11 @@
 
 	function normalizedFinalizeAliveCount(value: unknown = form.finalizeAliveCount) {
 		const numberValue = Number(value);
+		const maxAlive = Math.max(1, normalizedParticipantsPerMatch() - 1);
 
 		return Math.max(
 			1,
-			Math.min(100, Number.isFinite(numberValue) ? Math.floor(numberValue) : 1)
+			Math.min(maxAlive, Number.isFinite(numberValue) ? Math.floor(numberValue) : 1)
 		);
 	}
 
@@ -655,12 +690,30 @@
             </div>
           </div>
 
+          <div class="field queue-size-field">
+            <Label for="pvp-event-participants">Event queue match size</Label>
+            <Input
+              id="pvp-event-participants"
+              bind:value={form.participantsPerMatch}
+              min="2"
+              type="number"
+              inputmode="numeric"
+            />
+            <div class="queue-size-note">
+              <Users class="h-4 w-4" />
+              <span>
+                {participantSizeSummary(normalizedParticipantsPerMatch())}
+              </span>
+            </div>
+          </div>
+
           <div class="field">
             <Label>Rating</Label>
             <div class="segmented-control two-option">
               <button
                 type="button"
                 class:active={form.ranked}
+                disabled={normalizedParticipantsPerMatch() > 2}
                 on:click={() => (form.ranked = true)}
               >
                 Ranked
@@ -736,7 +789,9 @@
                   id="pvp-event-completion-value"
                   bind:value={form.completionRuleValue}
                   min="1"
-                  max={form.completionRuleType === 'percentage' ? 100 : 2}
+                  max={form.completionRuleType === 'percentage'
+                    ? 100
+                    : normalizedParticipantsPerMatch()}
                   type="number"
                 />
                 <span>{form.completionRuleType === 'percentage' ? '%' : 'players'}</span>
@@ -793,7 +848,7 @@
                   id="pvp-event-finalize-alive"
                   bind:value={form.finalizeAliveCount}
                   min="1"
-                  max="100"
+                  max={Math.max(1, normalizedParticipantsPerMatch() - 1)}
                   type="number"
                 />
               </div>
@@ -868,6 +923,10 @@
                 </span>
                 <span>Ends: {formatDate(event.endsAt ?? event.ends_at)}</span>
                 <span>List ID: {eventListId(event)}</span>
+                <span>
+                  <Users class="h-4 w-4" />
+                  {participantSizeLabel(eventParticipantsPerMatch(event))}
+                </span>
                 <span>{eventRanked(event) ? 'Ranked' : 'Unranked'}</span>
                 <span>Level selection: {eventLevelSelectionLabel(event)}</span>
                 <span>Config: {eventConfigSummary(event)}</span>
@@ -963,6 +1022,19 @@
 .field {
   display: grid;
   gap: 8px;
+}
+
+.queue-size-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: hsl(var(--muted-foreground));
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.queue-size-note :global(svg) {
+  flex: 0 0 auto;
 }
 
 .match-config-panel {
@@ -1069,6 +1141,11 @@
 .segmented-control button.active {
   background: hsl(var(--primary));
   color: hsl(var(--primary-foreground));
+}
+
+.segmented-control button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .event-card-head {
