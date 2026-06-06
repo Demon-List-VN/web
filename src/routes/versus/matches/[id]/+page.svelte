@@ -202,6 +202,7 @@
 	};
 
 	type ProgressGraphSeries = {
+		uid?: string | null;
 		label: string;
 		color: string;
 		points: ProgressGraphPoint[];
@@ -2724,7 +2725,7 @@
 			: 0;
 
 		return {
-			series: series.map(({ uid, ...item }) => item),
+			series,
 			modeSegments,
 			hasPoints: series.some((item) => item.points.length > 0)
 				|| modeSegments.length > 0,
@@ -3590,7 +3591,23 @@
 					return;
 				}
 
+				const hiddenPlayerUids = new Set(
+					chart.data.datasets
+						.filter((dataset: any) =>
+							!dataset.isModeSegment
+								&& dataset.hidden
+								&& dataset.playerUid
+						)
+						.map((dataset: any) => dataset.playerUid)
+				);
 				chart.data.datasets = getProgressChartDatasets(nextData);
+
+				for (const dataset of chart.data.datasets as any[]) {
+					dataset.hidden = Boolean(
+						dataset.playerUid && hiddenPlayerUids.has(dataset.playerUid)
+					);
+				}
+
 				chart.options.scales!.x!.min = nextData.minX;
 				chart.options.scales!.x!.max = nextData.maxX;
 				chart.options.scales!.y!.min = nextData.minY;
@@ -3600,6 +3617,8 @@
 					progressGraphTickLabel(value, nextData);
 				chart.options.plugins!.tooltip!.callbacks!.label =
 					getProgressTooltipLabel(nextData);
+				chart.options.plugins!.tooltip!.callbacks!.afterBody =
+					getProgressTooltipEffects(nextData);
 				chart.update();
 			},
 			destroy() {
@@ -3620,7 +3639,8 @@
 				maintainAspectRatio: false,
 				animation: false,
 				interaction: {
-					mode: 'nearest',
+					mode: 'index',
+					axis: 'x',
 					intersect: false
 				},
 				scales: {
@@ -3672,6 +3692,27 @@
 				},
 				plugins: {
 					legend: {
+						onClick: (_event, legendItem, legend) => {
+							const chart = legend.chart;
+							const dataset = chart.data.datasets[
+								legendItem.datasetIndex ?? -1
+							] as any;
+							const playerUid = dataset?.playerUid;
+
+							if (!playerUid) {
+								return;
+							}
+
+							const hidden = !dataset.hidden;
+
+							for (const item of chart.data.datasets as any[]) {
+								if (item.playerUid === playerUid) {
+									item.hidden = hidden;
+								}
+							}
+
+							chart.update();
+						},
 						labels: {
 							color: chartColor('--foreground', '#18181b'),
 							usePointStyle: true,
@@ -3683,12 +3724,15 @@
 						}
 					},
 					tooltip: {
+						filter: (context) =>
+							!(context.dataset as any).isModeSegment,
 						callbacks: {
 							title: (context) =>
 								formatDuration(
 									Number(context[0]?.parsed.x ?? 0) * 1000
 								),
-							label: getProgressTooltipLabel(data)
+							label: getProgressTooltipLabel(data),
+							afterBody: getProgressTooltipEffects(data)
 						}
 					}
 				}
@@ -3697,27 +3741,39 @@
 	}
 
 	function getProgressChartDatasets(data: ProgressGraphData) {
+		const timeline = [
+			0,
+			...data.series.flatMap((item) => item.points.map((point) => point.x)),
+			...data.modeSegments.flatMap((segment) => [
+				segment.startX,
+				segment.endX
+			]),
+			data.maxX
+		]
+			.filter((value, index, values) =>
+				Number.isFinite(value) && values.indexOf(value) === index
+			)
+			.sort((left, right) => left - right);
 		const progressDatasets = data.series.map((item) => ({
 			label: item.label,
-			data: item.points,
+			playerUid: item.uid,
+			data: progressGraphTimelinePoints(item.points, timeline),
 			borderColor: item.color,
 			backgroundColor: item.color,
 			borderWidth: 2,
 			fill: false,
+			stepped: 'after' as const,
 			tension: 0,
 			pointBackgroundColor: chartColor('--background', '#ffffff'),
 			pointBorderColor: item.color,
 			pointBorderWidth: 2,
-			pointRadius: 3,
+			pointRadius: 0,
 			pointHoverRadius: 6
 		}));
 
 		const modeDatasets = data.modeSegments.map((segment) => ({
 			label: segment.label,
-			data: [
-				modeSegmentPoint(segment, segment.startX),
-				modeSegmentPoint(segment, segment.endX)
-			],
+			data: progressGraphModeTimelinePoints(segment, timeline),
 			borderColor: segment.color,
 			backgroundColor: segment.color,
 			borderWidth: 8,
@@ -3727,10 +3783,41 @@
 			pointRadius: 0,
 			pointHoverRadius: 5,
 			pointHitRadius: 10,
+			playerUid: segment.uid,
 			isModeSegment: true
 		}));
 
 		return [...progressDatasets, ...modeDatasets];
+	}
+
+	function progressGraphTimelinePoints(
+		points: ProgressGraphPoint[],
+		timeline: number[]
+	) {
+		const sorted = [...points].sort((left, right) => left.x - right.x);
+		let pointIndex = 0;
+		let currentValue = 0;
+
+		return timeline.map((x) => {
+			while (pointIndex < sorted.length && sorted[pointIndex].x <= x) {
+				currentValue = sorted[pointIndex].y;
+				pointIndex += 1;
+			}
+
+			return { x, y: currentValue };
+		});
+	}
+
+	function progressGraphModeTimelinePoints(
+		segment: ProgressGraphModeSegment,
+		timeline: number[]
+	) {
+		return timeline.map((x) => ({
+			...modeSegmentPoint(segment, x),
+			y: x >= segment.startX && x <= segment.endX
+				? segment.y
+				: Number.NaN
+		}));
 	}
 
 	function modeSegmentPoint(
@@ -3773,6 +3860,68 @@
 					data.startingHp
 				)
 			}`;
+		};
+	}
+
+	function getProgressTooltipEffects(data: ProgressGraphData) {
+		return (context: Array<{
+			chart: { data: { datasets: unknown[]; }; };
+			datasetIndex: number;
+			parsed: { x: number; };
+		}>) => {
+			const x = Number(context[0]?.parsed.x);
+
+			if (!Number.isFinite(x)) {
+				return [];
+			}
+
+			const visiblePlayerUids = new Set(
+				context
+					.map((item) => (
+						item.chart.data.datasets[item.datasetIndex] as {
+							playerUid?: string | null;
+						}
+					)?.playerUid)
+					.filter((uid): uid is string => Boolean(uid))
+			);
+			const effectsByPlayer = new Map<string, {
+				label: string;
+				effects: Set<string>;
+			}>();
+
+			for (const segment of data.modeSegments) {
+				if (
+					segment.kind !== 'powerup_effect'
+					|| !visiblePlayerUids.has(segment.uid)
+					|| x < segment.startX
+					|| x > segment.endX
+				) {
+					continue;
+				}
+
+				const entry = effectsByPlayer.get(segment.uid) ?? {
+					label: segment.label,
+					effects: new Set<string>()
+				};
+				entry.effects.add(segment.modeLabel);
+				effectsByPlayer.set(segment.uid, entry);
+			}
+
+			if (!effectsByPlayer.size) {
+				return [];
+			}
+
+			return [
+				'',
+				$_('pvp.progress_graph.active_effects'),
+				...Array.from(effectsByPlayer.values())
+					.map((entry) =>
+						`${entry.label}: ${
+							Array.from(entry.effects)
+								.join(', ')
+						}`
+					)
+			];
 		};
 	}
 
