@@ -250,6 +250,8 @@ export type PvpEvent = {
     starting_hp?: number | null;
     finalizeAliveCount?: number | null;
     finalize_alive_count?: number | null;
+    participantsPerMatch?: number | null;
+    participants_per_match?: number | null;
     timeLimitSeconds?: number | null;
     time_limit_seconds?: number | null;
     list?: Record<string, unknown> | null;
@@ -274,6 +276,7 @@ export type AdminPvpEventPayload = {
     targetScore?: number | null;
     startingHp?: number | null;
     finalizeAliveCount?: number | null;
+    participantsPerMatch?: number | null;
 };
 
 export type PvpMatch = {
@@ -576,6 +579,10 @@ export type PvpMatchmakingRequest = {
     search_started_at?: string | null;
     currentSearchRange?: number | null;
     current_search_range?: number | null;
+    matchedParticipantCount?: number | null;
+    matched_participant_count?: number | null;
+    targetParticipantCount?: number | null;
+    target_participant_count?: number | null;
     expiresAt?: string | null;
     expires_at?: string | null;
     created_at?: string;
@@ -2297,7 +2304,7 @@ export function hasPvpParticipantAccepted(participant: PvpParticipant | null | u
     return Boolean(participant?.acceptedAt ?? participant?.accepted_at);
 }
 
-export function isPvpMatchConfirmedByBoth(match: PvpMatch | null | undefined) {
+export function isPvpMatchConfirmedByAll(match: PvpMatch | null | undefined) {
     if (!match) {
         return false;
     }
@@ -2311,6 +2318,10 @@ export function isPvpMatchConfirmedByBoth(match: PvpMatch | null | undefined) {
     return ['in_progress', 'waiting_result', 'completed', 'disputed'].includes(
         getPvpStatus(match, '')
     );
+}
+
+export function isPvpMatchConfirmedByBoth(match: PvpMatch | null | undefined) {
+    return isPvpMatchConfirmedByAll(match);
 }
 
 export function getTimeMs(value: unknown) {

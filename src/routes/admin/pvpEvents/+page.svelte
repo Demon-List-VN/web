@@ -32,6 +32,7 @@
 		enabled: boolean;
 		levelSelectionMode: LevelSelectionMode;
 		ranked: boolean;
+		participantsPerMatch: number;
 		startTimeLimitMinutes: number;
 		startTimeLimitSeconds: number;
 		completionRuleType: CompletionRuleType;
@@ -53,6 +54,7 @@
 		enabled: true,
 		levelSelectionMode: 'random',
 		ranked: true,
+		participantsPerMatch: 2,
 		startTimeLimitMinutes: 15,
 		startTimeLimitSeconds: 0,
 		completionRuleType: 'count',
@@ -79,6 +81,9 @@
 		&& formListId > 0
 		&& Boolean(form.startsAt)
 		&& !saving;
+	$: if (normalizedParticipantsPerMatch() > 2 && form.ranked) {
+		form.ranked = false;
+	}
 
 	$: if ($user.data?.isAdmin && !initialized) {
 		initialized = true;
@@ -171,7 +176,15 @@
 	}
 
 	function eventRanked(event: PvpEvent) {
-		return Boolean(event.ranked ?? event.isRanked ?? event.is_ranked ?? true);
+		return eventParticipantsPerMatch(event) > 2
+			? false
+			: Boolean(event.ranked ?? event.isRanked ?? event.is_ranked ?? true);
+	}
+
+	function eventParticipantsPerMatch(event: PvpEvent) {
+		return normalizedParticipantsPerMatch(
+			event.participantsPerMatch ?? event.participants_per_match
+		);
 	}
 
 	function eventLevelSelectionMode(event: PvpEvent): LevelSelectionMode {
@@ -213,7 +226,7 @@
 		const ruleValue = event.completionRuleValue ?? event.completion_rule_value ?? 1;
 		const ruleLabel = ruleType === 'percentage' ? `${ruleValue}%` : `${ruleValue} player`;
 
-		return `Progress - ${timeLabel} - ${ruleLabel}`;
+		return `Progress - ${timeLabel} - ${ruleLabel} - ${eventParticipantsPerMatch(event)} players`;
 	}
 
 	function eventStatus(event: PvpEvent) {
@@ -262,7 +275,8 @@
 			endsAt,
 			enabled: form.enabled,
 			levelSelectionMode: form.levelSelectionMode,
-			ranked: form.ranked,
+			ranked: normalizedParticipantsPerMatch() > 2 ? false : form.ranked,
+			participantsPerMatch: normalizedParticipantsPerMatch(),
 			timeLimitSeconds: totalStartTimeLimitSeconds(),
 			completionRuleType: scoringMode === 'hp' ? null : form.completionRuleType,
 			completionRuleValue: scoringMode === 'hp' ? null : normalizedCompletionRuleValue(),
@@ -292,6 +306,7 @@
 			enabled: event.enabled !== false,
 			levelSelectionMode: eventLevelSelectionMode(event),
 			ranked: eventRanked(event),
+			participantsPerMatch: eventParticipantsPerMatch(event),
 			...formMatchConfigFromEvent(event)
 		};
 	}
@@ -303,6 +318,7 @@
 			startTimeLimitSeconds: emptyForm.startTimeLimitSeconds,
 			levelSelectionMode: emptyForm.levelSelectionMode,
 			ranked: emptyForm.ranked,
+			participantsPerMatch: emptyForm.participantsPerMatch,
 			completionRuleType: emptyForm.completionRuleType,
 			completionRuleValue: emptyForm.completionRuleValue,
 			scoringMode: emptyForm.scoringMode,
@@ -398,9 +414,15 @@
 		const numberValue = Number(value);
 		const fallback = type === 'percentage' ? 100 : 1;
 		const rounded = Number.isFinite(numberValue) ? Math.floor(numberValue) : fallback;
-		const upperBound = type === 'percentage' ? 100 : 2;
+		const upperBound = type === 'percentage' ? 100 : normalizedParticipantsPerMatch();
 
 		return Math.max(1, Math.min(upperBound, rounded));
+	}
+
+	function normalizedParticipantsPerMatch(value: unknown = form.participantsPerMatch) {
+		const numberValue = Number(value);
+
+		return Math.max(2, Number.isFinite(numberValue) ? Math.floor(numberValue) : 2);
 	}
 
 	function normalizedInteger(value: unknown, min: number, max: number, fallback: number) {
@@ -433,10 +455,11 @@
 
 	function normalizedFinalizeAliveCount(value: unknown = form.finalizeAliveCount) {
 		const numberValue = Number(value);
+		const maxAlive = Math.max(1, normalizedParticipantsPerMatch() - 1);
 
 		return Math.max(
 			1,
-			Math.min(100, Number.isFinite(numberValue) ? Math.floor(numberValue) : 1)
+			Math.min(maxAlive, Number.isFinite(numberValue) ? Math.floor(numberValue) : 1)
 		);
 	}
 
@@ -656,11 +679,23 @@
           </div>
 
           <div class="field">
+            <Label for="pvp-event-participants">Participants per match</Label>
+            <Input
+              id="pvp-event-participants"
+              bind:value={form.participantsPerMatch}
+              min="2"
+              type="number"
+              inputmode="numeric"
+            />
+          </div>
+
+          <div class="field">
             <Label>Rating</Label>
             <div class="segmented-control two-option">
               <button
                 type="button"
                 class:active={form.ranked}
+                disabled={normalizedParticipantsPerMatch() > 2}
                 on:click={() => (form.ranked = true)}
               >
                 Ranked
@@ -736,7 +771,9 @@
                   id="pvp-event-completion-value"
                   bind:value={form.completionRuleValue}
                   min="1"
-                  max={form.completionRuleType === 'percentage' ? 100 : 2}
+                  max={form.completionRuleType === 'percentage'
+                    ? 100
+                    : normalizedParticipantsPerMatch()}
                   type="number"
                 />
                 <span>{form.completionRuleType === 'percentage' ? '%' : 'players'}</span>
@@ -793,7 +830,7 @@
                   id="pvp-event-finalize-alive"
                   bind:value={form.finalizeAliveCount}
                   min="1"
-                  max="100"
+                  max={Math.max(1, normalizedParticipantsPerMatch() - 1)}
                   type="number"
                 />
               </div>
@@ -868,6 +905,7 @@
                 </span>
                 <span>Ends: {formatDate(event.endsAt ?? event.ends_at)}</span>
                 <span>List ID: {eventListId(event)}</span>
+                <span>{eventParticipantsPerMatch(event)} players per match</span>
                 <span>{eventRanked(event) ? 'Ranked' : 'Unranked'}</span>
                 <span>Level selection: {eventLevelSelectionLabel(event)}</span>
                 <span>Config: {eventConfigSummary(event)}</span>
