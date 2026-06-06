@@ -67,6 +67,7 @@
 		requestPvpMatchLevelChange,
 		resignPvpMatch,
 		sendPvpMatchMessage,
+		setPvpPowerupManaAsManager,
 		type PvpBanPickAction,
 		type PvpMatch,
 		type PvpMatchMessage,
@@ -275,6 +276,7 @@
 	let powerupCastLoading = '';
 	let loadedPowerupStateFor = '';
 	let powerupStateError = '';
+	let managerManaLoadingUid = '';
 
 	$: matchId = $page.params.id;
 	$: isSpectateRoute = $page.url.searchParams.get('spectate') === '1';
@@ -378,6 +380,7 @@
 	$: selfAccepted = hasPvpParticipantAccepted(selfParticipant)
 		|| (matchId ? locallyAcceptedMatchIds.has(String(matchId)) : false);
 	$: isPowerupMatch = normalizedScoringMode(scoringMode) === 'powerup';
+	$: isManagerViewer = Boolean($user.data?.isAdmin || $user.data?.isManager);
 	$: powerupTargets = orderedParticipants.filter((participant) => {
 		const uid = getPvpParticipantUid(participant);
 
@@ -387,16 +390,13 @@
 		&& isActive
 		&& Boolean(selfParticipant)
 		&& !isSpectator;
+	$: canManagePowerupMana = isPowerupMatch && isActive && isManagerViewer;
 	$: powerupMana = Math.max(0, Math.floor(Number(powerupState?.mana) || 0));
 	$: powerupMaxMana = Math.max(
 		1,
 		Math.floor(Number(powerupState?.maxMana) || 100)
 	);
-	$: powerupManaPercent = Math.max(
-		0,
-		Math.min(100, (powerupMana / powerupMaxMana) * 100)
-	);
-	$: powerupStateKey = canUsePowerups
+	$: powerupStateKey = (canUsePowerups || canManagePowerupMana)
 		&& currentUid
 		&& matchId
 		? `${currentUid}:${matchId}`
@@ -469,7 +469,7 @@
 		&& ['in_progress', 'waiting_result'].includes(status)
 		&& !isSpectator
 		&& sameUid(roomHostUid, currentUid);
-	$: canAbortAsManager = Boolean($user.data?.isAdmin || $user.data?.isManager)
+	$: canAbortAsManager = isManagerViewer
 		&& ['ban_pick', 'in_progress', 'waiting_result'].includes(status);
 	$: chatOpenDuringMatch = ['in_progress', 'waiting_result'].includes(status)
 		&& remainingMs > 0;
@@ -739,7 +739,12 @@
 	) {
 		const key = options.key || powerupStateKey;
 
-		if (!$user.loggedIn || !matchId || !key || isSpectator) {
+		if (
+			!$user.loggedIn
+			|| !matchId
+			|| !key
+			|| (isSpectator && !canManagePowerupMana)
+		) {
 			return;
 		}
 
@@ -823,6 +828,47 @@
 			if (powerupCastLoading === actionKey) {
 				powerupCastLoading = '';
 			}
+		}
+	}
+
+	async function setManagerMana(event: SubmitEvent, uid: string) {
+		event.preventDefault();
+
+		if (!matchId || !canManagePowerupMana || managerManaLoadingUid) {
+			return;
+		}
+
+		const form = event.currentTarget as HTMLFormElement;
+		const mana = Number(
+			new FormData(form)
+				.get('mana')
+		);
+
+		if (!Number.isInteger(mana) || mana < 0 || mana > 100) {
+			toast.error($_('pvp.powerups.manager_mana_invalid'));
+
+			return;
+		}
+
+		managerManaLoadingUid = uid;
+
+		try {
+			await setPvpPowerupManaAsManager(
+				await $user.token(),
+				matchId,
+				uid,
+				mana
+			);
+			await refreshPowerupState({ key: powerupStateKey, silent: true });
+			toast.success($_('pvp.powerups.manager_mana_set'));
+		} catch (error) {
+			toast.error(
+				error instanceof Error
+					? error.message
+					: $_('pvp.powerups.manager_mana_failed')
+			);
+		} finally {
+			managerManaLoadingUid = '';
 		}
 	}
 
@@ -2310,6 +2356,22 @@
 		) || $_('pvp.rival');
 	}
 
+	function participantPowerupMana(participant: PvpParticipant) {
+		const uid = getPvpParticipantUid(participant);
+		const state = powerupState?.playerMana?.find((item) => item.uid === uid);
+		const maxMana = Math.max(1, Math.floor(Number(state?.maxMana) || 100));
+		const mana = Math.max(
+			0,
+			Math.min(maxMana, Math.floor(Number(state?.mana) || 0))
+		);
+
+		return {
+			mana,
+			maxMana,
+			percent: Math.max(0, Math.min(100, (mana / maxMana) * 100))
+		};
+	}
+
 	function powerupActionKey(
 		skill: PvpPowerupSkill | string,
 		targetUid?: string | null,
@@ -3158,6 +3220,15 @@
 			content = $_('pvp.system_message.powerup_shield', {
 				values: {
 					player: systemParticipantName(metadataText(metadata, 'casterUid'))
+				}
+			});
+		}
+
+		if (kind === 'powerup_mana_set') {
+			content = $_('pvp.system_message.powerup_mana_set', {
+				values: {
+					player: systemParticipantName(metadataText(metadata, 'targetUid')),
+					mana: compactNumber(metadataNumber(metadata, 'mana') ?? 0)
 				}
 			});
 		}
@@ -4168,6 +4239,7 @@
                 <div class:multi-player-grid={isRoomMatch || orderedParticipants.length > 2} class="side-grid">
                   {#each orderedParticipants as participant, index}
                     {@const participantPlayer = getPvpParticipantPlayer(participant)}
+                    {@const participantUid = getPvpParticipantUid(participant) || ''}
                     {@const participantMasked = shouldMaskParticipant(
                         participant,
                         hideOpponentInfo,
@@ -4185,6 +4257,7 @@
                     )}
                     {@const participantRating = participantRatingLabel(participant)}
                     {@const participantRatingDiff = participantRatingDiffLabel(participant)}
+                    {@const participantMana = participantPowerupMana(participant)}
                     <div
                       class:left-side={index === 0}
                       class:right-side={index === 1}
@@ -4268,6 +4341,55 @@
                             />
                           </div>
                         {/if}
+                        {#if isPowerupMatch && powerupState}
+                          <div class="participant-mana">
+                            <div class="participant-mana-label">
+                              <span>{$_('pvp.powerups.mana')}</span>
+                              <strong>{participantMana.mana}/{participantMana.maxMana}</strong>
+                            </div>
+                            <div
+                              class="powerup-mana-track"
+                              aria-label={`${participantDisplayName} ${$_('pvp.powerups.mana')}`}
+                            >
+                              <div
+                                class="powerup-mana-fill"
+                                style={`width: ${participantMana.percent}%;`}
+                              />
+                            </div>
+                            {#if canManagePowerupMana}
+                              <form
+                                class="manager-mana-control"
+                                on:submit={(event) => setManagerMana(
+                                  event,
+                                  participantUid
+                                )}
+                              >
+                                <input
+                                  name="mana"
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  step="1"
+                                  value={participantMana.mana}
+                                  aria-label={$_('pvp.powerups.manager_mana_label', {
+                                    values: { player: participantDisplayName }
+                                  })}
+                                />
+                                <Button
+                                  type="submit"
+                                  size="sm"
+                                  disabled={Boolean(managerManaLoadingUid)}
+                                >
+                                  {#if managerManaLoadingUid === participantUid}
+                                    <Loader2 class="h-3.5 w-3.5 animate-spin" />
+                                  {:else}
+                                    {$_('pvp.powerups.manager_mana_set_action')}
+                                  {/if}
+                                </Button>
+                              </form>
+                            {/if}
+                          </div>
+                        {/if}
                       </div>
                     </div>
                   {/each}
@@ -4345,27 +4467,12 @@
                     {$_('pvp.powerups.loading')}
                   </div>
                 {:else}
-                  <div class="powerup-mana-panel">
-                    <div class="powerup-mana-row">
-                      <span>{$_('pvp.powerups.mana')}</span>
-                      <strong>{powerupMana}/{powerupMaxMana}</strong>
-                    </div>
-                    <div
-                      class="powerup-mana-track"
-                      aria-label={$_('pvp.powerups.mana')}
-                    >
-                      <div
-                        class="powerup-mana-fill"
-                        style={`width: ${powerupManaPercent}%;`}
-                      />
-                    </div>
-                    {#if powerupState.shieldActive}
-                      <Badge variant="secondary" class="powerup-shield-badge">
-                        <Shield class="h-3.5 w-3.5" />
-                        {$_('pvp.powerups.shield_active')}
-                      </Badge>
-                    {/if}
-                  </div>
+                  {#if powerupState.shieldActive}
+                    <Badge variant="secondary" class="powerup-shield-badge">
+                      <Shield class="h-3.5 w-3.5" />
+                      {$_('pvp.powerups.shield_active')}
+                    </Badge>
+                  {/if}
 
                   <div class="powerup-skill-grid">
                     {#each powerupSkills() as skill}
@@ -5397,12 +5504,6 @@
   gap: 14px;
 }
 
-.powerup-mana-panel {
-  display: grid;
-  gap: 8px;
-}
-
-.powerup-mana-row,
 .powerup-skill-heading,
 .powerup-skill-meta,
 .powerup-target-actions,
@@ -5410,17 +5511,6 @@
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.powerup-mana-row {
-  justify-content: space-between;
-  color: hsl(var(--muted-foreground));
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.powerup-mana-row strong {
-  color: hsl(var(--foreground));
 }
 
 .powerup-mana-track {
@@ -5628,6 +5718,46 @@
   border-radius: inherit;
   background: hsl(var(--primary));
   transition: width 180ms ease;
+}
+
+.participant-mana {
+  display: grid;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.participant-mana-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.participant-mana-label strong {
+  color: hsl(var(--foreground));
+}
+
+.participant-mana .powerup-mana-track {
+  height: 7px;
+}
+
+.manager-mana-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.manager-mana-control input {
+  min-width: 0;
+  height: 32px;
+  border: 1px solid hsl(var(--input));
+  border-radius: 6px;
+  background: hsl(var(--background));
+  padding: 0 10px;
+  color: hsl(var(--foreground));
+  font-size: 13px;
 }
 
 .progress-graph-panel {

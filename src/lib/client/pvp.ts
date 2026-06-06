@@ -22,6 +22,11 @@ export type PvpPowerupState = {
     shieldExpiresAt?: string | null;
     shieldCharges?: number;
     shieldActive?: boolean;
+    playerMana: Array<{
+        uid: string;
+        mana: number;
+        maxMana: number;
+    }>;
     skills?: Array<{
         skill: PvpPowerupSkill;
         cost: number;
@@ -1755,6 +1760,22 @@ export async function castPvpPowerupSkill(
         token,
         body: payload
     });
+}
+
+export async function setPvpPowerupManaAsManager(
+    token: string | null | undefined,
+    id: number | string,
+    uid: string,
+    mana: number
+) {
+    return pvpRequest<{ uid: string; mana: number; maxMana: number; }>(
+        `/pvp/admin/matches/${id}/powerups/mana`,
+        {
+            method: 'PATCH',
+            token,
+            body: { uid, mana }
+        }
+    );
 }
 
 export async function reportPvpMatch(

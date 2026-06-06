@@ -981,6 +981,11 @@
             "toast_cast": "Đã dùng {skill}.",
             "toast_blocked": "Powerup đã bị Shield chặn.",
             "toast_failed": "Không dùng được powerup",
+            "manager_mana_label": "Đặt mana cho {player}",
+            "manager_mana_set_action": "Đặt",
+            "manager_mana_set": "Đã cập nhật mana.",
+            "manager_mana_failed": "Không cập nhật được mana",
+            "manager_mana_invalid": "Mana phải là số nguyên từ 0 đến 100.",
             "skills": {
                 "flashbang": {
                     "name": "Flashbang",
@@ -1004,7 +1009,7 @@
                 },
                 "force_reset": {
                     "name": "Force reset",
-                    "description": "Đưa đối thủ về 0% và không ghi nhận lượt chạy đó."
+                    "description": "Reset đối thủ trừ khi họ bấm 10 lần trong vòng 2 giây."
                 }
             }
         },
@@ -1026,6 +1031,7 @@
             "powerup_blocked_double_click": "Shield của {target} đã chặn Double click của {caster}.",
             "powerup_blocked_force_reset": "Shield của {target} đã chặn Force reset của {caster}.",
             "powerup_shield": "Shield của {player} đã kết thúc.",
+            "powerup_mana_set": "Quản lý đã đặt mana của {player} thành {mana}.",
             "match_end_win": "{winner} đã thắng trận. Chat sẽ mở thêm {minutes} phút rồi bị tắt.",
             "match_end_draw": "Trận đấu kết thúc với kết quả hòa. Chat sẽ mở thêm {minutes} phút rồi bị tắt.",
             "match_cancelled": "Trận đấu đã bị hủy. Chat sẽ mở thêm {minutes} phút rồi bị tắt.",
