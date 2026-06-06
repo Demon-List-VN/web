@@ -129,6 +129,16 @@
 		supporter_vs_none: 50,
 		both_are_supporters: 40
 	};
+	const PROGRESS_GRAPH_COLORS = [
+		'#2563eb',
+		'#dc2626',
+		'#16a34a',
+		'#9333ea',
+		'#ea580c',
+		'#0891b2',
+		'#ca8a04',
+		'#db2777'
+	];
 	const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://gdvn.net').replace(
 		/\/$/,
 		''
@@ -2556,17 +2566,19 @@
 		const currentTargetScore = sourceMatch?.targetScore ?? sourceMatch?.target_score ?? targetScore;
 		const currentStartingHp = sourceMatch?.startingHp ?? sourceMatch?.starting_hp ?? startingHp;
 		const progressMessages = messagesAfterLatestLevelChange(sourceMessages);
-		const series = items.slice(0, 2)
-			.map((participant, index) => ({
-				uid: getPvpParticipantUid(participant)
+		const series = items
+			.map((participant) => {
+				const participantUid = getPvpParticipantUid(participant)
 					? String(getPvpParticipantUid(participant))
-					: null,
-				label: participantName(participant, hideOpponentInfo, currentUid) ?? '',
-				color: index === 0
-					? chartColor('--primary', '#2563eb')
-					: chartColor('--destructive', '#dc2626'),
-				points: [] as ProgressGraphPoint[]
-			}));
+					: null;
+
+				return {
+					uid: participantUid,
+					label: participantName(participant, hideOpponentInfo, currentUid) ?? '',
+					color: progressGraphPlayerColor(participantUid),
+					points: [] as ProgressGraphPoint[]
+				};
+			});
 
 		const parsed = progressMessages
 			.map((message) => progressMessageEvent(message, mode, currentScoringMode))
@@ -2677,10 +2689,10 @@
 			? Math.max(1, Number(currentStartingHp) || 0, maxProgress)
 			: 100;
 		const modeLaneGap = maxY * 0.06;
-		const modeLaneOne = -modeLaneGap;
-		const modeLaneTwo = -modeLaneGap * 2;
-		const powerupLaneOne = -modeLaneGap * 3;
-		const powerupLaneTwo = -modeLaneGap * 4;
+		const modeLanes = series.map((_, index) => -modeLaneGap * (index + 1));
+		const powerupLanes = series.map(
+			(_, index) => -modeLaneGap * (series.length + index + 1)
+		);
 		const modeTimelineAvailable = [
 			'in_progress',
 			'waiting_result',
@@ -2697,13 +2709,13 @@
 					series,
 					modeEvents,
 					maxX,
-					[modeLaneOne, modeLaneTwo]
+					modeLanes
 				),
 				...getProgressGraphPowerupEffectSegments(
 					series,
 					powerupEffectEvents,
 					maxX,
-					[powerupLaneOne, powerupLaneTwo]
+					powerupLanes
 				)
 			]
 			: [];
@@ -3510,6 +3522,18 @@
 			.trim();
 
 		return value ? `hsl(${value})` : fallback;
+	}
+
+	function progressGraphPlayerColor(uid: string | null) {
+		let hash = 0;
+
+		for (const character of uid || '') {
+			hash = ((hash << 5) - hash + character.charCodeAt(0)) | 0;
+		}
+
+		return PROGRESS_GRAPH_COLORS[
+			(hash >>> 0) % PROGRESS_GRAPH_COLORS.length
+		];
 	}
 
 	function chartAlphaColor(cssVariable: string, alpha: number, fallback: string) {
