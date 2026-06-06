@@ -17,7 +17,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { toast } from 'svelte-sonner';
-	import { CalendarDays, Loader2, Plus, RefreshCw, Save, Trash2, X } from 'lucide-svelte';
+	import { CalendarDays, Loader2, Plus, RefreshCw, Save, Trash2, Users, X } from 'lucide-svelte';
 
 	type CompletionRuleType = 'count' | 'percentage';
 	type ScoringMode = 'progress' | 'score' | 'hp' | 'powerup';
@@ -187,6 +187,16 @@
 		);
 	}
 
+	function participantSizeLabel(count: number) {
+		return count === 2 ? '2 players' : `${count} players`;
+	}
+
+	function participantSizeSummary(count: number) {
+		return count === 2
+			? 'Standard 1v1 event matchmaking.'
+			: 'Group event matchmaking. These matches are always unranked.';
+	}
+
 	function eventLevelSelectionMode(event: PvpEvent): LevelSelectionMode {
 		const value = event.levelSelectionMode ?? event.level_selection_mode;
 
@@ -208,25 +218,27 @@
 		const seconds = timeLimitSeconds % 60;
 		const timeLabel = seconds ? `${minutes}m ${seconds}s` : `${minutes}m`;
 
+		const participantLabel = participantSizeLabel(eventParticipantsPerMatch(event));
+
 		if (scoringMode === 'score' || scoringMode === 'powerup') {
 			const target = event.targetScore ?? event.target_score;
 			const label = scoringMode === 'powerup' ? 'Powerup' : 'Score';
 
-			return `${label} - ${timeLabel}${target ? ` - target ${target}` : ' - unlimited'}`;
+			return `${label} - ${timeLabel}${target ? ` - target ${target}` : ' - unlimited'} - ${participantLabel}`;
 		}
 
 		if (scoringMode === 'hp') {
 			const hp = event.startingHp ?? event.starting_hp ?? 200;
 			const alive = event.finalizeAliveCount ?? event.finalize_alive_count ?? 1;
 
-			return `HP - ${timeLabel} - ${hp} HP - finalize ${alive} alive`;
+			return `HP - ${timeLabel} - ${hp} HP - finalize ${alive} alive - ${participantLabel}`;
 		}
 
 		const ruleType = event.completionRuleType ?? event.completion_rule_type;
 		const ruleValue = event.completionRuleValue ?? event.completion_rule_value ?? 1;
 		const ruleLabel = ruleType === 'percentage' ? `${ruleValue}%` : `${ruleValue} player`;
 
-		return `Progress - ${timeLabel} - ${ruleLabel} - ${eventParticipantsPerMatch(event)} players`;
+		return `Progress - ${timeLabel} - ${ruleLabel} - ${participantLabel}`;
 	}
 
 	function eventStatus(event: PvpEvent) {
@@ -678,8 +690,8 @@
             </div>
           </div>
 
-          <div class="field">
-            <Label for="pvp-event-participants">Participants per match</Label>
+          <div class="field queue-size-field">
+            <Label for="pvp-event-participants">Event queue match size</Label>
             <Input
               id="pvp-event-participants"
               bind:value={form.participantsPerMatch}
@@ -687,6 +699,12 @@
               type="number"
               inputmode="numeric"
             />
+            <div class="queue-size-note">
+              <Users class="h-4 w-4" />
+              <span>
+                {participantSizeSummary(normalizedParticipantsPerMatch())}
+              </span>
+            </div>
           </div>
 
           <div class="field">
@@ -905,7 +923,10 @@
                 </span>
                 <span>Ends: {formatDate(event.endsAt ?? event.ends_at)}</span>
                 <span>List ID: {eventListId(event)}</span>
-                <span>{eventParticipantsPerMatch(event)} players per match</span>
+                <span>
+                  <Users class="h-4 w-4" />
+                  {participantSizeLabel(eventParticipantsPerMatch(event))}
+                </span>
                 <span>{eventRanked(event) ? 'Ranked' : 'Unranked'}</span>
                 <span>Level selection: {eventLevelSelectionLabel(event)}</span>
                 <span>Config: {eventConfigSummary(event)}</span>
@@ -1001,6 +1022,19 @@
 .field {
   display: grid;
   gap: 8px;
+}
+
+.queue-size-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: hsl(var(--muted-foreground));
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.queue-size-note :global(svg) {
+  flex: 0 0 auto;
 }
 
 .match-config-panel {
@@ -1107,6 +1141,11 @@
 .segmented-control button.active {
   background: hsl(var(--primary));
   color: hsl(var(--primary-foreground));
+}
+
+.segmented-control button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .event-card-head {
