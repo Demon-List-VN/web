@@ -3726,6 +3726,8 @@
 					tooltip: {
 						filter: (context) =>
 							!(context.dataset as any).isModeSegment,
+						itemSort: (left, right) =>
+							Number(right.parsed.y) - Number(left.parsed.y),
 						callbacks: {
 							title: (context) =>
 								formatDuration(
@@ -3875,14 +3877,19 @@
 				return [];
 			}
 
+			const visiblePlayers = context
+				.map((item) => (
+					item.chart.data.datasets[item.datasetIndex] as {
+						label?: string;
+						playerUid?: string | null;
+					}
+				))
+				.filter((dataset): dataset is {
+					label?: string;
+					playerUid: string;
+				} => Boolean(dataset?.playerUid));
 			const visiblePlayerUids = new Set(
-				context
-					.map((item) => (
-						item.chart.data.datasets[item.datasetIndex] as {
-							playerUid?: string | null;
-						}
-					)?.playerUid)
-					.filter((uid): uid is string => Boolean(uid))
+				visiblePlayers.map((player) => player.playerUid)
 			);
 			const effectsByPlayer = new Map<string, {
 				label: string;
@@ -3914,7 +3921,12 @@
 			return [
 				'',
 				$_('pvp.progress_graph.active_effects'),
-				...Array.from(effectsByPlayer.values())
+				...visiblePlayers
+					.map((player) => effectsByPlayer.get(player.playerUid))
+					.filter((entry): entry is {
+						label: string;
+						effects: Set<string>;
+					} => Boolean(entry))
 					.map((entry) =>
 						`${entry.label}: ${
 							Array.from(entry.effects)
