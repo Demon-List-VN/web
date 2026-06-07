@@ -1093,7 +1093,10 @@
 	function getQueueTargetParticipantCount(
 		queue: PvpMatchmakingRequest | null | undefined
 	) {
-		const queueEvent = queue?.pvpEvent ?? queue?.pvp_event ?? activePvpEvent;
+		const queueEventId = Number(queue?.pvpEventId ?? queue?.pvp_event_id ?? null);
+		const queueEvent = Number.isInteger(queueEventId) && queueEventId > 0
+			? (queue?.pvpEvent ?? queue?.pvp_event ?? activePvpEvent)
+			: null;
 		const value = Number(
 			queue?.targetParticipantCount
 			?? queue?.target_participant_count
