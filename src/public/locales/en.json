@@ -2515,9 +2515,12 @@
             "button": "Support us with just 49.000₫/month"
         },
         "goals": {
-            "title": "Progress toward monthly goals",
+            "title": "GDVN Cup 2026 fundraising progress",
             "server_cost": "Server cost",
-            "minecraft_server": "Minecraft server"
+            "minecraft_server": "Minecraft server",
+            "gdvn_cup_funding": "GDVN Cup 2026 operating fund",
+            "hcm_grand_finals": "Offline Grand Finals in Ho Chi Minh City",
+            "hanoi_quarterfinals": "Offline Quarterfinals in Hanoi"
         },
         "tiers": {
             "title": "Supporter tier",

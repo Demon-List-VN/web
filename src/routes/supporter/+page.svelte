@@ -13,11 +13,42 @@
 
 	export let data: any;
 
-	$: serverCostPercent = Number(data?.progress?.serverCostPercent || 0);
-	$: minecraftServerPercent = Number(data?.progress?.minecraftServerPercent || 0);
+	const cupGoals = [
+		{
+			labelKey: 'supporter.goals.gdvn_cup_funding',
+			target: 10000000,
+			percentKey: 'gdvnCupFundingPercent'
+		},
+		{
+			labelKey: 'supporter.goals.hcm_grand_finals',
+			target: 15000000,
+			percentKey: 'hcmGrandFinalsPercent'
+		},
+		{
+			labelKey: 'supporter.goals.hanoi_quarterfinals',
+			target: 20000000,
+			percentKey: 'hanoiQuarterfinalsPercent'
+		}
+	];
+
+	$: totalRevenue = Number(data?.progress?.totalRevenue || 0);
+	$: progress = data?.progress || {};
+	$: goals = cupGoals.map((goal) => ({
+		...goal,
+		percent: Number(progress?.[goal.percentKey] || 0)
+	}));
 
 	function toBarWidth(percent: number) {
 		return `${Math.max(0, Math.min(100, percent))}%`;
+	}
+
+	function formatVnd(amount: number) {
+		return new Intl.NumberFormat('vi-VN', {
+			style: 'currency',
+			currency: 'VND',
+			maximumFractionDigits: 0
+		})
+			.format(amount);
 	}
 </script>
 
@@ -66,19 +97,25 @@
 
     <div class="goalWrapper">
       <h2 class="goalTitle">{$_('supporter.goals.title')}</h2>
-      <div class="goalRow">
-        <div class="goalHeader">
-          <span>{$_('supporter.goals.server_cost')}</span>
-          <span>{serverCostPercent}%</span>
-        </div>
-        <div class="goalBar">
-          <div
-            class="goalBarFill bg-green-600"
-            style={`width: ${toBarWidth(serverCostPercent)}`}
-          >
+      {#each goals as goal}
+        <div class="goalRow">
+          <div class="goalHeader">
+            <span>{$_(goal.labelKey)}</span>
+            <span>{goal.percent}%</span>
+          </div>
+          <div class="goalMeta">
+            <span>{formatVnd(totalRevenue)}</span>
+            <span>{formatVnd(goal.target)}</span>
+          </div>
+          <div class="goalBar">
+            <div
+              class="goalBarFill bg-green-600"
+              style={`width: ${toBarWidth(goal.percent)}`}
+            >
+            </div>
           </div>
         </div>
-      </div>
+      {/each}
     </div>
 
     <h1 class="mb-[40px] mt-[75px] text-center text-3xl font-bold">
@@ -221,8 +258,30 @@
 .goalHeader {
   display: flex;
   justify-content: space-between;
+  gap: 16px;
   font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.goalHeader span:first-child {
+  min-width: 0;
+}
+
+.goalHeader span:last-child {
+  white-space: nowrap;
+}
+
+.goalMeta {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  color: rgb(156 163 175);
+  font-size: 0.875rem;
   margin-bottom: 8px;
+}
+
+.goalMeta span:last-child {
+  white-space: nowrap;
 }
 
 .goalBar {

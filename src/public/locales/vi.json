@@ -2535,9 +2535,12 @@
             "button": "Ủng hộ chúng tôi chỉ với 49.000₫/tháng"
         },
         "goals": {
-            "title": "Tiến độ mục tiêu hàng tháng",
+            "title": "Tiến độ gây quỹ GDVN Cup 2026",
             "server_cost": "Chi phí máy chủ",
-            "minecraft_server": "Máy chủ Minecraft"
+            "minecraft_server": "Máy chủ Minecraft",
+            "gdvn_cup_funding": "Kinh phí tổ chức GDVN Cup 2026",
+            "hcm_grand_finals": "Tổ chức offline Grand Finals ở Hồ Chí Minh",
+            "hanoi_quarterfinals": "Tổ chức offline Tứ kết ở Hà Nội"
         },
         "tiers": {
             "title": "Hạng Supporter",
