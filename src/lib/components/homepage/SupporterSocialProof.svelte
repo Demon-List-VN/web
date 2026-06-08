@@ -49,8 +49,20 @@
 	$: totalRevenue = Number(serverProgress?.totalRevenue || 0);
 	$: goals = cupGoals.map((goal) => ({
 		...goal,
-		percent: Number(serverProgress?.[goal.percentKey] || 0)
+		percent: progressPercent(goal)
 	}));
+
+	function progressPercent(goal: (typeof cupGoals)[number]) {
+		const apiPercent = serverProgress?.[goal.percentKey];
+
+		if (typeof apiPercent === 'number') {
+			return apiPercent;
+		}
+
+		return goal.target > 0
+			? Math.min(100, Math.round((totalRevenue / goal.target) * 10000) / 100)
+			: 0;
+	}
 
 	function toBarWidth(percent: number) {
 		return `${Math.max(0, Math.min(100, percent))}%`;
