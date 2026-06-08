@@ -8,14 +8,62 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 
-	export let topSupporters: any[] | null = null;
-	export let serverProgress: {
+	type SupporterProgress = {
+		totalRevenue?: number;
 		serverCostPercent: number;
 		minecraftServerPercent: number;
-	} | null = null;
+		gdvnCupFundingPercent?: number;
+		hcmGrandFinalsPercent?: number;
+		hanoiQuarterfinalsPercent?: number;
+	};
 
+	type CupProgressKey = Extract<keyof SupporterProgress, `${string}Percent`>;
+
+	export let topSupporters: any[] | null = null;
+	export let serverProgress: SupporterProgress | null = null;
+
+	const cupGoals: {
+		labelKey: string;
+		target: number;
+		percentKey: CupProgressKey;
+	}[] = [
+		{
+			labelKey: 'supporter.goals.gdvn_cup_funding',
+			target: 10000000,
+			percentKey: 'gdvnCupFundingPercent'
+		},
+		{
+			labelKey: 'supporter.goals.hcm_grand_finals',
+			target: 15000000,
+			percentKey: 'hcmGrandFinalsPercent'
+		},
+		{
+			labelKey: 'supporter.goals.hanoi_quarterfinals',
+			target: 20000000,
+			percentKey: 'hanoiQuarterfinalsPercent'
+		}
+	];
 	const medalColors = ['text-yellow-500', 'text-gray-400', 'text-amber-600'];
 	const isBannerFailedToLoad: boolean[] = [];
+
+	$: totalRevenue = Number(serverProgress?.totalRevenue || 0);
+	$: goals = cupGoals.map((goal) => ({
+		...goal,
+		percent: Number(serverProgress?.[goal.percentKey] || 0)
+	}));
+
+	function toBarWidth(percent: number) {
+		return `${Math.max(0, Math.min(100, percent))}%`;
+	}
+
+	function formatCompactVnd(amount: number) {
+		return new Intl.NumberFormat('vi-VN', {
+			notation: 'compact',
+			compactDisplay: 'short',
+			maximumFractionDigits: 1
+		})
+			.format(amount);
+	}
 </script>
 
 <section class="supporterProof">
@@ -98,20 +146,26 @@
     <!-- Server Progress -->
     {#if serverProgress}
       <div class="progressSection">
-        <div class="progressRow">
-          <div class="progressLabel">
-            <span>{$_('homepage.supporters.server_cost')}</span>
-            <span class="progressPercent">{
-                Math.round(serverProgress.serverCostPercent)
-              }%</span>
-          </div>
-          <div class="progressBar">
-            <div
-              class="progressFill"
-              style={`width: ${Math.min(serverProgress.serverCostPercent, 100)}%`}
-            >
+        <div class="progressRows">
+          {#each goals as goal}
+            <div class="progressRow">
+              <div class="progressLabel">
+                <span>{$_(goal.labelKey)}</span>
+                <span class="progressPercent">{Math.round(goal.percent)}%</span>
+              </div>
+              <div class="progressMeta">
+                <span>{formatCompactVnd(totalRevenue)}</span>
+                <span>{formatCompactVnd(goal.target)}</span>
+              </div>
+              <div class="progressBar">
+                <div
+                  class="progressFill"
+                  style={`width: ${toBarWidth(goal.percent)}`}
+                >
+                </div>
+              </div>
             </div>
-          </div>
+          {/each}
         </div>
         <Button
           href="/supporter"
@@ -188,22 +242,48 @@
   flex-wrap: wrap;
 }
 
-.progressRow {
+.progressRows {
   flex: 1;
-  min-width: 200px;
+  display: grid;
+  gap: 10px;
+  min-width: 240px;
+}
+
+.progressRow {
+  min-width: 0;
 }
 
 .progressLabel {
   display: flex;
   justify-content: space-between;
+  gap: 12px;
   font-size: 13px;
   margin-bottom: 6px;
   color: hsl(var(--muted-foreground));
 }
 
+.progressLabel span:first-child {
+  min-width: 0;
+}
+
 .progressPercent {
   font-weight: 600;
   color: hsl(var(--foreground));
+  white-space: nowrap;
+}
+
+.progressMeta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  color: hsl(var(--muted-foreground) / 0.78);
+  margin-top: -3px;
+  margin-bottom: 5px;
+}
+
+.progressMeta span:last-child {
+  white-space: nowrap;
 }
 
 .progressBar {

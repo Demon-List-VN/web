@@ -3,6 +3,18 @@
 	import { fade } from 'svelte/transition';
 	import { Trophy } from 'lucide-svelte';
 	import PlayerLink from '$lib/components/playerLink.svelte';
+	import { supporterRevenueIntervalMs } from './+page';
+
+	type SupporterProgress = {
+		totalRevenue?: number;
+		serverCostPercent: number;
+		minecraftServerPercent: number;
+		gdvnCupFundingPercent?: number;
+		hcmGrandFinalsPercent?: number;
+		hanoiQuarterfinalsPercent?: number;
+	};
+
+	type CupProgressKey = Extract<keyof SupporterProgress, `${string}Percent`>;
 
 	export let data: any;
 
@@ -11,12 +23,52 @@
 	let visibleEvent: any = null;
 	let pollTimer: ReturnType<typeof setInterval> | null = null;
 	let hideTimer: ReturnType<typeof setTimeout> | null = null;
+	const cupGoals: {
+		label: string;
+		target: number;
+		percentKey: CupProgressKey;
+	}[] = [
+		{
+			label: 'Kinh phí GDVN Cup 2026',
+			target: 10000000,
+			percentKey: 'gdvnCupFundingPercent'
+		},
+		{
+			label: 'Offline Grand Finals HCM',
+			target: 15000000,
+			percentKey: 'hcmGrandFinalsPercent'
+		},
+		{
+			label: 'Offline Tứ kết Hà Nội',
+			target: 20000000,
+			percentKey: 'hanoiQuarterfinalsPercent'
+		}
+	];
 
 	$: topSupporters = overlay?.topSupporters ?? [];
+	$: progress = (overlay?.progress ?? null) as SupporterProgress | null;
+	$: totalRevenue = Number(progress?.totalRevenue || 0);
+	$: goals = cupGoals.map((goal) => ({
+		...goal,
+		percent: Number(progress?.[goal.percentKey] || 0)
+	}));
 
 	function formatPrice(value: number) {
 		return `${Math.round(value || 0)
 			.toLocaleString('vi-VN')}vnd`;
+	}
+
+	function formatCompactPrice(value: number) {
+		return new Intl.NumberFormat('vi-VN', {
+			notation: 'compact',
+			compactDisplay: 'short',
+			maximumFractionDigits: 1
+		})
+			.format(value || 0);
+	}
+
+	function toBarWidth(percent: number) {
+		return `${Math.max(0, Math.min(100, percent))}%`;
 	}
 
 	function nameplateStyle(player: any) {
@@ -54,7 +106,7 @@
 	async function refreshOverlay() {
 		try {
 			const response = await fetch(
-				`${import.meta.env.VITE_API_URL}/donations/overlay`
+				`${import.meta.env.VITE_API_URL}/donations/overlay?interval=${supporterRevenueIntervalMs()}`
 			);
 
 			if (!response.ok) {
@@ -157,6 +209,27 @@
         </div>
       {/each}
     </div>
+    {#if progress}
+      <div class="cupProgress">
+        <div class="cupTitle">GDVN Cup 2026</div>
+        {#each goals as goal}
+          <div class="cupGoal">
+            <div class="cupGoalHeader">
+              <span>{goal.label}</span>
+              <strong>{Math.round(goal.percent)}%</strong>
+            </div>
+            <div class="cupGoalMeta">
+              <span>{formatCompactPrice(totalRevenue)}</span>
+              <span>{formatCompactPrice(goal.target)}</span>
+            </div>
+            <div class="cupBar">
+              <div class="cupBarFill" style={`width: ${toBarWidth(goal.percent)}`}>
+              </div>
+            </div>
+          </div>
+        {/each}
+      </div>
+    {/if}
   </aside>
 </main>
 
@@ -287,6 +360,77 @@
 .supporterList {
   display: grid;
   gap: 10px;
+}
+
+.cupProgress {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.cupTitle {
+  color: #fbbf24;
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.cupGoal {
+  min-width: 0;
+}
+
+.cupGoalHeader,
+.cupGoalMeta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cupGoalHeader {
+  margin-bottom: 3px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.cupGoalHeader span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cupGoalHeader strong {
+  flex: 0 0 auto;
+  color: #fbbf24;
+}
+
+.cupGoalMeta {
+  margin-bottom: 5px;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.cupGoalMeta span:last-child {
+  white-space: nowrap;
+}
+
+.cupBar {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.cupBarFill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #fbbf24, #fb7185);
+  transition: width 0.6s ease;
 }
 
 .supporterRow {
