@@ -3,7 +3,7 @@
 	import { fade } from 'svelte/transition';
 	import { Trophy } from 'lucide-svelte';
 	import PlayerLink from '$lib/components/playerLink.svelte';
-	import { supporterRevenueIntervalMs } from './+page';
+	import { supporterRevenueIntervalMs } from './campaign';
 
 	type SupporterProgress = {
 		totalRevenue?: number;
