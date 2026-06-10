@@ -38,7 +38,6 @@
 	$: communityPosts = homeData?.communityPosts ?? null;
 	$: topClans = homeData?.topClans ?? null;
 	$: topSupporters = homeData?.topSupporters ?? null;
-	$: serverProgress = homeData?.serverProgress ?? null;
 	$: activeSeason = homeData?.activeSeason ?? null;
 	$: battlepassProgress = homeData?.battlepassProgress ?? null;
 
@@ -108,7 +107,7 @@
   <!-- Full-width top: Battlepass + Supporter -->
   <div class="topRow">
     <BattlepassHomeWidget {activeSeason} {battlepassProgress} />
-    <SupporterSocialProof {topSupporters} {serverProgress} />
+    <SupporterSocialProof {topSupporters} />
   </div>
 
   <!-- 2-Column Desktop Layout: Community+Levels | Clans -->

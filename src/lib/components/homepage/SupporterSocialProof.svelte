@@ -7,6 +7,7 @@
 	import { ArrowRight, Heart } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { onMount } from 'svelte';
 
 	type SupporterProgress = {
 		totalRevenue?: number;
@@ -20,8 +21,9 @@
 	type CupProgressKey = Extract<keyof SupporterProgress, `${string}Percent`>;
 
 	export let topSupporters: any[] | null = null;
-	export let serverProgress: SupporterProgress | null = null;
 
+	const SUPPORTER_REVENUE_START_DATE = '2026-06-08T00:00:00+07:00';
+	const DEFAULT_INTERVAL_MS = 30 * 24 * 60 * 60 * 1000;
 	const cupGoals: {
 		labelKey: string;
 		target: number;
@@ -45,6 +47,8 @@
 	];
 	const medalColors = ['text-yellow-500', 'text-gray-400', 'text-amber-600'];
 	const isBannerFailedToLoad: boolean[] = [];
+	let serverProgress: SupporterProgress | null = null;
+	let progressLoading = true;
 
 	$: totalRevenue = Number(serverProgress?.totalRevenue || 0);
 	$: goals = cupGoals.map((goal) => ({
@@ -76,6 +80,36 @@
 		})
 			.format(amount);
 	}
+
+	function supporterRevenueIntervalMs() {
+		const startMs = new Date(SUPPORTER_REVENUE_START_DATE)
+			.getTime();
+		const intervalMs = Date.now() - startMs;
+
+		return Number.isFinite(intervalMs)
+			? Math.max(1, intervalMs)
+			: DEFAULT_INTERVAL_MS;
+	}
+
+	async function loadProgress() {
+		try {
+			const response = await fetch(
+				`${import.meta.env.VITE_API_URL}/buyers/progress?interval=${supporterRevenueIntervalMs()}`
+			);
+
+			if (response.ok) {
+				serverProgress = await response.json();
+			}
+		} catch {
+		// Keep the supporter leaderboard usable if progress cannot be loaded.
+		} finally {
+			progressLoading = false;
+		}
+	}
+
+	onMount(() => {
+		void loadProgress();
+	});
 </script>
 
 <section class="supporterProof">
@@ -156,7 +190,19 @@
     </div>
 
     <!-- Server Progress -->
-    {#if serverProgress}
+    {#if progressLoading}
+      <div class="progressSection">
+        <div class="progressRows" aria-hidden="true">
+          {#each cupGoals as _}
+            <div class="progressRow">
+              <Skeleton class="h-4 w-3/4" />
+              <Skeleton class="mt-2 h-3 w-full" />
+              <Skeleton class="mt-2 h-1.5 w-full" />
+            </div>
+          {/each}
+        </div>
+      </div>
+    {:else if serverProgress}
       <div class="progressSection">
         <div class="progressRows">
           {#each goals as goal}
