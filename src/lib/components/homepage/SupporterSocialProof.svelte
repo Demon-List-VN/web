@@ -10,15 +10,8 @@
 	import { onMount } from 'svelte';
 
 	type SupporterProgress = {
-		totalRevenue?: number;
-		serverCostPercent: number;
-		minecraftServerPercent: number;
-		gdvnCupFundingPercent?: number;
-		hcmGrandFinalsPercent?: number;
-		hanoiQuarterfinalsPercent?: number;
+		totalRevenue?: number | string | null;
 	};
-
-	type CupProgressKey = Extract<keyof SupporterProgress, `${string}Percent`>;
 
 	export let topSupporters: any[] | null = null;
 
@@ -27,22 +20,18 @@
 	const cupGoals: {
 		labelKey: string;
 		target: number;
-		percentKey: CupProgressKey;
 	}[] = [
 		{
 			labelKey: 'supporter.goals.gdvn_cup_funding',
-			target: 10000000,
-			percentKey: 'gdvnCupFundingPercent'
+			target: 10000000
 		},
 		{
 			labelKey: 'supporter.goals.hcm_grand_finals',
-			target: 15000000,
-			percentKey: 'hcmGrandFinalsPercent'
+			target: 15000000
 		},
 		{
 			labelKey: 'supporter.goals.hanoi_quarterfinals',
-			target: 20000000,
-			percentKey: 'hanoiQuarterfinalsPercent'
+			target: 20000000
 		}
 	];
 	const medalColors = ['text-yellow-500', 'text-gray-400', 'text-amber-600'];
@@ -50,19 +39,16 @@
 	let serverProgress: SupporterProgress | null = null;
 	let progressLoading = true;
 
-	$: totalRevenue = Number(serverProgress?.totalRevenue || 0);
+	$: parsedTotalRevenue = Number(serverProgress?.totalRevenue);
+	$: totalRevenue = Number.isFinite(parsedTotalRevenue)
+		? Math.max(0, parsedTotalRevenue)
+		: 0;
 	$: goals = cupGoals.map((goal) => ({
 		...goal,
 		percent: progressPercent(goal)
 	}));
 
 	function progressPercent(goal: (typeof cupGoals)[number]) {
-		const apiPercent = serverProgress?.[goal.percentKey];
-
-		if (typeof apiPercent === 'number') {
-			return apiPercent;
-		}
-
 		return goal.target > 0
 			? Math.min(100, Math.round((totalRevenue / goal.target) * 10000) / 100)
 			: 0;

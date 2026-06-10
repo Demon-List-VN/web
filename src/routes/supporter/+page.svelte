@@ -10,6 +10,8 @@
 	import SupporterTierProgress from '$lib/components/SupporterTierProgress.svelte';
 	import { user } from '$lib/client';
 	import { isActive } from '$lib/client/isSupporterActive';
+	import * as Alert from '$lib/components/ui/alert';
+	import { AlertTriangle } from 'lucide-svelte';
 
 	export let data: any;
 
@@ -75,6 +77,12 @@
   />
   <div class="mt-[-20px] flex max-w-[1000px] flex-col items-center">
     <div class="flex flex-col items-center gap-[10px]">
+      {#if !$user.loggedIn}
+        <Alert.Root class="max-w-[500px] border-yellow-500/50 text-yellow-400">
+          <AlertTriangle class="h-4 w-4" />
+          <Alert.Title>{$_('supporter.login_required')}</Alert.Title>
+        </Alert.Root>
+      {/if}
       <PaymentButton title={$_('supporter.price')} />
       <span class="text-gray-400">{$_('supporter.or')}</span>
       <div>

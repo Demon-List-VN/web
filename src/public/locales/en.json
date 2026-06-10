@@ -2431,6 +2431,7 @@
         "price": "49.000₫/month",
         "or": "or",
         "store_button": "Check out our store",
+        "login_required": "You must log in before you can donate.",
         "alert": {
             "title": "Support Geometry Dash Việt Nam 💖",
             "description": "Consider becoming a Supporter to help DLVN grow and get exclusive perks!",
