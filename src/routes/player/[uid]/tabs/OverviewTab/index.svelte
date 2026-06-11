@@ -463,7 +463,7 @@
 					{
 						label: $_('player.overview.contest_rating'),
 						data: rankedEventHistory.ratings,
-						borderColor: player.borderColor || 'hsl(210, 90%, 55%)',
+						borderColor: 'hsl(210, 90%, 55%)',
 						backgroundColor: 'rgba(59, 130, 246, 0.12)',
 						tension: 0,
 						fill: true,

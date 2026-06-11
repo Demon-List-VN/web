@@ -218,10 +218,6 @@
 	}
 
 	function getBgTint() {
-		if (player.bgColor) {
-			return `background-color: ${player.bgColor}20`;
-		}
-
 		return '';
 	}
 </script>

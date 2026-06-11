@@ -45,7 +45,6 @@
 	export let listSummaries: PlayerRankedListSummary[] | null = null;
 	export let active = true;
 
-	let isBannerFailedToLoad = false;
 	let remoteSummaries: PlayerRankedListSummary[] = [];
 	let hydratedPlayer: any = null;
 	let isLoadingPlayerSettings = false;
@@ -90,7 +89,6 @@
 	$: contestTitle = contestEloValue === null
 		? null
 		: getTitle('elo', cardPlayer);
-	$: playerCardStyle = getPlayerCardStyle(cardPlayer);
 	$: hasConfiguredStatLines = hasKnownPlayerCardStatLines
 		&& configuredStatLineIds.length > 0;
 	$: effectiveStatLineIds = resolvePlayerCardStatLineIds(
@@ -232,21 +230,6 @@
 		return Number.isFinite(matchCount) && matchCount < 5;
 	}
 
-	function getPlayerCardStyle(player: any) {
-		const styles: string[] = [];
-
-		if (player?.bgColor) {
-			styles.push(`background-color: ${player.bgColor}`);
-			styles.push('color: white');
-		}
-
-		if (player?.borderColor) {
-			styles.push(`border-color: ${player.borderColor}`);
-		}
-
-		return styles.join('; ');
-	}
-
 	function getOuterHeight(node: HTMLElement) {
 		return node.getBoundingClientRect().height;
 	}
@@ -330,20 +313,7 @@
 <div class="playerCardFrame" use:animateCardResize>
 <div
   class="playerCardRoot relative z-0 overflow-hidden rounded-md border-[1px] p-[12px]"
-  style={playerCardStyle}
 >
-  {#if isActive(cardPlayer.supporterUntil) && !isBannerFailedToLoad}
-    <img
-      on:error={() => {
-          isBannerFailedToLoad = true;
-      }}
-      class="bgGradient absolute top-[42px] z-[-1] ml-[-12px] h-[72px] w-[calc(100%+24px)] rounded object-cover"
-      src={`https://cdn.gdvn.net/banners/${cardPlayer.uid}${
-          cardPlayer.isBannerGif ? '.gif' : '.jpg'
-      }`}
-      alt=""
-    />
-  {/if}
   <div class="hoverName">
     <div class="player-card-avatar-frame">
       <Avatar.Root>
@@ -498,14 +468,6 @@
     color 260ms ease;
 }
 
-.bgGradient {
-  margin-top: -50px;
-  mask-image: linear-gradient(
-    rgba(0, 0, 0, 1) 0%,
-    rgba(0, 0, 0, 1) 25%,
-    rgba(0, 0, 0, 0) 100%
-  );
-}
 .progressBar {
   background-color: gray;
   width: 100%;

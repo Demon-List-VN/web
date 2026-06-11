@@ -31,7 +31,6 @@
 
 	export let data: any;
 
-	let isBannerFailedToLoad = false;
 	let socialStatus: SocialStatus = 'none';
 	let socialActivity: SocialActivity | null = null;
 	let socialPresence: AggregatedSocialPresence | null = null;
@@ -48,9 +47,6 @@
 	$: avatarSrc = `https://cdn.gdvn.net/avatars/${player.uid}${
 		isSupporter && player.isAvatarGif ? '.gif' : '.jpg'
 	}?version=${player.avatarVersion}`;
-	$: bannerSrc = `https://cdn.gdvn.net/banners/${player.uid}${
-		player.isBannerGif ? '.gif' : '.jpg'
-	}?version=${player.bannerVersion}`;
 	$: showFriendButton = browser && $user.loggedIn && player.uid
 		&& player.uid !== $user.data?.uid;
 	$: showPresenceStatus = browser && player.uid && player.uid !== $user.data?.uid;
@@ -108,14 +104,6 @@
 		cleanupPresence?.();
 	});
 
-	function getBgColor() {
-		if (player.bgColor) {
-			return `background-color: ${player.bgColor}`;
-		}
-
-		return '';
-	}
-
 	async function loadSocialStatus() {
 		try {
 			const token = await $user.token();
@@ -159,24 +147,12 @@
 	}
 </script>
 
-<div class="hero-container relative" style={getBgColor()}>
+<div class="hero-container relative">
   <!-- Banner -->
   <div class="banner-area relative h-[200px] sm:h-[250px] lg:h-[280px]">
-    {#if isSupporter && !isBannerFailedToLoad}
-      <img
-        on:error={() => {
-            isBannerFailedToLoad = true;
-        }}
-        class="banner-image absolute inset-0 h-full w-full object-cover"
-        src={bannerSrc}
-        alt=""
-      />
-    {/if}
     <div
       class="absolute inset-0"
-      style={`background: linear-gradient(to bottom, transparent 0%, transparent 50%, ${
-          player.bgColor || 'hsl(var(--background))'
-      } 100%);`}
+      style="background: linear-gradient(to bottom, transparent 0%, transparent 50%, hsl(var(--background)) 100%);"
     />
   </div>
 
@@ -334,25 +310,10 @@
   </div>
 </div>
 
-{#if player.bgColor}
-  <div
-    class="h-[60px] w-full"
-    style={`background: linear-gradient(to bottom, ${player.bgColor}, hsl(var(--background)));`}
-  />
-{/if}
-
 <style lang="scss">
 .hero-container {
   overflow-x: hidden;
   overflow-y: visible;
-}
-
-.banner-image {
-  mask-image: linear-gradient(
-    rgba(0, 0, 0, 1) 0%,
-    rgba(0, 0, 0, 1) 70%,
-    rgba(0, 0, 0, 0) 100%
-  );
 }
 
 .profile-avatar-frame {

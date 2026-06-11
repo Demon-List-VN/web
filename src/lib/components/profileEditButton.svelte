@@ -33,7 +33,6 @@
 
 	let player = structuredClone(data);
 	let fileinput: any;
-	let fileinput1: any;
 	let provinces: any = {};
 	let provinceItem = {
 		disabled: false,
@@ -162,10 +161,6 @@
 		};
 	}
 
-	function setPlayerColor(field: 'borderColor' | 'bgColor', event: Event) {
-		player[field] = (event.currentTarget as HTMLInputElement).value;
-	}
-
 	async function savePlayerCardStatLines() {
 		const token = await $user.token();
 		const overviewData = setPlayerCardPvpEloStatVisibility(
@@ -278,75 +273,6 @@
 		}
 	}
 
-	async function getBanner(e: any) {
-		if (player.isBanned) {
-			return;
-		}
-
-		const image = e.target.files[0];
-
-		if (image.name.endsWith('.gif')) {
-			const handleUpload = async () => {
-				await upload(
-					`banners/${$user.data.uid}.gif`,
-					image,
-					(await $user.token())!
-				);
-
-				player.isBannerGif = true;
-				player.bannerVersion++;
-
-				await fetch(`${import.meta.env.VITE_API_URL}/players`, {
-					method: 'PUT',
-					headers: {
-						Authorization: 'Bearer ' + (await $user.token()),
-						'Content-Type': 'application/json'
-					},
-					body: JSON.stringify(player)
-				});
-			};
-
-			toast.promise(handleUpload, {
-				loading: $_('toast.player_edit.uploading'),
-				success: $_('toast.player_edit.success'),
-				error: $_('toast.player_edit.error')
-			});
-		} else {
-			const options = {
-				maxSizeMB: 4.5,
-				maxWidthOrHeight: 1920,
-				useWebWorker: true
-			};
-
-			const cImg = await imageCompression(image, options);
-			const handleUpload = async () => {
-				await upload(
-					`banners/${$user.data.uid}.jpg`,
-					cImg,
-					(await $user.token())!
-				);
-
-				player.isBannerGif = false;
-				player.bannerVersion++;
-
-				await fetch(`${import.meta.env.VITE_API_URL}/players`, {
-					method: 'PUT',
-					headers: {
-						Authorization: 'Bearer ' + (await $user.token()),
-						'Content-Type': 'application/json'
-					},
-					body: JSON.stringify(player)
-				});
-			};
-
-			toast.promise(handleUpload, {
-				loading: $_('toast.player_edit.uploading'),
-				success: $_('toast.player_edit.success'),
-				error: $_('toast.player_edit.error')
-			});
-		}
-	}
-
 	async function saveChanges() {
 		player.province = provinceItem.value;
 		player.city = cityItem.value;
@@ -406,14 +332,6 @@
   bind:this={fileinput}
 />
 
-<input
-  style="display: none"
-  type="file"
-  accept={'.jpg, .jpeg, .gif'}
-  on:change={(e) => getBanner(e)}
-  bind:this={fileinput1}
-/>
-
 <Dialog.Root bind:open>
   <Dialog.Trigger
     class={buttonVariants({ variant: 'outline' })}
@@ -450,36 +368,6 @@
                 fileinput.click();
             }}
           >{$_('profile_edit.upload_avatar')}</Button>
-          <Button
-            class="w-full"
-            variant="outline"
-            id="avatar"
-            placeholder="Avatar"
-            disabled={!isActive(player.supporterUntil)}
-            on:click={() => {
-                fileinput1.click();
-            }}
-          >{$_('profile_edit.upload_banner')}</Button>
-        </div>
-        <div class="mb-[10px] flex items-center gap-[10px] text-sm">
-          {$_('profile_edit.border')}
-          <Input
-            type="color"
-            value={player.borderColor || '#000000'}
-            on:input={(event) => setPlayerColor('borderColor', event)}
-          />
-          {$_('profile_edit.background')}
-          <Input
-            type="color"
-            value={player.bgColor || '#000000'}
-            on:input={(event) => setPlayerColor('bgColor', event)}
-          />
-          <Button
-            variant="outline"
-            on:click={() => {
-                player.borderColor = player.bgColor = null;
-            }}
-          >{$_('profile_edit.reset')}</Button>
         </div>
         <div class="grid grid-cols-4 items-center gap-4">
           <Label for="youtube" class="text-right">YouTube</Label>
