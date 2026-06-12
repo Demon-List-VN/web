@@ -4,6 +4,20 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { toast } from 'svelte-sonner';
 
+	type AdminItem = {
+		name: string;
+		action?: () => Promise<void>;
+		type?: 'button';
+		href?: string;
+		managerAccess?: boolean;
+	};
+
+	type AdminCategory = {
+		title: string;
+		icon: string;
+		items: AdminItem[];
+	};
+
 	async function copyToken() {
 		await navigator.clipboard.writeText((await $user.token())!);
 		toast('Copied to clipboard!');
@@ -71,9 +85,14 @@
 
 	$: visibleCategories = $user.data?.isAdmin
 		? categories
-		: categories.filter((c) => c.title === 'Store & Revenue');
+		: categories
+			.map((category) => ({
+				...category,
+				items: category.items.filter((item) => item.managerAccess)
+			}))
+			.filter((category) => category.items.length > 0);
 
-	const categories = [
+	const categories: AdminCategory[] = [
 		{
 			title: 'System',
 			icon: '⚙️',
@@ -129,6 +148,11 @@
 			title: 'User Management',
 			icon: '👥',
 			items: [
+				{
+					name: 'Give Item',
+					href: '/admin/giveItem',
+					managerAccess: true
+				},
 				{ name: 'Account Merger', href: '/admin/accountMerger' },
 				{ name: 'Player Convictions', href: '/admin/convictions' }
 			]
@@ -147,7 +171,11 @@
 			icon: '💰',
 			items: [
 				{ name: 'Revenue Analytics', href: '/admin/revenue' },
-				{ name: 'Donation Manager', href: '/admin/donations' }
+				{
+					name: 'Donation Manager',
+					href: '/admin/donations',
+					managerAccess: true
+				}
 			]
 		},
 		{
@@ -177,14 +205,14 @@
           {#each category.items as item}
             {#if item.type === 'button'}
               <Button
-                on:click={item.action}
+                on:click={() => item.action?.()}
                 class="admin-button"
                 variant="outline"
               >
                 {item.name}
               </Button>
             {:else}
-              <a href={item.href} class="admin-link">
+              <a href={item.href ?? '#'} class="admin-link">
                 <span class="link-arrow">→</span>
                 {item.name}
               </a>
