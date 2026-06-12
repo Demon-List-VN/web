@@ -6,6 +6,11 @@
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 	import CaseDialog from '$lib/components/caseDialog.svelte';
+	import { clearPlayerCardSettingsCache } from '$lib/components/playerCard.svelte';
+	import {
+		equipCosmetic,
+		type CosmeticType
+	} from '$lib/client/cosmetics';
 	import { goto } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import { _ } from 'svelte-i18n';
@@ -27,9 +32,71 @@
 		inventoryQuantity: number;
 	};
 
+	const COSMETIC_TYPES = ['avatarFrame', 'profileTheme'];
+
 	let items: Item[] = [];
 	let loading = false;
 	let error: string | null = null;
+	let equipped: {
+		equippedFrame: number | null;
+		equippedTheme: number | null;
+	} = { equippedFrame: null, equippedTheme: null };
+
+	function isCosmetic(item: Item) {
+		return !!item.type && COSMETIC_TYPES.includes(item.type);
+	}
+
+	function isEquipped(item: Item) {
+		return item.type === 'avatarFrame'
+			? equipped.equippedFrame === item.itemId
+			: equipped.equippedTheme === item.itemId;
+	}
+
+	async function fetchEquipped() {
+		if (!$user.loggedIn) {
+			return;
+		}
+
+		try {
+			const response = await fetch(
+				`${import.meta.env.VITE_API_URL}/players/${$user.data.uid}`
+			);
+
+			if (!response.ok) {
+				return;
+			}
+
+			const player = await response.json();
+			equipped = {
+				equippedFrame: player.equippedFrame ?? null,
+				equippedTheme: player.equippedTheme ?? null
+			};
+		} catch (e) {
+			console.error(e);
+		}
+	}
+
+	async function toggleEquip(item: Item, itemId: number | null) {
+		const request = (async () => {
+			const player = await equipCosmetic(
+				(await $user.token())!,
+				item.type as CosmeticType,
+				itemId
+			);
+			equipped = {
+				equippedFrame: player.equippedFrame ?? null,
+				equippedTheme: player.equippedTheme ?? null
+			};
+			clearPlayerCardSettingsCache($user.data.uid);
+		})();
+
+		toast.promise(request, {
+			loading: get(_)('inventory.equipping'),
+			success: get(_)('inventory.equip_success'),
+			error: (e) =>
+				(e instanceof Error ? e.message : get(_)('inventory.equip_error'))
+		});
+	}
 
 	async function fetchInventory() {
 		loading = true;
@@ -122,7 +189,7 @@
 	}
 
 	onMount(async () => {
-		await fetchInventory();
+		await Promise.all([fetchInventory(), fetchEquipped()]);
 	});
 
 	async function closeAllAndReload() {
@@ -327,6 +394,11 @@
                   x{item.inventoryQuantity}
                 </div>
               {/if}
+              {#if isCosmetic(item) && isEquipped(item)}
+                <div class="absolute left-2 top-2 z-10 rounded-full bg-emerald-600/90 px-2 py-1 text-xs font-bold text-white">
+                  {$_('inventory.equipped')}
+                </div>
+              {/if}
               <div class="p-2">
                 <div class="truncate text-sm font-medium text-white">
                   {item.name}
@@ -400,7 +472,19 @@
                       {/if}
                     </div>
                     <div class="mt-auto">
-                      {#if selectedItems[item.inventoryId].data.type == 'case'}
+                      {#if isCosmetic(item)}
+                        {#if isEquipped(item)}
+                          <Button
+                            variant="secondary"
+                            on:click={() => toggleEquip(item, null)}
+                          >{$_('inventory.unequip')}</Button>
+                        {:else}
+                          <Button
+                            variant="secondary"
+                            on:click={() => toggleEquip(item, item.itemId)}
+                          >{$_('inventory.equip')}</Button>
+                        {/if}
+                      {:else if selectedItems[item.inventoryId].data.type == 'case'}
                         <AlertDialog.Root>
                           <AlertDialog.Trigger>
                             <Button variant="secondary">{

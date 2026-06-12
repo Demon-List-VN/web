@@ -138,7 +138,8 @@
 			icon: '✨',
 			items: [
 				{ name: 'Battlepass', href: '/admin/battlepass' },
-				{ name: 'Battlepass Courses', href: '/admin/battlepass/course' }
+				{ name: 'Battlepass Courses', href: '/admin/battlepass/course' },
+				{ name: 'Cosmetics', href: '/admin/cosmetics' }
 			]
 		},
 		{

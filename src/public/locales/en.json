@@ -1301,7 +1301,13 @@
         "open_one_suffix": "?",
         "open_button": "Open",
         "received_from_case": "You received an item from the case",
-        "better_luck": "Better luck next time"
+        "better_luck": "Better luck next time",
+        "equip": "Equip",
+        "unequip": "Unequip",
+        "equipped": "Equipped",
+        "equipping": "Equipping...",
+        "equip_success": "Updated equipped cosmetics",
+        "equip_error": "Failed to update equipped cosmetics"
     },
     "submit": {
         "button": "Submit",
@@ -1570,7 +1576,12 @@
         "show_pvp_elo_stat": "Show PvP Elo stat",
         "player_card_stat_line": "Stat line {index}",
         "save_stat_lines": "Save stat lines",
-        "save": "Save changes"
+        "save": "Save changes",
+        "collection": "Collection",
+        "collection_description": "Equip avatar frames and profile themes you own. Changes apply immediately.",
+        "avatar_frame": "Avatar frame",
+        "profile_theme": "Theme",
+        "none": "None"
     },
     "record_detail": {
         "tabs": {

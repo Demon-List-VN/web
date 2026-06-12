@@ -21,6 +21,13 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { getExpLevel } from '$lib/client/getExpLevel';
 	import PlayerLevelBadge from '$lib/components/PlayerLevelBadge.svelte';
+	import AvatarFrame from '$lib/components/AvatarFrame.svelte';
+	import {
+		bannerImageUrl,
+		getEquippedFrame,
+		getEquippedTheme,
+		getThemeStyle
+	} from '$lib/client/cosmetics';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import {
 		getSupporterTier,
@@ -46,6 +53,7 @@
 	export let active = true;
 	export let hideHeader = false;
 
+	let isBannerFailedToLoad = false;
 	let remoteSummaries: PlayerRankedListSummary[] = [];
 	let hydratedPlayer: any = null;
 	let isLoadingPlayerSettings = false;
@@ -57,6 +65,7 @@
 
 	$: if (player?.uid !== lastPlayerUid) {
 		lastPlayerUid = player?.uid || '';
+		isBannerFailedToLoad = false;
 		remoteSummaries = [];
 		hydratedPlayer = playerCardSettingsCache.get(lastPlayerUid) ?? null;
 		isLoadingPlayerSettings = false;
@@ -67,6 +76,9 @@
 	}
 
 	$: cardPlayer = hydratedPlayer ?? player;
+	$: equippedFrame = getEquippedFrame(cardPlayer);
+	$: equippedTheme = getEquippedTheme(cardPlayer);
+	$: playerCardStyle = getThemeStyle(equippedTheme);
 	$: supporterTier = getSupporterTier(cardPlayer?.supporterUntil);
 	$: supporterTierStyle = getSupporterTierStyle(supporterTier);
 	$: hasKnownPlayerCardStatLines = Array.isArray(cardPlayer?.playerCardStatLines);
@@ -314,22 +326,35 @@
 <div class="playerCardFrame" use:animateCardResize>
 <div
   class="playerCardRoot relative z-0 overflow-hidden rounded-md border-[1px] p-[12px]"
+  style={playerCardStyle}
 >
+  {#if !hideHeader && equippedTheme && !isBannerFailedToLoad}
+    <img
+      on:error={() => {
+          isBannerFailedToLoad = true;
+      }}
+      class="absolute left-0 top-0 z-[-1] h-[56px] w-full object-cover"
+      src={bannerImageUrl(equippedTheme)}
+      alt=""
+    />
+  {/if}
   {#if !hideHeader}
     <div class="hoverName">
       <div class="player-card-avatar-frame">
-        <Avatar.Root>
-          <Avatar.Image
-            class="object-cover"
-            src={`https://cdn.gdvn.net/avatars/${cardPlayer.uid}${
-                isActive(cardPlayer.supporterUntil) && cardPlayer.isAvatarGif
-                    ? '.gif'
-                    : '.jpg'
-            }`}
-            alt=""
-          />
-          <Avatar.Fallback>{cardPlayer.name[0]}</Avatar.Fallback>
-        </Avatar.Root>
+        <AvatarFrame frame={equippedFrame}>
+          <Avatar.Root>
+            <Avatar.Image
+              class="object-cover"
+              src={`https://cdn.gdvn.net/avatars/${cardPlayer.uid}${
+                  isActive(cardPlayer.supporterUntil) && cardPlayer.isAvatarGif
+                      ? '.gif'
+                      : '.jpg'
+              }`}
+              alt=""
+            />
+            <Avatar.Fallback>{cardPlayer.name[0]}</Avatar.Fallback>
+          </Avatar.Root>
+        </AvatarFrame>
         <PlayerLevelBadge player={cardPlayer} />
       </div>
       {#if cardPlayer.clan && isActive(cardPlayer.clans.boostedUntil)}

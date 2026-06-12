@@ -13,6 +13,13 @@
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import { upload } from '$lib/client/storage';
+	import {
+		bannerImageUrl,
+		equipCosmetic,
+		frameImageUrl,
+		type Cosmetic,
+		type CosmeticType
+	} from '$lib/client/cosmetics';
 	import ListSelector, {
 		type ListSelectorOption
 	} from '$lib/components/listSelector.svelte';
@@ -50,6 +57,16 @@
 	let playerCardShowEloStat = false;
 	let playerCardShowPvpEloStat = true;
 
+	type OwnedCosmetic = {
+		itemId: number;
+		name: string;
+	};
+
+	let ownedFrames: OwnedCosmetic[] = [];
+	let ownedThemes: OwnedCosmetic[] = [];
+	let cosmeticsLoadedForUid: string | null = null;
+	let isLoadingCosmetics = false;
+
 	$: (open, reset());
 	$: listSearchUrl = `${import.meta.env.VITE_API_URL}/lists`;
 	$: playerCardStatLineOptions = getPlayerCardStatLineOptions(
@@ -66,6 +83,26 @@
 	) {
 		void loadPlayerCardStatLines(player.uid);
 	}
+	$: if (
+		open
+		&& player?.uid
+		&& cosmeticsLoadedForUid !== player.uid
+		&& !isLoadingCosmetics
+	) {
+		void loadOwnedCosmetics(player.uid);
+	}
+	$: equippedFrameItem = {
+		value: player?.equippedFrame ?? null,
+		label: ownedFrames.find((frame) => frame.itemId === player?.equippedFrame)
+			?.name ?? $_('profile_edit.none')
+	};
+	$: equippedThemeItem = {
+		value: player?.equippedTheme ?? null,
+		label: ownedThemes.find((theme) => theme.itemId === player?.equippedTheme)
+			?.name ?? $_('profile_edit.none')
+	};
+	$: equippedFrameData = (player?.equippedFrameData ?? null) as Cosmetic | null;
+	$: equippedThemeData = (player?.equippedThemeData ?? null) as Cosmetic | null;
 
 	function reset() {
 		player = structuredClone(data);
@@ -111,6 +148,73 @@
 		} finally {
 			isLoadingPlayerCardStatLines = false;
 		}
+	}
+
+	async function loadOwnedCosmetics(uid: string) {
+		isLoadingCosmetics = true;
+
+		try {
+			const token = await $user.token();
+			const headers = { Authorization: `Bearer ${token}` };
+			const [framesResponse, themesResponse] = await Promise.all([
+				fetch(
+					`${import.meta.env.VITE_API_URL}/inventory?itemType=avatarFrame`,
+					{ headers }
+				),
+				fetch(
+					`${import.meta.env.VITE_API_URL}/inventory?itemType=profileTheme`,
+					{ headers }
+				)
+			]);
+			const frames = await framesResponse.json();
+			const themes = await themesResponse.json();
+			ownedFrames = (Array.isArray(frames) ? frames : []).map(
+				(item: any) => ({ itemId: item.itemId, name: item.name })
+			);
+			ownedThemes = (Array.isArray(themes) ? themes : []).map(
+				(item: any) => ({ itemId: item.itemId, name: item.name })
+			);
+			cosmeticsLoadedForUid = uid;
+		} catch {
+			ownedFrames = [];
+			ownedThemes = [];
+		} finally {
+			isLoadingCosmetics = false;
+		}
+	}
+
+	async function equip(type: CosmeticType, itemId: number | null) {
+		const currentItemId = type === 'avatarFrame'
+			? player?.equippedFrame ?? null
+			: player?.equippedTheme ?? null;
+
+		if (itemId === currentItemId) {
+			return;
+		}
+
+		const request = (async () => {
+			const updatedPlayer = await equipCosmetic(
+				(await $user.token())!,
+				type,
+				itemId
+			);
+			const equipUpdate = {
+				equippedFrame: updatedPlayer.equippedFrame ?? null,
+				equippedTheme: updatedPlayer.equippedTheme ?? null,
+				equippedFrameData: updatedPlayer.equippedFrameData ?? null,
+				equippedThemeData: updatedPlayer.equippedThemeData ?? null
+			};
+			data = { ...data, ...equipUpdate };
+			player = { ...player, ...equipUpdate };
+			clearPlayerCardSettingsCache(player.uid);
+		})();
+
+		toast.promise(request, {
+			loading: $_('inventory.equipping'),
+			success: $_('inventory.equip_success'),
+			error: (e) =>
+				(e instanceof Error ? e.message : $_('inventory.equip_error'))
+		});
 	}
 
 	function getPlayerCardStatLineOptions(
@@ -503,6 +607,92 @@
               {$_('profile_edit.save_stat_lines')}
             </Button>
           </div>
+        </div>
+        <div class="grid gap-3 rounded-md border p-4">
+          <div class="space-y-1">
+            <p class="text-sm font-semibold">
+              {$_('profile_edit.collection')}
+            </p>
+            <p class="text-xs text-muted-foreground">
+              {$_('profile_edit.collection_description')}
+            </p>
+          </div>
+          <div class="grid grid-cols-4 items-center gap-4">
+            <Label class="text-right">{$_('profile_edit.avatar_frame')}</Label>
+            <div class="col-span-3 flex items-center gap-3">
+              <Select.Root
+                selected={equippedFrameItem}
+                onSelectedChange={(selected) => {
+                    if (selected) {
+                        void equip('avatarFrame', selected.value);
+                    }
+                }}
+                disabled={isLoadingCosmetics}
+              >
+                <Select.Trigger class="flex-1">
+                  <Select.Value placeholder={$_('profile_edit.none')} />
+                </Select.Trigger>
+                <Select.Content>
+                  <Select.Item value={null}>{
+                    $_('profile_edit.none')
+                  }</Select.Item>
+                  {#each ownedFrames as frame (frame.itemId)}
+                    <Select.Item value={frame.itemId}>{
+                      frame.name
+                    }</Select.Item>
+                  {/each}
+                </Select.Content>
+              </Select.Root>
+              {#if equippedFrameData}
+                <img
+                  class="h-9 w-9 object-contain"
+                  src={frameImageUrl(equippedFrameData)}
+                  alt=""
+                />
+              {/if}
+            </div>
+          </div>
+          <div class="grid grid-cols-4 items-center gap-4">
+            <Label class="text-right">{$_('profile_edit.profile_theme')}</Label>
+            <div class="col-span-3 flex items-center gap-3">
+              <Select.Root
+                selected={equippedThemeItem}
+                onSelectedChange={(selected) => {
+                    if (selected) {
+                        void equip('profileTheme', selected.value);
+                    }
+                }}
+                disabled={isLoadingCosmetics}
+              >
+                <Select.Trigger class="flex-1">
+                  <Select.Value placeholder={$_('profile_edit.none')} />
+                </Select.Trigger>
+                <Select.Content>
+                  <Select.Item value={null}>{
+                    $_('profile_edit.none')
+                  }</Select.Item>
+                  {#each ownedThemes as theme (theme.itemId)}
+                    <Select.Item value={theme.itemId}>{
+                      theme.name
+                    }</Select.Item>
+                  {/each}
+                </Select.Content>
+              </Select.Root>
+              {#if equippedThemeData}
+                <img
+                  class="h-9 w-16 rounded border object-cover"
+                  style={`border-color: ${equippedThemeData.borderColor};`}
+                  src={bannerImageUrl(equippedThemeData)}
+                  alt=""
+                />
+              {/if}
+            </div>
+          </div>
+          {#if isLoadingCosmetics}
+            <p class="text-xs text-muted-foreground">
+              {$_('general.loading')}...
+            </p>
+          {/if}
         </div>
       </div>
       <Dialog.Footer>

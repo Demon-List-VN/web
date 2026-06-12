@@ -1301,7 +1301,13 @@
         "open_one_suffix": "?",
         "open_button": "Mở",
         "received_from_case": "Bạn đã nhận một vật phẩm từ hòm",
-        "better_luck": "Chúc may mắn lần sau"
+        "better_luck": "Chúc may mắn lần sau",
+        "equip": "Trang bị",
+        "unequip": "Gỡ trang bị",
+        "equipped": "Đang trang bị",
+        "equipping": "Đang trang bị...",
+        "equip_success": "Đã cập nhật trang bị",
+        "equip_error": "Cập nhật trang bị thất bại"
     },
     "submit": {
         "button": "Nộp",
@@ -1569,7 +1575,12 @@
         "show_pvp_elo_stat": "Hiển thị Elo PvP",
         "player_card_stat_line": "Dòng chỉ số {index}",
         "save_stat_lines": "Lưu dòng chỉ số",
-        "save": "Lưu thay đổi"
+        "save": "Lưu thay đổi",
+        "collection": "Bộ sưu tập",
+        "collection_description": "Trang bị khung ảnh đại diện và chủ đề hồ sơ bạn sở hữu. Thay đổi áp dụng ngay lập tức.",
+        "avatar_frame": "Khung ảnh đại diện",
+        "profile_theme": "Chủ đề",
+        "none": "Không"
     },
     "record_detail": {
         "tabs": {

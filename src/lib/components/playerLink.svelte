@@ -13,6 +13,8 @@
 	import { BadgeCheck, CheckCheck, Crown } from 'lucide-svelte';
 	import PlayerCard from '$lib/components/playerCard.svelte';
 	import PlayerLevelBadge from '$lib/components/PlayerLevelBadge.svelte';
+	import AvatarFrame from '$lib/components/AvatarFrame.svelte';
+	import { getEquippedFrame } from '$lib/client/cosmetics';
 
 	export let player: any;
 	export let showTitle = false;
@@ -100,19 +102,21 @@
 <div class:large class="wrapper">
   {#if showAvatar}
     <span class="player-link-avatar-frame">
-      <Avatar.Root
-        class="player-link-avatar-root"
-        style={`width: ${avatarSize}px; height: ${avatarSize}px;`}
-      >
-        <Avatar.Image
-          class="playerAvatar"
-          src={getAvatarSrc(player)}
-          alt={player.name}
-        />
-        <Avatar.Fallback
-          class="playerAvatar"
-        >{getAvatarFallback(player)}</Avatar.Fallback>
-      </Avatar.Root>
+      <AvatarFrame frame={getEquippedFrame(player)}>
+        <Avatar.Root
+          class="player-link-avatar-root"
+          style={`width: ${avatarSize}px; height: ${avatarSize}px;`}
+        >
+          <Avatar.Image
+            class="playerAvatar"
+            src={getAvatarSrc(player)}
+            alt={player.name}
+          />
+          <Avatar.Fallback
+            class="playerAvatar"
+          >{getAvatarFallback(player)}</Avatar.Fallback>
+        </Avatar.Root>
+      </AvatarFrame>
       <PlayerLevelBadge {player} size="sm" />
     </span>
   {/if}
@@ -213,15 +217,6 @@
 </div>
 
 <style lang="scss">
-.bgGradient {
-  margin-top: -50px;
-  mask-image: linear-gradient(
-    rgba(0, 0, 0, 1) 0%,
-    rgba(0, 0, 0, 1) 25%,
-    rgba(0, 0, 0, 0) 100%
-  );
-}
-
 .wrapper {
   display: flex;
   align-items: center;
