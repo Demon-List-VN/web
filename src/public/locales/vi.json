@@ -3954,7 +3954,8 @@
             "tabs": {
                 "settings": "Cài đặt",
                 "participants": "Người tham gia",
-                "bracket": "Nhánh đấu"
+                "bracket": "Nhánh đấu",
+                "matches": "Trận đấu"
             }
         },
         "format": {
@@ -4023,7 +4024,9 @@
             "save": "Lưu nhánh đấu",
             "saved": "Đã lưu nhánh đấu",
             "assignment_ready": "Mọi người chơi đã được xếp. Ô trống sẽ được miễn đấu.",
-            "assignment_incomplete": "Xếp mỗi người chơi đang tham gia đúng một lần trước khi lưu."
+            "assignment_incomplete": "Xếp mỗi người chơi đang tham gia đúng một lần trước khi lưu.",
+            "setup_mode": "Chế độ xếp nhánh",
+            "match_mode": "Chế độ thi đấu"
         },
         "leaderboard": {
             "rank": "Hạng",
@@ -4046,7 +4049,16 @@
             "status_removed": "Đã xóa"
         },
         "matches": {
-            "empty": "Chưa có trận đấu nào."
+            "empty": "Chưa có trận đấu nào.",
+            "finalize": "Chốt kết quả",
+            "start_next_game": "Bắt đầu trận PvP tiếp theo",
+            "pvp_games": "Trận PvP: {count} (BO{bestOf})",
+            "no_pvp_games": "Chưa có trận PvP nào được bắt đầu cho cặp đấu này.",
+            "status_waiting": "Đang chờ người chơi",
+            "status_pending": "Sẵn sàng",
+            "status_ready": "Đang khởi tạo",
+            "status_in_progress": "Đang thi đấu",
+            "status_completed": "Đã hoàn tất"
         }
     }
 }

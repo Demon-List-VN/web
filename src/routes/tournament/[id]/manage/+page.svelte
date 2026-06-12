@@ -17,6 +17,7 @@
 	import PvpFormatEditor from './pvpFormatEditor.svelte';
 	import ContestConfigEditor from './contestConfigEditor.svelte';
 	import BracketManager from './bracketManager.svelte';
+	import MatchesManager from './matchesManager.svelte';
 	import ParticipantsTab from '../participantsTab.svelte';
 
 	export let data: any;
@@ -247,6 +248,7 @@
       <Tabs.Trigger value="participants">{$_('tournament.manage.tabs.participants')}</Tabs.Trigger>
       {#if tournament.format === 'single_elimination'}
         <Tabs.Trigger value="bracket">{$_('tournament.manage.tabs.bracket')}</Tabs.Trigger>
+        <Tabs.Trigger value="matches">{$_('tournament.manage.tabs.matches')}</Tabs.Trigger>
       {/if}
     </Tabs.List>
 
@@ -371,6 +373,9 @@
     {#if tournament.format === 'single_elimination'}
       <Tabs.Content value="bracket" class="mt-[20px]">
         <BracketManager {tournament} onChange={refreshManagedTournament} />
+      </Tabs.Content>
+      <Tabs.Content value="matches" class="mt-[20px]">
+        <MatchesManager {tournament} onChange={refreshManagedTournament} />
       </Tabs.Content>
     {/if}
 

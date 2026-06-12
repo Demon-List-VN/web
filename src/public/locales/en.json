@@ -3955,7 +3955,8 @@
             "tabs": {
                 "settings": "Settings",
                 "participants": "Participants",
-                "bracket": "Bracket"
+                "bracket": "Bracket",
+                "matches": "Matches"
             }
         },
         "format": {
@@ -4024,7 +4025,9 @@
             "save": "Save bracket",
             "saved": "Bracket saved",
             "assignment_ready": "Every participant is assigned. Empty slots will be byes.",
-            "assignment_incomplete": "Assign every active participant exactly once before saving."
+            "assignment_incomplete": "Assign every active participant exactly once before saving.",
+            "setup_mode": "Setup mode",
+            "match_mode": "Match mode"
         },
         "leaderboard": {
             "rank": "Rank",
@@ -4047,7 +4050,16 @@
             "status_removed": "Removed"
         },
         "matches": {
-            "empty": "No matches yet."
+            "empty": "No matches yet.",
+            "finalize": "Finalize match",
+            "start_next_game": "Start next PvP game",
+            "pvp_games": "PvP games: {count} (best of {bestOf})",
+            "no_pvp_games": "No PvP games have been started for this match.",
+            "status_waiting": "Waiting for players",
+            "status_pending": "Ready",
+            "status_ready": "Starting",
+            "status_in_progress": "In progress",
+            "status_completed": "Completed"
         }
     }
 }
