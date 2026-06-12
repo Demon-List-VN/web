@@ -112,7 +112,7 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 48px;
+  height: 56px;
   background-color: var(--navbar-bg);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border1);

@@ -297,13 +297,13 @@
   display: block;
 
   @media screen and (min-width: 1025px) {
-    top: 48px;
+    top: 56px;
   }
 }
 
 .sidebar {
   position: fixed;
-  top: 48px;
+  top: 56px;
   left: 0;
   bottom: 0;
   width: 240px;

@@ -2724,7 +2724,7 @@ label {
 
 .selectionPanel.isSticky {
   position: sticky;
-  top: 48px;
+  top: 56px;
   z-index: 40;
   padding: 8px 0;
   background: hsl(var(--background) / 0.96);

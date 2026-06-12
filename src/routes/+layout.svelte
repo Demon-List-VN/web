@@ -571,7 +571,7 @@
 
 /* Layout container */
 .layout-container {
-  padding-top: 48px;
+  padding-top: 56px;
   min-height: 100vh;
   box-sizing: border-box;
 

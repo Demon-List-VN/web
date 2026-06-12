@@ -65,14 +65,14 @@
 <Popover.Root bind:open>
   <Popover.Trigger asChild let:builder>
     <Button
-      variant="outline"
+      variant="ghost"
       size="icon"
       class="avatar-menu-button rounded-full"
       builders={[builder]}
     >
       <span class="avatar-menu-frame">
         <AvatarFrame frame={navbarFrame}>
-          <Avatar.Root class="h-[28px] w-[28px]">
+          <Avatar.Root class="h-[38px] w-[38px]">
             <Avatar.Image
               class="object-cover"
               src={`https://cdn.gdvn.net/avatars/${$user.data.uid}${
@@ -182,6 +182,14 @@
 <style lang="scss">
 :global(.avatar-menu-button) {
   overflow: visible;
+  width: auto;
+  height: auto;
+  padding: 0;
+  background: transparent;
+}
+
+:global(.avatar-menu-button:hover) {
+  background: transparent;
 }
 
 .avatar-menu-frame {

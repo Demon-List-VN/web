@@ -921,7 +921,7 @@
 
 .notificationPopups {
   position: fixed;
-  top: calc(48px + 12px);
+  top: calc(56px + 12px);
   right: 16px;
   z-index: 100000;
   width: min(380px, calc(100vw - 32px));
