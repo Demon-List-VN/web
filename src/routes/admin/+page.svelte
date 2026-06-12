@@ -94,58 +94,43 @@
 
 	const categories: AdminCategory[] = [
 		{
-			title: 'System',
-			icon: '⚙️',
-			items: [
-				{ name: 'Refresh', action: refresh, type: 'button' },
-				{ name: 'Copy Token', action: copyToken, type: 'button' },
-				{
-					name: 'Test Discord General Message',
-					action: testDiscordGeneralMessage,
-					type: 'button'
-				},
-				{ name: 'API Tester', href: '/admin/api' },
-				{ name: 'Notification Manager', href: '/admin/notification' }
-			]
-		},
-		{
-			title: 'Content Management',
-			icon: '📝',
+			title: 'Levels & Records',
+			icon: '📊',
 			items: [
 				{ name: 'Level Manager', href: '/admin/level' },
 				{ name: 'Level Tags', href: '/admin/level?tab=tags' },
 				{ name: 'New Levels', href: '/admin/newLevels' },
 				{ name: 'Rating Estimator', href: '/admin/ratingEstimator' },
-				{ name: 'Map Pack', href: '/admin/mappack' }
+				{ name: 'Map Pack', href: '/admin/mappack' },
+				{ name: 'Submission', href: '/admin/submission' },
+				{ name: 'Level Submissions', href: '/admin/levelSubmissions' },
+				{ name: 'Add Record', href: '/admin/addRecord' }
 			]
 		},
 		{
-			title: 'Submissions & Records',
-			icon: '📋',
+			title: 'PvP',
+			icon: '⚔️',
 			items: [
-				{ name: 'Submission', href: '/admin/submission' },
-				{ name: 'Level Submissions', href: '/admin/levelSubmissions' },
-				{ name: 'PvP Required Submission', href: '/admin/pvpRequiredSubmission' },
 				{ name: 'PvP Events', href: '/admin/pvpEvents' },
 				{ name: 'PvP Reports', href: '/admin/pvpReports' },
-				{ name: 'Add Record', href: '/admin/addRecord' }
+				{ name: 'PvP Required Submission', href: '/admin/pvpRequiredSubmission' }
 			]
 		},
 		{
 			title: 'Events',
 			icon: '🎉',
 			items: [
+				{ name: 'Event Manager', href: '/admin/event' },
+				{ name: 'Event Proofs', href: '/admin/eventProofs' },
 				{
 					name: 'Calculate Contest Rating',
 					action: calculateContestRating,
 					type: 'button'
-				},
-				{ name: 'Event Manager', href: '/admin/event' },
-				{ name: 'Event Proofs', href: '/admin/eventProofs' }
+				}
 			]
 		},
 		{
-			title: 'User Management',
+			title: 'Users & Moderation',
 			icon: '👥',
 			items: [
 				{
@@ -158,7 +143,7 @@
 			]
 		},
 		{
-			title: 'Features',
+			title: 'Items & Progression',
 			icon: '✨',
 			items: [
 				{ name: 'Battlepass', href: '/admin/battlepass' },
@@ -179,11 +164,26 @@
 			]
 		},
 		{
-			title: 'Community',
+			title: 'Community & Notifications',
 			icon: '💬',
 			items: [
 				{ name: 'Community Posts', href: '/admin/community' },
-				{ name: 'Post Tags', href: '/admin/community?tab=tags' }
+				{ name: 'Post Tags', href: '/admin/community?tab=tags' },
+				{ name: 'Notification Manager', href: '/admin/notification' }
+			]
+		},
+		{
+			title: 'System & Tools',
+			icon: '⚙️',
+			items: [
+				{ name: 'Refresh', action: refresh, type: 'button' },
+				{ name: 'Copy Token', action: copyToken, type: 'button' },
+				{
+					name: 'Test Discord General Message',
+					action: testDiscordGeneralMessage,
+					type: 'button'
+				},
+				{ name: 'API Tester', href: '/admin/api' }
 			]
 		}
 	];
