@@ -57,45 +57,57 @@
   </div>
 {/if}
 
-<ProfileHero bind:data />
+<div class="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8">
+  <div class="grid min-w-0 gap-6 lg:grid-cols-[340px_minmax(0,1fr)] lg:items-start">
+    <aside
+      class="min-w-0 lg:sticky lg:top-[72px] lg:max-h-[calc(100vh-88px)] lg:overflow-y-auto lg:pr-1"
+    >
+      <ProfileHero bind:data />
+    </aside>
 
-{#if !isActive(data.player.supporterUntil)}
-  <div class="mx-auto max-w-[1200px] px-4 py-4">
-    <Ads dataAdFormat="auto" />
+    <main class="min-w-0">
+      {#if !isActive(data.player.supporterUntil)}
+        <div class="pb-4">
+          <Ads dataAdFormat="auto" />
+        </div>
+      {/if}
+
+      <Tabs.Root value="overview">
+        <div class="flex min-w-0 flex-col gap-4">
+          <div class="w-full overflow-x-auto pb-1">
+            <Tabs.List class="flex h-fit w-max min-w-max flex-nowrap">
+              <Tabs.Trigger value="overview">{
+                $_('player.tabs.overview')
+              }</Tabs.Trigger>
+              <Tabs.Trigger value="records">{
+                $_('player.tabs.records')
+              }</Tabs.Trigger>
+              <Tabs.Trigger value="activity">{
+                $_('player.tabs.activity')
+              }</Tabs.Trigger>
+              <Tabs.Trigger value="collection">{
+                $_('player.tabs.collection')
+              }</Tabs.Trigger>
+            </Tabs.List>
+          </div>
+
+          <Tabs.Content value="overview" class="min-w-0 w-full">
+            <OverviewTab {data} />
+          </Tabs.Content>
+
+          <Tabs.Content value="records" class="min-w-0 w-full">
+            <RecordsTab bind:data />
+          </Tabs.Content>
+
+          <Tabs.Content value="activity" class="min-w-0 w-full">
+            <ActivityTab userID={data.player.uid} />
+          </Tabs.Content>
+
+          <Tabs.Content value="collection" class="min-w-0 w-full">
+            <CollectionTab userID={data.player.uid} {data} />
+          </Tabs.Content>
+        </div>
+      </Tabs.Root>
+    </main>
   </div>
-{/if}
-
-<div class="mx-auto max-w-[1200px] px-4 pb-8 sm:px-6 lg:px-8">
-  <Tabs.Root value="overview">
-    <div class="flex flex-col items-center gap-4 pt-4">
-      <Tabs.List class="flex h-fit w-fit flex-wrap">
-        <Tabs.Trigger value="overview">{
-          $_('player.tabs.overview')
-        }</Tabs.Trigger>
-        <Tabs.Trigger value="records">{$_('player.tabs.records')}</Tabs.Trigger>
-        <Tabs.Trigger value="activity">{
-          $_('player.tabs.activity')
-        }</Tabs.Trigger>
-        <Tabs.Trigger value="collection">{
-          $_('player.tabs.collection')
-        }</Tabs.Trigger>
-      </Tabs.List>
-
-      <Tabs.Content value="overview" class="w-full max-w-[1200px]">
-        <OverviewTab {data} />
-      </Tabs.Content>
-
-      <Tabs.Content value="records" class="w-full max-w-[1200px]">
-        <RecordsTab bind:data />
-      </Tabs.Content>
-
-      <Tabs.Content value="activity" class="w-full max-w-[1200px]">
-        <ActivityTab userID={data.player.uid} />
-      </Tabs.Content>
-
-      <Tabs.Content value="collection" class="w-full max-w-[1200px]">
-        <CollectionTab userID={data.player.uid} {data} />
-      </Tabs.Content>
-    </div>
-  </Tabs.Root>
 </div>

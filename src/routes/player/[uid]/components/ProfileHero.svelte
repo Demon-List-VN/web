@@ -18,16 +18,21 @@
 		subscribeToSocialPresence,
 		type AggregatedSocialPresence
 	} from '$lib/client/socialPresence';
-	import {
-		getSupporterTier,
-		getSupporterTierStyle
-	} from '$lib/client/supporterTier';
+	import PlayerCard from '$lib/components/playerCard.svelte';
+	import PlayerLink from '$lib/components/playerLink.svelte';
 	import ProfileEditButton from '$lib/components/profileEditButton.svelte';
-	import { BadgeCheck, Clock, Eye, MapPin, UserCheck, UserPlus } from 'lucide-svelte';
+	import SupporterTierProgress from '$lib/components/SupporterTierProgress.svelte';
+	import {
+		BadgeCheck,
+		Clock,
+		Copy,
+		Eye,
+		MapPin,
+		UserCheck,
+		UserPlus
+	} from 'lucide-svelte';
 	import { _, locale } from 'svelte-i18n';
 	import { onDestroy } from 'svelte';
-	import SupporterBadge from './SupporterBadge.svelte';
-	import PlayerLevelBadge from '$lib/components/PlayerLevelBadge.svelte';
 
 	export let data: any;
 
@@ -42,11 +47,9 @@
 
 	$: player = data.player;
 	$: isSupporter = isActive(player.supporterUntil);
-	$: supporterTier = getSupporterTier(player.supporterUntil);
-	$: supporterTierStyle = getSupporterTierStyle(supporterTier);
 	$: avatarSrc = `https://cdn.gdvn.net/avatars/${player.uid}${
 		isSupporter && player.isAvatarGif ? '.gif' : '.jpg'
-	}?version=${player.avatarVersion}`;
+	}?version=${player.avatarVersion ?? 0}`;
 	$: showFriendButton = browser && $user.loggedIn && player.uid
 		&& player.uid !== $user.data?.uid;
 	$: showPresenceStatus = browser && player.uid && player.uid !== $user.data?.uid;
@@ -63,6 +66,11 @@
 		: socialStatus === 'blocked_me'
 		? 'Unavailable'
 		: 'Add friend';
+	$: hasProfileDetails = player.isTrusted
+		|| Boolean(player.province);
+	$: hasSocialLinks = Boolean(
+		player.youtube || player.facebook || player.discord
+	);
 	$: if (showFriendButton) {
 		const nextKey = `${$user.data?.uid}:${player.uid}`;
 
@@ -147,210 +155,294 @@
 	}
 </script>
 
-<div class="hero-container relative">
-  <!-- Banner -->
-  <div class="banner-area relative h-[200px] sm:h-[250px] lg:h-[280px]">
-    <div
-      class="absolute inset-0"
-      style="background: linear-gradient(to bottom, transparent 0%, transparent 50%, hsl(var(--background)) 100%);"
-    />
-  </div>
+<div class="profile-sidebar">
+  <section class="identity-card">
+    <Avatar.Root class="profile-avatar">
+      <Avatar.Image class="object-cover" src={avatarSrc} alt={player.name} />
+      <Avatar.Fallback class="text-4xl font-bold">
+        {player.name?.trim()?.[0]?.toUpperCase() ?? '?'}
+      </Avatar.Fallback>
+    </Avatar.Root>
+    <div class="profile-player-link">
+      <PlayerLink {player} large />
+    </div>
+  </section>
 
-  <!-- Profile Info Overlay -->
-  <div class="profile-info relative z-10 mx-auto max-w-[1200px] px-4 pb-4 sm:px-6 lg:px-8">
-    <div
-      class="flex flex-col items-center gap-4 sm:flex-row sm:items-end sm:gap-6"
-      style="margin-top: -72px"
+  <PlayerCard
+    player={data.player}
+    listSummaries={data.listSummaries || []}
+    hideHeader
+  />
+
+  {#if isSupporter}
+    <SupporterTierProgress supporterUntil={player.supporterUntil} compact />
+  {:else}
+    <SupporterTierProgress preview compact nonSupporter />
+  {/if}
+
+  <section class="sidebar-section">
+    <div class="section-heading">
+      <span>{text('Player actions', 'Thao tác')}</span>
+      {#if $user.loggedIn && player.uid == $user.data.uid && !$user.data.isBanned}
+        <ProfileEditButton bind:data={data.player} />
+      {/if}
+    </div>
+
+    <button
+      class="uid-button"
+      type="button"
+      on:click={() => {
+          navigator.clipboard.writeText(player.uid);
+          toast.success($_('player.copy_uid'));
+      }}
     >
-      <!-- Avatar -->
-      <div class="avatar-wrapper flex-shrink-0">
-        <div class="profile-avatar-frame">
-          <Avatar.Root
-            class="profile-avatar-root h-36 w-36 overflow-visible lg:h-44 lg:w-44"
-          >
-            <Avatar.Image
-              class="rounded-full object-cover"
-              src={avatarSrc}
-              alt={player.name}
-            />
-            <Avatar.Fallback class="text-4xl lg:text-5xl">{
-              player.name[0]
-            }</Avatar.Fallback>
-          </Avatar.Root>
-          <PlayerLevelBadge
-            player={player}
-            size="lg"
-            iconSize={20}
-            class="profile-level-badge"
-          />
-        </div>
+      <span class="min-w-0">
+        <span class="detail-label">UID</span>
+        <span class="detail-value truncate">{player.uid}</span>
+      </span>
+      <Copy class="h-4 w-4 flex-none" />
+    </button>
+
+    {#if showFriendButton}
+      <Button
+        variant="outline"
+        class="friend-action w-full justify-start"
+        disabled={friendButtonDisabled}
+        on:click={addFriend}
+      >
+        {#if socialStatus === 'friend'}
+          <UserCheck class="h-4 w-4" />
+        {:else if socialStatus === 'outgoing_pending' || socialStatus === 'incoming_pending'}
+          <Clock class="h-4 w-4" />
+        {:else}
+          <UserPlus class="h-4 w-4" />
+        {/if}
+        {friendButtonLabel}
+      </Button>
+    {/if}
+
+    {#if showPresenceStatus}
+      <div class="presence-row">
+        <span
+          class:online={Boolean(socialPresence?.online)
+            && socialActivity?.presenceVisible !== false}
+          class="presence-dot"
+        />
+        <span>{socialLine}</span>
       </div>
+    {/if}
 
-      <!-- Identity -->
-      <div class="flex flex-col items-center gap-2 pb-4 sm:items-start">
-        <!-- Name Row -->
-        <div class="flex flex-wrap items-center gap-2">
-          {#if player.clan && isActive(player.clans.boostedUntil)}
-            <a
-              href={`/clan/${player.clan}`}
-              class={badgeVariants({ variant: 'secondary' })}
-              style={`background-color: ${player.clans.tagBgColor}; color: ${player.clans.tagTextColor};`}
-            >
-              <span class="text-[15px]">{player.clans.tag}</span>
-            </a>
-          {/if}
-          <button
-            on:click={() => {
-                navigator.clipboard.writeText(player.uid);
-                toast.success($_('player.copy_uid'));
-            }}
-          >
-            <h2
-              class={`text-2xl font-bold sm:text-3xl ${isSupporter ? 'supporter-tier-text' : ''}`}
-              style={supporterTierStyle}
-            >
-              {#if player.clan && !isActive(player.clans.boostedUntil)}
-                [{player.clans.tag}]
-              {/if}
-              {player.name}
-            </h2>
-          </button>
-          {#if player.isTrusted}
-            <BadgeCheck class="h-5 w-5 text-blue-500" />
-          {/if}
-          <SupporterBadge
-            supporterUntil={player.supporterUntil}
-            uid={player.uid}
-          />
-          {#if $user.loggedIn && player.uid == $user.data.uid && !$user.data.isBanned}
-            <ProfileEditButton bind:data={data.player} />
-          {/if}
-          {#if showFriendButton}
-            <Button
-              size="sm"
-              variant="outline"
-              class="friend-action"
-              disabled={friendButtonDisabled}
-              on:click={addFriend}
-            >
-              {#if socialStatus === 'friend'}
-                <UserCheck class="h-4 w-4" />
-              {:else if socialStatus === 'outgoing_pending' || socialStatus === 'incoming_pending'}
-                <Clock class="h-4 w-4" />
-              {:else}
-                <UserPlus class="h-4 w-4" />
-              {/if}
-              {friendButtonLabel}
-            </Button>
-          {/if}
-          {#if showPresenceStatus}
-            <span class="presence-status">{socialLine}</span>
-          {/if}
-          {#if showSpectate}
-            <a
-              class={`${badgeVariants({ variant: 'outline' })} friend-action`}
-              href={`/versus/matches/${socialActivity?.activity?.matchId}?spectate=1`}
-            >
-              <Eye class="h-4 w-4" />
-              {text('Spectate', 'Xem trận')}
-            </a>
-          {/if}
+    {#if showSpectate}
+      <a
+        class={`${badgeVariants({ variant: 'outline' })} friend-action w-full justify-start`}
+        href={`/versus/matches/${socialActivity?.activity?.matchId}?spectate=1`}
+      >
+        <Eye class="h-4 w-4" />
+        {text('Spectate', 'Xem trận')}
+      </a>
+    {/if}
+  </section>
+
+  {#if hasProfileDetails}
+    <section class="sidebar-section">
+      <h2 class="section-heading">
+        {text('Player info', 'Thông tin người chơi')}
+      </h2>
+
+      {#if player.isTrusted}
+        <div class="detail-row">
+          <BadgeCheck class="h-5 w-5 flex-none text-blue-500" />
+          <span>{text('Trusted player', 'Người chơi đáng tin cậy')}</span>
         </div>
+      {/if}
 
-        <!-- Location -->
-        {#if player.province}
-          <div class="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <MapPin class="h-4 w-4" />
+      {#if player.province}
+        <div class="detail-row items-start">
+          <MapPin class="mt-0.5 h-4 w-4 flex-none" />
+          <span>
             {#if player.city}
               {player.province}, {player.city}
             {:else}
               {player.province}
             {/if}
-          </div>
-        {/if}
-
-        <!-- Social Links -->
-        <div class="flex items-center gap-3">
-          {#if player.youtube}
-            <a
-              href={player.youtube}
-              target="_blank"
-              class="opacity-60 transition-opacity hover:opacity-100"
-            >
-              <img src="/youtube.svg" alt="YouTube" class="h-5 w-5" />
-            </a>
-          {/if}
-          {#if player.facebook}
-            <a
-              href={player.facebook}
-              target="_blank"
-              class="opacity-60 transition-opacity hover:opacity-100"
-            >
-              <img src="/facebook.svg" alt="Facebook" class="h-5 w-5" />
-            </a>
-          {/if}
-          {#if player.discord}
-            <button
-              class="text-muted-foreground transition-colors hover:text-foreground"
-              on:click={() => {
-                  navigator.clipboard.writeText(player.discord);
-                  toast($_('player.copy_discord'));
-              }}
-            >
-              <img
-                src="/discord.svg"
-                alt="Discord"
-                class="h-5 w-5 opacity-60 transition-opacity hover:opacity-100"
-              />
-            </button>
-          {/if}
+          </span>
         </div>
-      </div>
-    </div>
-  </div>
+      {/if}
+    </section>
+  {/if}
+
+  {#if hasSocialLinks}
+    <section class="sidebar-section">
+      <h2 class="section-heading">
+        {text('Social media', 'Mạng xã hội')}
+      </h2>
+
+      {#if player.youtube}
+        <a
+          href={player.youtube}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="social-row"
+        >
+          <img src="/youtube.svg" alt="" class="h-5 w-5 flex-none" />
+          <span>YouTube</span>
+        </a>
+      {/if}
+
+      {#if player.facebook}
+        <a
+          href={player.facebook}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="social-row"
+        >
+          <img src="/facebook.svg" alt="" class="h-5 w-5 flex-none" />
+          <span>Facebook</span>
+        </a>
+      {/if}
+
+      {#if player.discord}
+        <button
+          type="button"
+          class="social-row w-full"
+          on:click={() => {
+              navigator.clipboard.writeText(player.discord);
+              toast($_('player.copy_discord'));
+          }}
+        >
+          <img src="/discord.svg" alt="" class="h-5 w-5 flex-none" />
+          <span class="min-w-0 flex-1 text-left">
+            <span class="block">Discord</span>
+            <span class="block truncate text-xs text-muted-foreground">
+              {player.discord}
+            </span>
+          </span>
+          <Copy class="h-4 w-4 flex-none text-muted-foreground" />
+        </button>
+      {/if}
+    </section>
+  {/if}
 </div>
 
 <style lang="scss">
-.hero-container {
-  overflow-x: hidden;
-  overflow-y: visible;
+.profile-sidebar {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
 }
 
-.profile-avatar-frame {
-  position: relative;
-  display: inline-flex;
-  overflow: visible;
+.identity-card {
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  min-width: 0;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  padding: 24px 16px 18px;
+  background: hsl(var(--card));
+  color: hsl(var(--card-foreground));
 }
 
-.avatar-wrapper {
-  padding-bottom: 30px;
+:global(.profile-avatar) {
+  width: 136px;
+  height: 136px;
 }
 
-:global(.profile-level-badge) {
-  bottom: -26px;
-  z-index: 20;
-  overflow: visible;
-  min-height: 34px;
-  min-width: 42px;
-  align-content: center;
-  padding: 7px 10px;
-  border-width: 2px;
-  background: hsl(var(--background) / 0.95);
-  line-height: 0;
+.profile-player-link {
+  display: flex;
+  max-width: 100%;
+  justify-content: center;
+  text-align: center;
 }
 
-:global(.profile-level-badge .badge-row) {
-  line-height: 0;
+.sidebar-section {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  padding: 12px;
+  background: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+}
+
+.section-heading {
+  display: flex;
+  min-height: 28px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.uid-button,
+.social-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  border-radius: 6px;
+  padding: 8px;
+  text-align: left;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.uid-button {
+  justify-content: space-between;
+  border: 1px solid hsl(var(--border));
+}
+
+.uid-button:hover,
+.social-row:hover {
+  background: hsl(var(--muted));
+}
+
+.detail-label,
+.detail-value {
+  display: block;
+}
+
+.detail-label {
+  color: hsl(var(--muted-foreground));
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.detail-value {
+  margin-top: 2px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+}
+
+.detail-row,
+.presence-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  color: hsl(var(--muted-foreground));
+  font-size: 13px;
+}
+
+.presence-dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 9999px;
+  background: hsl(var(--muted-foreground));
+}
+
+.presence-dot.online {
+  background: rgb(34 197 94);
 }
 
 :global(.friend-action) {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-}
-
-.presence-status {
-  color: var(--textColor2);
-  font-size: 13px;
 }
 </style>

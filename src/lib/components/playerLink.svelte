@@ -18,6 +18,7 @@
 	export let showTitle = false;
 	export let showAvatar = false;
 	export let avatarSize = 26;
+	export let large = false;
 	export let titleType: string = 'dl';
 	export let truncate: number | null = null;
 	export let rankBadge: PlayerLinkRankBadge | null = null;
@@ -96,7 +97,7 @@
 	}
 </script>
 
-<div class="wrapper">
+<div class:large class="wrapper">
   {#if showAvatar}
     <span class="player-link-avatar-frame">
       <Avatar.Root
@@ -225,6 +226,16 @@
   display: flex;
   align-items: center;
   gap: 7px;
+}
+
+.wrapper.large {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.wrapper.large :global(svg) {
+  width: 18px;
+  height: 18px;
 }
 
 .player-link-avatar-frame {

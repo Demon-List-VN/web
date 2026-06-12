@@ -44,6 +44,7 @@
 	export let player: any;
 	export let listSummaries: PlayerRankedListSummary[] | null = null;
 	export let active = true;
+	export let hideHeader = false;
 
 	let remoteSummaries: PlayerRankedListSummary[] = [];
 	let hydratedPlayer: any = null;
@@ -314,41 +315,43 @@
 <div
   class="playerCardRoot relative z-0 overflow-hidden rounded-md border-[1px] p-[12px]"
 >
-  <div class="hoverName">
-    <div class="player-card-avatar-frame">
-      <Avatar.Root>
-        <Avatar.Image
-          class="object-cover"
-          src={`https://cdn.gdvn.net/avatars/${cardPlayer.uid}${
-              isActive(cardPlayer.supporterUntil) && cardPlayer.isAvatarGif
-                  ? '.gif'
-                  : '.jpg'
-          }`}
-          alt=""
-        />
-        <Avatar.Fallback>{cardPlayer.name[0]}</Avatar.Fallback>
-      </Avatar.Root>
-      <PlayerLevelBadge player={cardPlayer} />
+  {#if !hideHeader}
+    <div class="hoverName">
+      <div class="player-card-avatar-frame">
+        <Avatar.Root>
+          <Avatar.Image
+            class="object-cover"
+            src={`https://cdn.gdvn.net/avatars/${cardPlayer.uid}${
+                isActive(cardPlayer.supporterUntil) && cardPlayer.isAvatarGif
+                    ? '.gif'
+                    : '.jpg'
+            }`}
+            alt=""
+          />
+          <Avatar.Fallback>{cardPlayer.name[0]}</Avatar.Fallback>
+        </Avatar.Root>
+        <PlayerLevelBadge player={cardPlayer} />
+      </div>
+      {#if cardPlayer.clan && isActive(cardPlayer.clans.boostedUntil)}
+        <a
+          href={`/clan/${cardPlayer.clan}`}
+          class={`headerBadge ${badgeVariants({ variant: 'secondary' })}`}
+          style={`background-color: ${cardPlayer.clans.tagBgColor}; color: ${cardPlayer.clans.tagTextColor};`}
+        >{cardPlayer.clans.tag}</a>
+      {/if}
+      <h4 class="playerName font-semibold">
+        <span
+          class={isActive(cardPlayer.supporterUntil) ? 'supporter-tier-text' : ''}
+          style={supporterTierStyle}
+        >
+          {#if cardPlayer.clan && !isActive(cardPlayer.clans.boostedUntil)}
+            <a href={`/clan/${cardPlayer.clan}`}>[{cardPlayer.clans.tag}]</a>
+          {/if}
+          <a href={`/player/${cardPlayer.uid}`}>{cardPlayer.name}</a>
+        </span>
+      </h4>
     </div>
-    {#if cardPlayer.clan && isActive(cardPlayer.clans.boostedUntil)}
-      <a
-        href={`/clan/${cardPlayer.clan}`}
-        class={`headerBadge ${badgeVariants({ variant: 'secondary' })}`}
-        style={`background-color: ${cardPlayer.clans.tagBgColor}; color: ${cardPlayer.clans.tagTextColor};`}
-      >{cardPlayer.clans.tag}</a>
-    {/if}
-    <h4 class="playerName font-semibold">
-      <span
-        class={isActive(cardPlayer.supporterUntil) ? 'supporter-tier-text' : ''}
-        style={supporterTierStyle}
-      >
-        {#if cardPlayer.clan && !isActive(cardPlayer.clans.boostedUntil)}
-          <a href={`/clan/${cardPlayer.clan}`}>[{cardPlayer.clans.tag}]</a>
-        {/if}
-        <a href={`/player/${cardPlayer.uid}`}>{cardPlayer.name}</a>
-      </span>
-    </h4>
-  </div>
+  {/if}
   <div class="content">
     <div class="rating">
       <div class="flex justify-center">
