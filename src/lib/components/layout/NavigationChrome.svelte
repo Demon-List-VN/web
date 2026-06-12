@@ -13,7 +13,8 @@
 		GitCompare,
 		CreditCard,
 		Bug,
-		Swords
+		Swords,
+		Trophy
 	} from 'lucide-svelte';
 	import { locale } from 'svelte-i18n';
 
@@ -33,6 +34,11 @@
 	$: linkGroup = [
 		{ route: '/lists', name: 'Lists', icon: LayoutList },
 		{ route: '/versus/play', name: '1v1 Versus', icon: Swords },
+		{
+			route: '/tournaments',
+			name: $locale === 'en' ? 'Tournaments' : 'Giải đấu',
+			icon: Trophy
+		},
 		{ route: '/battlepass', name: 'Pass', icon: Ticket },
 		{
 			route: '/events',
