@@ -9,8 +9,22 @@
 	import RecordsTab from './components/RecordsTab.svelte';
 	import ActivityTab from './components/ActivityTab.svelte';
 	import CollectionTab from './components/CollectionTab.svelte';
+	import {
+		bannerImageUrl,
+		getEquippedTheme
+	} from '$lib/client/cosmetics';
 
 	export let data: PageData;
+
+	let isBannerFailedToLoad = false;
+	let bannerUid = '';
+
+	$: player = data.player;
+	$: if (player?.uid !== bannerUid) {
+		bannerUid = player?.uid || '';
+		isBannerFailedToLoad = false;
+	}
+	$: equippedTheme = getEquippedTheme(player);
 </script>
 
 <svelte:head>
@@ -58,6 +72,17 @@
 {/if}
 
 <div class="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8">
+  {#if equippedTheme && !isBannerFailedToLoad}
+    <img
+      class="mb-6 aspect-[6/1] w-full rounded-lg object-cover"
+      src={bannerImageUrl(equippedTheme)}
+      alt=""
+      on:error={() => {
+          isBannerFailedToLoad = true;
+      }}
+    />
+  {/if}
+
   <div class="grid min-w-0 gap-6 lg:grid-cols-[340px_minmax(0,1fr)] lg:items-start">
     <aside
       class="min-w-0 lg:sticky lg:top-[72px] lg:max-h-[calc(100vh-88px)] lg:overflow-y-auto lg:pr-1"

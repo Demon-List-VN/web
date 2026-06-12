@@ -20,7 +20,6 @@
 	} from '$lib/client/socialPresence';
 	import AvatarFrame from '$lib/components/AvatarFrame.svelte';
 	import {
-		bannerImageUrl,
 		getEquippedFrame,
 		getEquippedTheme,
 		getThemeStyle
@@ -51,14 +50,8 @@
 	let presenceKey = '';
 	let addingFriend = false;
 	let cleanupPresence: (() => Promise<unknown>) | null = null;
-	let isBannerFailedToLoad = false;
-	let bannerUid = '';
 
 	$: player = data.player;
-	$: if (player?.uid !== bannerUid) {
-		bannerUid = player?.uid || '';
-		isBannerFailedToLoad = false;
-	}
 	$: equippedFrame = getEquippedFrame(player);
 	$: equippedTheme = getEquippedTheme(player);
 	$: isSupporter = isActive(player.supporterUntil);
@@ -172,16 +165,6 @@
 
 <div class="profile-sidebar">
   <section class="identity-card" style={getThemeStyle(equippedTheme)}>
-    {#if equippedTheme && !isBannerFailedToLoad}
-      <img
-        on:error={() => {
-            isBannerFailedToLoad = true;
-        }}
-        class="profile-banner"
-        src={bannerImageUrl(equippedTheme)}
-        alt=""
-      />
-    {/if}
     <AvatarFrame frame={equippedFrame}>
       <Avatar.Root class="profile-avatar">
         <Avatar.Image class="object-cover" src={avatarSrc} alt={player.name} />
@@ -369,13 +352,6 @@
   padding: 24px 16px 18px;
   background: hsl(var(--card));
   color: hsl(var(--card-foreground));
-}
-
-.profile-banner {
-  width: calc(100% + 32px);
-  height: 110px;
-  margin: -24px -16px 0;
-  object-fit: cover;
 }
 
 :global(.profile-avatar) {
