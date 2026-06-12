@@ -131,7 +131,7 @@
 
     {#if isHost}
       <Button variant="outline" href={`/tournament/${tournament.id}/manage`}>
-        {$_('tournament.manage')}
+        {$_('tournament.manage.title')}
       </Button>
     {/if}
   </div>

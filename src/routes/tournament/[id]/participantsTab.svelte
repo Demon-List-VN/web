@@ -7,7 +7,6 @@
 	import { badgeVariants } from '$lib/components/ui/badge';
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import PlayerSelector from '$lib/components/playerSelector.svelte';
-	import { user } from '$lib/client';
 	import { tournamentFetch } from '$lib/client/tournament';
 
 	export let tournament: any;
@@ -137,7 +136,7 @@
             </Table.Cell>
             {#if (isHost || isManager) && preStart}
               <Table.Cell>
-                {#if isManager && participant.status !== 'removed'}
+                {#if (isHost || isManager) && participant.status !== 'removed'}
                   <Button size="sm" variant="ghost" on:click={() => remove(participant.uid)}>
                     {$_('tournament.participants.remove')}
                   </Button>

@@ -3892,6 +3892,7 @@
         "claim_reward": "Claim Reward",
         "reward_claimed": "Reward Claimed",
         "manage": {
+            "title": "Manage tournament",
             "view": "View page",
             "lifecycle": "Lifecycle",
             "current_status": "Current status",
@@ -3904,6 +3905,13 @@
             "cancelled": "Tournament cancelled",
             "started": "Tournament started",
             "action_done": "Done",
+            "registration_opens_at": "Registration opens",
+            "registration_closes_at": "Registration closes",
+            "starts_at": "Tournament starts",
+            "schedule_hint": "Registration and the tournament will transition automatically at these times.",
+            "schedule_invalid": "Set registration open, registration close, and tournament start times in order.",
+            "schedule_saved": "Schedule saved",
+            "save_schedule": "Save schedule",
             "basics": "Basic info",
             "detail": "Detail (Markdown)",
             "detail_placeholder": "Write the tournament rules and details in Markdown...",
@@ -3946,6 +3954,7 @@
             "add_reward": "Add reward",
             "tabs": {
                 "settings": "Settings",
+                "participants": "Participants",
                 "bracket": "Bracket"
             }
         },
@@ -4028,7 +4037,7 @@
         "participants": {
             "invite": "Invite",
             "force_add": "Force add",
-            "remove": "Remove",
+            "remove": "Kick",
             "invited": "Player invited",
             "added": "Player added",
             "removed": "Player removed",

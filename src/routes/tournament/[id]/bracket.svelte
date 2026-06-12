@@ -74,77 +74,82 @@
 <div class="overflow-x-auto pb-[10px]">
   <div class="flex w-fit gap-[40px] p-[10px]">
     {#each rounds as round, roundIndex}
-      <div class="flex flex-col" style={`gap: ${columnGap(roundIndex)}px; padding-top: ${columnPadding(roundIndex)}px;`}>
+      <div class="flex flex-col">
         <div class="mb-[6px] text-center text-sm font-semibold text-muted-foreground">
           {roundLabel(roundIndex, rounds.length)}
         </div>
-        {#each round.matches as node}
-          <div
-            class="flex w-[240px] flex-col overflow-hidden rounded-[8px] border border-[hsl(var(--border))]"
-            style={`height: ${MATCH_HEIGHT}px;`}
-          >
-            {#each [1, 2] as slot}
-              {@const player = slot === 1 ? node.player1 : node.player2}
-              {@const score = slot === 1 ? node.score1 : node.score2}
-              <div
-                class="flex flex-1 items-center gap-[6px] px-[10px] text-sm"
-                class:bg-green-500={false}
-                class:font-semibold={isWinner(node, slot)}
-              >
-                {#if editable && roundIndex === 0}
-                  <select
-                    class="h-8 min-w-0 flex-1 rounded-md border border-input bg-background px-2 text-xs"
-                    value={slot === 1 ? node.player1Uid ?? '' : node.player2Uid ?? ''}
-                    on:change={(event) => onSlotChange?.(node.position, slot === 1 ? 1 : 2, selectedUid(event))}
-                  >
-                    <option value="">{$_('tournament.bracket.bye')}</option>
-                    {#each participants as participant}
-                      <option value={participant.uid}>
-                        {participant.player?.name ?? participant.uid} ({participant.eloAtRegistration ?? 1500})
-                      </option>
-                    {/each}
-                  </select>
-                {:else if player}
-                  <PlayerLink {player} showAvatar avatarSize={20} truncate={18} />
-                {:else}
-                  <span class="opacity-40">{slotLabel(node, slot)}</span>
-                {/if}
-                {#if !editable || roundIndex !== 0}
-                  <span
-                    class="ml-auto tabular-nums"
-                    class:text-green-500={isWinner(node, slot)}
-                  >
-                    {score ?? 0}
-                  </span>
-                {/if}
-              </div>
-            {/each}
-            {#if node.currentPvpMatchId || (showActions && node.player1Uid && node.player2Uid && node.status !== 'waiting')}
-              <div class="flex h-[28px] border-t border-[hsl(var(--border))] bg-muted/40 text-xs">
-                {#if node.currentPvpMatchId}
-                  <a
-                    class="flex flex-1 items-center justify-center text-primary hover:bg-muted"
-                    href={`/versus/matches/${node.currentPvpMatchId}`}
-                  >
-                    {$_('tournament.bracket.open_match')}
-                  </a>
-                {:else if showActions && node.status === 'pending'}
-                  <button class="flex-1 hover:bg-muted" on:click={() => onStart?.(node)}>
-                    {$_('tournament.bracket.start_match')}
-                  </button>
-                {/if}
-                {#if showActions && node.player1Uid && node.player2Uid}
-                  <button
-                    class="flex-1 border-l border-[hsl(var(--border))] hover:bg-muted"
-                    on:click={() => onOverride?.(node)}
-                  >
-                    {$_('tournament.bracket.edit_result')}
-                  </button>
-                {/if}
-              </div>
-            {/if}
-          </div>
-        {/each}
+        <div
+          class="flex flex-col"
+          style={`gap: ${columnGap(roundIndex)}px; padding-top: ${columnPadding(roundIndex)}px;`}
+        >
+          {#each round.matches as node}
+            <div
+              class="flex w-[240px] flex-col overflow-hidden rounded-[8px] border border-[hsl(var(--border))]"
+              style={`height: ${MATCH_HEIGHT}px;`}
+            >
+              {#each [1, 2] as slot}
+                {@const player = slot === 1 ? node.player1 : node.player2}
+                {@const score = slot === 1 ? node.score1 : node.score2}
+                <div
+                  class="flex flex-1 items-center gap-[6px] px-[10px] text-sm"
+                  class:bg-green-500={false}
+                  class:font-semibold={isWinner(node, slot)}
+                >
+                  {#if editable && roundIndex === 0}
+                    <select
+                      class="h-8 min-w-0 flex-1 rounded-md border border-input bg-background px-2 text-xs"
+                      value={slot === 1 ? node.player1Uid ?? '' : node.player2Uid ?? ''}
+                      on:change={(event) => onSlotChange?.(node.position, slot === 1 ? 1 : 2, selectedUid(event))}
+                    >
+                      <option value="">{$_('tournament.bracket.bye')}</option>
+                      {#each participants as participant}
+                        <option value={participant.uid}>
+                          {participant.player?.name ?? participant.uid} ({participant.eloAtRegistration ?? 1500})
+                        </option>
+                      {/each}
+                    </select>
+                  {:else if player}
+                    <PlayerLink {player} showAvatar avatarSize={20} truncate={18} />
+                  {:else}
+                    <span class="opacity-40">{slotLabel(node, slot)}</span>
+                  {/if}
+                  {#if !editable || roundIndex !== 0}
+                    <span
+                      class="ml-auto tabular-nums"
+                      class:text-green-500={isWinner(node, slot)}
+                    >
+                      {score ?? 0}
+                    </span>
+                  {/if}
+                </div>
+              {/each}
+              {#if node.currentPvpMatchId || (showActions && node.player1Uid && node.player2Uid && node.status !== 'waiting')}
+                <div class="flex h-[28px] border-t border-[hsl(var(--border))] bg-muted/40 text-xs">
+                  {#if node.currentPvpMatchId}
+                    <a
+                      class="flex flex-1 items-center justify-center text-primary hover:bg-muted"
+                      href={`/versus/matches/${node.currentPvpMatchId}`}
+                    >
+                      {$_('tournament.bracket.open_match')}
+                    </a>
+                  {:else if showActions && node.status === 'pending'}
+                    <button class="flex-1 hover:bg-muted" on:click={() => onStart?.(node)}>
+                      {$_('tournament.bracket.start_match')}
+                    </button>
+                  {/if}
+                  {#if showActions && node.player1Uid && node.player2Uid}
+                    <button
+                      class="flex-1 border-l border-[hsl(var(--border))] hover:bg-muted"
+                      on:click={() => onOverride?.(node)}
+                    >
+                      {$_('tournament.bracket.edit_result')}
+                    </button>
+                  {/if}
+                </div>
+              {/if}
+            </div>
+          {/each}
+        </div>
       </div>
     {/each}
   </div>

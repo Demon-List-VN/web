@@ -17,10 +17,12 @@
 	import PvpFormatEditor from './pvpFormatEditor.svelte';
 	import ContestConfigEditor from './contestConfigEditor.svelte';
 	import BracketManager from './bracketManager.svelte';
+	import ParticipantsTab from '../participantsTab.svelte';
 
 	export let data: any;
 
 	$: tournament = data.tournament;
+	$: isHost = tournament.hostUid === $user?.data?.uid;
 	$: isManager = Boolean($user?.data?.isManager || $user?.data?.isAdmin);
 	$: preStart = ['draft', 'registration_open', 'registration_closed', 'ready'].includes(
 		tournament.status
@@ -33,7 +35,11 @@
 	let minElo: number | null = null;
 	let maxElo: number | null = null;
 	let eloEnforced = false;
+	let registrationOpensAt = '';
+	let registrationClosesAt = '';
+	let startsAt = '';
 	let saving = false;
+	let savingSchedule = false;
 	let initialized = false;
 	let activeTab = 'settings';
 	let authenticatedTournamentLoaded = false;
@@ -46,7 +52,40 @@
 		minElo = tournament.minElo;
 		maxElo = tournament.maxElo;
 		eloEnforced = tournament.eloEnforced ?? false;
+		registrationOpensAt = toDatetimeLocal(tournament.registrationOpensAt);
+		registrationClosesAt = toDatetimeLocal(tournament.registrationClosesAt);
+		startsAt = toDatetimeLocal(tournament.startsAt);
 		initialized = true;
+	}
+
+	$: scheduleValid =
+		Boolean(registrationOpensAt && registrationClosesAt && startsAt)
+		&& timestamp(registrationOpensAt) < timestamp(registrationClosesAt)
+		&& timestamp(registrationClosesAt) <= timestamp(startsAt);
+
+	function timestamp(value: string) {
+		return new Date(value)
+			.getTime();
+	}
+
+	function toDatetimeLocal(value: unknown) {
+		const date = new Date(String(value || ''));
+
+		if (Number.isNaN(date.getTime())) {
+			return '';
+		}
+
+		const offsetMs = date.getTimezoneOffset() * 60 * 1000;
+
+		return new Date(date.getTime() - offsetMs)
+			.toISOString()
+			.slice(0, 16);
+	}
+
+	function toIso(value: string) {
+		const date = new Date(value);
+
+		return Number.isNaN(date.getTime()) ? null : date.toISOString();
 	}
 
 	$: if ($user?.checked && !authenticatedTournamentLoaded) {
@@ -106,6 +145,33 @@
 		}
 	}
 
+	async function saveSchedule() {
+		if (!scheduleValid) {
+			toast.error($_('tournament.manage.schedule_invalid'));
+
+			return;
+		}
+
+		savingSchedule = true;
+
+		try {
+			await tournamentFetch(`/${tournament.id}`, {
+				method: 'PATCH',
+				body: JSON.stringify({
+					registrationOpensAt: toIso(registrationOpensAt),
+					registrationClosesAt: toIso(registrationClosesAt),
+					startsAt: toIso(startsAt)
+				})
+			});
+			await refreshManagedTournament();
+			toast.success($_('tournament.manage.schedule_saved'));
+		} catch (error: any) {
+			toast.error(error.message);
+		} finally {
+			savingSchedule = false;
+		}
+	}
+
 	async function uploadBanner(event: Event) {
 		const input = event.target as HTMLInputElement;
 		const file = input.files?.[0];
@@ -145,16 +211,6 @@
 		}
 	}
 
-	async function startTournament() {
-		try {
-			await tournamentFetch(`/${tournament.id}/start`, { method: 'POST' });
-			toast.success($_('tournament.manage.started'));
-			goto(`/tournament/${tournament.id}`);
-		} catch (error: any) {
-			toast.error(error.message);
-		}
-	}
-
 	async function cancelTournament() {
 		if (!confirm($_('tournament.manage.cancel_confirm'))) {
 			return;
@@ -174,12 +230,12 @@
 </script>
 
 <svelte:head>
-  <title>{$_('tournament.manage')} - {tournament.name}</title>
+  <title>{$_('tournament.manage.title')} - {tournament.name}</title>
 </svelte:head>
 
 <div class="mx-auto mt-[20px] w-full max-w-[1500px] px-[10px] pb-[60px]">
   <div class="flex items-center justify-between">
-    <h1 class="text-2xl font-bold">{$_('tournament.manage')}</h1>
+    <h1 class="text-2xl font-bold">{$_('tournament.manage.title')}</h1>
     <Button variant="outline" href={`/tournament/${tournament.id}`}>
       {$_('tournament.manage.view')}
     </Button>
@@ -188,6 +244,7 @@
   <Tabs.Root bind:value={activeTab} class="mt-[20px]">
     <Tabs.List>
       <Tabs.Trigger value="settings">{$_('tournament.manage.tabs.settings')}</Tabs.Trigger>
+      <Tabs.Trigger value="participants">{$_('tournament.manage.tabs.participants')}</Tabs.Trigger>
       {#if tournament.format === 'single_elimination'}
         <Tabs.Trigger value="bracket">{$_('tournament.manage.tabs.bracket')}</Tabs.Trigger>
       {/if}
@@ -208,22 +265,32 @@
         {/each}
       </ul>
     {/if}
+    {#if preStart || isManager}
+      <div class="grid gap-[10px] md:grid-cols-3">
+        <div class="flex flex-col gap-[6px]">
+          <Label>{$_('tournament.manage.registration_opens_at')}</Label>
+          <Input type="datetime-local" bind:value={registrationOpensAt} disabled={!preStart && !isManager} />
+        </div>
+        <div class="flex flex-col gap-[6px]">
+          <Label>{$_('tournament.manage.registration_closes_at')}</Label>
+          <Input type="datetime-local" bind:value={registrationClosesAt} disabled={!preStart && !isManager} />
+        </div>
+        <div class="flex flex-col gap-[6px]">
+          <Label>{$_('tournament.manage.starts_at')}</Label>
+          <Input type="datetime-local" bind:value={startsAt} disabled={!preStart && !isManager} />
+        </div>
+      </div>
+      <p class="text-xs text-muted-foreground">{$_('tournament.manage.schedule_hint')}</p>
+      <Button
+        size="sm"
+        class="self-start"
+        on:click={saveSchedule}
+        disabled={savingSchedule || !scheduleValid || (!preStart && !isManager)}
+      >
+        {$_('tournament.manage.save_schedule')}
+      </Button>
+    {/if}
     <div class="flex flex-wrap gap-[8px]">
-      {#if tournament.status === 'draft' || tournament.status === 'registration_closed'}
-        <Button size="sm" variant="outline" on:click={() => lifecycle('registration/open')}>
-          {$_('tournament.manage.open_registration')}
-        </Button>
-      {/if}
-      {#if tournament.status === 'registration_open'}
-        <Button size="sm" variant="outline" on:click={() => lifecycle('registration/close')}>
-          {$_('tournament.manage.close_registration')}
-        </Button>
-      {/if}
-      {#if preStart}
-        <Button size="sm" on:click={startTournament} disabled={tournament.canStart === false}>
-          {$_('tournament.manage.start')}
-        </Button>
-      {/if}
       {#if tournament.format === 'contest' && tournament.status === 'ongoing'}
         <Button size="sm" on:click={() => lifecycle('end')}>
           {$_('tournament.manage.end_contest')}
@@ -306,5 +373,14 @@
         <BracketManager {tournament} onChange={refreshManagedTournament} />
       </Tabs.Content>
     {/if}
+
+    <Tabs.Content value="participants" class="mt-[20px]">
+      <ParticipantsTab
+        {tournament}
+        isHost={isHost || isManager}
+        {isManager}
+        onChange={refreshManagedTournament}
+      />
+    </Tabs.Content>
   </Tabs.Root>
 </div>

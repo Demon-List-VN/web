@@ -3891,6 +3891,7 @@
         "claim_reward": "Nhận thưởng",
         "reward_claimed": "Đã nhận thưởng",
         "manage": {
+            "title": "Quản lý giải đấu",
             "view": "Xem trang",
             "lifecycle": "Vòng đời",
             "current_status": "Trạng thái hiện tại",
@@ -3903,6 +3904,13 @@
             "cancelled": "Đã hủy giải đấu",
             "started": "Giải đấu đã bắt đầu",
             "action_done": "Hoàn tất",
+            "registration_opens_at": "Mở đăng ký",
+            "registration_closes_at": "Đóng đăng ký",
+            "starts_at": "Bắt đầu giải đấu",
+            "schedule_hint": "Đăng ký và giải đấu sẽ tự động chuyển trạng thái vào các thời điểm này.",
+            "schedule_invalid": "Hãy đặt thời gian mở đăng ký, đóng đăng ký và bắt đầu giải đấu theo đúng thứ tự.",
+            "schedule_saved": "Đã lưu lịch trình",
+            "save_schedule": "Lưu lịch trình",
             "basics": "Thông tin cơ bản",
             "detail": "Chi tiết (Markdown)",
             "detail_placeholder": "Viết luật và chi tiết giải đấu bằng Markdown...",
@@ -3945,6 +3953,7 @@
             "add_reward": "Thêm phần thưởng",
             "tabs": {
                 "settings": "Cài đặt",
+                "participants": "Người tham gia",
                 "bracket": "Nhánh đấu"
             }
         },
@@ -4027,7 +4036,7 @@
         "participants": {
             "invite": "Mời",
             "force_add": "Thêm trực tiếp",
-            "remove": "Xóa",
+            "remove": "Kick",
             "invited": "Đã mời người chơi",
             "added": "Đã thêm người chơi",
             "removed": "Đã xóa người chơi",
