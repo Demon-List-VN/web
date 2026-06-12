@@ -5,14 +5,16 @@
 	export let srcOverride: string | null = null;
 
 	$: frameSrc = srcOverride ?? (frame ? frameImageUrl(frame) : null);
-	$: avatarScale = frame?.avatarWidth ?? 1;
+	$: avatarRatio = frame?.avatarWidth ?? 1;
+	$: frameScale = frameSrc && avatarRatio > 0 ? 1 / avatarRatio : 1;
 </script>
 
-<span class="avatar-frame" style={`--avatar-scale: ${frameSrc ? avatarScale : 1};`}>
+<span class="avatar-frame">
   <span class="avatar-frame-scale"><slot /></span>
   {#if frameSrc}
     <img
       class="avatar-frame-img"
+      style={`--frame-scale: ${frameScale};`}
       src={frameSrc}
       alt=""
       draggable="false"
@@ -31,8 +33,6 @@
 
 .avatar-frame-scale {
   display: inline-flex;
-  transform: scale(var(--avatar-scale));
-  transform-origin: center;
 }
 
 .avatar-frame-img {
@@ -43,5 +43,7 @@
   object-fit: contain;
   pointer-events: none;
   z-index: 2;
+  transform: scale(var(--frame-scale, 1));
+  transform-origin: center;
 }
 </style>

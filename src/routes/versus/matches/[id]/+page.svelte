@@ -85,6 +85,11 @@
 		subscribeToPvpMatchDetail
 	} from '$lib/client/pvpRealtime';
 	import { playPvpBell } from '$lib/client/pvpSound';
+	import {
+		bannerImageUrl,
+		getEquippedTheme,
+		getThemeStyle
+	} from '$lib/client/cosmetics';
 	import { resolvePvpRankBadge } from '$lib/utils/pvpRank';
 	import Chart from 'chart.js/auto';
 	import { onDestroy, onMount, tick } from 'svelte';
@@ -1720,6 +1725,14 @@
 		const label = $_(`pvp.result_reason.${key}`);
 
 		return label === `pvp.result_reason.${key}` ? key : label;
+	}
+
+	function hideBrokenImage(event: Event) {
+		const target = event.currentTarget as HTMLImageElement | null;
+
+		if (target) {
+			target.style.display = 'none';
+		}
 	}
 
 	function formatDuration(ms: number | null) {
@@ -4443,12 +4456,27 @@
                     {@const participantRating = participantRatingLabel(participant)}
                     {@const participantRatingDiff = participantRatingDiffLabel(participant)}
                     {@const participantMana = participantPowerupMana(participant)}
+                    {@const participantTheme = participantMasked
+                        ? null
+                        : getEquippedTheme(participantPlayer)}
+                    {@const participantThemeStyle = getThemeStyle(participantTheme)}
                     <div
                       class:left-side={index === 0}
                       class:right-side={index === 1}
                       class:winner={winnerUid && getPvpParticipantUid(participant) === winnerUid}
+                      class:themed={Boolean(participantThemeStyle)}
                       class="participant-card"
+                      style={participantThemeStyle}
                     >
+                      {#if participantTheme}
+                        <img
+                          class="participant-banner"
+                          src={bannerImageUrl(participantTheme)}
+                          alt=""
+                          draggable="false"
+                          on:error={hideBrokenImage}
+                        />
+                      {/if}
                       <div class="participant-topline">
                         <Badge
                           variant={getPvpParticipantUid(participant) === currentUid
@@ -5833,6 +5861,53 @@
 .participant-card.winner {
   border-color: hsl(var(--primary));
   background: hsl(var(--primary) / 0.08);
+}
+
+.participant-card.themed {
+  position: relative;
+  z-index: 0;
+  overflow: hidden;
+}
+
+/* Overlay ring keeps the winner highlight above the banner image and the
+   inline profile theme colors (inset shadows paint below children). */
+.participant-card.winner.themed::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px solid hsl(var(--primary));
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.participant-banner {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: -1;
+  width: 100%;
+  height: 64px;
+  object-fit: cover;
+  object-position: center;
+  pointer-events: none;
+  opacity: 0.85;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.95),
+    rgba(0, 0, 0, 0.55) 55%,
+    transparent
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.95),
+    rgba(0, 0, 0, 0.55) 55%,
+    transparent
+  );
+}
+
+.participant-card.themed .participant-rating {
+  color: rgba(255, 255, 255, 0.75);
 }
 
 .participant-card.right-side .progress-bar {
