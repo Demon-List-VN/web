@@ -5,10 +5,14 @@
 	export let rounds: any[] = [];
 	export let thirdPlaceMatch: any = null;
 	export let champion: any = null;
-	export let canManage = false;
+	export let editable = false;
+	export let participants: any[] = [];
+	export let showActions = false;
+	export let onSlotChange: ((position: number, slot: 1 | 2, uid: string | null) => void) | null = null;
+	export let onStart: ((node: any) => void) | null = null;
 	export let onOverride: ((node: any) => void) | null = null;
 
-	const MATCH_HEIGHT = 80;
+	const MATCH_HEIGHT = 104;
 	const GAP = 20;
 
 	function roundLabel(roundIndex: number, totalRounds: number) {
@@ -40,7 +44,7 @@
 		return ((MATCH_HEIGHT + GAP) * 2 ** roundIndex - (MATCH_HEIGHT + GAP)) / 2;
 	}
 
-	function isWinner(node: any, slot: 1 | 2) {
+	function isWinner(node: any, slot: number) {
 		if (!node.winnerUid) {
 			return false;
 		}
@@ -48,6 +52,22 @@
 		const uid = slot === 1 ? node.player1Uid : node.player2Uid;
 
 		return uid === node.winnerUid;
+	}
+
+	function slotState(node: any, slot: number) {
+		return slot === 1 ? node.player1State : node.player2State;
+	}
+
+	function slotLabel(node: any, slot: number) {
+		return slotState(node, slot) === 'bye'
+			? $_('tournament.bracket.bye')
+			: $_('tournament.bracket.pending_player');
+	}
+
+	function selectedUid(event: Event) {
+		const value = (event.currentTarget as HTMLSelectElement).value;
+
+		return value || null;
 	}
 </script>
 
@@ -71,26 +91,57 @@
                 class:bg-green-500={false}
                 class:font-semibold={isWinner(node, slot)}
               >
-                {#if player}
+                {#if editable && roundIndex === 0}
+                  <select
+                    class="h-8 min-w-0 flex-1 rounded-md border border-input bg-background px-2 text-xs"
+                    value={slot === 1 ? node.player1Uid ?? '' : node.player2Uid ?? ''}
+                    on:change={(event) => onSlotChange?.(node.position, slot === 1 ? 1 : 2, selectedUid(event))}
+                  >
+                    <option value="">{$_('tournament.bracket.bye')}</option>
+                    {#each participants as participant}
+                      <option value={participant.uid}>
+                        {participant.player?.name ?? participant.uid} ({participant.eloAtRegistration ?? 1500})
+                      </option>
+                    {/each}
+                  </select>
+                {:else if player}
                   <PlayerLink {player} showAvatar avatarSize={20} truncate={18} />
                 {:else}
-                  <span class="opacity-40">{$_('tournament.bracket.tbd')}</span>
+                  <span class="opacity-40">{slotLabel(node, slot)}</span>
                 {/if}
-                <span
-                  class="ml-auto tabular-nums"
-                  class:text-green-500={isWinner(node, slot)}
-                >
-                  {score ?? 0}
-                </span>
+                {#if !editable || roundIndex !== 0}
+                  <span
+                    class="ml-auto tabular-nums"
+                    class:text-green-500={isWinner(node, slot)}
+                  >
+                    {score ?? 0}
+                  </span>
+                {/if}
               </div>
             {/each}
-            {#if canManage && node.status !== 'completed' && node.player1Uid && node.player2Uid}
-              <button
-                class="border-t border-[hsl(var(--border))] bg-muted/40 py-[2px] text-xs text-muted-foreground hover:bg-muted"
-                on:click={() => onOverride?.(node)}
-              >
-                {$_('tournament.bracket.set_result')}
-              </button>
+            {#if node.currentPvpMatchId || (showActions && node.player1Uid && node.player2Uid && node.status !== 'waiting')}
+              <div class="flex h-[28px] border-t border-[hsl(var(--border))] bg-muted/40 text-xs">
+                {#if node.currentPvpMatchId}
+                  <a
+                    class="flex flex-1 items-center justify-center text-primary hover:bg-muted"
+                    href={`/versus/matches/${node.currentPvpMatchId}`}
+                  >
+                    {$_('tournament.bracket.open_match')}
+                  </a>
+                {:else if showActions && node.status === 'pending'}
+                  <button class="flex-1 hover:bg-muted" on:click={() => onStart?.(node)}>
+                    {$_('tournament.bracket.start_match')}
+                  </button>
+                {/if}
+                {#if showActions && node.player1Uid && node.player2Uid}
+                  <button
+                    class="flex-1 border-l border-[hsl(var(--border))] hover:bg-muted"
+                    on:click={() => onOverride?.(node)}
+                  >
+                    {$_('tournament.bracket.edit_result')}
+                  </button>
+                {/if}
+              </div>
             {/if}
           </div>
         {/each}
@@ -123,20 +174,36 @@
               {#if player}
                 <PlayerLink {player} showAvatar avatarSize={20} truncate={18} />
               {:else}
-                <span class="opacity-40">{$_('tournament.bracket.tbd')}</span>
+                <span class="opacity-40">{slotLabel(thirdPlaceMatch, slot)}</span>
               {/if}
               <span class="ml-auto tabular-nums" class:text-green-500={isWinner(thirdPlaceMatch, slot)}>
                 {score ?? 0}
               </span>
             </div>
           {/each}
-          {#if canManage && thirdPlaceMatch.status !== 'completed' && thirdPlaceMatch.player1Uid && thirdPlaceMatch.player2Uid}
-            <button
-              class="border-t border-[hsl(var(--border))] bg-muted/40 py-[2px] text-xs text-muted-foreground hover:bg-muted"
-              on:click={() => onOverride?.(thirdPlaceMatch)}
-            >
-              {$_('tournament.bracket.set_result')}
-            </button>
+          {#if thirdPlaceMatch.currentPvpMatchId || (showActions && thirdPlaceMatch.player1Uid && thirdPlaceMatch.player2Uid && thirdPlaceMatch.status !== 'waiting')}
+            <div class="flex h-[28px] border-t border-[hsl(var(--border))] bg-muted/40 text-xs">
+              {#if thirdPlaceMatch.currentPvpMatchId}
+                <a
+                  class="flex flex-1 items-center justify-center text-primary hover:bg-muted"
+                  href={`/versus/matches/${thirdPlaceMatch.currentPvpMatchId}`}
+                >
+                  {$_('tournament.bracket.open_match')}
+                </a>
+              {:else if showActions && thirdPlaceMatch.status === 'pending'}
+                <button class="flex-1 hover:bg-muted" on:click={() => onStart?.(thirdPlaceMatch)}>
+                  {$_('tournament.bracket.start_match')}
+                </button>
+              {/if}
+              {#if showActions && thirdPlaceMatch.player1Uid && thirdPlaceMatch.player2Uid}
+                <button
+                  class="flex-1 border-l border-[hsl(var(--border))] hover:bg-muted"
+                  on:click={() => onOverride?.(thirdPlaceMatch)}
+                >
+                  {$_('tournament.bracket.edit_result')}
+                </button>
+              {/if}
+            </div>
           {/if}
         </div>
       </div>

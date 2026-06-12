@@ -3920,6 +3920,7 @@
             "level_selection": "Level selection",
             "random": "Random",
             "sbmm": "Skill-based",
+            "manual": "Host selects each game",
             "levels_per_match": "Levels per match",
             "best_of": "Best of {n}",
             "tie_handling": "Tie handling",
@@ -3942,7 +3943,11 @@
             "placement": "Placement",
             "item_id": "Item ID",
             "quantity": "Quantity",
-            "add_reward": "Add reward"
+            "add_reward": "Add reward",
+            "tabs": {
+                "settings": "Settings",
+                "bracket": "Bracket"
+            }
         },
         "format": {
             "single_elimination": "Single Elimination",
@@ -3991,13 +3996,26 @@
         "bracket": {
             "not_started": "The bracket will appear once the tournament starts.",
             "tbd": "TBD",
+            "pending_player": "Pending player",
+            "bye": "Bye",
             "champion": "Champion",
             "third_place": "3rd Place",
             "round_of": "Round of {count}",
             "set_result": "Set result",
+            "edit_result": "Edit result",
             "choose_winner": "Choose the winner",
             "confirm": "Confirm",
-            "override_success": "Result updated"
+            "override_success": "Result updated",
+            "start_match": "Start match",
+            "open_match": "Open PvP match",
+            "match_started": "PvP match created",
+            "level_id": "Level ID",
+            "automatic_level_notice": "The level will be selected automatically using the tournament format.",
+            "auto_fill": "Auto-fill by Elo",
+            "save": "Save bracket",
+            "saved": "Bracket saved",
+            "assignment_ready": "Every participant is assigned. Empty slots will be byes.",
+            "assignment_incomplete": "Assign every active participant exactly once before saving."
         },
         "leaderboard": {
             "rank": "Rank",

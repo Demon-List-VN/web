@@ -11,16 +11,17 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Switch } from '$lib/components/ui/switch';
+	import * as Tabs from '$lib/components/ui/tabs';
 	import LevelPoolEditor from './levelPoolEditor.svelte';
 	import RewardsEditor from './rewardsEditor.svelte';
 	import PvpFormatEditor from './pvpFormatEditor.svelte';
 	import ContestConfigEditor from './contestConfigEditor.svelte';
+	import BracketManager from './bracketManager.svelte';
 
 	export let data: any;
 
 	$: tournament = data.tournament;
-	$: viewerRole = tournament.viewerRole;
-	$: isManager = viewerRole === 'manager' || viewerRole === 'admin';
+	$: isManager = Boolean($user?.data?.isManager || $user?.data?.isAdmin);
 	$: preStart = ['draft', 'registration_open', 'registration_closed', 'ready'].includes(
 		tournament.status
 	);
@@ -34,6 +35,8 @@
 	let eloEnforced = false;
 	let saving = false;
 	let initialized = false;
+	let activeTab = 'settings';
+	let authenticatedTournamentLoaded = false;
 
 	$: if (tournament && !initialized) {
 		name = tournament.name ?? '';
@@ -44,6 +47,25 @@
 		maxElo = tournament.maxElo;
 		eloEnforced = tournament.eloEnforced ?? false;
 		initialized = true;
+	}
+
+	$: if ($user?.checked && !authenticatedTournamentLoaded) {
+		authenticatedTournamentLoaded = true;
+
+		if ($user.loggedIn) {
+			refreshManagedTournament();
+		}
+	}
+
+	async function refreshManagedTournament() {
+		try {
+			data = {
+				...data,
+				tournament: await tournamentFetch(`/${tournament.id}`)
+			};
+		} catch (error: any) {
+			toast.error(error.message);
+		}
 	}
 
 	onMount(() => {
@@ -155,7 +177,7 @@
   <title>{$_('tournament.manage')} - {tournament.name}</title>
 </svelte:head>
 
-<div class="mx-auto mt-[20px] flex w-full max-w-[800px] flex-col gap-[24px] px-[10px] pb-[60px]">
+<div class="mx-auto mt-[20px] w-full max-w-[1500px] px-[10px] pb-[60px]">
   <div class="flex items-center justify-between">
     <h1 class="text-2xl font-bold">{$_('tournament.manage')}</h1>
     <Button variant="outline" href={`/tournament/${tournament.id}`}>
@@ -163,6 +185,16 @@
     </Button>
   </div>
 
+  <Tabs.Root bind:value={activeTab} class="mt-[20px]">
+    <Tabs.List>
+      <Tabs.Trigger value="settings">{$_('tournament.manage.tabs.settings')}</Tabs.Trigger>
+      {#if tournament.format === 'single_elimination'}
+        <Tabs.Trigger value="bracket">{$_('tournament.manage.tabs.bracket')}</Tabs.Trigger>
+      {/if}
+    </Tabs.List>
+
+    <Tabs.Content value="settings" class="mt-[20px]">
+      <div class="mx-auto flex w-full max-w-[800px] flex-col gap-[24px]">
   <!-- Lifecycle -->
   <section class="flex flex-col gap-[10px] rounded-[8px] border border-[hsl(var(--border))] p-[16px]">
     <h2 class="text-lg font-bold">{$_('tournament.manage.lifecycle')}</h2>
@@ -266,4 +298,13 @@
   {#if isManager}
     <RewardsEditor {tournament} />
   {/if}
+      </div>
+    </Tabs.Content>
+
+    {#if tournament.format === 'single_elimination'}
+      <Tabs.Content value="bracket" class="mt-[20px]">
+        <BracketManager {tournament} onChange={refreshManagedTournament} />
+      </Tabs.Content>
+    {/if}
+  </Tabs.Root>
 </div>

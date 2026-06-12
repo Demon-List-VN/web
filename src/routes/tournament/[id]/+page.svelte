@@ -16,9 +16,15 @@
 	export let data: any;
 
 	$: tournament = data.tournament;
-	$: viewerRole = tournament.viewerRole;
-	$: isHost = viewerRole === 'host' || viewerRole === 'manager' || viewerRole === 'admin';
-	$: isManager = viewerRole === 'manager' || viewerRole === 'admin';
+	$: isHost = Boolean(
+		$user?.loggedIn
+		&& (
+			tournament.hostUid === $user.data?.uid
+			|| $user.data?.isManager
+			|| $user.data?.isAdmin
+		)
+	);
+	$: isManager = Boolean($user?.data?.isManager || $user?.data?.isAdmin);
 	$: participant = tournament.viewerParticipant;
 	$: preStart = ['draft', 'registration_open', 'registration_closed', 'ready'].includes(
 		tournament.status
@@ -149,11 +155,7 @@
     </Tabs.Content>
     {#if tournament.format === 'single_elimination'}
       <Tabs.Content value="bracket" class="mt-[20px] w-full">
-        {#if preStart}
-          <p class="text-center text-muted-foreground">{$_('tournament.bracket.not_started')}</p>
-        {:else}
-          <BracketTab {tournament} canManage={isHost} />
-        {/if}
+        <BracketTab {tournament} />
       </Tabs.Content>
       <Tabs.Content value="matches" class="mt-[20px] w-full">
         <MatchesTab {tournament} />

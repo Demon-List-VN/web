@@ -3919,6 +3919,7 @@
             "level_selection": "Chọn màn",
             "random": "Ngẫu nhiên",
             "sbmm": "Theo kỹ năng",
+            "manual": "Host chọn từng trận",
             "levels_per_match": "Số màn mỗi trận",
             "best_of": "Best of {n}",
             "tie_handling": "Xử lý hòa",
@@ -3941,7 +3942,11 @@
             "placement": "Thứ hạng",
             "item_id": "ID vật phẩm",
             "quantity": "Số lượng",
-            "add_reward": "Thêm phần thưởng"
+            "add_reward": "Thêm phần thưởng",
+            "tabs": {
+                "settings": "Cài đặt",
+                "bracket": "Nhánh đấu"
+            }
         },
         "format": {
             "single_elimination": "Loại trực tiếp",
@@ -3990,13 +3995,26 @@
         "bracket": {
             "not_started": "Nhánh đấu sẽ hiển thị khi giải đấu bắt đầu.",
             "tbd": "Chưa xác định",
+            "pending_player": "Chờ người chơi",
+            "bye": "Miễn đấu",
             "champion": "Nhà vô địch",
             "third_place": "Hạng 3",
             "round_of": "Vòng {count}",
             "set_result": "Đặt kết quả",
+            "edit_result": "Sửa kết quả",
             "choose_winner": "Chọn người thắng",
             "confirm": "Xác nhận",
-            "override_success": "Đã cập nhật kết quả"
+            "override_success": "Đã cập nhật kết quả",
+            "start_match": "Bắt đầu trận",
+            "open_match": "Mở trận PvP",
+            "match_started": "Đã tạo trận PvP",
+            "level_id": "ID màn chơi",
+            "automatic_level_notice": "Màn chơi sẽ được chọn tự động theo cấu hình giải đấu.",
+            "auto_fill": "Tự xếp theo Elo",
+            "save": "Lưu nhánh đấu",
+            "saved": "Đã lưu nhánh đấu",
+            "assignment_ready": "Mọi người chơi đã được xếp. Ô trống sẽ được miễn đấu.",
+            "assignment_incomplete": "Xếp mỗi người chơi đang tham gia đúng một lần trước khi lưu."
         },
         "leaderboard": {
             "rank": "Hạng",

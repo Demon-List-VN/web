@@ -58,6 +58,7 @@
       <select bind:value={levelSelectionMode} {disabled} class="h-10 rounded-md border border-input bg-background px-3 text-sm">
         <option value="random">{$_('tournament.manage.random')}</option>
         <option value="sbmm">{$_('tournament.manage.sbmm')}</option>
+        <option value="manual">{$_('tournament.manage.manual')}</option>
       </select>
     </div>
     <div class="flex flex-col gap-[6px]">
