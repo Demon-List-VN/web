@@ -4,7 +4,9 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import PlayerCard from '$lib/components/playerCard.svelte';
 	import PlayerLevelBadge from '$lib/components/PlayerLevelBadge.svelte';
+	import AvatarFrame from '$lib/components/AvatarFrame.svelte';
 	import SupporterTierProgress from '$lib/components/SupporterTierProgress.svelte';
+	import { getEquippedFrame } from '$lib/client/cosmetics';
 	import { user } from '$lib/client';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import { goto } from '$app/navigation';
@@ -23,10 +25,40 @@
 	export let signOut: () => void;
 
 	let open = false;
+	let hydratedNavbarPlayer: any = null;
+	let hydratedNavbarPlayerUid = '';
+
+	$: currentPlayer = $user.data;
+	$: if (
+		currentPlayer?.uid
+		&& currentPlayer.uid !== hydratedNavbarPlayerUid
+	) {
+		hydratedNavbarPlayerUid = currentPlayer.uid;
+		hydratedNavbarPlayer = null;
+		void loadNavbarPlayer(currentPlayer.uid);
+	}
+	$: navbarFrame = getEquippedFrame(currentPlayer)
+		?? getEquippedFrame(hydratedNavbarPlayer);
 
 	function navigate(path: string) {
 		open = false;
 		goto(path);
+	}
+
+	async function loadNavbarPlayer(uid: string) {
+		try {
+			const response = await fetch(
+				`${import.meta.env.VITE_API_URL}/players/${encodeURIComponent(uid)}`
+			);
+
+			if (!response.ok || hydratedNavbarPlayerUid !== uid) {
+				return;
+			}
+
+			hydratedNavbarPlayer = await response.json();
+		} catch {
+			hydratedNavbarPlayer = null;
+		}
 	}
 </script>
 
@@ -39,18 +71,20 @@
       builders={[builder]}
     >
       <span class="avatar-menu-frame">
-        <Avatar.Root class="h-[28px] w-[28px]">
-          <Avatar.Image
-            class="object-cover"
-            src={`https://cdn.gdvn.net/avatars/${$user.data.uid}${
-                isActive($user.data.supporterUntil) && $user.data.isAvatarGif
-                    ? '.gif'
-                    : '.jpg'
-            }?version=${$user.data.avatarVersion}`}
-            alt=""
-          />
-          <Avatar.Fallback>{$user.data.name[0]}</Avatar.Fallback>
-        </Avatar.Root>
+        <AvatarFrame frame={navbarFrame}>
+          <Avatar.Root class="h-[28px] w-[28px]">
+            <Avatar.Image
+              class="object-cover"
+              src={`https://cdn.gdvn.net/avatars/${$user.data.uid}${
+                  isActive($user.data.supporterUntil) && $user.data.isAvatarGif
+                      ? '.gif'
+                      : '.jpg'
+              }?version=${$user.data.avatarVersion}`}
+              alt=""
+            />
+            <Avatar.Fallback>{$user.data.name[0]}</Avatar.Fallback>
+          </Avatar.Root>
+        </AvatarFrame>
         <PlayerLevelBadge player={$user.data} size="sm" />
       </span>
     </Button>

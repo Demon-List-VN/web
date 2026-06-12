@@ -333,16 +333,19 @@
       on:error={() => {
           isBannerFailedToLoad = true;
       }}
-      class="absolute left-0 top-0 z-[-1] h-[56px] w-full object-cover"
+      class="absolute left-0 top-0 z-[-1] h-[68px] w-full object-cover"
       src={bannerImageUrl(equippedTheme)}
       alt=""
     />
   {/if}
   {#if !hideHeader}
-    <div class="hoverName">
+    <div
+      class:themed-header={Boolean(equippedTheme) && !isBannerFailedToLoad}
+      class="hoverName"
+    >
       <div class="player-card-avatar-frame">
         <AvatarFrame frame={equippedFrame}>
-          <Avatar.Root>
+          <Avatar.Root class="player-card-avatar">
             <Avatar.Image
               class="object-cover"
               src={`https://cdn.gdvn.net/avatars/${cardPlayer.uid}${
@@ -528,6 +531,11 @@
   flex-shrink: 0;
 }
 
+:global(.player-card-avatar) {
+  width: 48px;
+  height: 48px;
+}
+
 .leftCol {
   width: 38px;
   display: flex;
@@ -539,6 +547,10 @@
   gap: 8px;
   align-items: center;
   padding-bottom: 8px;
+}
+
+.hoverName.themed-header {
+  padding-bottom: 14px;
 }
 
 .playerName {

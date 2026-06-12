@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
-	import * as Avatar from '$lib/components/ui/avatar';
 	import { badgeVariants } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { toast } from 'svelte-sonner';
@@ -18,14 +17,7 @@
 		subscribeToSocialPresence,
 		type AggregatedSocialPresence
 	} from '$lib/client/socialPresence';
-	import AvatarFrame from '$lib/components/AvatarFrame.svelte';
-	import {
-		getEquippedFrame,
-		getEquippedTheme,
-		getThemeStyle
-	} from '$lib/client/cosmetics';
 	import PlayerCard from '$lib/components/playerCard.svelte';
-	import PlayerLink from '$lib/components/playerLink.svelte';
 	import ProfileEditButton from '$lib/components/profileEditButton.svelte';
 	import SupporterTierProgress from '$lib/components/SupporterTierProgress.svelte';
 	import {
@@ -52,12 +44,7 @@
 	let cleanupPresence: (() => Promise<unknown>) | null = null;
 
 	$: player = data.player;
-	$: equippedFrame = getEquippedFrame(player);
-	$: equippedTheme = getEquippedTheme(player);
 	$: isSupporter = isActive(player.supporterUntil);
-	$: avatarSrc = `https://cdn.gdvn.net/avatars/${player.uid}${
-		isSupporter && player.isAvatarGif ? '.gif' : '.jpg'
-	}?version=${player.avatarVersion ?? 0}`;
 	$: showFriendButton = browser && $user.loggedIn && player.uid
 		&& player.uid !== $user.data?.uid;
 	$: showPresenceStatus = browser && player.uid && player.uid !== $user.data?.uid;
@@ -164,20 +151,6 @@
 </script>
 
 <div class="profile-sidebar">
-  <section class="identity-card" style={getThemeStyle(equippedTheme)}>
-    <AvatarFrame frame={equippedFrame}>
-      <Avatar.Root class="profile-avatar">
-        <Avatar.Image class="object-cover" src={avatarSrc} alt={player.name} />
-        <Avatar.Fallback class="text-4xl font-bold">
-          {player.name?.trim()?.[0]?.toUpperCase() ?? '?'}
-        </Avatar.Fallback>
-      </Avatar.Root>
-    </AvatarFrame>
-    <div class="profile-player-link">
-      <PlayerLink {player} large />
-    </div>
-  </section>
-
   <PlayerCard
     player={data.player}
     listSummaries={data.listSummaries || []}
@@ -339,31 +312,6 @@
   display: grid;
   gap: 12px;
   min-width: 0;
-}
-
-.identity-card {
-  display: grid;
-  justify-items: center;
-  gap: 16px;
-  min-width: 0;
-  overflow: hidden;
-  border: 1px solid hsl(var(--border));
-  border-radius: 8px;
-  padding: 24px 16px 18px;
-  background: hsl(var(--card));
-  color: hsl(var(--card-foreground));
-}
-
-:global(.profile-avatar) {
-  width: 136px;
-  height: 136px;
-}
-
-.profile-player-link {
-  display: flex;
-  max-width: 100%;
-  justify-content: center;
-  text-align: center;
 }
 
 .sidebar-section {

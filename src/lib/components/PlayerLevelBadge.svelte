@@ -108,7 +108,7 @@
   width: max-content;
   min-width: max-content;
   padding: 2px 4px;
-  border: 1px solid hsl(var(--border));
+  border: 1px solid var(--border1);
   border-radius: 999px;
   background: hsl(var(--background) / 0.9);
   color: hsl(var(--foreground));

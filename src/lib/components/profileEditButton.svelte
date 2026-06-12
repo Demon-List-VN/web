@@ -206,6 +206,12 @@
 			};
 			data = { ...data, ...equipUpdate };
 			player = { ...player, ...equipUpdate };
+			user.update((current) => ({
+				...current,
+				data: current.data?.uid === player.uid
+					? { ...current.data, ...equipUpdate }
+					: current.data
+			}));
 			clearPlayerCardSettingsCache(player.uid);
 		})();
 
