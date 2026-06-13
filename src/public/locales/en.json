@@ -4024,6 +4024,7 @@
         "tabs": {
             "overview": "Overview",
             "bracket": "Bracket",
+            "levels": "Levels",
             "leaderboard": "Leaderboard",
             "participants": "Participants",
             "matches": "Matches"
@@ -4087,7 +4088,19 @@
             "score": "Score",
             "completed": "Completed",
             "frozen_notice": "The leaderboard is frozen. Final standings will be revealed when the contest ends.",
-            "view_live": "View live data"
+            "view_live": "View live data",
+            "refresh": "Refresh leaderboard",
+            "export": "Export leaderboard",
+            "empty": "No leaderboard entries yet.",
+            "penalty_detail": "{hours} hours {minutes} minutes {seconds} seconds"
+        },
+        "levels": {
+            "empty": "No contest levels are available yet.",
+            "load_failed": "Failed to load contest levels.",
+            "refresh": "Refresh levels",
+            "copy_failed": "Failed to copy the level ID.",
+            "by_creator": "by {creator}",
+            "open_death_count": "View death count for {level}"
         },
         "participants": {
             "invite": "Invite",

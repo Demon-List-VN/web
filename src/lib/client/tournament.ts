@@ -40,6 +40,37 @@ export async function tournamentFetch(path: string, init: RequestInit = {}) {
     return json;
 }
 
+export async function getTournamentContestLevels(tournament: any) {
+    const contestLevels = tournament.contestLevels
+        ?? await tournamentFetch(`/${tournament.id}/levels`);
+
+    if (!contestLevels?.length) {
+        return [];
+    }
+
+    const response = await fetch(`${API}/levels/batch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            batch: contestLevels.map((level: any) => Number(level.levelId))
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to load level details');
+    }
+
+    const details = await response.json();
+    const detailById = new Map(
+        (details ?? []).map((level: any) => [Number(level.id), level])
+    );
+
+    return contestLevels.map((level: any) => ({
+        ...(detailById.get(Number(level.levelId)) ?? {}),
+        ...level
+    }));
+}
+
 export function rarityColor(rarity: number | null | undefined) {
     switch (rarity) {
         case 1:

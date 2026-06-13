@@ -4023,6 +4023,7 @@
         "tabs": {
             "overview": "Tổng quan",
             "bracket": "Nhánh đấu",
+            "levels": "Màn chơi",
             "leaderboard": "Bảng xếp hạng",
             "participants": "Người tham gia",
             "matches": "Trận đấu"
@@ -4086,7 +4087,19 @@
             "score": "Điểm",
             "completed": "Hoàn thành",
             "frozen_notice": "Bảng xếp hạng đã bị đóng băng. Kết quả cuối sẽ hiển thị khi cuộc thi kết thúc.",
-            "view_live": "Xem dữ liệu trực tiếp"
+            "view_live": "Xem dữ liệu trực tiếp",
+            "refresh": "Làm mới bảng xếp hạng",
+            "export": "Xuất bảng xếp hạng",
+            "empty": "Chưa có dữ liệu bảng xếp hạng.",
+            "penalty_detail": "{hours} giờ {minutes} phút {seconds} giây"
+        },
+        "levels": {
+            "empty": "Chưa có màn chơi nào cho cuộc thi.",
+            "load_failed": "Không thể tải danh sách màn chơi.",
+            "refresh": "Làm mới màn chơi",
+            "copy_failed": "Không thể sao chép ID màn chơi.",
+            "by_creator": "bởi {creator}",
+            "open_death_count": "Xem số lần chết của {level}"
         },
         "participants": {
             "invite": "Mời",

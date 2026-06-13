@@ -13,6 +13,7 @@
 	import Countdown from '$lib/components/tournament/Countdown.svelte';
 	import OverviewTab from './overviewTab.svelte';
 	import BracketTab from './bracketTab.svelte';
+	import LevelsTab from './levelsTab.svelte';
 	import LeaderboardTab from './leaderboardTab.svelte';
 	import ParticipantsTab from './participantsTab.svelte';
 	import MatchesTab from './matchesTab.svelte';
@@ -166,6 +167,7 @@
       {#if tournament.format === 'single_elimination'}
         <Tabs.Trigger value="bracket">{$_('tournament.tabs.bracket')}</Tabs.Trigger>
       {:else}
+        <Tabs.Trigger value="levels">{$_('tournament.tabs.levels')}</Tabs.Trigger>
         <Tabs.Trigger value="leaderboard">{$_('tournament.tabs.leaderboard')}</Tabs.Trigger>
       {/if}
       <Tabs.Trigger value="participants">{$_('tournament.tabs.participants')}</Tabs.Trigger>
@@ -185,6 +187,9 @@
         <MatchesTab {tournament} />
       </Tabs.Content>
     {:else}
+      <Tabs.Content value="levels" class="mt-[20px] w-full">
+        <LevelsTab {tournament} />
+      </Tabs.Content>
       <Tabs.Content value="leaderboard" class="mt-[20px] w-full">
         <LeaderboardTab {tournament} canManage={isHost} />
       </Tabs.Content>
