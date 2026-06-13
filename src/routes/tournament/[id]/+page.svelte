@@ -34,6 +34,7 @@
 	$: preStart = ['draft', 'registration_open', 'registration_closed', 'ready'].includes(
 		tournament.status
 	);
+	$: contestStarted = ['ongoing', 'finished'].includes(tournament.status);
 	$: bannerUrl = `https://cdn.gdvn.net/tournament-banner/${tournament.id}.webp?v=${tournament.bannerVersion ?? 0}`;
 	$: milestone = nextMilestone(tournament);
 
@@ -41,6 +42,16 @@
 
 	async function refresh() {
 		await invalidateAll();
+	}
+
+	function handleMilestoneDone() {
+		if (milestone?.labelKey === 'tournament.milestone.starts') {
+			window.location.reload();
+
+			return;
+		}
+
+		void refresh();
 	}
 
 	async function act(path: string, body?: any) {
@@ -126,7 +137,11 @@
         <Clock size={20} class="shrink-0 text-primary" />
         <div class="flex flex-col leading-tight">
           <span class="text-xs text-muted-foreground">{$_(milestone.labelKey)}</span>
-          <Countdown to={milestone.at} class="text-base font-semibold" on:done={refresh} />
+          <Countdown
+            to={milestone.at}
+            class="text-base font-semibold"
+            on:done={handleMilestoneDone}
+          />
         </div>
       </div>
     {/if}
@@ -167,8 +182,10 @@
       {#if tournament.format === 'single_elimination'}
         <Tabs.Trigger value="bracket">{$_('tournament.tabs.bracket')}</Tabs.Trigger>
       {:else}
-        <Tabs.Trigger value="levels">{$_('tournament.tabs.levels')}</Tabs.Trigger>
-        <Tabs.Trigger value="leaderboard">{$_('tournament.tabs.leaderboard')}</Tabs.Trigger>
+        {#if contestStarted}
+          <Tabs.Trigger value="levels">{$_('tournament.tabs.levels')}</Tabs.Trigger>
+          <Tabs.Trigger value="leaderboard">{$_('tournament.tabs.leaderboard')}</Tabs.Trigger>
+        {/if}
       {/if}
       <Tabs.Trigger value="participants">{$_('tournament.tabs.participants')}</Tabs.Trigger>
       {#if tournament.format === 'single_elimination'}
@@ -187,12 +204,14 @@
         <MatchesTab {tournament} />
       </Tabs.Content>
     {:else}
-      <Tabs.Content value="levels" class="mt-[20px] w-full">
-        <LevelsTab {tournament} />
-      </Tabs.Content>
-      <Tabs.Content value="leaderboard" class="mt-[20px] w-full">
-        <LeaderboardTab {tournament} canManage={isHost} />
-      </Tabs.Content>
+      {#if contestStarted}
+        <Tabs.Content value="levels" class="mt-[20px] w-full">
+          <LevelsTab {tournament} />
+        </Tabs.Content>
+        <Tabs.Content value="leaderboard" class="mt-[20px] w-full">
+          <LeaderboardTab {tournament} canManage={isHost} />
+        </Tabs.Content>
+      {/if}
     {/if}
     <Tabs.Content value="participants" class="mt-[20px] w-full">
       <ParticipantsTab {tournament} {isHost} {isManager} onChange={refresh} />

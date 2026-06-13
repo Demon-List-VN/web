@@ -41,6 +41,10 @@ export async function tournamentFetch(path: string, init: RequestInit = {}) {
 }
 
 export async function getTournamentContestLevels(tournament: any) {
+    if (!['ongoing', 'finished'].includes(tournament.status)) {
+        return [];
+    }
+
     const contestLevels = tournament.contestLevels
         ?? await tournamentFetch(`/${tournament.id}/levels`);
 
