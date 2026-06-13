@@ -3886,6 +3886,7 @@
         "organizer": "Organizer",
         "has_reward": "Rewards",
         "register": "Register",
+        "registered": "Registered",
         "withdraw": "Withdraw",
         "accept_invite": "Accept Invite",
         "decline_invite": "Decline",

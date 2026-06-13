@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { _ } from 'svelte-i18n';
 	import { onMount } from 'svelte';
-	import { invalidateAll } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import { Button } from '$lib/components/ui/button';
@@ -41,7 +40,9 @@
 	let rewardClaim: any = null;
 
 	async function refresh() {
-		await invalidateAll();
+		const updated = await tournamentFetch(`/${tournament.id}`);
+
+		data = { ...data, tournament: updated };
 	}
 
 	function handleMilestoneDone() {
@@ -101,7 +102,29 @@
 		}
 	}
 
-	onMount(loadRewardClaim);
+	onMount(() => {
+		let viewerKey: string | null = null;
+		const unsubscribe = user.subscribe(async (currentUser) => {
+			if (!currentUser.checked) {
+				return;
+			}
+
+			const nextViewerKey = currentUser.loggedIn ? String(currentUser.data?.uid) : 'guest';
+
+			if (nextViewerKey === viewerKey) {
+				return;
+			}
+
+			viewerKey = nextViewerKey;
+
+			try {
+				await refresh();
+				await loadRewardClaim();
+			} catch {}
+		});
+
+		return unsubscribe;
+	});
 </script>
 
 <svelte:head>
@@ -156,10 +179,15 @@
         <Button variant="outline" on:click={() => act(`/${tournament.id}/invites/decline`)}>
           {$_('tournament.decline_invite')}
         </Button>
-      {:else if participant?.status === 'active' && preStart}
-        <Button variant="outline" on:click={withdraw}>{$_('tournament.withdraw')}</Button>
-      {:else if !participant && (tournament.status === 'registration_open' || (tournament.format === 'contest' && tournament.status === 'ongoing'))}
+      {:else if participant?.status === 'active'}
+        <Button variant="outline" disabled>{$_('tournament.registered')}</Button>
+        {#if preStart}
+          <Button variant="outline" on:click={withdraw}>{$_('tournament.withdraw')}</Button>
+        {/if}
+      {:else if !participant && tournament.registrationOpen}
         <Button on:click={register}>{$_('tournament.register')}</Button>
+      {:else if !participant && ['registration_closed', 'ready', 'ongoing'].includes(tournament.status)}
+        <Button variant="outline" disabled>{$_('tournament.status.registration_closed')}</Button>
       {/if}
     {/if}
 
