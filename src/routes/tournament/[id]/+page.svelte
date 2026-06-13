@@ -6,7 +6,11 @@
 	import * as Tabs from '$lib/components/ui/tabs';
 	import { Button } from '$lib/components/ui/button';
 	import { user } from '$lib/client';
-	import { tournamentFetch } from '$lib/client/tournament';
+	import { Clock } from 'lucide-svelte';
+	import { tournamentFetch, nextMilestone } from '$lib/client/tournament';
+	import StatBar from '$lib/components/tournament/StatBar.svelte';
+	import LifecycleTimeline from '$lib/components/tournament/LifecycleTimeline.svelte';
+	import Countdown from '$lib/components/tournament/Countdown.svelte';
 	import OverviewTab from './overviewTab.svelte';
 	import BracketTab from './bracketTab.svelte';
 	import LeaderboardTab from './leaderboardTab.svelte';
@@ -30,6 +34,7 @@
 		tournament.status
 	);
 	$: bannerUrl = `https://cdn.gdvn.net/tournament-banner/${tournament.id}.webp?v=${tournament.bannerVersion ?? 0}`;
+	$: milestone = nextMilestone(tournament);
 
 	let rewardClaim: any = null;
 
@@ -107,7 +112,26 @@
     {/if}
   </div>
 
-  <div class="mt-[14px] flex flex-wrap items-center justify-center gap-[10px]">
+  <div class="mt-[14px]">
+    <StatBar {tournament} />
+  </div>
+
+  <div class="mt-[12px] flex flex-col gap-[12px] lg:flex-row lg:items-stretch">
+    <div class="flex flex-1 items-center rounded-[12px] border border-[hsl(var(--border))] bg-card/40 px-[16px] py-[14px]">
+      <LifecycleTimeline status={tournament.status} />
+    </div>
+    {#if milestone}
+      <div class="flex items-center gap-[10px] rounded-[12px] border border-primary/30 bg-primary/5 px-[16px] py-[12px]">
+        <Clock size={20} class="shrink-0 text-primary" />
+        <div class="flex flex-col leading-tight">
+          <span class="text-xs text-muted-foreground">{$_(milestone.labelKey)}</span>
+          <Countdown to={milestone.at} class="text-base font-semibold" on:done={refresh} />
+        </div>
+      </div>
+    {/if}
+  </div>
+
+  <div class="mt-[16px] flex flex-wrap items-center justify-center gap-[10px]">
     {#if $user?.loggedIn}
       {#if participant?.status === 'invited'}
         <Button on:click={() => act(`/${tournament.id}/invites/accept`)}>

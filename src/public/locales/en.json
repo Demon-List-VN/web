@@ -3952,12 +3952,56 @@
             "item_id": "Item ID",
             "quantity": "Quantity",
             "add_reward": "Add reward",
+            "unsaved": "You have unsaved changes",
+            "save_all": "Save changes",
+            "discard": "Discard",
+            "saving": "Saving...",
+            "all_saved": "All changes saved",
+            "leave_confirm": "You have unsaved changes. Leave without saving?",
+            "danger_zone": "Danger zone",
             "tabs": {
                 "settings": "Settings",
+                "schedule": "Schedule",
                 "participants": "Participants",
                 "bracket": "Bracket",
                 "matches": "Matches"
             }
+        },
+        "list": {
+            "search": "Search tournaments",
+            "filter_format": "Format",
+            "filter_status": "Status",
+            "all_formats": "All formats",
+            "all_statuses": "All statuses",
+            "no_results": "No tournaments match your filters.",
+            "group": {
+                "live": "Live now",
+                "registration": "Open for registration",
+                "upcoming": "Upcoming",
+                "finished": "Finished"
+            }
+        },
+        "countdown": {
+            "days": "d",
+            "hours": "h",
+            "minutes": "m",
+            "seconds": "s",
+            "ended": "Ended"
+        },
+        "milestone": {
+            "registration_opens": "Registration opens in",
+            "registration_closes": "Registration closes in",
+            "starts": "Starts in"
+        },
+        "lifecycle_stage": {
+            "registration": "Registration",
+            "closed": "Closed",
+            "ready": "Ready",
+            "ongoing": "Ongoing",
+            "finished": "Finished"
+        },
+        "podium": {
+            "other_placements": "Other placements"
         },
         "format": {
             "single_elimination": "Single Elimination",
@@ -4001,7 +4045,8 @@
             "mode": "Mode",
             "duration": "Duration",
             "rewards": "Rewards",
-            "placement": "Placement #{placement}"
+            "placement": "Placement #{placement}",
+            "empty": "No details have been added yet."
         },
         "bracket": {
             "not_started": "The bracket will appear once the tournament starts.",
@@ -4027,7 +4072,12 @@
             "assignment_ready": "Every participant is assigned. Empty slots will be byes.",
             "assignment_incomplete": "Assign every active participant exactly once before saving.",
             "setup_mode": "Setup mode",
-            "match_mode": "Match mode"
+            "match_mode": "Match mode",
+            "zoom_in": "Zoom in",
+            "zoom_out": "Zoom out",
+            "reset_view": "Reset view",
+            "fullscreen": "Fullscreen",
+            "exit_fullscreen": "Exit fullscreen"
         },
         "leaderboard": {
             "rank": "Rank",
@@ -4047,7 +4097,8 @@
             "status": "Status",
             "status_active": "Active",
             "status_invited": "Invited",
-            "status_removed": "Removed"
+            "status_removed": "Removed",
+            "empty": "No participants yet."
         },
         "matches": {
             "empty": "No matches yet.",

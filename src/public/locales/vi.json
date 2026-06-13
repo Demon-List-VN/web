@@ -3951,12 +3951,56 @@
             "item_id": "ID vật phẩm",
             "quantity": "Số lượng",
             "add_reward": "Thêm phần thưởng",
+            "unsaved": "Bạn có thay đổi chưa lưu",
+            "save_all": "Lưu thay đổi",
+            "discard": "Hủy bỏ",
+            "saving": "Đang lưu...",
+            "all_saved": "Đã lưu tất cả thay đổi",
+            "leave_confirm": "Bạn có thay đổi chưa lưu. Rời đi mà không lưu?",
+            "danger_zone": "Vùng nguy hiểm",
             "tabs": {
                 "settings": "Cài đặt",
+                "schedule": "Lịch trình",
                 "participants": "Người tham gia",
                 "bracket": "Nhánh đấu",
                 "matches": "Trận đấu"
             }
+        },
+        "list": {
+            "search": "Tìm giải đấu",
+            "filter_format": "Thể thức",
+            "filter_status": "Trạng thái",
+            "all_formats": "Tất cả thể thức",
+            "all_statuses": "Tất cả trạng thái",
+            "no_results": "Không có giải đấu nào khớp với bộ lọc.",
+            "group": {
+                "live": "Đang diễn ra",
+                "registration": "Đang mở đăng ký",
+                "upcoming": "Sắp diễn ra",
+                "finished": "Đã kết thúc"
+            }
+        },
+        "countdown": {
+            "days": "d",
+            "hours": "h",
+            "minutes": "m",
+            "seconds": "s",
+            "ended": "Đã kết thúc"
+        },
+        "milestone": {
+            "registration_opens": "Mở đăng ký sau",
+            "registration_closes": "Đóng đăng ký sau",
+            "starts": "Bắt đầu sau"
+        },
+        "lifecycle_stage": {
+            "registration": "Đăng ký",
+            "closed": "Đã đóng",
+            "ready": "Sẵn sàng",
+            "ongoing": "Đang diễn ra",
+            "finished": "Kết thúc"
+        },
+        "podium": {
+            "other_placements": "Các thứ hạng khác"
         },
         "format": {
             "single_elimination": "Loại trực tiếp",
@@ -4000,7 +4044,8 @@
             "mode": "Chế độ",
             "duration": "Thời lượng",
             "rewards": "Phần thưởng",
-            "placement": "Hạng #{placement}"
+            "placement": "Hạng #{placement}",
+            "empty": "Chưa có thông tin chi tiết."
         },
         "bracket": {
             "not_started": "Nhánh đấu sẽ hiển thị khi giải đấu bắt đầu.",
@@ -4026,7 +4071,12 @@
             "assignment_ready": "Mọi người chơi đã được xếp. Ô trống sẽ được miễn đấu.",
             "assignment_incomplete": "Xếp mỗi người chơi đang tham gia đúng một lần trước khi lưu.",
             "setup_mode": "Chế độ xếp nhánh",
-            "match_mode": "Chế độ thi đấu"
+            "match_mode": "Chế độ thi đấu",
+            "zoom_in": "Phóng to",
+            "zoom_out": "Thu nhỏ",
+            "reset_view": "Đặt lại",
+            "fullscreen": "Toàn màn hình",
+            "exit_fullscreen": "Thoát toàn màn hình"
         },
         "leaderboard": {
             "rank": "Hạng",
@@ -4046,7 +4096,8 @@
             "status": "Trạng thái",
             "status_active": "Tham gia",
             "status_invited": "Đã mời",
-            "status_removed": "Đã xóa"
+            "status_removed": "Đã xóa",
+            "empty": "Chưa có người tham gia."
         },
         "matches": {
             "empty": "Chưa có trận đấu nào.",

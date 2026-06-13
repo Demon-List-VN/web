@@ -3,19 +3,27 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
+	import { Swords, Trophy } from 'lucide-svelte';
 	import { user } from '$lib/client';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Textarea } from '$lib/components/ui/textarea';
-	import { SINGLE_ELIM_SIZES, tournamentFetch } from '$lib/client/tournament';
+	import * as Select from '$lib/components/ui/select';
+	import { cn } from '$lib/utils.js';
+	import { SINGLE_ELIM_SIZES, formatLabelKey, tournamentFetch } from '$lib/client/tournament';
 
 	let name = '';
 	let description = '';
 	let format: 'single_elimination' | 'contest' = 'single_elimination';
-	let visibility: 'public' | 'unlisted' | 'private' = 'public';
+	let visibility = 'public';
 	let maxPlayers = 8;
 	let submitting = false;
+
+	const formatOptions = [
+		{ value: 'single_elimination', icon: Swords },
+		{ value: 'contest', icon: Trophy }
+	] as const;
 
 	onMount(() => {
 		if (!$user?.loggedIn) {
@@ -52,15 +60,17 @@
 			submitting = false;
 		}
 	}
+
+	const visibilityLabel = (value: string) => $_(`tournament.visibility.${value}`);
 </script>
 
 <svelte:head>
   <title>{$_('tournament.create')} - {$_('head.site_name')}</title>
 </svelte:head>
 
-<div class="mx-auto mt-[20px] w-full max-w-[600px] px-[10px]">
+<div class="mx-auto mt-[20px] w-full max-w-[640px] px-[10px]">
   <h1 class="mb-[20px] text-2xl font-bold">{$_('tournament.create')}</h1>
-  <div class="flex flex-col gap-[16px]">
+  <div class="flex flex-col gap-[16px] rounded-[12px] border border-[hsl(var(--border))] bg-card/40 p-[20px]">
     <div class="flex flex-col gap-[6px]">
       <Label>{$_('tournament.create_form.name')}</Label>
       <Input bind:value={name} maxlength={96} />
@@ -69,40 +79,54 @@
       <Label>{$_('tournament.create_form.description')}</Label>
       <Textarea bind:value={description} rows={3} />
     </div>
+
     <div class="flex flex-col gap-[6px]">
       <Label>{$_('tournament.create_form.format')}</Label>
-      <select
-        bind:value={format}
-        class="h-10 rounded-md border border-input bg-background px-3 text-sm"
-      >
-        <option value="single_elimination">{$_('tournament.format.single_elimination')}</option>
-        <option value="contest">{$_('tournament.format.contest')}</option>
-      </select>
+      <div class="grid grid-cols-2 gap-[10px]">
+        {#each formatOptions as option}
+          <button
+            type="button"
+            class={cn(
+              'flex flex-col gap-[8px] rounded-[10px] border p-[14px] text-left transition-colors',
+              format === option.value
+                ? 'border-primary bg-primary/5'
+                : 'border-[hsl(var(--border))] hover:bg-muted/40'
+            )}
+            on:click={() => (format = option.value)}
+          >
+            <svelte:component this={option.icon} size={20} class={format === option.value ? 'text-primary' : 'text-muted-foreground'} />
+            <span class="font-semibold">{$_(formatLabelKey(option.value))}</span>
+          </button>
+        {/each}
+      </div>
     </div>
+
     {#if format === 'single_elimination'}
       <div class="flex flex-col gap-[6px]">
         <Label>{$_('tournament.create_form.size')}</Label>
-        <select
-          bind:value={maxPlayers}
-          class="h-10 rounded-md border border-input bg-background px-3 text-sm"
-        >
-          {#each SINGLE_ELIM_SIZES as size}
-            <option value={size}>{size}</option>
-          {/each}
-        </select>
+        <Select.Root selected={{ value: String(maxPlayers), label: String(maxPlayers) }} onSelectedChange={(v) => v && (maxPlayers = Number(v.value))}>
+          <Select.Trigger><Select.Value /></Select.Trigger>
+          <Select.Content>
+            {#each SINGLE_ELIM_SIZES as size}
+              <Select.Item value={String(size)} label={String(size)}>{size}</Select.Item>
+            {/each}
+          </Select.Content>
+        </Select.Root>
       </div>
     {/if}
+
     <div class="flex flex-col gap-[6px]">
       <Label>{$_('tournament.create_form.visibility')}</Label>
-      <select
-        bind:value={visibility}
-        class="h-10 rounded-md border border-input bg-background px-3 text-sm"
-      >
-        <option value="public">{$_('tournament.visibility.public')}</option>
-        <option value="unlisted">{$_('tournament.visibility.unlisted')}</option>
-        <option value="private">{$_('tournament.visibility.private')}</option>
-      </select>
+      <Select.Root selected={{ value: visibility, label: visibilityLabel(visibility) }} onSelectedChange={(v) => v && (visibility = String(v.value))}>
+        <Select.Trigger><Select.Value /></Select.Trigger>
+        <Select.Content>
+          <Select.Item value="public" label={visibilityLabel('public')}>{visibilityLabel('public')}</Select.Item>
+          <Select.Item value="unlisted" label={visibilityLabel('unlisted')}>{visibilityLabel('unlisted')}</Select.Item>
+          <Select.Item value="private" label={visibilityLabel('private')}>{visibilityLabel('private')}</Select.Item>
+        </Select.Content>
+      </Select.Root>
     </div>
+
     <Button on:click={create} disabled={submitting}>
       {$_('tournament.create_form.submit')}
     </Button>

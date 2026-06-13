@@ -103,7 +103,7 @@
   <div class="mx-auto flex w-full max-w-[1000px] flex-col gap-[14px]">
     {#each series as node (node.id)}
       {@const games = gamesFor(node)}
-      <section class="rounded-[8px] border border-[hsl(var(--border))] p-[14px]">
+      <section class="rounded-[10px] border border-[hsl(var(--border))] bg-card/40 p-[14px]">
         <div class="flex flex-wrap items-start justify-between gap-[12px]">
           <div class="flex flex-col gap-[8px]">
             <div class="flex flex-wrap items-center gap-[8px]">

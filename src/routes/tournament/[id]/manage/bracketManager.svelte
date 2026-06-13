@@ -220,7 +220,7 @@
   </div>
 
   {#if preStart && bracketMode === 'setup'}
-    <div class="mb-[16px] flex flex-wrap items-center gap-[8px] rounded-[8px] border border-[hsl(var(--border))] p-[12px]">
+    <div class="mb-[16px] flex flex-wrap items-center gap-[8px] rounded-[10px] border border-[hsl(var(--border))] bg-card/40 p-[12px]">
       <Button size="sm" variant="outline" on:click={autoFill}>
         {$_('tournament.bracket.auto_fill')}
       </Button>

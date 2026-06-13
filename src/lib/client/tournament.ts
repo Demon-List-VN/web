@@ -80,3 +80,201 @@ export function eloRangeText(minElo: number | null, maxElo: number | null) {
 
     return `≤ ${maxElo}`;
 }
+
+export type StatusTone = 'live' | 'open' | 'soon' | 'done' | 'cancelled' | 'draft';
+
+export interface StatusMeta {
+    labelKey: string;
+    tone: StatusTone;
+    /** Literal Tailwind classes for a status pill (kept literal so JIT picks them up). */
+    badgeClass: string;
+    /** Literal Tailwind class for a status dot. */
+    dotClass: string;
+}
+
+export function statusMeta(status: TournamentStatus): StatusMeta {
+    const labelKey = statusLabelKey(status);
+
+    switch (status) {
+        case 'ongoing':
+            return {
+                labelKey,
+                tone: 'live',
+                badgeClass: 'border-transparent bg-green-500/15 text-green-500',
+                dotClass: 'bg-green-500'
+            };
+        case 'registration_open':
+            return {
+                labelKey,
+                tone: 'open',
+                badgeClass: 'border-transparent bg-blue-500/15 text-blue-400',
+                dotClass: 'bg-blue-500'
+            };
+        case 'registration_closed':
+        case 'ready':
+            return {
+                labelKey,
+                tone: 'soon',
+                badgeClass: 'border-transparent bg-amber-500/15 text-amber-400',
+                dotClass: 'bg-amber-500'
+            };
+        case 'finished':
+            return {
+                labelKey,
+                tone: 'done',
+                badgeClass: 'border-transparent bg-zinc-500/15 text-zinc-300',
+                dotClass: 'bg-zinc-400'
+            };
+        case 'cancelled':
+            return {
+                labelKey,
+                tone: 'cancelled',
+                badgeClass: 'border-transparent bg-red-500/15 text-red-400',
+                dotClass: 'bg-red-500'
+            };
+        case 'draft':
+        default:
+            return {
+                labelKey,
+                tone: 'draft',
+                badgeClass: 'border-transparent bg-muted text-muted-foreground',
+                dotClass: 'bg-muted-foreground'
+            };
+    }
+}
+
+/** High-level lifecycle stages shown in the timeline (draft folds into registration). */
+export const LIFECYCLE_STAGES = ['registration', 'closed', 'ready', 'ongoing', 'finished'] as const;
+
+export function lifecycleStageKey(stage: (typeof LIFECYCLE_STAGES)[number]) {
+    return `tournament.lifecycle_stage.${stage}`;
+}
+
+/** Index of the active lifecycle stage; -1 when cancelled. */
+export function stageIndex(status: TournamentStatus): number {
+    switch (status) {
+        case 'draft':
+        case 'registration_open':
+            return 0;
+        case 'registration_closed':
+            return 1;
+        case 'ready':
+            return 2;
+        case 'ongoing':
+            return 3;
+        case 'finished':
+            return 4;
+        case 'cancelled':
+            return -1;
+        default:
+            return 0;
+    }
+}
+
+export interface Milestone {
+    labelKey: string;
+    at: Date;
+}
+
+function futureDate(value: unknown): Date | null {
+    if (!value) {
+        return null;
+    }
+
+    const date = new Date(String(value));
+
+    return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/** The next scheduled transition the viewer is waiting on, or null. */
+export function nextMilestone(tournament: any): Milestone | null {
+    const now = Date.now();
+    const opens = futureDate(tournament.registrationOpensAt);
+    const closes = futureDate(tournament.registrationClosesAt);
+    const starts = futureDate(tournament.startsAt);
+    const future = (date: Date | null) => (date && date.getTime() > now ? date : null);
+
+    switch (tournament.status) {
+        case 'draft': {
+            const at = future(opens) ?? future(closes) ?? future(starts);
+
+            if (!at) {
+                return null;
+            }
+
+            return {
+                labelKey:
+                    at === opens
+                        ? 'tournament.milestone.registration_opens'
+                        : at === closes
+                            ? 'tournament.milestone.registration_closes'
+                            : 'tournament.milestone.starts',
+                at
+            };
+        }
+
+        case 'registration_open': {
+            const at = future(closes) ?? future(starts);
+
+            if (!at) {
+                return null;
+            }
+
+            return {
+                labelKey:
+                    at === closes
+                        ? 'tournament.milestone.registration_closes'
+                        : 'tournament.milestone.starts',
+                at
+            };
+        }
+
+        case 'registration_closed':
+        case 'ready': {
+            const at = future(starts);
+
+            return at ? { labelKey: 'tournament.milestone.starts', at } : null;
+        }
+
+        default:
+            return null;
+    }
+}
+
+export interface TournamentGroup {
+    key: string;
+    labelKey: string;
+    items: any[];
+}
+
+/** Buckets tournaments into Live / Registration / Upcoming / Finished, dropping empty groups. */
+export function groupTournaments(list: any[]): TournamentGroup[] {
+    const live: any[] = [];
+    const open: any[] = [];
+    const upcoming: any[] = [];
+    const finished: any[] = [];
+
+    for (const tournament of list ?? []) {
+        switch (tournament.status) {
+            case 'ongoing':
+                live.push(tournament);
+                break;
+            case 'registration_open':
+                open.push(tournament);
+                break;
+            case 'finished':
+            case 'cancelled':
+                finished.push(tournament);
+                break;
+            default:
+                upcoming.push(tournament);
+        }
+    }
+
+    return [
+        { key: 'live', labelKey: 'tournament.list.group.live', items: live },
+        { key: 'registration', labelKey: 'tournament.list.group.registration', items: open },
+        { key: 'upcoming', labelKey: 'tournament.list.group.upcoming', items: upcoming },
+        { key: 'finished', labelKey: 'tournament.list.group.finished', items: finished }
+    ].filter((group) => group.items.length > 0);
+}
