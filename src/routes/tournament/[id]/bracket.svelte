@@ -148,7 +148,7 @@
 	function hasFooter(node: any) {
 		return Boolean(
 			node.currentPvpMatchId
-			|| (showActions && node.player1Uid && node.player2Uid && node.status !== 'waiting')
+			|| (showActions && node.player1Uid && node.player2Uid)
 		);
 	}
 

@@ -4058,6 +4058,8 @@
             "set_result": "Đặt kết quả",
             "edit_result": "Sửa kết quả",
             "choose_winner": "Chọn người thắng",
+            "score": "Tỷ số",
+            "winner_score_error": "Nhập tỷ số nguyên không âm hợp lệ, không vượt quá số trận thắng cần thiết.",
             "confirm": "Xác nhận",
             "override_success": "Đã cập nhật kết quả",
             "start_match": "Bắt đầu trận",

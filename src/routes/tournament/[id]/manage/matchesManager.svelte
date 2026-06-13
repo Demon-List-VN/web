@@ -70,7 +70,6 @@
 	function canFinalize(node: any) {
 		return node.player1Uid
 			&& node.player2Uid
-			&& node.status !== 'waiting'
 			&& (tournament.status === 'ongoing' || tournament.status === 'finished');
 	}
 
@@ -153,7 +152,7 @@
             {/if}
             {#if canFinalize(node)}
               <Button size="sm" variant="outline" on:click={() => matchActions.openOverride(node)}>
-                {$_('tournament.matches.finalize')}
+                {$_('tournament.bracket.set_result')}
               </Button>
             {/if}
           </div>

@@ -4059,6 +4059,8 @@
             "set_result": "Set result",
             "edit_result": "Edit result",
             "choose_winner": "Choose the winner",
+            "score": "Score",
+            "winner_score_error": "Enter valid non-negative whole-number scores within the series win target.",
             "confirm": "Confirm",
             "override_success": "Result updated",
             "start_match": "Start match",

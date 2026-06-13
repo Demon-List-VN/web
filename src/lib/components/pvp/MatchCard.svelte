@@ -169,7 +169,7 @@
 		const player = getPvpParticipantPlayer(participant);
 
 		return player?.name || (participant
-			? getPvpParticipantDisplayName(participant, $_('pvp.rooms.player'))
+			? getPvpParticipantDisplayName(participant, 'Unknown')
 			: $_('pvp.waiting_opponent'));
 	}
 
@@ -199,7 +199,7 @@
 			(participant) => getPvpParticipantUid(participant) === winnerUid
 		);
 
-		return winner ? participantName(winner) : winnerUid || '--';
+		return winner ? participantName(winner) : 'Unknown';
 	}
 
 	function ratingLabel(participant: typeof self) {

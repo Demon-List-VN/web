@@ -1918,7 +1918,7 @@ export function getPvpParticipantPlayer(
 
 export function getPvpParticipantDisplayName(
     participant: PvpParticipant | PvpResult | null | undefined,
-    fallback = 'Player'
+    fallback = 'Unknown'
 ) {
     const player = getPvpParticipantPlayer(participant);
     const rawName = participant
@@ -1926,7 +1926,7 @@ export function getPvpParticipantDisplayName(
         : null;
     const name = typeof rawName === 'string' ? rawName.trim() : '';
 
-    return name || player?.name || getPvpParticipantUid(participant) || fallback;
+    return name || player?.name || fallback;
 }
 
 export function getPvpParticipantIsAnonymous(

@@ -14,7 +14,9 @@
 	let startNode: any = null;
 	let startLevelId: number | null = null;
 	let overrideNode: any = null;
-	let overrideWinner = '';
+	let overrideScore1: number | string | null = null;
+	let overrideScore2: number | string | null = null;
+	let overrideWinsNeeded = 1;
 	let submitting = false;
 
 	export function openStart(node: any) {
@@ -24,8 +26,39 @@
 
 	export function openOverride(node: any) {
 		overrideNode = node;
-		overrideWinner = node.winnerUid ?? node.player1Uid;
+		overrideWinsNeeded = Math.ceil(
+			Math.max(Number(tournament.pvpFormat?.levelsPerMatch) || 1, 1) / 2
+		);
+		overrideScore1 = node.status === 'completed'
+			? Number(node.score1 ?? 0)
+			: Number(node.score1 ?? 0);
+		overrideScore2 = node.status === 'completed'
+			? Number(node.score2 ?? 0)
+			: Number(node.score2 ?? 0);
 	}
+
+	$: normalizedOverrideScore1 = overrideScore1 === null || overrideScore1 === ''
+		? null
+		: Number(overrideScore1);
+	$: normalizedOverrideScore2 = overrideScore2 === null || overrideScore2 === ''
+		? null
+		: Number(overrideScore2);
+	$: overrideScoresEntered = normalizedOverrideScore1 !== null
+		&& normalizedOverrideScore2 !== null;
+	$: overrideScoreValid = Boolean(
+		overrideNode
+		&& overrideScoresEntered
+		&& Number.isInteger(normalizedOverrideScore1)
+		&& Number.isInteger(normalizedOverrideScore2)
+		&& Number(normalizedOverrideScore1) >= 0
+		&& Number(normalizedOverrideScore2) >= 0
+		&& Number(normalizedOverrideScore1) <= overrideWinsNeeded
+		&& Number(normalizedOverrideScore2) <= overrideWinsNeeded
+		&& !(
+			normalizedOverrideScore1 === overrideWinsNeeded
+			&& normalizedOverrideScore2 === overrideWinsNeeded
+		)
+	);
 
 	async function startMatch() {
 		submitting = true;
@@ -55,7 +88,10 @@
 		try {
 			await tournamentFetch(`/${tournament.id}/matches/${overrideNode.id}/override`, {
 				method: 'POST',
-				body: JSON.stringify({ winnerUid: overrideWinner })
+				body: JSON.stringify({
+					score1: normalizedOverrideScore1,
+					score2: normalizedOverrideScore2
+				})
 			});
 			toast.success($_('tournament.bracket.override_success'));
 			overrideNode = null;
@@ -120,23 +156,33 @@
 >
   <Dialog.Content>
     <Dialog.Header>
-      <Dialog.Title>{$_('tournament.matches.finalize')}</Dialog.Title>
+      <Dialog.Title>{$_('tournament.bracket.edit_result')}</Dialog.Title>
     </Dialog.Header>
     {#if overrideNode}
       <div class="flex flex-col gap-[10px]">
-        <p class="text-sm text-muted-foreground">{$_('tournament.bracket.choose_winner')}</p>
-        <label class="flex items-center gap-[8px]">
-          <input type="radio" bind:group={overrideWinner} value={overrideNode.player1Uid} />
-          <PlayerLink player={overrideNode.player1} showAvatar avatarSize={20} />
-        </label>
-        <label class="flex items-center gap-[8px]">
-          <input type="radio" bind:group={overrideWinner} value={overrideNode.player2Uid} />
-          <PlayerLink player={overrideNode.player2} showAvatar avatarSize={20} />
-        </label>
+        <div class="grid grid-cols-[1fr_90px] items-center gap-[10px]">
+          <div class="flex items-center gap-[8px]">
+            <PlayerLink player={overrideNode.player1} showAvatar avatarSize={20} />
+          </div>
+          <div class="flex flex-col gap-[4px]">
+            <Label for="override-score-1">{$_('tournament.bracket.score')}</Label>
+            <Input id="override-score-1" type="number" min="0" step="1" bind:value={overrideScore1} />
+          </div>
+          <div class="flex items-center gap-[8px]">
+            <PlayerLink player={overrideNode.player2} showAvatar avatarSize={20} />
+          </div>
+          <div class="flex flex-col gap-[4px]">
+            <Label for="override-score-2">{$_('tournament.bracket.score')}</Label>
+            <Input id="override-score-2" type="number" min="0" step="1" bind:value={overrideScore2} />
+          </div>
+        </div>
+        {#if overrideScoresEntered && !overrideScoreValid}
+          <p class="text-sm text-destructive">{$_('tournament.bracket.winner_score_error')}</p>
+        {/if}
       </div>
     {/if}
     <Dialog.Footer>
-      <Button on:click={submitOverride} disabled={submitting || !overrideWinner}>
+      <Button on:click={submitOverride} disabled={submitting || !overrideScoreValid}>
         {$_('tournament.bracket.confirm')}
       </Button>
     </Dialog.Footer>
