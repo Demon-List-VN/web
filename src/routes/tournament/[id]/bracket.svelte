@@ -61,12 +61,13 @@
 
 	$: roundsCount = rounds.length;
 	$: finalsCenter = roundsCount ? centerOf(roundsCount - 1, 0) : 0;
+	$: finalsX = roundsCount ? columnX(roundsCount - 1) : PAD;
 	$: championX = roundsCount ? columnX(roundsCount - 1) + MATCH_W + H_GAP : 0;
 	$: bracketRight = roundsCount ? columnX(roundsCount - 1) + MATCH_W : 0;
 	$: treeWidth = (champion ? championX + MATCH_W : bracketRight) + PAD;
 	$: bracketBottom = PAD + HEADER_H + SLOT_H + Math.max(0, round0Count - 1) * PITCH + FOOT_H;
-	$: thirdPlaceTop = bracketBottom + 30;
-	$: treeHeight = (thirdPlaceMatch ? thirdPlaceTop + 26 + SLOT_H + FOOT_H : bracketBottom) + PAD;
+	$: thirdPlaceTop = finalsCenter + SLOT_H / 2 + FOOT_H + 30;
+	$: treeHeight = Math.max(bracketBottom, thirdPlaceMatch ? thirdPlaceTop + 26 + SLOT_H + FOOT_H : 0) + PAD;
 
 	$: connectors = (() => {
 		const out: string[] = [];
@@ -390,7 +391,7 @@
           {/if}
 
           {#if thirdPlaceMatch}
-            <div class="absolute" style={`left: ${PAD}px; top: ${thirdPlaceTop}px; width: ${MATCH_W}px;`}>
+            <div class="absolute" style={`left: ${finalsX}px; top: ${thirdPlaceTop}px; width: ${MATCH_W}px;`}>
               <div class="mb-[6px] text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 {$_('tournament.bracket.third_place')}
               </div>
