@@ -14,10 +14,7 @@ export const load: PageLoad = async ({ fetch }) => {
                 progress: {
                     totalRevenue: 0,
                     serverCostPercent: 0,
-                    minecraftServerPercent: 0,
-                    gdvnCupFundingPercent: 0,
-                    hcmGrandFinalsPercent: 0,
-                    hanoiQuarterfinalsPercent: 0
+                    minecraftServerPercent: 0
                 }
             }
         };

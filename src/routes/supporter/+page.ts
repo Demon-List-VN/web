@@ -32,10 +32,7 @@ export async function load({ fetch }: Parameters<PageLoad>[0]) {
             progress: {
                 totalRevenue: 0,
                 serverCostPercent: 0,
-                minecraftServerPercent: 0,
-                gdvnCupFundingPercent: 0,
-                hcmGrandFinalsPercent: 0,
-                hanoiQuarterfinalsPercent: 0
+                minecraftServerPercent: 0
             }
         };
     }

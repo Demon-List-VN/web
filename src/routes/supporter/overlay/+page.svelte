@@ -9,12 +9,7 @@
 		totalRevenue?: number;
 		serverCostPercent: number;
 		minecraftServerPercent: number;
-		gdvnCupFundingPercent?: number;
-		hcmGrandFinalsPercent?: number;
-		hanoiQuarterfinalsPercent?: number;
 	};
-
-	type CupProgressKey = Extract<keyof SupporterProgress, `${string}Percent`>;
 
 	export let data: any;
 
@@ -26,31 +21,40 @@
 	const cupGoals: {
 		label: string;
 		target: number;
-		percentKey: CupProgressKey;
 	}[] = [
 		{
-			label: 'Kinh phí GDVN Cup 2026',
-			target: 10000000,
-			percentKey: 'gdvnCupFundingPercent'
+			label: 'Edit/Design Team',
+			target: 5000000
 		},
 		{
-			label: 'Offline Grand Finals HCM',
-			target: 15000000,
-			percentKey: 'hcmGrandFinalsPercent'
+			label: 'Miền Bắc: tới Thanh Hóa rồi quay về Hà Nội',
+			target: 11000000
 		},
 		{
-			label: 'Offline Tứ kết Hà Nội',
-			target: 20000000,
-			percentKey: 'hanoiQuarterfinalsPercent'
+			label: 'Miền Trung: tới Đà Nẵng rồi quay về Hà Nội',
+			target: 17000000
+		},
+		{
+			label: 'Full Route: tới TP.HCM + Offline HCM + quay về Hà Nội',
+			target: 25000000
+		},
+		{
+			label: 'Optional: Offline Hà Nội',
+			target: 30000000
 		}
 	];
 
 	$: topSupporters = overlay?.topSupporters ?? [];
 	$: progress = (overlay?.progress ?? null) as SupporterProgress | null;
-	$: totalRevenue = Number(progress?.totalRevenue || 0);
+	$: parsedTotalRevenue = Number(progress?.totalRevenue);
+	$: totalRevenue = Number.isFinite(parsedTotalRevenue)
+		? Math.max(0, parsedTotalRevenue)
+		: 0;
 	$: goals = cupGoals.map((goal) => ({
 		...goal,
-		percent: Number(progress?.[goal.percentKey] || 0)
+		percent: goal.target > 0
+			? Math.min(100, Math.round((totalRevenue / goal.target) * 10000) / 100)
+			: 0
 	}));
 
 	function formatPrice(value: number) {

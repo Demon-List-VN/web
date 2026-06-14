@@ -17,27 +17,36 @@
 
 	const cupGoals = [
 		{
-			labelKey: 'supporter.goals.gdvn_cup_funding',
-			target: 10000000,
-			percentKey: 'gdvnCupFundingPercent'
+			labelKey: 'supporter.goals.edit_design_team',
+			target: 5000000
 		},
 		{
-			labelKey: 'supporter.goals.hcm_grand_finals',
-			target: 15000000,
-			percentKey: 'hcmGrandFinalsPercent'
+			labelKey: 'supporter.goals.northern_route',
+			target: 11000000
 		},
 		{
-			labelKey: 'supporter.goals.hanoi_quarterfinals',
-			target: 20000000,
-			percentKey: 'hanoiQuarterfinalsPercent'
+			labelKey: 'supporter.goals.central_route',
+			target: 17000000
+		},
+		{
+			labelKey: 'supporter.goals.full_route',
+			target: 25000000
+		},
+		{
+			labelKey: 'supporter.goals.hanoi_offline',
+			target: 30000000
 		}
 	];
 
-	$: totalRevenue = Number(data?.progress?.totalRevenue || 0);
-	$: progress = data?.progress || {};
+	$: parsedTotalRevenue = Number(data?.progress?.totalRevenue);
+	$: totalRevenue = Number.isFinite(parsedTotalRevenue)
+		? Math.max(0, parsedTotalRevenue)
+		: 0;
 	$: goals = cupGoals.map((goal) => ({
 		...goal,
-		percent: Number(progress?.[goal.percentKey] || 0)
+		percent: goal.target > 0
+			? Math.min(100, Math.round((totalRevenue / goal.target) * 10000) / 100)
+			: 0
 	}));
 
 	function toBarWidth(percent: number) {

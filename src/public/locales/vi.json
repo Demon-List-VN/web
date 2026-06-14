@@ -320,6 +320,29 @@
                 "supporter_state": "Cảm ơn bạn đã giúp Versus luôn hoạt động."
             }
         },
+        "dashboard": {
+            "hero_title": "Sẵn sàng chơi chưa?",
+            "hero_subtitle": "Vào ngay một trận {mode} xếp hạng.",
+            "quick_queue": "Tìm trận nhanh",
+            "view_all": "Xem tất cả",
+            "view_race": "Xem cuộc đua",
+            "view_history": "Xem lịch sử",
+            "weekly_login": "Số ngày hoạt động tuần này",
+            "weekly_login_claimable": "Đã có thưởng đăng nhập tuần: +{xp} XP",
+            "weekly_login_claimed": "Đã nhận thưởng đăng nhập tuần.",
+            "weekly_login_hint": "Còn {days} ngày nữa để nhận +{xp} XP thưởng tuần.",
+            "missions_empty": "Hiện chưa có nhiệm vụ hằng ngày.",
+            "your_rank": "Hạng của bạn",
+            "winrate": "Tỉ lệ thắng",
+            "race_empty": "Chơi một trận xếp hạng để tham gia cuộc đua tuần này.",
+            "race_ends_in": "Kết thúc sau {time}",
+            "recent_form": "Phong độ gần đây",
+            "wins_short": "W",
+            "losses_short": "L",
+            "win_letter": "W",
+            "loss_letter": "L",
+            "form_empty": "Chưa có trận xếp hạng nào. Tìm trận để bắt đầu."
+        },
         "match": "Trận",
         "winner": "Người thắng",
         "winner_named": "Người thắng: {name}",
@@ -2565,9 +2588,11 @@
             "title": "Tiến độ gây quỹ GDVN Cup 2026",
             "server_cost": "Chi phí máy chủ",
             "minecraft_server": "Máy chủ Minecraft",
-            "gdvn_cup_funding": "Kinh phí tổ chức GDVN Cup 2026",
-            "hcm_grand_finals": "Tổ chức offline Grand Finals ở Hồ Chí Minh",
-            "hanoi_quarterfinals": "Tổ chức offline Tứ kết ở Hà Nội"
+            "edit_design_team": "Edit/Design Team",
+            "northern_route": "Miền Bắc: tới Thanh Hóa rồi quay về Hà Nội",
+            "central_route": "Miền Trung: tới Đà Nẵng rồi quay về Hà Nội",
+            "full_route": "Full Route: tới TP.HCM + Offline HCM + quay về Hà Nội",
+            "hanoi_offline": "Optional: Offline Hà Nội"
         },
         "tiers": {
             "title": "Hạng Supporter",

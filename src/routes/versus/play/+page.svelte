@@ -11,6 +11,7 @@
 	import PvpDialogs from './PvpDialogs.svelte';
 	import PvpLeaderboardTab from './PvpLeaderboardTab.svelte';
 	import PvpMissionsTab from './PvpMissionsTab.svelte';
+	import PvpHomeDashboard, { type PvpRecentFormItem } from './PvpHomeDashboard.svelte';
 	import WeeklyRaceTab from './WeeklyRaceTab.svelte';
 	import { user } from '$lib/client';
 	import { DISCORD_SERVER_INVITE_URL } from '$lib/client/discord';
@@ -34,6 +35,7 @@
 		acceptPvpRoomInvite,
 		declinePvpRoomInvite,
 		createPvpRoom,
+		getActivePvpEvent,
 		getPvpClanWeeklyRace,
 		getPvpInviteExpiresMs,
 		getPvpInvite,
@@ -309,6 +311,7 @@
 	let matchDialogOpen = false;
 	let showGeodeAlert = true;
 	let eventInfoDialogOpen = false;
+	let publicActivePvpEvent: PvpEvent | null = null;
 	let currentPvpTip: PvpTip | null = null;
 	let currentUserClan: PvpClan | null = null;
 	let lobbyReady = false;
@@ -351,7 +354,7 @@
 			: false);
 	$: queueStatus = getPvpStatus(lobby.matchmaking, 'idle');
 	$: isSearching = queueStatus === 'searching' || queueStatus === 'matching';
-	$: activePvpEvent = lobby.activePvpEvent ?? null;
+	$: activePvpEvent = lobby.activePvpEvent ?? publicActivePvpEvent ?? null;
 	$: activePvpEventId = getPvpEventId(activePvpEvent);
 	$: activePvpEventBaseMode = getPvpEventBaseMode(activePvpEvent);
 	$: selectedBaseMode = selectedMode === 'event'
@@ -451,6 +454,18 @@
 	$: unclaimedPvpMissionCount = pvpMissions.filter((mission) =>
 		!mission.claimed && (mission.claimable || mission.completed)
 	).length;
+	$: dashboardDailyMissions = pvpMissions.filter(
+		(mission) => mission.periodType === 'daily'
+	);
+	$: weeklyLoginMission = pvpMissions.find(
+		(mission) => mission.key === 'weekly_login_7'
+	) ?? null;
+	$: weeklyRaceSelf = weeklyRace.currentPlayer ?? null;
+	$: weeklyRaceEndsMs = getPvpWeekEndMs(weeklyRace.week);
+	$: recentForm = getPvpRecentForm(
+		matches.filter((match) => getPvpMode(match) === selectedBaseMode),
+		currentUid
+	);
 	$: updateActiveMatchRealtime($user.loggedIn, getLobbyRealtimeMatchIds());
 	$: updatePendingConfirmRealtime($user.loggedIn, pendingMatchId);
 	$: updateMatchmakingCheckPolling($user.loggedIn, isSearching && !requiredSubmission);
@@ -520,6 +535,11 @@
 		refreshLeaderboard();
 		refreshWeeklyRace();
 		refreshClanRace();
+		getActivePvpEvent()
+			.then((event) => {
+				publicActivePvpEvent = event;
+			})
+			.catch(() => {});
 	});
 
 	$: currentUserClan = $user.data?.clan && $user.data?.clans
@@ -1695,6 +1715,52 @@
 			},
 			{ wins: 0, losses: 0 }
 		);
+	}
+
+	function getPvpWeekEndMs(week: PvpWeeklyRace['week']) {
+		const value = week?.weekEndAt ?? week?.week_end_at;
+
+		if (!value) {
+			return null;
+		}
+
+		const ms = new Date(value)
+			.getTime();
+
+		return Number.isFinite(ms) ? ms : null;
+	}
+
+	function getPvpRecentForm(
+		sourceMatches: PvpMatch[],
+		uid: string | null | undefined
+	): PvpRecentFormItem[] {
+		if (!uid) {
+			return [];
+		}
+
+		return sourceMatches
+			.filter((match) =>
+				getPvpStatus(match, '') === 'completed'
+					&& isPvpMatchRanked(match)
+					&& Boolean(getPvpSelfParticipant(match, uid))
+					&& Boolean(getPvpWinnerUid(match))
+			)
+			.sort((a, b) =>
+				(Number(getPvpMatchEndMs(b)) || 0) - (Number(getPvpMatchEndMs(a)) || 0)
+			)
+			.slice(0, 5)
+			.map((match) => {
+				const self = getPvpSelfParticipant(match, uid);
+				const winnerUid = getPvpWinnerUid(match);
+				const result: 'win' | 'loss' =
+					String(winnerUid) === String(uid) ? 'win' : 'loss';
+
+				return {
+					id: getPvpMatchId(match),
+					result,
+					ratingDiff: getPvpParticipantRatingDiff(self)
+				};
+			});
 	}
 
 	function getRatingUnlockProgress(ratingDeviation: number | null | undefined) {
@@ -2979,7 +3045,7 @@
     <Ads dataAdFormat="auto" />
   </div>
 
-  {#if activePvpEvent && $user.checked && $user.loggedIn}
+  {#if activePvpEvent && $user.checked && !(activePvpTab === 'lobby' && $user.loggedIn)}
     <section
       class="pvp-event-banner"
       class:has-image={Boolean(getPvpEventBannerUrl(activePvpEvent))}
@@ -3007,17 +3073,24 @@
             </div>
           {/if}
           <div class="pvp-event-actions">
-            <Button
-              size="sm"
-              class="event-queue-button"
-              disabled={controlsDisabled}
-              on:click={startEventQueue}
-            >
-              {#if actionLoading === 'matchmaking' && selectedMode === 'event'}
-                <Loader2 class="mr-2 h-4 w-4 animate-spin" />
-              {/if}
-              {$_('pvp.event_view_pool')}
-            </Button>
+            {#if $user.loggedIn}
+              <Button
+                size="sm"
+                class="event-queue-button"
+                disabled={controlsDisabled}
+                on:click={startEventQueue}
+              >
+                {#if actionLoading === 'matchmaking' && selectedMode === 'event'}
+                  <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+                {/if}
+                {$_('pvp.event_view_pool')}
+              </Button>
+            {:else}
+              <Button size="sm" class="event-queue-button" on:click={signIn}>
+                <LogIn class="mr-2 h-4 w-4" />
+                {$_('nav.sign_in')}
+              </Button>
+            {/if}
             <Button
               size="icon"
               variant="outline"
@@ -3672,6 +3745,103 @@
           </section>
         {/if}
 
+        {#if !activeMatch}
+          <section class="pvp-quick-hero" class:is-event={Boolean(activePvpEvent)}>
+            <div class="pvp-quick-hero-copy">
+              {#if activePvpEvent}
+                <span class="pvp-quick-hero-eyebrow">
+                  <Badge>{$_('pvp.event_mode')}</Badge>
+                  {#if getPvpEventEndsMs(activePvpEvent)}
+                    <span class="pvp-quick-hero-countdown">
+                      <Clock class="h-4 w-4" />
+                      {$_('pvp.event_race.ends_in')}
+                      <strong>
+                        {eventCountdownLabel(getPvpEventEndsMs(activePvpEvent), now)}
+                      </strong>
+                    </span>
+                  {/if}
+                </span>
+                <strong>{getPvpEventTitle(activePvpEvent)}</strong>
+                <span>
+                  {$_(`pvp.mode.${activePvpEventBaseMode}`)} ·
+                  {
+                    isPvpEventRanked(activePvpEvent)
+                    ? $_('pvp.ranked')
+                    : $_('pvp.unranked')
+                  }
+                </span>
+              {:else}
+                <strong>{$_('pvp.dashboard.hero_title')}</strong>
+                <span>
+                  {
+                    $_('pvp.dashboard.hero_subtitle', {
+                        values: { mode: $_(`pvp.mode.${selectedMode}`) }
+                    })
+                  }
+                </span>
+              {/if}
+            </div>
+            {#if isSearching}
+              <div class="pvp-quick-hero-searching">
+                <div class="queue-status">
+                  <Badge>{statusLabel(queueStatus)}</Badge>
+                  <span>
+                    <Clock class="h-4 w-4" />
+                    {elapsedLabel(queueStartedAt, now)}
+                  </span>
+                </div>
+                <Button
+                  variant="outline"
+                  disabled={Boolean(actionLoading)}
+                  on:click={cancelQueue}
+                >
+                  {#if actionLoading === 'cancel-matchmaking'}
+                    <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+                  {/if}
+                  {$_('pvp.cancel_search')}
+                </Button>
+              </div>
+            {:else if activePvpEvent}
+              <div class="pvp-quick-hero-actions">
+                <Button
+                  size="lg"
+                  class="pvp-quick-hero-button"
+                  disabled={controlsDisabled}
+                  on:click={startEventQueue}
+                >
+                  {#if actionLoading === 'matchmaking' && selectedMode === 'event'}
+                    <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+                  {:else}
+                    <Swords class="mr-2 h-4 w-4" />
+                  {/if}
+                  {$_('pvp.event_view_pool')}
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  on:click={() => (activePvpTab = 'event-race')}
+                >
+                  {$_('pvp.tabs.event_race')}
+                </Button>
+              </div>
+            {:else}
+              <Button
+                size="lg"
+                class="pvp-quick-hero-button"
+                disabled={rankedQueueDisabled}
+                on:click={() => startQueue()}
+              >
+                {#if actionLoading === 'matchmaking'}
+                  <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+                {:else}
+                  <Swords class="mr-2 h-4 w-4" />
+                {/if}
+                {$_('pvp.dashboard.quick_queue')}
+              </Button>
+            {/if}
+          </section>
+        {/if}
+
         <section class="rating-start-section">
           <Collapsible.Root bind:open={summaryOpen}>
             <Card.Root
@@ -3825,6 +3995,24 @@
               </Card.Content>
             </Card.Root>
           </Collapsible.Root>
+        </section>
+
+        <section class="pvp-dashboard">
+          <PvpHomeDashboard
+            dailyMissions={dashboardDailyMissions}
+            {weeklyLoginMission}
+            unclaimedCount={unclaimedPvpMissionCount}
+            claimingMissionKey={claimingPvpMissionKey}
+            {weeklyRaceSelf}
+            {weeklyRaceEndsMs}
+            {recentForm}
+            winLoss={pvpWinLossStats}
+            {now}
+            onClaimMission={handleClaimPvpMission}
+            onOpenMissions={() => (activePvpTab = 'missions')}
+            onOpenRace={() => (activePvpTab = 'weekly-race')}
+            onOpenHistory={() => (activePvpTab = 'history')}
+          />
         </section>
 
         {#if currentPvpTip}
@@ -4451,6 +4639,101 @@
 :global(.auth-content) p {
   margin: 0;
   color: hsl(var(--muted-foreground));
+}
+
+.pvp-quick-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  padding: 16px 18px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  background:
+    radial-gradient(
+      120% 160% at 0% 0%,
+      hsl(var(--primary) / 0.1),
+      transparent 60%
+    ),
+    hsl(var(--muted) / 0.4);
+}
+
+.pvp-quick-hero-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pvp-quick-hero-copy strong {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.pvp-quick-hero-copy span {
+  color: hsl(var(--muted-foreground));
+  font-size: 13px;
+}
+
+.pvp-quick-hero-searching {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pvp-quick-hero.is-event {
+  background:
+    radial-gradient(
+      120% 160% at 0% 0%,
+      hsl(var(--primary) / 0.18),
+      transparent 60%
+    ),
+    hsl(var(--muted) / 0.5);
+}
+
+.pvp-quick-hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.pvp-quick-hero-countdown {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.pvp-quick-hero-countdown strong {
+  font-size: 12px;
+  font-weight: 800;
+  color: hsl(var(--foreground));
+  font-variant-numeric: tabular-nums;
+}
+
+.pvp-quick-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+:global(.pvp-quick-hero-button) {
+  flex-shrink: 0;
+  min-width: 180px;
+}
+
+.pvp-dashboard {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-items: stretch;
+  margin-bottom: 20px;
 }
 
 .control-grid {
@@ -5198,6 +5481,7 @@
 
 @media (max-width: 980px) {
   .control-grid,
+  .pvp-dashboard,
   .match-grid,
   .room-grid {
     grid-template-columns: 1fr;

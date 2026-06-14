@@ -22,16 +22,24 @@
 		target: number;
 	}[] = [
 		{
-			labelKey: 'supporter.goals.gdvn_cup_funding',
-			target: 10000000
+			labelKey: 'supporter.goals.edit_design_team',
+			target: 5000000
 		},
 		{
-			labelKey: 'supporter.goals.hcm_grand_finals',
-			target: 15000000
+			labelKey: 'supporter.goals.northern_route',
+			target: 11000000
 		},
 		{
-			labelKey: 'supporter.goals.hanoi_quarterfinals',
-			target: 20000000
+			labelKey: 'supporter.goals.central_route',
+			target: 17000000
+		},
+		{
+			labelKey: 'supporter.goals.full_route',
+			target: 25000000
+		},
+		{
+			labelKey: 'supporter.goals.hanoi_offline',
+			target: 30000000
 		}
 	];
 	const medalColors = ['text-yellow-500', 'text-gray-400', 'text-amber-600'];

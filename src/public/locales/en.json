@@ -320,6 +320,29 @@
                 "supporter_state": "Thank you for keeping Versus online."
             }
         },
+        "dashboard": {
+            "hero_title": "Ready to play?",
+            "hero_subtitle": "Jump into a ranked {mode} match.",
+            "quick_queue": "Quick queue",
+            "view_all": "View all",
+            "view_race": "View race",
+            "view_history": "View history",
+            "weekly_login": "Days active this week",
+            "weekly_login_claimable": "Weekly login reward ready: +{xp} XP",
+            "weekly_login_claimed": "Weekly login reward claimed.",
+            "weekly_login_hint": "{days} more day(s) for the +{xp} XP weekly reward.",
+            "missions_empty": "No daily missions right now.",
+            "your_rank": "Your rank",
+            "winrate": "Winrate",
+            "race_empty": "Play a ranked match to join this week's race.",
+            "race_ends_in": "Ends in {time}",
+            "recent_form": "Recent form",
+            "wins_short": "W",
+            "losses_short": "L",
+            "win_letter": "W",
+            "loss_letter": "L",
+            "form_empty": "No ranked matches yet. Queue up to start your record."
+        },
         "match": "Match",
         "winner": "Winner",
         "winner_named": "Winner: {name}",
@@ -2545,9 +2568,11 @@
             "title": "GDVN Cup 2026 fundraising progress",
             "server_cost": "Server cost",
             "minecraft_server": "Minecraft server",
-            "gdvn_cup_funding": "GDVN Cup 2026 operating fund",
-            "hcm_grand_finals": "Offline Grand Finals in Ho Chi Minh City",
-            "hanoi_quarterfinals": "Offline Quarterfinals in Hanoi"
+            "edit_design_team": "Edit/Design Team",
+            "northern_route": "Northern route: to Thanh Hoa, then return to Hanoi",
+            "central_route": "Central route: to Da Nang, then return to Hanoi",
+            "full_route": "Full Route: to Ho Chi Minh City + HCMC meetup + return to Hanoi",
+            "hanoi_offline": "Optional: Hanoi meetup"
         },
         "tiers": {
             "title": "Supporter tier",
