@@ -46,25 +46,29 @@
 	let initial = {
 		registrationOpensAt: toDatetimeLocal(tournament.registrationOpensAt),
 		registrationClosesAt: toDatetimeLocal(tournament.registrationClosesAt),
-		startsAt: toDatetimeLocal(tournament.startsAt)
+		startsAt: toDatetimeLocal(tournament.startsAt),
+		endsAt: toDatetimeLocal(tournament.endsAt)
 	};
 
 	let registrationOpensAt = initial.registrationOpensAt;
 	let registrationClosesAt = initial.registrationClosesAt;
 	let startsAt = initial.startsAt;
+	let endsAt = initial.endsAt;
 
-	$: current = { registrationOpensAt, registrationClosesAt, startsAt };
+	$: current = { registrationOpensAt, registrationClosesAt, startsAt, endsAt };
 	$: dirty = JSON.stringify(current) !== JSON.stringify(initial);
 	$: dirtyStore?.setDirty(ID, dirty && !disabled);
 	$: scheduleValid =
-		Boolean(registrationOpensAt && registrationClosesAt && startsAt)
+		Boolean(registrationOpensAt && registrationClosesAt && startsAt && endsAt)
 		&& timestamp(registrationOpensAt) < timestamp(registrationClosesAt)
-		&& timestamp(registrationClosesAt) <= timestamp(startsAt);
+		&& timestamp(registrationClosesAt) <= timestamp(startsAt)
+		&& timestamp(startsAt) < timestamp(endsAt);
 
 	function reset() {
 		registrationOpensAt = initial.registrationOpensAt;
 		registrationClosesAt = initial.registrationClosesAt;
 		startsAt = initial.startsAt;
+		endsAt = initial.endsAt;
 	}
 
 	async function save() {
@@ -77,7 +81,8 @@
 			body: JSON.stringify({
 				registrationOpensAt: toIso(registrationOpensAt),
 				registrationClosesAt: toIso(registrationClosesAt),
-				startsAt: toIso(startsAt)
+				startsAt: toIso(startsAt),
+				endsAt: toIso(endsAt)
 			})
 		});
 		initial = { ...current };
@@ -145,7 +150,7 @@
       </div>
     {/if}
 
-    <div class="grid grid-cols-1 gap-[10px] md:grid-cols-3">
+    <div class="grid grid-cols-1 gap-[10px] md:grid-cols-2">
       <div class="flex flex-col gap-[6px]">
         <Label>{$_('tournament.manage.registration_opens_at')}</Label>
         <Input type="datetime-local" bind:value={registrationOpensAt} {disabled} />
@@ -157,6 +162,10 @@
       <div class="flex flex-col gap-[6px]">
         <Label>{$_('tournament.manage.starts_at')}</Label>
         <Input type="datetime-local" bind:value={startsAt} {disabled} />
+      </div>
+      <div class="flex flex-col gap-[6px]">
+        <Label>{$_('tournament.manage.ends_at')}</Label>
+        <Input type="datetime-local" bind:value={endsAt} {disabled} />
       </div>
     </div>
     <p class="text-xs text-muted-foreground">{$_('tournament.manage.schedule_hint')}</p>
