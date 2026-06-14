@@ -28,6 +28,7 @@
 	export let claimingMissionKey = '';
 	export let weeklyRaceSelf: PvpWeeklyRacePlayer | null = null;
 	export let weeklyRaceEndsMs: number | null = null;
+	export let isEventRace = false;
 	export let recentForm: PvpRecentFormItem[] = [];
 	export let winLoss: { wins: number; losses: number; } = { wins: 0, losses: 0 };
 	export let now = Date.now();
@@ -176,7 +177,7 @@
   <button type="button" class="dashboard-card-head" on:click={onOpenRace}>
     <span class="dashboard-card-title">
       <Trophy class="h-4 w-4" />
-      {$_('pvp.tabs.weekly_race')}
+      {$_(isEventRace ? 'pvp.tabs.event_race' : 'pvp.tabs.weekly_race')}
     </span>
     <span class="dashboard-card-link">
       {$_('pvp.dashboard.view_race')}
@@ -195,7 +196,9 @@
       <div class="race-meta">
         <div>
           <strong>{weeklyRaceSelf.points ?? 0}</strong>
-          <span>{$_('pvp.weekly_race_points')}</span>
+          <span>
+            {$_(isEventRace ? 'pvp.weekly_race.points' : 'pvp.weekly_race_points')}
+          </span>
         </div>
         <div>
           <strong>{Math.round(weeklyRaceSelf.winrate ?? 0)}%</strong>
@@ -204,7 +207,9 @@
       </div>
     </div>
   {:else}
-    <p class="dashboard-empty">{$_('pvp.dashboard.race_empty')}</p>
+    <p class="dashboard-empty">
+      {$_(isEventRace ? 'pvp.event_race.empty' : 'pvp.dashboard.race_empty')}
+    </p>
   {/if}
 
   <div class="race-countdown">

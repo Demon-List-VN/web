@@ -3045,66 +3045,7 @@
     <Ads dataAdFormat="auto" />
   </div>
 
-  {#if activePvpEvent && $user.checked && !(activePvpTab === 'lobby' && $user.loggedIn)}
-    <section
-      class="pvp-event-banner"
-      class:has-image={Boolean(getPvpEventBannerUrl(activePvpEvent))}
-      style={getPvpEventBannerStyle(activePvpEvent)}
-    >
-      <div class="pvp-event-banner-pill">
-        <div class="pvp-event-banner-main">
-          <Badge>{$_('pvp.event_mode')}</Badge>
-          <div>
-            <h2>{getPvpEventTitle(activePvpEvent)}</h2>
-            {#if activePvpEvent.description}
-              <p>{activePvpEvent.description}</p>
-            {/if}
-          </div>
-        </div>
-        <div class="pvp-event-banner-meta">
-          <Badge variant="outline">
-            {$_(`pvp.mode.${activePvpEventBaseMode}`)}
-          </Badge>
-          {#if getPvpEventEndsMs(activePvpEvent)}
-            <div class="pvp-event-countdown">
-              <Clock class="h-4 w-4" />
-              <span>{$_('pvp.event_race.ends_in')}</span>
-              <strong>{eventCountdownLabel(getPvpEventEndsMs(activePvpEvent), now)}</strong>
-            </div>
-          {/if}
-          <div class="pvp-event-actions">
-            {#if $user.loggedIn}
-              <Button
-                size="sm"
-                class="event-queue-button"
-                disabled={controlsDisabled}
-                on:click={startEventQueue}
-              >
-                {#if actionLoading === 'matchmaking' && selectedMode === 'event'}
-                  <Loader2 class="mr-2 h-4 w-4 animate-spin" />
-                {/if}
-                {$_('pvp.event_view_pool')}
-              </Button>
-            {:else}
-              <Button size="sm" class="event-queue-button" on:click={signIn}>
-                <LogIn class="mr-2 h-4 w-4" />
-                {$_('nav.sign_in')}
-              </Button>
-            {/if}
-            <Button
-              size="icon"
-              variant="outline"
-              class="event-info-button"
-              aria-label={$_('pvp.event_info.aria_label')}
-              on:click={() => (eventInfoDialogOpen = true)}
-            >
-              <Info class="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
-    </section>
-
+  {#if activePvpEvent && $user.checked}
     <Dialog.Root bind:open={eventInfoDialogOpen}>
       <Dialog.Content class="event-info-dialog">
         <Dialog.Header>
@@ -3746,7 +3687,12 @@
         {/if}
 
         {#if !activeMatch}
-          <section class="pvp-quick-hero" class:is-event={Boolean(activePvpEvent)}>
+          <section
+            class="pvp-quick-hero"
+            class:is-event={Boolean(activePvpEvent)}
+            class:has-banner={Boolean(getPvpEventBannerUrl(activePvpEvent))}
+            style={activePvpEvent ? getPvpEventBannerStyle(activePvpEvent) : ''}
+          >
             <div class="pvp-quick-hero-copy">
               {#if activePvpEvent}
                 <span class="pvp-quick-hero-eyebrow">
@@ -3822,6 +3768,15 @@
                   on:click={() => (activePvpTab = 'event-race')}
                 >
                   {$_('pvp.tabs.event_race')}
+                </Button>
+                <Button
+                  size="icon"
+                  variant="outline"
+                  class="event-info-button"
+                  aria-label={$_('pvp.event_info.aria_label')}
+                  on:click={() => (eventInfoDialogOpen = true)}
+                >
+                  <Info class="h-4 w-4" />
                 </Button>
               </div>
             {:else}
@@ -4003,14 +3958,21 @@
             {weeklyLoginMission}
             unclaimedCount={unclaimedPvpMissionCount}
             claimingMissionKey={claimingPvpMissionKey}
-            {weeklyRaceSelf}
-            {weeklyRaceEndsMs}
+            weeklyRaceSelf={selectedMode === 'event'
+              ? eventRace.currentPlayer ?? null
+              : weeklyRaceSelf}
+            weeklyRaceEndsMs={selectedMode === 'event'
+              ? getPvpEventEndsMs(activePvpEvent)
+              : weeklyRaceEndsMs}
+            isEventRace={selectedMode === 'event'}
             {recentForm}
             winLoss={pvpWinLossStats}
             {now}
             onClaimMission={handleClaimPvpMission}
             onOpenMissions={() => (activePvpTab = 'missions')}
-            onOpenRace={() => (activePvpTab = 'weekly-race')}
+            onOpenRace={() => (
+              activePvpTab = selectedMode === 'event' ? 'event-race' : 'weekly-race'
+            )}
             onOpenHistory={() => (activePvpTab = 'history')}
           />
         </section>
@@ -4693,6 +4655,23 @@
     hsl(var(--muted) / 0.5);
 }
 
+.pvp-quick-hero.is-event.has-banner {
+  min-height: 144px;
+  background-color: hsl(var(--muted));
+  background-position: center;
+  background-size: cover;
+}
+
+.pvp-quick-hero.is-event.has-banner .pvp-quick-hero-copy {
+  border: 1px solid hsl(var(--border) / 0.5);
+  border-radius: 10px;
+  background: hsl(var(--background) / 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 10px 12px;
+  box-shadow: 0 8px 24px hsl(var(--foreground) / 0.12);
+}
+
 .pvp-quick-hero-eyebrow {
   display: inline-flex;
   align-items: center;
@@ -5107,139 +5086,6 @@
   margin-bottom: 16px;
 }
 
-.pvp-event-banner {
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  aspect-ratio: 6 / 1;
-  min-height: 118px;
-  margin-bottom: 16px;
-  border: 1px solid hsl(var(--border));
-  border-radius: 8px;
-  background-color: hsl(var(--muted));
-  background-position: center;
-  background-size: cover;
-  padding: 14px;
-  color: hsl(var(--foreground));
-}
-
-.pvp-event-banner.has-image {
-  min-height: auto;
-}
-
-.pvp-event-banner-pill {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  width: min(100%, 920px);
-  border: 1px solid hsl(var(--border) / 0.28);
-  border-radius: 8px;
-  background: hsl(var(--background) / 0.24);
-  backdrop-filter: blur(26px) saturate(175%);
-  -webkit-backdrop-filter: blur(26px) saturate(175%);
-  padding: 10px 12px;
-  box-shadow:
-    0 12px 30px hsl(var(--foreground) / 0.1),
-    inset 0 1px 0 hsl(var(--background) / 0.32);
-}
-
-.pvp-event-banner-main,
-.pvp-event-banner-meta {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.pvp-event-banner-main {
-  min-width: 0;
-}
-
-.pvp-event-banner-main h2 {
-  margin: 0;
-  font-size: 1.15rem;
-  font-weight: 800;
-}
-
-.pvp-event-banner-main p {
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  margin: 4px 0 0;
-  max-width: 640px;
-  color: hsl(var(--muted-foreground));
-  line-height: 1.45;
-}
-
-.pvp-event-banner-meta {
-  flex-shrink: 0;
-}
-
-.pvp-event-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.pvp-event-countdown {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  min-height: 32px;
-  border: 1px solid hsl(var(--border));
-  border-radius: 999px;
-  background: hsl(var(--muted) / 0.55);
-  padding: 6px 10px;
-}
-
-.pvp-event-countdown span {
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.pvp-event-countdown strong {
-  font-size: 15px;
-  font-weight: 850;
-  white-space: nowrap;
-}
-
-.pvp-event-banner :global(.border-input) {
-  border-color: hsl(var(--border));
-  background: hsl(var(--background));
-  color: hsl(var(--foreground));
-}
-
-.pvp-event-banner :global(.border-input:hover) {
-  background: hsl(var(--muted));
-  color: hsl(var(--foreground));
-}
-
-.pvp-event-banner :global(.event-queue-button) {
-  background: hsl(var(--foreground));
-  color: hsl(var(--background));
-  box-shadow: 0 8px 18px hsl(var(--foreground) / 0.18);
-}
-
-.pvp-event-banner :global(.event-queue-button:hover) {
-  background: hsl(var(--foreground) / 0.86);
-  color: hsl(var(--background));
-}
-
-.pvp-event-banner :global(.event-info-button) {
-  width: 32px;
-  height: 32px;
-  border-color: hsl(var(--border));
-  background: hsl(var(--background));
-  color: hsl(var(--foreground));
-}
-
-.pvp-event-banner :global(.event-info-button:hover) {
-  background: hsl(var(--muted));
-  color: hsl(var(--foreground));
-}
-
 :global(.event-info-dialog) {
   display: flex;
   flex-direction: column;
@@ -5510,25 +5356,6 @@
   .elo-graph-toolbar {
     align-items: stretch;
     flex-direction: column;
-  }
-
-  .pvp-event-banner-pill,
-  .pvp-event-banner-main,
-  .pvp-event-banner-meta {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .pvp-event-banner-pill {
-    border-radius: 8px;
-  }
-
-  .pvp-event-actions {
-    width: 100%;
-  }
-
-  .pvp-event-actions :global(.event-queue-button) {
-    flex: 1;
   }
 
   .event-info-title-row,
