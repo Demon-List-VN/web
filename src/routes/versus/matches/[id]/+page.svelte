@@ -3,6 +3,7 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import Ads from '$lib/components/ads.svelte';
+	import SupporterUpsell from '$lib/components/SupporterUpsell.svelte';
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import BanPickPanel from './components/BanPickPanel.svelte';
 	import MatchReportDialog from './components/MatchReportDialog.svelte';
@@ -4349,6 +4350,7 @@
   />
 
   <div class="pvp-match-ad-slot">
+    <SupporterUpsell />
     <Ads dataAdFormat="auto" />
   </div>
 

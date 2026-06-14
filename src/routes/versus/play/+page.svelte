@@ -3,6 +3,8 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import Ads from '$lib/components/ads.svelte';
+	import SupporterUpsell from '$lib/components/SupporterUpsell.svelte';
+	import { isActive } from '$lib/client/isSupporterActive';
 	import PlayerSelector from '$lib/components/playerSelector.svelte';
 	import MatchCard from '$lib/components/pvp/MatchCard.svelte';
 	import ClanWeeklyRaceTab from './ClanWeeklyRaceTab.svelte';
@@ -661,8 +663,11 @@
 
 	function pickPvpTip() {
 		const roll = Math.random();
+		// Don't show donate/supporter tips to players who already support us.
+		const supporterActive =
+			$user.loggedIn && isActive($user.data?.supporterUntil);
 
-		if (roll < PVP_SUPPORTER_TIP_CHANCE) {
+		if (!supporterActive && roll < PVP_SUPPORTER_TIP_CHANCE) {
 			currentPvpTip = {
 				type: 'supporter',
 				key: PVP_SUPPORTER_TIP_KEYS[
@@ -2970,6 +2975,7 @@
   </section>
 
   <div class="pvp-ad-slot">
+    <SupporterUpsell />
     <Ads dataAdFormat="auto" />
   </div>
 

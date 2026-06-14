@@ -266,6 +266,7 @@
             "secondary_cta": "See rankings",
             "preview_you": "You",
             "preview_rival": "Rival",
+            "preview_supporter": "Supporter",
             "preview_level": "Shared level",
             "features_label": "1v1 Versus features",
             "features": {
@@ -307,7 +308,17 @@
                 }
             },
             "mod_title": "GDVN Geode mod required",
-            "mod_description": "Install the latest GDVN Geode mod before playing 1v1 Versus inside Geometry Dash."
+            "mod_description": "Install the latest GDVN Geode mod before playing 1v1 Versus inside Geometry Dash.",
+            "support": {
+                "eyebrow": "Support GDVN",
+                "title": "Keep 1v1 Versus free for everyone",
+                "description": "GDVN Versus runs on community support. Becoming a Supporter keeps the matchmaking servers online, and you pick up a few perks along the way.",
+                "benefit_ad_free": "Play 1v1 Versus completely ad-free",
+                "benefit_badge": "A colored Supporter tier badge next to your name in matches and on the leaderboard",
+                "benefit_servers": "Directly funds the 1v1 matchmaking servers",
+                "cta": "Become a Supporter",
+                "supporter_state": "Thank you for keeping Versus online."
+            }
         },
         "match": "Match",
         "winner": "Winner",
@@ -498,6 +509,10 @@
                     ]
                 }
             }
+        },
+        "supporter_strip": {
+            "text": "Tired of ads? Go ad-free and unlock your Supporter tier badge.",
+            "cta": "Support GDVN"
         },
         "resign": "Resign",
         "request_level_change": "Change level",

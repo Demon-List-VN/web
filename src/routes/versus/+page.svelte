@@ -3,12 +3,21 @@
 	import {
 		ArrowRight,
 		BarChart3,
+		Check,
 		Gamepad2,
+		Heart,
 		ShieldCheck,
 		Swords,
 		Trophy,
 		Users
 	} from 'lucide-svelte';
+	import { user } from '$lib/client';
+	import { isActive } from '$lib/client/isSupporterActive';
+	import {
+		getSupporterTier,
+		getSupporterTierLabel,
+		getSupporterTierStyle
+	} from '$lib/client/supporterTier';
 
 	const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://gdvn.net').replace(
 		/\/$/,
@@ -18,6 +27,17 @@
 	const featureKeys = ['matchmaking', 'elo', 'invites', 'weekly'] as const;
 	const featureIcons = [Swords, BarChart3, Users, Trophy] as const;
 	const stepKeys = ['install', 'queue', 'play'] as const;
+	const supportBenefitKeys = [
+		'benefit_ad_free',
+		'benefit_badge',
+		'benefit_servers'
+	] as const;
+
+	$: isSupporter =
+		$user.checked && $user.loggedIn && isActive($user.data?.supporterUntil);
+	$: supporterTier = getSupporterTier($user.data?.supporterUntil);
+	$: supporterTierLabel = getSupporterTierLabel(supporterTier);
+	$: supporterTierStyle = getSupporterTierStyle(supporterTier);
 </script>
 
 <svelte:head>
@@ -72,6 +92,10 @@
           <div>GD</div>
           <strong>{$_('pvp.landing.preview_you')}</strong>
           <span>1478 Elo</span>
+          <span class="preview-supporter-chip">
+            <Heart class="h-3 w-3" />
+            {$_('pvp.landing.preview_supporter')}
+          </span>
         </div>
         <div class="preview-vs">VS</div>
         <div class="preview-player rival">
@@ -105,6 +129,41 @@
         <p>{$_(`pvp.landing.features.${feature}.description`)}</p>
       </article>
     {/each}
+  </section>
+
+  <section class="versus-support">
+    <div class="support-copy">
+      <span class="support-eyebrow">
+        <Heart class="h-4 w-4" />
+        {$_('pvp.landing.support.eyebrow')}
+      </span>
+      <h2>{$_('pvp.landing.support.title')}</h2>
+      <p>{$_('pvp.landing.support.description')}</p>
+      <ul class="support-benefits">
+        {#each supportBenefitKeys as benefit}
+          <li>
+            <Check class="h-4 w-4" />
+            <span>{$_(`pvp.landing.support.${benefit}`)}</span>
+          </li>
+        {/each}
+      </ul>
+    </div>
+    <div class="support-action">
+      {#if isSupporter}
+        <div class="support-thanks">
+          <span
+            class="support-thanks-tier supporter-tier-text"
+            style={supporterTierStyle}
+          >{supporterTierLabel}</span>
+          <p>{$_('pvp.landing.support.supporter_state')}</p>
+        </div>
+      {:else}
+        <a class="support-cta" href="/supporter">
+          <Heart class="h-4 w-4" />
+          {$_('pvp.landing.support.cta')}
+        </a>
+      {/if}
+    </div>
   </section>
 
   <section class="versus-info-band" id="leaderboard">
@@ -312,6 +371,22 @@
   }
 }
 
+.preview-supporter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  font-size: 10px !important;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #facc15;
+  opacity: 1 !important;
+}
+
 .preview-vs {
   width: 46px;
   height: 46px;
@@ -396,6 +471,121 @@
   border: 1px solid hsl(var(--border));
   border-radius: 8px;
   background: hsl(var(--muted) / 0.45);
+}
+
+.versus-support {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  padding: 28px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background:
+    radial-gradient(
+      120% 140% at 0% 0%,
+      rgba(224, 36, 94, 0.08),
+      transparent 60%
+    ),
+    hsl(var(--muted) / 0.45);
+}
+
+.support-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  h2,
+  p {
+    margin: 0;
+  }
+
+  h2 {
+    font-size: 26px;
+    font-weight: 850;
+  }
+
+  p {
+    max-width: 640px;
+    color: hsl(var(--muted-foreground));
+    line-height: 1.6;
+  }
+}
+
+.support-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #e0245e;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.support-benefits {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+
+  li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    color: hsl(var(--foreground));
+    font-size: 14px;
+    line-height: 1.5;
+
+    :global(svg) {
+      flex-shrink: 0;
+      margin-top: 2px;
+      color: #16a34a;
+    }
+  }
+}
+
+.support-action {
+  flex: 0 0 auto;
+}
+
+.support-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border-radius: 8px;
+  background: hsl(var(--foreground));
+  color: hsl(var(--background));
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: transform 0.15s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+}
+
+.support-thanks {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: right;
+
+  p {
+    margin: 0;
+    max-width: 240px;
+    color: hsl(var(--muted-foreground));
+    font-size: 13px;
+    line-height: 1.5;
+  }
+}
+
+.support-thanks-tier {
+  font-size: 18px;
+  font-weight: 900;
 }
 
 .versus-info-band {
@@ -513,13 +703,18 @@
   }
 
   .versus-info-band,
-  .versus-mod {
+  .versus-mod,
+  .versus-support {
     align-items: flex-start;
     flex-direction: column;
   }
 
   .versus-mod a {
     margin-left: 0;
+  }
+
+  .support-thanks {
+    text-align: left;
   }
 }
 

@@ -266,6 +266,7 @@
             "secondary_cta": "Xem xếp hạng",
             "preview_you": "Bạn",
             "preview_rival": "Đối thủ",
+            "preview_supporter": "Supporter",
             "preview_level": "Level chung",
             "features_label": "Tính năng 1v1 Versus",
             "features": {
@@ -307,7 +308,17 @@
                 }
             },
             "mod_title": "Cần cài GDVN Geode mod",
-            "mod_description": "Hãy cài GDVN Geode mod mới nhất trước khi chơi 1v1 Versus trong Geometry Dash."
+            "mod_description": "Hãy cài GDVN Geode mod mới nhất trước khi chơi 1v1 Versus trong Geometry Dash.",
+            "support": {
+                "eyebrow": "Ủng hộ GDVN",
+                "title": "Giữ cho 1v1 Versus luôn miễn phí",
+                "description": "GDVN Versus hoạt động được là nhờ sự ủng hộ của cộng đồng. Trở thành Supporter giúp duy trì máy chủ ghép trận, và bạn cũng nhận thêm vài đặc quyền nho nhỏ.",
+                "benefit_ad_free": "Chơi 1v1 Versus hoàn toàn không quảng cáo",
+                "benefit_badge": "Huy hiệu Supporter có màu cạnh tên bạn trong trận và trên bảng xếp hạng",
+                "benefit_servers": "Trực tiếp góp phần duy trì máy chủ ghép trận 1v1",
+                "cta": "Trở thành Supporter",
+                "supporter_state": "Cảm ơn bạn đã giúp Versus luôn hoạt động."
+            }
         },
         "match": "Trận",
         "winner": "Người thắng",
@@ -498,6 +509,10 @@
                     ]
                 }
             }
+        },
+        "supporter_strip": {
+            "text": "Ngán quảng cáo? Tắt quảng cáo và mở khóa huy hiệu Supporter của bạn.",
+            "cta": "Ủng hộ GDVN"
         },
         "resign": "Đầu hàng",
         "request_level_change": "Đổi level",
