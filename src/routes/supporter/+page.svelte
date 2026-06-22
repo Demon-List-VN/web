@@ -10,42 +10,20 @@
 	import SupporterTierProgress from '$lib/components/SupporterTierProgress.svelte';
 	import { user } from '$lib/client';
 	import { isActive } from '$lib/client/isSupporterActive';
+	import { supporterGoalList } from '$lib/client/supporterGoals';
 	import * as Alert from '$lib/components/ui/alert';
 	import { AlertTriangle } from 'lucide-svelte';
 
 	export let data: any;
 
-	const cupGoals = [
-		{
-			labelKey: 'supporter.goals.edit_design_team',
-			target: 5000000
-		},
-		{
-			labelKey: 'supporter.goals.northern_route',
-			target: 11000000
-		},
-		{
-			labelKey: 'supporter.goals.central_route',
-			target: 17000000
-		},
-		{
-			labelKey: 'supporter.goals.full_route',
-			target: 25000000
-		},
-		{
-			labelKey: 'supporter.goals.hanoi_offline',
-			target: 30000000
-		}
-	];
-
 	$: parsedTotalRevenue = Number(data?.progress?.totalRevenue);
 	$: totalRevenue = Number.isFinite(parsedTotalRevenue)
 		? Math.max(0, parsedTotalRevenue)
 		: 0;
-	$: goals = cupGoals.map((goal) => ({
+	$: goals = supporterGoalList.map((goal) => ({
 		...goal,
-		percent: goal.target > 0
-			? Math.min(100, Math.round((totalRevenue / goal.target) * 10000) / 100)
+		percent: goal.amount > 0
+			? Math.min(100, Math.round((totalRevenue / goal.amount) * 10000) / 100)
 			: 0
 	}));
 
@@ -117,12 +95,12 @@
       {#each goals as goal}
         <div class="goalRow">
           <div class="goalHeader">
-            <span>{$_(goal.labelKey)}</span>
+            <span>{$_(goal.name)}</span>
             <span>{goal.percent}%</span>
           </div>
           <div class="goalMeta">
             <span>{formatVnd(totalRevenue)}</span>
-            <span>{formatVnd(goal.target)}</span>
+            <span>{formatVnd(goal.amount)}</span>
           </div>
           <div class="goalBar">
             <div

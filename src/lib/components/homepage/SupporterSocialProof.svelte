@@ -7,6 +7,7 @@
 	import { ArrowRight, Heart } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { supporterGoalList, type SupporterGoal } from '$lib/client/supporterGoals';
 	import { onMount } from 'svelte';
 
 	type SupporterProgress = {
@@ -17,31 +18,6 @@
 
 	const SUPPORTER_REVENUE_START_DATE = '2026-06-08T00:00:00+07:00';
 	const DEFAULT_INTERVAL_MS = 30 * 24 * 60 * 60 * 1000;
-	const cupGoals: {
-		labelKey: string;
-		target: number;
-	}[] = [
-		{
-			labelKey: 'supporter.goals.edit_design_team',
-			target: 5000000
-		},
-		{
-			labelKey: 'supporter.goals.northern_route',
-			target: 11000000
-		},
-		{
-			labelKey: 'supporter.goals.central_route',
-			target: 17000000
-		},
-		{
-			labelKey: 'supporter.goals.full_route',
-			target: 25000000
-		},
-		{
-			labelKey: 'supporter.goals.hanoi_offline',
-			target: 30000000
-		}
-	];
 	const medalColors = ['text-yellow-500', 'text-gray-400', 'text-amber-600'];
 	const isBannerFailedToLoad: boolean[] = [];
 	let serverProgress: SupporterProgress | null = null;
@@ -51,14 +27,14 @@
 	$: totalRevenue = Number.isFinite(parsedTotalRevenue)
 		? Math.max(0, parsedTotalRevenue)
 		: 0;
-	$: goals = cupGoals.map((goal) => ({
+	$: goals = supporterGoalList.map((goal) => ({
 		...goal,
 		percent: progressPercent(goal)
 	}));
 
-	function progressPercent(goal: (typeof cupGoals)[number]) {
-		return goal.target > 0
-			? Math.min(100, Math.round((totalRevenue / goal.target) * 10000) / 100)
+	function progressPercent(goal: SupporterGoal) {
+		return goal.amount > 0
+			? Math.min(100, Math.round((totalRevenue / goal.amount) * 10000) / 100)
 			: 0;
 	}
 
@@ -187,7 +163,7 @@
     {#if progressLoading}
       <div class="progressSection">
         <div class="progressRows" aria-hidden="true">
-          {#each cupGoals as _}
+          {#each supporterGoalList as _}
             <div class="progressRow">
               <Skeleton class="h-4 w-3/4" />
               <Skeleton class="mt-2 h-3 w-full" />
@@ -202,12 +178,12 @@
           {#each goals as goal}
             <div class="progressRow">
               <div class="progressLabel">
-                <span>{$_(goal.labelKey)}</span>
+                <span>{$_(goal.name)}</span>
                 <span class="progressPercent">{Math.round(goal.percent)}%</span>
               </div>
               <div class="progressMeta">
                 <span>{formatCompactVnd(totalRevenue)}</span>
-                <span>{formatCompactVnd(goal.target)}</span>
+                <span>{formatCompactVnd(goal.amount)}</span>
               </div>
               <div class="progressBar">
                 <div

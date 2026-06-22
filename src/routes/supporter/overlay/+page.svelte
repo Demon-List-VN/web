@@ -1,14 +1,14 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
+	import { _ } from 'svelte-i18n';
 	import { Trophy } from 'lucide-svelte';
 	import PlayerLink from '$lib/components/playerLink.svelte';
+	import { supporterGoalList } from '$lib/client/supporterGoals';
 	import { supporterRevenueIntervalMs } from './campaign';
 
 	type SupporterProgress = {
-		totalRevenue?: number;
-		serverCostPercent: number;
-		minecraftServerPercent: number;
+		totalRevenue?: number | string | null;
 	};
 
 	export let data: any;
@@ -18,31 +18,6 @@
 	let visibleEvent: any = null;
 	let pollTimer: ReturnType<typeof setInterval> | null = null;
 	let hideTimer: ReturnType<typeof setTimeout> | null = null;
-	const cupGoals: {
-		label: string;
-		target: number;
-	}[] = [
-		{
-			label: 'Edit/Design Team',
-			target: 5000000
-		},
-		{
-			label: 'Miền Bắc: tới Thanh Hóa rồi quay về Hà Nội',
-			target: 11000000
-		},
-		{
-			label: 'Miền Trung: tới Đà Nẵng rồi quay về Hà Nội',
-			target: 17000000
-		},
-		{
-			label: 'Full Route: tới TP.HCM + Offline HCM + quay về Hà Nội',
-			target: 25000000
-		},
-		{
-			label: 'Optional: Offline Hà Nội',
-			target: 30000000
-		}
-	];
 
 	$: topSupporters = overlay?.topSupporters ?? [];
 	$: progress = (overlay?.progress ?? null) as SupporterProgress | null;
@@ -50,10 +25,10 @@
 	$: totalRevenue = Number.isFinite(parsedTotalRevenue)
 		? Math.max(0, parsedTotalRevenue)
 		: 0;
-	$: goals = cupGoals.map((goal) => ({
+	$: goals = supporterGoalList.map((goal) => ({
 		...goal,
-		percent: goal.target > 0
-			? Math.min(100, Math.round((totalRevenue / goal.target) * 10000) / 100)
+		percent: goal.amount > 0
+			? Math.min(100, Math.round((totalRevenue / goal.amount) * 10000) / 100)
 			: 0
 	}));
 
@@ -219,12 +194,12 @@
         {#each goals as goal}
           <div class="cupGoal">
             <div class="cupGoalHeader">
-              <span>{goal.label}</span>
+              <span>{$_(goal.name)}</span>
               <strong>{Math.round(goal.percent)}%</strong>
             </div>
             <div class="cupGoalMeta">
               <span>{formatCompactPrice(totalRevenue)}</span>
-              <span>{formatCompactPrice(goal.target)}</span>
+              <span>{formatCompactPrice(goal.amount)}</span>
             </div>
             <div class="cupBar">
               <div class="cupBarFill" style={`width: ${toBarWidth(goal.percent)}`}>
