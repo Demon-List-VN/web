@@ -25,6 +25,7 @@
 	export let tabsLabel = '';
 	export let rangeLabel = '';
 	export let countdownLabel = '';
+	export let countdownValue: string | null = null;
 	export let emptyLabel = '';
 	export let tableLabel = '';
 	export let showTutorial = true;
@@ -35,7 +36,7 @@
 	let activeTab = 'standings';
 
 	$: weekRange = formatWeekRange(weeklyRace.week);
-	$: resetCountdown = remainingLongLabel(getWeekEndMs(weeklyRace.week), now);
+	$: resetCountdown = countdownValue ?? remainingLongLabel(getWeekEndMs(weeklyRace.week), now);
 	$: previousWeekRange = formatWeekRange(weeklyRace.previousWeek);
 	$: userRaceRow = getUserRaceRow(weeklyRace, currentUid, currentPlayer);
 	$: pageCount = Math.max(1, Math.ceil(total / pageSize));

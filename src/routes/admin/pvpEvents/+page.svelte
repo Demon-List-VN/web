@@ -17,7 +17,17 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { toast } from 'svelte-sonner';
-	import { CalendarDays, Loader2, Plus, RefreshCw, Save, Trash2, Users, X } from 'lucide-svelte';
+	import {
+		CalendarDays,
+		Loader2,
+		Plus,
+		RefreshCw,
+		Save,
+		Trash2,
+		Trophy,
+		Users,
+		X
+	} from 'lucide-svelte';
 
 	type CompletionRuleType = 'count' | 'percentage';
 	type ScoringMode = 'progress' | 'score' | 'hp' | 'powerup';
@@ -146,6 +156,10 @@
 
 	function eventId(event: PvpEvent) {
 		return event.id ?? '';
+	}
+
+	function eventLeaderboardUrl(event: PvpEvent) {
+		return `/admin/pvpEvents/${encodeURIComponent(String(eventId(event)))}/leaderboard`;
 	}
 
 	function eventListId(event: PvpEvent) {
@@ -937,6 +951,10 @@
                 </a>
               {/if}
               <div class="event-actions">
+                <Button variant="outline" size="sm" href={eventLeaderboardUrl(event)}>
+                  <Trophy class="mr-2 h-4 w-4" />
+                  View leaderboard
+                </Button>
                 <Button variant="outline" size="sm" on:click={() => editEvent(event)}>
                   Edit
                 </Button>
