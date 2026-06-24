@@ -93,7 +93,9 @@
 			return;
 		}
 
-		if (!Number.isInteger(Number(quantity)) || Number(quantity) <= 0) {
+		const grantQuantity = Number(quantity);
+
+		if (!Number.isInteger(grantQuantity) || grantQuantity <= 0) {
 			toast.error('Quantity must be a positive integer');
 
 			return;
@@ -113,7 +115,7 @@
 					body: JSON.stringify({
 						playerUid: selectedPlayer.uid,
 						itemId: selectedItem.id,
-						quantity: Number(quantity),
+						quantity: grantQuantity,
 						expireAt: expireAt
 							? new Date(expireAt)
 								.toISOString()
@@ -129,7 +131,7 @@
 			}
 
 			toast.success(
-				`Gave ${selectedItem.name} x${quantity} to ${selectedPlayer.name}`
+				`Gave ${selectedItem.name} x${grantQuantity} to ${selectedPlayer.name}`
 			);
 			clearItem();
 			quantity = 1;
@@ -244,6 +246,11 @@
             bind:value={quantity}
             disabled={granting}
           />
+          {#if selectedItem?.stackable === false}
+            <p class="text-xs text-muted-foreground">
+              Each copy will be added as a separate inventory item.
+            </p>
+          {/if}
         </div>
         <div class="grid gap-2">
           <Label for="expire-at">Expires at (optional)</Label>

@@ -138,6 +138,11 @@
 					href: '/admin/giveItem',
 					managerAccess: true
 				},
+				{
+					name: 'Player Inventory',
+					href: '/admin/inventory',
+					managerAccess: true
+				},
 				{ name: 'Account Merger', href: '/admin/accountMerger' },
 				{ name: 'Player Convictions', href: '/admin/convictions' }
 			]
