@@ -296,6 +296,7 @@
 	let managerManaLoadingUid = '';
 
 	$: matchId = $page.params.id;
+	$: overlayMode = $page.url.searchParams.has('overlay');
 	$: isSpectateRoute = $page.url.searchParams.get('spectate') === '1';
 	$: isSpectator = isSpectateRoute || match?.viewerRole === 'spectator';
 	$: matchUrl = `${siteUrl}/versus/matches/${matchId}`;
@@ -342,7 +343,9 @@
 	$: roomId = getPvpMatchRoomId(match);
 	$: roomName = getPvpMatchRoomName(match);
 	$: roomHostUid = match?.room?.hostUid ?? match?.room?.host_uid ?? null;
-	$: effectiveHideOpponentInfo = isRoomMatch ? false : hideOpponentInfo;
+	$: effectiveHideOpponentInfo = overlayMode || isRoomMatch
+		? false
+		: hideOpponentInfo;
 	$: matchTitle = isRoomMatch
 		? `${roomName || $_('pvp.rooms.custom_room')} match`
 		: getMatchTitle(participants, effectiveHideOpponentInfo, currentUid);
@@ -530,7 +533,7 @@
 	);
 	$: deathCountChartData = getDeathCountChartData(
 		orderedParticipants,
-		compareGlobalDeathCount,
+		overlayMode ? false : compareGlobalDeathCount,
 		globalDeathCount,
 		effectiveHideOpponentInfo,
 		currentUid,
@@ -540,7 +543,8 @@
 		playerGlobalDeathCountsReady
 	);
 	$: if (
-		compareGlobalDeathCount
+		!overlayMode
+		&& compareGlobalDeathCount
 		&& deathCountLevelId
 		&& loadedGlobalDeathCountLevelId !== deathCountLevelId
 		&& !globalDeathCountLoading
@@ -1962,6 +1966,34 @@
 			: $_('pvp.rival');
 	}
 
+	function participantPracticeModeActive(
+		participant: PvpParticipant | null | undefined
+	) {
+		const participantMode = participant?.playMode ?? participant?.play_mode;
+
+		if (participantMode === 'practice') {
+			return true;
+		}
+
+		const uid = getPvpParticipantUid(participant);
+
+		if (!uid) {
+			return false;
+		}
+
+		const latestPlayModeEvent = messagesAfterLatestLevelChange(messages)
+			.map((message) => playModeMessageEvent(message))
+			.filter((
+				entry
+			): entry is NonNullable<ReturnType<typeof playModeMessageEvent>> =>
+				Boolean(entry)
+			)
+			.filter((entry) => String(entry.uid) === String(uid))
+			.sort((a, b) => b.timeMs - a.timeMs)[0];
+
+		return latestPlayModeEvent?.playMode === 'practice';
+	}
+
 	function messageMetadata(message: PvpMatchMessage): Record<string, unknown> {
 		const metadata = message.metadata;
 
@@ -2589,7 +2621,7 @@
 
 				return {
 					uid: participantUid,
-					label: participantName(participant, hideOpponentInfo, currentUid) ?? '',
+					label: participantName(participant, effectiveHideOpponentInfo, currentUid) ?? '',
 					color: progressGraphPlayerColor(participantUid),
 					points: [] as ProgressGraphPoint[]
 				};
@@ -4289,8 +4321,8 @@
   <link rel="canonical" href={matchUrl} />
 </svelte:head>
 
-<main class="match-page">
-  {#if showGeodeAlert}
+<main class={overlayMode ? 'match-page overlay-mode' : 'match-page'}>
+  {#if showGeodeAlert && !overlayMode}
     <Alert.Root
       class="relative mb-4 border-yellow-300 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/40"
     >
@@ -4312,32 +4344,34 @@
     </Alert.Root>
   {/if}
 
-  <MatchTopbar
-    title={matchTitle}
-    backHref={matchBackHref}
-    backLabel={matchBackLabel}
-    loggedIn={$user.loggedIn}
-    {loading}
-    {actionLoading}
-    {hideOpponentInfo}
-    showOpponentInfoToggle={!isRoomMatch}
-    {canRequeue}
-    canRequestLevelChange={canRequestLevelChange && !levelChangeRequestedByUid}
-    canRequestBanPickAbort={canRequestBanPickAbort && !banPickAbortRequestedByUid}
-    {canAbortRoomMatch}
-    {canAbortAsManager}
-    {canResign}
-    canReport={canReportMatch}
-    reportSubmitted={hasReportedMatch}
-    onToggleOpponentInfo={() => (hideOpponentInfo = !hideOpponentInfo)}
-    onRequeue={requeue}
-    onRequestLevelChange={requestLevelChange}
-    onRequestBanPickAbort={requestBanPickAbort}
-    onAbortRoomMatch={abortRoomMatch}
-    onAbortAsManager={abortMatchAsManager}
-    onResign={resignMatch}
-    onReport={() => (reportDialogOpen = true)}
-  />
+  {#if !overlayMode}
+    <MatchTopbar
+      title={matchTitle}
+      backHref={matchBackHref}
+      backLabel={matchBackLabel}
+      loggedIn={$user.loggedIn}
+      {loading}
+      {actionLoading}
+      {hideOpponentInfo}
+      showOpponentInfoToggle={!isRoomMatch}
+      {canRequeue}
+      canRequestLevelChange={canRequestLevelChange && !levelChangeRequestedByUid}
+      canRequestBanPickAbort={canRequestBanPickAbort && !banPickAbortRequestedByUid}
+      {canAbortRoomMatch}
+      {canAbortAsManager}
+      {canResign}
+      canReport={canReportMatch}
+      reportSubmitted={hasReportedMatch}
+      onToggleOpponentInfo={() => (hideOpponentInfo = !hideOpponentInfo)}
+      onRequeue={requeue}
+      onRequestLevelChange={requestLevelChange}
+      onRequestBanPickAbort={requestBanPickAbort}
+      onAbortRoomMatch={abortRoomMatch}
+      onAbortAsManager={abortMatchAsManager}
+      onResign={resignMatch}
+      onReport={() => (reportDialogOpen = true)}
+    />
+  {/if}
 
   <MatchReportDialog
     bind:open={reportDialogOpen}
@@ -4349,10 +4383,12 @@
     onSubmitted={handleReportSubmitted}
   />
 
-  <div class="pvp-match-ad-slot">
-    <SupporterUpsell />
-    <Ads dataAdFormat="auto" />
-  </div>
+  {#if !overlayMode}
+    <div class="pvp-match-ad-slot">
+      <SupporterUpsell />
+      <Ads dataAdFormat="auto" />
+    </div>
+  {/if}
 
   {#if !$user.checked}
     <Card.Root>
@@ -4386,35 +4422,37 @@
       <div class="match-main-column">
         <div class="summary-grid">
           <Card.Root class="match-progress-panel">
-            <Card.Header>
-              <div class="match-panel-header">
-                <div>
-                  <Card.Title>{resultTitleText}</Card.Title>
-                  <Card.Description>
-                    {#if resultReason}
-                      {resultReasonLabel(resultReason)}
-                    {:else}
-                      {statusLabel(status)}
-                    {/if}
-                  </Card.Description>
-                </div>
-                <div class="result-line">
-                  <Badge variant={ranked ? 'default' : 'secondary'}>
-                    {ranked ? $_('pvp.ranked') : $_('pvp.unranked')}
-                  </Badge>
-                  <Badge variant={isActive ? 'default' : 'secondary'}>{
-                    statusLabel(status)
-                  }</Badge>
-                  {#if levelRating !== null}
-                    <Badge variant="outline">
-                      {
-                        $_('pvp.level_rating', { values: { rating: levelRating } })
-                      }
+            {#if !overlayMode}
+              <Card.Header>
+                <div class="match-panel-header">
+                  <div>
+                    <Card.Title>{resultTitleText}</Card.Title>
+                    <Card.Description>
+                      {#if resultReason}
+                        {resultReasonLabel(resultReason)}
+                      {:else}
+                        {statusLabel(status)}
+                      {/if}
+                    </Card.Description>
+                  </div>
+                  <div class="result-line">
+                    <Badge variant={ranked ? 'default' : 'secondary'}>
+                      {ranked ? $_('pvp.ranked') : $_('pvp.unranked')}
                     </Badge>
-                  {/if}
+                    <Badge variant={isActive ? 'default' : 'secondary'}>{
+                      statusLabel(status)
+                    }</Badge>
+                    {#if levelRating !== null}
+                      <Badge variant="outline">
+                        {
+                          $_('pvp.level_rating', { values: { rating: levelRating } })
+                        }
+                      </Badge>
+                    {/if}
+                  </div>
                 </div>
-              </div>
-            </Card.Header>
+              </Card.Header>
+            {/if}
             <Card.Content class="match-progress-content">
               <div class="timer-display">
                 {#if status === 'completed'}
@@ -4442,12 +4480,12 @@
                     {@const participantUid = getPvpParticipantUid(participant) || ''}
                     {@const participantMasked = shouldMaskParticipant(
                         participant,
-                        hideOpponentInfo,
+                        effectiveHideOpponentInfo,
                         currentUid
                     )}
                     {@const participantDisplayName = participantName(
                         participant,
-                        hideOpponentInfo,
+                        effectiveHideOpponentInfo,
                         currentUid
                     )}
                     {@const participantResultLabel = participantResult(
@@ -4480,17 +4518,24 @@
                         />
                       {/if}
                       <div class="participant-topline">
-                        <Badge
-                          variant={getPvpParticipantUid(participant) === currentUid
-                          ? 'default'
-                          : 'outline'}
-                        >
-                          {participantLabel(participant, currentUid)}
-                        </Badge>
+                        {#if !overlayMode}
+                          <Badge
+                            variant={getPvpParticipantUid(participant) === currentUid
+                            ? 'default'
+                            : 'outline'}
+                          >
+                            {participantLabel(participant, currentUid)}
+                          </Badge>
+                        {/if}
                         {#if participantResultLabel}
                           <Badge variant="secondary">{
                             participantResultLabel
                           }</Badge>
+                        {/if}
+                        {#if participantPracticeModeActive(participant)}
+                          <Badge variant="outline">
+                            {$_('pvp.progress_graph.practice_mode')}
+                          </Badge>
                         {/if}
                       </div>
 
@@ -4656,7 +4701,7 @@
         {/if}
 
         <section class="detail-grid">
-          {#if isPowerupMatch}
+          {#if isPowerupMatch && !overlayMode}
             <Card.Root class="powerup-card">
               <Card.Header class="powerup-header">
                 <div>
@@ -4820,80 +4865,136 @@
             </Card.Root>
           {/if}
 
-          <Card.Root>
-            <Card.Header>
-              <Card.Title>{$_('pvp.challenge_level')}</Card.Title>
-            </Card.Header>
-            <Card.Content class="level-content">
+          {#if overlayMode}
+            <section class="overlay-level-title">
               {#if visibleLevel}
-                <div>
-                  <h2>
-                    {
-                      visibleLevel.name || `#${visibleLevel.id || match.levelId}`
+                <h2>
+                  {visibleLevel.name || `#${visibleLevel.id || match.levelId}`}
+                </h2>
+                <p>
+                  {#if visibleLevel.creator || visibleLevel.author}
+                    by {
+                      visibleLevel.creator || visibleLevel.author
                     }
-                  </h2>
-                  <p>
-                    {#if visibleLevel.creator || visibleLevel.author}
-                      {$_('head.labels.by')} {
-                        visibleLevel.creator || visibleLevel.author
-                      }
-                    {:else}
-                      {$_('pvp.level_pending')}
-                    {/if}
-                  </p>
-                </div>
-                <div class="level-meta">
-                  {#if levelRating !== null}
-                    <Badge variant="secondary">
+                  {:else}
+                    {$_('pvp.level_pending')}
+                  {/if}
+                </p>
+              {:else}
+                <h2>{$_('pvp.level_pending')}</h2>
+              {/if}
+            </section>
+          {:else}
+            <Card.Root>
+              <Card.Header>
+                <Card.Title>{$_('pvp.challenge_level')}</Card.Title>
+              </Card.Header>
+              <Card.Content class="level-content">
+                {#if visibleLevel}
+                  <div>
+                    <h2>
                       {
-                        $_('pvp.level_rating', { values: { rating: levelRating } })
+                        visibleLevel.name || `#${visibleLevel.id || match.levelId}`
                       }
-                    </Badge>
-                  {/if}
-                  {#if visibleLevel.difficulty}
-                    <Badge variant="outline">{visibleLevel.difficulty}</Badge>
-                  {/if}
-                  {#if visibleLevel.id || match.levelId}
-                    <a
-                      class="level-link"
-                      href={`/level/${visibleLevel.id || match.levelId}`}
-                    >
-                      {$_('pvp.open_level')}
-                      <ExternalLink class="h-4 w-4" />
-                    </a>
-                    <div class="level-id">
-                      <span class="id-label">ID: {
-                          visibleLevel.id ?? match.levelId
-                        }</span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        on:click={copyLevelId}
-                        aria-label={$_('pvp.copy_level_id')}
+                    </h2>
+                    <p>
+                      {#if visibleLevel.creator || visibleLevel.author}
+                        {$_('head.labels.by')} {
+                          visibleLevel.creator || visibleLevel.author
+                        }
+                      {:else}
+                        {$_('pvp.level_pending')}
+                      {/if}
+                    </p>
+                  </div>
+                  <div class="level-meta">
+                    {#if levelRating !== null}
+                      <Badge variant="secondary">
+                        {
+                          $_('pvp.level_rating', { values: { rating: levelRating } })
+                        }
+                      </Badge>
+                    {/if}
+                    {#if visibleLevel.difficulty}
+                      <Badge variant="outline">{visibleLevel.difficulty}</Badge>
+                    {/if}
+                    {#if visibleLevel.id || match.levelId}
+                      <a
+                        class="level-link"
+                        href={`/level/${visibleLevel.id || match.levelId}`}
                       >
-                        <Copy class="h-4 w-4" />
-                      </Button>
+                        {$_('pvp.open_level')}
+                        <ExternalLink class="h-4 w-4" />
+                      </a>
+                      <div class="level-id">
+                        <span class="id-label">ID: {
+                            visibleLevel.id ?? match.levelId
+                          }</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          on:click={copyLevelId}
+                          aria-label={$_('pvp.copy_level_id')}
+                        >
+                          <Copy class="h-4 w-4" />
+                        </Button>
+                      </div>
+                    {/if}
+                  </div>
+                  {#if levelVideoId}
+                    <div class="level-video">
+                      <iframe
+                        src={`https://www.youtube.com/embed/${levelVideoId}`}
+                        title={visibleLevel.name || $_('pvp.challenge_level')}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowfullscreen
+                      ></iframe>
                     </div>
                   {/if}
-                </div>
-                {#if levelVideoId}
-                  <div class="level-video">
-                    <iframe
-                      src={`https://www.youtube.com/embed/${levelVideoId}`}
-                      title={visibleLevel.name || $_('pvp.challenge_level')}
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      allowfullscreen
-                    ></iframe>
-                  </div>
+                {:else}
+                  <div class="empty-state">{$_('pvp.level_pending')}</div>
                 {/if}
-              {:else}
-                <div class="empty-state">{$_('pvp.level_pending')}</div>
-              {/if}
-            </Card.Content>
-          </Card.Root>
+              </Card.Content>
+            </Card.Root>
+          {/if}
         </section>
       </div>
 
+      {#if overlayMode}
+        <section class="overlay-graphs-panel">
+          <div class="progress-graph-panel">
+            {#if progressGraphData.hasPoints}
+              <div class="progress-graph-canvas overlay-progress-graph-canvas">
+                <canvas
+                  use:createProgressChart={progressGraphData}
+                  aria-label={$_('pvp.progress_graph.title')}
+                />
+              </div>
+            {:else}
+              <div class="empty-state">
+                {$_('pvp.progress_graph.empty')}
+              </div>
+            {/if}
+          </div>
+
+          <div class="death-count-panel">
+            {#if matchMode === 'platformer'}
+              <div class="empty-state">
+                {$_('pvp.death_count.platformer_empty')}
+              </div>
+            {:else if deathCountChartData.hasPoints}
+              <div class="death-count-chart-canvas overlay-death-count-chart-canvas">
+                <canvas
+                  use:createDeathCountChart={deathCountChartData}
+                  aria-label={$_('pvp.death_count.title')}
+                />
+              </div>
+            {:else}
+              <div class="empty-state">{$_('pvp.death_count.empty')}</div>
+            {/if}
+          </div>
+        </section>
+      {:else}
       <aside class="desktop-chat-panel">
         <Card.Root class="desktop-chat-card">
           <Tabs.Root
@@ -5108,12 +5209,12 @@
                       {@const participantPlayer = getPvpParticipantPlayer(participant)}
                       {@const participantMasked = shouldMaskParticipant(
                           participant,
-                          hideOpponentInfo,
+                          effectiveHideOpponentInfo,
                           currentUid
                       )}
                       {@const participantDisplayName = participantName(
                           participant,
-                          hideOpponentInfo,
+                          effectiveHideOpponentInfo,
                           currentUid
                       )}
                       <div class="death-count-card">
@@ -5124,13 +5225,20 @@
                             </span>
                           {/if}
                           <div class="participant-name">
-                            <Badge
-                              variant={getPvpParticipantUid(participant) === currentUid
-                              ? 'default'
-                              : 'outline'}
-                            >
-                              {participantLabel(participant, currentUid)}
-                            </Badge>
+                            {#if !overlayMode}
+                              <Badge
+                                variant={getPvpParticipantUid(participant) === currentUid
+                                ? 'default'
+                                : 'outline'}
+                              >
+                                {participantLabel(participant, currentUid)}
+                              </Badge>
+                            {/if}
+                            {#if participantPracticeModeActive(participant)}
+                              <Badge variant="outline">
+                                {$_('pvp.progress_graph.practice_mode')}
+                              </Badge>
+                            {/if}
                             {#if !participantMasked && participantPlayer?.uid}
                               <PlayerLink
                                 player={participantPlayer}
@@ -5186,8 +5294,10 @@
           </Tabs.Root>
         </Card.Root>
       </aside>
+      {/if}
     </div>
 
+    {#if !overlayMode}
     <Drawer.Root bind:open={mobileChatOpen}>
       <Drawer.Trigger asChild let:builder>
         <Button builders={[builder]} class="mobile-chat-trigger" type="button">
@@ -5256,7 +5366,7 @@
                     {@const senderUid = messageSenderUid(message)}
                     {@const senderName = messageSenderName(
                         message,
-                        hideOpponentInfo,
+                        effectiveHideOpponentInfo,
                         currentUid,
                         participants,
                         senderUid
@@ -5394,12 +5504,12 @@
                       {@const participantPlayer = getPvpParticipantPlayer(participant)}
                       {@const participantMasked = shouldMaskParticipant(
                           participant,
-                          hideOpponentInfo,
+                          effectiveHideOpponentInfo,
                           currentUid
                       )}
                       {@const participantDisplayName = participantName(
                           participant,
-                          hideOpponentInfo,
+                          effectiveHideOpponentInfo,
                           currentUid
                       )}
                       <div class="death-count-card">
@@ -5410,13 +5520,20 @@
                             </span>
                           {/if}
                           <div class="participant-name">
-                            <Badge
-                              variant={getPvpParticipantUid(participant) === currentUid
-                              ? 'default'
-                              : 'outline'}
-                            >
-                              {participantLabel(participant, currentUid)}
-                            </Badge>
+                            {#if !overlayMode}
+                              <Badge
+                                variant={getPvpParticipantUid(participant) === currentUid
+                                ? 'default'
+                                : 'outline'}
+                              >
+                                {participantLabel(participant, currentUid)}
+                              </Badge>
+                            {/if}
+                            {#if participantPracticeModeActive(participant)}
+                              <Badge variant="outline">
+                                {$_('pvp.progress_graph.practice_mode')}
+                              </Badge>
+                            {/if}
                             {#if !participantMasked && participantPlayer?.uid}
                               <PlayerLink
                                 player={participantPlayer}
@@ -5473,6 +5590,7 @@
         </Tabs.Root>
       </Drawer.Content>
     </Drawer.Root>
+    {/if}
   {:else}
     <Card.Root>
       <Card.Content class="state-content">{
@@ -5489,11 +5607,46 @@
   padding: 36px 0 64px;
 }
 
+.match-page.overlay-mode {
+  width: 100vw;
+  max-width: none;
+  min-height: min(100vh, 1920px);
+  padding: 8px 0 10px;
+  background: transparent;
+}
+
+.match-page.overlay-mode :global(.bg-card) {
+  background: transparent !important;
+  box-shadow: none;
+}
+
+.match-page.overlay-mode :global(.text-card-foreground) {
+  color: hsl(var(--card-foreground));
+}
+
+.match-page.overlay-mode :global(.rounded-xl),
+.match-page.overlay-mode .progress-graph-panel,
+.match-page.overlay-mode .death-count-panel,
+.match-page.overlay-mode .overlay-graphs-panel,
+.match-page.overlay-mode .overlay-level-title {
+  width: calc(100% - 20px);
+  margin-inline: auto;
+}
+
+.match-page.overlay-mode :global(.match-progress-panel) {
+  width: min(1000px, calc(100% - 20px));
+}
+
 .match-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 18px;
   align-items: start;
+}
+
+.overlay-mode .match-layout {
+  grid-template-columns: 1fr;
+  gap: 12px;
 }
 
 .match-main-column {
@@ -5591,6 +5744,10 @@
   margin-top: 16px;
 }
 
+.overlay-mode .detail-grid {
+  margin-top: 10px;
+}
+
 .desktop-chat-panel {
   position: sticky;
   top: 18px;
@@ -5672,6 +5829,10 @@
   gap: 14px;
 }
 
+.overlay-mode :global(.match-progress-content) {
+  padding-top: 20px;
+}
+
 .side-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -5691,6 +5852,10 @@
 
 .timer-display strong {
   font-size: 1.4rem;
+}
+
+.overlay-mode .timer-display {
+  min-height: 46px;
 }
 
 .acceptance-panel {
@@ -5860,6 +6025,11 @@
   padding: 14px;
 }
 
+.overlay-mode .participant-card {
+  gap: 9px;
+  padding: 12px;
+}
+
 .participant-card.winner {
   border-color: hsl(var(--primary));
   background: hsl(var(--primary) / 0.08);
@@ -5945,6 +6115,10 @@
   min-height: 32px;
 }
 
+.participant-name :global(.rank) {
+  margin-bottom: 6px;
+}
+
 .participant-rating {
   margin-left: 53px;
   color: hsl(var(--muted-foreground));
@@ -5959,6 +6133,32 @@
 
 .participant-rating strong.positive {
   color: hsl(var(--primary));
+}
+
+.overlay-level-title {
+  display: grid;
+  min-height: 86px;
+  align-content: center;
+  justify-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.overlay-level-title h2 {
+  max-width: min(100%, 920px);
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 2rem;
+  font-weight: 850;
+  line-height: 1.08;
+}
+
+.overlay-level-title p {
+  margin: 0;
+  color: hsl(var(--muted-foreground));
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.25;
 }
 
 .progress-label {
@@ -6030,6 +6230,25 @@
   padding: 14px;
 }
 
+.overlay-graphs-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  min-height: 0;
+}
+
+.overlay-mode .progress-graph-panel,
+.overlay-mode .death-count-panel {
+  width: 100%;
+  margin-inline: 0;
+  aspect-ratio: 5 / 2;
+  height: auto;
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr);
+  background: rgb(0 0 0 / 0.24);
+  backdrop-filter: blur(2px);
+}
+
 :global(.progress-tab-content) .progress-graph-panel {
   flex: 1;
   min-height: 0;
@@ -6049,6 +6268,11 @@
   position: relative;
   height: 500px;
   min-height: 500px;
+}
+
+.overlay-progress-graph-canvas {
+  height: 100%;
+  min-height: 0;
 }
 
 :global(.progress-tab-content) .progress-graph-canvas {
@@ -6159,6 +6383,11 @@
   position: relative;
   height: 420px;
   min-height: 420px;
+}
+
+.overlay-death-count-chart-canvas {
+  height: 100%;
+  min-height: 0;
 }
 
 .death-count-chart-canvas canvas {
@@ -6322,6 +6551,14 @@
 @media (max-width: 900px) {
   .match-layout {
     grid-template-columns: 1fr;
+  }
+
+  .overlay-mode .match-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .overlay-graphs-panel {
+    min-height: auto;
   }
 
   .desktop-chat-panel {

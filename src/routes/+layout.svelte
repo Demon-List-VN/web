@@ -44,6 +44,7 @@
 	let removePad = false;
 	let pathname = '';
 	let isSupporterOverlay = false;
+	let isPvpMatchOverlay = false;
 	let currentCustomLogoUrl = '';
 	let passwordSignInOpen = false;
 	let passwordSignInEmail = '';
@@ -116,6 +117,8 @@
 
 	$: pathname = $page.url.pathname;
 	$: isSupporterOverlay = $page.route.id === '/supporter/overlay';
+	$: isPvpMatchOverlay = $page.route.id === '/versus/matches/[id]'
+		&& $page.url.searchParams.has('overlay');
 	$: ownSocialPresenceUid.set($user.loggedIn ? ($user.data?.uid ?? '') : '');
 	$: socialPresenceVisible.set(
 		$user.loggedIn ? $user.data?.socialPresenceVisible !== false : false
@@ -362,7 +365,7 @@
   </div>
 {/if}
 
-{#if !hideNav && !isSupporterOverlay}
+{#if !hideNav && !isSupporterOverlay && !isPvpMatchOverlay}
   <NavigationChrome
     bind:searchToggled
     navLogoSrc={$navLogoSrc}
@@ -377,12 +380,13 @@
 <!-- Main content wrapper -->
 <div
   class="layout-container"
-  class:has-sidebar={!hideNav && !isSupporterOverlay}
-  class:no-pad={removePad || isSupporterOverlay}
+  class:has-sidebar={!hideNav && !isSupporterOverlay && !isPvpMatchOverlay}
+  class:no-pad={removePad || isSupporterOverlay || isPvpMatchOverlay}
+  class:transparent={isPvpMatchOverlay}
 >
   <slot />
 
-  {#if !isSupporterOverlay}
+  {#if !isSupporterOverlay && !isPvpMatchOverlay}
     <footer>
     <div class="footerFiller"></div>
     <p>
@@ -567,6 +571,15 @@
     border: solid 1px var(--textColor);
     padding-inline: 10px;
   }
+}
+
+.layout-container.transparent {
+  background: transparent;
+}
+
+:global(html:has(.match-page.overlay-mode)),
+:global(body:has(.match-page.overlay-mode)) {
+  background: transparent;
 }
 
 /* Layout container */
