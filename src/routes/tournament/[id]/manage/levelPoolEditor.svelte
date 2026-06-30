@@ -13,17 +13,51 @@
 	const ID = 'level-pool';
 	const dirtyStore = getManageDirty();
 
-	const loaded = (tournament.contestLevels ?? []).map((level: any) => ({
-		levelId: level.levelId,
-		maxPoints: level.maxPoints
-	}));
+	type LevelDraft = {
+		levelId: number | string | null;
+		maxPoints: number | string | null;
+	};
 
-	let levels: { levelId: number | null; maxPoints: number | null; }[] = loaded.length
-		? structuredClone(loaded)
-		: [{ levelId: null, maxPoints: 100 }];
+	function emptyLevels(): LevelDraft[] {
+		return [{ levelId: null, maxPoints: 100 }];
+	}
+
+	function normalizeLevels(contestLevels: any[] | null | undefined): LevelDraft[] {
+		const normalized = (contestLevels ?? []).map((level: any) => ({
+			levelId: level.levelId,
+			maxPoints: level.maxPoints
+		}));
+
+		return normalized.length ? normalized : emptyLevels();
+	}
+
+	function levelsKey(contestLevels: any[] | null | undefined) {
+		return JSON.stringify(normalizeLevels(contestLevels));
+	}
+
+	function applyLoadedLevels(contestLevels: any[] | null | undefined) {
+		levels = normalizeLevels(contestLevels);
+		initial = structuredClone(levels);
+		lastLoadedKey = levelsKey(contestLevels);
+	}
+
+	let levels: LevelDraft[] = Array.isArray(tournament.contestLevels)
+		? normalizeLevels(tournament.contestLevels)
+		: emptyLevels();
 	let initial = structuredClone(levels);
+	let dirty = false;
+	let lastLoadedKey = Array.isArray(tournament.contestLevels)
+		? levelsKey(tournament.contestLevels)
+		: null;
 
 	$: dirty = JSON.stringify(levels) !== JSON.stringify(initial);
+	$: if (Array.isArray(tournament.contestLevels)) {
+		const nextLoadedKey = levelsKey(tournament.contestLevels);
+
+		if (!dirty && nextLoadedKey !== lastLoadedKey) {
+			applyLoadedLevels(tournament.contestLevels);
+		}
+	}
 	$: dirtyStore?.setDirty(ID, dirty && !disabled);
 
 	function addRow() {
@@ -40,14 +74,14 @@
 
 	async function save() {
 		const payload = levels
-			.filter((level) => level.levelId && level.maxPoints)
+			.filter((level) => level.levelId !== null && level.levelId !== '' && level.maxPoints !== null && level.maxPoints !== '')
 			.map((level) => ({ levelId: Number(level.levelId), maxPoints: Number(level.maxPoints) }));
 
-		await tournamentFetch(`/${tournament.id}/levels`, {
+		const savedLevels = await tournamentFetch(`/${tournament.id}/levels`, {
 			method: 'PUT',
 			body: JSON.stringify({ levels: payload })
 		});
-		initial = structuredClone(levels);
+		applyLoadedLevels(savedLevels);
 		dirtyStore?.setDirty(ID, false);
 	}
 
