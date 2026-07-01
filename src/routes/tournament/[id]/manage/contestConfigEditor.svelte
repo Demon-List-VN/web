@@ -3,6 +3,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
+	import * as Select from '$lib/components/ui/select';
 	import { Switch } from '$lib/components/ui/switch';
 	import { tournamentFetch } from '$lib/client/tournament';
 	import { getManageDirty } from '$lib/components/tournament/manage/manageDirty';
@@ -13,40 +14,156 @@
 	const ID = 'contest-config';
 	const dirtyStore = getManageDirty();
 	const cfg = tournament.contestConfig ?? {};
+	type LateRegMode = 'until_end' | 'custom';
+
+	function toDatetimeLocal(value: unknown) {
+		const date = new Date(String(value || ''));
+
+		if (Number.isNaN(date.getTime())) {
+			return '';
+		}
+
+		const offsetMs = date.getTimezoneOffset() * 60 * 1000;
+
+		return new Date(date.getTime() - offsetMs)
+			.toISOString()
+			.slice(0, 16);
+	}
+
+	function toIso(value: string) {
+		const date = new Date(value);
+
+		return Number.isNaN(date.getTime()) ? null : date.toISOString();
+	}
+
+	function contestStartMs() {
+		const date = new Date(String(tournament.startedAt ?? tournament.startsAt ?? ''));
+		const time = date.getTime();
+
+		return Number.isFinite(time) ? time : null;
+	}
+
+	function offsetToCloseTime(offsetSeconds: unknown) {
+		const startMs = contestStartMs();
+		const offset = Number(offsetSeconds);
+
+		if (startMs === null || !Number.isFinite(offset) || offset <= 0) {
+			return '';
+		}
+
+		return toDatetimeLocal(new Date(startMs + offset * 1000)
+			.toISOString());
+	}
+
+	function defaultCloseTime(durationSeconds: number) {
+		const startMs = contestStartMs();
+
+		if (startMs === null) {
+			return '';
+		}
+
+		return toDatetimeLocal(new Date(startMs + durationSeconds * 1000)
+			.toISOString());
+	}
+
+	function modeFromConfig() {
+		if (cfg.lateRegOffsetSeconds == null) {
+			return 'until_end';
+		}
+
+		const offset = Number(cfg.lateRegOffsetSeconds);
+		const duration = Number(cfg.durationSeconds);
+
+		return Number.isFinite(offset)
+			&& Number.isFinite(duration)
+			&& duration > 0
+			&& offset >= duration
+			? 'until_end'
+			: 'custom';
+	}
 
 	let initial = {
 		durationHours: cfg.durationSeconds ? cfg.durationSeconds / 3600 : 2,
 		freezeMinutes: cfg.freezeOffsetSeconds ? cfg.freezeOffsetSeconds / 60 : 0,
 		lateRegEnabled: cfg.lateRegOffsetSeconds != null,
-		lateRegMinutes: cfg.lateRegOffsetSeconds ? cfg.lateRegOffsetSeconds / 60 : 0,
+		lateRegMode: modeFromConfig() as LateRegMode,
+		lateRegClosesAt: offsetToCloseTime(cfg.lateRegOffsetSeconds)
+			|| defaultCloseTime(Number(cfg.durationSeconds ?? 7200)),
 		lateRegPenaltyPercent: cfg.lateRegPenaltyFraction != null ? cfg.lateRegPenaltyFraction * 100 : 0
 	};
 
 	let durationHours = initial.durationHours;
 	let freezeMinutes = initial.freezeMinutes;
 	let lateRegEnabled = initial.lateRegEnabled;
-	let lateRegMinutes = initial.lateRegMinutes;
+	let lateRegMode = initial.lateRegMode;
+	let lateRegClosesAt = initial.lateRegClosesAt;
 	let lateRegPenaltyPercent = initial.lateRegPenaltyPercent;
 
-	$: current = { durationHours, freezeMinutes, lateRegEnabled, lateRegMinutes, lateRegPenaltyPercent };
+	$: current = {
+		durationHours,
+		freezeMinutes,
+		lateRegEnabled,
+		lateRegMode,
+		lateRegClosesAt,
+		lateRegPenaltyPercent
+	};
 	$: dirty = JSON.stringify(current) !== JSON.stringify(initial);
 	$: dirtyStore?.setDirty(ID, dirty && !disabled);
+	$: customLateRegValid = !lateRegEnabled
+		|| lateRegMode !== 'custom'
+		|| Boolean(lateRegClosesAt);
 
 	function reset() {
 		durationHours = initial.durationHours;
 		freezeMinutes = initial.freezeMinutes;
 		lateRegEnabled = initial.lateRegEnabled;
-		lateRegMinutes = initial.lateRegMinutes;
+		lateRegMode = initial.lateRegMode;
+		lateRegClosesAt = initial.lateRegClosesAt;
 		lateRegPenaltyPercent = initial.lateRegPenaltyPercent;
 	}
 
+	function setLateRegMode(value: unknown) {
+		if (value === 'until_end' || value === 'custom') {
+			lateRegMode = value;
+		}
+	}
+
+	function lateRegOffsetSeconds() {
+		if (!lateRegEnabled) {
+			return null;
+		}
+
+		const durationSeconds = Math.round(durationHours * 3600);
+
+		if (lateRegMode === 'until_end') {
+			return durationSeconds;
+		}
+
+		const startMs = contestStartMs();
+		const closeIso = toIso(lateRegClosesAt);
+		const closeMs = closeIso
+			? new Date(closeIso)
+				.getTime()
+			: NaN;
+
+		if (startMs === null || !Number.isFinite(closeMs)) {
+			throw new Error($_('tournament.manage.late_reg_close_invalid'));
+		}
+
+		return Math.round((closeMs - startMs) / 1000);
+	}
+
 	async function save() {
+		if (!customLateRegValid) {
+			throw new Error($_('tournament.manage.late_reg_close_invalid'));
+		}
+
 		await tournamentFetch(`/${tournament.id}/contest/config`, {
 			method: 'PUT',
 			body: JSON.stringify({
 				durationSeconds: Math.round(durationHours * 3600),
 				freezeOffsetSeconds: Math.round(freezeMinutes * 60),
-				lateRegOffsetSeconds: lateRegEnabled ? Math.round(lateRegMinutes * 60) : null,
+				lateRegOffsetSeconds: lateRegOffsetSeconds(),
 				lateRegPenaltyFraction: lateRegEnabled ? lateRegPenaltyPercent / 100 : null
 			})
 		});
@@ -81,13 +198,41 @@
   {#if lateRegEnabled}
     <div class="grid grid-cols-1 gap-[10px] sm:grid-cols-2">
       <div class="flex flex-col gap-[6px]">
-        <Label>{$_('tournament.manage.late_reg_minutes')}</Label>
-        <Input type="number" bind:value={lateRegMinutes} {disabled} />
+        <Label>{$_('tournament.manage.late_reg_window')}</Label>
+        <Select.Root
+          {disabled}
+          selected={{
+            value: lateRegMode,
+            label: $_(`tournament.manage.late_reg_${lateRegMode}`)
+          }}
+          onSelectedChange={(v) => v && setLateRegMode(v.value)}
+        >
+          <Select.Trigger>
+            {$_(`tournament.manage.late_reg_${lateRegMode}`)}
+          </Select.Trigger>
+          <Select.Content>
+            <Select.Item value="until_end" label={$_('tournament.manage.late_reg_until_end')}>
+              {$_('tournament.manage.late_reg_until_end')}
+            </Select.Item>
+            <Select.Item value="custom" label={$_('tournament.manage.late_reg_custom')}>
+              {$_('tournament.manage.late_reg_custom')}
+            </Select.Item>
+          </Select.Content>
+        </Select.Root>
       </div>
       <div class="flex flex-col gap-[6px]">
         <Label>{$_('tournament.manage.late_reg_penalty')}</Label>
         <Input type="number" bind:value={lateRegPenaltyPercent} {disabled} />
       </div>
     </div>
+    {#if lateRegMode === 'custom'}
+      <div class="flex flex-col gap-[6px]">
+        <Label>{$_('tournament.manage.late_reg_closes_at')}</Label>
+        <Input type="datetime-local" bind:value={lateRegClosesAt} {disabled} />
+        {#if !customLateRegValid}
+          <p class="text-xs text-destructive">{$_('tournament.manage.late_reg_close_invalid')}</p>
+        {/if}
+      </div>
+    {/if}
   {/if}
 </section>
