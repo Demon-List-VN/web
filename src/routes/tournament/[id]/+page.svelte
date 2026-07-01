@@ -34,6 +34,22 @@
 		tournament.status
 	);
 	$: contestStarted = ['ongoing', 'finished'].includes(tournament.status);
+	$: lateRegistrationOpen = (() => {
+		const lateRegOffsetSeconds = Number(tournament.contestConfig?.lateRegOffsetSeconds);
+		const startValue = tournament.startedAt ?? tournament.startsAt;
+		const startedAt = startValue
+			? new Date(String(startValue))
+				.getTime()
+			: Number.NaN;
+
+		return tournament.format === 'contest'
+			&& tournament.status === 'ongoing'
+			&& Number.isFinite(startedAt)
+			&& Number.isFinite(lateRegOffsetSeconds)
+			&& lateRegOffsetSeconds > 0
+			&& Date.now() <= startedAt + lateRegOffsetSeconds * 1000;
+	})();
+	$: canRegister = Boolean(tournament.registrationOpen || lateRegistrationOpen);
 	$: bannerUrl = `https://cdn.gdvn.net/tournament-banner/${tournament.id}.webp?v=${tournament.bannerVersion ?? 0}`;
 	$: milestone = nextMilestone(tournament);
 
@@ -184,7 +200,7 @@
         {#if preStart}
           <Button variant="outline" on:click={withdraw}>{$_('tournament.withdraw')}</Button>
         {/if}
-      {:else if !participant && tournament.registrationOpen}
+      {:else if !participant && canRegister}
         <Button on:click={register}>{$_('tournament.register')}</Button>
       {:else if !participant && ['registration_closed', 'ready', 'ongoing'].includes(tournament.status)}
         <Button variant="outline" disabled>{$_('tournament.status.registration_closed')}</Button>
