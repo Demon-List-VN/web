@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { _ } from 'svelte-i18n';
-	import { Users, Trophy, Gauge } from 'lucide-svelte';
+	import { Users, Trophy, Gauge, ShieldCheck } from 'lucide-svelte';
 	import { badgeVariants } from '$lib/components/ui/badge';
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import TournamentStatusBadge from '$lib/components/tournament/TournamentStatusBadge.svelte';
@@ -40,6 +40,14 @@
   <div class="flex min-w-0 flex-1 flex-col gap-[8px] p-[12px]">
     <div class="flex items-start gap-[8px]">
       <span class="line-clamp-2 flex-1 font-bold leading-tight">{tournament.name}</span>
+      {#if tournament.isOfficial}
+        <span
+          class="inline-flex h-[24px] w-[24px] shrink-0 items-center justify-center rounded-full border border-primary/30 bg-primary/10 text-primary"
+          title={$_('tournament.official')}
+        >
+          <ShieldCheck size={15} />
+        </span>
+      {/if}
       <span class={badgeVariants({ variant: 'outline' })}>
         {$_(formatLabelKey(tournament.format))}
       </span>

@@ -298,8 +298,9 @@ export function groupTournaments(list: any[]): TournamentGroup[] {
                 open.push(tournament);
                 break;
             case 'finished':
-            case 'cancelled':
                 finished.push(tournament);
+                break;
+            case 'cancelled':
                 break;
             default:
                 upcoming.push(tournament);

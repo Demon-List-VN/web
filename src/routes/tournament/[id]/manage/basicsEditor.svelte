@@ -28,7 +28,10 @@
 		visibility: tournament.visibility ?? 'public',
 		minElo: (tournament.minElo ?? null) as number | null,
 		maxElo: (tournament.maxElo ?? null) as number | null,
-		eloEnforced: tournament.eloEnforced ?? false
+		eloEnforced: tournament.eloEnforced ?? false,
+		...(tournament.viewerRole === 'admin' || tournament.viewerRole === 'manager'
+			? { isOfficial: Boolean(tournament.isOfficial) }
+			: {})
 	};
 
 	let name = initial.name;
@@ -38,9 +41,20 @@
 	let minElo: number | null = initial.minElo;
 	let maxElo: number | null = initial.maxElo;
 	let eloEnforced = initial.eloEnforced;
+	let isOfficial = 'isOfficial' in initial ? initial.isOfficial : Boolean(tournament.isOfficial);
 	let fileInput: HTMLInputElement;
 
-	$: current = { name, description, detail, visibility, minElo, maxElo, eloEnforced };
+	$: canManageOfficial = tournament.viewerRole === 'admin' || tournament.viewerRole === 'manager';
+	$: current = {
+		name,
+		description,
+		detail,
+		visibility,
+		minElo,
+		maxElo,
+		eloEnforced,
+		...(canManageOfficial ? { isOfficial } : {})
+	};
 	$: dirty = JSON.stringify(current) !== JSON.stringify(initial);
 	$: dirtyStore?.setDirty(ID, dirty);
 
@@ -52,6 +66,7 @@
 		minElo = initial.minElo;
 		maxElo = initial.maxElo;
 		eloEnforced = initial.eloEnforced;
+		isOfficial = 'isOfficial' in initial ? initial.isOfficial : Boolean(tournament.isOfficial);
 	}
 
 	async function save() {
@@ -141,6 +156,12 @@
     <Switch bind:checked={eloEnforced} {disabled} id="elo-enforced" />
     <Label for="elo-enforced">{$_('tournament.manage.elo_enforced')}</Label>
   </div>
+  {#if canManageOfficial}
+    <div class="flex items-center gap-[8px]">
+      <Switch bind:checked={isOfficial} id="official-tournament" />
+      <Label for="official-tournament">{$_('tournament.manage.official')}</Label>
+    </div>
+  {/if}
   <div class="flex flex-col gap-[6px]">
     <Label>{$_('tournament.manage.banner')}</Label>
     <input bind:this={fileInput} type="file" accept="image/webp" class="hidden" on:change={uploadBanner} />
