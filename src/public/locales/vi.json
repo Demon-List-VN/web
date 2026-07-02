@@ -1377,6 +1377,8 @@
             "variant_level_id": "ID level LDM",
             "comment": "Ghi chú",
             "comment_placeholder": "Ghi chú cho người duyệt, ví dụ phần đã tối ưu.",
+            "confirm_title": "Xác nhận bản LDM",
+            "confirm_description": "Kiểm tra lại cặp level trước khi gửi cho admin.",
             "preview": "Xem thử",
             "submit": "Nộp bản LDM"
         },

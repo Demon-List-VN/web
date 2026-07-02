@@ -1377,6 +1377,8 @@
             "variant_level_id": "LDM variant level ID",
             "comment": "Comment",
             "comment_placeholder": "Add notes for the reviewer, such as what was optimized.",
+            "confirm_title": "Confirm LDM submission",
+            "confirm_description": "Review the level pairing before sending it to admins.",
             "preview": "Preview",
             "submit": "Submit LDM variant"
         },

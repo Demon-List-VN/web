@@ -187,16 +187,17 @@
 							Authorization: `Bearer ${await $user.token()}`
 						}
 					}
-				).then(async (response) => {
-					if (!response.ok) {
-						const payload = await response.json()
-							.catch(() => null);
+				)
+					.then(async (response) => {
+						if (!response.ok) {
+							const payload = await response.json()
+								.catch(() => null);
 
-						throw new Error(payload?.message || $_('submissions.ldm_cancel_error'));
-					}
+							throw new Error(payload?.message || $_('submissions.ldm_cancel_error'));
+						}
 
-					return response;
-				}),
+						return response;
+					}),
 				{
 					loading: $_('submissions.ldm_cancel_loading'),
 					success: () => {
@@ -206,7 +207,9 @@
 
 						return $_('submissions.ldm_cancel_success');
 					},
-					error: (error) => error?.message || $_('submissions.ldm_cancel_error')
+					error: (error: unknown) => error instanceof Error
+						? error.message
+						: $_('submissions.ldm_cancel_error')
 				}
 			);
 		} finally {

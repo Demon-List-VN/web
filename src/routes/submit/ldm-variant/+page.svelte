@@ -17,6 +17,7 @@
 	let loadingVariant = false;
 	let submitting = false;
 	let submitted = false;
+	let confirming = false;
 
 	function t(vi: string, en: string) {
 		return $locale == 'vi' ? vi : en;
@@ -40,6 +41,72 @@
 		return level?.author || level?.creator || 'Unknown';
 	}
 
+	function getValidatedLevelIds() {
+		const parsedMainLevelId = parseLevelId(mainLevelId);
+		const parsedVariantLevelId = parseLevelId(variantLevelId);
+
+		if (!parsedMainLevelId || !parsedVariantLevelId) {
+			toast.error(
+				t(
+					'Vui lòng nhập ID level gốc và ID level LDM hợp lệ',
+					'Please enter valid main and LDM level IDs'
+				)
+			);
+
+			return null;
+		}
+
+		if (parsedMainLevelId === parsedVariantLevelId) {
+			toast.error(
+				t('Level LDM phải khác level gốc', 'LDM variant must be a different level')
+			);
+
+			return null;
+		}
+
+		return {
+			mainLevelId: parsedMainLevelId,
+			variantLevelId: parsedVariantLevelId
+		};
+	}
+
+	function getSubmissionContext() {
+		const ids = getCurrentLevelIds();
+
+		if (!ids) {
+			return null;
+		}
+
+		const variantName = variantLevel?.name || t('level', 'level');
+		const mainName = mainLevel?.name || t('level gốc', 'original level');
+
+		return {
+			prefix: t('Bạn đang nộp', 'You are submitting'),
+			variantName,
+			variantLevelId: ids.variantLevelId,
+			middle: t('làm LDM cho', 'as LDM for'),
+			mainName
+		};
+	}
+
+	function getCurrentLevelIds() {
+		const parsedMainLevelId = parseLevelId(mainLevelId);
+		const parsedVariantLevelId = parseLevelId(variantLevelId);
+
+		if (!parsedMainLevelId || !parsedVariantLevelId) {
+			return null;
+		}
+
+		return {
+			mainLevelId: parsedMainLevelId,
+			variantLevelId: parsedVariantLevelId
+		};
+	}
+
+	function previewMatches(level: any, id: number) {
+		return Number(level?.id) === id;
+	}
+
 	async function loadLevelPreview(kind: 'main' | 'variant') {
 		const value = kind === 'main' ? mainLevelId : variantLevelId;
 		const id = parseLevelId(value);
@@ -51,7 +118,7 @@
 				variantLevel = null;
 			}
 
-			return;
+			return false;
 		}
 
 		if (kind === 'main') {
@@ -76,6 +143,8 @@
 			} else {
 				variantLevel = level;
 			}
+
+			return true;
 		} catch {
 			if (kind === 'main') {
 				mainLevel = null;
@@ -84,6 +153,8 @@
 			}
 
 			toast.error(t('Không tải được level này', 'Unable to load this level'));
+
+			return false;
 		} finally {
 			if (kind === 'main') {
 				loadingMain = false;
@@ -93,26 +164,29 @@
 		}
 	}
 
-	async function submitLdmVariant() {
-		const parsedMainLevelId = parseLevelId(mainLevelId);
-		const parsedVariantLevelId = parseLevelId(variantLevelId);
+	async function continueToConfirmation() {
+		const ids = getValidatedLevelIds();
 
-		if (!parsedMainLevelId || !parsedVariantLevelId) {
-			toast.error(
-				t(
-					'Vui lòng nhập ID level gốc và ID level LDM hợp lệ',
-					'Please enter valid main and LDM level IDs'
-				)
-			);
-
+		if (!ids) {
 			return;
 		}
 
-		if (parsedMainLevelId === parsedVariantLevelId) {
-			toast.error(
-				t('Level LDM phải khác level gốc', 'LDM variant must be a different level')
-			);
+		const [mainLoaded, variantLoaded] = await Promise.all([
+			previewMatches(mainLevel, ids.mainLevelId) ? true : loadLevelPreview('main'),
+			previewMatches(variantLevel, ids.variantLevelId) ? true : loadLevelPreview('variant')
+		]);
 
+		if (!mainLoaded || !variantLoaded) {
+			return;
+		}
+
+		confirming = true;
+	}
+
+	async function submitLdmVariant() {
+		const ids = getValidatedLevelIds();
+
+		if (!ids) {
 			return;
 		}
 
@@ -124,8 +198,8 @@
 				{
 					method: 'POST',
 					body: JSON.stringify({
-						mainLevelId: parsedMainLevelId,
-						variantLevelId: parsedVariantLevelId,
+						mainLevelId: ids.mainLevelId,
+						variantLevelId: ids.variantLevelId,
 						comment
 					}),
 					headers: {
@@ -165,6 +239,7 @@
 		mainLevel = null;
 		variantLevel = null;
 		submitted = false;
+		confirming = false;
 	}
 </script>
 
@@ -193,6 +268,51 @@
             <p>{$_('submit.ldm_variant.success_description')}</p>
             <Button on:click={resetForm}>
               {$_('submit.ldm_variant.submit_another')}
+            </Button>
+          </div>
+        {:else if confirming}
+          {@const submissionContext = getSubmissionContext()}
+          <div class="form-header">
+            <p class="eyebrow">{$_('submit.flow.eyebrow')}</p>
+            <h1>{$_('submit.ldm_variant.confirm_title')}</h1>
+            <p>{$_('submit.ldm_variant.confirm_description')}</p>
+          </div>
+
+          <div class="confirmation-panel">
+            {#if submissionContext}
+              <p class="submission-context">
+                <span>{submissionContext.prefix}</span>
+                <strong>{submissionContext.variantName}</strong>
+                <span>({submissionContext.variantLevelId})</span>
+                <span>{submissionContext.middle}</span>
+                <strong>{submissionContext.mainName}</strong>
+              </p>
+            {/if}
+            {#if comment}
+              <div class="confirmation-note">
+                <span>{$_('submit.ldm_variant.comment')}</span>
+                <p>{comment}</p>
+              </div>
+            {/if}
+          </div>
+
+          <div class="actions split-actions">
+            <Button
+              variant="outline"
+              on:click={() => {
+                  confirming = false;
+              }}
+            >
+              {$_('general.back')}
+            </Button>
+            <Button
+              on:click={submitLdmVariant}
+              disabled={submitting}
+            >
+              {#if submitting}
+                <Loader2 size={16} class="spin" />
+              {/if}
+              {$_('submit.ldm_variant.submit')}
             </Button>
           </div>
         {:else}
@@ -290,13 +410,13 @@
 
           <div class="actions">
             <Button
-              on:click={submitLdmVariant}
-              disabled={submitting}
+              on:click={continueToConfirmation}
+              disabled={loadingMain || loadingVariant}
             >
-              {#if submitting}
+              {#if loadingMain || loadingVariant}
                 <Loader2 size={16} class="spin" />
               {/if}
-              {$_('submit.ldm_variant.submit')}
+              {$_('general.continue')}
             </Button>
           </div>
         {/if}
@@ -418,6 +538,46 @@
   gap: 8px;
 }
 
+.submission-context {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: hsl(var(--foreground));
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+
+  strong {
+    font-weight: 700;
+  }
+}
+
+.confirmation-panel {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--muted) / 0.16);
+}
+
+.confirmation-note {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+
+  span {
+    color: hsl(var(--muted-foreground));
+    font-weight: 600;
+  }
+
+  p {
+    margin: 0;
+    color: hsl(var(--muted-foreground));
+    line-height: 1.5;
+  }
+}
+
 .input-row {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -456,6 +616,10 @@
   margin-top: 24px;
   padding-top: 16px;
   border-top: 1px solid hsl(var(--border));
+}
+
+.split-actions {
+  justify-content: space-between;
 }
 
 :global(.spin) {
