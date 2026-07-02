@@ -104,6 +104,7 @@
 				{ name: 'Map Pack', href: '/admin/mappack' },
 				{ name: 'Submission', href: '/admin/submission' },
 				{ name: 'Level Submissions', href: '/admin/levelSubmissions' },
+				{ name: 'LDM Variant Submissions', href: '/admin/ldmVariants' },
 				{ name: 'Add Record', href: '/admin/addRecord' }
 			]
 		},

@@ -1361,7 +1361,24 @@
             "challenge_title": "Nộp level cho Challenge List",
             "challenge_description": "Gửi level vào luồng duyệt của Challenge List.",
             "feedback_title": "Gửi level để nhận feedback",
-            "feedback_description": "Nhận góp ý về gameplay, deco và các phần khác của level."
+            "feedback_description": "Nhận góp ý về gameplay, deco và các phần khác của level.",
+            "ldm_variant_title": "Nộp bản LDM",
+            "ldm_variant_description": "Gửi bản Low Detail Mode để liên kết với level gốc."
+        },
+        "ldm_variant": {
+            "title": "Nộp bản LDM",
+            "description": "Gửi bản Low Detail Mode để admin duyệt và gắn vào level gốc.",
+            "signed_out_title": "Cần đăng nhập",
+            "signed_out_description": "Bạn cần đăng nhập để nộp bản LDM.",
+            "success_title": "Đã gửi bản LDM",
+            "success_description": "Admin sẽ duyệt trước khi bản LDM xuất hiện trong danh sách variant.",
+            "submit_another": "Nộp bản khác",
+            "main_level_id": "ID level gốc",
+            "variant_level_id": "ID level LDM",
+            "comment": "Ghi chú",
+            "comment_placeholder": "Ghi chú cho người duyệt, ví dụ phần đã tối ưu.",
+            "preview": "Xem thử",
+            "submit": "Nộp bản LDM"
         },
         "level_feedback": {
             "title": "Gửi level để nhận feedback",
@@ -1999,6 +2016,16 @@
             "description": "Hành động này không thể hoàn tác."
         },
         "queue": "Số thứ tự",
+        "ldm_tab": "LDM",
+        "ldm_loading": "Đang tải bản LDM đang chờ duyệt...",
+        "ldm_empty": "Chưa có bản LDM nào đang chờ duyệt.",
+        "ldm_load_failed": "Không tải được bản LDM đang chờ duyệt",
+        "ldm_variant": "Bản LDM",
+        "ldm_status_pending": "Chờ duyệt",
+        "ldm_cancel_confirm": "Huỷ bản nộp LDM này?",
+        "ldm_cancel_loading": "Đang huỷ bản nộp LDM...",
+        "ldm_cancel_success": "Đã huỷ bản nộp LDM",
+        "ldm_cancel_error": "Không thể huỷ bản nộp LDM",
         "feedback_tab": "Feedback",
         "feedback_loading": "Đang tải feedback submissions...",
         "feedback_empty": "Chưa có level feedback submission.",

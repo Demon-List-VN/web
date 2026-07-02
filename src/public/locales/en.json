@@ -1361,7 +1361,24 @@
             "challenge_title": "Submit challenge list level",
             "challenge_description": "Send a level to the Challenge List submission flow.",
             "feedback_title": "Submit level for feedback",
-            "feedback_description": "Get feedback on gameplay, deco, and other parts of your level."
+            "feedback_description": "Get feedback on gameplay, deco, and other parts of your level.",
+            "ldm_variant_title": "Submit LDM variant",
+            "ldm_variant_description": "Send a Low Detail Mode copy to be linked to an existing level."
+        },
+        "ldm_variant": {
+            "title": "Submit LDM variant",
+            "description": "Submit a Low Detail Mode copy for admins to review and attach to the original level.",
+            "signed_out_title": "Sign in required",
+            "signed_out_description": "You need to sign in to submit an LDM variant.",
+            "success_title": "LDM variant submitted",
+            "success_description": "An admin will review it before it appears as a selectable variant.",
+            "submit_another": "Submit another",
+            "main_level_id": "Original level ID",
+            "variant_level_id": "LDM variant level ID",
+            "comment": "Comment",
+            "comment_placeholder": "Add notes for the reviewer, such as what was optimized.",
+            "preview": "Preview",
+            "submit": "Submit LDM variant"
         },
         "level_feedback": {
             "title": "Submit level for feedback",
@@ -2000,6 +2017,16 @@
             "description": "This action cannot be undone."
         },
         "queue": "Queue",
+        "ldm_tab": "LDM",
+        "ldm_loading": "Loading LDM variant submissions...",
+        "ldm_empty": "No pending LDM variant submissions.",
+        "ldm_load_failed": "Failed to load LDM variant submissions",
+        "ldm_variant": "LDM variant",
+        "ldm_status_pending": "Pending review",
+        "ldm_cancel_confirm": "Cancel this LDM variant submission?",
+        "ldm_cancel_loading": "Cancelling LDM variant submission...",
+        "ldm_cancel_success": "LDM variant submission cancelled",
+        "ldm_cancel_error": "Failed to cancel LDM variant submission",
         "feedback_tab": "Feedback",
         "feedback_loading": "Loading feedback submissions...",
         "feedback_empty": "No level feedback submissions yet.",

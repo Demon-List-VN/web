@@ -17,7 +17,7 @@
 	import Ads from '$lib/components/ads.svelte';
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import { _ } from 'svelte-i18n';
-	import { EllipsisIcon, FileText, SkipForward } from 'lucide-svelte';
+	import { EllipsisIcon, FileText, Gauge, SkipForward } from 'lucide-svelte';
 
 	export let data: PageData;
 	let alertOpened = false;
@@ -26,16 +26,26 @@
 	let feedbackSubmissions: any[] = data.feedbackSubmissions || [];
 	let feedbackLoading = false;
 	let feedbackLoaded = false;
+	let ldmVariantSubmissions: any[] = data.ldmVariantSubmissions || [];
+	let ldmVariantLoading = false;
+	let ldmVariantLoaded = false;
+	let cancellingLdmVariantIds: number[] = [];
 
 	onMount(() => {
 		const unsubscribe = user.subscribe((currentUser) => {
 			if (
 				currentUser.loggedIn
 				&& currentUser.data?.uid == $page.params.uid
-				&& !feedbackLoaded
 			) {
-				feedbackLoaded = true;
-				void loadFeedbackSubmissions();
+				if (!feedbackLoaded) {
+					feedbackLoaded = true;
+					void loadFeedbackSubmissions();
+				}
+
+				if (!ldmVariantLoaded) {
+					ldmVariantLoaded = true;
+					void loadLdmVariantSubmissions();
+				}
 			}
 		});
 
@@ -116,6 +126,93 @@
 		// error handled by toast
 		} finally {
 			boosting = boosting.filter((x) => x !== levelid);
+		}
+	}
+
+	async function loadLdmVariantSubmissions() {
+		ldmVariantLoading = true;
+
+		try {
+			const response = await fetch(
+				`${import.meta.env.VITE_API_URL}/ldm-variant-submissions/my`,
+				{
+					headers: {
+						Authorization: `Bearer ${await $user.token()}`
+					}
+				}
+			);
+
+			if (!response.ok) {
+				throw new Error($_('submissions.ldm_load_failed'));
+			}
+
+			ldmVariantSubmissions = await response.json();
+		} catch {
+			toast.error($_('submissions.ldm_load_failed'));
+		} finally {
+			ldmVariantLoading = false;
+		}
+	}
+
+	function getLdmLevelName(submission: any, key: 'mainLevel' | 'variantLevel') {
+		const idKey = key === 'mainLevel' ? 'mainLevelId' : 'variantLevelId';
+
+		return submission[key]?.name || submission[idKey];
+	}
+
+	function isCancellingLdmVariant(id: number) {
+		return cancellingLdmVariantIds.includes(id);
+	}
+
+	async function cancelLdmVariantSubmission(submission: any) {
+		const id = Number(submission.id);
+
+		if (!Number.isInteger(id)) {
+			return;
+		}
+
+		if (!confirm($_('submissions.ldm_cancel_confirm'))) {
+			return;
+		}
+
+		cancellingLdmVariantIds = [...cancellingLdmVariantIds, id];
+
+		try {
+			await toast.promise(
+				fetch(
+					`${import.meta.env.VITE_API_URL}/ldm-variant-submissions/${id}`,
+					{
+						method: 'DELETE',
+						headers: {
+							Authorization: `Bearer ${await $user.token()}`
+						}
+					}
+				).then(async (response) => {
+					if (!response.ok) {
+						const payload = await response.json()
+							.catch(() => null);
+
+						throw new Error(payload?.message || $_('submissions.ldm_cancel_error'));
+					}
+
+					return response;
+				}),
+				{
+					loading: $_('submissions.ldm_cancel_loading'),
+					success: () => {
+						ldmVariantSubmissions = ldmVariantSubmissions.filter(
+							(item) => item.id !== id
+						);
+
+						return $_('submissions.ldm_cancel_success');
+					},
+					error: (error) => error?.message || $_('submissions.ldm_cancel_error')
+				}
+			);
+		} finally {
+			cancellingLdmVariantIds = cancellingLdmVariantIds.filter(
+				(itemId) => itemId !== id
+			);
 		}
 	}
 
@@ -243,6 +340,9 @@
             Level ({data.levelSubmissions.length})
           </Tabs.Trigger>
         {/if}
+        <Tabs.Trigger value="ldm">
+          {$_('submissions.ldm_tab')} ({ldmVariantSubmissions.length})
+        </Tabs.Trigger>
         <Tabs.Trigger value="feedback">
           {$_('submissions.feedback_tab')} ({feedbackSubmissions.length})
         </Tabs.Trigger>
@@ -427,6 +527,72 @@
         </Tabs.Content>
       {/if}
 
+      <Tabs.Content value="ldm">
+        {#if ldmVariantLoading}
+          <div class="feedback-empty">
+            <Gauge size={22} />
+            <span>{$_('submissions.ldm_loading')}</span>
+          </div>
+        {:else if ldmVariantSubmissions.length === 0}
+          <div class="feedback-empty">
+            <Gauge size={22} />
+            <span>{$_('submissions.ldm_empty')}</span>
+          </div>
+        {:else}
+          <div class="level-grid">
+            {#each ldmVariantSubmissions as submission}
+              <Card.Root>
+                <Card.Header>
+                  <div class="feedback-card-header">
+                    <div>
+                      <Card.Title>
+                        <a
+                          href={`/level/${submission.mainLevelId}`}
+                          data-sveltekit-preload-data="tap"
+                        >
+                          {getLdmLevelName(submission, 'mainLevel')}
+                        </a>
+                      </Card.Title>
+                      <Card.Description>
+                        {formatSubmissionDate(submission.created_at)}
+                      </Card.Description>
+                    </div>
+                    <Badge variant="outline">
+                      {$_('submissions.ldm_status_pending')}
+                    </Badge>
+                  </div>
+                </Card.Header>
+                <Card.Content class="feedback-card-body">
+                  <div class="ldm-pair">
+                    <span>{$_('submissions.ldm_variant')}:</span>
+                    <a
+                      href={`/level/${submission.variantLevelId}`}
+                      data-sveltekit-preload-data="tap"
+                    >
+                      {getLdmLevelName(submission, 'variantLevel')}
+                    </a>
+                  </div>
+                  {#if submission.comment}
+                    <p class="feedback-note">{submission.comment}</p>
+                  {/if}
+                </Card.Content>
+                <Card.Footer class="flex justify-end">
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    disabled={isCancellingLdmVariant(submission.id)}
+                    on:click={() => cancelLdmVariantSubmission(submission)}
+                  >
+                    <CrossCircled size={14} />
+                    {$_('general.cancel')}
+                  </Button>
+                </Card.Footer>
+              </Card.Root>
+            {/each}
+          </div>
+        {/if}
+      </Tabs.Content>
+
       <Tabs.Content value="feedback">
         {#if feedbackLoading}
           <div class="feedback-empty">
@@ -570,6 +736,22 @@
   gap: 4px;
   font-size: 13px;
   color: hsl(var(--muted-foreground));
+}
+
+.ldm-pair {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 13px;
+
+  span {
+    color: hsl(var(--muted-foreground));
+  }
+
+  a {
+    font-weight: 700;
+    text-decoration: underline;
+  }
 }
 
 .feedback-empty {

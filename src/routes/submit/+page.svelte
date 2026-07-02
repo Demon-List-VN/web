@@ -6,6 +6,7 @@
 	import {
 		ArrowLeft,
 		ClipboardCheck,
+		Gauge,
 		ListPlus,
 		MessageSquareText
 	} from 'lucide-svelte';
@@ -34,6 +35,10 @@
 
 	function chooseLevelFeedbackFlow() {
 		void goto('/submit/level-feedback');
+	}
+
+	function chooseLdmVariantFlow() {
+		void goto('/submit/ldm-variant');
 	}
 </script>
 
@@ -108,6 +113,24 @@
               </span>
               <span class="option-description">
                 {$_('submit.flow.feedback_description')}
+              </span>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            class="flow-option"
+            on:click={chooseLdmVariantFlow}
+          >
+            <span class="option-icon">
+              <Gauge size={22} />
+            </span>
+            <span class="option-copy">
+              <span class="option-title">
+                {$_('submit.flow.ldm_variant_title')}
+              </span>
+              <span class="option-description">
+                {$_('submit.flow.ldm_variant_description')}
               </span>
             </span>
           </button>
