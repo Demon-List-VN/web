@@ -45,6 +45,10 @@
 	let fileInput: HTMLInputElement;
 
 	$: canManageOfficial = tournament.viewerRole === 'admin' || tournament.viewerRole === 'manager';
+	$: isDraft = tournament.status === 'draft';
+	$: if (isDraft) {
+		visibility = 'private';
+	}
 	$: current = {
 		name,
 		description,
@@ -134,7 +138,7 @@
   <div class="grid grid-cols-1 gap-[10px] sm:grid-cols-3">
     <div class="flex flex-col gap-[6px]">
       <Label>{$_('tournament.create_form.visibility')}</Label>
-      <Select.Root {disabled} selected={{ value: visibility, label: visibilityLabel(visibility) }} onSelectedChange={(v) => v && (visibility = String(v.value))}>
+      <Select.Root disabled={disabled || isDraft} selected={{ value: visibility, label: visibilityLabel(visibility) }} onSelectedChange={(v) => v && (visibility = String(v.value))}>
         <Select.Trigger><Select.Value /></Select.Trigger>
         <Select.Content>
           <Select.Item value="public" label={visibilityLabel('public')}>{visibilityLabel('public')}</Select.Item>

@@ -16,7 +16,7 @@
 	let name = '';
 	let description = '';
 	let format: 'single_elimination' | 'contest' = 'single_elimination';
-	let visibility = 'public';
+	let visibility = 'private';
 	let maxPlayers = 8;
 	let submitting = false;
 
@@ -117,7 +117,7 @@
 
     <div class="flex flex-col gap-[6px]">
       <Label>{$_('tournament.create_form.visibility')}</Label>
-      <Select.Root selected={{ value: visibility, label: visibilityLabel(visibility) }} onSelectedChange={(v) => v && (visibility = String(v.value))}>
+      <Select.Root disabled selected={{ value: visibility, label: visibilityLabel(visibility) }} onSelectedChange={(v) => v && (visibility = String(v.value))}>
         <Select.Trigger><Select.Value /></Select.Trigger>
         <Select.Content>
           <Select.Item value="public" label={visibilityLabel('public')}>{visibilityLabel('public')}</Select.Item>
