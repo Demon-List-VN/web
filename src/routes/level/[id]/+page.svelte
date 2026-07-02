@@ -13,7 +13,9 @@
 	import { Button } from '$lib/components/ui/button';
 	import { goto } from '$app/navigation';
 	import { _ } from 'svelte-i18n';
+	import { toast } from 'svelte-sonner';
 	import {
+		Copy,
 		MessageSquare,
 		Tag,
 		Link,
@@ -420,6 +422,15 @@
 		goto(getListHref(list));
 	}
 
+	async function copyVariantId(id: number | string) {
+		try {
+			await navigator.clipboard.writeText(String(id));
+			toast.success($_('toast.clipboard'));
+		} catch {
+			toast.error($_('tournament.levels.copy_failed'));
+		}
+	}
+
 	$: hasLocalLevel = 'level' in data;
 	$: starredLists = mergeLevelLists(
 		data?.level,
@@ -708,7 +719,15 @@
                   <div class="variantDetails">
                     <span class="variantName">{variant.name}</span>
                     <span class="variantCreator">by {variant.creator}</span>
-                    <span class="variantId">ID: {variant.id}</span>
+                    <button
+                      type="button"
+                      class="variantId"
+                      on:click={() => copyVariantId(variant.id)}
+                      aria-label={`Copy level ID ${variant.id}`}
+                    >
+                      ID: {variant.id}
+                      <Copy class="h-3 w-3" />
+                    </button>
                   </div>
                 </div>
               {/each}
@@ -1310,8 +1329,18 @@ h2 {
 }
 
 .variantId {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 4px;
   color: var(--textColor2);
   font-size: 12px;
   opacity: 0.7;
+  transition: color 0.15s, opacity 0.15s;
+
+  &:hover {
+    color: var(--textColor);
+    opacity: 1;
+  }
 }
 </style>
