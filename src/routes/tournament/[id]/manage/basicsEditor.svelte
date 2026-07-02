@@ -21,18 +21,60 @@
 	const ID = 'basics';
 	const dirtyStore = getManageDirty();
 
-	let initial = {
-		name: tournament.name ?? '',
-		description: tournament.description ?? '',
-		detail: tournament.detail ?? '',
-		visibility: tournament.visibility ?? 'public',
-		minElo: (tournament.minElo ?? null) as number | null,
-		maxElo: (tournament.maxElo ?? null) as number | null,
-		eloEnforced: tournament.eloEnforced ?? false,
-		...(tournament.viewerRole === 'admin' || tournament.viewerRole === 'manager'
-			? { isOfficial: Boolean(tournament.isOfficial) }
-			: {})
+	type BasicsDraft = {
+		name: string;
+		description: string;
+		detail: string;
+		visibility: string;
+		minElo: number | null;
+		maxElo: number | null;
+		eloEnforced: boolean;
+		isOfficial?: boolean;
 	};
+
+	function normalizeElo(value: unknown): number | null {
+		if (value === null || value === undefined || value === '') {
+			return null;
+		}
+
+		const parsed = Number(value);
+
+		return Number.isFinite(parsed) ? parsed : null;
+	}
+
+	function normalizeTournament(value: any): BasicsDraft {
+		const canManageOfficial = value.viewerRole === 'admin' || value.viewerRole === 'manager';
+
+		return {
+			name: value.name ?? '',
+			description: value.description ?? '',
+			detail: value.detail ?? '',
+			visibility: value.status === 'draft' ? 'private' : value.visibility ?? 'public',
+			minElo: normalizeElo(value.minElo),
+			maxElo: normalizeElo(value.maxElo),
+			eloEnforced: Boolean(value.eloEnforced),
+			...(canManageOfficial ? { isOfficial: Boolean(value.isOfficial) } : {})
+		};
+	}
+
+	function basicsKey(value: any) {
+		return JSON.stringify(normalizeTournament(value));
+	}
+
+	function applyLoadedBasics(value: any) {
+		initial = normalizeTournament(value);
+		name = initial.name;
+		description = initial.description;
+		detail = initial.detail;
+		visibility = initial.visibility;
+		minElo = initial.minElo;
+		maxElo = initial.maxElo;
+		eloEnforced = initial.eloEnforced;
+		isOfficial = initial.isOfficial ?? Boolean(value.isOfficial);
+		lastLoadedKey = basicsKey(value);
+	}
+
+	let initial = normalizeTournament(tournament);
 
 	let name = initial.name;
 	let description = initial.description;
@@ -43,6 +85,8 @@
 	let eloEnforced = initial.eloEnforced;
 	let isOfficial = 'isOfficial' in initial ? initial.isOfficial : Boolean(tournament.isOfficial);
 	let fileInput: HTMLInputElement;
+	let dirty = false;
+	let lastLoadedKey = basicsKey(tournament);
 
 	$: canManageOfficial = tournament.viewerRole === 'admin' || tournament.viewerRole === 'manager';
 	$: isDraft = tournament.status === 'draft';
@@ -54,13 +98,20 @@
 		description,
 		detail,
 		visibility,
-		minElo,
-		maxElo,
+		minElo: normalizeElo(minElo),
+		maxElo: normalizeElo(maxElo),
 		eloEnforced,
-		...(canManageOfficial ? { isOfficial } : {})
+		...(canManageOfficial && 'isOfficial' in initial ? { isOfficial: Boolean(isOfficial) } : {})
 	};
 	$: dirty = JSON.stringify(current) !== JSON.stringify(initial);
-	$: dirtyStore?.setDirty(ID, dirty);
+	$: {
+		const nextLoadedKey = basicsKey(tournament);
+
+		if (!dirty && nextLoadedKey !== lastLoadedKey) {
+			applyLoadedBasics(tournament);
+		}
+	}
+	$: dirtyStore?.setDirty(ID, dirty && !disabled);
 
 	function reset() {
 		name = initial.name;
