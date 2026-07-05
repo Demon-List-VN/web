@@ -20,5 +20,5 @@ export function supporterPrizePool(totalRevenue: number | string | null | undefi
         return 0;
     }
 
-    return Math.max(0, Math.round(parsedRevenue * PRIZE_POOL_REVENUE_SHARE));
+    return Math.max(0, parsedRevenue * PRIZE_POOL_REVENUE_SHARE);
 }

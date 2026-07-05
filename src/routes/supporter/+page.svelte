@@ -23,12 +23,16 @@
 	$: prizePool = supporterPrizePool(totalRevenue);
 
 	function formatVnd(amount: number) {
+		const normalizedAmount = Number.isFinite(amount) ? amount : 0;
+		const hasFraction = !Number.isInteger(normalizedAmount);
+
 		return new Intl.NumberFormat('vi-VN', {
 			style: 'currency',
 			currency: 'VND',
-			maximumFractionDigits: 0
+			maximumFractionDigits: 1,
+			minimumFractionDigits: hasFraction ? 1 : 0
 		})
-			.format(amount);
+			.format(normalizedAmount);
 	}
 </script>
 

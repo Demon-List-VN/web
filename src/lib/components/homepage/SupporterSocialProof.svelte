@@ -30,13 +30,15 @@
 		: 0;
 	$: prizePool = supporterPrizePool(totalRevenue);
 
-	function formatCompactVnd(amount: number) {
+	function formatVnd(amount: number) {
+		const normalizedAmount = Number.isFinite(amount) ? amount : 0;
+		const hasFraction = !Number.isInteger(normalizedAmount);
+
 		return new Intl.NumberFormat('vi-VN', {
-			notation: 'compact',
-			compactDisplay: 'short',
-			maximumFractionDigits: 1
+			maximumFractionDigits: 1,
+			minimumFractionDigits: hasFraction ? 1 : 0
 		})
-			.format(amount);
+			.format(normalizedAmount);
 	}
 
 	async function loadProgress() {
@@ -150,10 +152,10 @@
       <div class="prizeSection">
         <div class="prizeCard">
           <span class="prizeLabel">{$_('supporter.prize_pool.title')}</span>
-          <strong>{formatCompactVnd(prizePool)}</strong>
+          <strong>{formatVnd(prizePool)} VND</strong>
           <span class="prizeNote">
             {$_('supporter.prize_pool.note', {
-              values: { revenue: formatCompactVnd(totalRevenue) }
+              values: { revenue: `${formatVnd(totalRevenue)} VND` }
             })}
           </span>
         </div>

@@ -43,6 +43,17 @@
 			.toLocaleString('vi-VN')}vnd`;
 	}
 
+	function formatPrizePool(value: number) {
+		const normalizedValue = Number.isFinite(value) ? value : 0;
+		const hasFraction = !Number.isInteger(normalizedValue);
+
+		return `${new Intl.NumberFormat('vi-VN', {
+			maximumFractionDigits: 1,
+			minimumFractionDigits: hasFraction ? 1 : 0
+		})
+			.format(normalizedValue)}vnd`;
+	}
+
 	function playDonationSound() {
 		if (typeof window === 'undefined') {
 			return;
@@ -82,9 +93,7 @@
 		const tick = (now: number) => {
 			const progress = Math.min(1, (now - startTime) / durationMs);
 			const easedProgress = 1 - Math.pow(1 - progress, 3);
-			animatedPrizePool = Math.round(
-				startValue + (targetValue - startValue) * easedProgress
-			);
+			animatedPrizePool = startValue + (targetValue - startValue) * easedProgress;
 
 			if (progress < 1) {
 				countAnimationFrame = requestAnimationFrame(tick);
@@ -228,7 +237,7 @@
       <div class="prizePool">
         <div class="prizePoolLabel">GDVN Cup 2026 Prize Pool</div>
         <div class="prizePoolAmount" aria-live="polite">
-          {formatPrice(animatedPrizePool)}
+          {formatPrizePool(animatedPrizePool)}
         </div>
         <div class="prizePoolNote">
           50% doanh thu từ 01/07
