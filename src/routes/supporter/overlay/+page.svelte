@@ -43,14 +43,6 @@
 			.toLocaleString('vi-VN')}vnd`;
 	}
 
-	function nameplateStyle(player: any) {
-		const bgColor = player?.bgColor || 'rgba(255, 255, 255, 0.08)';
-		const borderColor = player?.borderColor || 'rgba(255, 255, 255, 0.18)';
-		const color = player?.bgColor ? '#ffffff' : 'inherit';
-
-		return `background: ${bgColor}; border-color: ${borderColor}; color: ${color};`;
-	}
-
 	function playDonationSound() {
 		if (typeof window === 'undefined') {
 			return;
@@ -216,7 +208,7 @@
           <div class="rank">#{index + 1}</div>
           <div class="supporterMeta">
             {#if supporter.player}
-              <div class="nameplate" style={nameplateStyle(supporter.player)}>
+              <div class="nameplate">
                 <PlayerLink
                   player={supporter.player}
                   showAvatar
@@ -239,7 +231,7 @@
           {formatPrice(animatedPrizePool)}
         </div>
         <div class="prizePoolNote">
-          50% doanh thu từ 05/07
+          50% doanh thu từ 01/07
         </div>
       </div>
     {/if}

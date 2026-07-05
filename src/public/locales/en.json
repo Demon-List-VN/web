@@ -2605,7 +2605,7 @@
         },
         "prize_pool": {
             "title": "GDVN Cup 2026 Prize Pool",
-            "note": "50% of {revenue} total revenue since 05/07."
+            "note": "50% of {revenue} total revenue since 01/07."
         },
         "tiers": {
             "title": "Supporter tier",

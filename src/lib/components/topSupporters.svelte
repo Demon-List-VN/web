@@ -20,14 +20,7 @@
     </h2>
     <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
       {#each topBuyers.slice(0, 3) as buyer, index}
-        <Card.Root
-          class="relative overflow-hidden"
-          style={isActive(buyer.player.supporterUntil)
-          ? `background-color: ${buyer.player.bgColor}; border-color: ${buyer.player.borderColor}; ${
-              buyer.player.bgColor ? 'color: white' : ''
-          }`
-          : ''}
-        >
+        <Card.Root class="relative overflow-hidden">
           {#if isActive(buyer.player.supporterUntil) && !isBannerFailedToLoad[index]}
             <img
               on:error={() => {
