@@ -2603,6 +2603,10 @@
             "full_route": "Full Route: to Ho Chi Minh City + HCMC meetup + return to Hanoi",
             "hanoi_offline": "Optional: Hanoi meetup"
         },
+        "prize_pool": {
+            "title": "GDVN Cup 2026 Prize Pool",
+            "note": "50% of {revenue} total revenue since 05/07."
+        },
         "tiers": {
             "title": "Supporter tier",
             "open_supporter_page": "Open supporter page",

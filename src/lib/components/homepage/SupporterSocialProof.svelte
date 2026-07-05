@@ -7,7 +7,10 @@
 	import { ArrowRight, Heart } from 'lucide-svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import { supporterGoalList, type SupporterGoal } from '$lib/client/supporterGoals';
+	import {
+		supporterPrizePool,
+		supporterRevenueIntervalMs
+	} from '$lib/client/supporterCampaign';
 	import { onMount } from 'svelte';
 
 	type SupporterProgress = {
@@ -16,8 +19,6 @@
 
 	export let topSupporters: any[] | null = null;
 
-	const SUPPORTER_REVENUE_START_DATE = '2026-06-08T00:00:00+07:00';
-	const DEFAULT_INTERVAL_MS = 30 * 24 * 60 * 60 * 1000;
 	const medalColors = ['text-yellow-500', 'text-gray-400', 'text-amber-600'];
 	const isBannerFailedToLoad: boolean[] = [];
 	let serverProgress: SupporterProgress | null = null;
@@ -27,20 +28,7 @@
 	$: totalRevenue = Number.isFinite(parsedTotalRevenue)
 		? Math.max(0, parsedTotalRevenue)
 		: 0;
-	$: goals = supporterGoalList.map((goal) => ({
-		...goal,
-		percent: progressPercent(goal)
-	}));
-
-	function progressPercent(goal: SupporterGoal) {
-		return goal.amount > 0
-			? Math.min(100, Math.round((totalRevenue / goal.amount) * 10000) / 100)
-			: 0;
-	}
-
-	function toBarWidth(percent: number) {
-		return `${Math.max(0, Math.min(100, percent))}%`;
-	}
+	$: prizePool = supporterPrizePool(totalRevenue);
 
 	function formatCompactVnd(amount: number) {
 		return new Intl.NumberFormat('vi-VN', {
@@ -49,16 +37,6 @@
 			maximumFractionDigits: 1
 		})
 			.format(amount);
-	}
-
-	function supporterRevenueIntervalMs() {
-		const startMs = new Date(SUPPORTER_REVENUE_START_DATE)
-			.getTime();
-		const intervalMs = Date.now() - startMs;
-
-		return Number.isFinite(intervalMs)
-			? Math.max(1, intervalMs)
-			: DEFAULT_INTERVAL_MS;
 	}
 
 	async function loadProgress() {
@@ -159,41 +137,25 @@
       {/if}
     </div>
 
-    <!-- Server Progress -->
+    <!-- Prize Pool -->
     {#if progressLoading}
-      <div class="progressSection">
-        <div class="progressRows" aria-hidden="true">
-          {#each supporterGoalList as _}
-            <div class="progressRow">
-              <Skeleton class="h-4 w-3/4" />
-              <Skeleton class="mt-2 h-3 w-full" />
-              <Skeleton class="mt-2 h-1.5 w-full" />
-            </div>
-          {/each}
+      <div class="prizeSection" aria-hidden="true">
+        <div class="prizeCard">
+          <Skeleton class="h-3 w-24" />
+          <Skeleton class="mt-3 h-8 w-40" />
+          <Skeleton class="mt-3 h-3 w-56" />
         </div>
       </div>
     {:else if serverProgress}
-      <div class="progressSection">
-        <div class="progressRows">
-          {#each goals as goal}
-            <div class="progressRow">
-              <div class="progressLabel">
-                <span>{$_(goal.name)}</span>
-                <span class="progressPercent">{Math.round(goal.percent)}%</span>
-              </div>
-              <div class="progressMeta">
-                <span>{formatCompactVnd(totalRevenue)}</span>
-                <span>{formatCompactVnd(goal.amount)}</span>
-              </div>
-              <div class="progressBar">
-                <div
-                  class="progressFill"
-                  style={`width: ${toBarWidth(goal.percent)}`}
-                >
-                </div>
-              </div>
-            </div>
-          {/each}
+      <div class="prizeSection">
+        <div class="prizeCard">
+          <span class="prizeLabel">{$_('supporter.prize_pool.title')}</span>
+          <strong>{formatCompactVnd(prizePool)}</strong>
+          <span class="prizeNote">
+            {$_('supporter.prize_pool.note', {
+              values: { revenue: formatCompactVnd(totalRevenue) }
+            })}
+          </span>
         </div>
         <Button
           href="/supporter"
@@ -263,69 +225,43 @@
   }
 }
 
-.progressSection {
+.prizeSection {
   display: flex;
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;
 }
 
-.progressRows {
+.prizeCard {
   flex: 1;
   display: grid;
-  gap: 10px;
+  gap: 4px;
   min-width: 240px;
+  padding: 14px 16px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--card));
 }
 
-.progressRow {
-  min-width: 0;
-}
-
-.progressLabel {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 13px;
-  margin-bottom: 6px;
+.prizeLabel {
   color: hsl(var(--muted-foreground));
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
 }
 
-.progressLabel span:first-child {
-  min-width: 0;
-}
-
-.progressPercent {
-  font-weight: 600;
+.prizeCard strong {
   color: hsl(var(--foreground));
-  white-space: nowrap;
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
 }
 
-.progressMeta {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
+.prizeNote {
   font-size: 12px;
   color: hsl(var(--muted-foreground) / 0.78);
-  margin-top: -3px;
-  margin-bottom: 5px;
-}
-
-.progressMeta span:last-child {
-  white-space: nowrap;
-}
-
-.progressBar {
-  height: 6px;
-  border-radius: 3px;
-  background: hsl(var(--muted));
-  overflow: hidden;
-}
-
-.progressFill {
-  height: 100%;
-  border-radius: 3px;
-  background: linear-gradient(90deg, hsl(330 70% 55%), hsl(340 80% 60%));
-  transition: width 0.8s ease;
 }
 
 :global(.supportCta) {
@@ -339,9 +275,17 @@
   .topSupportersSection {
     grid-template-columns: 1fr;
   }
-  .progressSection {
+  .prizeSection {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .prizeCard {
+    width: 100%;
+  }
+
+  .prizeCard strong {
+    font-size: 1.75rem;
   }
 }
 </style>

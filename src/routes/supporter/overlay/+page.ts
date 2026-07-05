@@ -1,5 +1,5 @@
 import type { PageLoad } from './$types';
-import { supporterRevenueIntervalMs } from './campaign';
+import { supporterRevenueIntervalMs } from '$lib/client/supporterCampaign';
 
 export const load: PageLoad = async ({ fetch }) => {
     const response = await fetch(

@@ -10,7 +10,7 @@
 	import SupporterTierProgress from '$lib/components/SupporterTierProgress.svelte';
 	import { user } from '$lib/client';
 	import { isActive } from '$lib/client/isSupporterActive';
-	import { supporterGoalList } from '$lib/client/supporterGoals';
+	import { supporterPrizePool } from '$lib/client/supporterCampaign';
 	import * as Alert from '$lib/components/ui/alert';
 	import { AlertTriangle } from 'lucide-svelte';
 
@@ -20,16 +20,7 @@
 	$: totalRevenue = Number.isFinite(parsedTotalRevenue)
 		? Math.max(0, parsedTotalRevenue)
 		: 0;
-	$: goals = supporterGoalList.map((goal) => ({
-		...goal,
-		percent: goal.amount > 0
-			? Math.min(100, Math.round((totalRevenue / goal.amount) * 10000) / 100)
-			: 0
-	}));
-
-	function toBarWidth(percent: number) {
-		return `${Math.max(0, Math.min(100, percent))}%`;
-	}
+	$: prizePool = supporterPrizePool(totalRevenue);
 
 	function formatVnd(amount: number) {
 		return new Intl.NumberFormat('vi-VN', {
@@ -90,27 +81,14 @@
 
     <TopSupporters topBuyers={data.topBuyers} />
 
-    <div class="goalWrapper">
-      <h2 class="goalTitle">{$_('supporter.goals.title')}</h2>
-      {#each goals as goal}
-        <div class="goalRow">
-          <div class="goalHeader">
-            <span>{$_(goal.name)}</span>
-            <span>{goal.percent}%</span>
-          </div>
-          <div class="goalMeta">
-            <span>{formatVnd(totalRevenue)}</span>
-            <span>{formatVnd(goal.amount)}</span>
-          </div>
-          <div class="goalBar">
-            <div
-              class="goalBarFill bg-green-600"
-              style={`width: ${toBarWidth(goal.percent)}`}
-            >
-            </div>
-          </div>
-        </div>
-      {/each}
+    <div class="prizePoolWrapper">
+      <span class="prizePoolLabel">{$_('supporter.prize_pool.title')}</span>
+      <strong>{formatVnd(prizePool)}</strong>
+      <p>
+        {$_('supporter.prize_pool.note', {
+          values: { revenue: formatVnd(totalRevenue) }
+        })}
+      </p>
     </div>
 
     <h1 class="mb-[40px] mt-[75px] text-center text-3xl font-bold">
@@ -227,10 +205,15 @@
   mask-image: linear-gradient(rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%);
 }
 
-.goalWrapper {
+.prizePoolWrapper {
   width: 100%;
   max-width: 700px;
   margin-top: 24px;
+  padding: 24px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--card) / 0.78);
+  text-align: center;
 }
 
 .tierProgressWrapper {
@@ -239,56 +222,38 @@
   margin-top: 24px;
 }
 
-.goalTitle {
-  font-size: 1.25rem;
+.prizePoolLabel {
+  display: block;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.85rem;
   font-weight: 700;
-  margin-bottom: 16px;
-  text-align: center;
+  letter-spacing: 0;
+  text-transform: uppercase;
 }
 
-.goalRow {
-  margin-bottom: 16px;
+.prizePoolWrapper strong {
+  display: block;
+  margin-top: 8px;
+  color: hsl(var(--foreground));
+  font-size: 2.75rem;
+  font-weight: 800;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
 }
 
-.goalHeader {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  font-weight: 600;
-  margin-bottom: 4px;
-}
-
-.goalHeader span:first-child {
-  min-width: 0;
-}
-
-.goalHeader span:last-child {
-  white-space: nowrap;
-}
-
-.goalMeta {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
+.prizePoolWrapper p {
+  margin-top: 10px;
   color: rgb(156 163 175);
-  font-size: 0.875rem;
-  margin-bottom: 8px;
+  font-size: 0.95rem;
 }
 
-.goalMeta span:last-child {
-  white-space: nowrap;
-}
+@media screen and (max-width: 520px) {
+  .prizePoolWrapper {
+    padding: 20px 16px;
+  }
 
-.goalBar {
-  height: 12px;
-  width: 100%;
-  border-radius: 999px;
-  background: hsl(var(--muted));
-  overflow: hidden;
-}
-
-.goalBarFill {
-  height: 100%;
-  transition: width 0.3s ease;
+  .prizePoolWrapper strong {
+    font-size: 2rem;
+  }
 }
 </style>

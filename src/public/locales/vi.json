@@ -2623,6 +2623,10 @@
             "full_route": "Full Route: tới TP.HCM + Offline HCM + quay về Hà Nội",
             "hanoi_offline": "Optional: Offline Hà Nội"
         },
+        "prize_pool": {
+            "title": "Prize Pool GDVN Cup 2026",
+            "note": "50% của {revenue} tổng doanh thu từ 05/07."
+        },
         "tiers": {
             "title": "Hạng Supporter",
             "open_supporter_page": "Mở trang Supporter",

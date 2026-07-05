@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
-	import { _ } from 'svelte-i18n';
 	import { Trophy } from 'lucide-svelte';
 	import PlayerLink from '$lib/components/playerLink.svelte';
-	import { supporterGoalList } from '$lib/client/supporterGoals';
-	import { supporterRevenueIntervalMs } from './campaign';
+	import {
+		supporterPrizePool,
+		supporterRevenueIntervalMs
+	} from '$lib/client/supporterCampaign';
 
 	type SupporterProgress = {
 		totalRevenue?: number | string | null;
@@ -18,6 +19,10 @@
 	let visibleEvent: any = null;
 	let pollTimer: ReturnType<typeof setInterval> | null = null;
 	let hideTimer: ReturnType<typeof setTimeout> | null = null;
+	let countAnimationFrame: number | null = null;
+	let mounted = false;
+	let animatedPrizePool = supporterPrizePool(overlay?.progress?.totalRevenue);
+	let lastAnimatedPrizePool = animatedPrizePool;
 
 	$: topSupporters = overlay?.topSupporters ?? [];
 	$: progress = (overlay?.progress ?? null) as SupporterProgress | null;
@@ -25,29 +30,17 @@
 	$: totalRevenue = Number.isFinite(parsedTotalRevenue)
 		? Math.max(0, parsedTotalRevenue)
 		: 0;
-	$: goals = supporterGoalList.map((goal) => ({
-		...goal,
-		percent: goal.amount > 0
-			? Math.min(100, Math.round((totalRevenue / goal.amount) * 10000) / 100)
-			: 0
-	}));
+	$: prizePool = supporterPrizePool(totalRevenue);
+	$: if (mounted && prizePool !== lastAnimatedPrizePool) {
+		animatePrizePool(prizePool);
+	} else if (!mounted) {
+		animatedPrizePool = prizePool;
+		lastAnimatedPrizePool = prizePool;
+	}
 
 	function formatPrice(value: number) {
 		return `${Math.round(value || 0)
 			.toLocaleString('vi-VN')}vnd`;
-	}
-
-	function formatCompactPrice(value: number) {
-		return new Intl.NumberFormat('vi-VN', {
-			notation: 'compact',
-			compactDisplay: 'short',
-			maximumFractionDigits: 1
-		})
-			.format(value || 0);
-	}
-
-	function toBarWidth(percent: number) {
-		return `${Math.max(0, Math.min(100, percent))}%`;
 	}
 
 	function nameplateStyle(player: any) {
@@ -68,6 +61,50 @@
 			.catch(() => {
 			// OBS/browser audio can be blocked until the source has interacted.
 			});
+	}
+
+	function animatePrizePool(targetValue: number) {
+		lastAnimatedPrizePool = targetValue;
+
+		if (typeof window === 'undefined') {
+			animatedPrizePool = targetValue;
+
+			return;
+		}
+
+		if (countAnimationFrame) {
+			cancelAnimationFrame(countAnimationFrame);
+		}
+
+		const startValue = animatedPrizePool;
+		const startTime = performance.now();
+		const durationMs = 900;
+
+		if (startValue === targetValue) {
+			animatedPrizePool = targetValue;
+			countAnimationFrame = null;
+
+			return;
+		}
+
+		const tick = (now: number) => {
+			const progress = Math.min(1, (now - startTime) / durationMs);
+			const easedProgress = 1 - Math.pow(1 - progress, 3);
+			animatedPrizePool = Math.round(
+				startValue + (targetValue - startValue) * easedProgress
+			);
+
+			if (progress < 1) {
+				countAnimationFrame = requestAnimationFrame(tick);
+
+				return;
+			}
+
+			animatedPrizePool = targetValue;
+			countAnimationFrame = null;
+		};
+
+		countAnimationFrame = requestAnimationFrame(tick);
 	}
 
 	function showEvent(event: any) {
@@ -110,6 +147,9 @@
 	}
 
 	onMount(() => {
+		mounted = true;
+		animatedPrizePool = prizePool;
+		lastAnimatedPrizePool = prizePool;
 		pollTimer = setInterval(refreshOverlay, 5000);
 	});
 
@@ -120,6 +160,10 @@
 
 		if (hideTimer) {
 			clearTimeout(hideTimer);
+		}
+
+		if (countAnimationFrame) {
+			cancelAnimationFrame(countAnimationFrame);
 		}
 	});
 </script>
@@ -189,24 +233,14 @@
       {/each}
     </div>
     {#if progress}
-      <div class="cupProgress">
-        <div class="cupTitle">GDVN Cup 2026</div>
-        {#each goals as goal}
-          <div class="cupGoal">
-            <div class="cupGoalHeader">
-              <span>{$_(goal.name)}</span>
-              <strong>{Math.round(goal.percent)}%</strong>
-            </div>
-            <div class="cupGoalMeta">
-              <span>{formatCompactPrice(totalRevenue)}</span>
-              <span>{formatCompactPrice(goal.amount)}</span>
-            </div>
-            <div class="cupBar">
-              <div class="cupBarFill" style={`width: ${toBarWidth(goal.percent)}`}>
-              </div>
-            </div>
-          </div>
-        {/each}
+      <div class="prizePool">
+        <div class="prizePoolLabel">GDVN Cup 2026 Prize Pool</div>
+        <div class="prizePoolAmount" aria-live="polite">
+          {formatPrice(animatedPrizePool)}
+        </div>
+        <div class="prizePoolNote">
+          50% doanh thu từ 05/07
+        </div>
       </div>
     {/if}
   </aside>
@@ -341,15 +375,15 @@
   gap: 10px;
 }
 
-.cupProgress {
+.prizePool {
   display: grid;
-  gap: 10px;
+  gap: 6px;
   margin-top: 16px;
   padding-top: 14px;
   border-top: 1px solid rgba(255, 255, 255, 0.14);
 }
 
-.cupTitle {
+.prizePoolLabel {
   color: #fbbf24;
   font-size: 0.82rem;
   font-weight: 900;
@@ -357,59 +391,20 @@
   text-transform: uppercase;
 }
 
-.cupGoal {
-  min-width: 0;
+.prizePoolAmount {
+  overflow: hidden;
+  color: white;
+  font-size: 2rem;
+  font-weight: 900;
+  line-height: 1.05;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.78);
+  white-space: nowrap;
 }
 
-.cupGoalHeader,
-.cupGoalMeta {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.cupGoalHeader {
-  margin-bottom: 3px;
-  color: rgba(255, 255, 255, 0.9);
+.prizePoolNote {
+  color: rgba(255, 255, 255, 0.68);
   font-size: 0.78rem;
-  font-weight: 800;
-}
-
-.cupGoalHeader span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.cupGoalHeader strong {
-  flex: 0 0 auto;
-  color: #fbbf24;
-}
-
-.cupGoalMeta {
-  margin-bottom: 5px;
-  color: rgba(255, 255, 255, 0.62);
-  font-size: 0.72rem;
   font-weight: 700;
-}
-
-.cupGoalMeta span:last-child {
-  white-space: nowrap;
-}
-
-.cupBar {
-  height: 6px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
-}
-
-.cupBarFill {
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, #fbbf24, #fb7185);
-  transition: width 0.6s ease;
 }
 
 .supporterRow {
