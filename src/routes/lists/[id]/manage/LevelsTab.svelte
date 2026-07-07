@@ -70,6 +70,11 @@
 		videoID?: string | null;
 	};
 
+	type PendingLevelOrderDraft = {
+		top: number;
+		inputIndex: number;
+	};
+
 	type LevelFilters = {
 		nameSearch: string;
 		creatorSearch: string;
@@ -84,6 +89,7 @@
 	export let canEditLevels = false;
 	export let levelDrafts: Record<number, LevelItemPatch> = {};
 	export let levelDeletionDraftIds: number[] = [];
+	export let pendingLevelOrderDrafts: Record<number, PendingLevelOrderDraft> = {};
 	export let pendingLevelAdditions: any[] = [];
 	export let addingLevel = false;
 	export let loadingMoreLevels = false;
@@ -120,14 +126,20 @@
 	export let stageMultipleLevelDeletions: (
 		levelIds: number[]
 	) => void | Promise<void> = async () => {};
-	export let reorderLevels: (levelIds: number[]) => void | Promise<void> =
-		async () => {};
+	export let stageLevelTopDraft: (
+		levelId: number,
+		top: number,
+		inputIndex: number
+	) => void | Promise<void> = async () => {};
+	export let ensureTopEditReady: () => boolean | Promise<boolean> =
+		async () => true;
 	export let applyLevelFilters: (
 		filters: LevelFilters
 	) => boolean | Promise<boolean> = async () => true;
 
 	let levelsSectionElement: HTMLDivElement | null = null;
 	let allDisplayedItems: any[] = [];
+	let baseDisplayedItems: any[] = [];
 	let displayedItems: any[] = [];
 	let levelIdInput = '';
 	let csvInput = '';
@@ -150,8 +162,11 @@
 	let editingMinProgressValue: string | number | undefined = '';
 	let editingVideoIdItemId: number | null = null;
 	let editingVideoIdValue = '';
+	let editingTopItemId: number | null = null;
+	let editingTopValue: string | number = '';
 	let selectedLevelIds: number[] = [];
 	let lastSelectedIndex: number | null = null;
+	let optimisticReorderLevelIds: number[] | null = null;
 	let bulkRatingValue = '';
 	let bulkMinProgressValue = '';
 	let bulkVideoIdValue = '';
@@ -162,6 +177,7 @@
 	let hasActiveLevelFilters = false;
 	let hasLevelFilterInput = false;
 	let hasPendingLevelFilterChanges = false;
+	$: hasPendingTopOrderDrafts = Object.keys(pendingLevelOrderDrafts).length > 0;
 	const levelsPageSize = 50;
 	const csvExampleColumns = [
 		'levelId',
@@ -182,7 +198,8 @@
 			list,
 			pendingLevelAdditions,
 			levelDrafts,
-			levelDeletionDraftIds
+			levelDeletionDraftIds,
+			pendingLevelOrderDrafts
 		)
 		: [];
 	$: hasActiveLevelFilters = Boolean(
@@ -204,7 +221,20 @@
 		|| filterMinRating !== appliedFilterMinRating
 		|| filterMaxRating !== appliedFilterMaxRating
 		|| filterPendingOnly !== appliedFilterPendingOnly;
-	$: displayedItems = filterDisplayedItems(allDisplayedItems);
+	$: baseDisplayedItems = filterDisplayedItems(allDisplayedItems);
+	$: {
+		if (
+			optimisticReorderLevelIds
+			&& haveSameOrderedLevelIds(baseDisplayedItems, optimisticReorderLevelIds)
+		) {
+			optimisticReorderLevelIds = null;
+		}
+
+		displayedItems = applyOptimisticReorder(
+			baseDisplayedItems,
+			optimisticReorderLevelIds
+		);
+	}
 	$: canDragReorder = canEditLevels
 		&& allLevelsLoaded
 		&& list?.mode === 'top'
@@ -213,12 +243,19 @@
 		&& !savingReorder
 		&& !levelDeletionDraftIds.length
 		&& !getPendingAdditionCount(list);
+	$: canEditTopLabels = canEditLevels
+		&& list?.mode === 'top'
+		&& !savingLevelDrafts
+		&& !savingReorder
+		&& !loadingMoreLevels;
 	$: quickLevelId = getQuickLevelId();
 	$: currentLevelsPage = Math.max(loadedLevelCount, 1);
-	$: levelsPageCount = Math.max(
-		Math.ceil((list?.levelCount ?? 0) / levelsPageSize),
-		1
-	);
+	$: levelsPageCount = allLevelsLoaded
+		? 1
+		: Math.max(
+			Math.ceil((list?.levelCount ?? 0) / levelsPageSize),
+			1
+		);
 	$: csvProgressPercent = batchAddProgress?.total
 		? Math.min((batchAddProgress.completed / batchAddProgress.total) * 100, 100)
 		: 0;
@@ -337,6 +374,21 @@
 		}: ${videoId}${suffix}`;
 	}
 
+	function getDisplayedTop(item: any, index: number) {
+		if (
+			list?.mode === 'top'
+			&& (optimisticReorderLevelIds || hasPendingTopOrderDrafts)
+		) {
+			return (currentLevelsPage - 1) * levelsPageSize + index + 1;
+		}
+
+		if (Number.isInteger(item?.position) && item.position > 0) {
+			return item.position;
+		}
+
+		return (currentLevelsPage - 1) * levelsPageSize + index + 1;
+	}
+
 	function hasDraftValue(
 		patch: LevelItemPatch | undefined,
 		key: keyof LevelItemPatch
@@ -347,7 +399,7 @@
 	function filterDisplayedItems(items: any[]) {
 		return items.filter((item) => {
 			const pendingMatches = !appliedFilterPendingOnly
-				|| hasPendingDraft(item.levelId);
+				|| hasPendingDraft(item.levelId, pendingLevelOrderDrafts);
 
 			if (!pendingMatches) {
 				return false;
@@ -359,6 +411,49 @@
 
 			return pendingAdditionMatchesAppliedFilters(item);
 		});
+	}
+
+	function haveSameOrderedLevelIds(items: any[], levelIds: number[]) {
+		return items.length === levelIds.length
+			&& items.every((item, index) => item.levelId === levelIds[index]);
+	}
+
+	function applyOptimisticReorder(items: any[], levelIds: number[] | null) {
+		if (!levelIds?.length) {
+			return items;
+		}
+
+		const itemsByLevelId = new Map(items.map((item) => [item.levelId, item]));
+		const orderedItems = levelIds
+			.map((levelId) => itemsByLevelId.get(levelId))
+			.filter(Boolean);
+
+		if (!orderedItems.length) {
+			return items;
+		}
+
+		const orderedLevelIds = new Set(levelIds);
+		const remainingItems = items.filter((item) =>
+			!orderedLevelIds.has(item.levelId)
+		);
+
+		return [...orderedItems, ...remainingItems];
+	}
+
+	function buildLevelIdsWithTopMove(levelId: number, top: number) {
+		const levelIds = displayedItems.map((item) => item.levelId);
+		const currentIndex = levelIds.indexOf(levelId);
+
+		if (currentIndex === -1) {
+			return levelIds;
+		}
+
+		const [movedLevelId] = levelIds.splice(currentIndex, 1);
+		const insertIndex = Math.min(Math.max(top - 1, 0), levelIds.length);
+
+		levelIds.splice(insertIndex, 0, movedLevelId);
+
+		return levelIds;
 	}
 
 	function pendingAdditionMatchesAppliedFilters(item: any) {
@@ -497,9 +592,19 @@
 		};
 	}
 
-	function sortItemsForDisplay(items: any[], currentList: any) {
-		const itemSort = currentList?.itemSort || 'mode_default';
-		const ascending = getItemSortAscending(currentList);
+	function sortItemsForDisplay(
+		items: any[],
+		currentList: any,
+		orderDrafts: Record<number, PendingLevelOrderDraft> = pendingLevelOrderDrafts
+	) {
+		const hasTopOrderDrafts = currentList?.mode === 'top'
+			&& Object.keys(orderDrafts).length > 0;
+		const itemSort = hasTopOrderDrafts
+			? 'mode_default'
+			: currentList?.itemSort || 'mode_default';
+		const ascending = hasTopOrderDrafts
+			? true
+			: getItemSortAscending(currentList);
 
 		return [...items].sort((left, right) => {
 			if (itemSort === 'created_at') {
@@ -613,7 +718,8 @@
 		currentList: any,
 		additions: any[],
 		drafts: Record<number, LevelItemPatch>,
-		deletionDraftIds: number[]
+		deletionDraftIds: number[],
+		orderDrafts: Record<number, PendingLevelOrderDraft>
 	) {
 		const deletedLevelIds = new Set(deletionDraftIds);
 
@@ -621,13 +727,18 @@
 			getCombinedLevelItems(currentList, additions)
 				.filter((item: any) => !deletedLevelIds.has(item.levelId))
 				.map((item: any) => applyDraftToItem(item, drafts)),
-			currentList
+			currentList,
+			orderDrafts
 		);
 	}
 
-	function hasPendingDraft(levelId: number) {
+	function hasPendingDraft(
+		levelId: number,
+		orderDrafts: Record<number, PendingLevelOrderDraft> = pendingLevelOrderDrafts
+	) {
 		return Boolean(
 			levelDrafts[levelId]
+			|| orderDrafts[levelId]
 			|| getCombinedLevelItems(list)
 				.some(
 					(item: any) =>
@@ -754,6 +865,35 @@
 		editingVideoIdValue = item.videoID ?? '';
 	}
 
+	async function startTopEdit(item: any, index: number) {
+		if (!canEditTopLabels) {
+			return;
+		}
+
+		const ready = await ensureTopEditReady();
+
+		if (!ready) {
+			return;
+		}
+
+		await tick();
+		const nextIndex = displayedItems.findIndex((displayedItem) =>
+			displayedItem.levelId === item.levelId
+		);
+		const nextItem = nextIndex === -1 ? item : displayedItems[nextIndex];
+
+		editingTopItemId = nextItem.id;
+		editingTopValue = String(
+			getDisplayedTop(nextItem, nextIndex === -1 ? index : nextIndex)
+		);
+		await tick();
+		const input = document.getElementById(`level-top-input-${nextItem.id}`);
+
+		if (input instanceof HTMLInputElement) {
+			input.select();
+		}
+	}
+
 	function cancelMinProgressEdit() {
 		editingMinProgressItemId = null;
 		editingMinProgressValue = '';
@@ -762,6 +902,11 @@
 	function cancelVideoIdEdit() {
 		editingVideoIdItemId = null;
 		editingVideoIdValue = '';
+	}
+
+	function cancelTopEdit() {
+		editingTopItemId = null;
+		editingTopValue = '';
 	}
 
 	function handleMinProgressBlur(event: FocusEvent) {
@@ -787,6 +932,16 @@
 		cancelVideoIdEdit();
 	}
 
+	function handleTopBlur(event: FocusEvent, levelId: number, index: number, itemId: number) {
+		const nextTarget = event.relatedTarget;
+
+		if (nextTarget instanceof HTMLElement && nextTarget.dataset.topAction) {
+			return;
+		}
+
+		void saveTopEdit(levelId, index, itemId);
+	}
+
 	async function saveRatingEdit(levelId: number) {
 		const rating = Number.parseFloat(editingRatingValue);
 		editingRatingItemId = null;
@@ -798,6 +953,44 @@
 		}
 
 		await stageLevelDraft(levelId, { rating });
+	}
+
+	async function saveTopEdit(
+		levelId: number,
+		inputIndex: number,
+		itemId: number
+	) {
+		if (editingTopItemId !== itemId) {
+			return;
+		}
+
+		const rawValue = String(editingTopValue ?? '')
+			.trim();
+		const maxTop = Math.max(list?.levelCount ?? allDisplayedItems.length, 1);
+		cancelTopEdit();
+
+		if (!/^\d+$/.test(rawValue)) {
+			toast.error($_('custom_lists.detail.levels.top_invalid', {
+				values: { max: maxTop }
+			}));
+
+			return;
+		}
+
+		const top = Number.parseInt(rawValue, 10);
+
+		if (
+			!Number.isInteger(top) || top < 1 || top > maxTop
+		) {
+			toast.error($_('custom_lists.detail.levels.top_invalid', {
+				values: { max: maxTop }
+			}));
+
+			return;
+		}
+
+		optimisticReorderLevelIds = buildLevelIdsWithTopMove(levelId, top);
+		await stageLevelTopDraft(levelId, top, inputIndex);
 	}
 
 	async function saveMinProgressEdit(levelId: number) {
@@ -932,7 +1125,7 @@
 		dragOverIndex = null;
 	}
 
-	function onDrop(event: DragEvent, targetIndex: number) {
+	async function onDrop(event: DragEvent, targetIndex: number) {
 		event.preventDefault();
 
 		if (draggedIndex === null || draggedIndex === targetIndex) {
@@ -944,9 +1137,9 @@
 		const nextItems = [...displayedItems];
 		const [moved] = nextItems.splice(draggedIndex, 1);
 		nextItems.splice(targetIndex, 0, moved);
-		displayedItems = nextItems;
+		optimisticReorderLevelIds = nextItems.map((item) => item.levelId);
 		onDragEnd();
-		reorderLevels(nextItems.map((item) => item.levelId));
+		await stageLevelTopDraft(moved.levelId, targetIndex + 1, Date.now());
 	}
 
 	async function submitAddLevel() {
@@ -1997,7 +2190,7 @@
             class:dragOver={canDragReorder && dragOverIndex === index}
             class:dragging={canDragReorder && draggedIndex === index}
             class:selected={selectedLevelIds.includes(item.levelId)}
-            data-pending-change={hasPendingDraft(item.levelId) ? 'true' : undefined}
+            data-pending-change={hasPendingDraft(item.levelId, pendingLevelOrderDrafts) ? 'true' : undefined}
             role="listitem"
             draggable={canDragReorder}
             on:dragstart={(event) => {
@@ -2043,7 +2236,66 @@
                 </div>
               {/if}
 
-              <div class="rankBadge">#{index + 1}</div>
+              {#if canEditTopLabels && editingTopItemId === item.id}
+                <div class="topEditWrap">
+                  <input
+                    id={`level-top-input-${item.id}`}
+                    class="inlineInput topInput"
+                    type="number"
+                    min="1"
+                    max={Math.max(list?.levelCount ?? allDisplayedItems.length, 1)}
+                    step="1"
+                    aria-label={$_('custom_lists.detail.levels.top_edit_hint')}
+                    bind:value={editingTopValue}
+                    on:blur={(event) => handleTopBlur(event, item.levelId, index, item.id)}
+                    on:keydown={(event) => {
+                        if (event.key === 'Enter') {
+                            event.preventDefault();
+                            saveTopEdit(item.levelId, index, item.id);
+                        }
+
+                        if (event.key === 'Escape') {
+                            event.preventDefault();
+                            cancelTopEdit();
+                        }
+                    }}
+                  />
+                  <div class="inlineEditActions compactInlineEditActions">
+                    <button
+                      type="button"
+                      class="inlineEditBtn inlineEditBtnPrimary compactInlineEditBtn"
+                      data-top-action="save"
+                      on:mousedown|preventDefault
+                      on:click={() => saveTopEdit(item.levelId, index, item.id)}
+                      disabled={savingLevelDrafts}
+                    >
+                      <Save class="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      class="inlineEditBtn inlineEditBtnSecondary compactInlineEditBtn"
+                      data-top-action="cancel"
+                      on:mousedown|preventDefault
+                      on:click={cancelTopEdit}
+                      disabled={savingLevelDrafts}
+                    >
+                      {$_('custom_lists.detail.levels.cancel_button')}
+                    </button>
+                  </div>
+                </div>
+              {:else if canEditTopLabels}
+                <button
+                  class="rankBadge rankBadgeButton"
+                  type="button"
+                  on:click={() => startTopEdit(item, index)}
+                  title={$_('custom_lists.detail.levels.top_edit_hint')}
+                  aria-label={$_('custom_lists.detail.levels.top_edit_hint')}
+                >
+                  #{getDisplayedTop(item, index)}
+                </button>
+              {:else}
+                <div class="rankBadge">#{getDisplayedTop(item, index)}</div>
+              {/if}
 
               <div class="levelBody">
                 {#if item.level}
@@ -2211,7 +2463,7 @@
                   </button>
                 {/if}
 
-                {#if hasPendingDraft(item.levelId)}
+                {#if hasPendingDraft(item.levelId, pendingLevelOrderDrafts)}
                   <Badge variant="secondary">
                     {$_('custom_lists.detail.levels.draft_badge')}
                   </Badge>
@@ -2882,6 +3134,23 @@ label {
   flex-shrink: 0;
 }
 
+.rankBadgeButton {
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  padding: 4px 6px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.rankBadgeButton:hover,
+.rankBadgeButton:focus-visible {
+  background: hsl(var(--primary) / 0.12);
+  border-color: hsl(var(--primary));
+  color: hsl(var(--foreground));
+  outline: none;
+}
+
 .levelBody {
   display: flex;
   flex-direction: column;
@@ -2955,6 +3224,18 @@ label {
   width: 60px;
 }
 
+.topInput {
+  width: 58px;
+  flex-shrink: 0;
+}
+
+.topEditWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
 .minProgressInput {
   width: 120px;
 }
@@ -2970,6 +3251,10 @@ label {
   gap: 8px;
 }
 
+.compactInlineEditActions {
+  gap: 4px;
+}
+
 .inlineEditBtn {
   display: inline-flex;
   align-items: center;
@@ -2983,6 +3268,11 @@ label {
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.compactInlineEditBtn {
+  min-height: 28px;
+  padding: 0 8px;
 }
 
 .inlineEditBtn:disabled {

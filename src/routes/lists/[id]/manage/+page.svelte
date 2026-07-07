@@ -24,7 +24,7 @@
 		normalizeCustomListRankBadges,
 		type CustomListRankBadge
 	} from '$lib/utils/customListRank';
-	import { goto } from '$app/navigation';
+	import { beforeNavigate, goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { user } from '$lib/client';
 	import { toast } from 'svelte-sonner';
@@ -36,7 +36,6 @@
 		Lock,
 		Layers,
 		Clock,
-		Save,
 		RefreshCw,
 		AlertTriangle,
 		Settings,
@@ -538,12 +537,24 @@
 	function buildListRequestUrl(
 		start: number = 0,
 		end: number = LEVELS_PAGE_SIZE - 1,
-		filters: LevelsFilterState = levelsFilters
+		filters: LevelsFilterState = levelsFilters,
+		options: {
+			itemSort?: 'mode_default' | 'created_at';
+			ascending?: boolean;
+		} = {}
 	) {
 		const params = new URLSearchParams({
 			start: String(start),
 			end: String(end)
 		});
+
+		if (options.itemSort) {
+			params.set('itemSort', options.itemSort);
+		}
+
+		if (typeof options.ascending === 'boolean') {
+			params.set('ascending', String(options.ascending));
+		}
 
 		if (filters.nameSearch) {
 			params.set('nameSearch', filters.nameSearch);
@@ -587,8 +598,11 @@
 		};
 	}
 
-	function hasSingleLevelsPage(currentList: CustomList | null = list) {
-		return !hasActiveApiLevelFilters() && getLevelsPageCount(currentList) === 1;
+	function hasAllManageLevelsLoaded(currentList: CustomList | null = list) {
+		const levelCount = currentList?.levelCount ?? 0;
+
+		return !hasActiveApiLevelFilters()
+			&& (currentList?.items?.length ?? 0) >= levelCount;
 	}
 
 	function applyFetchedLevelsPage(
@@ -640,10 +654,14 @@
 		start: number,
 		end: number,
 		headers?: HeadersInit,
-		filters: LevelsFilterState = levelsFilters
+		filters: LevelsFilterState = levelsFilters,
+		options: {
+			itemSort?: 'mode_default' | 'created_at';
+			ascending?: boolean;
+		} = {}
 	) {
 		const res = await fetch(
-			buildListRequestUrl(start, end, filters),
+			buildListRequestUrl(start, end, filters, options),
 			headers ? { headers } : undefined
 		);
 		const payload = await res.json()
@@ -798,6 +816,76 @@
 				listLevelsError = error instanceof Error
 					? error.message
 					: 'Failed to load list';
+			}
+
+			return false;
+		} finally {
+			if (fetchKey === listLevelsFetchKey) {
+				listLevelsLoading = false;
+			}
+		}
+	}
+
+	async function ensureAllLevelsLoadedForTopEdit() {
+		if (!list || !canEditLevels) {
+			return false;
+		}
+
+		if (hasAllManageLevelsLoaded(list)) {
+			return true;
+		}
+
+		const totalCount = list.levelCount ?? 0;
+
+		if (!totalCount) {
+			return false;
+		}
+
+		const fetchKey = `${$page.params.id}:${
+			$user.loggedIn ? $user.data?.uid || 'authed' : 'anon'
+		}:top-edit-full`;
+		const headers = $user.loggedIn
+			? {
+				Authorization: `Bearer ${await $user.token()}`
+			}
+			: undefined;
+
+		listLevelsFetchKey = fetchKey;
+		listLevelsLoading = true;
+		listLevelsError = '';
+
+		try {
+			const payload = await fetchListDetail(0, totalCount - 1, headers, {
+				nameSearch: '',
+				creatorSearch: '',
+				ratingMin: null,
+				ratingMax: null,
+				pendingOnly: false
+			}, {
+				itemSort: 'mode_default',
+				ascending: true
+			});
+
+			if (fetchKey !== listLevelsFetchKey) {
+				return false;
+			}
+
+			levelsFilters = {
+				nameSearch: '',
+				creatorSearch: '',
+				ratingMin: null,
+				ratingMax: null,
+				pendingOnly: false
+			};
+			applyFetchedLevelsPage(payload, 1, { syncForm: false });
+
+			return true;
+		} catch (error) {
+			if (fetchKey === listLevelsFetchKey) {
+				listLevelsError = error instanceof Error
+					? error.message
+					: 'Failed to load list';
+				toast.error(listLevelsError);
 			}
 
 			return false;
@@ -1100,29 +1188,76 @@
 	) {
 		if (
 			!currentList || currentList.mode !== 'top'
-			|| currentList.itemSort === 'created_at'
-			|| currentList.itemSortAscending === false
 		) {
 			return sortLevelItemsForDisplay(items, currentList);
 		}
 
-		const orderedItems = sortLevelItemsForDisplay(items, currentList);
+		const topOverrides = getPendingLevelOrderEntries(orderDrafts);
+
+		if (!topOverrides.length) {
+			return sortLevelItemsForDisplay(items, currentList);
+		}
+
+		const orderedItems = sortLevelItemsByTopPosition(items);
 		const itemsByLevelId = new Map(
 			orderedItems.map((item) => [item.levelId, item])
 		);
-		const topOverrides = getPendingLevelOrderEntries(orderDrafts)
+		const availableTopOverrides = topOverrides
 			.filter((
 				entry
 			) => itemsByLevelId.has(entry.levelId));
 		const baseLevelIds = orderedItems.map((item) => item.levelId);
-		const reorderedLevelIds = topOverrides.length
-			? buildReorderedLevelIds(baseLevelIds, topOverrides)
+		const reorderedLevelIds = availableTopOverrides.length
+			? buildReorderedLevelIds(baseLevelIds, availableTopOverrides)
 			: baseLevelIds;
 
 		return reorderedLevelIds.map((levelId, index) => ({
 			...itemsByLevelId.get(levelId)!,
 			position: index + 1
 		}));
+	}
+
+	function sortLevelItemsByTopPosition(items: CustomListItem[]) {
+		return [...items].sort((left, right) => {
+			const leftPosition = left.position;
+			const rightPosition = right.position;
+
+			if (leftPosition == null && rightPosition == null) {
+				const createdAtDifference = new Date(left.created_at)
+					.getTime()
+					- new Date(right.created_at)
+						.getTime();
+
+				if (createdAtDifference !== 0) {
+					return createdAtDifference;
+				}
+
+				return left.id - right.id;
+			}
+
+			if (leftPosition == null) {
+				return 1;
+			}
+
+			if (rightPosition == null) {
+				return -1;
+			}
+
+			if (leftPosition !== rightPosition) {
+				return leftPosition - rightPosition;
+			}
+
+			const createdAtDifference = new Date(left.created_at)
+				.getTime()
+				- new Date(right.created_at)
+					.getTime();
+
+			if (createdAtDifference !== 0) {
+				return createdAtDifference;
+			}
+
+			return left.id - right.id;
+		});
 	}
 
 	function sortLevelItemsForDisplay(
@@ -1231,6 +1366,39 @@
 		);
 	}
 
+	function getTopOrderedLevelItems(
+		currentList: CustomList | null = list,
+		drafts: Record<number, LevelItemPatch> = levelDrafts,
+		deletionDraftIds: number[] = levelDeletionDraftIds,
+		orderDrafts: Record<number, PendingLevelOrderDraft> =
+			pendingLevelOrderDrafts
+	) {
+		if (!currentList) {
+			return [];
+		}
+
+		const deletionDraftSet = new Set(deletionDraftIds);
+		const orderedItems = sortLevelItemsByTopPosition(
+			getCombinedLevelItems(currentList)
+				.filter((item) => !deletionDraftSet.has(item.levelId))
+				.map((item) => applyDraftToLevelItem(item, drafts))
+		);
+		const itemsByLevelId = new Map(
+			orderedItems.map((item) => [item.levelId, item])
+		);
+		const topOverrides = getPendingLevelOrderEntries(orderDrafts)
+			.filter((entry) => itemsByLevelId.has(entry.levelId));
+		const baseLevelIds = orderedItems.map((item) => item.levelId);
+		const reorderedLevelIds = topOverrides.length
+			? buildReorderedLevelIds(baseLevelIds, topOverrides)
+			: baseLevelIds;
+
+		return reorderedLevelIds.map((levelId, index) => ({
+			...itemsByLevelId.get(levelId)!,
+			position: index + 1
+		}));
+	}
+
 	function normalizeMutationListPayload(payload: CustomList) {
 		return {
 			...payload,
@@ -1277,7 +1445,6 @@
 	) {
 		if (
 			!list || list.mode !== 'top'
-			|| list.itemSortAscending === false
 			|| !Number.isInteger(top) || top < 1
 		) {
 			return;
@@ -1285,7 +1452,7 @@
 
 		const { [levelId]: _removedDraft, ...remainingDrafts } =
 			pendingLevelOrderDrafts;
-		const currentPosition = getDisplayedLevelItems(
+		const currentPosition = getTopOrderedLevelItems(
 			list,
 			levelDrafts,
 			levelDeletionDraftIds,
@@ -1410,6 +1577,15 @@
 		return () => {
 			window.removeEventListener('beforeunload', handleBeforeUnload);
 		};
+	});
+
+	beforeNavigate((navigation) => {
+		if (
+			hasUnsavedManageChanges
+			&& !confirm($_('custom_lists.manage.unsaved_manage_changes_close_warning'))
+		) {
+			navigation.cancel();
+		}
 	});
 
 	let authFetchKey = '';
@@ -2455,14 +2631,6 @@
 		}
 	}
 
-	function viewPendingLevelChanges() {
-		if (!pendingManageAuditEntries.length) {
-			return;
-		}
-
-		showPendingLevelChangesDialog = true;
-	}
-
 	async function deleteList(confirmationName: string) {
 		if (!list || !canDelete) {
 			return;
@@ -3147,40 +3315,6 @@
 				status: res.status,
 				error: payload?.error
 					|| $_('custom_lists.toast.failed_remove_level')
-			};
-		}
-
-		return {
-			ok: true as const,
-			payload: payload as CustomList
-		};
-	}
-
-	async function requestReorderLevels(
-		listId: number,
-		levelIds: number[],
-		signal?: AbortSignal
-	) {
-		const res = await fetch(
-			`${import.meta.env.VITE_API_URL}/lists/${listId}/reorder`,
-			{
-				method: 'PATCH',
-				signal,
-				headers: {
-					Authorization: `Bearer ${await $user.token()}`,
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({ levelIds })
-			}
-		);
-		const payload = await res.json()
-			.catch(() => null);
-
-		if (!res.ok) {
-			return {
-				ok: false as const,
-				status: res.status,
-				error: payload?.error || $_('custom_lists.toast.failed_reorder')
 			};
 		}
 
@@ -3959,7 +4093,9 @@
 		currentList: CustomList | null,
 		pendingAdditions: PendingLevelAddition[],
 		drafts: Record<number, LevelItemPatch>,
-		deletionDraftIds: number[]
+		deletionDraftIds: number[],
+		orderDrafts: Record<number, PendingLevelOrderDraft> =
+			pendingLevelOrderDrafts
 	): PendingLevelAuditEntry[] {
 		if (!currentList) {
 			return [];
@@ -3970,7 +4106,8 @@
 		const displayedItems = getDisplayedLevelItems(
 			currentList,
 			drafts,
-			deletionDraftIds
+			deletionDraftIds,
+			orderDrafts
 		);
 		const displayedPositionByLevelId = new Map(
 			displayedItems.map((item, index) => [item.levelId, index + 1])
@@ -4045,13 +4182,16 @@
 			}
 
 			const patch = drafts[item.levelId];
-			const orderDraft = pendingLevelOrderDrafts[item.levelId];
+			const orderDraft = orderDrafts[item.levelId];
 
 			if (!patch && !orderDraft) {
 				continue;
 			}
 
 			const previousState = getLevelAuditState(currentList, item);
+			const nextPosition = orderDraft
+				? displayedPositionByLevelId.get(item.levelId) ?? orderDraft.top
+				: previousState.position;
 			const nextState: PendingLevelAuditState = {
 				...previousState,
 				...(patch?.rating !== undefined ? { rating: patch.rating } : {}),
@@ -4064,13 +4204,13 @@
 				...(Object.prototype.hasOwnProperty.call(patch ?? {}, 'createdAt')
 					? { createdAt: patch?.createdAt ?? null }
 					: {}),
-				...(orderDraft ? { position: orderDraft.top } : {})
+				...(orderDraft ? { position: nextPosition } : {})
 			};
 			const fields = [
 				...LEVEL_AUDIT_MUTABLE_FIELDS.filter((field) =>
 					Object.prototype.hasOwnProperty.call(patch ?? {}, field)
 				),
-				...(orderDraft && previousState.position !== orderDraft.top
+				...(orderDraft && previousState.position !== nextPosition
 					? ['position' as const]
 					: [])
 			];
@@ -4652,7 +4792,7 @@
 
 			if (reorderEntries.length && savingTopMode) {
 				(batchPayload as Record<string, unknown>).reorderLevelIds =
-					getDisplayedLevelItems(
+					getTopOrderedLevelItems(
 						list,
 						currentDrafts,
 						currentDeletionDraftIds,
@@ -4772,46 +4912,6 @@
 			);
 		} finally {
 			savingBanState = false;
-		}
-	}
-
-	async function reorderLevels(levelIds: number[]) {
-		if (!list || !canEditLevels) {
-			return;
-		}
-
-		savingReorder = true;
-
-		try {
-			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/lists/${list.id}/reorder`,
-				{
-					method: 'PATCH',
-					headers: {
-						Authorization: `Bearer ${await $user.token()}`,
-						'Content-Type': 'application/json'
-					},
-					body: JSON.stringify({ levelIds })
-				}
-			);
-			const payload = await res.json();
-
-			if (!res.ok) {
-				throw new Error(
-					payload.error || $_('custom_lists.toast.failed_reorder')
-				);
-			}
-
-			applyPagedListPayload(payload, { syncForm: false });
-			toast.success($_('custom_lists.toast.reordered'));
-		} catch (error) {
-			toast.error(
-				error instanceof Error
-					? error.message
-					: $_('custom_lists.toast.failed_reorder')
-			);
-		} finally {
-			savingReorder = false;
 		}
 	}
 
@@ -4943,7 +5043,8 @@
 		list,
 		pendingLevelAdditions,
 		levelDrafts,
-		levelDeletionDraftIds
+		levelDeletionDraftIds,
+		pendingLevelOrderDrafts
 	);
 	$: pendingSettingsAuditEntry = buildPendingSettingsAuditEntry(list, editForm);
 	$: pendingManageAuditEntries = buildPendingManageAuditEntries(
@@ -5452,10 +5553,11 @@
         <LevelsTab
           list={levelsTabList}
           loadedLevelCount={levelsPage}
-          allLevelsLoaded={hasSingleLevelsPage(list)}
+          allLevelsLoaded={hasAllManageLevelsLoaded(list)}
           {canEditLevels}
           {levelDrafts}
           {levelDeletionDraftIds}
+          {pendingLevelOrderDrafts}
           {pendingLevelAdditions}
           {addingLevel}
           loadingMoreLevels={listLevelsLoading}
@@ -5473,7 +5575,8 @@
           {stageMultipleLevelDrafts}
           {stageLevelDeletion}
           {stageMultipleLevelDeletions}
-          {reorderLevels}
+          stageLevelTopDraft={stageLevelOrderDraft}
+          ensureTopEditReady={ensureAllLevelsLoadedForTopEdit}
           applyLevelFilters={applyLevelsFilterRequest}
         />
       </Tabs.Content>
@@ -5698,111 +5801,28 @@
     </Dialog.Root>
 
     {#if hasUnsavedManageChanges}
-      <div class="unsavedBar" role="status" aria-live="polite">
-        <div class="unsavedBarInner">
-          <div class="unsavedBarInfo">
-            <div class="unsavedBarDot" aria-hidden="true"></div>
-            <div class="unsavedBarText">
-              <h2 class="unsavedBarTitle">
-                {$_('custom_lists.manage.unsaved_manage_changes_title')}
-              </h2>
-              <div class="unsavedBarBadges">
-                {#if pendingSettingsAuditFieldCount}
-                  <Badge variant="secondary">{
-                    $_('custom_lists.manage.audit.list_updated')
-                  }</Badge>
-                {/if}
-                {#if pendingLevelAuditAddedCount}
-                  <Badge variant="secondary">
-                    {
-                      $_('custom_lists.manage.unsaved_level_edits_dialog_added_count', {
-                          values: { count: pendingLevelAuditAddedCount }
-                      })
-                    }
-                  </Badge>
-                {/if}
-                {#if pendingLevelAuditUpdatedCount}
-                  <Badge variant="secondary">
-                    {
-                      $_('custom_lists.manage.unsaved_level_edits_dialog_updated_count', {
-                          values: { count: pendingLevelAuditUpdatedCount }
-                      })
-                    }
-                  </Badge>
-                {/if}
-                {#if pendingLevelAuditRemovedCount}
-                  <Badge variant="destructive">
-                    {
-                      $_('custom_lists.manage.unsaved_level_edits_dialog_removed_count', {
-                          values: { count: pendingLevelAuditRemovedCount }
-                      })
-                    }
-                  </Badge>
-                {/if}
-              </div>
-            </div>
-          </div>
-          <div class="unsavedBarActions">
-            {#if canEditLevels && pendingLevelAuditEntries.length}
-              <label class="unsavedBarCheck">
-                <input
-                  type="checkbox"
-                  bind:checked={addSavedChangesToChangelog}
-                />
-                <span>{
-                  $_('custom_lists.manage.changelog.add_after_save_short')
-                }</span>
-              </label>
-              {#if addSavedChangesToChangelog}
-                <div
-                  class="changelogModePicker compact"
-                  aria-label="Changelog mode"
-                >
-                  <button
-                    type="button"
-                    class:selected={savedChangesChangelogMode === 'top'}
-                    on:click={() => (savedChangesChangelogMode = 'top')}
-                  >
-                    Top
-                  </button>
-                  <button
-                    type="button"
-                    class:selected={savedChangesChangelogMode === 'rating'}
-                    on:click={() => (savedChangesChangelogMode = 'rating')}
-                  >
-                    Rating
-                  </button>
-                </div>
-              {/if}
-            {/if}
-            {#if pendingManageAuditEntries.length}
-              <Button
-                variant="ghost"
-                size="sm"
-                on:click={viewPendingLevelChanges}
-                disabled={savingLevelDrafts || !pendingManageAuditEntries.length}
-              >
-                {$_('custom_lists.manage.unsaved_level_edits_view_changes')}
-              </Button>
-            {/if}
+      <div class="fixed inset-x-0 bottom-0 z-50 border-t border-[hsl(var(--border))] bg-background/95 backdrop-blur">
+        <div class="mx-auto flex max-w-[1100px] items-center justify-between gap-[12px] px-[16px] py-[12px]">
+          <span class="flex items-center gap-[8px] text-sm font-medium">
+            <span class="h-[8px] w-[8px] rounded-full bg-amber-500"></span>
+            {$_('tournament.manage.unsaved')}
+          </span>
+          <div class="flex gap-[8px]">
             <Button
-              variant="outline"
-              size="sm"
+              variant="ghost"
               on:click={discardStagedManageChanges}
               disabled={savingLevelDrafts}
             >
-              {$_('custom_lists.detail.levels.cancel_button')}
+              {$_('tournament.manage.discard')}
             </Button>
             <Button
-              size="sm"
               on:click={saveStagedManageChanges}
               disabled={savingLevelDrafts}
             >
-              <Save class="mr-2 h-4 w-4" />
               {
                 savingLevelDrafts
-                ? `${$_('general.loading')}...`
-                : $_('custom_lists.detail.edit.save')
+                ? $_('tournament.manage.saving')
+                : $_('tournament.manage.save_all')
               }
             </Button>
           </div>
@@ -6181,98 +6201,6 @@
   margin: 0;
 }
 
-/* Unsaved changes floating bar */
-.unsavedBar {
-  position: fixed;
-  left: 50%;
-  bottom: 20px;
-  transform: translateX(-50%);
-  z-index: 40;
-  width: min(860px, calc(100vw - 24px));
-  padding: 0;
-  animation: unsavedBarSlideUp 220ms ease-out;
-}
-
-@keyframes unsavedBarSlideUp {
-  from {
-    transform: translate(-50%, 20px);
-    opacity: 0;
-  }
-  to {
-    transform: translate(-50%, 0);
-    opacity: 1;
-  }
-}
-
-.unsavedBarInner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 12px 16px;
-  background: hsl(var(--card));
-  border: 1px solid hsl(var(--border));
-  border-radius: 14px;
-  box-shadow:
-    0 20px 40px hsl(var(--foreground) / 0.16),
-    0 0 0 1px hsl(var(--primary) / 0.15);
-}
-
-.unsavedBarInfo {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-  flex: 1;
-}
-
-.unsavedBarDot {
-  flex-shrink: 0;
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  background: hsl(var(--primary));
-  box-shadow: 0 0 0 4px hsl(var(--primary) / 0.2);
-  animation: unsavedBarPulse 2s ease-in-out infinite;
-}
-
-@keyframes unsavedBarPulse {
-  0%,
-  100% {
-    box-shadow: 0 0 0 4px hsl(var(--primary) / 0.2);
-  }
-  50% {
-    box-shadow: 0 0 0 7px hsl(var(--primary) / 0.08);
-  }
-}
-
-.unsavedBarText {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.unsavedBarTitle {
-  margin: 0;
-  font-size: 0.92rem;
-  font-weight: 600;
-}
-
-.unsavedBarBadges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.unsavedBarActions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.unsavedBarCheck,
 .changelogSaveCheck {
   display: inline-flex;
   align-items: center;
@@ -6281,7 +6209,6 @@
   font-size: 0.84rem;
 }
 
-.unsavedBarCheck input,
 .changelogSaveCheck input {
   width: 16px;
   height: 16px;
@@ -6305,11 +6232,6 @@
   font-weight: 600;
   min-height: 36px;
   padding: 7px 10px;
-}
-
-.changelogModePicker.compact button {
-  min-height: 32px;
-  padding: 5px 9px;
 }
 
 .changelogModePicker button.selected {
@@ -6539,21 +6461,6 @@
     align-items: flex-start;
   }
 
-  .unsavedBar {
-    bottom: 12px;
-    width: calc(100vw - 16px);
-  }
-
-  .unsavedBarInner {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
-
-  .unsavedBarActions {
-    justify-content: flex-end;
-    flex-wrap: wrap;
-  }
 }
 
 @media (max-width: 480px) {

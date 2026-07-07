@@ -3551,6 +3551,8 @@
                 "draft_badge": "Bản nháp",
                 "remove": "Xoá",
                 "drag_hint": "Kéo để sắp xếp lại",
+                "top_edit_hint": "Nhấn để chỉnh top level",
+                "top_invalid": "Nhập top từ 1 đến {max}.",
                 "rating_edit_hint": "Nhấn để chỉnh điểm",
                 "min_progress_edit_hint": "Nhấn để đặt mốc tối thiểu tuỳ chỉnh. Để trống để dùng giá trị mặc định của level.",
                 "video_id_edit_hint": "Nhấn để đặt Video ID tuỳ chỉnh. Để trống để dùng giá trị mặc định của level.",

@@ -3552,6 +3552,8 @@
                 "draft_badge": "Draft",
                 "remove": "Remove",
                 "drag_hint": "Drag to reorder",
+                "top_edit_hint": "Click to set level top",
+                "top_invalid": "Enter a top from 1 to {max}.",
                 "rating_edit_hint": "Click to set rating",
                 "min_progress_edit_hint": "Click to set a custom minimum progress. Leave blank to use the level default.",
                 "video_id_edit_hint": "Click to set a custom video ID. Leave blank to use the level default.",
