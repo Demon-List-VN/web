@@ -137,7 +137,7 @@
 
     <Tabs.Content value="settings" class="mt-[20px]">
       <div class="mx-auto flex w-full max-w-[800px] flex-col gap-[20px]">
-        <BasicsEditor {tournament} disabled={gated} />
+        <BasicsEditor {tournament} disabled={gated} on:published={refreshManagedTournament} />
         {#if isSingleElim}
           <PvpFormatEditor {tournament} disabled={gated} />
         {:else}

@@ -3990,6 +3990,8 @@
             "schedule_saved": "Đã lưu lịch trình",
             "save_schedule": "Lưu lịch trình",
             "basics": "Thông tin cơ bản",
+            "publish": "Xuất bản",
+            "published": "Đã xuất bản giải đấu",
             "detail": "Chi tiết (Markdown)",
             "detail_placeholder": "Viết luật và chi tiết giải đấu bằng Markdown...",
             "min_elo": "Elo tối thiểu",

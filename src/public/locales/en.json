@@ -3991,6 +3991,8 @@
             "schedule_saved": "Schedule saved",
             "save_schedule": "Save schedule",
             "basics": "Basic info",
+            "publish": "Publish",
+            "published": "Tournament published",
             "detail": "Detail (Markdown)",
             "detail_placeholder": "Write the tournament rules and details in Markdown...",
             "min_elo": "Minimum elo",

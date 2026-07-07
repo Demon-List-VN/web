@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { _ } from 'svelte-i18n';
-	import { onMount, onDestroy } from 'svelte';
+	import { createEventDispatcher, onMount, onDestroy } from 'svelte';
 	import { invalidateAll } from '$app/navigation';
 	import { toast } from 'svelte-sonner';
 	import { Upload } from 'lucide-svelte';
@@ -20,6 +20,7 @@
 
 	const ID = 'basics';
 	const dirtyStore = getManageDirty();
+	const dispatch = createEventDispatcher<{ published: void; }>();
 
 	type BasicsDraft = {
 		name: string;
@@ -87,8 +88,10 @@
 	let fileInput: HTMLInputElement;
 	let dirty = false;
 	let lastLoadedKey = basicsKey(tournament);
+	let publishLoading = false;
 
 	$: canManageOfficial = tournament.viewerRole === 'admin' || tournament.viewerRole === 'manager';
+	$: canPublishDraft = ['admin', 'manager', 'host'].includes(tournament.viewerRole);
 	$: isDraft = tournament.status === 'draft';
 	$: if (isDraft) {
 		visibility = 'private';
@@ -162,6 +165,29 @@
 		}
 	}
 
+	async function publishDraft() {
+		if (!isDraft || !canPublishDraft || disabled || publishLoading) {
+			return;
+		}
+
+		publishLoading = true;
+
+		try {
+			if (dirty) {
+				await save();
+			}
+
+			await tournamentFetch(`/${tournament.id}/registration/open`, { method: 'POST' });
+			toast.success($_('tournament.manage.published'));
+			await invalidateAll();
+			dispatch('published');
+		} catch (error: any) {
+			toast.error(error.message);
+		} finally {
+			publishLoading = false;
+		}
+	}
+
 	let unregister: (() => void) | undefined;
 
 	onMount(() => {
@@ -173,7 +199,14 @@
 </script>
 
 <section class="flex flex-col gap-[12px] rounded-[10px] border border-[hsl(var(--border))] bg-card/40 p-[16px]">
-  <h2 class="text-lg font-bold">{$_('tournament.manage.basics')}</h2>
+  <div class="flex flex-wrap items-center justify-between gap-[10px]">
+    <h2 class="text-lg font-bold">{$_('tournament.manage.basics')}</h2>
+    {#if isDraft && canPublishDraft}
+      <Button size="sm" disabled={disabled || publishLoading} on:click={publishDraft}>
+        {publishLoading ? $_('tournament.manage.saving') : $_('tournament.manage.publish')}
+      </Button>
+    {/if}
+  </div>
   <div class="flex flex-col gap-[6px]">
     <Label>{$_('tournament.create_form.name')}</Label>
     <Input bind:value={name} maxlength={96} />
