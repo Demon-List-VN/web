@@ -20,8 +20,10 @@
 	export let data: any;
 
 	$: tournament = data.tournament;
+	$: tournamentId = tournament?.id ?? data.id;
 	$: isHost = Boolean(
 		$user?.loggedIn
+		&& tournament
 		&& (
 			tournament.hostUid === $user.data?.uid
 			|| $user.data?.isManager
@@ -29,12 +31,19 @@
 		)
 	);
 	$: isManager = Boolean($user?.data?.isManager || $user?.data?.isAdmin);
-	$: participant = tournament.viewerParticipant;
-	$: preStart = ['draft', 'registration_open', 'registration_closed', 'ready'].includes(
-		tournament.status
+	$: participant = tournament?.viewerParticipant ?? null;
+	$: preStart = Boolean(
+		tournament
+		&& ['draft', 'registration_open', 'registration_closed', 'ready'].includes(
+			tournament.status
+		)
 	);
-	$: contestStarted = ['ongoing', 'finished'].includes(tournament.status);
+	$: contestStarted = Boolean(tournament && ['ongoing', 'finished'].includes(tournament.status));
 	$: lateRegistrationOpen = (() => {
+		if (!tournament) {
+			return false;
+		}
+
 		const lateRegOffsetSeconds = Number(tournament.contestConfig?.lateRegOffsetSeconds);
 		const startValue = tournament.startedAt ?? tournament.startsAt;
 		const startedAt = startValue
@@ -49,16 +58,66 @@
 			&& lateRegOffsetSeconds > 0
 			&& Date.now() <= startedAt + lateRegOffsetSeconds * 1000;
 	})();
-	$: canRegister = Boolean(tournament.registrationOpen || lateRegistrationOpen);
-	$: bannerUrl = `https://cdn.gdvn.net/tournament-banner/${tournament.id}.webp?v=${tournament.bannerVersion ?? 0}`;
-	$: milestone = nextMilestone(tournament);
+	$: canRegister = Boolean(tournament?.registrationOpen || lateRegistrationOpen);
+	$: bannerUrl = tournament
+		? `https://cdn.gdvn.net/tournament-banner/${tournament.id}.webp?v=${tournament.bannerVersion ?? 0}`
+		: '';
+	$: milestone = tournament ? nextMilestone(tournament) : null;
 
 	let rewardClaim: any = null;
+	let loadingError = data?.error ?? '';
+	let requiresAuthRecovery = Boolean(data?.requiresAuthRecovery);
+	let authRecoveryLoading = requiresAuthRecovery;
+	let authFetchKey = '';
+
+	$: if ($user?.checked && $user.loggedIn && (requiresAuthRecovery || !tournament)) {
+		refetchWithAuth();
+	}
+	$: if (requiresAuthRecovery && $user?.checked && !$user.loggedIn && !tournament) {
+		loadingError = 'Tournament not found';
+		authRecoveryLoading = false;
+		requiresAuthRecovery = false;
+	}
 
 	async function refresh() {
-		const updated = await tournamentFetch(`/${tournament.id}`);
+		const id = tournament?.id ?? data.id;
+
+		if (!id) {
+			return;
+		}
+
+		const updated = await tournamentFetch(`/${id}`);
 
 		data = { ...data, tournament: updated };
+		loadingError = '';
+	}
+
+	async function refetchWithAuth() {
+		const key = `${tournamentId}:${$user.data?.uid || 'authed'}`;
+
+		if (key === authFetchKey) {
+			return;
+		}
+
+		authFetchKey = key;
+		const recoveringTournament = requiresAuthRecovery || !tournament;
+
+		if (recoveringTournament) {
+			authRecoveryLoading = true;
+		}
+
+		try {
+			await refresh();
+		} catch (error: any) {
+			if (recoveringTournament) {
+				loadingError = error.message || 'Tournament not found';
+			}
+		} finally {
+			if (recoveringTournament) {
+				authRecoveryLoading = false;
+				requiresAuthRecovery = false;
+			}
+		}
 	}
 
 	function handleMilestoneDone() {
@@ -84,10 +143,18 @@
 	}
 
 	async function register() {
+		if (!tournament) {
+			return;
+		}
+
 		await act(`/${tournament.id}/register`);
 	}
 
 	async function withdraw() {
+		if (!tournament) {
+			return;
+		}
+
 		try {
 			await tournamentFetch(`/${tournament.id}/register`, { method: 'DELETE' });
 			await refresh();
@@ -97,7 +164,7 @@
 	}
 
 	async function loadRewardClaim() {
-		if (tournament.status !== 'finished' || !$user?.loggedIn) {
+		if (!tournament || tournament.status !== 'finished' || !$user?.loggedIn) {
 			return;
 		}
 
@@ -134,7 +201,10 @@
 			viewerKey = nextViewerKey;
 
 			try {
-				await refresh();
+				if (tournament || currentUser.loggedIn) {
+					await refresh();
+				}
+
 				await loadRewardClaim();
 			} catch {}
 		});
@@ -144,14 +214,28 @@
 </script>
 
 <svelte:head>
-  <title>{tournament.name} - {$_('head.site_name')}</title>
-  <meta property="og:title" content={`${tournament.name} - ${$_('head.site_name')}`} />
-  {#if tournament.description}
+  <title>{tournament?.name ?? $_('tournament.title')} - {$_('head.site_name')}</title>
+  {#if tournament}
+    <meta property="og:title" content={`${tournament.name} - ${$_('head.site_name')}`} />
+  {/if}
+  {#if tournament?.description}
     <meta property="og:description" content={tournament.description} />
   {/if}
-  <meta property="og:image" content={bannerUrl} />
+  {#if bannerUrl}
+    <meta property="og:image" content={bannerUrl} />
+  {/if}
 </svelte:head>
 
+{#if authRecoveryLoading && !tournament}
+  <div class="mx-auto mt-[60px] w-full max-w-[900px] px-[10px] text-center text-muted-foreground">
+    {$_('tournament.loading')}
+  </div>
+{:else if loadingError || !tournament}
+  <div class="mx-auto mt-[60px] w-full max-w-[900px] px-[10px] text-center">
+    <h1 class="text-2xl font-bold">{$_('tournament.title')}</h1>
+    <p class="mt-[8px] text-muted-foreground">{loadingError || 'Tournament not found'}</p>
+  </div>
+{:else}
 <div class="mx-auto w-full max-w-[1500px] px-[10px]">
   <div
     class="mt-[20px] flex flex-col justify-end overflow-hidden rounded-[10px] border border-[hsl(var(--border))] bg-muted bg-cover bg-center p-[20px] text-white"
@@ -262,3 +346,4 @@
     </Tabs.Content>
   </Tabs.Root>
 </div>
+{/if}

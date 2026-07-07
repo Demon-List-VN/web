@@ -24,39 +24,73 @@
 	setManageDirty(createManageDirty());
 
 	$: tournament = data.tournament;
-	$: isHost = tournament.hostUid === $user?.data?.uid;
+	$: tournamentId = tournament?.id ?? data.id;
+	$: isHost = Boolean(tournament && tournament.hostUid === $user?.data?.uid);
 	$: isManager = Boolean($user?.data?.isManager || $user?.data?.isAdmin);
-	$: preStart = ['draft', 'registration_open', 'registration_closed', 'ready'].includes(
-		tournament.status
+	$: preStart = Boolean(
+		tournament
+		&& ['draft', 'registration_open', 'registration_closed', 'ready'].includes(
+			tournament.status
+		)
 	);
 	$: gated = !preStart && !isManager;
-	$: isSingleElim = tournament.format === 'single_elimination';
+	$: isSingleElim = tournament?.format === 'single_elimination';
 
 	let activeTab = 'settings';
 	let authenticatedTournamentLoaded = false;
+	let loadingError = data?.error ?? '';
+	let requiresAuthRecovery = Boolean(data?.requiresAuthRecovery);
+	let authRecoveryLoading = requiresAuthRecovery;
 
 	$: if ($user?.checked && !authenticatedTournamentLoaded) {
 		authenticatedTournamentLoaded = true;
 
 		if ($user.loggedIn) {
 			refreshManagedTournament();
+		} else if (requiresAuthRecovery && !tournament) {
+			loadingError = 'Tournament not found';
+			authRecoveryLoading = false;
+			requiresAuthRecovery = false;
 		}
 	}
 
 	async function refreshManagedTournament() {
+		const id = tournament?.id ?? data.id;
+
+		if (!id) {
+			return;
+		}
+
+		const recoveringTournament = requiresAuthRecovery || !tournament;
+
+		if (recoveringTournament) {
+			authRecoveryLoading = true;
+		}
+
 		try {
 			data = {
 				...data,
-				tournament: await tournamentFetch(`/${tournament.id}`)
+				tournament: await tournamentFetch(`/${id}`)
 			};
+			loadingError = '';
 		} catch (error: any) {
-			toast.error(error.message);
+			if (recoveringTournament) {
+				loadingError = error.message || 'Tournament not found';
+			} else {
+				toast.error(error.message);
+			}
+		} finally {
+			if (recoveringTournament) {
+				authRecoveryLoading = false;
+				requiresAuthRecovery = false;
+			}
 		}
 	}
 
 	onMount(() => {
 		if (
 			$user?.loggedIn
+			&& tournament
 			&& !(
 				tournament.hostUid === $user.data?.uid
 				|| $user.data?.isManager
@@ -69,9 +103,19 @@
 </script>
 
 <svelte:head>
-  <title>{$_('tournament.manage.title')} - {tournament.name}</title>
+  <title>{$_('tournament.manage.title')}{tournament ? ` - ${tournament.name}` : ''}</title>
 </svelte:head>
 
+{#if authRecoveryLoading && !tournament}
+  <div class="mx-auto mt-[60px] w-full max-w-[900px] px-[10px] text-center text-muted-foreground">
+    {$_('tournament.loading')}
+  </div>
+{:else if loadingError || !tournament}
+  <div class="mx-auto mt-[60px] w-full max-w-[900px] px-[10px] text-center">
+    <h1 class="text-2xl font-bold">{$_('tournament.manage.title')}</h1>
+    <p class="mt-[8px] text-muted-foreground">{loadingError || 'Tournament not found'}</p>
+  </div>
+{:else}
 <div class="mx-auto mt-[20px] w-full max-w-[1100px] px-[10px] pb-[80px]">
   <div class="flex items-center justify-between">
     <h1 class="text-2xl font-bold">{$_('tournament.manage.title')}</h1>
@@ -131,3 +175,4 @@
 </div>
 
 <SaveBar onSaved={refreshManagedTournament} />
+{/if}
