@@ -40,6 +40,7 @@
 	let replayEvents: any[] = [];
 	let replayParticipants: any[] = [];
 	let replayMeta: any = null;
+	let revealedCells = new Set<string>();
 	const replaySpeeds = [1, 2, 5, 10, 25, 50, 100];
 
 	$: totalAvailablePoints = levels.reduce(
@@ -286,6 +287,7 @@
 			board = cloneValue(normalBoard);
 			liveRevealBoard = liveBoard;
 			levels = nextLevels;
+			revealedCells = new Set();
 		};
 
 		try {
@@ -559,8 +561,33 @@
 		return liveRevealBoard?.entries?.find((entry: any) => entry.uid === uid) ?? null;
 	}
 
+	function cellKey(entry: any, level: any) {
+		return `${entry.uid}:${level?.levelId ?? ''}`;
+	}
+
+	function hasLiveUpdate(current: any, live: any) {
+		if (!live) {
+			return false;
+		}
+
+		if (!current) {
+			return true;
+		}
+
+		return Number(live?.score ?? 0) > Number(current?.score ?? 0)
+			|| Number(live?.progress ?? 0) > Number(current?.progress ?? 0);
+	}
+
+	function isZeroScore(result: any) {
+		return !result || Number(result?.score ?? 0) <= 0;
+	}
+
 	function hasHiddenScore(entry: any, level: any) {
 		if (leaderboardViewMode !== 'reveal' || !liveRevealBoard || !level) {
+			return false;
+		}
+
+		if (revealedCells.has(cellKey(entry, level))) {
 			return false;
 		}
 
@@ -568,8 +595,7 @@
 		const current = entry.levels?.[levelId] ?? null;
 		const live = liveEntryFor(entry.uid)?.levels?.[levelId] ?? null;
 
-		return Number(live?.score ?? 0) > Number(current?.score ?? 0)
-			|| Number(live?.progress ?? 0) > Number(current?.progress ?? 0);
+		return isZeroScore(current) || hasLiveUpdate(current, live);
 	}
 
 	function recomputeEntry(entry: any) {
@@ -612,6 +638,7 @@
 	function revealScore(entry: any, level: any) {
 		const levelId = String(level?.levelId ?? '');
 		const live = liveEntryFor(entry.uid)?.levels?.[levelId] ?? null;
+		revealedCells = new Set([...revealedCells, cellKey(entry, level)]);
 
 		if (!live) {
 			return;
@@ -925,21 +952,25 @@
                   {@const result = entry.levels[String(level.levelId)]}
                   {@const hiddenScore = hasHiddenScore(entry, level)}
                   <Table.Cell
-                    class={cn(
-                      'w-[90px] text-center tabular-nums',
-                      hiddenScore ? 'cursor-pointer bg-amber-500/10 text-amber-300 hover:bg-amber-500/20' : ''
-                    )}
+                    class={cn('w-[90px] text-center tabular-nums', hiddenScore ? 'cursor-pointer' : '')}
                     on:click={() => hiddenScore && revealScore(entry, level)}
                   >
                     {#if hiddenScore}
-                      <span class="font-semibold">{$_('tournament.leaderboard.hidden_score')}</span>
+                      {#if result && Number(result.score || 0) > 0}
+                        <span>{result.score}<sup>*</sup></span><br />
+                        <span class="text-[11px] opacity-50">
+                          {Math.round(Number(result.progress) * 100) / 100}%
+                        </span>
+                      {:else}
+                        <span class="font-semibold">0<sup>*</sup></span>
+                      {/if}
                     {:else if result}
                       {result.score}<br />
                       <span class="text-[11px] opacity-50">
                         {Math.round(Number(result.progress) * 100) / 100}%
                       </span>
                     {:else}
-                      -
+                      0
                     {/if}
                   </Table.Cell>
                 {/each}
