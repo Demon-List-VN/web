@@ -63,6 +63,9 @@
 			|| (freezeAtMs > 0 && Date.now() >= freezeAtMs)
 		)
 	);
+	$: frozenNoticeKey = tournament?.contestConfig?.autoUnfreezeLeaderboard === false
+		? 'tournament.leaderboard.frozen_manual_notice'
+		: 'tournament.leaderboard.frozen_notice';
 	$: canUseRevealMode = Boolean(canManage && canReplay && !replayMode && !viewLive);
 	$: replayDurationMs = Math.max(0, replayRangeEndMs - replayRangeStartMs);
 	$: replayProgressPercent = replayDurationMs > 0
@@ -739,7 +742,7 @@
     {#if board.frozen}
       <div class="mb-[10px] flex items-center gap-[8px] rounded-[8px] border border-amber-500/40 bg-amber-500/10 px-[12px] py-[8px] text-sm text-amber-300">
         <Snowflake size={16} class="shrink-0" />
-        {$_('tournament.leaderboard.frozen_notice')}
+        {$_(frozenNoticeKey)}
       </div>
     {/if}
 

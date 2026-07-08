@@ -107,6 +107,7 @@
 			cfg.freezeAt
 			|| (Number.isFinite(Number(cfg.freezeOffsetSeconds)) && Number(cfg.freezeOffsetSeconds) > 0)
 		),
+		autoUnfreezeLeaderboard: cfg.autoUnfreezeLeaderboard !== false,
 		freezeAt: toDatetimeLocal(cfg.freezeAt)
 			|| offsetToFreezeTime(cfg.freezeOffsetSeconds, cfg.durationSeconds),
 		lateRegEnabled: cfg.lateRegOffsetSeconds != null,
@@ -118,6 +119,7 @@
 
 	let durationHours = initial.durationHours;
 	let freezeEnabled = initial.freezeEnabled;
+	let autoUnfreezeLeaderboard = initial.autoUnfreezeLeaderboard;
 	let freezeAt = initial.freezeAt;
 	let lateRegEnabled = initial.lateRegEnabled;
 	let lateRegMode = initial.lateRegMode;
@@ -127,6 +129,7 @@
 	$: current = {
 		durationHours,
 		freezeEnabled,
+		autoUnfreezeLeaderboard: freezeEnabled ? autoUnfreezeLeaderboard : true,
 		freezeAt,
 		lateRegEnabled,
 		lateRegMode,
@@ -143,6 +146,7 @@
 	function reset() {
 		durationHours = initial.durationHours;
 		freezeEnabled = initial.freezeEnabled;
+		autoUnfreezeLeaderboard = initial.autoUnfreezeLeaderboard;
 		freezeAt = initial.freezeAt;
 		lateRegEnabled = initial.lateRegEnabled;
 		lateRegMode = initial.lateRegMode;
@@ -195,6 +199,7 @@
 			body: JSON.stringify({
 				durationSeconds: Math.round(durationHours * 3600),
 				freezeAt: freezeEnabled ? toIso(freezeAt) : null,
+				autoUnfreezeLeaderboard: freezeEnabled ? autoUnfreezeLeaderboard : true,
 				lateRegOffsetSeconds: lateRegOffsetSeconds(),
 				lateRegPenaltyFraction: lateRegEnabled ? lateRegPenaltyPercent / 100 : null
 			})
@@ -230,6 +235,16 @@
       {#if !freezeValid}
         <p class="text-xs text-destructive">{$_('tournament.manage.freeze_at_invalid')}</p>
       {/if}
+    </div>
+    <div class="flex items-center gap-[8px]">
+      <Switch
+        bind:checked={autoUnfreezeLeaderboard}
+        {disabled}
+        id="auto-unfreeze-leaderboard"
+      />
+      <Label for="auto-unfreeze-leaderboard">
+        {$_('tournament.manage.auto_unfreeze_leaderboard')}
+      </Label>
     </div>
   {/if}
   <div class="flex items-center gap-[8px]">

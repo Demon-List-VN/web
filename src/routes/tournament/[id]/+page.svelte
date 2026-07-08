@@ -69,9 +69,8 @@
 		&& !['finished', 'cancelled'].includes(tournament.status)
 		&& freezeAtMs > 0
 	);
-	$: freezeAlertKey = freezeAtMs > Date.now()
-		? 'tournament.leaderboard.freeze_scheduled_notice'
-		: 'tournament.leaderboard.freeze_active_notice';
+	$: freezeAutoUnfreezes = tournament?.contestConfig?.autoUnfreezeLeaderboard !== false;
+	$: freezeAlertKey = getFreezeAlertKey(freezeAtMs, freezeAutoUnfreezes);
 	$: freezeAlertAt = freezeAtMs > 0
 		? new Date(freezeAtMs)
 			.toLocaleString()
@@ -112,6 +111,18 @@
 			: NaN;
 
 		return Number.isFinite(time) ? time : 0;
+	}
+
+	function getFreezeAlertKey(freezeAt: number, autoUnfreezes: boolean) {
+		if (freezeAt > Date.now()) {
+			return autoUnfreezes
+				? 'tournament.leaderboard.freeze_scheduled_notice'
+				: 'tournament.leaderboard.freeze_scheduled_manual_notice';
+		}
+
+		return autoUnfreezes
+			? 'tournament.leaderboard.freeze_active_notice'
+			: 'tournament.leaderboard.freeze_active_manual_notice';
 	}
 
 	async function refetchWithAuth() {
