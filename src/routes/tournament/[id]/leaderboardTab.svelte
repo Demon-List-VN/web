@@ -59,10 +59,10 @@
 		canManage
 		&& (
 			board?.frozen
-			|| (freezeAtMs > 0 && Date.now() >= freezeAtMs && !board?.revealed)
+			|| (freezeAtMs > 0 && Date.now() >= freezeAtMs)
 		)
 	);
-	$: canUseRevealMode = Boolean(canManage && canReplay && !replayMode);
+	$: canUseRevealMode = Boolean(canManage && canReplay && !replayMode && !viewLive);
 	$: replayDurationMs = Math.max(0, replayRangeEndMs - replayRangeStartMs);
 	$: replayProgressPercent = replayDurationMs > 0
 		? Math.round(((replayAtMs - replayRangeStartMs) / replayDurationMs) * 1000) / 10
@@ -235,8 +235,16 @@
 
 		refreshing = true;
 		const request = async () => {
+			const leaderboardParams = new URLSearchParams();
+
+			if (viewLive) {
+				leaderboardParams.set('live', 'true');
+			}
+
+			const leaderboardQuery = leaderboardParams.toString();
+
 			[board, levels] = await Promise.all([
-				tournamentFetch(`/${tournament.id}/leaderboard`),
+				tournamentFetch(`/${tournament.id}/leaderboard${leaderboardQuery ? `?${leaderboardQuery}` : ''}`),
 				getTournamentContestLevels(tournament)
 			]);
 			liveRevealBoard = null;
@@ -674,6 +682,11 @@
 	}
 
 	function handleLiveToggle() {
+		if (viewLive && leaderboardViewMode === 'reveal') {
+			leaderboardViewMode = 'normal';
+			liveRevealBoard = null;
+		}
+
 		if (replayMode) {
 			stopReplayPlayback();
 			void loadReplayData();
@@ -695,7 +708,7 @@
 {:else if board}
   <div class="mx-auto w-full max-w-[1500px] px-[10px]">
     {#if board.frozen}
-      <div class="mb-[10px] flex items-center gap-[8px] rounded-[8px] border border-sky-500/40 bg-sky-500/10 px-[12px] py-[8px] text-sm text-sky-300">
+      <div class="mb-[10px] flex items-center gap-[8px] rounded-[8px] border border-amber-500/40 bg-amber-500/10 px-[12px] py-[8px] text-sm text-amber-300">
         <Snowflake size={16} class="shrink-0" />
         {$_('tournament.leaderboard.frozen_notice')}
       </div>
@@ -760,14 +773,14 @@
       >
         <RefreshCw size={16} class={refreshing ? 'animate-spin' : ''} />
       </Button>
-      {#if replayMode && canViewLiveFrozenBoard && !canUseRevealMode}
+      {#if canViewLiveFrozenBoard}
         <div class="flex items-center gap-[8px] rounded-md border border-input bg-background px-3">
           <Switch
             bind:checked={viewLive}
             onCheckedChange={handleLiveToggle}
             id="view-live"
           />
-          <Label for="view-live">{$_('tournament.leaderboard.view_live')}</Label>
+          <Label for="view-live">{$_('tournament.leaderboard.bypass_freeze')}</Label>
         </div>
       {/if}
     </div>
@@ -864,10 +877,10 @@
           <Table.Body>
             {#each board.entries as entry (entry.uid)}
               <tr
-                animate:flip={{ duration: 900, easing: cubicInOut }}
+                animate:flip={{ duration: 1600, easing: cubicInOut }}
                 class={cn(
                   'border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted',
-                  leaderboardViewMode === 'reveal' ? 'duration-300' : ''
+                  leaderboardViewMode === 'reveal' ? 'duration-700 ease-in-out' : ''
                 )}
               >
                 <Table.Cell

@@ -5,7 +5,7 @@
 	import * as Tabs from '$lib/components/ui/tabs';
 	import { Button } from '$lib/components/ui/button';
 	import { user } from '$lib/client';
-	import { Clock } from 'lucide-svelte';
+	import { AlertTriangle, Clock } from 'lucide-svelte';
 	import { tournamentFetch, nextMilestone } from '$lib/client/tournament';
 	import StatBar from '$lib/components/tournament/StatBar.svelte';
 	import LifecycleTimeline from '$lib/components/tournament/LifecycleTimeline.svelte';
@@ -63,6 +63,19 @@
 		? `https://cdn.gdvn.net/tournament-banner/${tournament.id}.webp?v=${tournament.bannerVersion ?? 0}`
 		: '';
 	$: milestone = tournament ? nextMilestone(tournament) : null;
+	$: freezeAtMs = parseTime(tournament?.contestConfig?.freezeAt);
+	$: hasFreezeAlert = Boolean(
+		tournament?.format === 'contest'
+		&& !['finished', 'cancelled'].includes(tournament.status)
+		&& freezeAtMs > 0
+	);
+	$: freezeAlertKey = freezeAtMs > Date.now()
+		? 'tournament.leaderboard.freeze_scheduled_notice'
+		: 'tournament.leaderboard.freeze_active_notice';
+	$: freezeAlertAt = freezeAtMs > 0
+		? new Date(freezeAtMs)
+			.toLocaleString()
+		: '';
 
 	let rewardClaim: any = null;
 	let loadingError = data?.error ?? '';
@@ -90,6 +103,15 @@
 
 		data = { ...data, tournament: updated };
 		loadingError = '';
+	}
+
+	function parseTime(value: unknown) {
+		const time = value
+			? new Date(String(value))
+				.getTime()
+			: NaN;
+
+		return Number.isFinite(time) ? time : 0;
 	}
 
 	async function refetchWithAuth() {
@@ -303,6 +325,15 @@
       </Button>
     {/if}
   </div>
+
+  {#if hasFreezeAlert}
+    <div class="mt-[16px] flex items-center gap-[8px] rounded-[8px] border border-amber-500/40 bg-amber-500/10 px-[12px] py-[10px] text-sm text-amber-300">
+      <AlertTriangle size={16} class="shrink-0" />
+      <span>
+        {$_(freezeAlertKey, { values: { at: freezeAlertAt } })}
+      </span>
+    </div>
+  {/if}
 
   <Tabs.Root value="overview" class="mt-[20px] flex flex-col items-center">
     <Tabs.List>
