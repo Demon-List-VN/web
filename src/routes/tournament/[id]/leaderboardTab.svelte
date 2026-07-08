@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
+	import { flip } from 'svelte/animate';
+	import { cubicInOut } from 'svelte/easing';
 	import { _ } from 'svelte-i18n';
 	import { Download, Pause, Play, RefreshCw, Snowflake } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
@@ -25,6 +27,8 @@
 	let refreshing = false;
 	let viewLive = false;
 	let showPercentage = false;
+	let leaderboardViewMode: 'normal' | 'reveal' = 'normal';
+	let liveRevealBoard: any = null;
 	let replayMode = false;
 	let replayPlaying = false;
 	let replayLoading = false;
@@ -58,6 +62,7 @@
 			|| (freezeAtMs > 0 && Date.now() >= freezeAtMs && !board?.revealed)
 		)
 	);
+	$: canUseRevealMode = Boolean(canManage && canReplay && !replayMode);
 	$: replayDurationMs = Math.max(0, replayRangeEndMs - replayRangeStartMs);
 	$: replayProgressPercent = replayDurationMs > 0
 		? Math.round(((replayAtMs - replayRangeStartMs) / replayDurationMs) * 1000) / 10
@@ -222,12 +227,19 @@
 			return;
 		}
 
+		if (leaderboardViewMode === 'reveal') {
+			await loadRevealMode(showToast);
+
+			return;
+		}
+
 		refreshing = true;
 		const request = async () => {
 			[board, levels] = await Promise.all([
-				tournamentFetch(`/${tournament.id}/leaderboard${viewLive ? '?live=true' : ''}`),
+				tournamentFetch(`/${tournament.id}/leaderboard`),
 				getTournamentContestLevels(tournament)
 			]);
+			liveRevealBoard = null;
 		};
 
 		try {
@@ -246,6 +258,43 @@
 			}
 		} finally {
 			loading = false;
+			refreshing = false;
+		}
+	}
+
+	function cloneValue(value: any) {
+		return JSON.parse(JSON.stringify(value));
+	}
+
+	async function loadRevealMode(showToast = false) {
+		refreshing = true;
+		const request = async () => {
+			const [normalBoard, liveBoard, nextLevels] = await Promise.all([
+				tournamentFetch(`/${tournament.id}/leaderboard`),
+				tournamentFetch(`/${tournament.id}/leaderboard?live=true`),
+				getTournamentContestLevels(tournament)
+			]);
+
+			board = cloneValue(normalBoard);
+			liveRevealBoard = liveBoard;
+			levels = nextLevels;
+		};
+
+		try {
+			if (showToast) {
+				await toast.promise(request(), {
+					success: $_('contest.leaderboard.refresh.success'),
+					error: $_('contest.leaderboard.refresh.error'),
+					loading: $_('contest.leaderboard.refresh.loading')
+				});
+			} else {
+				await request();
+			}
+		} catch (error: any) {
+			leaderboardViewMode = 'normal';
+			liveRevealBoard = null;
+			toast.error(error.message);
+		} finally {
 			refreshing = false;
 		}
 	}
@@ -294,6 +343,25 @@
 		}
 
 		return a.penaltyMs - b.penaltyMs;
+	}
+
+	function sortAndRankEntries(entries: any[]) {
+		const sorted = [...entries].sort(compareEntries);
+		let rank = 0;
+		let previous: any = null;
+
+		for (let index = 0; index < sorted.length; index += 1) {
+			const entry = sorted[index];
+
+			if (!previous || !entriesTied(previous, entry)) {
+				rank = index + 1;
+			}
+
+			entry.rank = rank;
+			previous = entry;
+		}
+
+		return sorted;
 	}
 
 	function entriesTied(a: any, b: any) {
@@ -387,22 +455,7 @@
 			}
 		}
 
-		const entries = [...byUid.values()].sort(compareEntries);
-		let rank = 0;
-		let previous: any = null;
-
-		for (let index = 0; index < entries.length; index += 1) {
-			const entry = entries[index];
-
-			if (!previous || !entriesTied(previous, entry)) {
-				rank = index + 1;
-			}
-
-			entry.rank = rank;
-			previous = entry;
-		}
-
-		return entries;
+		return sortAndRankEntries([...byUid.values()]);
 	}
 
 	function applyReplayAt(nextAtMs: number) {
@@ -478,6 +531,102 @@
 		replayParticipants = [];
 		replayMeta = null;
 		void load();
+	}
+
+	async function setLeaderboardMode(mode: 'normal' | 'reveal') {
+		if (leaderboardViewMode === mode && !refreshing) {
+			return;
+		}
+
+		leaderboardViewMode = mode;
+
+		if (mode === 'normal') {
+			liveRevealBoard = null;
+		}
+
+		await load();
+	}
+
+	function liveEntryFor(uid: string) {
+		return liveRevealBoard?.entries?.find((entry: any) => entry.uid === uid) ?? null;
+	}
+
+	function hasHiddenScore(entry: any, level: any) {
+		if (leaderboardViewMode !== 'reveal' || !liveRevealBoard || !level) {
+			return false;
+		}
+
+		const levelId = String(level.levelId);
+		const current = entry.levels?.[levelId] ?? null;
+		const live = liveEntryFor(entry.uid)?.levels?.[levelId] ?? null;
+
+		return Number(live?.score ?? 0) > Number(current?.score ?? 0)
+			|| Number(live?.progress ?? 0) > Number(current?.progress ?? 0);
+	}
+
+	function recomputeEntry(entry: any) {
+		const startedAtMs = parseTime(tournament.startedAt ?? tournament.startsAt);
+		const nextEntry = {
+			...entry,
+			totalScore: 0,
+			penaltyMs: 0,
+			completedCount: 0,
+			lastImprovedAt: null
+		};
+
+		for (const result of Object.values(nextEntry.levels ?? {}) as any[]) {
+			nextEntry.totalScore = Math.round(
+				(nextEntry.totalScore + Number(result?.score || 0)) * 100
+			) / 100;
+
+			if (Number(result?.progress || 0) >= 100) {
+				nextEntry.completedCount += 1;
+			}
+
+			const reachedAtMs = parseTime(result?.reachedAt);
+
+			if (reachedAtMs > 0 && startedAtMs > 0) {
+				nextEntry.penaltyMs += Math.max(0, reachedAtMs - startedAtMs);
+			}
+
+			if (
+				result?.reachedAt
+				&& (!nextEntry.lastImprovedAt
+					|| parseTime(result.reachedAt) > parseTime(nextEntry.lastImprovedAt))
+			) {
+				nextEntry.lastImprovedAt = result.reachedAt;
+			}
+		}
+
+		return nextEntry;
+	}
+
+	function revealScore(entry: any, level: any) {
+		const levelId = String(level?.levelId ?? '');
+		const live = liveEntryFor(entry.uid)?.levels?.[levelId] ?? null;
+
+		if (!live) {
+			return;
+		}
+
+		const entries = (board?.entries ?? []).map((row: any) => {
+			if (row.uid !== entry.uid) {
+				return row;
+			}
+
+			return recomputeEntry({
+				...cloneValue(row),
+				levels: {
+					...(cloneValue(row.levels ?? {})),
+					[levelId]: cloneValue(live)
+				}
+			});
+		});
+
+		board = {
+			...board,
+			entries: sortAndRankEntries(entries)
+		};
 	}
 
 	function handleReplaySliderInput(event: Event) {
@@ -573,6 +722,26 @@
           {replayMode ? $_('tournament.leaderboard.exit_replay') : $_('tournament.leaderboard.replay')}
         </Button>
       {/if}
+      {#if canUseRevealMode}
+        <div class="flex items-center gap-[4px] rounded-md border border-input bg-background p-1">
+          <Button
+            size="sm"
+            variant={leaderboardViewMode === 'normal' ? 'default' : 'ghost'}
+            on:click={() => setLeaderboardMode('normal')}
+            disabled={refreshing}
+          >
+            {$_('tournament.leaderboard.normal_mode')}
+          </Button>
+          <Button
+            size="sm"
+            variant={leaderboardViewMode === 'reveal' ? 'default' : 'ghost'}
+            on:click={() => setLeaderboardMode('reveal')}
+            disabled={refreshing || !board.entries?.length}
+          >
+            {$_('tournament.leaderboard.reveal_mode')}
+          </Button>
+        </div>
+      {/if}
       <Button
         size="icon"
         variant="outline"
@@ -591,7 +760,7 @@
       >
         <RefreshCw size={16} class={refreshing ? 'animate-spin' : ''} />
       </Button>
-      {#if canViewLiveFrozenBoard}
+      {#if replayMode && canViewLiveFrozenBoard && !canUseRevealMode}
         <div class="flex items-center gap-[8px] rounded-md border border-input bg-background px-3">
           <Switch
             bind:checked={viewLive}
@@ -604,7 +773,7 @@
     </div>
 
     {#if replayMode}
-      <div class="mb-[12px] rounded-[10px] border border-[hsl(var(--border))] bg-card/40 p-[12px]">
+      <div class="sticky top-[55px] z-20 mb-[12px] rounded-[10px] border border-[hsl(var(--border))] bg-background/95 p-[12px] shadow-sm backdrop-blur">
         <div class="flex flex-col gap-[10px]">
           <div class="flex flex-wrap items-center justify-between gap-[10px]">
             <div class="flex items-center gap-[8px]">
@@ -694,7 +863,13 @@
           </Table.Header>
           <Table.Body>
             {#each board.entries as entry (entry.uid)}
-              <Table.Row>
+              <tr
+                animate:flip={{ duration: 900, easing: cubicInOut }}
+                class={cn(
+                  'border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted',
+                  leaderboardViewMode === 'reveal' ? 'duration-300' : ''
+                )}
+              >
                 <Table.Cell
                   class={cn(
                     'w-[100px] text-base font-bold tabular-nums',
@@ -735,8 +910,17 @@
                 </Table.Cell>
                 {#each levels as level}
                   {@const result = entry.levels[String(level.levelId)]}
-                  <Table.Cell class="w-[90px] text-center tabular-nums">
-                    {#if result}
+                  {@const hiddenScore = hasHiddenScore(entry, level)}
+                  <Table.Cell
+                    class={cn(
+                      'w-[90px] text-center tabular-nums',
+                      hiddenScore ? 'cursor-pointer bg-amber-500/10 text-amber-300 hover:bg-amber-500/20' : ''
+                    )}
+                    on:click={() => hiddenScore && revealScore(entry, level)}
+                  >
+                    {#if hiddenScore}
+                      <span class="font-semibold">{$_('tournament.leaderboard.hidden_score')}</span>
+                    {:else if result}
                       {result.score}<br />
                       <span class="text-[11px] opacity-50">
                         {Math.round(Number(result.progress) * 100) / 100}%
@@ -746,7 +930,7 @@
                     {/if}
                   </Table.Cell>
                 {/each}
-              </Table.Row>
+              </tr>
             {/each}
           </Table.Body>
         </Table.Root>
