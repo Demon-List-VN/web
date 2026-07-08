@@ -66,6 +66,25 @@
 			.toISOString());
 	}
 
+	function offsetToFreezeTime(offsetSeconds: unknown, durationSeconds: unknown) {
+		const startMs = contestStartMs();
+		const offset = Number(offsetSeconds);
+		const duration = Number(durationSeconds);
+
+		if (
+			startMs === null
+			|| !Number.isFinite(offset)
+			|| offset <= 0
+			|| !Number.isFinite(duration)
+			|| duration <= offset
+		) {
+			return '';
+		}
+
+		return toDatetimeLocal(new Date(startMs + (duration - offset) * 1000)
+			.toISOString());
+	}
+
 	function modeFromConfig() {
 		if (cfg.lateRegOffsetSeconds == null) {
 			return 'until_end';
@@ -84,7 +103,13 @@
 
 	let initial = {
 		durationHours: cfg.durationSeconds ? cfg.durationSeconds / 3600 : 2,
-		freezeMinutes: cfg.freezeOffsetSeconds ? cfg.freezeOffsetSeconds / 60 : 0,
+		freezeEnabled: Boolean(
+			cfg.freezeAt
+			|| (Number.isFinite(Number(cfg.freezeOffsetSeconds)) && Number(cfg.freezeOffsetSeconds) > 0)
+		),
+		autoUnfreezeLeaderboard: cfg.autoUnfreezeLeaderboard !== false,
+		freezeAt: toDatetimeLocal(cfg.freezeAt)
+			|| offsetToFreezeTime(cfg.freezeOffsetSeconds, cfg.durationSeconds),
 		lateRegEnabled: cfg.lateRegOffsetSeconds != null,
 		lateRegMode: modeFromConfig() as LateRegMode,
 		lateRegClosesAt: offsetToCloseTime(cfg.lateRegOffsetSeconds)
@@ -93,7 +118,9 @@
 	};
 
 	let durationHours = initial.durationHours;
-	let freezeMinutes = initial.freezeMinutes;
+	let freezeEnabled = initial.freezeEnabled;
+	let autoUnfreezeLeaderboard = initial.autoUnfreezeLeaderboard;
+	let freezeAt = initial.freezeAt;
 	let lateRegEnabled = initial.lateRegEnabled;
 	let lateRegMode = initial.lateRegMode;
 	let lateRegClosesAt = initial.lateRegClosesAt;
@@ -101,7 +128,9 @@
 
 	$: current = {
 		durationHours,
-		freezeMinutes,
+		freezeEnabled,
+		autoUnfreezeLeaderboard: freezeEnabled ? autoUnfreezeLeaderboard : true,
+		freezeAt,
 		lateRegEnabled,
 		lateRegMode,
 		lateRegClosesAt,
@@ -112,10 +141,13 @@
 	$: customLateRegValid = !lateRegEnabled
 		|| lateRegMode !== 'custom'
 		|| Boolean(lateRegClosesAt);
+	$: freezeValid = !freezeEnabled || Boolean(toIso(freezeAt));
 
 	function reset() {
 		durationHours = initial.durationHours;
-		freezeMinutes = initial.freezeMinutes;
+		freezeEnabled = initial.freezeEnabled;
+		autoUnfreezeLeaderboard = initial.autoUnfreezeLeaderboard;
+		freezeAt = initial.freezeAt;
 		lateRegEnabled = initial.lateRegEnabled;
 		lateRegMode = initial.lateRegMode;
 		lateRegClosesAt = initial.lateRegClosesAt;
@@ -158,11 +190,16 @@
 			throw new Error($_('tournament.manage.late_reg_close_invalid'));
 		}
 
+		if (!freezeValid) {
+			throw new Error($_('tournament.manage.freeze_at_invalid'));
+		}
+
 		await tournamentFetch(`/${tournament.id}/contest/config`, {
 			method: 'PUT',
 			body: JSON.stringify({
 				durationSeconds: Math.round(durationHours * 3600),
-				freezeOffsetSeconds: Math.round(freezeMinutes * 60),
+				freezeAt: freezeEnabled ? toIso(freezeAt) : null,
+				autoUnfreezeLeaderboard: freezeEnabled ? autoUnfreezeLeaderboard : true,
 				lateRegOffsetSeconds: lateRegOffsetSeconds(),
 				lateRegPenaltyFraction: lateRegEnabled ? lateRegPenaltyPercent / 100 : null
 			})
@@ -186,11 +223,30 @@
       <Label>{$_('tournament.manage.duration_hours')}</Label>
       <Input type="number" step="0.5" bind:value={durationHours} {disabled} />
     </div>
-    <div class="flex flex-col gap-[6px]">
-      <Label>{$_('tournament.manage.freeze_minutes')}</Label>
-      <Input type="number" bind:value={freezeMinutes} {disabled} />
-    </div>
   </div>
+  <div class="flex items-center gap-[8px]">
+    <Switch bind:checked={freezeEnabled} {disabled} id="leaderboard-freeze" />
+    <Label for="leaderboard-freeze">{$_('tournament.manage.leaderboard_freeze')}</Label>
+  </div>
+  {#if freezeEnabled}
+    <div class="flex flex-col gap-[6px]">
+      <Label>{$_('tournament.manage.freeze_at')}</Label>
+      <Input type="datetime-local" bind:value={freezeAt} {disabled} />
+      {#if !freezeValid}
+        <p class="text-xs text-destructive">{$_('tournament.manage.freeze_at_invalid')}</p>
+      {/if}
+    </div>
+    <div class="flex items-center gap-[8px]">
+      <Switch
+        bind:checked={autoUnfreezeLeaderboard}
+        {disabled}
+        id="auto-unfreeze-leaderboard"
+      />
+      <Label for="auto-unfreeze-leaderboard">
+        {$_('tournament.manage.auto_unfreeze_leaderboard')}
+      </Label>
+    </div>
+  {/if}
   <div class="flex items-center gap-[8px]">
     <Switch bind:checked={lateRegEnabled} {disabled} id="late-reg" />
     <Label for="late-reg">{$_('tournament.manage.late_registration')}</Label>
