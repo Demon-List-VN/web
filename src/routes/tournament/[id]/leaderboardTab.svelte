@@ -708,7 +708,9 @@
 		replayPlaybackTimer = setInterval(tickReplayPlayback, 1000);
 	}
 
-	function handleLiveToggle() {
+	function handleLiveToggle(checked: boolean) {
+		viewLive = checked;
+
 		if (viewLive && leaderboardViewMode === 'reveal') {
 			leaderboardViewMode = 'normal';
 			liveRevealBoard = null;
