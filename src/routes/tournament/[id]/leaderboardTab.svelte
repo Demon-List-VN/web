@@ -41,10 +41,14 @@
 	let replayParticipants: any[] = [];
 	let replayMeta: any = null;
 	let revealedCells = new Set<string>();
+	let replayCellFlashTokens = new Map<string, number>();
+	let replayCellFlashTimer: ReturnType<typeof setTimeout> | null = null;
+	let replayCellFlashSequence = 0;
 	const replaySpeeds = [1, 2, 5, 10, 25, 50, 100];
 	const replaySeekSeconds = 10;
 	const leaderboardFlyDurationMs = 1600;
 	const replayLeaderboardFlyDurationMs = 1000;
+	const replayCellFlashDurationMs = 700;
 
 	$: totalAvailablePoints = levels.reduce(
 		(total, level) => total + Number(level.maxPoints || 0),
@@ -385,6 +389,89 @@
 		return a.totalScore === b.totalScore && a.penaltyMs === b.penaltyMs;
 	}
 
+	function replayCellKey(entry: any, column: string) {
+		return `${entry.uid}:${column}`;
+	}
+
+	function replayLevelCellKey(entry: any, level: any) {
+		return replayCellKey(entry, `level:${level?.levelId ?? ''}`);
+	}
+
+	function replayLevelCellValue(entry: any, level: any) {
+		const result = entry?.levels?.[String(level?.levelId)] ?? null;
+
+		if (!result) {
+			return '0';
+		}
+
+		return `${Number(result.score ?? 0)}:${Number(result.progress ?? 0)}`;
+	}
+
+	function replayVisibleCellValue(entry: any, column: string) {
+		switch (column) {
+			case 'rank':
+				return String(entry?.rank ?? '');
+			case 'total':
+				return String(entry?.totalScore ?? 0);
+			case 'penalty':
+				return String(getPenaltyMinutes(entry));
+			case 'completed':
+				return String(entry?.completedCount ?? 0);
+			default:
+				return '';
+		}
+	}
+
+	function markReplayCellChanges(previousEntries: any[], nextEntries: any[]) {
+		if (!replayMode || !previousEntries?.length) {
+			return;
+		}
+
+		const previousByUid = new Map(previousEntries.map((entry) => [entry.uid, entry]));
+		const changed = new Map<string, number>();
+		const staticColumns = ['rank', 'total', 'penalty', 'completed'];
+
+		for (const entry of nextEntries) {
+			const previous = previousByUid.get(entry.uid);
+
+			if (!previous) {
+				continue;
+			}
+
+			for (const column of staticColumns) {
+				if (replayVisibleCellValue(previous, column) !== replayVisibleCellValue(entry, column)) {
+					changed.set(replayCellKey(entry, column), replayCellFlashSequence + 1);
+				}
+			}
+
+			for (const level of levels) {
+				if (replayLevelCellValue(previous, level) !== replayLevelCellValue(entry, level)) {
+					changed.set(replayLevelCellKey(entry, level), replayCellFlashSequence + 1);
+				}
+			}
+		}
+
+		if (!changed.size) {
+			return;
+		}
+
+		replayCellFlashSequence += 1;
+		replayCellFlashTokens = changed;
+
+		if (replayCellFlashTimer) {
+			clearTimeout(replayCellFlashTimer);
+		}
+
+		replayCellFlashTimer = setTimeout(() => {
+			replayCellFlashTokens = new Map();
+			replayCellFlashTimer = null;
+		}, replayCellFlashDurationMs);
+	}
+
+	function replayCellFlashToken(key: string) {
+		return replayCellFlashTokens.get(key) ?? 0;
+	}
+
 	function buildReplayEntries(atMs: number) {
 		const levelById = new Map(levels.map((level: any) => [Number(level.levelId), level]));
 		const startedAtMs = parseTime(tournament.startedAt ?? tournament.startsAt);
@@ -475,14 +562,23 @@
 		return sortAndRankEntries([...byUid.values()]);
 	}
 
-	function applyReplayAt(nextAtMs: number) {
+	function applyReplayAt(nextAtMs: number, flashChanges = true) {
 		replayAtMs = clampReplayAt(nextAtMs);
+		const previousEntries = board?.replay ? board.entries ?? [] : [];
+		const entries = buildReplayEntries(replayAtMs);
+
+		if (flashChanges) {
+			markReplayCellChanges(previousEntries, entries);
+		} else {
+			replayCellFlashTokens = new Map();
+		}
+
 		board = {
 			...replayMeta,
 			replay: true,
 			replayAt: new Date(replayAtMs)
 				.toISOString(),
-			entries: buildReplayEntries(replayAtMs)
+			entries
 		};
 	}
 
@@ -502,7 +598,7 @@
 			.sort((a: any, b: any) => replayEventTime(a) - replayEventTime(b));
 		replayRangeStartMs = parseTime(data?.rangeStart);
 		replayRangeEndMs = parseTime(data?.rangeEnd);
-		applyReplayAt(requestedAtMs || replayRangeEndMs);
+		applyReplayAt(requestedAtMs || replayRangeEndMs, false);
 	}
 
 	async function loadReplayData(showToast = false) {
@@ -544,6 +640,7 @@
 	function exitReplay() {
 		replayMode = false;
 		stopReplayPlayback();
+		replayCellFlashTokens = new Map();
 		replayEvents = [];
 		replayParticipants = [];
 		replayMeta = null;
@@ -722,7 +819,7 @@
 		}
 
 		if (replayAtMs >= replayRangeEndMs) {
-			applyReplayAt(replayRangeStartMs);
+			applyReplayAt(replayRangeStartMs, false);
 		}
 
 		replayPlaying = true;
@@ -750,6 +847,10 @@
 	onMount(() => load());
 	onDestroy(() => {
 		stopReplayPlayback();
+
+		if (replayCellFlashTimer) {
+			clearTimeout(replayCellFlashTimer);
+		}
 	});
 </script>
 
@@ -944,6 +1045,10 @@
           </Table.Header>
           <Table.Body>
             {#each board.entries as entry (entry.uid)}
+              {@const rankFlashToken = replayCellFlashToken(replayCellKey(entry, 'rank'))}
+              {@const totalFlashToken = replayCellFlashToken(replayCellKey(entry, 'total'))}
+              {@const penaltyFlashToken = replayCellFlashToken(replayCellKey(entry, 'penalty'))}
+              {@const completedFlashToken = replayCellFlashToken(replayCellKey(entry, 'completed'))}
               <tr
                 animate:flip={{
                   duration: replayMode ? replayLeaderboardFlyDurationMs : leaderboardFlyDurationMs,
@@ -961,7 +1066,9 @@
                     $user.loggedIn && entry.uid === $user.data.uid ? 'text-yellow-500' : ''
                   )}
                 >
-                  #{entry.rank}
+                  {#key rankFlashToken}
+                    <span class:replay-cell-flash={rankFlashToken > 0}>#{entry.rank}</span>
+                  {/key}
                 </Table.Cell>
                 <Table.Cell class="min-w-[200px]">
                   {#if entry.player}
@@ -979,43 +1086,56 @@
                   {/if}
                 </Table.Cell>
                 <Table.Cell class="w-[100px] text-center font-bold tabular-nums">
-                  {displayTotal(entry)}
+                  {#key totalFlashToken}
+                    <span class:replay-cell-flash={totalFlashToken > 0}>{displayTotal(entry)}</span>
+                  {/key}
                 </Table.Cell>
                 <Table.Cell class="w-[100px] text-center tabular-nums">
-                  <Tooltip.Root>
-                    <Tooltip.Trigger>
-                      {getPenaltyMinutes(entry)}
-                    </Tooltip.Trigger>
-                    <Tooltip.Content>{getPenaltyTooltip(entry)}</Tooltip.Content>
-                  </Tooltip.Root>
+                  {#key penaltyFlashToken}
+                    <span class:replay-cell-flash={penaltyFlashToken > 0}>
+                      <Tooltip.Root>
+                        <Tooltip.Trigger>
+                          {getPenaltyMinutes(entry)}
+                        </Tooltip.Trigger>
+                        <Tooltip.Content>{getPenaltyTooltip(entry)}</Tooltip.Content>
+                      </Tooltip.Root>
+                    </span>
+                  {/key}
                 </Table.Cell>
                 <Table.Cell class="w-[100px] text-center tabular-nums text-muted-foreground">
-                  {entry.completedCount}
+                  {#key completedFlashToken}
+                    <span class:replay-cell-flash={completedFlashToken > 0}>{entry.completedCount}</span>
+                  {/key}
                 </Table.Cell>
                 {#each levels as level}
                   {@const result = entry.levels[String(level.levelId)]}
                   {@const hiddenScore = hasHiddenScore(entry, level)}
+                  {@const levelFlashToken = replayCellFlashToken(replayLevelCellKey(entry, level))}
                   <Table.Cell
                     class={cn('w-[90px] text-center tabular-nums', hiddenScore ? 'cursor-pointer' : '')}
                     on:click={() => hiddenScore && revealScore(entry, level)}
                   >
-                    {#if hiddenScore}
-                      {#if result && Number(result.score || 0) > 0}
-                        <span>{result.score}<sup>*</sup></span><br />
-                        <span class="text-[11px] opacity-50">
-                          {Math.round(Number(result.progress) * 100) / 100}%
-                        </span>
-                      {:else}
-                        <span class="font-semibold">0<sup>*</sup></span>
-                      {/if}
-                    {:else if result}
-                      {result.score}<br />
-                      <span class="text-[11px] opacity-50">
-                        {Math.round(Number(result.progress) * 100) / 100}%
+                    {#key levelFlashToken}
+                      <span class:replay-cell-flash={levelFlashToken > 0}>
+                        {#if hiddenScore}
+                          {#if result && Number(result.score || 0) > 0}
+                            <span>{result.score}<sup>*</sup></span><br />
+                            <span class="text-[11px] opacity-50">
+                              {Math.round(Number(result.progress) * 100) / 100}%
+                            </span>
+                          {:else}
+                            <span class="font-semibold">0<sup>*</sup></span>
+                          {/if}
+                        {:else if result}
+                          {result.score}<br />
+                          <span class="text-[11px] opacity-50">
+                            {Math.round(Number(result.progress) * 100) / 100}%
+                          </span>
+                        {:else}
+                          0
+                        {/if}
                       </span>
-                    {:else}
-                      0
-                    {/if}
+                    {/key}
                   </Table.Cell>
                 {/each}
               </tr>
@@ -1030,3 +1150,22 @@
     {/if}
   </div>
 {/if}
+
+<style>
+	.replay-cell-flash {
+		animation: replay-cell-flash 700ms ease-out;
+	}
+
+	@keyframes replay-cell-flash {
+		0%,
+		55% {
+			color: rgb(250 204 21);
+			text-shadow: 0 0 10px rgb(250 204 21 / 45%);
+		}
+
+		100% {
+			color: inherit;
+			text-shadow: none;
+		}
+	}
+</style>
