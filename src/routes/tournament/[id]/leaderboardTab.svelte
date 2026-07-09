@@ -56,7 +56,7 @@
 	const replaySpeeds = [1, 2, 5, 10, 25, 50, 100, 250, 500, 750, 1000];
 	const replaySeekSeconds = 10;
 	const leaderboardFlyDurationMs = 1600;
-	const replayLeaderboardFlyDurationMs = 1000;
+	const replayLeaderboardFlyDurationMs = 900;
 	const replayCellFlashDurationMs = 700;
 	const contestScorePrecision = 100_000_000;
 
@@ -499,9 +499,7 @@
 
 	function markReplayCellChanges(
 		previousEntries: any[],
-		nextEntries: any[],
-		previousAtMs: number,
-		nextAtMs: number
+		nextEntries: any[]
 	) {
 		if (!replayMode || !previousEntries?.length) {
 			return;
@@ -532,29 +530,6 @@
 					changed.set(replayLevelCellKey(entry, level), {
 						sequence: replayCellFlashSequence + 1,
 						change: replayLevelCellChange(previous, entry, level)
-					});
-				}
-			}
-		}
-
-		if (nextAtMs > previousAtMs) {
-			const nextByUid = new Map(nextEntries.map((entry) => [entry.uid, entry]));
-
-			for (const event of replayEvents) {
-				const eventMs = replayEventTime(event);
-
-				if (eventMs <= previousAtMs || eventMs > nextAtMs) {
-					continue;
-				}
-
-				const entry = nextByUid.get(event.uid);
-				const level = levels.find((item) => Number(item.levelId) === Number(event.levelId));
-				const key = entry && level ? replayLevelCellKey(entry, level) : null;
-
-				if (key && !changed.has(key)) {
-					changed.set(key, {
-						sequence: replayCellFlashSequence + 1,
-						change: 'unchanged'
 					});
 				}
 			}
@@ -702,7 +677,7 @@
 		const entries = buildReplayEntries(replayAtMs);
 
 		if (flashChanges) {
-			markReplayCellChanges(previousEntries, entries, previousAtMs, replayAtMs);
+			markReplayCellChanges(previousEntries, entries);
 		} else {
 			replayCellFlashTokens = new Map();
 		}
@@ -1283,7 +1258,6 @@
                     <span
                       class:replay-cell-flash-better={rankFlash?.change === 'better'}
                       class:replay-cell-flash-worse={rankFlash?.change === 'worse'}
-                      class:replay-cell-flash-unchanged={rankFlash?.change === 'unchanged'}
                     >#{entry.rank}</span>
                   {/key}
                 </Table.Cell>
@@ -1308,7 +1282,6 @@
                       class="w-full rounded-sm px-2 py-1 tabular-nums transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       class:replay-cell-flash-better={totalFlash?.change === 'better'}
                       class:replay-cell-flash-worse={totalFlash?.change === 'worse'}
-                      class:replay-cell-flash-unchanged={totalFlash?.change === 'unchanged'}
                       on:click={() => openPlayerStats(entry)}
                       aria-label={$_('tournament.stats.open_player', {
                         values: { player: playerDisplayName(entry) }
@@ -1323,7 +1296,6 @@
                     <span
                       class:replay-cell-flash-better={penaltyFlash?.change === 'better'}
                       class:replay-cell-flash-worse={penaltyFlash?.change === 'worse'}
-                      class:replay-cell-flash-unchanged={penaltyFlash?.change === 'unchanged'}
                     >
                       <Tooltip.Root>
                         <Tooltip.Trigger>
@@ -1339,7 +1311,6 @@
                     <span
                       class:replay-cell-flash-better={completedFlash?.change === 'better'}
                       class:replay-cell-flash-worse={completedFlash?.change === 'worse'}
-                      class:replay-cell-flash-unchanged={completedFlash?.change === 'unchanged'}
                     >{entry.completedCount}</span>
                   {/key}
                 </Table.Cell>
@@ -1361,7 +1332,6 @@
                         )}
                         class:replay-cell-flash-better={levelFlash?.change === 'better'}
                         class:replay-cell-flash-worse={levelFlash?.change === 'worse'}
-                        class:replay-cell-flash-unchanged={levelFlash?.change === 'unchanged'}
                         on:click={() => handleLevelCellClick(entry, level, hiddenScore)}
                         aria-label={hiddenScore
                           ? $_('tournament.leaderboard.hidden_score')
@@ -1431,8 +1401,7 @@
 
 <style>
 	.replay-cell-flash-better,
-	.replay-cell-flash-worse,
-	.replay-cell-flash-unchanged {
+	.replay-cell-flash-worse {
 		animation: replay-cell-flash 700ms ease-out;
 	}
 
@@ -1442,10 +1411,6 @@
 
 	.replay-cell-flash-worse {
 		--replay-cell-flash-color: rgb(239 68 68);
-	}
-
-	.replay-cell-flash-unchanged {
-		--replay-cell-flash-color: rgb(250 204 21);
 	}
 
 	@keyframes replay-cell-flash {
