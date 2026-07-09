@@ -179,7 +179,7 @@ export function statusMeta(status: TournamentStatus): StatusMeta {
 }
 
 /** High-level lifecycle stages shown in the timeline (draft folds into registration). */
-export const LIFECYCLE_STAGES = ['registration', 'closed', 'ready', 'ongoing', 'finished'] as const;
+export const LIFECYCLE_STAGES = ['registration', 'closed', 'ready', 'ongoing'] as const;
 
 export function lifecycleStageKey(stage: (typeof LIFECYCLE_STAGES)[number]) {
     return `tournament.lifecycle_stage.${stage}`;
