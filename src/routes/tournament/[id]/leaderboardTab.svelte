@@ -51,7 +51,8 @@
 	$: canReplay = Boolean(
 		board
 		&& (
-			tournament.status === 'finished'
+			(canManage && tournament?.status === 'ongoing')
+			|| tournament?.status === 'finished'
 			|| board.frozen
 			|| (freezeAtMs > 0 && Date.now() >= freezeAtMs && !board.revealed)
 		)
