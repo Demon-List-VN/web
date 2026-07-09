@@ -4212,6 +4212,7 @@
             "level_description": "Tiến độ và số lần chết của người chơi ở màn này.",
             "total_score": "Tổng điểm",
             "all_level_progress": "Đóng góp điểm từng màn",
+            "show_contribution": "Đóng góp từng màn",
             "level_progress": "Tiến độ màn",
             "death_count": "Số lần chết",
             "deaths": "Lần chết",

@@ -4213,6 +4213,7 @@
             "level_description": "Progress and death count for this player's level run.",
             "total_score": "Total score",
             "all_level_progress": "Level score contribution",
+            "show_contribution": "Level contribution",
             "level_progress": "Level progress",
             "death_count": "Death count",
             "deaths": "Deaths",

@@ -8,6 +8,8 @@
 	import { _ } from 'svelte-i18n';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import Loading from '$lib/components/animation/loading.svelte';
+	import { Label } from '$lib/components/ui/label';
+	import { Switch } from '$lib/components/ui/switch';
 	import { tournamentFetch } from '$lib/client/tournament';
 
 	export let open = false;
@@ -30,11 +32,17 @@
 		levels: LevelPoint[];
 	};
 
+	type PlayerAreaChartData = {
+		points: HistoryPoint[];
+		showContribution: boolean;
+	};
+
 	let loading = false;
 	let errorMessage = '';
 	let activeLoadKey = '';
 	let history: HistoryPoint[] = [];
 	let deathCount: number[] = [];
+	let showLevelContribution = false;
 
 	$: playerName = entry?.player?.name || entry?.uid || '';
 	$: selectedLevelId = Number(level?.levelId);
@@ -310,29 +318,17 @@
 		return nextChart(node);
 	}
 
-	function createTotalScoreChart(node: HTMLCanvasElement, points: HistoryPoint[]) {
+	function createLevelAreaChart(node: HTMLCanvasElement, data: PlayerAreaChartData) {
 		let chart: Chart | null = null;
-		const render = (nextPoints: HistoryPoint[]) => {
-			chart = replaceChart(chart, node, (canvas) => buildTotalScoreChart(canvas, nextPoints));
+		const render = (nextData: PlayerAreaChartData) => {
+			chart = replaceChart(
+				chart,
+				node,
+				(canvas) => buildLevelAreaChart(canvas, nextData.points, nextData.showContribution)
+			);
 		};
 
-		render(points);
-
-		return {
-			update: render,
-			destroy() {
-				chart?.destroy();
-			}
-		};
-	}
-
-	function createLevelAreaChart(node: HTMLCanvasElement, points: HistoryPoint[]) {
-		let chart: Chart | null = null;
-		const render = (nextPoints: HistoryPoint[]) => {
-			chart = replaceChart(chart, node, (canvas) => buildLevelAreaChart(canvas, nextPoints));
-		};
-
-		render(points);
+		render(data);
 
 		return {
 			update: render,
@@ -389,30 +385,53 @@
 		};
 	}
 
-	function buildTotalScoreChart(node: HTMLCanvasElement, points: HistoryPoint[]) {
+	function buildLevelAreaChart(
+		node: HTMLCanvasElement,
+		points: HistoryPoint[],
+		showContribution: boolean
+	) {
 		return new Chart(node, {
 			type: 'line',
 			data: {
 				labels: points.map((point) => formatDate(point.atMs)),
-				datasets: [
-					{
-						label: $_('tournament.stats.total_score'),
-						data: points.map((point) => point.totalScore),
-						borderColor: cssColor('--primary', '#2563eb'),
-						backgroundColor: cssAlphaColor('--primary', 0.12, 'rgba(37, 99, 235, 0.12)'),
-						fill: true,
+				datasets: showContribution
+					? levels.map((item, index) => ({
+						label: levelLabel(item),
+						data: points.map((point) =>
+							point.levels.find((levelPoint) =>
+								Number(levelPoint.level.levelId) === Number(item.levelId)
+							)?.score ?? 0
+						),
+						borderColor: palette(index),
+						backgroundColor: palette(index, 0.12),
+						fill: index === 0 ? 'origin' : '-1',
+						stack: 'score',
 						tension: 0,
 						borderWidth: 2,
 						pointRadius: 0,
 						pointHoverRadius: 5,
 						pointHitRadius: 10
-					}
-				]
+					}))
+					: [
+						{
+							label: $_('tournament.stats.total_score'),
+							data: points.map((point) => point.totalScore),
+							borderColor: cssColor('--primary', '#2563eb'),
+							backgroundColor: cssAlphaColor('--primary', 0.12, 'rgba(37, 99, 235, 0.12)'),
+							fill: true,
+							tension: 0,
+							borderWidth: 2,
+							pointRadius: 0,
+							pointHoverRadius: 5,
+							pointHitRadius: 10
+						}
+					]
 			},
 			options: {
 				...baseChartOptions(),
 				scales: {
 					x: {
+						stacked: showContribution,
 						grid: { display: false },
 						ticks: {
 							color: cssColor('--muted-foreground', '#71717a'),
@@ -422,74 +441,7 @@
 						}
 					},
 					y: {
-						beginAtZero: true,
-						border: { display: false },
-						grid: { color: cssAlphaColor('--border', 0.85, 'rgba(161, 161, 170, 0.4)') },
-						ticks: {
-							color: cssColor('--muted-foreground', '#71717a'),
-							precision: 0
-						}
-					}
-				},
-				plugins: {
-					legend: { display: false },
-					tooltip: {
-						callbacks: {
-							title: (context) => context[0]?.label ?? '',
-							label: (context) =>
-								`${$_('tournament.stats.total_score')}: ${formatNumber(context.parsed.y)}`,
-							afterLabel: (context) => {
-								const point = points[context.dataIndex];
-
-								return point?.levels.map((item) =>
-									`${levelLabel(item.level)}: ${formatNumber(item.progress)}% · ${formatNumber(item.score)} ${$_('tournament.stats.points_suffix')}`
-								) ?? [];
-							}
-						}
-					}
-				}
-			}
-		});
-	}
-
-	function buildLevelAreaChart(node: HTMLCanvasElement, points: HistoryPoint[]) {
-		return new Chart(node, {
-			type: 'line',
-			data: {
-				labels: points.map((point) => formatDate(point.atMs)),
-				datasets: levels.map((item, index) => ({
-					label: levelLabel(item),
-					data: points.map((point) =>
-						point.levels.find((levelPoint) =>
-							Number(levelPoint.level.levelId) === Number(item.levelId)
-						)?.score ?? 0
-					),
-					borderColor: palette(index),
-					backgroundColor: palette(index, 0.12),
-					fill: index === 0 ? 'origin' : '-1',
-					stack: 'score',
-					tension: 0,
-					borderWidth: 2,
-					pointRadius: 0,
-					pointHoverRadius: 5,
-					pointHitRadius: 10
-				}))
-			},
-			options: {
-				...baseChartOptions(),
-				scales: {
-					x: {
-						stacked: true,
-						grid: { display: false },
-						ticks: {
-							color: cssColor('--muted-foreground', '#71717a'),
-							maxRotation: 0,
-							autoSkip: true,
-							maxTicksLimit: 6
-						}
-					},
-					y: {
-						stacked: true,
+						stacked: showContribution,
 						beginAtZero: true,
 						border: { display: false },
 						grid: { color: cssAlphaColor('--border', 0.85, 'rgba(161, 161, 170, 0.4)') },
@@ -501,16 +453,33 @@
 				},
 				plugins: {
 					legend: {
-						display: true,
+						display: showContribution,
 						position: 'bottom'
 					},
 					tooltip: {
 						callbacks: {
 							label: (context) => {
 								const point = points[context.dataIndex];
-								const levelPoint = point?.levels[context.datasetIndex];
+								const levelPoint = showContribution
+									? point?.levels[context.datasetIndex]
+									: null;
+
+								if (!showContribution) {
+									return `${$_('tournament.stats.total_score')}: ${formatNumber(context.parsed.y)}`;
+								}
 
 								return `${context.dataset.label}: ${formatNumber(levelPoint?.score ?? 0)} ${$_('tournament.stats.points_suffix')} · ${formatNumber(levelPoint?.progress ?? 0)}%`;
+							},
+							afterLabel: (context) => {
+								if (showContribution) {
+									return [];
+								}
+
+								const point = points[context.dataIndex];
+
+								return point?.levels.map((item) =>
+									`${levelLabel(item.level)}: ${formatNumber(item.progress)}% · ${formatNumber(item.score)} ${$_('tournament.stats.points_suffix')}`
+								) ?? [];
 							}
 						}
 					}
@@ -659,15 +628,25 @@
     {:else if mode === 'player'}
       <div class="flex flex-col gap-6">
         <section>
-          <h3 class="mb-2 text-sm font-semibold">{$_('tournament.stats.total_score')}</h3>
-          <div class="h-[280px] w-full">
-            <canvas use:createTotalScoreChart={history}></canvas>
+          <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <h3 class="text-sm font-semibold">{$_('tournament.stats.total_score')}</h3>
+            <div class="flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2">
+              <Switch
+                id="contest-stats-contribution-toggle"
+                bind:checked={showLevelContribution}
+              />
+              <Label for="contest-stats-contribution-toggle" class="cursor-pointer text-sm">
+                {$_('tournament.stats.show_contribution')}
+              </Label>
+            </div>
           </div>
-        </section>
-        <section>
-          <h3 class="mb-2 text-sm font-semibold">{$_('tournament.stats.all_level_progress')}</h3>
-          <div class="h-[320px] w-full">
-            <canvas use:createLevelAreaChart={history}></canvas>
+          <div class="h-[360px] w-full">
+            <canvas
+              use:createLevelAreaChart={{
+                points: history,
+                showContribution: showLevelContribution
+              }}
+            ></canvas>
           </div>
         </section>
       </div>
