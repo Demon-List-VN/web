@@ -4206,6 +4206,26 @@
             "empty": "No leaderboard entries yet.",
             "penalty_detail": "{hours} hours {minutes} minutes {seconds} seconds"
         },
+        "stats": {
+            "player_title": "{player} stats",
+            "level_title": "{player} - {level}",
+            "player_description": "Score and level progress over the contest timeline.",
+            "level_description": "Progress and death count for this player's level run.",
+            "total_score": "Total score",
+            "all_level_progress": "Level score contribution",
+            "level_progress": "Level progress",
+            "death_count": "Death count",
+            "deaths": "Deaths",
+            "progress": "Progress",
+            "points_suffix": "pt",
+            "total_deaths": "Total deaths: {count}",
+            "loading": "Loading stats...",
+            "load_failed": "Failed to load stats.",
+            "no_history": "No progress history yet.",
+            "no_death_count": "No death count data yet.",
+            "open_player": "Open stats for {player}",
+            "open_level": "Open {level} stats for {player}"
+        },
         "levels": {
             "empty": "No contest levels are available yet.",
             "load_failed": "Failed to load contest levels.",

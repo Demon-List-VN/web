@@ -1,0 +1,702 @@
+<script lang="ts" context="module">
+	const replayCache = new Map<string, Promise<any>>();
+	const deathCountCache = new Map<string, Promise<number[]>>();
+</script>
+
+<script lang="ts">
+	import Chart from 'chart.js/auto';
+	import { _ } from 'svelte-i18n';
+	import * as Dialog from '$lib/components/ui/dialog';
+	import Loading from '$lib/components/animation/loading.svelte';
+	import { tournamentFetch } from '$lib/client/tournament';
+
+	export let open = false;
+	export let mode: 'player' | 'level' = 'player';
+	export let tournament: any;
+	export let levels: any[] = [];
+	export let entry: any = null;
+	export let level: any = null;
+	export let live = false;
+
+	type LevelPoint = {
+		level: any;
+		progress: number;
+		score: number;
+	};
+
+	type HistoryPoint = {
+		atMs: number;
+		totalScore: number;
+		levels: LevelPoint[];
+	};
+
+	let loading = false;
+	let errorMessage = '';
+	let activeLoadKey = '';
+	let history: HistoryPoint[] = [];
+	let deathCount: number[] = [];
+
+	$: playerName = entry?.player?.name || entry?.uid || '';
+	$: selectedLevelId = Number(level?.levelId);
+	$: selectedLevelName = level?.name || (selectedLevelId ? `Level ${selectedLevelId}` : '');
+	$: hasHistory = history.length > 0;
+	$: totalDeaths = deathCount.reduce((total, count) => total + Number(count || 0), 0);
+	$: selectedLevelHistory = selectedLevelId
+		? history.map((point) => ({
+			...point,
+			levelPoint: point.levels.find(
+				(item) => Number(item.level.levelId) === selectedLevelId
+			) ?? {
+				level,
+				progress: 0,
+				score: 0
+			}
+		}))
+		: [];
+	$: dialogTitle = mode === 'level'
+		? $_('tournament.stats.level_title', {
+			values: {
+				player: playerName,
+				level: selectedLevelName
+			}
+		})
+		: $_('tournament.stats.player_title', { values: { player: playerName } });
+	$: loadKey = open && tournament?.id && entry?.uid
+		? [
+			mode,
+			tournament.id,
+			entry.uid,
+			live ? 'live' : 'frozen',
+			mode === 'level' ? selectedLevelId : 'all'
+		].join(':')
+		: '';
+	$: if (loadKey && loadKey !== activeLoadKey) {
+		activeLoadKey = loadKey;
+		void loadStats(loadKey);
+	}
+	$: if (!open) {
+		activeLoadKey = '';
+	}
+
+	function parseTime(value: unknown) {
+		const time = value
+			? new Date(String(value))
+				.getTime()
+			: NaN;
+
+		return Number.isFinite(time) ? time : 0;
+	}
+
+	function roundScore(value: number) {
+		return Math.round(value * 100) / 100;
+	}
+
+	function formatNumber(value: number) {
+		return Math.round(Number(value || 0) * 100) / 100;
+	}
+
+	function formatDate(valueMs: number) {
+		return valueMs > 0
+			? new Date(valueMs)
+				.toLocaleString()
+			: '-';
+	}
+
+	function levelLabel(value: any) {
+		return value?.name || `Level ${value?.levelId ?? ''}`;
+	}
+
+	function replayCacheKey() {
+		return `${tournament.id}:${live ? 'live' : 'normal'}`;
+	}
+
+	function replayPath() {
+		return `/${tournament.id}/leaderboard/replay${live ? '?live=true' : ''}`;
+	}
+
+	function getReplayData() {
+		const key = replayCacheKey();
+
+		if (!replayCache.has(key)) {
+			const request = tournamentFetch(replayPath())
+				.catch((error) => {
+					replayCache.delete(key);
+					throw error;
+				});
+
+			replayCache.set(key, request);
+		}
+
+		return replayCache.get(key)!;
+	}
+
+	function getDeathCount(uid: string, levelId: number) {
+		const key = `${uid}:${levelId}`;
+
+		if (!deathCountCache.has(key)) {
+			const request = fetch(
+				`${import.meta.env.VITE_API_URL}/deathCount/${encodeURIComponent(uid)}/${levelId}`
+			)
+				.then(async (response) => {
+					if (!response.ok) {
+						throw new Error('Failed to load death count');
+					}
+
+					const payload = await response.json();
+
+					return Array.isArray(payload?.count)
+						? Array.from({ length: 100 }, (_, index) => Number(payload.count[index] || 0))
+						: [];
+				})
+				.catch((error) => {
+					deathCountCache.delete(key);
+					throw error;
+				});
+
+			deathCountCache.set(key, request);
+		}
+
+		return deathCountCache.get(key)!;
+	}
+
+	async function loadStats(key: string) {
+		loading = true;
+		errorMessage = '';
+		history = [];
+		deathCount = [];
+
+		try {
+			const replayData = await getReplayData();
+			const nextHistory = buildHistory(replayData, entry.uid);
+			let nextDeathCount: number[] = [];
+
+			if (mode === 'level' && selectedLevelId) {
+				nextDeathCount = await getDeathCount(entry.uid, selectedLevelId);
+			}
+
+			if (key !== activeLoadKey) {
+				return;
+			}
+
+			history = nextHistory;
+			deathCount = nextDeathCount;
+		} catch (error: any) {
+			if (key === activeLoadKey) {
+				errorMessage = error?.message || $_('tournament.stats.load_failed');
+			}
+		} finally {
+			if (key === activeLoadKey) {
+				loading = false;
+			}
+		}
+	}
+
+	function buildHistory(replayData: any, uid: string) {
+		const contestLevels = levels.filter((item) => Number.isFinite(Number(item.levelId)));
+		const levelById = new Map(
+			contestLevels.map((item) => [Number(item.levelId), item])
+		);
+		const participant = (replayData?.participants ?? [])
+			.find((item: any) => item.uid === uid);
+		const latePenalty = Number(replayData?.lateRegPenaltyFraction ?? 0);
+		const lateFactor = participant?.isLate && latePenalty ? 1 - latePenalty : 1;
+		const events = (Array.isArray(replayData?.events) ? replayData.events : [])
+			.filter((event: any) => event?.uid === uid && levelById.has(Number(event.levelId)))
+			.sort((a: any, b: any) => parseTime(a.created_at) - parseTime(b.created_at));
+		const rangeStartMs = parseTime(replayData?.rangeStart)
+			|| parseTime(tournament?.startedAt ?? tournament?.startsAt)
+			|| parseTime(events[0]?.created_at);
+		const rangeEndMs = parseTime(replayData?.rangeEnd)
+			|| parseTime(tournament?.endedAt ?? tournament?.endsAt)
+			|| parseTime(events[events.length - 1]?.created_at)
+			|| rangeStartMs;
+		const timestamps = [...new Set([
+			rangeStartMs,
+			...events.map((event: any) => parseTime(event.created_at)),
+			rangeEndMs
+		])]
+			.filter((time) => time > 0)
+			.sort((a, b) => a - b);
+		const bestProgress = new Map<number, number>();
+		const points: HistoryPoint[] = [];
+		let eventIndex = 0;
+
+		for (const timestamp of timestamps) {
+			while (eventIndex < events.length && parseTime(events[eventIndex].created_at) <= timestamp) {
+				const event = events[eventIndex];
+				const levelId = Number(event.levelId);
+				const progress = Math.max(0, Math.min(100, Number(event.progress) || 0));
+				const current = bestProgress.get(levelId) ?? 0;
+
+				if (progress > current) {
+					bestProgress.set(levelId, progress);
+				}
+
+				eventIndex += 1;
+			}
+
+			let totalScore = 0;
+			const levelPoints = contestLevels.map((item) => {
+				const progress = bestProgress.get(Number(item.levelId)) ?? 0;
+				const score = roundScore(
+					(progress / 100) * Number(item.maxPoints || 0) * lateFactor
+				);
+
+				totalScore = roundScore(totalScore + score);
+
+				return {
+					level: item,
+					progress,
+					score
+				};
+			});
+
+			points.push({
+				atMs: timestamp,
+				totalScore,
+				levels: levelPoints
+			});
+		}
+
+		return points;
+	}
+
+	function cssColor(variable: string, fallback: string) {
+		if (typeof document === 'undefined') {
+			return fallback;
+		}
+
+		const value = getComputedStyle(document.documentElement)
+			.getPropertyValue(variable)
+			.trim();
+
+		return value ? `hsl(${value})` : fallback;
+	}
+
+	function cssAlphaColor(variable: string, alpha: number, fallback: string) {
+		if (typeof document === 'undefined') {
+			return fallback;
+		}
+
+		const value = getComputedStyle(document.documentElement)
+			.getPropertyValue(variable)
+			.trim();
+
+		return value ? `hsl(${value} / ${alpha})` : fallback;
+	}
+
+	function palette(index: number, alpha = 1) {
+		const colors = [
+			`rgba(59, 130, 246, ${alpha})`,
+			`rgba(16, 185, 129, ${alpha})`,
+			`rgba(245, 158, 11, ${alpha})`,
+			`rgba(236, 72, 153, ${alpha})`,
+			`rgba(139, 92, 246, ${alpha})`,
+			`rgba(20, 184, 166, ${alpha})`,
+			`rgba(239, 68, 68, ${alpha})`,
+			`rgba(132, 204, 22, ${alpha})`
+		];
+
+		return colors[index % colors.length];
+	}
+
+	function replaceChart(
+		chart: Chart | null,
+		node: HTMLCanvasElement,
+		nextChart: (node: HTMLCanvasElement) => Chart
+	) {
+		chart?.destroy();
+
+		return nextChart(node);
+	}
+
+	function createTotalScoreChart(node: HTMLCanvasElement, points: HistoryPoint[]) {
+		let chart: Chart | null = null;
+		const render = (nextPoints: HistoryPoint[]) => {
+			chart = replaceChart(chart, node, (canvas) => buildTotalScoreChart(canvas, nextPoints));
+		};
+
+		render(points);
+
+		return {
+			update: render,
+			destroy() {
+				chart?.destroy();
+			}
+		};
+	}
+
+	function createLevelAreaChart(node: HTMLCanvasElement, points: HistoryPoint[]) {
+		let chart: Chart | null = null;
+		const render = (nextPoints: HistoryPoint[]) => {
+			chart = replaceChart(chart, node, (canvas) => buildLevelAreaChart(canvas, nextPoints));
+		};
+
+		render(points);
+
+		return {
+			update: render,
+			destroy() {
+				chart?.destroy();
+			}
+		};
+	}
+
+	function createSelectedLevelChart(
+		node: HTMLCanvasElement,
+		points: Array<HistoryPoint & { levelPoint: LevelPoint; }>
+	) {
+		let chart: Chart | null = null;
+		const render = (nextPoints: Array<HistoryPoint & { levelPoint: LevelPoint; }>) => {
+			chart = replaceChart(chart, node, (canvas) => buildSelectedLevelChart(canvas, nextPoints));
+		};
+
+		render(points);
+
+		return {
+			update: render,
+			destroy() {
+				chart?.destroy();
+			}
+		};
+	}
+
+	function createDeathCountChart(node: HTMLCanvasElement, data: number[]) {
+		let chart: Chart | null = null;
+		const render = (nextData: number[]) => {
+			chart = replaceChart(chart, node, (canvas) => buildDeathCountChart(canvas, nextData));
+		};
+
+		render(data);
+
+		return {
+			update: render,
+			destroy() {
+				chart?.destroy();
+			}
+		};
+	}
+
+	function baseChartOptions() {
+		return {
+			responsive: true,
+			maintainAspectRatio: false,
+			animation: false as const,
+			interaction: {
+				mode: 'index' as const,
+				intersect: false
+			}
+		};
+	}
+
+	function buildTotalScoreChart(node: HTMLCanvasElement, points: HistoryPoint[]) {
+		return new Chart(node, {
+			type: 'line',
+			data: {
+				labels: points.map((point) => formatDate(point.atMs)),
+				datasets: [
+					{
+						label: $_('tournament.stats.total_score'),
+						data: points.map((point) => point.totalScore),
+						borderColor: cssColor('--primary', '#2563eb'),
+						backgroundColor: cssAlphaColor('--primary', 0.12, 'rgba(37, 99, 235, 0.12)'),
+						fill: true,
+						tension: 0,
+						borderWidth: 2,
+						pointRadius: 0,
+						pointHoverRadius: 5,
+						pointHitRadius: 10
+					}
+				]
+			},
+			options: {
+				...baseChartOptions(),
+				scales: {
+					x: {
+						grid: { display: false },
+						ticks: {
+							color: cssColor('--muted-foreground', '#71717a'),
+							maxRotation: 0,
+							autoSkip: true,
+							maxTicksLimit: 6
+						}
+					},
+					y: {
+						beginAtZero: true,
+						border: { display: false },
+						grid: { color: cssAlphaColor('--border', 0.85, 'rgba(161, 161, 170, 0.4)') },
+						ticks: {
+							color: cssColor('--muted-foreground', '#71717a'),
+							precision: 0
+						}
+					}
+				},
+				plugins: {
+					legend: { display: false },
+					tooltip: {
+						callbacks: {
+							title: (context) => context[0]?.label ?? '',
+							label: (context) =>
+								`${$_('tournament.stats.total_score')}: ${formatNumber(context.parsed.y)}`,
+							afterLabel: (context) => {
+								const point = points[context.dataIndex];
+
+								return point?.levels.map((item) =>
+									`${levelLabel(item.level)}: ${formatNumber(item.progress)}% · ${formatNumber(item.score)} ${$_('tournament.stats.points_suffix')}`
+								) ?? [];
+							}
+						}
+					}
+				}
+			}
+		});
+	}
+
+	function buildLevelAreaChart(node: HTMLCanvasElement, points: HistoryPoint[]) {
+		return new Chart(node, {
+			type: 'line',
+			data: {
+				labels: points.map((point) => formatDate(point.atMs)),
+				datasets: levels.map((item, index) => ({
+					label: levelLabel(item),
+					data: points.map((point) =>
+						point.levels.find((levelPoint) =>
+							Number(levelPoint.level.levelId) === Number(item.levelId)
+						)?.score ?? 0
+					),
+					borderColor: palette(index),
+					backgroundColor: palette(index, 0.12),
+					fill: index === 0 ? 'origin' : '-1',
+					stack: 'score',
+					tension: 0,
+					borderWidth: 2,
+					pointRadius: 0,
+					pointHoverRadius: 5,
+					pointHitRadius: 10
+				}))
+			},
+			options: {
+				...baseChartOptions(),
+				scales: {
+					x: {
+						stacked: true,
+						grid: { display: false },
+						ticks: {
+							color: cssColor('--muted-foreground', '#71717a'),
+							maxRotation: 0,
+							autoSkip: true,
+							maxTicksLimit: 6
+						}
+					},
+					y: {
+						stacked: true,
+						beginAtZero: true,
+						border: { display: false },
+						grid: { color: cssAlphaColor('--border', 0.85, 'rgba(161, 161, 170, 0.4)') },
+						ticks: {
+							color: cssColor('--muted-foreground', '#71717a'),
+							precision: 0
+						}
+					}
+				},
+				plugins: {
+					legend: {
+						display: true,
+						position: 'bottom'
+					},
+					tooltip: {
+						callbacks: {
+							label: (context) => {
+								const point = points[context.dataIndex];
+								const levelPoint = point?.levels[context.datasetIndex];
+
+								return `${context.dataset.label}: ${formatNumber(levelPoint?.score ?? 0)} ${$_('tournament.stats.points_suffix')} · ${formatNumber(levelPoint?.progress ?? 0)}%`;
+							}
+						}
+					}
+				}
+			}
+		});
+	}
+
+	function buildSelectedLevelChart(
+		node: HTMLCanvasElement,
+		points: Array<HistoryPoint & { levelPoint: LevelPoint; }>
+	) {
+		return new Chart(node, {
+			type: 'line',
+			data: {
+				labels: points.map((point) => formatDate(point.atMs)),
+				datasets: [
+					{
+						label: $_('tournament.stats.progress'),
+						data: points.map((point) => point.levelPoint.progress),
+						borderColor: palette(1),
+						backgroundColor: palette(1, 0.14),
+						fill: true,
+						tension: 0,
+						borderWidth: 2,
+						pointRadius: 0,
+						pointHoverRadius: 5,
+						pointHitRadius: 10
+					}
+				]
+			},
+			options: {
+				...baseChartOptions(),
+				scales: {
+					x: {
+						grid: { display: false },
+						ticks: {
+							color: cssColor('--muted-foreground', '#71717a'),
+							maxRotation: 0,
+							autoSkip: true,
+							maxTicksLimit: 6
+						}
+					},
+					y: {
+						beginAtZero: true,
+						max: 100,
+						border: { display: false },
+						grid: { color: cssAlphaColor('--border', 0.85, 'rgba(161, 161, 170, 0.4)') },
+						ticks: {
+							color: cssColor('--muted-foreground', '#71717a'),
+							callback: (value) => `${value}%`
+						}
+					}
+				},
+				plugins: {
+					legend: { display: false },
+					tooltip: {
+						callbacks: {
+							label: (context) => {
+								const point = points[context.dataIndex]?.levelPoint;
+
+								return `${$_('tournament.stats.progress')}: ${formatNumber(context.parsed.y)}% · ${formatNumber(point?.score ?? 0)} ${$_('tournament.stats.points_suffix')}`;
+							}
+						}
+					}
+				}
+			}
+		});
+	}
+
+	function buildDeathCountChart(node: HTMLCanvasElement, data: number[]) {
+		return new Chart(node, {
+			type: 'bar',
+			data: {
+				labels: Array.from({ length: 100 }, (_, index) => `${index + 1}%`),
+				datasets: [
+					{
+						label: $_('tournament.stats.deaths'),
+						data,
+						backgroundColor: palette(6, 0.6),
+						borderColor: palette(6),
+						borderWidth: 1
+					}
+				]
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				animation: false,
+				scales: {
+					x: {
+						ticks: {
+							color: cssColor('--muted-foreground', '#71717a'),
+							maxRotation: 0,
+							autoSkip: true,
+							maxTicksLimit: 10
+						}
+					},
+					y: {
+						beginAtZero: true,
+						border: { display: false },
+						grid: { color: cssAlphaColor('--border', 0.85, 'rgba(161, 161, 170, 0.4)') },
+						ticks: {
+							color: cssColor('--muted-foreground', '#71717a'),
+							precision: 0
+						}
+					}
+				},
+				plugins: {
+					legend: { display: false },
+					tooltip: {
+						callbacks: {
+							label: (context) =>
+								`${$_('tournament.stats.deaths')}: ${context.parsed.y}`
+						}
+					}
+				}
+			}
+		});
+	}
+</script>
+
+<Dialog.Root bind:open>
+  <Dialog.Content class="max-h-[90vh] overflow-y-auto md:max-w-[900px]">
+    <Dialog.Header>
+      <Dialog.Title>{dialogTitle}</Dialog.Title>
+      <Dialog.Description>
+        {mode === 'level'
+          ? $_('tournament.stats.level_description')
+          : $_('tournament.stats.player_description')}
+      </Dialog.Description>
+    </Dialog.Header>
+
+    {#if loading}
+      <div class="flex h-[360px] items-center justify-center">
+        <Loading inverted />
+      </div>
+    {:else if errorMessage}
+      <div class="flex h-[260px] items-center justify-center text-center text-muted-foreground">
+        {errorMessage}
+      </div>
+    {:else if !hasHistory}
+      <div class="flex h-[260px] items-center justify-center text-center text-muted-foreground">
+        {$_('tournament.stats.no_history')}
+      </div>
+    {:else if mode === 'player'}
+      <div class="flex flex-col gap-6">
+        <section>
+          <h3 class="mb-2 text-sm font-semibold">{$_('tournament.stats.total_score')}</h3>
+          <div class="h-[280px] w-full">
+            <canvas use:createTotalScoreChart={history}></canvas>
+          </div>
+        </section>
+        <section>
+          <h3 class="mb-2 text-sm font-semibold">{$_('tournament.stats.all_level_progress')}</h3>
+          <div class="h-[320px] w-full">
+            <canvas use:createLevelAreaChart={history}></canvas>
+          </div>
+        </section>
+      </div>
+    {:else}
+      <div class="flex flex-col gap-6">
+        <section>
+          <h3 class="mb-2 text-sm font-semibold">{$_('tournament.stats.level_progress')}</h3>
+          <div class="h-[300px] w-full">
+            <canvas use:createSelectedLevelChart={selectedLevelHistory}></canvas>
+          </div>
+        </section>
+        <section>
+          <div class="mb-2 flex items-center justify-between gap-3">
+            <h3 class="text-sm font-semibold">{$_('tournament.stats.death_count')}</h3>
+            <span class="text-sm text-muted-foreground">
+              {$_('tournament.stats.total_deaths', { values: { count: totalDeaths } })}
+            </span>
+          </div>
+          {#if deathCount.length > 0}
+            <div class="h-[300px] w-full">
+              <canvas use:createDeathCountChart={deathCount}></canvas>
+            </div>
+          {:else}
+            <div class="flex h-[220px] items-center justify-center text-center text-muted-foreground">
+              {$_('tournament.stats.no_death_count')}
+            </div>
+          {/if}
+        </section>
+      </div>
+    {/if}
+  </Dialog.Content>
+</Dialog.Root>

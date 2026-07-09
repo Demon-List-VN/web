@@ -4205,6 +4205,26 @@
             "empty": "Chưa có dữ liệu bảng xếp hạng.",
             "penalty_detail": "{hours} giờ {minutes} phút {seconds} giây"
         },
+        "stats": {
+            "player_title": "Thống kê của {player}",
+            "level_title": "{player} - {level}",
+            "player_description": "Điểm và tiến độ từng màn theo dòng thời gian cuộc thi.",
+            "level_description": "Tiến độ và số lần chết của người chơi ở màn này.",
+            "total_score": "Tổng điểm",
+            "all_level_progress": "Đóng góp điểm từng màn",
+            "level_progress": "Tiến độ màn",
+            "death_count": "Số lần chết",
+            "deaths": "Lần chết",
+            "progress": "Tiến độ",
+            "points_suffix": "đ",
+            "total_deaths": "Tổng lần chết: {count}",
+            "loading": "Đang tải thống kê...",
+            "load_failed": "Không thể tải thống kê.",
+            "no_history": "Chưa có lịch sử tiến độ.",
+            "no_death_count": "Chưa có dữ liệu số lần chết.",
+            "open_player": "Mở thống kê của {player}",
+            "open_level": "Mở thống kê {level} của {player}"
+        },
         "levels": {
             "empty": "Chưa có màn chơi nào cho cuộc thi.",
             "load_failed": "Không thể tải danh sách màn chơi.",

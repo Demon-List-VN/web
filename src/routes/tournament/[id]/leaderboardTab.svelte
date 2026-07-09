@@ -17,6 +17,7 @@
 		tournamentFetch
 	} from '$lib/client/tournament';
 	import { cn } from '$lib/utils.js';
+	import ContestStatsDialog from './contestStatsDialog.svelte';
 
 	export let tournament: any;
 	export let canManage = false;
@@ -44,6 +45,10 @@
 	let replayCellFlashTokens = new Map<string, number>();
 	let replayCellFlashTimer: ReturnType<typeof setTimeout> | null = null;
 	let replayCellFlashSequence = 0;
+	let statsDialogOpen = false;
+	let statsDialogMode: 'player' | 'level' = 'player';
+	let statsDialogEntry: any = null;
+	let statsDialogLevel: any = null;
 	const replaySpeeds = [1, 2, 5, 10, 25, 50, 100];
 	const replaySeekSeconds = 10;
 	const leaderboardFlyDurationMs = 1600;
@@ -139,6 +144,14 @@
 		) / 100;
 
 		return `${percentage}%`;
+	}
+
+	function playerDisplayName(entry: any) {
+		return entry?.player?.name || entry?.uid || '';
+	}
+
+	function levelDisplayName(level: any) {
+		return level?.name || `Level ${level?.levelId ?? ''}`;
 	}
 
 	function getPenaltyMs(entry: any) {
@@ -768,6 +781,30 @@
 		};
 	}
 
+	function openPlayerStats(entry: any) {
+		statsDialogMode = 'player';
+		statsDialogEntry = entry;
+		statsDialogLevel = null;
+		statsDialogOpen = true;
+	}
+
+	function openLevelStats(entry: any, level: any) {
+		statsDialogMode = 'level';
+		statsDialogEntry = entry;
+		statsDialogLevel = level;
+		statsDialogOpen = true;
+	}
+
+	function handleLevelCellClick(entry: any, level: any, hiddenScore: boolean) {
+		if (hiddenScore) {
+			revealScore(entry, level);
+
+			return;
+		}
+
+		openLevelStats(entry, level);
+	}
+
 	function handleReplaySliderInput(event: Event) {
 		const target = event.currentTarget as HTMLInputElement;
 
@@ -1087,7 +1124,17 @@
                 </Table.Cell>
                 <Table.Cell class="w-[100px] text-center font-bold tabular-nums">
                   {#key totalFlashToken}
-                    <span class:replay-cell-flash={totalFlashToken > 0}>{displayTotal(entry)}</span>
+                    <button
+                      type="button"
+                      class="w-full rounded-sm px-2 py-1 tabular-nums transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      class:replay-cell-flash={totalFlashToken > 0}
+                      on:click={() => openPlayerStats(entry)}
+                      aria-label={$_('tournament.stats.open_player', {
+                        values: { player: playerDisplayName(entry) }
+                      })}
+                    >
+                      {displayTotal(entry)}
+                    </button>
                   {/key}
                 </Table.Cell>
                 <Table.Cell class="w-[100px] text-center tabular-nums">
@@ -1112,11 +1159,26 @@
                   {@const hiddenScore = hasHiddenScore(entry, level)}
                   {@const levelFlashToken = replayCellFlashToken(replayLevelCellKey(entry, level))}
                   <Table.Cell
-                    class={cn('w-[90px] text-center tabular-nums', hiddenScore ? 'cursor-pointer' : '')}
-                    on:click={() => hiddenScore && revealScore(entry, level)}
+                    class="w-[90px] text-center tabular-nums"
                   >
                     {#key levelFlashToken}
-                      <span class:replay-cell-flash={levelFlashToken > 0}>
+                      <button
+                        type="button"
+                        class={cn(
+                          'w-full rounded-sm px-2 py-1 tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                          hiddenScore ? 'cursor-pointer' : 'hover:text-primary'
+                        )}
+                        class:replay-cell-flash={levelFlashToken > 0}
+                        on:click={() => handleLevelCellClick(entry, level, hiddenScore)}
+                        aria-label={hiddenScore
+                          ? $_('tournament.leaderboard.hidden_score')
+                          : $_('tournament.stats.open_level', {
+                            values: {
+                              player: playerDisplayName(entry),
+                              level: levelDisplayName(level)
+                            }
+                          })}
+                      >
                         {#if hiddenScore}
                           {#if result && Number(result.score || 0) > 0}
                             <span>{result.score}<sup>*</sup></span><br />
@@ -1134,7 +1196,7 @@
                         {:else}
                           0
                         {/if}
-                      </span>
+                      </button>
                     {/key}
                   </Table.Cell>
                 {/each}
@@ -1148,6 +1210,15 @@
         {$_('tournament.leaderboard.empty')}
       </p>
     {/if}
+    <ContestStatsDialog
+      bind:open={statsDialogOpen}
+      mode={statsDialogMode}
+      {tournament}
+      {levels}
+      entry={statsDialogEntry}
+      level={statsDialogLevel}
+      live={viewLive}
+    />
   </div>
 {/if}
 
