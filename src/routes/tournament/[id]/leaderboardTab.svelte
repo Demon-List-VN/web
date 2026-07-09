@@ -43,14 +43,16 @@
 	let replayParticipants: any[] = [];
 	let replayMeta: any = null;
 	let revealedCells = new Set<string>();
-	let replayCellFlashTokens = new Map<string, number>();
+	type ReplayCellChange = 'better' | 'worse' | 'unchanged';
+
+	let replayCellFlashTokens = new Map<string, { sequence: number; change: ReplayCellChange; }>();
 	let replayCellFlashTimer: ReturnType<typeof setTimeout> | null = null;
 	let replayCellFlashSequence = 0;
 	let statsDialogOpen = false;
 	let statsDialogMode: 'player' | 'level' = 'player';
 	let statsDialogEntry: any = null;
 	let statsDialogLevel: any = null;
-	const replaySpeeds = [1, 2, 5, 10, 25, 50, 100];
+	const replaySpeeds = [1, 2, 5, 10, 25, 50, 100, 250, 500, 750, 1000];
 	const replaySeekSeconds = 10;
 	const leaderboardFlyDurationMs = 1600;
 	const replayLeaderboardFlyDurationMs = 1000;
@@ -452,13 +454,51 @@
 		}
 	}
 
-	function markReplayCellChanges(previousEntries: any[], nextEntries: any[]) {
+	function replayCellChange(previous: number, next: number, lowerIsBetter = false): ReplayCellChange {
+		if (previous === next) {
+			return 'unchanged';
+		}
+
+		const improved = lowerIsBetter ? next < previous : next > previous;
+
+		return improved ? 'better' : 'worse';
+	}
+
+	function replayVisibleCellChange(previous: any, next: any, column: string): ReplayCellChange {
+		const lowerIsBetter = column === 'rank' || column === 'penalty';
+
+		return replayCellChange(
+			Number(replayVisibleCellValue(previous, column)),
+			Number(replayVisibleCellValue(next, column)),
+			lowerIsBetter
+		);
+	}
+
+	function replayLevelCellChange(previous: any, next: any, level: any): ReplayCellChange {
+		const previousResult = previous?.levels?.[String(level?.levelId)] ?? {};
+		const nextResult = next?.levels?.[String(level?.levelId)] ?? {};
+		const scoreChange = replayCellChange(
+			Number(previousResult.score ?? 0),
+			Number(nextResult.score ?? 0)
+		);
+
+		return scoreChange === 'unchanged'
+			? replayCellChange(Number(previousResult.progress ?? 0), Number(nextResult.progress ?? 0))
+			: scoreChange;
+	}
+
+	function markReplayCellChanges(
+		previousEntries: any[],
+		nextEntries: any[],
+		previousAtMs: number,
+		nextAtMs: number
+	) {
 		if (!replayMode || !previousEntries?.length) {
 			return;
 		}
 
 		const previousByUid = new Map(previousEntries.map((entry) => [entry.uid, entry]));
-		const changed = new Map<string, number>();
+		const changed = new Map<string, { sequence: number; change: ReplayCellChange; }>();
 		const staticColumns = ['rank', 'total', 'penalty', 'completed'];
 
 		for (const entry of nextEntries) {
@@ -470,13 +510,42 @@
 
 			for (const column of staticColumns) {
 				if (replayVisibleCellValue(previous, column) !== replayVisibleCellValue(entry, column)) {
-					changed.set(replayCellKey(entry, column), replayCellFlashSequence + 1);
+					changed.set(replayCellKey(entry, column), {
+						sequence: replayCellFlashSequence + 1,
+						change: replayVisibleCellChange(previous, entry, column)
+					});
 				}
 			}
 
 			for (const level of levels) {
 				if (replayLevelCellValue(previous, level) !== replayLevelCellValue(entry, level)) {
-					changed.set(replayLevelCellKey(entry, level), replayCellFlashSequence + 1);
+					changed.set(replayLevelCellKey(entry, level), {
+						sequence: replayCellFlashSequence + 1,
+						change: replayLevelCellChange(previous, entry, level)
+					});
+				}
+			}
+		}
+
+		if (nextAtMs > previousAtMs) {
+			const nextByUid = new Map(nextEntries.map((entry) => [entry.uid, entry]));
+
+			for (const event of replayEvents) {
+				const eventMs = replayEventTime(event);
+
+				if (eventMs <= previousAtMs || eventMs > nextAtMs) {
+					continue;
+				}
+
+				const entry = nextByUid.get(event.uid);
+				const level = levels.find((item) => Number(item.levelId) === Number(event.levelId));
+				const key = entry && level ? replayLevelCellKey(entry, level) : null;
+
+				if (key && !changed.has(key)) {
+					changed.set(key, {
+						sequence: replayCellFlashSequence + 1,
+						change: 'unchanged'
+					});
 				}
 			}
 		}
@@ -498,8 +567,8 @@
 		}, replayCellFlashDurationMs);
 	}
 
-	function replayCellFlashToken(key: string) {
-		return replayCellFlashTokens.get(key) ?? 0;
+	function replayCellFlash(key: string) {
+		return replayCellFlashTokens.get(key) ?? null;
 	}
 
 	function buildReplayEntries(atMs: number) {
@@ -616,12 +685,13 @@
 	}
 
 	function applyReplayAt(nextAtMs: number, flashChanges = true) {
+		const previousAtMs = replayAtMs;
 		replayAtMs = clampReplayAt(nextAtMs);
 		const previousEntries = board?.replay ? board.entries ?? [] : [];
 		const entries = buildReplayEntries(replayAtMs);
 
 		if (flashChanges) {
-			markReplayCellChanges(previousEntries, entries);
+			markReplayCellChanges(previousEntries, entries, previousAtMs, replayAtMs);
 		} else {
 			replayCellFlashTokens = new Map();
 		}
@@ -1176,10 +1246,10 @@
           </Table.Header>
           <Table.Body>
             {#each board.entries as entry (entry.uid)}
-              {@const rankFlashToken = replayCellFlashToken(replayCellKey(entry, 'rank'))}
-              {@const totalFlashToken = replayCellFlashToken(replayCellKey(entry, 'total'))}
-              {@const penaltyFlashToken = replayCellFlashToken(replayCellKey(entry, 'penalty'))}
-              {@const completedFlashToken = replayCellFlashToken(replayCellKey(entry, 'completed'))}
+              {@const rankFlash = replayCellFlash(replayCellKey(entry, 'rank'))}
+              {@const totalFlash = replayCellFlash(replayCellKey(entry, 'total'))}
+              {@const penaltyFlash = replayCellFlash(replayCellKey(entry, 'penalty'))}
+              {@const completedFlash = replayCellFlash(replayCellKey(entry, 'completed'))}
               <tr
                 animate:flip={{
                   duration: replayMode ? replayLeaderboardFlyDurationMs : leaderboardFlyDurationMs,
@@ -1198,8 +1268,12 @@
                     $user.loggedIn && entry.uid === $user.data.uid ? 'text-yellow-500' : ''
                   )}
                 >
-                  {#key rankFlashToken}
-                    <span class:replay-cell-flash={rankFlashToken > 0}>#{entry.rank}</span>
+                  {#key rankFlash?.sequence ?? 0}
+                    <span
+                      class:replay-cell-flash-better={rankFlash?.change === 'better'}
+                      class:replay-cell-flash-worse={rankFlash?.change === 'worse'}
+                      class:replay-cell-flash-unchanged={rankFlash?.change === 'unchanged'}
+                    >#{entry.rank}</span>
                   {/key}
                 </Table.Cell>
                 <Table.Cell class="min-w-[200px]">
@@ -1218,11 +1292,13 @@
                   {/if}
                 </Table.Cell>
                 <Table.Cell class="w-[100px] text-center font-bold tabular-nums">
-                  {#key totalFlashToken}
+                  {#key totalFlash?.sequence ?? 0}
                     <button
                       type="button"
                       class="w-full rounded-sm px-2 py-1 tabular-nums transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      class:replay-cell-flash={totalFlashToken > 0}
+                      class:replay-cell-flash-better={totalFlash?.change === 'better'}
+                      class:replay-cell-flash-worse={totalFlash?.change === 'worse'}
+                      class:replay-cell-flash-unchanged={totalFlash?.change === 'unchanged'}
                       on:click={() => openPlayerStats(entry)}
                       aria-label={$_('tournament.stats.open_player', {
                         values: { player: playerDisplayName(entry) }
@@ -1233,8 +1309,12 @@
                   {/key}
                 </Table.Cell>
                 <Table.Cell class="w-[100px] text-center tabular-nums">
-                  {#key penaltyFlashToken}
-                    <span class:replay-cell-flash={penaltyFlashToken > 0}>
+                  {#key penaltyFlash?.sequence ?? 0}
+                    <span
+                      class:replay-cell-flash-better={penaltyFlash?.change === 'better'}
+                      class:replay-cell-flash-worse={penaltyFlash?.change === 'worse'}
+                      class:replay-cell-flash-unchanged={penaltyFlash?.change === 'unchanged'}
+                    >
                       <Tooltip.Root>
                         <Tooltip.Trigger>
                           {getPenaltyMinutes(entry)}
@@ -1245,19 +1325,23 @@
                   {/key}
                 </Table.Cell>
                 <Table.Cell class="w-[100px] text-center tabular-nums text-muted-foreground">
-                  {#key completedFlashToken}
-                    <span class:replay-cell-flash={completedFlashToken > 0}>{entry.completedCount}</span>
+                  {#key completedFlash?.sequence ?? 0}
+                    <span
+                      class:replay-cell-flash-better={completedFlash?.change === 'better'}
+                      class:replay-cell-flash-worse={completedFlash?.change === 'worse'}
+                      class:replay-cell-flash-unchanged={completedFlash?.change === 'unchanged'}
+                    >{entry.completedCount}</span>
                   {/key}
                 </Table.Cell>
                 {#each levels as level}
                   {@const result = entry.levels[String(level.levelId)]}
                   {@const disqualified = isLevelDisqualified(entry, level)}
                   {@const hiddenScore = hasHiddenScore(entry, level)}
-                  {@const levelFlashToken = replayCellFlashToken(replayLevelCellKey(entry, level))}
+                  {@const levelFlash = replayCellFlash(replayLevelCellKey(entry, level))}
                   <Table.Cell
                     class="w-[90px] text-center tabular-nums"
                   >
-                    {#key levelFlashToken}
+                    {#key levelFlash?.sequence ?? 0}
                       <button
                         type="button"
                         class={cn(
@@ -1265,7 +1349,9 @@
                           hiddenScore ? 'cursor-pointer' : 'hover:text-primary',
                           disqualified ? 'text-destructive line-through decoration-2 hover:text-destructive' : ''
                         )}
-                        class:replay-cell-flash={levelFlashToken > 0}
+                        class:replay-cell-flash-better={levelFlash?.change === 'better'}
+                        class:replay-cell-flash-worse={levelFlash?.change === 'worse'}
+                        class:replay-cell-flash-unchanged={levelFlash?.change === 'unchanged'}
                         on:click={() => handleLevelCellClick(entry, level, hiddenScore)}
                         aria-label={hiddenScore
                           ? $_('tournament.leaderboard.hidden_score')
@@ -1334,15 +1420,29 @@
 {/if}
 
 <style>
-	.replay-cell-flash {
+	.replay-cell-flash-better,
+	.replay-cell-flash-worse,
+	.replay-cell-flash-unchanged {
 		animation: replay-cell-flash 700ms ease-out;
+	}
+
+	.replay-cell-flash-better {
+		--replay-cell-flash-color: rgb(34 197 94);
+	}
+
+	.replay-cell-flash-worse {
+		--replay-cell-flash-color: rgb(239 68 68);
+	}
+
+	.replay-cell-flash-unchanged {
+		--replay-cell-flash-color: rgb(250 204 21);
 	}
 
 	@keyframes replay-cell-flash {
 		0%,
 		55% {
-			color: rgb(250 204 21);
-			text-shadow: 0 0 10px rgb(250 204 21 / 45%);
+			color: var(--replay-cell-flash-color);
+			text-shadow: 0 0 10px color-mix(in srgb, var(--replay-cell-flash-color) 45%, transparent);
 		}
 
 		100% {
