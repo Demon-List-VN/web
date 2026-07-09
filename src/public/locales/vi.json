@@ -4193,6 +4193,8 @@
             "exit_replay": "Thoát phát lại",
             "play_replay": "Phát",
             "pause_replay": "Tạm dừng",
+            "seek_previous_replay": "Tua lùi phát lại",
+            "seek_next_replay": "Tua tới phát lại",
             "replay_at": "Thời điểm phát lại",
             "replay_speed": "Tốc độ",
             "replay_slider": "Mốc thời gian phát lại",

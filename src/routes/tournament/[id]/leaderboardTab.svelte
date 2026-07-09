@@ -3,7 +3,7 @@
 	import { flip } from 'svelte/animate';
 	import { cubicInOut } from 'svelte/easing';
 	import { _ } from 'svelte-i18n';
-	import { Download, Pause, Play, RefreshCw, Snowflake } from 'lucide-svelte';
+	import { Download, FastForward, Pause, Play, RefreshCw, Rewind, Snowflake } from 'lucide-svelte';
 	import { toast } from 'svelte-sonner';
 	import * as Table from '$lib/components/ui/table';
 	import * as Tooltip from '$lib/components/ui/tooltip';
@@ -42,6 +42,7 @@
 	let replayMeta: any = null;
 	let revealedCells = new Set<string>();
 	const replaySpeeds = [1, 2, 5, 10, 25, 50, 100];
+	const replaySeekSeconds = 10;
 	const leaderboardFlyDurationMs = 1600;
 	const replayLeaderboardFlyDurationMs = 1000;
 
@@ -695,6 +696,20 @@
 		}
 	}
 
+	function seekReplay(direction: -1 | 1) {
+		if (!replayMode || replayLoading || replayRangeEndMs <= replayRangeStartMs) {
+			return;
+		}
+
+		const nextAt = replayAtMs + direction * replaySeekSeconds * Number(replaySpeed) * 1000;
+
+		applyReplayAt(nextAt);
+
+		if (direction > 0 && nextAt >= replayRangeEndMs) {
+			stopReplayPlayback();
+		}
+	}
+
 	function toggleReplayPlayback() {
 		if (!replayMode || replayLoading || replayRangeEndMs <= replayRangeStartMs) {
 			return;
@@ -828,6 +843,15 @@
               <Button
                 size="icon"
                 variant="outline"
+                on:click={() => seekReplay(-1)}
+                disabled={replayLoading || replayRangeEndMs <= replayRangeStartMs}
+                aria-label={$_('tournament.leaderboard.seek_previous_replay')}
+              >
+                <Rewind size={16} />
+              </Button>
+              <Button
+                size="icon"
+                variant="outline"
                 on:click={toggleReplayPlayback}
                 disabled={replayLoading || replayRangeEndMs <= replayRangeStartMs}
                 aria-label={replayPlaying
@@ -839,6 +863,15 @@
                 {:else}
                   <Play size={16} />
                 {/if}
+              </Button>
+              <Button
+                size="icon"
+                variant="outline"
+                on:click={() => seekReplay(1)}
+                disabled={replayLoading || replayRangeEndMs <= replayRangeStartMs}
+                aria-label={$_('tournament.leaderboard.seek_next_replay')}
+              >
+                <FastForward size={16} />
               </Button>
               <div class="text-sm">
                 <div class="font-semibold">{$_('tournament.leaderboard.replay_at')}</div>

@@ -4194,6 +4194,8 @@
             "exit_replay": "Exit replay",
             "play_replay": "Play replay",
             "pause_replay": "Pause replay",
+            "seek_previous_replay": "Seek replay backward",
+            "seek_next_replay": "Seek replay forward",
             "replay_at": "Replay time",
             "replay_speed": "Speed",
             "replay_slider": "Replay timestamp",
