@@ -17,6 +17,7 @@
 		tournamentFetch
 	} from '$lib/client/tournament';
 	import { cn } from '$lib/utils.js';
+	import { resolvePvpRankBadge } from '$lib/utils/pvpRank';
 	import ContestStatsDialog from './contestStatsDialog.svelte';
 
 	export let tournament: any;
@@ -1289,13 +1290,12 @@
                 <Table.Cell class="min-w-[200px]">
                   {#if entry.player}
                     <div id={$user.loggedIn && entry.uid === $user.data.uid ? 'tournament-me' : undefined}>
-                      <PlayerLink
-                        player={entry.player}
-                        showAvatar
-                        avatarSize={22}
-                        showTitle={true}
-                        titleType="elo"
-                      />
+						<PlayerLink
+							player={entry.player}
+							showAvatar
+							avatarSize={22}
+							rankBadge={resolvePvpRankBadge(entry.player)}
+						/>
                     </div>
                   {:else}
                     {entry.uid}
