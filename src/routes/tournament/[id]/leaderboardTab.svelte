@@ -42,6 +42,8 @@
 	let replayMeta: any = null;
 	let revealedCells = new Set<string>();
 	const replaySpeeds = [1, 2, 5, 10, 25, 50, 100];
+	const leaderboardFlyDurationMs = 1600;
+	const replayLeaderboardFlyDurationMs = 1000;
 
 	$: totalAvailablePoints = levels.reduce(
 		(total, level) => total + Number(level.maxPoints || 0),
@@ -910,7 +912,10 @@
           <Table.Body>
             {#each board.entries as entry (entry.uid)}
               <tr
-                animate:flip={{ duration: 1600, easing: cubicInOut }}
+                animate:flip={{
+                  duration: replayMode ? replayLeaderboardFlyDurationMs : leaderboardFlyDurationMs,
+                  easing: cubicInOut
+                }}
                 class={cn(
                   'border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted',
                   leaderboardViewMode === 'reveal' ? 'duration-700 ease-in-out' : ''
