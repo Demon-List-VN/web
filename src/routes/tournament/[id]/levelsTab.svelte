@@ -61,7 +61,7 @@
     <p class="py-6 text-center text-muted-foreground">{$_('tournament.levels.empty')}</p>
   {:else}
     {#each levels as level, index (level.levelId)}
-      <ContestLevelCard {level} {index} {showDeathCount} />
+      <ContestLevelCard {level} {index} {showDeathCount} {tournament} onSubmitted={load} />
     {/each}
   {/if}
 </div>

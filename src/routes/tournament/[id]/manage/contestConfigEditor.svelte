@@ -110,6 +110,8 @@
 		autoUnfreezeLeaderboard: cfg.autoUnfreezeLeaderboard !== false,
 		freezeAt: toDatetimeLocal(cfg.freezeAt)
 			|| offsetToFreezeTime(cfg.freezeOffsetSeconds, cfg.durationSeconds),
+		allowGeodeSubmit: cfg.allowGeodeSubmit !== false,
+		allowManualSubmit: cfg.allowManualSubmit === true,
 		lateRegEnabled: cfg.lateRegOffsetSeconds != null,
 		lateRegMode: modeFromConfig() as LateRegMode,
 		lateRegClosesAt: offsetToCloseTime(cfg.lateRegOffsetSeconds)
@@ -121,6 +123,8 @@
 	let freezeEnabled = initial.freezeEnabled;
 	let autoUnfreezeLeaderboard = initial.autoUnfreezeLeaderboard;
 	let freezeAt = initial.freezeAt;
+	let allowGeodeSubmit = initial.allowGeodeSubmit;
+	let allowManualSubmit = initial.allowManualSubmit;
 	let lateRegEnabled = initial.lateRegEnabled;
 	let lateRegMode = initial.lateRegMode;
 	let lateRegClosesAt = initial.lateRegClosesAt;
@@ -131,6 +135,8 @@
 		freezeEnabled,
 		autoUnfreezeLeaderboard: freezeEnabled ? autoUnfreezeLeaderboard : true,
 		freezeAt,
+		allowGeodeSubmit,
+		allowManualSubmit,
 		lateRegEnabled,
 		lateRegMode,
 		lateRegClosesAt,
@@ -148,6 +154,8 @@
 		freezeEnabled = initial.freezeEnabled;
 		autoUnfreezeLeaderboard = initial.autoUnfreezeLeaderboard;
 		freezeAt = initial.freezeAt;
+		allowGeodeSubmit = initial.allowGeodeSubmit;
+		allowManualSubmit = initial.allowManualSubmit;
 		lateRegEnabled = initial.lateRegEnabled;
 		lateRegMode = initial.lateRegMode;
 		lateRegClosesAt = initial.lateRegClosesAt;
@@ -200,6 +208,8 @@
 				durationSeconds: Math.round(durationHours * 3600),
 				freezeAt: freezeEnabled ? toIso(freezeAt) : null,
 				autoUnfreezeLeaderboard: freezeEnabled ? autoUnfreezeLeaderboard : true,
+				allowGeodeSubmit,
+				allowManualSubmit,
 				lateRegOffsetSeconds: lateRegOffsetSeconds(),
 				lateRegPenaltyFraction: lateRegEnabled ? lateRegPenaltyPercent / 100 : null
 			})
@@ -247,6 +257,18 @@
       </Label>
     </div>
   {/if}
+  <div class="flex items-center gap-[8px]">
+    <Switch bind:checked={allowGeodeSubmit} {disabled} id="allow-geode-submit" />
+    <Label for="allow-geode-submit">
+      {$_('tournament.manage.allow_geode_submit')}
+    </Label>
+  </div>
+  <div class="flex items-center gap-[8px]">
+    <Switch bind:checked={allowManualSubmit} {disabled} id="allow-manual-submit" />
+    <Label for="allow-manual-submit">
+      {$_('tournament.manage.allow_manual_submit')}
+    </Label>
+  </div>
   <div class="flex items-center gap-[8px]">
     <Switch bind:checked={lateRegEnabled} {disabled} id="late-reg" />
     <Label for="late-reg">{$_('tournament.manage.late_registration')}</Label>

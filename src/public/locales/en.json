@@ -4024,6 +4024,8 @@
             "freeze_at": "Freeze leaderboard at",
             "freeze_at_invalid": "Choose a valid leaderboard freeze time.",
             "auto_unfreeze_leaderboard": "Automatically unfreeze leaderboard when contest ends",
+            "allow_geode_submit": "Allow automatic submit via Geode Mod",
+            "allow_manual_submit": "Allow manual submit",
             "late_registration": "Enable late registration",
             "late_reg_minutes": "Late window (minutes)",
             "late_reg_window": "Late registration closes",
@@ -4035,6 +4037,7 @@
             "level_pool": "Level pool",
             "level_id": "Level ID",
             "max_points": "Max points",
+            "require_raw": "Require raw",
             "add_level": "Add level",
             "rewards": "Rewards",
             "rewards_hint": "Set reward items per placement. Players claim them after the tournament ends.",
@@ -4207,6 +4210,7 @@
             "penalty_detail": "{hours} hours {minutes} minutes {seconds} seconds"
         },
         "stats": {
+            "stats_tab": "Stats",
             "player_title": "{player} stats",
             "level_title": "{player} - {level}",
             "player_description": "Score and level progress over the contest timeline.",
@@ -4233,7 +4237,34 @@
             "refresh": "Refresh levels",
             "copy_failed": "Failed to copy the level ID.",
             "by_creator": "by {creator}",
-            "open_death_count": "View death count for {level}"
+            "open_death_count": "View death count for {level}",
+            "raw_required": "Raw required"
+        },
+        "manual_submit": {
+            "title": "Submit progress",
+            "submit": "Submit",
+            "submitting": "Submitting...",
+            "cancel": "Cancel",
+            "progress": "Progress",
+            "video_link": "Video link",
+            "raw": "Raw",
+            "comment": "Comment",
+            "fill_required": "Fill all required fields.",
+            "invalid_progress": "Enter progress from 0 to 100.",
+            "success": "Progress submitted.",
+            "error": "Failed to submit progress."
+        },
+        "moderation": {
+            "tab": "Moderation",
+            "reason": "Reason",
+            "disqualify": "Disqualify progress",
+            "clear_disqualification": "Clear disqualification",
+            "disqualified": "Progress is disqualified",
+            "not_disqualified": "Progress is not disqualified",
+            "disqualified_short": "DQ",
+            "disqualified_saved": "Progress disqualified.",
+            "disqualification_cleared": "Disqualification cleared.",
+            "update_failed": "Failed to update disqualification."
         },
         "participants": {
             "invite": "Invite",

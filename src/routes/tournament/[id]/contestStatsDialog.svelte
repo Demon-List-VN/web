@@ -6,10 +6,14 @@
 <script lang="ts">
 	import Chart from 'chart.js/auto';
 	import { _ } from 'svelte-i18n';
+	import { toast } from 'svelte-sonner';
 	import * as Dialog from '$lib/components/ui/dialog';
+	import * as Tabs from '$lib/components/ui/tabs';
 	import Loading from '$lib/components/animation/loading.svelte';
 	import { Label } from '$lib/components/ui/label';
 	import { Switch } from '$lib/components/ui/switch';
+	import { Button } from '$lib/components/ui/button';
+	import { Textarea } from '$lib/components/ui/textarea';
 	import { tournamentFetch } from '$lib/client/tournament';
 
 	export let open = false;
@@ -19,6 +23,8 @@
 	export let entry: any = null;
 	export let level: any = null;
 	export let live = false;
+	export let canManage = false;
+	export let onModerationChange: (() => void | Promise<void>) | null = null;
 
 	type LevelPoint = {
 		level: any;
@@ -43,10 +49,17 @@
 	let history: HistoryPoint[] = [];
 	let deathCount: number[] = [];
 	let showLevelContribution = false;
+	let moderationSaving = false;
+	let moderationReason = '';
+	let localDisqualification: any = undefined;
+	let moderationTargetKey = '';
 
 	$: playerName = entry?.player?.name || entry?.uid || '';
 	$: selectedLevelId = Number(level?.levelId);
 	$: selectedLevelName = level?.name || (selectedLevelId ? `Level ${selectedLevelId}` : '');
+	$: selectedDisqualification = localDisqualification === undefined
+		? entry?.disqualifications?.[String(selectedLevelId)] ?? null
+		: localDisqualification;
 	$: hasHistory = history.length > 0;
 	$: totalDeaths = deathCount.reduce((total, count) => total + Number(count || 0), 0);
 	$: selectedLevelHistory = selectedLevelId
@@ -84,6 +97,18 @@
 	}
 	$: if (!open) {
 		activeLoadKey = '';
+		localDisqualification = undefined;
+		moderationReason = '';
+		moderationTargetKey = '';
+	}
+	$: if (open && mode === 'level') {
+		const nextModerationTargetKey = `${entry?.uid ?? ''}:${selectedLevelId || ''}`;
+
+		if (nextModerationTargetKey !== moderationTargetKey) {
+			moderationTargetKey = nextModerationTargetKey;
+			localDisqualification = undefined;
+			moderationReason = '';
+		}
 	}
 
 	function parseTime(value: unknown) {
@@ -206,10 +231,22 @@
 		);
 		const participant = (replayData?.participants ?? [])
 			.find((item: any) => item.uid === uid);
+		const disqualifiedLevelIds = new Set(
+			(replayData?.disqualifications ?? [])
+				.filter((item: any) => item.uid === uid)
+				.map((item: any) => Number(item.levelId))
+		);
 		const latePenalty = Number(replayData?.lateRegPenaltyFraction ?? 0);
 		const lateFactor = participant?.isLate && latePenalty ? 1 - latePenalty : 1;
+		const isRelevantEvent = (event: any) => {
+			const eventLevelId = Number(event.levelId);
+
+			return event?.uid === uid
+				&& levelById.has(eventLevelId)
+				&& !disqualifiedLevelIds.has(eventLevelId);
+		};
 		const events = (Array.isArray(replayData?.events) ? replayData.events : [])
-			.filter((event: any) => event?.uid === uid && levelById.has(Number(event.levelId)))
+			.filter(isRelevantEvent)
 			.sort((a: any, b: any) => parseTime(a.created_at) - parseTime(b.created_at));
 		const rangeStartMs = parseTime(replayData?.rangeStart)
 			|| parseTime(tournament?.startedAt ?? tournament?.startsAt)
@@ -246,15 +283,18 @@
 			let totalScore = 0;
 			const levelPoints = contestLevels.map((item) => {
 				const progress = bestProgress.get(Number(item.levelId)) ?? 0;
+				const effectiveProgress = disqualifiedLevelIds.has(Number(item.levelId))
+					? 0
+					: progress;
 				const score = roundScore(
-					(progress / 100) * Number(item.maxPoints || 0) * lateFactor
+					(effectiveProgress / 100) * Number(item.maxPoints || 0) * lateFactor
 				);
 
 				totalScore = roundScore(totalScore + score);
 
 				return {
 					level: item,
-					progress,
+					progress: effectiveProgress,
 					score
 				};
 			});
@@ -600,6 +640,64 @@
 			}
 		});
 	}
+
+	async function disqualifyProgress() {
+		if (!entry?.uid || !selectedLevelId || moderationSaving) {
+			return;
+		}
+
+		moderationSaving = true;
+
+		try {
+			const next = await tournamentFetch(
+				`/${tournament.id}/levels/${selectedLevelId}/disqualifications/${entry.uid}`,
+				{
+					method: 'PUT',
+					body: JSON.stringify({ reason: moderationReason })
+				}
+			);
+
+			if (!entry.disqualifications) {
+				entry.disqualifications = {};
+			}
+
+			entry.disqualifications[String(selectedLevelId)] = next;
+			localDisqualification = next;
+			await onModerationChange?.();
+			toast.success($_('tournament.moderation.disqualified_saved'));
+		} catch (error: any) {
+			toast.error(error?.message || $_('tournament.moderation.update_failed'));
+		} finally {
+			moderationSaving = false;
+		}
+	}
+
+	async function clearDisqualification() {
+		if (!entry?.uid || !selectedLevelId || moderationSaving) {
+			return;
+		}
+
+		moderationSaving = true;
+
+		try {
+			await tournamentFetch(
+				`/${tournament.id}/levels/${selectedLevelId}/disqualifications/${entry.uid}`,
+				{ method: 'DELETE' }
+			);
+
+			if (entry.disqualifications) {
+				delete entry.disqualifications[String(selectedLevelId)];
+			}
+
+			localDisqualification = null;
+			await onModerationChange?.();
+			toast.success($_('tournament.moderation.disqualification_cleared'));
+		} catch (error: any) {
+			toast.error(error?.message || $_('tournament.moderation.update_failed'));
+		} finally {
+			moderationSaving = false;
+		}
+	}
 </script>
 
 <Dialog.Root bind:open>
@@ -621,7 +719,7 @@
       <div class="flex h-[260px] items-center justify-center text-center text-muted-foreground">
         {errorMessage}
       </div>
-    {:else if !hasHistory}
+    {:else if !hasHistory && !(mode === 'level' && canManage)}
       <div class="flex h-[260px] items-center justify-center text-center text-muted-foreground">
         {$_('tournament.stats.no_history')}
       </div>
@@ -650,6 +748,86 @@
           </div>
         </section>
       </div>
+    {:else if mode === 'level' && canManage}
+      <Tabs.Root value="stats" class="w-full">
+        <Tabs.List>
+          <Tabs.Trigger value="stats">{$_('tournament.stats.stats_tab')}</Tabs.Trigger>
+          <Tabs.Trigger value="moderation">{$_('tournament.moderation.tab')}</Tabs.Trigger>
+        </Tabs.List>
+        <Tabs.Content value="stats" class="mt-4">
+          {#if !hasHistory}
+            <div class="flex h-[220px] items-center justify-center text-center text-muted-foreground">
+              {$_('tournament.stats.no_history')}
+            </div>
+          {:else}
+            <div class="flex flex-col gap-6">
+              <section>
+                <h3 class="mb-2 text-sm font-semibold">{$_('tournament.stats.level_progress')}</h3>
+                <div class="h-[300px] w-full">
+                  <canvas use:createSelectedLevelChart={selectedLevelHistory}></canvas>
+                </div>
+              </section>
+              <section>
+                <div class="mb-2 flex items-center justify-between gap-3">
+                  <h3 class="text-sm font-semibold">{$_('tournament.stats.death_count')}</h3>
+                  <span class="text-sm text-muted-foreground">
+                    {$_('tournament.stats.total_deaths', { values: { count: totalDeaths } })}
+                  </span>
+                </div>
+                {#if deathCount.length > 0}
+                  <div class="h-[300px] w-full">
+                    <canvas use:createDeathCountChart={deathCount}></canvas>
+                  </div>
+                {:else}
+                  <div class="flex h-[220px] items-center justify-center text-center text-muted-foreground">
+                    {$_('tournament.stats.no_death_count')}
+                  </div>
+                {/if}
+              </section>
+            </div>
+          {/if}
+        </Tabs.Content>
+        <Tabs.Content value="moderation" class="mt-4">
+          <div class="flex flex-col gap-4">
+            <div class="rounded-md border border-[hsl(var(--border))] p-3 text-sm">
+              <div class="font-semibold">
+                {selectedDisqualification
+                  ? $_('tournament.moderation.disqualified')
+                  : $_('tournament.moderation.not_disqualified')}
+              </div>
+              {#if selectedDisqualification?.reason}
+                <div class="mt-1 text-muted-foreground">{selectedDisqualification.reason}</div>
+              {/if}
+            </div>
+            <div class="grid gap-2">
+              <Label for="contest-disqualification-reason">
+                {$_('tournament.moderation.reason')}
+              </Label>
+              <Textarea
+                id="contest-disqualification-reason"
+                bind:value={moderationReason}
+                disabled={moderationSaving}
+              />
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <Button
+                variant="destructive"
+                on:click={disqualifyProgress}
+                disabled={moderationSaving || Boolean(selectedDisqualification)}
+              >
+                {$_('tournament.moderation.disqualify')}
+              </Button>
+              <Button
+                variant="outline"
+                on:click={clearDisqualification}
+                disabled={moderationSaving || !selectedDisqualification}
+              >
+                {$_('tournament.moderation.clear_disqualification')}
+              </Button>
+            </div>
+          </div>
+        </Tabs.Content>
+      </Tabs.Root>
     {:else}
       <div class="flex flex-col gap-6">
         <section>

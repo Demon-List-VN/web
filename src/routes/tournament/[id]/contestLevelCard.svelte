@@ -3,19 +3,40 @@
 	import Chart from 'chart.js/auto';
 	import { _ } from 'svelte-i18n';
 	import { toast } from 'svelte-sonner';
-	import { Copy } from 'lucide-svelte';
+	import { Copy, Send } from 'lucide-svelte';
 	import * as Card from '$lib/components/ui/card';
 	import * as Dialog from '$lib/components/ui/dialog';
+	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
+	import { Label } from '$lib/components/ui/label';
+	import { Textarea } from '$lib/components/ui/textarea';
+	import { user } from '$lib/client';
+	import { tournamentFetch } from '$lib/client/tournament';
 
 	export let level: any;
 	export let index: number;
 	export let showDeathCount = true;
+	export let tournament: any = null;
+	export let onSubmitted: (() => void | Promise<void>) | null = null;
 
 	let deathCount: number[] = [];
 	let chartDialogOpen = false;
+	let submitDialogOpen = false;
+	let submitting = false;
+	let submitProgress: number | string = '';
+	let submitVideoLink = '';
+	let submitRaw = '';
+	let submitComment = '';
 
 	$: levelId = Number(level.levelId);
 	$: levelName = level.name || `Level ${levelId}`;
+	$: requireRaw = level.requireRaw === true || level.needRaw === true;
+	$: canManualSubmit = Boolean(
+		tournament?.contestConfig?.allowManualSubmit === true
+		&& tournament?.status === 'ongoing'
+		&& $user?.loggedIn
+		&& tournament?.viewerParticipant?.status === 'active'
+	);
 	$: thumbnailUrl = level.videoID
 		? `https://img.youtube.com/vi/${level.videoID}/0.jpg`
 		: `https://levelthumbs.prevter.me/thumbnail/${levelId}/small`;
@@ -72,6 +93,51 @@
 			deathCount = Array.isArray(payload?.count) ? payload.count : [];
 		} catch {
 			deathCount = [];
+		}
+	}
+
+	function resetSubmitForm() {
+		submitProgress = '';
+		submitVideoLink = '';
+		submitRaw = '';
+		submitComment = '';
+	}
+
+	async function submitManualProgress() {
+		const progress = Number(submitProgress);
+
+		if (!Number.isFinite(progress) || progress < 0 || progress > 100) {
+			toast.error($_('tournament.manual_submit.invalid_progress'));
+
+			return;
+		}
+
+		if (!submitVideoLink.trim() || (requireRaw && !submitRaw.trim())) {
+			toast.error($_('tournament.manual_submit.fill_required'));
+
+			return;
+		}
+
+		submitting = true;
+
+		try {
+			await tournamentFetch(`/${tournament.id}/levels/${levelId}/submit`, {
+				method: 'POST',
+				body: JSON.stringify({
+					progress,
+					videoLink: submitVideoLink,
+					raw: submitRaw,
+					comment: submitComment
+				})
+			});
+			toast.success($_('tournament.manual_submit.success'));
+			submitDialogOpen = false;
+			resetSubmitForm();
+			await onSubmitted?.();
+		} catch (error: any) {
+			toast.error(error?.message || $_('tournament.manual_submit.error'));
+		} finally {
+			submitting = false;
 		}
 	}
 
@@ -154,6 +220,11 @@
           <span class="rounded-sm bg-foreground px-[5px] text-[12px] font-semibold text-background">
             {level.maxPoints}pt
           </span>
+          {#if requireRaw}
+            <span class="rounded-sm bg-foreground px-[5px] text-[12px] font-semibold text-background">
+              {$_('tournament.levels.raw_required')}
+            </span>
+          {/if}
         </div>
         <div class="mt-1 flex flex-col text-sm text-muted-foreground">
           {#if level.creator}
@@ -181,6 +252,18 @@
         <canvas use:createChart></canvas>
       </button>
     {/if}
+
+    {#if canManualSubmit}
+      <Button
+        type="button"
+        variant="outline"
+        class="self-start md:self-center"
+        on:click={() => (submitDialogOpen = true)}
+      >
+        <Send size={15} class="mr-[6px]" />
+        {$_('tournament.manual_submit.submit')}
+      </Button>
+    {/if}
   </div>
 </Card.Root>
 
@@ -189,5 +272,64 @@
     <div class="h-[500px] w-full">
       <canvas use:createChart={true}></canvas>
     </div>
+  </Dialog.Content>
+</Dialog.Root>
+
+<Dialog.Root bind:open={submitDialogOpen}>
+  <Dialog.Content class="max-w-lg">
+    <Dialog.Header>
+      <Dialog.Title>{$_('tournament.manual_submit.title')}</Dialog.Title>
+      <Dialog.Description>{levelName}</Dialog.Description>
+    </Dialog.Header>
+    <div class="grid gap-4 py-2">
+      <div class="grid gap-2">
+        <Label for={`contest-progress-${levelId}`}>{$_('tournament.manual_submit.progress')}</Label>
+        <Input
+          id={`contest-progress-${levelId}`}
+          type="number"
+          min="0"
+          max="100"
+          step="0.01"
+          bind:value={submitProgress}
+          disabled={submitting}
+        />
+      </div>
+      <div class="grid gap-2">
+        <Label for={`contest-video-${levelId}`}>{$_('tournament.manual_submit.video_link')}</Label>
+        <Input
+          id={`contest-video-${levelId}`}
+          bind:value={submitVideoLink}
+          disabled={submitting}
+          placeholder="https://youtube.com/watch?v=..."
+        />
+      </div>
+      {#if requireRaw}
+        <div class="grid gap-2">
+          <Label for={`contest-raw-${levelId}`}>{$_('tournament.manual_submit.raw')}</Label>
+          <Input
+            id={`contest-raw-${levelId}`}
+            bind:value={submitRaw}
+            disabled={submitting}
+            placeholder="https://youtube.com/watch?v=..."
+          />
+        </div>
+      {/if}
+      <div class="grid gap-2">
+        <Label for={`contest-comment-${levelId}`}>{$_('tournament.manual_submit.comment')}</Label>
+        <Textarea
+          id={`contest-comment-${levelId}`}
+          bind:value={submitComment}
+          disabled={submitting}
+        />
+      </div>
+    </div>
+    <Dialog.Footer>
+      <Button variant="outline" on:click={() => (submitDialogOpen = false)} disabled={submitting}>
+        {$_('tournament.manual_submit.cancel')}
+      </Button>
+      <Button on:click={submitManualProgress} disabled={submitting}>
+        {submitting ? $_('tournament.manual_submit.submitting') : $_('tournament.manual_submit.submit')}
+      </Button>
+    </Dialog.Footer>
   </Dialog.Content>
 </Dialog.Root>

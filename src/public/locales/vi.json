@@ -4023,6 +4023,8 @@
             "freeze_at": "Đóng băng bảng xếp hạng lúc",
             "freeze_at_invalid": "Chọn thời điểm đóng băng bảng xếp hạng hợp lệ.",
             "auto_unfreeze_leaderboard": "Tự động mở đóng băng bảng xếp hạng khi cuộc thi kết thúc",
+            "allow_geode_submit": "Cho phép tự động nộp bằng Geode Mod",
+            "allow_manual_submit": "Cho phép nộp thủ công",
             "late_registration": "Cho phép đăng ký muộn",
             "late_reg_minutes": "Thời gian đăng ký muộn (phút)",
             "late_reg_window": "Đóng đăng ký muộn",
@@ -4034,6 +4036,7 @@
             "level_pool": "Bể màn chơi",
             "level_id": "ID màn",
             "max_points": "Điểm tối đa",
+            "require_raw": "Yêu cầu raw",
             "add_level": "Thêm màn",
             "rewards": "Phần thưởng",
             "rewards_hint": "Đặt phần thưởng theo thứ hạng. Người chơi nhận sau khi giải đấu kết thúc.",
@@ -4206,6 +4209,7 @@
             "penalty_detail": "{hours} giờ {minutes} phút {seconds} giây"
         },
         "stats": {
+            "stats_tab": "Thống kê",
             "player_title": "Thống kê của {player}",
             "level_title": "{player} - {level}",
             "player_description": "Điểm và tiến độ từng màn theo dòng thời gian cuộc thi.",
@@ -4232,7 +4236,34 @@
             "refresh": "Làm mới màn chơi",
             "copy_failed": "Không thể sao chép ID màn chơi.",
             "by_creator": "bởi {creator}",
-            "open_death_count": "Xem số lần chết của {level}"
+            "open_death_count": "Xem số lần chết của {level}",
+            "raw_required": "Yêu cầu raw"
+        },
+        "manual_submit": {
+            "title": "Nộp tiến độ",
+            "submit": "Nộp",
+            "submitting": "Đang nộp...",
+            "cancel": "Hủy",
+            "progress": "Tiến độ",
+            "video_link": "Link video",
+            "raw": "Raw",
+            "comment": "Bình luận",
+            "fill_required": "Điền đầy đủ các trường bắt buộc.",
+            "invalid_progress": "Nhập tiến độ từ 0 đến 100.",
+            "success": "Đã nộp tiến độ.",
+            "error": "Không thể nộp tiến độ."
+        },
+        "moderation": {
+            "tab": "Kiểm duyệt",
+            "reason": "Lý do",
+            "disqualify": "Loại tiến độ",
+            "clear_disqualification": "Gỡ loại",
+            "disqualified": "Tiến độ đã bị loại",
+            "not_disqualified": "Tiến độ chưa bị loại",
+            "disqualified_short": "Loại",
+            "disqualified_saved": "Đã loại tiến độ.",
+            "disqualification_cleared": "Đã gỡ loại.",
+            "update_failed": "Không thể cập nhật trạng thái loại."
         },
         "participants": {
             "invite": "Mời",

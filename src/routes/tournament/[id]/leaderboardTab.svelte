@@ -489,6 +489,12 @@
 		const levelById = new Map(levels.map((level: any) => [Number(level.levelId), level]));
 		const startedAtMs = parseTime(tournament.startedAt ?? tournament.startsAt);
 		const lateRegPenaltyFraction = Number(replayMeta?.lateRegPenaltyFraction ?? 0);
+		const disqualificationByKey = new Map(
+			(replayMeta?.disqualifications ?? []).map((row: any) => [
+				`${row.uid}:${Number(row.levelId)}`,
+				row
+			])
+		);
 		const byUid = new Map<string, any>();
 		const best = new Map<string, any>();
 
@@ -501,8 +507,18 @@
 				penaltyMs: 0,
 				completedCount: 0,
 				lastImprovedAt: null,
+				disqualifications: {},
 				levels: {}
 			});
+		}
+
+		for (const disqualification of replayMeta?.disqualifications ?? []) {
+			const entry = byUid.get(disqualification.uid);
+			const level = levelById.get(Number(disqualification.levelId));
+
+			if (entry && level) {
+				entry.disqualifications[String(disqualification.levelId)] = disqualification;
+			}
 		}
 
 		for (const event of replayEvents) {
@@ -518,6 +534,11 @@
 
 			const levelId = Number(event.levelId);
 			const progress = Math.max(0, Math.min(100, Number(event.progress) || 0));
+
+			if (disqualificationByKey.has(`${event.uid}:${levelId}`)) {
+				continue;
+			}
+
 			const key = `${event.uid}:${levelId}`;
 			const current = best.get(key);
 
@@ -604,7 +625,8 @@
 			frozenAt: data?.frozenAt ?? null,
 			revealed: Boolean(data?.revealed),
 			endsAt: data?.endsAt ?? null,
-			lateRegPenaltyFraction: data?.lateRegPenaltyFraction ?? null
+			lateRegPenaltyFraction: data?.lateRegPenaltyFraction ?? null,
+			disqualifications: Array.isArray(data?.disqualifications) ? data.disqualifications : []
 		};
 		replayParticipants = Array.isArray(data?.participants) ? data.participants : [];
 		replayEvents = (Array.isArray(data?.events) ? data.events : [])
@@ -700,6 +722,10 @@
 	}
 
 	function hasHiddenScore(entry: any, level: any) {
+		if (isLevelDisqualified(entry, level)) {
+			return false;
+		}
+
 		if (leaderboardViewMode !== 'reveal' || !liveRevealBoard || !level) {
 			return false;
 		}
@@ -725,7 +751,11 @@
 			lastImprovedAt: null
 		};
 
-		for (const result of Object.values(nextEntry.levels ?? {}) as any[]) {
+		for (const [levelId, result] of Object.entries(nextEntry.levels ?? {}) as Array<[string, any]>) {
+			if (nextEntry.disqualifications?.[levelId]) {
+				continue;
+			}
+
 			nextEntry.totalScore = Math.round(
 				(nextEntry.totalScore + Number(result?.score || 0)) * 100
 			) / 100;
@@ -793,6 +823,10 @@
 		statsDialogEntry = entry;
 		statsDialogLevel = level;
 		statsDialogOpen = true;
+	}
+
+	function isLevelDisqualified(entry: any, level: any) {
+		return Boolean(entry?.disqualifications?.[String(level?.levelId ?? '')]);
 	}
 
 	function handleLevelCellClick(entry: any, level: any, hiddenScore: boolean) {
@@ -1156,6 +1190,7 @@
                 </Table.Cell>
                 {#each levels as level}
                   {@const result = entry.levels[String(level.levelId)]}
+                  {@const disqualified = isLevelDisqualified(entry, level)}
                   {@const hiddenScore = hasHiddenScore(entry, level)}
                   {@const levelFlashToken = replayCellFlashToken(replayLevelCellKey(entry, level))}
                   <Table.Cell
@@ -1166,7 +1201,8 @@
                         type="button"
                         class={cn(
                           'w-full rounded-sm px-2 py-1 tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                          hiddenScore ? 'cursor-pointer' : 'hover:text-primary'
+                          hiddenScore ? 'cursor-pointer' : 'hover:text-primary',
+                          disqualified ? 'text-destructive line-through decoration-2 hover:text-destructive' : ''
                         )}
                         class:replay-cell-flash={levelFlashToken > 0}
                         on:click={() => handleLevelCellClick(entry, level, hiddenScore)}
@@ -1180,7 +1216,12 @@
                           })}
                       >
                         {#if hiddenScore}
-                          {#if result && Number(result.score || 0) > 0}
+                          {#if disqualified}
+                            <span class="font-semibold">0</span><br />
+                            <span class="text-[11px] opacity-70">
+                              {$_('tournament.moderation.disqualified_short')}
+                            </span>
+                          {:else if result && Number(result.score || 0) > 0}
                             <span>{result.score}<sup>*</sup></span><br />
                             <span class="text-[11px] opacity-50">
                               {Math.round(Number(result.progress) * 100) / 100}%
@@ -1218,6 +1259,8 @@
       entry={statsDialogEntry}
       level={statsDialogLevel}
       live={viewLive}
+      {canManage}
+      onModerationChange={load}
     />
   </div>
 {/if}
