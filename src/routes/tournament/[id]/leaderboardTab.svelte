@@ -57,6 +57,7 @@
 	const leaderboardFlyDurationMs = 1600;
 	const replayLeaderboardFlyDurationMs = 1000;
 	const replayCellFlashDurationMs = 700;
+	const contestScorePrecision = 100_000_000;
 
 	$: totalAvailablePoints = levels.reduce(
 		(total, level) => total + Number(level.maxPoints || 0),
@@ -138,7 +139,7 @@
 
 	function displayTotal(entry: any) {
 		if (!showPercentage) {
-			return entry.totalScore;
+			return formatScore(entry.totalScore);
 		}
 
 		if (totalAvailablePoints <= 0) {
@@ -150,6 +151,14 @@
 		) / 100;
 
 		return `${percentage}%`;
+	}
+
+	function roundContestScore(value: number) {
+		return Math.round(value * contestScorePrecision) / contestScorePrecision;
+	}
+
+	function formatScore(value: unknown) {
+		return Math.round(Number(value || 0) * 100) / 100;
 	}
 
 	function playerDisplayName(entry: any) {
@@ -650,8 +659,9 @@
 			const lateFactor = entry.isLate && lateRegPenaltyFraction
 				? 1 - lateRegPenaltyFraction
 				: 1;
-			const score = Math.round((row.progress / 100) * Number(level.maxPoints) * lateFactor * 100)
-				/ 100;
+			const score = roundContestScore(
+				(row.progress / 100) * Number(level.maxPoints) * lateFactor
+			);
 
 			entry.levels[String(row.levelId)] = {
 				progress: row.progress,
@@ -659,7 +669,7 @@
 				reachedAt: row.reachedAt,
 				source: row.source ?? null
 			};
-			entry.totalScore = Math.round((entry.totalScore + score) * 100) / 100;
+			entry.totalScore = roundContestScore(entry.totalScore + score);
 
 			if (row.reachedAt && startedAtMs > 0) {
 				const reachedAtMs = parseTime(row.reachedAt);
@@ -849,9 +859,9 @@
 				continue;
 			}
 
-			nextEntry.totalScore = Math.round(
-				(nextEntry.totalScore + Number(result?.score || 0)) * 100
-			) / 100;
+			nextEntry.totalScore = roundContestScore(
+				nextEntry.totalScore + Number(result?.score || 0)
+			);
 
 			if (Number(result?.progress || 0) >= 100) {
 				nextEntry.completedCount += 1;
@@ -1369,7 +1379,7 @@
                               {$_('tournament.moderation.disqualified_short')}
                             </span>
                           {:else if result && Number(result.score || 0) > 0}
-                            <span>{result.score}<sup>?</sup></span><br />
+                            <span>{formatScore(result.score)}<sup>?</sup></span><br />
                             <span class="text-[11px] opacity-50">
                               {Math.round(Number(result.progress) * 100) / 100}%
                             </span>
@@ -1377,7 +1387,7 @@
                             <span class="font-semibold">0<sup>?</sup></span>
                           {/if}
                         {:else if result}
-                          {result.score}{#if isManualResult(result)}<sup>*</sup>{/if}<br />
+                          {formatScore(result.score)}{#if isManualResult(result)}<sup>*</sup>{/if}<br />
                           <span class="text-[11px] opacity-50">
                             {Math.round(Number(result.progress) * 100) / 100}%
                           </span>

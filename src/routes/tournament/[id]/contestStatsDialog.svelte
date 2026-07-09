@@ -123,7 +123,7 @@
 	}
 
 	function roundScore(value: number) {
-		return Math.round(value * 100) / 100;
+		return Math.round(value * 100_000_000) / 100_000_000;
 	}
 
 	function formatNumber(value: number) {
