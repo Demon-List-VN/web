@@ -23,6 +23,7 @@
 	export let entry: any = null;
 	export let level: any = null;
 	export let live = false;
+	export let personalOnly = false;
 	export let canManage = false;
 	export let onModerationChange: (() => void | Promise<void>) | null = null;
 
@@ -88,6 +89,7 @@
 			tournament.id,
 			entry.uid,
 			live ? 'live' : 'frozen',
+			personalOnly ? 'mine' : 'all',
 			mode === 'level' ? selectedLevelId : 'all'
 		].join(':')
 		: '';
@@ -140,11 +142,23 @@
 	}
 
 	function replayCacheKey() {
-		return `${tournament.id}:${live ? 'live' : 'normal'}`;
+		return `${tournament.id}:${live ? 'live' : 'normal'}:${personalOnly ? 'mine' : 'all'}`;
 	}
 
 	function replayPath() {
-		return `/${tournament.id}/leaderboard/replay${live ? '?live=true' : ''}`;
+		const params = new URLSearchParams();
+
+		if (live) {
+			params.set('live', 'true');
+		}
+
+		if (personalOnly) {
+			params.set('mine', 'true');
+		}
+
+		const query = params.toString();
+
+		return `/${tournament.id}/leaderboard/replay${query ? `?${query}` : ''}`;
 	}
 
 	function getReplayData() {

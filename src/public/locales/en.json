@@ -4120,6 +4120,7 @@
             "overview": "Overview",
             "bracket": "Bracket",
             "levels": "Levels",
+            "my_result": "My result",
             "leaderboard": "Leaderboard",
             "participants": "Participants",
             "matches": "Matches"
@@ -4207,6 +4208,8 @@
             "refresh": "Refresh leaderboard",
             "export": "Export leaderboard",
             "empty": "No leaderboard entries yet.",
+            "personal_empty": "You do not have a contest result yet.",
+            "personal_login_required": "Log in to view your contest result.",
             "penalty_detail": "{hours} hours {minutes} minutes {seconds} seconds"
         },
         "stats": {

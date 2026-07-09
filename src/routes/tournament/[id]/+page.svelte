@@ -354,6 +354,7 @@
       {:else}
         {#if contestStarted}
           <Tabs.Trigger value="levels">{$_('tournament.tabs.levels')}</Tabs.Trigger>
+          <Tabs.Trigger value="my-result">{$_('tournament.tabs.my_result')}</Tabs.Trigger>
           <Tabs.Trigger value="leaderboard">{$_('tournament.tabs.leaderboard')}</Tabs.Trigger>
         {/if}
       {/if}
@@ -377,6 +378,9 @@
       {#if contestStarted}
         <Tabs.Content value="levels" class="mt-[20px] w-full">
           <LevelsTab {tournament} />
+        </Tabs.Content>
+        <Tabs.Content value="my-result" class="mt-[20px] w-full">
+          <LeaderboardTab {tournament} personalOnly />
         </Tabs.Content>
         <Tabs.Content value="leaderboard" class="mt-[20px] w-full">
           <LeaderboardTab {tournament} canManage={isHost} />

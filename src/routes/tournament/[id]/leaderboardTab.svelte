@@ -21,6 +21,7 @@
 
 	export let tournament: any;
 	export let canManage = false;
+	export let personalOnly = false;
 
 	let board: any = null;
 	let levels: any[] = [];
@@ -59,9 +60,11 @@
 		(total, level) => total + Number(level.maxPoints || 0),
 		0
 	);
+	$: viewerUid = $user?.loggedIn ? $user.data?.uid : null;
 	$: freezeAtMs = parseTime(tournament?.contestConfig?.freezeAt ?? board?.frozenAt);
 	$: canReplay = Boolean(
-		board
+		!personalOnly
+		&& board
 		&& (
 			(canManage && tournament?.status === 'ongoing')
 			|| tournament?.status === 'finished'
@@ -70,7 +73,8 @@
 		)
 	);
 	$: canViewLiveFrozenBoard = Boolean(
-		canManage
+		!personalOnly
+		&& canManage
 		&& (
 			board?.frozen
 			|| (freezeAtMs > 0 && Date.now() >= freezeAtMs)
@@ -79,7 +83,7 @@
 	$: frozenNoticeKey = tournament?.contestConfig?.autoUnfreezeLeaderboard === false
 		? 'tournament.leaderboard.frozen_manual_notice'
 		: 'tournament.leaderboard.frozen_notice';
-	$: canUseRevealMode = Boolean(canManage && canReplay && !replayMode && !viewLive);
+	$: canUseRevealMode = Boolean(!personalOnly && canManage && canReplay && !replayMode && !viewLive);
 	$: replayDurationMs = Math.max(0, replayRangeEndMs - replayRangeStartMs);
 	$: replayProgressPercent = replayDurationMs > 0
 		? Math.round(((replayAtMs - replayRangeStartMs) / replayDurationMs) * 1000) / 10
@@ -262,16 +266,29 @@
 		const request = async () => {
 			const leaderboardParams = new URLSearchParams();
 
-			if (viewLive) {
+			if (viewLive || personalOnly) {
 				leaderboardParams.set('live', 'true');
+			}
+
+			if (personalOnly) {
+				leaderboardParams.set('mine', 'true');
 			}
 
 			const leaderboardQuery = leaderboardParams.toString();
 
-			[board, levels] = await Promise.all([
+			const [nextBoard, nextLevels] = await Promise.all([
 				tournamentFetch(`/${tournament.id}/leaderboard${leaderboardQuery ? `?${leaderboardQuery}` : ''}`),
 				getTournamentContestLevels(tournament)
 			]);
+			board = personalOnly && viewerUid
+				? {
+					...nextBoard,
+					frozen: false,
+					entries: (nextBoard?.entries ?? [])
+						.filter((entry: any) => entry.uid === viewerUid)
+				}
+				: nextBoard;
+			levels = nextLevels;
 			liveRevealBoard = null;
 		};
 
@@ -547,7 +564,8 @@
 					uid: event.uid,
 					levelId,
 					progress,
-					reachedAt: event.created_at
+					reachedAt: event.created_at,
+					source: event.source ?? null
 				});
 			}
 		}
@@ -569,7 +587,8 @@
 			entry.levels[String(row.levelId)] = {
 				progress: row.progress,
 				score,
-				reachedAt: row.reachedAt
+				reachedAt: row.reachedAt,
+				source: row.source ?? null
 			};
 			entry.totalScore = Math.round((entry.totalScore + score) * 100) / 100;
 
@@ -721,6 +740,10 @@
 		return !result || Number(result?.score ?? 0) <= 0;
 	}
 
+	function isManualResult(result: any) {
+		return result?.source === 'manual';
+	}
+
 	function hasHiddenScore(entry: any, level: any) {
 		if (isLevelDisqualified(entry, level)) {
 			return false;
@@ -787,13 +810,13 @@
 		const live = liveEntryFor(entry.uid)?.levels?.[levelId] ?? null;
 		revealedCells = new Set([...revealedCells, cellKey(entry, level)]);
 
-		if (!live) {
-			return;
-		}
-
 		const entries = (board?.entries ?? []).map((row: any) => {
 			if (row.uid !== entry.uid) {
 				return row;
+			}
+
+			if (!live) {
+				return cloneValue(row);
 			}
 
 			return recomputeEntry({
@@ -915,7 +938,40 @@
 		void load();
 	}
 
-	onMount(() => load());
+	onMount(() => {
+		if (!personalOnly) {
+			void load();
+
+			return undefined;
+		}
+
+		let loadedFor = '';
+		const unsubscribe = user.subscribe((currentUser) => {
+			if (!currentUser.checked) {
+				return;
+			}
+
+			if (!currentUser.loggedIn) {
+				loadedFor = '';
+				board = null;
+				levels = [];
+				loading = false;
+
+				return;
+			}
+
+			const uid = String(currentUser.data?.uid ?? '');
+
+			if (!uid || uid === loadedFor) {
+				return;
+			}
+
+			loadedFor = uid;
+			void load();
+		});
+
+		return unsubscribe;
+	});
 	onDestroy(() => {
 		stopReplayPlayback();
 
@@ -929,7 +985,7 @@
   <p class="text-center text-muted-foreground">{$_('tournament.loading')}</p>
 {:else if board}
   <div class="mx-auto w-full max-w-[1500px] px-[10px]">
-    {#if board.frozen}
+    {#if board.frozen && !personalOnly}
       <div class="mb-[10px] flex items-center gap-[8px] rounded-[8px] border border-amber-500/40 bg-amber-500/10 px-[12px] py-[8px] text-sm text-amber-300">
         <Snowflake size={16} class="shrink-0" />
         {$_(frozenNoticeKey)}
@@ -945,10 +1001,12 @@
         </Label>
         <Switch id="tournament-percentage-switch" bind:checked={showPercentage} />
       </div>
-      <Button href="#tournament-me" variant="outline">
-        {$_('contest.leaderboard.jump_to_me')}
-      </Button>
-      {#if canReplay || replayMode}
+      {#if !personalOnly}
+        <Button href="#tournament-me" variant="outline">
+          {$_('contest.leaderboard.jump_to_me')}
+        </Button>
+      {/if}
+      {#if !personalOnly && (canReplay || replayMode)}
         <Button
           variant={replayMode ? 'default' : 'outline'}
           on:click={replayMode ? exitReplay : enterReplay}
@@ -977,15 +1035,17 @@
           </Button>
         </div>
       {/if}
-      <Button
-        size="icon"
-        variant="outline"
-        on:click={exportToCsv}
-        disabled={!board.entries?.length}
-        aria-label={$_('tournament.leaderboard.export')}
-      >
-        <Download size={16} />
-      </Button>
+      {#if !personalOnly}
+        <Button
+          size="icon"
+          variant="outline"
+          on:click={exportToCsv}
+          disabled={!board.entries?.length}
+          aria-label={$_('tournament.leaderboard.export')}
+        >
+          <Download size={16} />
+        </Button>
+      {/if}
       <Button
         size="icon"
         variant="outline"
@@ -1127,7 +1187,8 @@
                 }}
                 class={cn(
                   'border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted',
-                  leaderboardViewMode === 'reveal' ? 'duration-700 ease-in-out' : ''
+                  leaderboardViewMode === 'reveal' ? 'duration-700 ease-in-out' : '',
+                  personalOnly ? 'bg-primary/5' : ''
                 )}
               >
                 <Table.Cell
@@ -1222,15 +1283,15 @@
                               {$_('tournament.moderation.disqualified_short')}
                             </span>
                           {:else if result && Number(result.score || 0) > 0}
-                            <span>{result.score}<sup>*</sup></span><br />
+                            <span>{result.score}<sup>?</sup></span><br />
                             <span class="text-[11px] opacity-50">
                               {Math.round(Number(result.progress) * 100) / 100}%
                             </span>
                           {:else}
-                            <span class="font-semibold">0<sup>*</sup></span>
+                            <span class="font-semibold">0<sup>?</sup></span>
                           {/if}
                         {:else if result}
-                          {result.score}<br />
+                          {result.score}{#if isManualResult(result)}<sup>*</sup>{/if}<br />
                           <span class="text-[11px] opacity-50">
                             {Math.round(Number(result.progress) * 100) / 100}%
                           </span>
@@ -1248,7 +1309,9 @@
       </div>
     {:else}
       <p class="py-8 text-center text-muted-foreground">
-        {$_('tournament.leaderboard.empty')}
+        {personalOnly
+          ? $_('tournament.leaderboard.personal_empty')
+          : $_('tournament.leaderboard.empty')}
       </p>
     {/if}
     <ContestStatsDialog
@@ -1258,11 +1321,16 @@
       {levels}
       entry={statsDialogEntry}
       level={statsDialogLevel}
-      live={viewLive}
+      live={viewLive || personalOnly}
+      {personalOnly}
       {canManage}
       onModerationChange={load}
     />
   </div>
+{:else if personalOnly}
+  <p class="py-8 text-center text-muted-foreground">
+    {$_('tournament.leaderboard.personal_login_required')}
+  </p>
 {/if}
 
 <style>

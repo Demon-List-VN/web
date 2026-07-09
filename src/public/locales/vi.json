@@ -4119,6 +4119,7 @@
             "overview": "Tổng quan",
             "bracket": "Nhánh đấu",
             "levels": "Màn chơi",
+            "my_result": "Kết quả của tôi",
             "leaderboard": "Bảng xếp hạng",
             "participants": "Người tham gia",
             "matches": "Trận đấu"
@@ -4206,6 +4207,8 @@
             "refresh": "Làm mới bảng xếp hạng",
             "export": "Xuất bảng xếp hạng",
             "empty": "Chưa có dữ liệu bảng xếp hạng.",
+            "personal_empty": "Bạn chưa có kết quả trong cuộc thi này.",
+            "personal_login_required": "Đăng nhập để xem kết quả của bạn.",
             "penalty_detail": "{hours} giờ {minutes} phút {seconds} giây"
         },
         "stats": {
