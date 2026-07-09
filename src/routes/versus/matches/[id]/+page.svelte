@@ -519,6 +519,7 @@
 		now,
 		status
 	);
+	$: runningPlayerProgressByUid = getRunningPlayerProgress(messages, now);
 	$: deathCountLevelId = getDeathCountLevelId(match);
 	$: deathCountParticipantUids = getDeathCountParticipantUids(
 		orderedParticipants
@@ -2474,8 +2475,11 @@
 		mode: PvpMode = matchMode,
 		currentScoringMode: PvpRoomScoringMode | string = scoringMode
 	) {
+		const kind = messageMetadataKind(message);
+
 		if (
-			message.type !== 'system' || messageMetadataKind(message) !== 'progress'
+			message.type !== 'system'
+			|| !['progress', 'progress_run', 'death'].includes(kind)
 		) {
 			return null;
 		}
@@ -2484,6 +2488,7 @@
 		const messageScoringMode = normalizedScoringMode(metadataText(metadata, 'scoringMode'));
 		const uid = metadataText(metadata, 'uid');
 		const progress = metadataNumber(metadata, 'progress');
+		const progressSpeed = metadataNumber(metadata, 'progressSpeed');
 		const timeMs = getTimeMs(message.created_at);
 
 		if (!uid || progress === null || !timeMs) {
@@ -2499,6 +2504,8 @@
 
 		return {
 			uid,
+			kind,
+			progressSpeed: progressSpeed === null ? 0 : Math.max(0, progressSpeed),
 			progress: mode === 'platformer'
 				? Math.max(0, Math.floor(progress))
 				: isScoreLikeScoringMode(currentScoringMode) || currentScoringMode === 'hp'
@@ -2506,6 +2513,51 @@
 				: Math.max(0, Math.min(100, progress)),
 			timeMs
 		};
+	}
+
+	function getRunningPlayerProgress(sourceMessages: PvpMatchMessage[], nowMs: number) {
+		const progressByUid = new Map<string, number>();
+		const activeRuns = new Map<string, { progress: number; speed: number; timeMs: number; }>();
+
+		for (const message of messagesAfterLatestLevelChange(sourceMessages)) {
+			const event = progressMessageEvent(message);
+
+			if (!event) {
+				continue;
+			}
+
+			if (event.kind === 'death') {
+				progressByUid.set(event.uid, event.progress);
+				activeRuns.delete(event.uid);
+				continue;
+			}
+
+			progressByUid.set(
+				event.uid,
+				event.kind === 'progress'
+					? Math.max(progressByUid.get(event.uid) ?? 0, event.progress)
+					: event.progress
+			);
+
+			if (event.kind === 'progress_run') {
+				activeRuns.set(event.uid, {
+					progress: event.progress,
+					speed: event.progressSpeed,
+					timeMs: event.timeMs
+				});
+			}
+		}
+
+		if (['in_progress', 'waiting_result'].includes(status)) {
+			for (const [uid, run] of activeRuns) {
+				progressByUid.set(
+					uid,
+					Math.max(0, Math.min(100, run.progress + run.speed * Math.max(0, nowMs - run.timeMs) / 1000))
+				);
+			}
+		}
+
+		return progressByUid;
 	}
 
 	function playModeMessageEvent(message: PvpMatchMessage): {
@@ -2703,6 +2755,8 @@
 				})
 				.sort((a, b) => a.x - b.x || a.timeMs - b.timeMs);
 
+		const activeRuns = new Map<string, NonNullable<ReturnType<typeof progressMessageEvent>>>();
+
 		for (const entry of parsed) {
 			const target = series.find((item) => item.uid === entry.uid);
 
@@ -2715,6 +2769,31 @@
 				y: entry.progress,
 				timeMs: entry.timeMs
 			});
+
+			if (entry.kind === 'progress_run') {
+				activeRuns.set(entry.uid, entry);
+			} else if (entry.kind === 'death') {
+				activeRuns.delete(entry.uid);
+			}
+		}
+
+		if (['in_progress', 'waiting_result'].includes(matchStatus)) {
+			for (const [uid, run] of activeRuns) {
+				const target = series.find((item) => item.uid === uid);
+
+				if (!target) {
+					continue;
+				}
+
+				target.points.push({
+					x: Math.max(0, (nowMs - origin) / 1000),
+					y: Math.max(
+						0,
+						Math.min(100, run.progress + run.progressSpeed * Math.max(0, nowMs - run.timeMs) / 1000)
+					),
+					timeMs: nowMs
+				});
+			}
 		}
 
 		const maxX = Math.max(
@@ -2969,18 +3048,25 @@
 	}
 
 	function participantProgressBarWidth(participant: PvpParticipant) {
-		const progress = getPvpProgress(participant);
+		const progress = participantDisplayProgress(participant);
 
 		if (matchMode === 'platformer') {
 			const maxProgress = Math.max(
 				1,
-				...orderedParticipants.map((item) => getPvpProgress(item))
+				...orderedParticipants.map((item) => participantDisplayProgress(item))
 			);
 
 			return Math.max(0, Math.min(100, (progress / maxProgress) * 100));
 		}
 
 		return Math.max(0, Math.min(100, progress));
+	}
+
+	function participantDisplayProgress(participant: PvpParticipant) {
+		const uid = getPvpParticipantUid(participant);
+		const liveProgress = uid ? runningPlayerProgressByUid.get(String(uid)) : undefined;
+
+		return liveProgress ?? getPvpProgress(participant);
 	}
 
 	function messageSenderName(
@@ -3204,6 +3290,25 @@
 		const kind = messageMetadataKind(message);
 		const minutes = systemChatGraceMinutes(metadata);
 		let content = '';
+
+		if (kind === 'progress_run') {
+			content = $_('pvp.system_message.progress_run', {
+				values: { player: systemParticipantName(metadataText(metadata, 'uid')) }
+			});
+		}
+
+		if (kind === 'death') {
+			const progress = metadataNumber(metadata, 'progress');
+
+			if (progress !== null) {
+				content = $_('pvp.system_message.death', {
+					values: {
+						player: systemParticipantName(metadataText(metadata, 'uid')),
+						progress: compactNumber(progress)
+					}
+				});
+			}
+		}
 
 		if (kind === 'progress') {
 			const progress = metadataNumber(metadata, 'progress');
@@ -4581,7 +4686,7 @@
                         <div class="progress-label">
                           <span>{
                             formatPvpProgressValue(
-                              getPvpProgress(participant),
+                              participantDisplayProgress(participant),
                               matchMode,
                               scoringMode,
                               targetScore,

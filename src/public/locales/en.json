@@ -1057,6 +1057,8 @@
         "system_sender": "Versus",
         "system_message": {
             "progress": "{player} reached {progress}% progress.",
+            "progress_run": "{player} is getting new progress!",
+            "death": "{player} died at {progress}% progress.",
             "progress_score": "{player} reached {score} score.",
             "progress_hp": "{player} has {score} remaining.",
             "progress_platformer": "{player} reached {progress} checkpoints.",
