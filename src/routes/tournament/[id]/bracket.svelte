@@ -19,7 +19,7 @@
 
 	// Layout constants (connectors are anchored to the slot block, footers overflow below).
 	const MATCH_W = 280;
-	const SLOT_H = 64;
+	const SLOT_H = 68;
 	const FOOT_H = 30;
 	const V_GAP = 40;
 	const H_GAP = 64;
@@ -141,12 +141,6 @@
 				? `#${participant.contestSeed} ${participant.player?.name ?? uid}`
 				: `${participant.player?.name ?? uid} (${participant.eloAtRegistration ?? 1500})`
 			: uid;
-	}
-
-	function participantSeed(uid: string | null) {
-		return uid
-			? participants.find((entry) => entry.uid === uid)?.contestSeed ?? null
-			: null;
 	}
 
 	function slotSelected(uid: string | null) {
@@ -322,12 +316,11 @@
                   {#each [1, 2] as slot}
                     {@const player = slot === 1 ? node.player1 : node.player2}
                     {@const playerUid = slot === 1 ? node.player1Uid : node.player2Uid}
-                    {@const seed = participantSeed(playerUid)}
                     {@const score = slot === 1 ? node.score1 : node.score2}
                     {@const winner = isWinner(node, slot)}
                     <div
                       class={cn(
-                        'flex h-[32px] items-center gap-[6px] border-l-2 px-[8px] text-sm',
+                        'flex h-[34px] items-center gap-[6px] border-l-2 px-[8px] text-sm',
                         slot === 2 && 'border-t border-t-[hsl(var(--border))]',
                         winner ? 'border-l-primary bg-primary/10 font-semibold' : 'border-l-transparent'
                       )}
@@ -335,10 +328,7 @@
                       {#if editable && roundIndex === 0}
                         <div class="flex min-w-0 flex-1 items-center gap-[5px]" data-no-pan>
                           {#if player}
-                            {#if seed}
-                              <span class="shrink-0 tabular-nums">#{seed}</span>
-                            {/if}
-                            <div class="min-w-0 overflow-hidden">
+                            <div class="min-w-0">
                               <PlayerLink
                                 {player}
                                 showAvatar
@@ -424,7 +414,7 @@
                 <Crown size={14} />
                 {$_('tournament.bracket.champion')}
               </div>
-              <div class="flex h-[64px] items-center gap-[8px] rounded-[8px] border border-amber-400/60 bg-gradient-to-r from-amber-500/15 to-transparent px-[12px]">
+              <div class="flex h-[68px] items-center gap-[8px] rounded-[8px] border border-amber-400/60 bg-gradient-to-r from-amber-500/15 to-transparent px-[12px]">
                 <Trophy size={18} class="shrink-0 text-amber-400" />
                 <PlayerLink
                   player={champion}
@@ -449,7 +439,7 @@
                   {@const winner = isWinner(thirdPlaceMatch, slot)}
                   <div
                     class={cn(
-                      'flex h-[32px] items-center gap-[6px] border-l-2 px-[8px] text-sm',
+                      'flex h-[34px] items-center gap-[6px] border-l-2 px-[8px] text-sm',
                       slot === 2 && 'border-t border-t-[hsl(var(--border))]',
                       winner ? 'border-l-orange-400 bg-orange-400/10 font-semibold' : 'border-l-transparent'
                     )}
