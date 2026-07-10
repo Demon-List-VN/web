@@ -45,8 +45,7 @@ export async function getTournamentContestLevels(tournament: any) {
         return [];
     }
 
-    const contestLevels = tournament.contestLevels
-        ?? await tournamentFetch(`/${tournament.id}/levels`);
+    const contestLevels = await tournamentFetch(`/${tournament.id}/levels`);
 
     if (!contestLevels?.length) {
         return [];

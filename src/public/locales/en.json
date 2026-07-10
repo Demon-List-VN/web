@@ -4273,7 +4273,13 @@
             "fill_required": "Fill all required fields.",
             "invalid_progress": "Enter progress from 0 to 100.",
             "success": "Progress submitted.",
-            "error": "Failed to submit progress."
+            "error": "Failed to submit progress.",
+            "submitted_progress": "Submitted: {progress}%",
+            "cancel_submission": "Cancel submission",
+            "cancelling": "Cancelling...",
+            "cancel_confirm": "Cancel this manual submission? You can submit again afterward.",
+            "cancel_success": "Submission cancelled. You can now submit again.",
+            "cancel_error": "Failed to cancel submission."
         },
         "moderation": {
             "tab": "Moderation",

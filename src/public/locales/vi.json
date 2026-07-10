@@ -4272,7 +4272,13 @@
             "fill_required": "Điền đầy đủ các trường bắt buộc.",
             "invalid_progress": "Nhập tiến độ từ 0 đến 100.",
             "success": "Đã nộp tiến độ.",
-            "error": "Không thể nộp tiến độ."
+            "error": "Không thể nộp tiến độ.",
+            "submitted_progress": "Đã nộp: {progress}%",
+            "cancel_submission": "Hủy bài nộp",
+            "cancelling": "Đang hủy...",
+            "cancel_confirm": "Hủy bài nộp thủ công này? Bạn có thể nộp lại sau đó.",
+            "cancel_success": "Đã hủy bài nộp. Bạn có thể nộp lại.",
+            "cancel_error": "Không thể hủy bài nộp."
         },
         "moderation": {
             "tab": "Kiểm duyệt",

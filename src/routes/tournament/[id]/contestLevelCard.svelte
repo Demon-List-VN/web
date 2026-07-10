@@ -3,7 +3,7 @@
 	import Chart from 'chart.js/auto';
 	import { _ } from 'svelte-i18n';
 	import { toast } from 'svelte-sonner';
-	import { Copy, Send } from 'lucide-svelte';
+	import { Copy, Send, Trash2 } from 'lucide-svelte';
 	import * as Card from '$lib/components/ui/card';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Button } from '$lib/components/ui/button';
@@ -23,6 +23,7 @@
 	let chartDialogOpen = false;
 	let submitDialogOpen = false;
 	let submitting = false;
+	let cancelling = false;
 	let submitProgress: number | string = '';
 	let submitVideoLink = '';
 	let submitRaw = '';
@@ -31,6 +32,7 @@
 	$: levelId = Number(level.levelId);
 	$: levelName = level.name || `Level ${levelId}`;
 	$: requireRaw = level.requireRaw === true || level.needRaw === true;
+	$: manualSubmission = level.viewerManualSubmission ?? null;
 	$: canManualSubmit = Boolean(
 		tournament?.contestConfig?.allowManualSubmit === true
 		&& tournament?.status === 'ongoing'
@@ -138,6 +140,26 @@
 			toast.error(error?.message || $_('tournament.manual_submit.error'));
 		} finally {
 			submitting = false;
+		}
+	}
+
+	async function cancelManualProgress() {
+		if (!confirm($_('tournament.manual_submit.cancel_confirm'))) {
+			return;
+		}
+
+		cancelling = true;
+
+		try {
+			await tournamentFetch(`/${tournament.id}/levels/${levelId}/submit`, {
+				method: 'DELETE'
+			});
+			toast.success($_('tournament.manual_submit.cancel_success'));
+			await onSubmitted?.();
+		} catch (error: any) {
+			toast.error(error?.message || $_('tournament.manual_submit.cancel_error'));
+		} finally {
+			cancelling = false;
 		}
 	}
 
@@ -254,15 +276,35 @@
     {/if}
 
     {#if canManualSubmit}
-      <Button
-        type="button"
-        variant="outline"
-        class="self-start md:self-center"
-        on:click={() => (submitDialogOpen = true)}
-      >
-        <Send size={15} class="mr-[6px]" />
-        {$_('tournament.manual_submit.submit')}
-      </Button>
+      <div class="flex flex-col items-start gap-2 md:items-end">
+        {#if manualSubmission}
+          <span class="text-sm text-muted-foreground">
+            {$_('tournament.manual_submit.submitted_progress', {
+              values: { progress: manualSubmission.progress }
+            })}
+          </span>
+          <Button
+            type="button"
+            variant="destructive"
+            on:click={cancelManualProgress}
+            disabled={cancelling}
+          >
+            <Trash2 size={15} class="mr-[6px]" />
+            {cancelling
+              ? $_('tournament.manual_submit.cancelling')
+              : $_('tournament.manual_submit.cancel_submission')}
+          </Button>
+        {:else}
+          <Button
+            type="button"
+            variant="outline"
+            on:click={() => (submitDialogOpen = true)}
+          >
+            <Send size={15} class="mr-[6px]" />
+            {$_('tournament.manual_submit.submit')}
+          </Button>
+        {/if}
+      </div>
     {/if}
   </div>
 </Card.Root>
