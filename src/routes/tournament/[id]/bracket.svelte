@@ -5,6 +5,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { cn } from '$lib/utils.js';
 	import PlayerLink from '$lib/components/playerLink.svelte';
+	import { resolvePvpRankBadge } from '$lib/utils/pvpRank';
 
 	export let rounds: any[] = [];
 	export let thirdPlaceMatch: any = null;
@@ -17,7 +18,7 @@
 	export let onOverride: ((node: any) => void) | null = null;
 
 	// Layout constants (connectors are anchored to the slot block, footers overflow below).
-	const MATCH_W = 232;
+	const MATCH_W = 280;
 	const SLOT_H = 64;
 	const FOOT_H = 30;
 	const V_GAP = 40;
@@ -140,6 +141,12 @@
 				? `#${participant.contestSeed} ${participant.player?.name ?? uid}`
 				: `${participant.player?.name ?? uid} (${participant.eloAtRegistration ?? 1500})`
 			: uid;
+	}
+
+	function participantSeed(uid: string | null) {
+		return uid
+			? participants.find((entry) => entry.uid === uid)?.contestSeed ?? null
+			: null;
 	}
 
 	function slotSelected(uid: string | null) {
@@ -314,6 +321,8 @@
                 <div class="overflow-hidden rounded-[8px] border border-[hsl(var(--border))] bg-card shadow-sm">
                   {#each [1, 2] as slot}
                     {@const player = slot === 1 ? node.player1 : node.player2}
+                    {@const playerUid = slot === 1 ? node.player1Uid : node.player2Uid}
+                    {@const seed = participantSeed(playerUid)}
                     {@const score = slot === 1 ? node.score1 : node.score2}
                     {@const winner = isWinner(node, slot)}
                     <div
@@ -324,16 +333,40 @@
                       )}
                     >
                       {#if editable && roundIndex === 0}
-                        <div class="min-w-0 flex-1" data-no-pan>
+                        <div class="flex min-w-0 flex-1 items-center gap-[5px]" data-no-pan>
+                          {#if player}
+                            {#if seed}
+                              <span class="shrink-0 tabular-nums">#{seed}</span>
+                            {/if}
+                            <div class="min-w-0 overflow-hidden">
+                              <PlayerLink
+                                {player}
+                                showAvatar
+                                avatarSize={20}
+                                truncate={24}
+                                rankBadge={resolvePvpRankBadge(player)}
+                              />
+                            </div>
+                          {:else}
+                            <span class="min-w-0 flex-1 truncate opacity-40">{slotLabel(node, slot)}</span>
+                          {/if}
                           <Select.Root
-                            selected={slotSelected(slot === 1 ? node.player1Uid : node.player2Uid)}
+                            selected={slotSelected(playerUid)}
                             onSelectedChange={(value) =>
                               onSlotChange?.(node.position, slot === 1 ? 1 : 2, value?.value ? String(value.value) : null)}
                           >
-                            <Select.Trigger class="h-[26px] w-full px-[8px] text-xs">
-                              <Select.Value placeholder={$_('tournament.bracket.bye')} />
+                            <Select.Trigger
+                              class="h-[30px] w-[28px] shrink-0 border-0 bg-transparent px-[4px] py-0 shadow-none focus:ring-0"
+                              aria-label={playerUid ? participantLabel(playerUid) : $_('tournament.bracket.bye')}
+                            >
+                              <span class="sr-only">
+                                {playerUid ? participantLabel(playerUid) : $_('tournament.bracket.bye')}
+                              </span>
                             </Select.Trigger>
-                            <Select.Content class="max-h-[260px] overflow-y-auto">
+                            <Select.Content
+                              sameWidth={false}
+                              class="max-h-[260px] w-[280px] overflow-y-auto"
+                            >
                               <Select.Item value="" label={$_('tournament.bracket.bye')}>
                                 {$_('tournament.bracket.bye')}
                               </Select.Item>
@@ -346,7 +379,13 @@
                           </Select.Root>
                         </div>
                       {:else if player}
-                        <PlayerLink {player} showAvatar avatarSize={20} truncate={16} />
+                        <PlayerLink
+                          {player}
+                          showAvatar
+                          avatarSize={20}
+                          truncate={22}
+                          rankBadge={resolvePvpRankBadge(player)}
+                        />
                       {:else}
                         <span class="opacity-40">{slotLabel(node, slot)}</span>
                       {/if}
@@ -387,7 +426,13 @@
               </div>
               <div class="flex h-[64px] items-center gap-[8px] rounded-[8px] border border-amber-400/60 bg-gradient-to-r from-amber-500/15 to-transparent px-[12px]">
                 <Trophy size={18} class="shrink-0 text-amber-400" />
-                <PlayerLink player={champion} showAvatar avatarSize={24} truncate={18} />
+                <PlayerLink
+                  player={champion}
+                  showAvatar
+                  avatarSize={24}
+                  truncate={24}
+                  rankBadge={resolvePvpRankBadge(champion)}
+                />
               </div>
             </div>
           {/if}
@@ -410,7 +455,13 @@
                     )}
                   >
                     {#if player}
-                      <PlayerLink {player} showAvatar avatarSize={20} truncate={16} />
+                      <PlayerLink
+                        {player}
+                        showAvatar
+                        avatarSize={20}
+                        truncate={22}
+                        rankBadge={resolvePvpRankBadge(player)}
+                      />
                     {:else}
                       <span class="opacity-40">{slotLabel(thirdPlaceMatch, slot)}</span>
                     {/if}
