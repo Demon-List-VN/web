@@ -4069,12 +4069,14 @@
             "all_statuses": "Tất cả trạng thái",
             "official": "Chính thức",
             "community": "Cộng đồng",
+            "mine": "Giải đấu của tôi",
             "no_results": "Không có giải đấu nào khớp với bộ lọc.",
             "group": {
                 "live": "Đang diễn ra",
                 "registration": "Đang mở đăng ký",
                 "upcoming": "Sắp diễn ra",
-                "finished": "Đã kết thúc"
+                "finished": "Đã kết thúc",
+                "cancelled": "Đã hủy"
             }
         },
         "countdown": {

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { _ } from 'svelte-i18n';
 	import { user } from '$lib/client';
 	import { Button } from '$lib/components/ui/button';
@@ -10,6 +11,7 @@
 		groupTournaments,
 		formatLabelKey,
 		statusLabelKey,
+		tournamentFetch,
 		type TournamentStatus
 	} from '$lib/client/tournament';
 	import TournamentCard from './tournamentCard.svelte';
@@ -22,6 +24,7 @@
 		'ready',
 		'ongoing',
 		'finished',
+		'cancelled',
 		'draft'
 	];
 
@@ -29,8 +32,14 @@
 	let formatFilter = 'all';
 	let statusFilter = 'all';
 	let tournamentKind = 'official';
+	let myTournaments: any[] = [];
+	let myTournamentsLoading = false;
+	let loadedViewerUid: string | null = null;
 
-	$: tournaments = (data.tournaments ?? []).filter((tournament: any) => tournament.status !== 'cancelled');
+	$: publicTournaments = (data.tournaments ?? []).filter(
+		(tournament: any) => tournament.status !== 'cancelled'
+	);
+	$: tournaments = tournamentKind === 'mine' ? myTournaments : publicTournaments;
 	$: needle = search.trim()
 		.toLowerCase();
 	$: filtered = tournaments.filter((tournament: any) => {
@@ -73,6 +82,50 @@
 				? $_('tournament.list.all_statuses')
 				: $_(statusLabelKey(statusFilter as TournamentStatus))
 	};
+
+	onMount(() => {
+		const unsubscribe = user.subscribe(async (currentUser) => {
+			if (!currentUser.checked) {
+				return;
+			}
+
+			if (!currentUser.loggedIn) {
+				loadedViewerUid = null;
+				myTournaments = [];
+				myTournamentsLoading = false;
+
+				if (tournamentKind === 'mine') {
+					tournamentKind = 'official';
+				}
+
+				return;
+			}
+
+			const viewerUid = String(currentUser.data?.uid ?? '');
+
+			if (!viewerUid || viewerUid === loadedViewerUid) {
+				return;
+			}
+
+			loadedViewerUid = viewerUid;
+			myTournamentsLoading = true;
+
+			try {
+				const tournaments = await tournamentFetch('/mine');
+				myTournaments = (Array.isArray(tournaments) ? tournaments : []).filter(
+					(tournament: any) => String(tournament.hostUid) === viewerUid
+				);
+			} catch (error) {
+				loadedViewerUid = null;
+				myTournaments = [];
+				console.error('Failed to load created tournaments:', error);
+			} finally {
+				myTournamentsLoading = false;
+			}
+		});
+
+		return unsubscribe;
+	});
 </script>
 
 <svelte:head>
@@ -94,6 +147,9 @@
     <Tabs.List class="mb-[16px] w-fit">
       <Tabs.Trigger value="official">{$_('tournament.list.official')}</Tabs.Trigger>
       <Tabs.Trigger value="community">{$_('tournament.list.community')}</Tabs.Trigger>
+      {#if $user?.loggedIn}
+        <Tabs.Trigger value="mine">{$_('tournament.list.mine')}</Tabs.Trigger>
+      {/if}
     </Tabs.List>
 
     <div class="mb-[24px] flex flex-col gap-[10px] sm:flex-row sm:items-center">
@@ -134,7 +190,9 @@
       </Select.Root>
     </div>
 
-    {#if groups.length}
+    {#if tournamentKind === 'mine' && myTournamentsLoading}
+      <p class="mt-[40px] text-center text-muted-foreground">{$_('tournament.loading')}</p>
+    {:else if groups.length}
       <div class="flex flex-col gap-[28px]">
         {#each groups as group (group.key)}
           <section>

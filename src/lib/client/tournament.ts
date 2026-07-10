@@ -282,12 +282,13 @@ export interface TournamentGroup {
     items: any[];
 }
 
-/** Buckets tournaments into Live / Registration / Upcoming / Finished, dropping empty groups. */
+/** Buckets tournaments by lifecycle status, dropping empty groups. */
 export function groupTournaments(list: any[]): TournamentGroup[] {
     const live: any[] = [];
     const open: any[] = [];
     const upcoming: any[] = [];
     const finished: any[] = [];
+    const cancelled: any[] = [];
 
     for (const tournament of list ?? []) {
         switch (tournament.status) {
@@ -301,6 +302,7 @@ export function groupTournaments(list: any[]): TournamentGroup[] {
                 finished.push(tournament);
                 break;
             case 'cancelled':
+                cancelled.push(tournament);
                 break;
             default:
                 upcoming.push(tournament);
@@ -311,6 +313,7 @@ export function groupTournaments(list: any[]): TournamentGroup[] {
         { key: 'live', labelKey: 'tournament.list.group.live', items: live },
         { key: 'registration', labelKey: 'tournament.list.group.registration', items: open },
         { key: 'upcoming', labelKey: 'tournament.list.group.upcoming', items: upcoming },
-        { key: 'finished', labelKey: 'tournament.list.group.finished', items: finished }
+        { key: 'finished', labelKey: 'tournament.list.group.finished', items: finished },
+        { key: 'cancelled', labelKey: 'tournament.list.group.cancelled', items: cancelled }
     ].filter((group) => group.items.length > 0);
 }

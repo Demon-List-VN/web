@@ -51,6 +51,7 @@
 	let replayCellFlashTokens = new Map<string, { sequence: number; change: ReplayCellChange; }>();
 	let replayCellFlashTimer: ReturnType<typeof setTimeout> | null = null;
 	let replayCellFlashSequence = 0;
+	const leaderboardRowNodes = new Set<HTMLTableRowElement>();
 	let statsDialogOpen = false;
 	let statsDialogMode: 'player' | 'level' = 'player';
 	let statsDialogEntry: any = null;
@@ -84,6 +85,30 @@
 			easing: params.easing,
 			css: (_t, u) => `transform: translateY(${u * deltaY}px);`
 		};
+	}
+
+	function trackLeaderboardRow(node: HTMLTableRowElement) {
+		leaderboardRowNodes.add(node);
+
+		return {
+			destroy() {
+				leaderboardRowNodes.delete(node);
+			}
+		};
+	}
+
+	function cancelUnfinishedReplayRowAnimations() {
+		if (!board?.replay) {
+			return;
+		}
+
+		for (const row of leaderboardRowNodes) {
+			for (const animation of row.getAnimations()) {
+				if ((animation as CSSAnimation).animationName?.startsWith('__svelte_')) {
+					animation.cancel();
+				}
+			}
+		}
 	}
 
 	$: totalAvailablePoints = levels.reduce(
@@ -698,6 +723,9 @@
 	}
 
 	function applyReplayAt(nextAtMs: number, flashChanges = true) {
+		// Measure the next FLIP from the last tick's settled layout, not from an
+		// in-progress transform. This makes every replay frame replace the previous one.
+		cancelUnfinishedReplayRowAnimations();
 		const previousAtMs = replayAtMs;
 		replayAtMs = clampReplayAt(nextAtMs);
 		const previousEntries = board?.replay ? board.entries ?? [] : [];
@@ -1343,6 +1371,7 @@
               {@const penaltyFlash = replayCellFlash(replayCellKey(entry, 'penalty'))}
               {@const completedFlash = replayCellFlash(replayCellKey(entry, 'completed'))}
               <tr
+                use:trackLeaderboardRow
                 animate:verticalLeaderboardFlip={{
                   duration: replayMode ? replayLeaderboardFlyDurationMs : leaderboardFlyDurationMs,
                   easing: cubicInOut

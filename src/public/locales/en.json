@@ -4070,12 +4070,14 @@
             "all_statuses": "All statuses",
             "official": "Official",
             "community": "Community",
+            "mine": "My Tournaments",
             "no_results": "No tournaments match your filters.",
             "group": {
                 "live": "Live now",
                 "registration": "Open for registration",
                 "upcoming": "Upcoming",
-                "finished": "Finished"
+                "finished": "Finished",
+                "cancelled": "Cancelled"
             }
         },
         "countdown": {
