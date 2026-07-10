@@ -165,7 +165,7 @@
 
     {#if isSingleElim}
       <Tabs.Content value="bracket" class="mt-[20px]">
-        <BracketManager {tournament} onChange={refreshManagedTournament} />
+        <BracketManager {tournament} {isManager} onChange={refreshManagedTournament} />
       </Tabs.Content>
       <Tabs.Content value="matches" class="mt-[20px]">
         <MatchesManager {tournament} onChange={refreshManagedTournament} />

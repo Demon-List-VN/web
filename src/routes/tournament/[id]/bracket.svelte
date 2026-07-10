@@ -136,7 +136,9 @@
 		const participant = participants.find((entry) => entry.uid === uid);
 
 		return participant
-			? `${participant.player?.name ?? uid} (${participant.eloAtRegistration ?? 1500})`
+			? participant.contestSeed
+				? `#${participant.contestSeed} ${participant.player?.name ?? uid}`
+				: `${participant.player?.name ?? uid} (${participant.eloAtRegistration ?? 1500})`
 			: uid;
 	}
 

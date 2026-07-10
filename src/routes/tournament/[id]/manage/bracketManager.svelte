@@ -2,16 +2,20 @@
 	import { _ } from 'svelte-i18n';
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
+	import * as Dialog from '$lib/components/ui/dialog';
 	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
 	import { tournamentFetch } from '$lib/client/tournament';
 	import {
 		autoFillTournamentSlots,
-		changeTournamentSlot
+		changeTournamentSlot,
+		seedTournamentSlotsByOrder
 	} from '$lib/utils/tournamentBracket';
 	import Bracket from '../bracket.svelte';
 	import MatchActionDialogs from './matchActionDialogs.svelte';
 
 	export let tournament: any;
+	export let isManager = false;
 	export let onChange: (() => Promise<void> | void) | null = null;
 
 	let bracket: any = null;
@@ -19,6 +23,11 @@
 	let slots: Array<string | null> = [];
 	let loading = true;
 	let saving = false;
+	let importing = false;
+	let contestTournamentId = '';
+	let stagedLeaderboardEntries: any[] = [];
+	let importedUids: string[] = [];
+	let saveConfirmOpen = false;
 	let matchActions: any;
 	let bracketMode: 'setup' | 'matches' = [
 		'draft',
@@ -33,11 +42,30 @@
 		tournament.status
 	);
 	$: activeParticipants = participants.filter((participant) => participant.status === 'active');
+	$: bracketParticipants = (() => {
+		const entries = new Map<string, any>();
+
+		for (const participant of participants) {
+			if (participant.status === 'active' || participant.status === 'invited') {
+				entries.set(participant.uid, participant);
+			}
+		}
+
+		for (const entry of stagedLeaderboardEntries) {
+			entries.set(entry.uid, { ...entries.get(entry.uid), ...entry });
+		}
+
+		return [...entries.values()];
+	})();
+	$: assignedUids = slots.filter((uid): uid is string => Boolean(uid));
+	$: bracketParticipantUids = new Set(bracketParticipants.map((participant) => participant.uid));
+	$: importedUidsToApply = importedUids.filter((uid) => slots.includes(uid));
 	$: assignmentValid =
-		slots.filter(Boolean).length === activeParticipants.length
-		&& new Set(slots.filter(Boolean)).size === activeParticipants.length
-		&& activeParticipants.every((participant) => slots.includes(participant.uid));
-	$: preview = bracket ? buildPreviewBracket(bracket, slots, activeParticipants) : null;
+		assignedUids.length >= 2
+		&& new Set(assignedUids).size === assignedUids.length
+		&& assignedUids.every((uid) => bracketParticipantUids.has(uid))
+		&& activeParticipants.every((participant) => assignedUids.includes(participant.uid));
+	$: preview = bracket ? buildPreviewBracket(bracket, slots, bracketParticipants) : null;
 	$: displayedBracket = bracketMode === 'setup' ? preview : bracket;
 
 	async function load() {
@@ -49,6 +77,8 @@
 				tournamentFetch(`/${tournament.id}/participants`)
 			]);
 			slots = [...(bracket.firstRoundSlots ?? [])];
+			stagedLeaderboardEntries = [];
+			importedUids = [];
 		} catch (error: any) {
 			toast.error(error.message);
 		} finally {
@@ -167,19 +197,118 @@
 		slots = autoFillTournamentSlots(activeParticipants, Number(tournament.maxPlayers));
 	}
 
+	async function importContestLeaderboard() {
+		const sourceId = Number(contestTournamentId);
+
+		if (!Number.isInteger(sourceId) || sourceId <= 0) {
+			toast.error($_('tournament.bracket.import_invalid_id'));
+
+			return;
+		}
+
+		importing = true;
+
+		try {
+			const board = await tournamentFetch(`/${sourceId}/leaderboard`);
+			const rankedEntries = (board?.entries ?? [])
+				.filter((entry: any) => entry?.uid)
+				.filter((entry: any, index: number, entries: any[]) =>
+					entries.findIndex((candidate) => candidate.uid === entry.uid) === index);
+			const existingByUid = new Map(
+				participants.map((participant) => [participant.uid, participant])
+			);
+			const requiredActiveUids = new Set(
+				activeParticipants.map((participant) => participant.uid)
+			);
+			const newPlayerLimit = Math.max(
+				0,
+				Number(tournament.maxPlayers) - activeParticipants.length
+			);
+			const selected: any[] = [];
+			let selectedNewPlayers = 0;
+
+			for (const entry of rankedEntries) {
+				const isActive = requiredActiveUids.has(entry.uid);
+
+				if (!isActive && selectedNewPlayers >= newPlayerLimit) {
+					continue;
+				}
+
+				selected.push(entry);
+
+				if (!isActive) {
+					selectedNewPlayers += 1;
+				}
+			}
+
+			const selectedUids = new Set(selected.map((entry) => entry.uid));
+
+			for (const participant of activeParticipants) {
+				if (!selectedUids.has(participant.uid)) {
+					selected.push({
+						uid: participant.uid,
+						player: participant.player,
+						rank: null
+					});
+				}
+			}
+
+			if (!selected.length) {
+				throw new Error($_('tournament.bracket.import_empty'));
+			}
+
+			stagedLeaderboardEntries = selected.map((entry, index) => ({
+				...(existingByUid.get(entry.uid) ?? {}),
+				uid: entry.uid,
+				player: entry.player ?? existingByUid.get(entry.uid)?.player ?? null,
+				status: existingByUid.get(entry.uid)?.status ?? 'staged',
+				contestSeed: Number(entry.rank) || index + 1
+			}));
+			importedUids = selected
+				.filter((entry) => existingByUid.get(entry.uid)?.status !== 'active')
+				.map((entry) => entry.uid);
+			slots = seedTournamentSlotsByOrder(
+				selected.map((entry) => entry.uid),
+				Number(tournament.maxPlayers)
+			);
+			toast.success($_('tournament.bracket.import_staged', {
+				values: { count: importedUids.length }
+			}));
+		} catch (error: any) {
+			toast.error(error.message);
+		} finally {
+			importing = false;
+		}
+	}
+
 	function changeSlot(position: number, slot: 1 | 2, uid: string | null) {
 		slots = changeTournamentSlot(slots, position * 2 + slot - 1, uid);
 	}
 
-	async function saveBracket() {
+	function requestSaveBracket() {
+		if (importedUidsToApply.length) {
+			saveConfirmOpen = true;
+
+			return;
+		}
+
+		saveBracket('invite');
+	}
+
+	async function saveBracket(importMode: 'invite' | 'force_add' = 'invite') {
+		saveConfirmOpen = false;
 		saving = true;
 
 		try {
 			bracket = await tournamentFetch(`/${tournament.id}/bracket`, {
 				method: 'PUT',
-				body: JSON.stringify({ slots })
+				body: JSON.stringify({
+					slots,
+					importedUids: importedUidsToApply,
+					importMode
+				})
 			});
-			slots = [...bracket.firstRoundSlots];
+			await load();
 			await onChange?.();
 			toast.success($_('tournament.bracket.saved'));
 		} catch (error: any) {
@@ -220,18 +349,39 @@
   </div>
 
   {#if preStart && bracketMode === 'setup'}
-    <div class="mb-[16px] flex flex-wrap items-center gap-[8px] rounded-[10px] border border-[hsl(var(--border))] bg-card/40 p-[12px]">
-      <Button size="sm" variant="outline" on:click={autoFill}>
-        {$_('tournament.bracket.auto_fill')}
-      </Button>
-      <Button size="sm" on:click={saveBracket} disabled={saving || !assignmentValid}>
-        {$_('tournament.bracket.save')}
-      </Button>
-      <p class="text-sm text-muted-foreground">
-        {assignmentValid
-          ? $_('tournament.bracket.assignment_ready')
-          : $_('tournament.bracket.assignment_incomplete')}
-      </p>
+    <div class="mb-[16px] flex flex-col gap-[12px] rounded-[10px] border border-[hsl(var(--border))] bg-card/40 p-[12px]">
+      <div class="flex flex-col gap-[8px] sm:flex-row sm:items-center">
+        <Input
+          class="sm:max-w-[240px]"
+          type="number"
+          min="1"
+          bind:value={contestTournamentId}
+          placeholder={$_('tournament.bracket.import_contest_id')}
+        />
+        <Button size="sm" variant="outline" on:click={importContestLeaderboard} disabled={importing}>
+          {importing
+            ? $_('tournament.bracket.importing')
+            : $_('tournament.bracket.import_leaderboard')}
+        </Button>
+        <p class="text-sm text-muted-foreground">
+          {isManager
+            ? $_('tournament.bracket.import_manager_notice')
+            : $_('tournament.bracket.import_owner_notice')}
+        </p>
+      </div>
+      <div class="flex flex-wrap items-center gap-[8px]">
+        <Button size="sm" variant="outline" on:click={autoFill}>
+          {$_('tournament.bracket.auto_fill')}
+        </Button>
+        <Button size="sm" on:click={requestSaveBracket} disabled={saving || !assignmentValid}>
+          {$_('tournament.bracket.save')}
+        </Button>
+        <p class="text-sm text-muted-foreground">
+          {assignmentValid
+            ? $_('tournament.bracket.assignment_ready')
+            : $_('tournament.bracket.assignment_incomplete')}
+        </p>
+      </div>
     </div>
   {/if}
 
@@ -240,12 +390,42 @@
     thirdPlaceMatch={displayedBracket.thirdPlaceMatch}
     champion={displayedBracket.champion}
     editable={preStart && bracketMode === 'setup'}
-    participants={activeParticipants}
+    participants={bracketParticipants}
     showActions={bracketMode === 'matches' && (tournament.status === 'ongoing' || tournament.status === 'finished')}
     onSlotChange={changeSlot}
     onStart={(node) => matchActions.openStart(node)}
     onOverride={(node) => matchActions.openOverride(node)}
   />
 {/if}
+
+<Dialog.Root bind:open={saveConfirmOpen}>
+  <Dialog.Content>
+    <Dialog.Header>
+      <Dialog.Title>{$_('tournament.bracket.import_save_title')}</Dialog.Title>
+      <Dialog.Description>
+        {isManager
+          ? $_('tournament.bracket.import_manager_confirm', {
+              values: { count: importedUidsToApply.length }
+            })
+          : $_('tournament.bracket.import_owner_confirm', {
+              values: { count: importedUidsToApply.length }
+            })}
+      </Dialog.Description>
+    </Dialog.Header>
+    <Dialog.Footer>
+      <Button variant="outline" on:click={() => (saveConfirmOpen = false)} disabled={saving}>
+        {$_('tournament.bracket.cancel')}
+      </Button>
+      {#if isManager}
+        <Button variant="outline" on:click={() => saveBracket('force_add')} disabled={saving}>
+          {$_('tournament.bracket.save_force_add')}
+        </Button>
+      {/if}
+      <Button on:click={() => saveBracket('invite')} disabled={saving}>
+        {$_('tournament.bracket.save_invite_all')}
+      </Button>
+    </Dialog.Footer>
+  </Dialog.Content>
+</Dialog.Root>
 
 <MatchActionDialogs bind:this={matchActions} {tournament} onChange={reloadMatches} />

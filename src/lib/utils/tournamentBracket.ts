@@ -36,6 +36,13 @@ export function autoFillTournamentSlots(participants: any[], size: number) {
     return seedOrder.map((seed) => sorted[seed - 1]?.uid ?? null);
 }
 
+export function seedTournamentSlotsByOrder(orderedUids: string[], size: number) {
+    const uniqueUids = [...new Set(orderedUids.filter(Boolean))].slice(0, size);
+    const seedOrder = bracketSeedOrder(size);
+
+    return seedOrder.map((seed) => uniqueUids[seed - 1] ?? null);
+}
+
 export function changeTournamentSlot(
     slots: Array<string | null>,
     index: number,
