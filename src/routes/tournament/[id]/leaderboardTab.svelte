@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
-	import { flip } from 'svelte/animate';
+	import type { AnimationConfig, FlipParams } from 'svelte/animate';
 	import { cubicInOut } from 'svelte/easing';
 	import { _ } from 'svelte-i18n';
 	import { Download, FastForward, Pause, Play, RefreshCw, Rewind, Snowflake } from 'lucide-svelte';
@@ -56,9 +56,32 @@
 	const replaySpeeds = [1, 2, 5, 10, 25, 50, 100, 250, 500, 750, 1000];
 	const replaySeekSeconds = 10;
 	const leaderboardFlyDurationMs = 1600;
-	const replayLeaderboardFlyDurationMs = 900;
+	const replayLeaderboardFlyDurationMs = 1000;
 	const replayCellFlashDurationMs = 700;
 	const contestScorePrecision = 100_000_000;
+	const leaderboardRowJitterThresholdPx = 2;
+
+	function verticalLeaderboardFlip(
+		_node: Element,
+		{ from, to }: { from: DOMRect; to: DOMRect; },
+		params: FlipParams = {}
+	): AnimationConfig {
+		const deltaY = from.top - to.top;
+		const duration = typeof params.duration === 'function'
+			? params.duration(Math.abs(deltaY))
+			: params.duration ?? 300;
+
+		if (Math.abs(deltaY) < leaderboardRowJitterThresholdPx) {
+			return { duration: 1 };
+		}
+
+		return {
+			delay: params.delay,
+			duration,
+			easing: params.easing,
+			css: (_t, u) => `transform: translateY(${u * deltaY}px);`
+		};
+	}
 
 	$: totalAvailablePoints = levels.reduce(
 		(total, level) => total + Number(level.maxPoints || 0),
@@ -1237,7 +1260,7 @@
               {@const penaltyFlash = replayCellFlash(replayCellKey(entry, 'penalty'))}
               {@const completedFlash = replayCellFlash(replayCellKey(entry, 'completed'))}
               <tr
-                animate:flip={{
+                animate:verticalLeaderboardFlip={{
                   duration: replayMode ? replayLeaderboardFlyDurationMs : leaderboardFlyDurationMs,
                   easing: cubicInOut
                 }}
@@ -1249,7 +1272,7 @@
               >
                 <Table.Cell
                   class={cn(
-                    'w-[100px] text-base font-bold tabular-nums',
+                    'w-[100px] py-1 text-base font-bold tabular-nums',
                     rankClass(entry.rank),
                     $user.loggedIn && entry.uid === $user.data.uid ? 'text-yellow-500' : ''
                   )}
@@ -1261,7 +1284,7 @@
                     >#{entry.rank}</span>
                   {/key}
                 </Table.Cell>
-                <Table.Cell class="min-w-[200px]">
+                <Table.Cell class="min-w-[200px] py-1">
                   {#if entry.player}
                     <div id={$user.loggedIn && entry.uid === $user.data.uid ? 'tournament-me' : undefined}>
 						<PlayerLink
@@ -1275,7 +1298,7 @@
                     {entry.uid}
                   {/if}
                 </Table.Cell>
-                <Table.Cell class="w-[100px] text-center font-bold tabular-nums">
+                <Table.Cell class="w-[100px] py-1 text-center font-bold tabular-nums">
                   {#key totalFlash?.sequence ?? 0}
                     <button
                       type="button"
@@ -1291,7 +1314,7 @@
                     </button>
                   {/key}
                 </Table.Cell>
-                <Table.Cell class="w-[100px] text-center tabular-nums">
+                <Table.Cell class="w-[100px] py-1 text-center tabular-nums">
                   {#key penaltyFlash?.sequence ?? 0}
                     <span
                       class:replay-cell-flash-better={penaltyFlash?.change === 'better'}
@@ -1306,7 +1329,7 @@
                     </span>
                   {/key}
                 </Table.Cell>
-                <Table.Cell class="w-[100px] text-center tabular-nums text-muted-foreground">
+                <Table.Cell class="w-[100px] py-1 text-center tabular-nums text-muted-foreground">
                   {#key completedFlash?.sequence ?? 0}
                     <span
                       class:replay-cell-flash-better={completedFlash?.change === 'better'}
@@ -1320,13 +1343,13 @@
                   {@const hiddenScore = hasHiddenScore(entry, level)}
                   {@const levelFlash = replayCellFlash(replayLevelCellKey(entry, level))}
                   <Table.Cell
-                    class="w-[90px] text-center tabular-nums"
+                    class="w-[90px] py-1 text-center tabular-nums"
                   >
                     {#key levelFlash?.sequence ?? 0}
                       <button
                         type="button"
                         class={cn(
-                          'w-full rounded-sm px-2 py-1 tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                          'min-h-9 w-full rounded-sm px-2 py-0.5 tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                           hiddenScore ? 'cursor-pointer' : 'hover:text-primary',
                           disqualified ? 'text-destructive line-through decoration-2 hover:text-destructive' : ''
                         )}
