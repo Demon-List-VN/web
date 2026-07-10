@@ -44,6 +44,8 @@
 	let replayParticipants: any[] = [];
 	let replayMeta: any = null;
 	let revealedCells = new Set<string>();
+	let revealingTotalUid: string | null = null;
+	let totalRevealSequence = 0;
 	type ReplayCellChange = 'better' | 'worse' | 'unchanged';
 
 	let replayCellFlashTokens = new Map<string, { sequence: number; change: ReplayCellChange; }>();
@@ -58,6 +60,7 @@
 	const leaderboardFlyDurationMs = 1600;
 	const replayLeaderboardFlyDurationMs = 1000;
 	const replayCellFlashDurationMs = 700;
+	const totalRevealStepDelayMs = 300;
 	const contestScorePrecision = 100_000_000;
 	const leaderboardRowJitterThresholdPx = 2;
 
@@ -352,6 +355,7 @@
 	}
 
 	async function loadRevealMode(showToast = false) {
+		cancelTotalReveal();
 		refreshing = true;
 		const request = async () => {
 			const [normalBoard, liveBoard, nextLevels] = await Promise.all([
@@ -765,6 +769,7 @@
 			return;
 		}
 
+		cancelTotalReveal();
 		replayMode = true;
 		stopReplayPlayback();
 		await loadReplayData();
@@ -785,6 +790,7 @@
 			return;
 		}
 
+		cancelTotalReveal();
 		leaderboardViewMode = mode;
 
 		if (mode === 'normal') {
@@ -841,6 +847,25 @@
 		const live = liveEntryFor(entry.uid)?.levels?.[levelId] ?? null;
 
 		return isZeroScore(current) || hasLiveUpdate(current, live);
+	}
+
+	function hasHiddenTotal(entry: any) {
+		return levels.some((level) => hasHiddenScore(entry, level));
+	}
+
+	function boardEntryFor(uid: string) {
+		return board?.entries?.find((entry: any) => entry.uid === uid) ?? null;
+	}
+
+	function cancelTotalReveal() {
+		totalRevealSequence += 1;
+		revealingTotalUid = null;
+	}
+
+	function waitForTotalRevealStep() {
+		return new Promise<void>((resolve) => {
+			setTimeout(resolve, totalRevealStepDelayMs);
+		});
 	}
 
 	function recomputeEntry(entry: any) {
@@ -913,11 +938,66 @@
 		};
 	}
 
+	async function revealTotal(entry: any) {
+		if (revealingTotalUid || !hasHiddenTotal(entry)) {
+			return;
+		}
+
+		const uid = entry.uid;
+		const initialRank = entry.rank;
+		const sequence = totalRevealSequence + 1;
+		totalRevealSequence = sequence;
+		revealingTotalUid = uid;
+
+		try {
+			while (
+				sequence === totalRevealSequence
+				&& leaderboardViewMode === 'reveal'
+			) {
+				const currentEntry = boardEntryFor(uid);
+
+				if (!currentEntry) {
+					break;
+				}
+
+				const nextLevel = levels.find((level) => hasHiddenScore(currentEntry, level));
+
+				if (!nextLevel) {
+					break;
+				}
+
+				revealScore(currentEntry, nextLevel);
+
+				const updatedEntry = boardEntryFor(uid);
+
+				if (!updatedEntry || updatedEntry.rank !== initialRank || !hasHiddenTotal(updatedEntry)) {
+					break;
+				}
+
+				await waitForTotalRevealStep();
+			}
+		} finally {
+			if (sequence === totalRevealSequence) {
+				revealingTotalUid = null;
+			}
+		}
+	}
+
 	function openPlayerStats(entry: any) {
 		statsDialogMode = 'player';
 		statsDialogEntry = entry;
 		statsDialogLevel = null;
 		statsDialogOpen = true;
+	}
+
+	function handleTotalCellClick(entry: any, hiddenTotal: boolean) {
+		if (hiddenTotal) {
+			void revealTotal(entry);
+
+			return;
+		}
+
+		openPlayerStats(entry);
 	}
 
 	function openLevelStats(entry: any, level: any) {
@@ -1000,6 +1080,7 @@
 	}
 
 	function handleLiveToggle(checked: boolean) {
+		cancelTotalReveal();
 		viewLive = checked;
 
 		if (viewLive && leaderboardViewMode === 'reveal') {
@@ -1052,6 +1133,7 @@
 		return unsubscribe;
 	});
 	onDestroy(() => {
+		cancelTotalReveal();
 		stopReplayPlayback();
 
 		if (replayCellFlashTimer) {
@@ -1257,6 +1339,7 @@
             {#each board.entries as entry (entry.uid)}
               {@const rankFlash = replayCellFlash(replayCellKey(entry, 'rank'))}
               {@const totalFlash = replayCellFlash(replayCellKey(entry, 'total'))}
+              {@const hiddenTotal = hasHiddenTotal(entry)}
               {@const penaltyFlash = replayCellFlash(replayCellKey(entry, 'penalty'))}
               {@const completedFlash = replayCellFlash(replayCellKey(entry, 'completed'))}
               <tr
@@ -1302,15 +1385,22 @@
                   {#key totalFlash?.sequence ?? 0}
                     <button
                       type="button"
-                      class="w-full rounded-sm px-2 py-1 tabular-nums transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      class={cn(
+                        'w-full rounded-sm px-2 py-1 tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                        hiddenTotal ? 'cursor-pointer' : 'hover:text-primary'
+                      )}
                       class:replay-cell-flash-better={totalFlash?.change === 'better'}
                       class:replay-cell-flash-worse={totalFlash?.change === 'worse'}
-                      on:click={() => openPlayerStats(entry)}
-                      aria-label={$_('tournament.stats.open_player', {
-                        values: { player: playerDisplayName(entry) }
-                      })}
+                      on:click={() => handleTotalCellClick(entry, hiddenTotal)}
+                      disabled={hiddenTotal && Boolean(revealingTotalUid)}
+                      aria-busy={revealingTotalUid === entry.uid}
+                      aria-label={hiddenTotal
+                        ? $_('tournament.leaderboard.hidden_score')
+                        : $_('tournament.stats.open_player', {
+                          values: { player: playerDisplayName(entry) }
+                        })}
                     >
-                      {displayTotal(entry)}
+                      {displayTotal(entry)}{#if hiddenTotal}<sup>?</sup>{/if}
                     </button>
                   {/key}
                 </Table.Cell>
