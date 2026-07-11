@@ -10,10 +10,13 @@
 	} from '$lib/client/tournament';
 
 	export let status: TournamentStatus;
+	export let inviteOnly = false;
 	let className: string | undefined = undefined;
 	export { className as class };
 
 	$: current = stageIndex(status);
+	$: stages = inviteOnly ? LIFECYCLE_STAGES.slice(2) : LIFECYCLE_STAGES;
+	$: visibleCurrent = inviteOnly ? current - 2 : current;
 	$: cancelled = status === 'cancelled';
 </script>
 
@@ -27,10 +30,10 @@
 		</div>
 	{:else}
 		<div class="overflow-x-auto">
-			<ol class="flex min-w-[460px] items-start">
-				{#each LIFECYCLE_STAGES as stage, i}
-					{@const isDone = i < current}
-					{@const isActive = i === current}
+			<ol class={cn('flex items-start', inviteOnly ? 'min-w-[220px]' : 'min-w-[460px]')}>
+				{#each stages as stage, i}
+					{@const isDone = i < visibleCurrent}
+					{@const isActive = i === visibleCurrent}
 					<li class="flex flex-col items-center gap-[6px]" style="flex: 0 0 auto;">
 						<div
 							class={cn(
@@ -57,7 +60,7 @@
 							{$_(lifecycleStageKey(stage))}
 						</span>
 					</li>
-					{#if i < LIFECYCLE_STAGES.length - 1}
+					{#if i < stages.length - 1}
 						<div
 							class={cn(
 								'mt-[13px] h-[2px] min-w-[24px] flex-1 rounded-full transition-colors',

@@ -3969,6 +3969,10 @@
         "decline_invite": "Từ chối",
         "claim_reward": "Nhận thưởng",
         "reward_claimed": "Đã nhận thưởng",
+        "registration_mode": {
+            "open": "Mở cho tất cả",
+            "invite_only": "Chỉ người được mời"
+        },
         "manage": {
             "title": "Quản lý giải đấu",
             "view": "Xem trang",
@@ -3996,6 +4000,7 @@
             "published": "Đã xuất bản giải đấu",
             "detail": "Chi tiết (Markdown)",
             "detail_placeholder": "Viết luật và chi tiết giải đấu bằng Markdown...",
+            "registration_mode": "Chế độ đăng ký",
             "min_elo": "Elo tối thiểu",
             "max_elo": "Elo tối đa",
             "elo_enforced": "Bắt buộc khoảng kỹ năng khi đăng ký",
@@ -4135,6 +4140,7 @@
             "format": "Thể thức",
             "size": "Số người chơi",
             "visibility": "Hiển thị",
+            "registration_mode": "Chế độ đăng ký",
             "submit": "Tạo",
             "success": "Đã tạo giải đấu"
         },

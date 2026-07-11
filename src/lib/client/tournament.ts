@@ -5,6 +5,7 @@ const API = import.meta.env.VITE_API_URL;
 
 export type TournamentFormat = 'single_elimination' | 'contest';
 export type TournamentVisibility = 'public' | 'unlisted' | 'private';
+export type TournamentRegistrationMode = 'open' | 'invite_only';
 export type TournamentStatus =
     | 'draft'
     | 'registration_open'

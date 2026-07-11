@@ -3970,6 +3970,10 @@
         "decline_invite": "Decline",
         "claim_reward": "Claim Reward",
         "reward_claimed": "Reward Claimed",
+        "registration_mode": {
+            "open": "Open to all",
+            "invite_only": "Invite only"
+        },
         "manage": {
             "title": "Manage tournament",
             "view": "View page",
@@ -3997,6 +4001,7 @@
             "published": "Tournament published",
             "detail": "Detail (Markdown)",
             "detail_placeholder": "Write the tournament rules and details in Markdown...",
+            "registration_mode": "Registration mode",
             "min_elo": "Minimum elo",
             "max_elo": "Maximum elo",
             "elo_enforced": "Enforce skill range at registration",
@@ -4136,6 +4141,7 @@
             "format": "Format",
             "size": "Player count",
             "visibility": "Visibility",
+            "registration_mode": "Registration mode",
             "submit": "Create",
             "success": "Tournament created"
         },

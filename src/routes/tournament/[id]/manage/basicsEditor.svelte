@@ -27,6 +27,7 @@
 		description: string;
 		detail: string;
 		visibility: string;
+		registrationMode: string;
 		minElo: number | null;
 		maxElo: number | null;
 		eloEnforced: boolean;
@@ -51,6 +52,7 @@
 			description: value.description ?? '',
 			detail: value.detail ?? '',
 			visibility: value.status === 'draft' ? 'private' : value.visibility ?? 'public',
+			registrationMode: value.registrationMode ?? 'open',
 			minElo: normalizeElo(value.minElo),
 			maxElo: normalizeElo(value.maxElo),
 			eloEnforced: Boolean(value.eloEnforced),
@@ -68,6 +70,7 @@
 		description = initial.description;
 		detail = initial.detail;
 		visibility = initial.visibility;
+		registrationMode = initial.registrationMode;
 		minElo = initial.minElo;
 		maxElo = initial.maxElo;
 		eloEnforced = initial.eloEnforced;
@@ -81,6 +84,7 @@
 	let description = initial.description;
 	let detail = initial.detail;
 	let visibility = initial.visibility;
+	let registrationMode = initial.registrationMode;
 	let minElo: number | null = initial.minElo;
 	let maxElo: number | null = initial.maxElo;
 	let eloEnforced = initial.eloEnforced;
@@ -101,6 +105,7 @@
 		description,
 		detail,
 		visibility,
+		registrationMode,
 		minElo: normalizeElo(minElo),
 		maxElo: normalizeElo(maxElo),
 		eloEnforced,
@@ -121,6 +126,7 @@
 		description = initial.description;
 		detail = initial.detail;
 		visibility = initial.visibility;
+		registrationMode = initial.registrationMode;
 		minElo = initial.minElo;
 		maxElo = initial.maxElo;
 		eloEnforced = initial.eloEnforced;
@@ -196,6 +202,7 @@
 	onDestroy(() => unregister?.());
 
 	const visibilityLabel = (value: string) => $_(`tournament.visibility.${value}`);
+	const registrationModeLabel = (value: string) => $_(`tournament.registration_mode.${value}`);
 </script>
 
 <section class="flex flex-col gap-[12px] rounded-[10px] border border-[hsl(var(--border))] bg-card/40 p-[16px]">
@@ -239,6 +246,16 @@
       <Label>{$_('tournament.manage.max_elo')}</Label>
       <Input type="number" bind:value={maxElo} {disabled} />
     </div>
+  </div>
+  <div class="flex flex-col gap-[6px]">
+    <Label>{$_('tournament.create_form.registration_mode')}</Label>
+    <Select.Root {disabled} selected={{ value: registrationMode, label: registrationModeLabel(registrationMode) }} onSelectedChange={(v) => v && (registrationMode = String(v.value))}>
+      <Select.Trigger><Select.Value /></Select.Trigger>
+      <Select.Content>
+        <Select.Item value="open" label={registrationModeLabel('open')}>{registrationModeLabel('open')}</Select.Item>
+        <Select.Item value="invite_only" label={registrationModeLabel('invite_only')}>{registrationModeLabel('invite_only')}</Select.Item>
+      </Select.Content>
+    </Select.Root>
   </div>
   <div class="flex items-center gap-[8px]">
     <Switch bind:checked={eloEnforced} {disabled} id="elo-enforced" />

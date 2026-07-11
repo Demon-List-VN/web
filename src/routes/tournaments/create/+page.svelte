@@ -17,6 +17,7 @@
 	let description = '';
 	let format: 'single_elimination' | 'contest' = 'single_elimination';
 	let visibility = 'private';
+	let registrationMode: 'open' | 'invite_only' = 'open';
 	let maxPlayers = 8;
 	let submitting = false;
 
@@ -41,7 +42,7 @@
 		submitting = true;
 
 		try {
-			const body: any = { name, description, format, visibility };
+			const body: any = { name, description, format, visibility, registrationMode };
 
 			if (format === 'single_elimination') {
 				body.maxPlayers = maxPlayers;
@@ -62,6 +63,10 @@
 	}
 
 	const visibilityLabel = (value: string) => $_(`tournament.visibility.${value}`);
+	const registrationModeLabel = (value: string) => $_(`tournament.registration_mode.${value}`);
+	function setRegistrationMode(value: string) {
+		registrationMode = value === 'invite_only' ? 'invite_only' : 'open';
+	}
 </script>
 
 <svelte:head>
@@ -114,6 +119,17 @@
         </Select.Root>
       </div>
     {/if}
+
+    <div class="flex flex-col gap-[6px]">
+      <Label>{$_('tournament.create_form.registration_mode')}</Label>
+      <Select.Root selected={{ value: registrationMode, label: registrationModeLabel(registrationMode) }} onSelectedChange={(v) => v && setRegistrationMode(String(v.value))}>
+        <Select.Trigger><Select.Value /></Select.Trigger>
+        <Select.Content>
+          <Select.Item value="open" label={registrationModeLabel('open')}>{registrationModeLabel('open')}</Select.Item>
+          <Select.Item value="invite_only" label={registrationModeLabel('invite_only')}>{registrationModeLabel('invite_only')}</Select.Item>
+        </Select.Content>
+      </Select.Root>
+    </div>
 
     <div class="flex flex-col gap-[6px]">
       <Label>{$_('tournament.create_form.visibility')}</Label>

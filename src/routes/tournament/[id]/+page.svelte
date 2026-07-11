@@ -59,6 +59,7 @@
 			&& Date.now() <= startedAt + lateRegOffsetSeconds * 1000;
 	})();
 	$: canRegister = Boolean(tournament?.registrationOpen || lateRegistrationOpen);
+	$: inviteOnly = tournament?.registrationMode === 'invite_only';
 	$: bannerUrl = tournament
 		? `https://cdn.gdvn.net/tournament-banner/${tournament.id}.webp?v=${tournament.bannerVersion ?? 0}`
 		: '';
@@ -286,7 +287,7 @@
 
   <div class="mt-[12px] flex flex-col gap-[12px] lg:flex-row lg:items-stretch">
     <div class="flex flex-1 items-center rounded-[12px] border border-[hsl(var(--border))] bg-card/40 px-[16px] py-[14px]">
-      <LifecycleTimeline status={tournament.status} />
+      <LifecycleTimeline status={tournament.status} {inviteOnly} />
     </div>
     {#if milestone}
       <div class="flex items-center gap-[10px] rounded-[12px] border border-primary/30 bg-primary/5 px-[16px] py-[12px]">
@@ -317,7 +318,7 @@
         {#if preStart}
           <Button variant="outline" on:click={withdraw}>{$_('tournament.withdraw')}</Button>
         {/if}
-      {:else if !participant && canRegister}
+      {:else if !participant && canRegister && !inviteOnly}
         <Button on:click={register}>{$_('tournament.register')}</Button>
       {:else if !participant && ['registration_closed', 'ready', 'ongoing'].includes(tournament.status)}
         <Button variant="outline" disabled>{$_('tournament.status.registration_closed')}</Button>
