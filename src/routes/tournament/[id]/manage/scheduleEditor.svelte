@@ -54,15 +54,17 @@
 	let registrationClosesAt = initial.registrationClosesAt;
 	let startsAt = initial.startsAt;
 	let endsAt = initial.endsAt;
+	$: inviteOnly = tournament.registrationMode === 'invite_only';
 
 	$: current = { registrationOpensAt, registrationClosesAt, startsAt, endsAt };
 	$: dirty = JSON.stringify(current) !== JSON.stringify(initial);
 	$: dirtyStore?.setDirty(ID, dirty && !disabled);
-	$: scheduleValid =
-		Boolean(registrationOpensAt && registrationClosesAt && startsAt && endsAt)
-		&& timestamp(registrationOpensAt) < timestamp(registrationClosesAt)
-		&& timestamp(registrationClosesAt) <= timestamp(startsAt)
-		&& timestamp(startsAt) < timestamp(endsAt);
+	$: scheduleValid = inviteOnly
+		? Boolean(startsAt && endsAt) && timestamp(startsAt) < timestamp(endsAt)
+		: Boolean(registrationOpensAt && registrationClosesAt && startsAt && endsAt)
+			&& timestamp(registrationOpensAt) < timestamp(registrationClosesAt)
+			&& timestamp(registrationClosesAt) <= timestamp(startsAt)
+			&& timestamp(startsAt) < timestamp(endsAt);
 
 	function reset() {
 		registrationOpensAt = initial.registrationOpensAt;
@@ -76,14 +78,20 @@
 			throw new Error($_('tournament.manage.schedule_invalid'));
 		}
 
+		const schedule = {
+			startsAt: toIso(startsAt),
+			endsAt: toIso(endsAt),
+			...(inviteOnly
+				? {}
+				: {
+					registrationOpensAt: toIso(registrationOpensAt),
+					registrationClosesAt: toIso(registrationClosesAt)
+				})
+		};
+
 		await tournamentFetch(`/${tournament.id}`, {
 			method: 'PATCH',
-			body: JSON.stringify({
-				registrationOpensAt: toIso(registrationOpensAt),
-				registrationClosesAt: toIso(registrationClosesAt),
-				startsAt: toIso(startsAt),
-				endsAt: toIso(endsAt)
-			})
+			body: JSON.stringify(schedule)
 		});
 		initial = { ...current };
 		dirtyStore?.setDirty(ID, false);
@@ -134,7 +142,7 @@
       <TournamentStatusBadge status={tournament.status} />
     </div>
 
-    <LifecycleTimeline status={tournament.status} class="py-[6px]" />
+    <LifecycleTimeline status={tournament.status} {inviteOnly} class="py-[6px]" />
 
     {#if tournament.startBlockers?.length}
       <div class="rounded-[8px] border border-amber-500/40 bg-amber-500/10 p-[12px]">
@@ -153,11 +161,11 @@
     <div class="grid grid-cols-1 gap-[10px] md:grid-cols-2">
       <div class="flex flex-col gap-[6px]">
         <Label>{$_('tournament.manage.registration_opens_at')}</Label>
-        <Input type="datetime-local" bind:value={registrationOpensAt} {disabled} />
+        <Input type="datetime-local" bind:value={registrationOpensAt} disabled={disabled || inviteOnly} />
       </div>
       <div class="flex flex-col gap-[6px]">
         <Label>{$_('tournament.manage.registration_closes_at')}</Label>
-        <Input type="datetime-local" bind:value={registrationClosesAt} {disabled} />
+        <Input type="datetime-local" bind:value={registrationClosesAt} disabled={disabled || inviteOnly} />
       </div>
       <div class="flex flex-col gap-[6px]">
         <Label>{$_('tournament.manage.starts_at')}</Label>

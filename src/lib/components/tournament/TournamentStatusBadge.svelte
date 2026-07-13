@@ -5,6 +5,7 @@
 
 	export let status: TournamentStatus;
 	export let withDot = true;
+	export let labelKey: string | undefined = undefined;
 	let className: string | undefined = undefined;
 	export { className as class };
 
@@ -21,5 +22,5 @@
 	{#if withDot}
 		<span class={cn('h-[6px] w-[6px] rounded-full', meta.dotClass)} class:animate-pulse={meta.tone === 'live'}></span>
 	{/if}
-	{$_(meta.labelKey)}
+	{$_(labelKey ?? meta.labelKey)}
 </span>

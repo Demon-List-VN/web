@@ -229,6 +229,15 @@ export function nextMilestone(tournament: any): Milestone | null {
     const starts = futureDate(tournament.startsAt);
     const future = (date: Date | null) => (date && date.getTime() > now ? date : null);
 
+    if (
+        tournament.registrationMode === 'invite_only'
+        && ['draft', 'registration_open', 'registration_closed', 'ready'].includes(tournament.status)
+    ) {
+        const at = future(starts);
+
+        return at ? { labelKey: 'tournament.milestone.starts', at } : null;
+    }
+
     switch (tournament.status) {
         case 'draft': {
             const at = future(opens) ?? future(closes) ?? future(starts);
@@ -296,7 +305,11 @@ export function groupTournaments(list: any[]): TournamentGroup[] {
                 live.push(tournament);
                 break;
             case 'registration_open':
-                open.push(tournament);
+                if (tournament.registrationMode === 'invite_only') {
+                    upcoming.push(tournament);
+                } else {
+                    open.push(tournament);
+                }
                 break;
             case 'finished':
                 finished.push(tournament);

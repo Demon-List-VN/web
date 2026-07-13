@@ -13,6 +13,8 @@
 	$: bannerUrl = `https://cdn.gdvn.net/tournament-banner/${tournament.id}.webp?v=${tournament.bannerVersion ?? 0}`;
 	$: milestone = nextMilestone(tournament);
 	$: hasReward = tournament.topRewardRarity !== null && tournament.topRewardRarity !== undefined;
+	$: inviteOnlyUpcoming = tournament.registrationMode === 'invite_only'
+		&& ['draft', 'registration_open', 'registration_closed', 'ready'].includes(tournament.status);
 </script>
 
 <a
@@ -24,7 +26,11 @@
     style={`background-image: linear-gradient(to top, rgba(0,0,0,0.55), rgba(0,0,0,0.05)), url('${bannerUrl}');`}
   >
     <div class="absolute left-[10px] top-[10px]">
-      <TournamentStatusBadge status={tournament.status} class="bg-black/40 backdrop-blur" />
+      <TournamentStatusBadge
+        status={inviteOnlyUpcoming ? 'ready' : tournament.status}
+        labelKey={inviteOnlyUpcoming ? 'tournament.list.group.upcoming' : undefined}
+        class="bg-black/40 backdrop-blur"
+      />
     </div>
     {#if hasReward}
       <div
