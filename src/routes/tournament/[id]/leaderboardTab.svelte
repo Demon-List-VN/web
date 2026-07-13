@@ -631,6 +631,7 @@
 				completedCount: 0,
 				lastImprovedAt: null,
 				disqualifications: {},
+				manualSubmissions: {},
 				levels: {}
 			});
 		}
@@ -657,6 +658,19 @@
 
 			const levelId = Number(event.levelId);
 			const progress = Math.max(0, Math.min(100, Number(event.progress) || 0));
+			const entry = byUid.get(event.uid);
+
+			if (entry && event.source === 'manual') {
+				entry.manualSubmissions[String(levelId)] = {
+					id: event.id,
+					progress,
+					source: 'manual',
+					videoLink: event.metadata?.videoLink ?? null,
+					raw: event.metadata?.raw ?? null,
+					comment: event.metadata?.comment ?? null,
+					submittedAt: event.created_at
+				};
+			}
 
 			if (disqualificationByKey.has(`${event.uid}:${levelId}`)) {
 				continue;
@@ -671,7 +685,8 @@
 					levelId,
 					progress,
 					reachedAt: event.created_at,
-					source: event.source ?? null
+					source: event.source ?? null,
+					manualSubmission: entry?.manualSubmissions?.[String(levelId)] ?? null
 				});
 			}
 		}
@@ -695,7 +710,8 @@
 				progress: row.progress,
 				score,
 				reachedAt: row.reachedAt,
-				source: row.source ?? null
+				source: row.source ?? null,
+				manualSubmission: row.manualSubmission ?? null
 			};
 			entry.totalScore = roundContestScore(entry.totalScore + score);
 
