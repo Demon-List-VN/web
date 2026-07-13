@@ -4289,6 +4289,9 @@
         },
         "moderation": {
             "tab": "Moderation",
+            "manual_submission": "Manual submission",
+            "submitted_at": "Submitted at",
+            "not_provided": "Not provided",
             "reason": "Reason",
             "disqualify": "Disqualify progress",
             "clear_disqualification": "Clear disqualification",

@@ -4288,6 +4288,9 @@
         },
         "moderation": {
             "tab": "Kiểm duyệt",
+            "manual_submission": "Bài nộp thủ công",
+            "submitted_at": "Thời gian nộp",
+            "not_provided": "Không cung cấp",
             "reason": "Lý do",
             "disqualify": "Loại tiến độ",
             "clear_disqualification": "Gỡ loại",

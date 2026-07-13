@@ -58,6 +58,18 @@
 	$: playerName = entry?.player?.name || entry?.uid || '';
 	$: selectedLevelId = Number(level?.levelId);
 	$: selectedLevelName = level?.name || (selectedLevelId ? `Level ${selectedLevelId}` : '');
+	$: selectedLevelResult = entry?.levels?.[String(selectedLevelId)] ?? null;
+	$: selectedManualSubmission = getManualSubmission();
+	$: selectedManualVideoLink = submissionValue(
+		selectedManualSubmission?.videoLink,
+		selectedManualSubmission?.video_link,
+		selectedManualSubmission?.video
+	);
+	$: selectedManualRawLink = submissionValue(
+		selectedManualSubmission?.raw,
+		selectedManualSubmission?.rawLink,
+		selectedManualSubmission?.raw_link
+	);
 	$: selectedDisqualification = localDisqualification === undefined
 		? entry?.disqualifications?.[String(selectedLevelId)] ?? null
 		: localDisqualification;
@@ -135,6 +147,45 @@
 			? new Date(valueMs)
 				.toLocaleString()
 			: '-';
+	}
+
+	function getManualSubmission() {
+		const levelId = String(selectedLevelId || '');
+		const nestedSubmission = selectedLevelResult?.manualSubmission
+			?? selectedLevelResult?.submission
+			?? entry?.manualSubmissions?.[levelId]
+			?? null;
+		const isManual = selectedLevelResult?.source === 'manual'
+			|| nestedSubmission?.source === 'manual';
+
+		if (!isManual) {
+			return null;
+		}
+
+		return nestedSubmission
+			? { ...selectedLevelResult, ...nestedSubmission }
+			: selectedLevelResult;
+	}
+
+	function submissionValue(...values: unknown[]): string | null {
+		for (const value of values) {
+			if (typeof value === 'string' && value.trim()) {
+				return value;
+			}
+		}
+
+		return null;
+	}
+
+	function submissionDate(submission: any) {
+		const value = submission?.submittedAt
+			?? submission?.submitted_at
+			?? submission?.createdAt
+			?? submission?.created_at
+			?? submission?.reachedAt;
+		const time = parseTime(value);
+
+		return time ? formatDate(time) : null;
 	}
 
 	function levelLabel(value: any) {
@@ -803,6 +854,60 @@
         </Tabs.Content>
         <Tabs.Content value="moderation" class="mt-4">
           <div class="flex flex-col gap-4">
+            {#if selectedManualSubmission}
+              <section class="rounded-md border border-[hsl(var(--border))] p-4 text-sm">
+                <h3 class="font-semibold">{$_('tournament.moderation.manual_submission')}</h3>
+                <dl class="mt-3 grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <dt class="text-muted-foreground">{$_('tournament.manual_submit.progress')}</dt>
+                    <dd class="font-medium">{formatNumber(selectedManualSubmission.progress)}%</dd>
+                  </div>
+                  {#if submissionDate(selectedManualSubmission)}
+                    <div>
+                      <dt class="text-muted-foreground">{$_('tournament.moderation.submitted_at')}</dt>
+                      <dd class="font-medium">{submissionDate(selectedManualSubmission)}</dd>
+                    </div>
+                  {/if}
+                  <div>
+                    <dt class="text-muted-foreground">{$_('tournament.manual_submit.video_link')}</dt>
+                    <dd>
+                      {#if selectedManualVideoLink}
+                        <a
+                          href={selectedManualVideoLink}
+                          target="_blank"
+                          rel="noreferrer"
+                          class="break-all font-medium text-primary underline-offset-4 hover:underline"
+                        >{selectedManualVideoLink}</a>
+                      {:else}
+                        <span class="text-muted-foreground">{$_('tournament.moderation.not_provided')}</span>
+                      {/if}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt class="text-muted-foreground">{$_('tournament.manual_submit.raw')}</dt>
+                    <dd>
+                      {#if selectedManualRawLink}
+                        <a
+                          href={selectedManualRawLink}
+                          target="_blank"
+                          rel="noreferrer"
+                          class="break-all font-medium text-primary underline-offset-4 hover:underline"
+                        >{selectedManualRawLink}</a>
+                      {:else}
+                        <span class="text-muted-foreground">{$_('tournament.moderation.not_provided')}</span>
+                      {/if}
+                    </dd>
+                  </div>
+                  <div class="sm:col-span-2">
+                    <dt class="text-muted-foreground">{$_('tournament.manual_submit.comment')}</dt>
+                    <dd class="whitespace-pre-wrap break-words font-medium">
+                      {submissionValue(selectedManualSubmission.comment)
+                        ?? $_('tournament.moderation.not_provided')}
+                    </dd>
+                  </div>
+                </dl>
+              </section>
+            {/if}
             <div class="rounded-md border border-[hsl(var(--border))] p-3 text-sm">
               <div class="font-semibold">
                 {selectedDisqualification
