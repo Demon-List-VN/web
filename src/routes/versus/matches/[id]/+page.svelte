@@ -214,8 +214,17 @@
 		points: ProgressGraphPoint[];
 	};
 
+	type ProgressGraphRunSegment = {
+		uid: string;
+		attemptId: string;
+		label: string;
+		color: string;
+		points: ProgressGraphPoint[];
+	};
+
 	type ProgressGraphData = {
 		series: ProgressGraphSeries[];
+		runSegments: ProgressGraphRunSegment[];
 		modeSegments: ProgressGraphModeSegment[];
 		hasPoints: boolean;
 		minX: number;
@@ -249,8 +258,11 @@
 	let initializedFor = '';
 	let cleanupRealtime: (() => Promise<void>) | null = null;
 	let scheduledRealtimeTasks = new Map<string, ReturnType<typeof setTimeout>>();
+	let messageRefreshInFlight = false;
 	let now = Date.now();
+	let progressNow = now;
 	let ticker: ReturnType<typeof setInterval> | null = null;
+	let progressAnimationFrame: number | null = null;
 	let actionLoading = '';
 	let acceptingMatchId: string | null = null;
 	let locallyAcceptedMatchIds = new Set<string>();
@@ -516,10 +528,13 @@
 		orderedParticipants,
 		matchMode,
 		match,
-		now,
+		progressNow,
 		status
 	);
-	$: runningPlayerProgressByUid = getRunningPlayerProgress(messages, now);
+	$: runningPlayerProgressByUid = getRunningPlayerProgress(messages, progressNow);
+	$: hasLiveProgressRun = ['in_progress', 'waiting_result'].includes(status)
+		&& hasActiveProgressRun(messages);
+	$: syncProgressAnimation(hasLiveProgressRun);
 	$: deathCountLevelId = getDeathCountLevelId(match);
 	$: deathCountParticipantUids = getDeathCountParticipantUids(
 		orderedParticipants
@@ -600,6 +615,14 @@
 
 		ticker = setInterval(() => {
 			now = Date.now();
+
+			if (!hasLiveProgressRun) {
+				progressNow = now;
+			}
+
+			if (isSpectator && ['in_progress', 'waiting_result'].includes(status)) {
+				void refreshMessages({ incremental: true, silent: true });
+			}
 		}, 1000);
 
 		window.addEventListener('focus', showPendingPvpXpToast);
@@ -614,6 +637,11 @@
 	onDestroy(() => {
 		if (ticker) {
 			clearInterval(ticker);
+		}
+
+		if (progressAnimationFrame !== null) {
+			cancelAnimationFrame(progressAnimationFrame);
+			progressAnimationFrame = null;
 		}
 
 		if (banPickDeadlineTimeout) {
@@ -642,7 +670,7 @@
 			setPvpRealtimeAuth(token);
 			await Promise.all([
 				refreshMatch(),
-				isSpectator ? Promise.resolve() : refreshMessages(),
+				refreshMessages(),
 				powerupStateKey
 					? refreshPowerupState({ key: powerupStateKey, silent: true })
 					: Promise.resolve()
@@ -650,12 +678,13 @@
 
 			cleanupRealtime = subscribeToPvpMatchDetail(id, async (event) => {
 				if (event.scope === 'message') {
-					if (!isSpectator) {
-						scheduleRealtimeTask(
-							'messages',
-							() => refreshMessages({ incremental: true })
-						);
-					}
+					scheduleRealtimeTask(
+						'messages',
+						() => refreshMessages({
+							incremental: true,
+							silent: isSpectator
+						})
+					);
 
 					scheduleRealtimeTask('match', refreshMatch);
 					schedulePowerupRefresh();
@@ -694,12 +723,18 @@
 		}
 	}
 
-	async function refreshMessages(options: { incremental?: boolean; } = {}) {
-		if (!$user.loggedIn || !matchId || isSpectator) {
+	async function refreshMessages(
+		options: { incremental?: boolean; silent?: boolean; } = {}
+	) {
+		if (!$user.loggedIn || !matchId || messageRefreshInFlight) {
 			return;
 		}
 
-		chatLoading = true;
+		messageRefreshInFlight = true;
+
+		if (!options.silent) {
+			chatLoading = true;
+		}
 
 		try {
 			const nextMessages = await getPvpMatchMessages(
@@ -707,7 +742,8 @@
 				matchId,
 				{
 					afterId: options.incremental ? latestMessageId() : null,
-					limit: options.incremental ? MESSAGE_FETCH_LIMIT : null
+					limit: options.incremental ? MESSAGE_FETCH_LIMIT : null,
+					telemetryOnly: isSpectator
 				}
 			);
 
@@ -717,15 +753,25 @@
 				messages = nextMessages;
 			}
 
-			if (nextMessages.length) {
+			if (nextMessages.some((message) =>
+				!['progress_run_sample', 'progress_run_end'].includes(
+					messageMetadataKind(message)
+				)
+			)) {
 				await scrollChatToBottom();
 			}
 		} catch (error) {
-			toast.error(
-				error instanceof Error ? error.message : 'Failed to load match chat'
-			);
+			if (!options.silent) {
+				toast.error(
+					error instanceof Error ? error.message : 'Failed to load match chat'
+				);
+			}
 		} finally {
-			chatLoading = false;
+			messageRefreshInFlight = false;
+
+			if (!options.silent) {
+				chatLoading = false;
+			}
 		}
 	}
 
@@ -2048,9 +2094,12 @@
 		items: PvpParticipant[],
 		nowMs = now
 	) {
-		const revealed = sourceMessages.filter((message) =>
-			messageIsRevealed(message, nowMs)
-		);
+		const revealed = sourceMessages.filter((message) => {
+			const kind = messageMetadataKind(message);
+
+			return messageIsRevealed(message, nowMs)
+				&& !['progress_run_sample', 'progress_run_end'].includes(kind);
+		});
 		const specialMessage = getMatchEndSpecialMessage(
 			currentMatch,
 			currentStatus,
@@ -2479,7 +2528,13 @@
 
 		if (
 			message.type !== 'system'
-			|| !['progress', 'progress_run', 'death'].includes(kind)
+			|| ![
+				'progress',
+				'progress_run',
+				'progress_run_sample',
+				'progress_run_end',
+				'death'
+			].includes(kind)
 		) {
 			return null;
 		}
@@ -2489,7 +2544,10 @@
 		const uid = metadataText(metadata, 'uid');
 		const progress = metadataNumber(metadata, 'progress');
 		const progressSpeed = metadataNumber(metadata, 'progressSpeed');
-		const timeMs = getTimeMs(message.created_at);
+		const attemptId = metadataText(metadata, 'attemptId');
+		const timeMs = metadataNumber(metadata, 'sampledAtMs')
+			?? getTimeMs(metadataText(metadata, 'sampledAt'))
+			?? getTimeMs(message.created_at);
 
 		if (!uid || progress === null || !timeMs) {
 			return null;
@@ -2505,6 +2563,7 @@
 		return {
 			uid,
 			kind,
+			attemptId,
 			progressSpeed: progressSpeed === null ? 0 : Math.max(0, progressSpeed),
 			progress: mode === 'platformer'
 				? Math.max(0, Math.floor(progress))
@@ -2515,9 +2574,11 @@
 		};
 	}
 
-	function getRunningPlayerProgress(sourceMessages: PvpMatchMessage[], nowMs: number) {
-		const progressByUid = new Map<string, number>();
-		const activeRuns = new Map<string, { progress: number; speed: number; timeMs: number; }>();
+	function activeProgressRuns(sourceMessages: PvpMatchMessage[]) {
+		const activeRuns = new Map<
+			string,
+			NonNullable<ReturnType<typeof progressMessageEvent>>
+		>();
 
 		for (const message of messagesAfterLatestLevelChange(sourceMessages)) {
 			const event = progressMessageEvent(message);
@@ -2526,9 +2587,64 @@
 				continue;
 			}
 
-			if (event.kind === 'death') {
-				progressByUid.set(event.uid, event.progress);
+			if (event.kind === 'progress_run' || event.kind === 'progress_run_sample') {
+				activeRuns.set(event.uid, event);
+			} else if (
+				event.kind === 'progress_run_end'
+				|| event.kind === 'death'
+				|| event.kind === 'progress'
+			) {
 				activeRuns.delete(event.uid);
+			}
+		}
+
+		return activeRuns;
+	}
+
+	function hasActiveProgressRun(sourceMessages: PvpMatchMessage[]) {
+		return activeProgressRuns(sourceMessages).size > 0;
+	}
+
+	function syncProgressAnimation(active: boolean) {
+		if (!browser) {
+			return;
+		}
+
+		if (!active) {
+			if (progressAnimationFrame !== null) {
+				cancelAnimationFrame(progressAnimationFrame);
+				progressAnimationFrame = null;
+			}
+
+			progressNow = Date.now();
+
+			return;
+		}
+
+		if (progressAnimationFrame !== null) {
+			return;
+		}
+
+		const tick = () => {
+			progressNow = Date.now();
+			progressAnimationFrame = requestAnimationFrame(tick);
+		};
+
+		progressAnimationFrame = requestAnimationFrame(tick);
+	}
+
+	function getRunningPlayerProgress(sourceMessages: PvpMatchMessage[], nowMs: number) {
+		const progressByUid = new Map<string, number>();
+
+		for (const message of messagesAfterLatestLevelChange(sourceMessages)) {
+			const event = progressMessageEvent(message);
+
+			if (!event) {
+				continue;
+			}
+
+			if (event.kind === 'death' || event.kind === 'progress_run_end') {
+				progressByUid.set(event.uid, event.progress);
 				continue;
 			}
 
@@ -2538,21 +2654,20 @@
 					? Math.max(progressByUid.get(event.uid) ?? 0, event.progress)
 					: event.progress
 			);
-
-			if (event.kind === 'progress_run') {
-				activeRuns.set(event.uid, {
-					progress: event.progress,
-					speed: event.progressSpeed,
-					timeMs: event.timeMs
-				});
-			}
 		}
 
 		if (['in_progress', 'waiting_result'].includes(status)) {
-			for (const [uid, run] of activeRuns) {
+			for (const [uid, run] of activeProgressRuns(sourceMessages)) {
 				progressByUid.set(
 					uid,
-					Math.max(0, Math.min(100, run.progress + run.speed * Math.max(0, nowMs - run.timeMs) / 1000))
+					Math.max(
+						0,
+						Math.min(
+							100,
+							run.progress
+								+ run.progressSpeed * Math.max(0, nowMs - run.timeMs) / 1000
+						)
+					)
 				);
 			}
 		}
@@ -2755,7 +2870,9 @@
 				})
 				.sort((a, b) => a.x - b.x || a.timeMs - b.timeMs);
 
-		const activeRuns = new Map<string, NonNullable<ReturnType<typeof progressMessageEvent>>>();
+		const runSegments: ProgressGraphRunSegment[] = [];
+		const runByAttempt = new Map<string, ProgressGraphRunSegment>();
+		const activeRunByUid = new Map<string, ProgressGraphRunSegment>();
 
 		for (const entry of parsed) {
 			const target = series.find((item) => item.uid === entry.uid);
@@ -2764,28 +2881,74 @@
 				continue;
 			}
 
-			target.points.push({
-				x: Math.max(0, Math.round((entry.timeMs - origin) / 1000)),
+			const point = {
+				x: Math.max(0, (entry.timeMs - origin) / 1000),
 				y: entry.progress,
 				timeMs: entry.timeMs
-			});
+			};
 
 			if (entry.kind === 'progress_run') {
-				activeRuns.set(entry.uid, entry);
-			} else if (entry.kind === 'death') {
-				activeRuns.delete(entry.uid);
+				const attemptId = entry.attemptId || `${entry.uid}:${entry.timeMs}`;
+				const segment: ProgressGraphRunSegment = {
+					uid: entry.uid,
+					attemptId,
+					label: target.label,
+					color: target.color,
+					points: [point]
+				};
+				runSegments.push(segment);
+				runByAttempt.set(`${entry.uid}:${attemptId}`, segment);
+				activeRunByUid.set(entry.uid, segment);
+				continue;
+			}
+
+			if (entry.kind === 'progress_run_sample') {
+				const segment = entry.attemptId
+					? runByAttempt.get(`${entry.uid}:${entry.attemptId}`)
+					: activeRunByUid.get(entry.uid);
+
+				if (segment) {
+					segment.points.push(point);
+					activeRunByUid.set(entry.uid, segment);
+				}
+
+				continue;
+			}
+
+			if (
+				entry.kind === 'progress_run_end'
+				|| entry.kind === 'death'
+				|| entry.kind === 'progress'
+			) {
+				const activeSegment = activeRunByUid.get(entry.uid);
+
+				if (activeSegment) {
+					const lastPoint = activeSegment.points[activeSegment.points.length - 1];
+
+					if (!lastPoint || lastPoint.timeMs !== point.timeMs || lastPoint.y !== point.y) {
+						activeSegment.points.push(point);
+					}
+
+					activeRunByUid.delete(entry.uid);
+				}
+			}
+
+			if (entry.kind === 'death' || entry.kind === 'progress') {
+				target.points.push(point);
 			}
 		}
 
 		if (['in_progress', 'waiting_result'].includes(matchStatus)) {
-			for (const [uid, run] of activeRuns) {
-				const target = series.find((item) => item.uid === uid);
+			const liveRuns = activeProgressRuns(progressMessages);
 
-				if (!target) {
+			for (const [uid, segment] of activeRunByUid) {
+				const run = liveRuns.get(uid);
+
+				if (!run) {
 					continue;
 				}
 
-				target.points.push({
+				segment.points.push({
 					x: Math.max(0, (nowMs - origin) / 1000),
 					y: Math.max(
 						0,
@@ -2801,11 +2964,13 @@
 			Math.round(Math.max(0, (liveEndMs ?? origin) - origin) / 1000),
 			...modeEvents.map((event) => event.x),
 			...powerupEffectEvents.map((event) => event.endX),
-			...series.flatMap((item) => item.points.map((point) => point.x))
+			...series.flatMap((item) => item.points.map((point) => point.x)),
+			...runSegments.flatMap((item) => item.points.map((point) => point.x))
 		);
 		const maxProgress = Math.max(
 			0,
-			...series.flatMap((item) => item.points.map((point) => point.y))
+			...series.flatMap((item) => item.points.map((point) => point.y)),
+			...runSegments.flatMap((item) => item.points.map((point) => point.y))
 		);
 		const maxY = mode === 'platformer'
 			? Math.max(1, maxProgress)
@@ -2851,8 +3016,10 @@
 
 		return {
 			series,
+			runSegments,
 			modeSegments,
 			hasPoints: series.some((item) => item.points.length > 0)
+				|| runSegments.some((item) => item.points.length > 0)
 				|| modeSegments.length > 0,
 			minX: 0,
 			maxX,
@@ -3047,13 +3214,18 @@
 			: 'flashbang';
 	}
 
-	function participantProgressBarWidth(participant: PvpParticipant) {
-		const progress = participantDisplayProgress(participant);
+	function participantProgressBarWidth(
+		participant: PvpParticipant,
+		liveProgressByUid = runningPlayerProgressByUid
+	) {
+		const progress = participantDisplayProgress(participant, liveProgressByUid);
 
 		if (matchMode === 'platformer') {
 			const maxProgress = Math.max(
 				1,
-				...orderedParticipants.map((item) => participantDisplayProgress(item))
+				...orderedParticipants.map((item) =>
+					participantDisplayProgress(item, liveProgressByUid)
+				)
 			);
 
 			return Math.max(0, Math.min(100, (progress / maxProgress) * 100));
@@ -3062,9 +3234,12 @@
 		return Math.max(0, Math.min(100, progress));
 	}
 
-	function participantDisplayProgress(participant: PvpParticipant) {
+	function participantDisplayProgress(
+		participant: PvpParticipant,
+		liveProgressByUid = runningPlayerProgressByUid
+	) {
 		const uid = getPvpParticipantUid(participant);
-		const liveProgress = uid ? runningPlayerProgressByUid.get(String(uid)) : undefined;
+		const liveProgress = uid ? liveProgressByUid.get(String(uid)) : undefined;
 
 		return liveProgress ?? getPvpProgress(participant);
 	}
@@ -3872,6 +4047,8 @@
 							filter: (legendItem, chartData) =>
 								!((chartData.datasets[legendItem.datasetIndex ?? -1] as any)
 									?.isModeSegment)
+									&& !((chartData.datasets[legendItem.datasetIndex ?? -1] as any)
+										?.isRunSegment)
 						}
 					},
 					tooltip: {
@@ -3897,6 +4074,15 @@
 		const timeline = [
 			0,
 			...data.series.flatMap((item) => item.points.map((point) => point.x)),
+			...data.runSegments.flatMap((segment) => [
+				...segment.points.map((point) => point.x),
+				...(segment.points.length >= 2
+					? [
+						(segment.points[0].x
+							+ segment.points[segment.points.length - 1].x) / 2
+					]
+					: [])
+			]),
 			...data.modeSegments.flatMap((segment) => [
 				segment.startX,
 				segment.endX
@@ -3910,7 +4096,11 @@
 		const progressDatasets = data.series.map((item) => ({
 			label: item.label,
 			playerUid: item.uid,
-			data: progressGraphTimelinePoints(item.points, timeline),
+			data: progressGraphTimelinePoints(
+				item.points,
+				timeline,
+				data.runSegments.filter((segment) => segment.uid === item.uid)
+			),
 			borderColor: item.color,
 			backgroundColor: item.color,
 			borderWidth: 2,
@@ -3922,6 +4112,23 @@
 			pointBorderWidth: 2,
 			pointRadius: 0,
 			pointHoverRadius: 6
+		}));
+		const runDatasets = data.runSegments.map((segment) => ({
+			label: segment.label,
+			playerUid: segment.uid,
+			data: [...segment.points].sort((left, right) => left.x - right.x),
+			borderColor: segment.color,
+			backgroundColor: segment.color,
+			borderWidth: 2,
+			fill: false,
+			tension: 0,
+			spanGaps: false,
+			pointBackgroundColor: chartColor('--background', '#ffffff'),
+			pointBorderColor: segment.color,
+			pointBorderWidth: 2,
+			pointRadius: 0,
+			pointHoverRadius: 6,
+			isRunSegment: true
 		}));
 
 		const modeDatasets = data.modeSegments.map((segment) => ({
@@ -3940,12 +4147,13 @@
 			isModeSegment: true
 		}));
 
-		return [...progressDatasets, ...modeDatasets];
+		return [...progressDatasets, ...runDatasets, ...modeDatasets];
 	}
 
 	function progressGraphTimelinePoints(
 		points: ProgressGraphPoint[],
-		timeline: number[]
+		timeline: number[],
+		runSegments: ProgressGraphRunSegment[] = []
 	) {
 		const sorted = [...points].sort((left, right) => left.x - right.x);
 		let pointIndex = 0;
@@ -3957,7 +4165,15 @@
 				pointIndex += 1;
 			}
 
-			return { x, y: currentValue };
+			const insideRun = runSegments.some((segment) => {
+				const start = segment.points[0]?.x;
+				const end = segment.points[segment.points.length - 1]?.x;
+
+				return Number.isFinite(start) && Number.isFinite(end)
+					&& x > start && x < end;
+			});
+
+			return { x, y: insideRun ? Number.NaN : currentValue };
 		});
 	}
 
@@ -4686,7 +4902,10 @@
                         <div class="progress-label">
                           <span>{
                             formatPvpProgressValue(
-                              participantDisplayProgress(participant),
+                              participantDisplayProgress(
+                                participant,
+                                runningPlayerProgressByUid
+                              ),
                               matchMode,
                               scoringMode,
                               targetScore,
@@ -4702,7 +4921,10 @@
                           <div class="progress-track">
                             <div
                               class="progress-bar"
-                              style={`width: ${participantProgressBarWidth(participant)}%;`}
+                              style={`width: ${participantProgressBarWidth(
+                                participant,
+                                runningPlayerProgressByUid
+                              )}%;`}
                             />
                           </div>
                         {/if}

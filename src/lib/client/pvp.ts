@@ -1726,7 +1726,11 @@ export async function requestPvpMatchLevelChange(
 export async function getPvpMatchMessages(
     token: string | null | undefined,
     id: number | string,
-    options: { afterId?: number | string | null; limit?: number | string | null; } = {}
+    options: {
+        afterId?: number | string | null;
+        limit?: number | string | null;
+        telemetryOnly?: boolean;
+    } = {}
 ) {
     const params = new URLSearchParams();
 
@@ -1736,6 +1740,10 @@ export async function getPvpMatchMessages(
 
     if (options.limit !== undefined && options.limit !== null && options.limit !== '') {
         params.set('limit', String(options.limit));
+    }
+
+    if (options.telemetryOnly) {
+        params.set('telemetryOnly', 'true');
     }
 
     const query = params.toString();
