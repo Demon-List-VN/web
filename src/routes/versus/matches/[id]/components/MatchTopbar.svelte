@@ -7,6 +7,8 @@
 		EyeOff,
 		Flag,
 		Loader2,
+		Pause,
+		Play,
 		RotateCcw,
 		ShieldAlert,
 		Shuffle,
@@ -27,6 +29,8 @@
 	export let canRequestBanPickAbort = false;
 	export let canAbortRoomMatch = false;
 	export let canAbortAsManager = false;
+	export let canControlTournamentMatch = false;
+	export let matchPaused = false;
 	export let canResign = false;
 	export let canReport = false;
 	export let reportSubmitted = false;
@@ -37,6 +41,7 @@
 	export let onRequestBanPickAbort: () => void = () => {};
 	export let onAbortRoomMatch: () => void = () => {};
 	export let onAbortAsManager: () => void = () => {};
+	export let onSetMatchPaused: (paused: boolean) => void = () => {};
 	export let onResign: () => void = () => {};
 	export let onReport: () => void = () => {};
 </script>
@@ -139,6 +144,23 @@
             <X class="mr-2 h-4 w-4" />
           {/if}
           {$_('pvp.manager_abort_match')}
+        </Button>
+      {/if}
+
+      {#if canControlTournamentMatch}
+        <Button
+          variant={matchPaused ? 'default' : 'outline'}
+          disabled={Boolean(actionLoading) || loading}
+          on:click={() => onSetMatchPaused(!matchPaused)}
+        >
+          {#if actionLoading === 'pause-match' || actionLoading === 'unpause-match'}
+            <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+          {:else if matchPaused}
+            <Play class="mr-2 h-4 w-4" />
+          {:else}
+            <Pause class="mr-2 h-4 w-4" />
+          {/if}
+          {matchPaused ? $_('pvp.unpause_match') : $_('pvp.pause_match')}
         </Button>
       {/if}
 

@@ -549,6 +549,9 @@
         "abort_room_match_confirm": "Kết thúc trận phòng này ngay? Kết quả hiện tại sẽ được dùng để tính thắng thua.",
         "manager_abort_match": "Quản lý hủy",
         "manager_abort_match_confirm": "Hủy trận này ngay? Trận sẽ bị hủy, không có người thắng, không tính rating hoặc XP.",
+        "pause_match": "Tạm dừng trận",
+        "unpause_match": "Tiếp tục trận",
+        "match_paused": "Trận đang tạm dừng",
         "agree_ban_pick_abort": "Đồng ý hủy",
         "ban_pick_abort_waiting": "Đang chờ hủy trận",
         "ban_pick_abort_request_confirm": "Yêu cầu hủy trận này? Trận chỉ bị hủy nếu đối thủ đồng ý.",
@@ -1221,6 +1224,9 @@
             "room_match_abort_failed": "Hủy trận phòng thất bại.",
             "manager_match_abort_success": "Đã hủy trận.",
             "manager_match_abort_failed": "Hủy trận thất bại.",
+            "match_pause_success": "Đã tạm dừng trận.",
+            "match_unpause_success": "Trận đã tiếp tục.",
+            "match_pause_failed": "Cập nhật trạng thái tạm dừng thất bại.",
             "resign_success": "Bạn đã đầu hàng trận đấu.",
             "resign_failed": "Đầu hàng trận đấu thất bại."
         }

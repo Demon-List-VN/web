@@ -36,6 +36,7 @@
 		getSpectatablePvpMatch,
 		getPvpMatchEndMs,
 		getPvpMatchId,
+		getPvpMatchPausedAtMs,
 		getPvpMode,
 		getPvpMatchStartMs,
 		getPvpMessageSenderIsAnonymous,
@@ -61,6 +62,7 @@
 		formatPvpProgressValue,
 		hasPvpParticipantAccepted,
 		isPvpMatchRanked,
+		isPvpMatchPaused,
 		isPvpCustomRoomMatch,
 		isActivePvpMatch,
 		isPvpMatchConfirmedByBoth,
@@ -69,6 +71,7 @@
 		resignPvpMatch,
 		sendPvpMatchMessage,
 		setPvpPowerupManaAsManager,
+		setTournamentPvpMatchPaused,
 		type PvpBanPickAction,
 		type PvpMatch,
 		type PvpMatchMessage,
@@ -316,10 +319,15 @@
 	$: overlayMode = $page.url.searchParams.has('overlay');
 	$: overlayColorMode = $mode === 'light' ? 'light' : 'dark';
 	$: isSpectateRoute = $page.url.searchParams.get('spectate') === '1';
-	$: isSpectator = isSpectateRoute || match?.viewerRole === 'spectator';
+	$: isSpectator = isSpectateRoute
+		|| match?.viewerRole === 'spectator'
+		|| match?.viewerRole === 'tournament_staff';
 	$: matchUrl = `${siteUrl}/versus/matches/${matchId}`;
 	$: currentUid = $user.data?.uid;
 	$: status = getPvpStatus(match);
+	$: matchPausedAtMs = getPvpMatchPausedAtMs(match);
+	$: isMatchPaused = isPvpMatchPaused(match);
+	$: matchClockNow = isMatchPaused ? matchPausedAtMs ?? now : now;
 	$: matchMode = getPvpMode(match);
 	$: scoringMode = match?.scoringMode ?? match?.scoring_mode ?? 'progress';
 	$: targetScore = match?.targetScore ?? match?.target_score ?? null;
@@ -335,12 +343,12 @@
 	$: banPickTurnStartsMs = getTimeMs(banPick?.turnStartsAt);
 	$: banPickTurnEndsMs = getTimeMs(banPick?.turnEndsAt);
 	$: banPickWaitingToStart = Boolean(
-		banPickTurnStartsMs && banPickTurnStartsMs > now
+		banPickTurnStartsMs && banPickTurnStartsMs > matchClockNow
 	);
 	$: banPickRemainingMs = Math.max(
 		0,
-		((banPickWaitingToStart ? banPickTurnStartsMs : banPickTurnEndsMs) ?? now)
-			- now
+		((banPickWaitingToStart ? banPickTurnStartsMs : banPickTurnEndsMs)
+			?? matchClockNow) - matchClockNow
 	);
 	$: banPickCurrentTurnActions = banPickActions.filter(
 		(action) => Number(action.turnIndex) === banPickTurnIndex
@@ -349,6 +357,7 @@
 	$: isBanPick = status === 'ban_pick';
 	$: banPickIsViewerTurn = sameUid(banPickCurrentUid, currentUid);
 	$: banPickTurnOpen = banPickIsViewerTurn
+		&& !isMatchPaused
 		&& !banPickWaitingToStart
 		&& banPickRemainingMs > 0
 		&& !banPickTurnSubmitted;
@@ -384,7 +393,10 @@
 		effectiveHideOpponentInfo,
 		currentUid
 	);
-	$: remainingMs = Math.max(0, (getPvpMatchEndMs(match) ?? now) - now);
+	$: remainingMs = Math.max(
+		0,
+		(getPvpMatchEndMs(match) ?? matchClockNow) - matchClockNow
+	);
 	$: reportEndMs = getPvpMatchEndMs(match);
 	$: endedMs = getTimeMs(match?.endedAt);
 	$: postMatchChatRemainingMs = Math.max(
@@ -398,7 +410,7 @@
 		: null;
 	$: reportWindowRemainingMs = Math.max(
 		0,
-		(reportDeadlineMs ?? (now + POST_MATCH_CHAT_GRACE_MS)) - now
+		(reportDeadlineMs ?? (matchClockNow + POST_MATCH_CHAT_GRACE_MS)) - matchClockNow
 	);
 	$: acceptanceRemainingMs = Math.max(
 		0,
@@ -426,9 +438,13 @@
 	});
 	$: canUsePowerups = isPowerupMatch
 		&& isActive
+		&& !isMatchPaused
 		&& Boolean(selfParticipant)
 		&& !isSpectator;
-	$: canManagePowerupMana = isPowerupMatch && isActive && isManagerViewer;
+	$: canManagePowerupMana = isPowerupMatch
+		&& isActive
+		&& !isMatchPaused
+		&& isManagerViewer;
 	$: powerupMana = Math.max(0, Math.floor(Number(powerupState?.mana) || 0));
 	$: powerupMaxMana = Math.max(
 		1,
@@ -474,6 +490,7 @@
 		&& !isSpectator
 		&& !hasReportedMatch;
 	$: canResign = ['in_progress', 'waiting_result'].includes(status)
+		&& !isMatchPaused
 		&& !isRoomMatch
 		&& remainingMs > 0
 		&& Boolean(selfParticipant);
@@ -481,12 +498,13 @@
 	$: levelChangeRequestExpiresMs = getPvpLevelChangeRequestExpiresMs(match);
 	$: levelChangeRequestRemainingMs = Math.max(
 		0,
-		(levelChangeRequestExpiresMs ?? now) - now
+		(levelChangeRequestExpiresMs ?? matchClockNow) - matchClockNow
 	);
 	$: levelChangeRequestActive = Boolean(levelChangeRequestedByUid)
 		&& levelChangeRequestRemainingMs > 0;
 	$: levelChangeUsed = Boolean(match?.levelChangedAt ?? match?.level_changed_at);
 	$: canRequestLevelChange = ['in_progress', 'waiting_result'].includes(status)
+		&& !isMatchPaused
 		&& !isRoomMatch
 		&& matchMode !== 'platformer'
 		&& remainingMs > 0
@@ -496,19 +514,26 @@
 	$: banPickAbortRequestExpiresMs = getPvpBanPickAbortRequestExpiresMs(match);
 	$: banPickAbortRequestRemainingMs = Math.max(
 		0,
-		(banPickAbortRequestExpiresMs ?? now) - now
+		(banPickAbortRequestExpiresMs ?? matchClockNow) - matchClockNow
 	);
 	$: banPickAbortRequestActive = Boolean(banPickAbortRequestedByUid)
 		&& banPickAbortRequestRemainingMs > 0;
 	$: banPickAbortRequestedBySelf = Boolean(currentUid)
 		&& String(banPickAbortRequestedByUid || '') === String(currentUid);
-	$: canRequestBanPickAbort = isBanPick && !isRoomMatch && Boolean(selfParticipant);
+	$: canRequestBanPickAbort = isBanPick
+		&& !isMatchPaused
+		&& !isRoomMatch
+		&& Boolean(selfParticipant);
 	$: canAbortRoomMatch = isRoomMatch
 		&& ['in_progress', 'waiting_result'].includes(status)
 		&& !isSpectator
 		&& sameUid(roomHostUid, currentUid);
 	$: canAbortAsManager = isManagerViewer
 		&& ['ban_pick', 'in_progress', 'waiting_result'].includes(status);
+	$: canControlTournamentMatch = Boolean(
+		match?.viewerCanControlTournamentMatch
+		?? match?.viewer_can_control_tournament_match
+	) && ['ban_pick', 'in_progress', 'waiting_result'].includes(status);
 	$: chatOpenDuringMatch = ['in_progress', 'waiting_result'].includes(status)
 		&& remainingMs > 0;
 	$: chatOpenDuringBanPick = isBanPick;
@@ -588,7 +613,7 @@
 		);
 	}
 	$: updateBanPickDeadlineCheck(
-		isBanPick,
+		isBanPick && !isMatchPaused,
 		banPick?.turnEndsAt,
 		selectedBanLevelIds.length,
 		banPickCurrentUid,
@@ -598,8 +623,8 @@
 	$: resetBanPickSelection(`${matchId}:${banPickTurnIndex}:${banPickCurrentUid}`);
 	$: updateMutualRequestExpiryCheck(
 		matchId,
-		levelChangeRequestActive ? levelChangeRequestExpiresMs : null,
-		banPickAbortRequestActive ? banPickAbortRequestExpiresMs : null
+		!isMatchPaused && levelChangeRequestActive ? levelChangeRequestExpiresMs : null,
+		!isMatchPaused && banPickAbortRequestActive ? banPickAbortRequestExpiresMs : null
 	);
 	$: syncPowerupState(powerupStateKey);
 
@@ -1251,6 +1276,7 @@
 		if (
 			!browser || !previousMatch || !nextMatch || isSpectateRoute
 			|| nextMatch?.viewerRole === 'spectator'
+			|| nextMatch?.viewerRole === 'tournament_staff'
 		) {
 			return;
 		}
@@ -1643,6 +1669,34 @@
 				error instanceof Error
 					? error.message
 					: $_('pvp.toast.manager_match_abort_failed')
+			);
+		} finally {
+			actionLoading = '';
+		}
+	}
+
+	async function setMatchPaused(paused: boolean) {
+		if (!matchId || !canControlTournamentMatch || actionLoading) {
+			return;
+		}
+
+		actionLoading = paused ? 'pause-match' : 'unpause-match';
+
+		try {
+			const response = await setTournamentPvpMatchPaused(
+				await $user.token(),
+				matchId,
+				paused
+			);
+			setMatch(response);
+			toast.success(
+				$_(paused ? 'pvp.toast.match_pause_success' : 'pvp.toast.match_unpause_success')
+			);
+		} catch (error) {
+			toast.error(
+				error instanceof Error
+					? error.message
+					: $_('pvp.toast.match_pause_failed')
 			);
 		} finally {
 			actionLoading = '';
@@ -4731,6 +4785,8 @@
       canRequestBanPickAbort={canRequestBanPickAbort && !banPickAbortRequestedByUid}
       {canAbortRoomMatch}
       {canAbortAsManager}
+      {canControlTournamentMatch}
+      matchPaused={isMatchPaused}
       {canResign}
       canReport={canReportMatch}
       reportSubmitted={hasReportedMatch}
@@ -4740,6 +4796,7 @@
       onRequestBanPickAbort={requestBanPickAbort}
       onAbortRoomMatch={abortRoomMatch}
       onAbortAsManager={abortMatchAsManager}
+      onSetMatchPaused={setMatchPaused}
       onResign={resignMatch}
       onReport={() => (reportDialogOpen = true)}
     />
@@ -4831,6 +4888,12 @@
                   <Trophy class="h-5 w-5" />
                 {:else}
                   <Clock class="h-5 w-5" />
+                {/if}
+                {#if overlayMode && isMatchPaused}
+                  <Pause
+                    class="h-5 w-5"
+                    aria-label={$_('pvp.match_paused')}
+                  />
                 {/if}
                 <strong>
                   {#if status === 'pending'}

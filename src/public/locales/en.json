@@ -549,6 +549,9 @@
         "abort_room_match_confirm": "End this room match now? Current standings will be used as the result.",
         "manager_abort_match": "Manager abort",
         "manager_abort_match_confirm": "Abort this match now? The match will be cancelled without a winner, rating, or XP rewards.",
+        "pause_match": "Pause match",
+        "unpause_match": "Resume match",
+        "match_paused": "Match paused",
         "agree_ban_pick_abort": "Agree abort",
         "ban_pick_abort_waiting": "Waiting for abort",
         "ban_pick_abort_request_confirm": "Request to abort this match? The match will be cancelled only if your opponent agrees.",
@@ -1221,6 +1224,9 @@
             "room_match_abort_failed": "Failed to abort room match.",
             "manager_match_abort_success": "Match aborted.",
             "manager_match_abort_failed": "Failed to abort match.",
+            "match_pause_success": "Match paused.",
+            "match_unpause_success": "Match resumed.",
+            "match_pause_failed": "Failed to update the match pause state.",
             "resign_success": "You resigned from the match.",
             "resign_failed": "Failed to resign match."
         }

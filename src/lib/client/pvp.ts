@@ -318,6 +318,15 @@ export type PvpMatch = {
     pvp_event_id?: number | string | null;
     pvpEvent?: PvpEvent | null;
     pvp_event?: PvpEvent | null;
+    tournamentMatchId?: number | string | null;
+    tournament_match_id?: number | string | null;
+    pausedAt?: string | null;
+    paused_at?: string | null;
+    pausedDurationMs?: number;
+    paused_duration_ms?: number;
+    viewerCanControlTournamentMatch?: boolean;
+    viewer_can_control_tournament_match?: boolean;
+    viewerRole?: 'spectator' | 'tournament_staff' | string;
     completionRuleType?: PvpRoomCompletionRuleType | string | null;
     completion_rule_type?: PvpRoomCompletionRuleType | string | null;
     completionRuleValue?: number | null;
@@ -1703,6 +1712,18 @@ export async function abortPvpMatchAsManager(
     });
 }
 
+export async function setTournamentPvpMatchPaused(
+    token: string | null | undefined,
+    id: number | string,
+    paused: boolean
+) {
+    return pvpRequest<PvpMatch>(`/pvp/matches/${id}/pause`, {
+        method: 'PATCH',
+        token,
+        body: { paused }
+    });
+}
+
 export async function requestPvpBanPickAbort(
     token: string | null | undefined,
     id: number | string
@@ -2176,6 +2197,18 @@ export function getPvpWinnerUid(match: PvpMatch | null | undefined) {
 
 export function getPvpMatchStartMs(match: PvpMatch | null | undefined) {
     return getTimeMs(match?.startedAt ?? match?.startsAt ?? match?.started_at ?? match?.created_at);
+}
+
+export function getPvpMatchPausedAtMs(match: PvpMatch | null | undefined) {
+    return getTimeMs(match?.pausedAt ?? match?.paused_at);
+}
+
+export function isPvpMatchPaused(match: PvpMatch | null | undefined) {
+    return Boolean(
+        match
+        && ['ban_pick', 'in_progress', 'waiting_result'].includes(getPvpStatus(match))
+        && getPvpMatchPausedAtMs(match)
+    );
 }
 
 export function getPvpMatchEndMs(match: PvpMatch | null | undefined) {
