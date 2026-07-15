@@ -980,6 +980,7 @@
             "active_effects": "Active effects",
             "normal_mode": "Normal",
             "practice_mode": "Practice",
+            "paused": "Paused",
             "flashbanged": "Flashbanged",
             "invisible": "Invisible",
             "double_click": "Double click"
@@ -1057,7 +1058,6 @@
         "system_sender": "Versus",
         "system_message": {
             "progress": "{player} reached {progress}% progress.",
-            "progress_run": "{player} is getting new progress!",
             "death": "{player} died at {progress}% progress.",
             "progress_score": "{player} reached {score} score.",
             "progress_hp": "{player} has {score} remaining.",

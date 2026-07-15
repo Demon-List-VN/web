@@ -96,6 +96,7 @@
 	import { onDestroy, onMount, tick } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { _ } from 'svelte-i18n';
+	import { mode, setMode } from 'mode-watcher';
 	import {
 		Clock,
 		ExternalLink,
@@ -103,6 +104,7 @@
 		Loader2,
 		LogIn,
 		MessageCircle,
+		Moon,
 		MousePointerClick,
 		Pause,
 		RotateCcw,
@@ -111,6 +113,7 @@
 		EyeOff,
 		Send,
 		Shield,
+		Sun,
 		Target,
 		UserRound,
 		Volume2,
@@ -145,6 +148,7 @@
 		'#ca8a04',
 		'#db2777'
 	];
+	const OVERLAY_PLAYER_COLORS = ['#38bdf8', '#f97316'];
 	const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://gdvn.net').replace(
 		/\/$/,
 		''
@@ -192,7 +196,15 @@
 		durationMs: number;
 	};
 
-	type ProgressGraphSegmentKind = 'play_mode' | 'powerup_effect';
+	type ProgressGraphPauseStateEvent = {
+		uid: string;
+		paused: boolean;
+		x: number;
+		timeMs: number;
+		elapsedMs: number | null;
+	};
+
+	type ProgressGraphSegmentKind = 'play_mode' | 'pause_state' | 'powerup_effect';
 
 	type ProgressGraphModeSegment = {
 		uid: string;
@@ -214,17 +226,8 @@
 		points: ProgressGraphPoint[];
 	};
 
-	type ProgressGraphRunSegment = {
-		uid: string;
-		attemptId: string;
-		label: string;
-		color: string;
-		points: ProgressGraphPoint[];
-	};
-
 	type ProgressGraphData = {
 		series: ProgressGraphSeries[];
-		runSegments: ProgressGraphRunSegment[];
 		modeSegments: ProgressGraphModeSegment[];
 		hasPoints: boolean;
 		minX: number;
@@ -235,7 +238,10 @@
 		scoringMode: PvpRoomScoringMode | string;
 		targetScore: number | string | null;
 		startingHp: number | string | null;
+		colorMode: OverlayColorMode;
 	};
+
+	type OverlayColorMode = 'light' | 'dark';
 
 	type DeathCountChartData = {
 		labels: string[];
@@ -246,9 +252,9 @@
 			backgroundColor: string;
 			borderColor: string;
 		}>;
-		hasPoints: boolean;
 		maxY: number;
 		showRate: boolean;
+		colorMode: OverlayColorMode;
 	};
 
 	type PowerupSkillConfig = NonNullable<PvpPowerupState['skills']>[number];
@@ -260,9 +266,7 @@
 	let scheduledRealtimeTasks = new Map<string, ReturnType<typeof setTimeout>>();
 	let messageRefreshInFlight = false;
 	let now = Date.now();
-	let progressNow = now;
 	let ticker: ReturnType<typeof setInterval> | null = null;
-	let progressAnimationFrame: number | null = null;
 	let actionLoading = '';
 	let acceptingMatchId: string | null = null;
 	let locallyAcceptedMatchIds = new Set<string>();
@@ -306,9 +310,11 @@
 	let loadedPowerupStateFor = '';
 	let powerupStateError = '';
 	let managerManaLoadingUid = '';
+	let overlayColorMode: OverlayColorMode = 'dark';
 
 	$: matchId = $page.params.id;
 	$: overlayMode = $page.url.searchParams.has('overlay');
+	$: overlayColorMode = $mode === 'light' ? 'light' : 'dark';
 	$: isSpectateRoute = $page.url.searchParams.get('spectate') === '1';
 	$: isSpectator = isSpectateRoute || match?.viewerRole === 'spectator';
 	$: matchUrl = `${siteUrl}/versus/matches/${matchId}`;
@@ -528,13 +534,12 @@
 		orderedParticipants,
 		matchMode,
 		match,
-		progressNow,
-		status
+		now,
+		status,
+		overlayMode,
+		overlayColorMode
 	);
-	$: runningPlayerProgressByUid = getRunningPlayerProgress(messages, progressNow);
-	$: hasLiveProgressRun = ['in_progress', 'waiting_result'].includes(status)
-		&& hasActiveProgressRun(messages);
-	$: syncProgressAnimation(hasLiveProgressRun);
+	$: playerProgressByUid = getMessagePlayerProgress(messages);
 	$: deathCountLevelId = getDeathCountLevelId(match);
 	$: deathCountParticipantUids = getDeathCountParticipantUids(
 		orderedParticipants
@@ -556,7 +561,9 @@
 		deathCountShowRate,
 		comparePlayerGlobalDeathCount,
 		playerGlobalDeathCounts,
-		playerGlobalDeathCountsReady
+		playerGlobalDeathCountsReady,
+		overlayMode,
+		overlayColorMode
 	);
 	$: if (
 		!overlayMode
@@ -616,10 +623,6 @@
 		ticker = setInterval(() => {
 			now = Date.now();
 
-			if (!hasLiveProgressRun) {
-				progressNow = now;
-			}
-
 			if (isSpectator && ['in_progress', 'waiting_result'].includes(status)) {
 				void refreshMessages({ incremental: true, silent: true });
 			}
@@ -637,11 +640,6 @@
 	onDestroy(() => {
 		if (ticker) {
 			clearInterval(ticker);
-		}
-
-		if (progressAnimationFrame !== null) {
-			cancelAnimationFrame(progressAnimationFrame);
-			progressAnimationFrame = null;
 		}
 
 		if (banPickDeadlineTimeout) {
@@ -754,7 +752,7 @@
 			}
 
 			if (nextMessages.some((message) =>
-				!['progress_run_sample', 'progress_run_end'].includes(
+				!['progress_run', 'progress_run_sample', 'progress_run_end', 'pause_state'].includes(
 					messageMetadataKind(message)
 				)
 			)) {
@@ -2014,7 +2012,8 @@
 	}
 
 	function participantPracticeModeActive(
-		participant: PvpParticipant | null | undefined
+		participant: PvpParticipant | null | undefined,
+		sourceMessages: PvpMatchMessage[] = messages
 	) {
 		const participantMode = participant?.playMode ?? participant?.play_mode;
 
@@ -2028,7 +2027,7 @@
 			return false;
 		}
 
-		const latestPlayModeEvent = messagesAfterLatestLevelChange(messages)
+		const latestPlayModeEvent = messagesAfterLatestLevelChange(sourceMessages)
 			.map((message) => playModeMessageEvent(message))
 			.filter((
 				entry
@@ -2039,6 +2038,39 @@
 			.sort((a, b) => b.timeMs - a.timeMs)[0];
 
 		return latestPlayModeEvent?.playMode === 'practice';
+	}
+
+	function participantPaused(
+		participant: PvpParticipant | null | undefined,
+		sourceMessages: PvpMatchMessage[] = messages
+	) {
+		const uid = getPvpParticipantUid(participant);
+
+		if (!uid) {
+			return false;
+		}
+
+		let paused = false;
+
+		for (const message of messagesAfterLatestLevelChange(sourceMessages)) {
+			const pauseEvent = pauseStateMessageEvent(message);
+
+			if (pauseEvent && String(pauseEvent.uid) === String(uid)) {
+				paused = pauseEvent.paused;
+				continue;
+			}
+
+			const progressEvent = progressMessageEvent(message);
+
+			if (
+				progressEvent
+				&& String(progressEvent.uid) === String(uid)
+			) {
+				paused = false;
+			}
+		}
+
+		return paused;
 	}
 
 	function messageMetadata(message: PvpMatchMessage): Record<string, unknown> {
@@ -2098,7 +2130,7 @@
 			const kind = messageMetadataKind(message);
 
 			return messageIsRevealed(message, nowMs)
-				&& !['progress_run_sample', 'progress_run_end'].includes(kind);
+				&& !['progress_run', 'progress_run_sample', 'progress_run_end', 'pause_state'].includes(kind);
 		});
 		const specialMessage = getMatchEndSpecialMessage(
 			currentMatch,
@@ -2528,13 +2560,7 @@
 
 		if (
 			message.type !== 'system'
-			|| ![
-				'progress',
-				'progress_run',
-				'progress_run_sample',
-				'progress_run_end',
-				'death'
-			].includes(kind)
+			|| !['progress', 'death'].includes(kind)
 		) {
 			return null;
 		}
@@ -2543,11 +2569,7 @@
 		const messageScoringMode = normalizedScoringMode(metadataText(metadata, 'scoringMode'));
 		const uid = metadataText(metadata, 'uid');
 		const progress = metadataNumber(metadata, 'progress');
-		const progressSpeed = metadataNumber(metadata, 'progressSpeed');
-		const attemptId = metadataText(metadata, 'attemptId');
-		const timeMs = metadataNumber(metadata, 'sampledAtMs')
-			?? getTimeMs(metadataText(metadata, 'sampledAt'))
-			?? getTimeMs(message.created_at);
+		const timeMs = getTimeMs(message.created_at);
 
 		if (!uid || progress === null || !timeMs) {
 			return null;
@@ -2563,8 +2585,6 @@
 		return {
 			uid,
 			kind,
-			attemptId,
-			progressSpeed: progressSpeed === null ? 0 : Math.max(0, progressSpeed),
 			progress: mode === 'platformer'
 				? Math.max(0, Math.floor(progress))
 				: isScoreLikeScoringMode(currentScoringMode) || currentScoringMode === 'hp'
@@ -2574,66 +2594,7 @@
 		};
 	}
 
-	function activeProgressRuns(sourceMessages: PvpMatchMessage[]) {
-		const activeRuns = new Map<
-			string,
-			NonNullable<ReturnType<typeof progressMessageEvent>>
-		>();
-
-		for (const message of messagesAfterLatestLevelChange(sourceMessages)) {
-			const event = progressMessageEvent(message);
-
-			if (!event) {
-				continue;
-			}
-
-			if (event.kind === 'progress_run' || event.kind === 'progress_run_sample') {
-				activeRuns.set(event.uid, event);
-			} else if (
-				event.kind === 'progress_run_end'
-				|| event.kind === 'death'
-				|| event.kind === 'progress'
-			) {
-				activeRuns.delete(event.uid);
-			}
-		}
-
-		return activeRuns;
-	}
-
-	function hasActiveProgressRun(sourceMessages: PvpMatchMessage[]) {
-		return activeProgressRuns(sourceMessages).size > 0;
-	}
-
-	function syncProgressAnimation(active: boolean) {
-		if (!browser) {
-			return;
-		}
-
-		if (!active) {
-			if (progressAnimationFrame !== null) {
-				cancelAnimationFrame(progressAnimationFrame);
-				progressAnimationFrame = null;
-			}
-
-			progressNow = Date.now();
-
-			return;
-		}
-
-		if (progressAnimationFrame !== null) {
-			return;
-		}
-
-		const tick = () => {
-			progressNow = Date.now();
-			progressAnimationFrame = requestAnimationFrame(tick);
-		};
-
-		progressAnimationFrame = requestAnimationFrame(tick);
-	}
-
-	function getRunningPlayerProgress(sourceMessages: PvpMatchMessage[], nowMs: number) {
+	function getMessagePlayerProgress(sourceMessages: PvpMatchMessage[]) {
 		const progressByUid = new Map<string, number>();
 
 		for (const message of messagesAfterLatestLevelChange(sourceMessages)) {
@@ -2643,33 +2604,15 @@
 				continue;
 			}
 
-			if (event.kind === 'death' || event.kind === 'progress_run_end') {
+			if (event.kind === 'death') {
 				progressByUid.set(event.uid, event.progress);
 				continue;
 			}
 
 			progressByUid.set(
 				event.uid,
-				event.kind === 'progress'
-					? Math.max(progressByUid.get(event.uid) ?? 0, event.progress)
-					: event.progress
+				Math.max(progressByUid.get(event.uid) ?? 0, event.progress)
 			);
-		}
-
-		if (['in_progress', 'waiting_result'].includes(status)) {
-			for (const [uid, run] of activeProgressRuns(sourceMessages)) {
-				progressByUid.set(
-					uid,
-					Math.max(
-						0,
-						Math.min(
-							100,
-							run.progress
-								+ run.progressSpeed * Math.max(0, nowMs - run.timeMs) / 1000
-						)
-					)
-				);
-			}
 		}
 
 		return progressByUid;
@@ -2703,6 +2646,40 @@
 		return {
 			uid,
 			playMode,
+			timeMs,
+			elapsedMs: metadataNumber(metadata, 'elapsedMs')
+		};
+	}
+
+	function pauseStateMessageEvent(message: PvpMatchMessage): {
+		uid: string;
+		paused: boolean;
+		progress: number;
+		timeMs: number;
+		elapsedMs: number | null;
+	} | null {
+		if (
+			message.type !== 'system' || messageMetadataKind(message) !== 'pause_state'
+		) {
+			return null;
+		}
+
+		const metadata = messageMetadata(message);
+		const uid = metadataText(metadata, 'uid');
+		const progress = metadataNumber(metadata, 'progress');
+		const paused = metadata.paused === true || metadataText(metadata, 'paused') === 'true';
+		const timeMs = metadataNumber(metadata, 'sampledAtMs')
+			?? getTimeMs(metadataText(metadata, 'sampledAt'))
+			?? getTimeMs(message.created_at);
+
+		if (!uid || progress === null || !timeMs) {
+			return null;
+		}
+
+		return {
+			uid,
+			paused,
+			progress: Math.max(0, Math.min(100, progress)),
 			timeMs,
 			elapsedMs: metadataNumber(metadata, 'elapsedMs')
 		};
@@ -2772,7 +2749,9 @@
 		mode: PvpMode = matchMode,
 		sourceMatch: PvpMatch | null = match,
 		nowMs = now,
-		matchStatus = status
+		matchStatus = status,
+		useNeutralPlayerColors = false,
+		colorMode: OverlayColorMode = overlayColorMode
 	): ProgressGraphData {
 		const currentScoringMode = normalizedScoringMode(
 			sourceMatch?.scoringMode ?? sourceMatch?.scoring_mode ?? scoringMode
@@ -2781,7 +2760,7 @@
 		const currentStartingHp = sourceMatch?.startingHp ?? sourceMatch?.starting_hp ?? startingHp;
 		const progressMessages = messagesAfterLatestLevelChange(sourceMessages);
 		const series = items
-			.map((participant) => {
+			.map((participant, index) => {
 				const participantUid = getPvpParticipantUid(participant)
 					? String(getPvpParticipantUid(participant))
 					: null;
@@ -2789,7 +2768,11 @@
 				return {
 					uid: participantUid,
 					label: participantName(participant, effectiveHideOpponentInfo, currentUid) ?? '',
-					color: progressGraphPlayerColor(participantUid),
+					color: progressGraphPlayerColor(
+						participantUid,
+						index,
+						useNeutralPlayerColors
+					),
 					points: [] as ProgressGraphPoint[]
 				};
 			});
@@ -2811,6 +2794,13 @@
 					ReturnType<typeof powerupEffectMessageEvent>
 				> => Boolean(entry))
 			: [];
+		const rawPauseStateEvents = progressMessages
+			.map((message) => pauseStateMessageEvent(message))
+			.filter((
+				entry
+			): entry is NonNullable<ReturnType<typeof pauseStateMessageEvent>> =>
+				Boolean(entry)
+			);
 
 		const origin = getPvpMatchStartMs(sourceMatch)
 			?? parsed.reduce<number | null>(
@@ -2821,6 +2811,13 @@
 				null
 			)
 			?? rawPowerupEffectEvents.reduce<number | null>(
+				(earliest, entry) =>
+					earliest === null || entry.timeMs < earliest
+						? entry.timeMs
+						: earliest,
+				null
+			)
+			?? rawPauseStateEvents.reduce<number | null>(
 				(earliest, entry) =>
 					earliest === null || entry.timeMs < earliest
 						? entry.timeMs
@@ -2869,10 +2866,29 @@
 					};
 				})
 				.sort((a, b) => a.x - b.x || a.timeMs - b.timeMs);
-
-		const runSegments: ProgressGraphRunSegment[] = [];
-		const runByAttempt = new Map<string, ProgressGraphRunSegment>();
-		const activeRunByUid = new Map<string, ProgressGraphRunSegment>();
+		const pauseStateEvents: ProgressGraphPauseStateEvent[] = [
+			...rawPauseStateEvents.map((entry) => ({
+				uid: entry.uid,
+				paused: entry.paused,
+				timeMs: entry.timeMs,
+				elapsedMs: entry.elapsedMs,
+				x: Math.max(
+					0,
+					Number.isFinite(Number(entry.elapsedMs))
+						? Number(entry.elapsedMs) / 1000
+						: (entry.timeMs - origin) / 1000
+				)
+			})),
+			...parsed
+				.map((entry) => ({
+					uid: entry.uid,
+					paused: false,
+					timeMs: entry.timeMs,
+					elapsedMs: null,
+					x: Math.max(0, (entry.timeMs - origin) / 1000)
+				}))
+		]
+			.sort((a, b) => a.x - b.x || a.timeMs - b.timeMs);
 
 		for (const entry of parsed) {
 			const target = series.find((item) => item.uid === entry.uid);
@@ -2887,90 +2903,20 @@
 				timeMs: entry.timeMs
 			};
 
-			if (entry.kind === 'progress_run') {
-				const attemptId = entry.attemptId || `${entry.uid}:${entry.timeMs}`;
-				const segment: ProgressGraphRunSegment = {
-					uid: entry.uid,
-					attemptId,
-					label: target.label,
-					color: target.color,
-					points: [point]
-				};
-				runSegments.push(segment);
-				runByAttempt.set(`${entry.uid}:${attemptId}`, segment);
-				activeRunByUid.set(entry.uid, segment);
-				continue;
-			}
-
-			if (entry.kind === 'progress_run_sample') {
-				const segment = entry.attemptId
-					? runByAttempt.get(`${entry.uid}:${entry.attemptId}`)
-					: activeRunByUid.get(entry.uid);
-
-				if (segment) {
-					segment.points.push(point);
-					activeRunByUid.set(entry.uid, segment);
-				}
-
-				continue;
-			}
-
-			if (
-				entry.kind === 'progress_run_end'
-				|| entry.kind === 'death'
-				|| entry.kind === 'progress'
-			) {
-				const activeSegment = activeRunByUid.get(entry.uid);
-
-				if (activeSegment) {
-					const lastPoint = activeSegment.points[activeSegment.points.length - 1];
-
-					if (!lastPoint || lastPoint.timeMs !== point.timeMs || lastPoint.y !== point.y) {
-						activeSegment.points.push(point);
-					}
-
-					activeRunByUid.delete(entry.uid);
-				}
-			}
-
-			if (entry.kind === 'death' || entry.kind === 'progress') {
-				target.points.push(point);
-			}
-		}
-
-		if (['in_progress', 'waiting_result'].includes(matchStatus)) {
-			const liveRuns = activeProgressRuns(progressMessages);
-
-			for (const [uid, segment] of activeRunByUid) {
-				const run = liveRuns.get(uid);
-
-				if (!run) {
-					continue;
-				}
-
-				segment.points.push({
-					x: Math.max(0, (nowMs - origin) / 1000),
-					y: Math.max(
-						0,
-						Math.min(100, run.progress + run.progressSpeed * Math.max(0, nowMs - run.timeMs) / 1000)
-					),
-					timeMs: nowMs
-				});
-			}
+			target.points.push(point);
 		}
 
 		const maxX = Math.max(
 			60,
 			Math.round(Math.max(0, (liveEndMs ?? origin) - origin) / 1000),
 			...modeEvents.map((event) => event.x),
+			...pauseStateEvents.map((event) => event.x),
 			...powerupEffectEvents.map((event) => event.endX),
-			...series.flatMap((item) => item.points.map((point) => point.x)),
-			...runSegments.flatMap((item) => item.points.map((point) => point.x))
+			...series.flatMap((item) => item.points.map((point) => point.x))
 		);
 		const maxProgress = Math.max(
 			0,
-			...series.flatMap((item) => item.points.map((point) => point.y)),
-			...runSegments.flatMap((item) => item.points.map((point) => point.y))
+			...series.flatMap((item) => item.points.map((point) => point.y))
 		);
 		const maxY = mode === 'platformer'
 			? Math.max(1, maxProgress)
@@ -2982,6 +2928,9 @@
 		const modeLaneGap = maxY * 0.06;
 		const modeLanes = series.map((_, index) => -modeLaneGap * (index + 1));
 		const powerupLanes = series.map(
+			(_, index) => -modeLaneGap * (series.length * 2 + index + 1)
+		);
+		const pauseLanes = series.map(
 			(_, index) => -modeLaneGap * (series.length + index + 1)
 		);
 		const modeTimelineAvailable = [
@@ -2992,6 +2941,7 @@
 			'disputed'
 		].includes(matchStatus)
 			|| modeEvents.length > 0
+			|| pauseStateEvents.length > 0
 			|| powerupEffectEvents.length > 0
 			|| parsed.length > 0;
 		const modeSegments = modeTimelineAvailable
@@ -3001,6 +2951,12 @@
 					modeEvents,
 					maxX,
 					modeLanes
+				),
+				...getProgressGraphPauseSegments(
+					series,
+					pauseStateEvents,
+					maxX,
+					pauseLanes
 				),
 				...getProgressGraphPowerupEffectSegments(
 					series,
@@ -3016,10 +2972,8 @@
 
 		return {
 			series,
-			runSegments,
 			modeSegments,
 			hasPoints: series.some((item) => item.points.length > 0)
-				|| runSegments.some((item) => item.points.length > 0)
 				|| modeSegments.length > 0,
 			minX: 0,
 			maxX,
@@ -3028,7 +2982,8 @@
 			mode,
 			scoringMode: currentScoringMode,
 			targetScore: currentTargetScore,
-			startingHp: currentStartingHp
+			startingHp: currentStartingHp,
+			colorMode
 		};
 	}
 
@@ -3138,6 +3093,58 @@
 		});
 	}
 
+	function getProgressGraphPauseSegments(
+		series: Array<ProgressGraphSeries & { uid: string | null; }>,
+		events: ProgressGraphPauseStateEvent[],
+		maxX: number,
+		lanes: number[]
+	): ProgressGraphModeSegment[] {
+		return series.flatMap((item, index) => {
+			if (!item.uid || !item.label) {
+				return [];
+			}
+
+			const playerEvents = events.filter((event) => event.uid === item.uid);
+			const segments: ProgressGraphModeSegment[] = [];
+			let pausedAt: number | null = null;
+
+			for (const event of playerEvents) {
+				if (event.paused) {
+					pausedAt ??= event.x;
+					continue;
+				}
+
+				if (pausedAt !== null && event.x > pausedAt) {
+					segments.push(
+						createProgressGraphPauseSegment(
+							item.uid,
+							item.label,
+							pausedAt,
+							event.x,
+							lanes[index] ?? lanes[0]
+						)
+					);
+				}
+
+				pausedAt = null;
+			}
+
+			if (pausedAt !== null && maxX > pausedAt) {
+				segments.push(
+					createProgressGraphPauseSegment(
+						item.uid,
+						item.label,
+						pausedAt,
+						maxX,
+						lanes[index] ?? lanes[0]
+					)
+				);
+			}
+
+			return segments;
+		});
+	}
+
 	function createProgressGraphModeSegment(
 		uid: string,
 		label: string,
@@ -3184,6 +3191,25 @@
 		};
 	}
 
+	function createProgressGraphPauseSegment(
+		uid: string,
+		label: string,
+		startX: number,
+		endX: number,
+		y: number
+	): ProgressGraphModeSegment {
+		return {
+			uid,
+			label,
+			kind: 'pause_state',
+			modeLabel: $_('pvp.progress_graph.paused'),
+			color: chartColor('--muted-foreground', '#64748b'),
+			startX,
+			endX,
+			y
+		};
+	}
+
 	function playModeLabel(playMode: PvpPlayMode) {
 		return playMode === 'practice'
 			? $_('pvp.progress_graph.practice_mode')
@@ -3216,15 +3242,15 @@
 
 	function participantProgressBarWidth(
 		participant: PvpParticipant,
-		liveProgressByUid = runningPlayerProgressByUid
+		messageProgressByUid = playerProgressByUid
 	) {
-		const progress = participantDisplayProgress(participant, liveProgressByUid);
+		const progress = participantDisplayProgress(participant, messageProgressByUid);
 
 		if (matchMode === 'platformer') {
 			const maxProgress = Math.max(
 				1,
 				...orderedParticipants.map((item) =>
-					participantDisplayProgress(item, liveProgressByUid)
+					participantDisplayProgress(item, messageProgressByUid)
 				)
 			);
 
@@ -3236,12 +3262,20 @@
 
 	function participantDisplayProgress(
 		participant: PvpParticipant,
-		liveProgressByUid = runningPlayerProgressByUid
+		messageProgressByUid = playerProgressByUid
 	) {
 		const uid = getPvpParticipantUid(participant);
-		const liveProgress = uid ? liveProgressByUid.get(String(uid)) : undefined;
+		const messageProgress = uid ? messageProgressByUid.get(String(uid)) : undefined;
+		const resultProgress = getPvpProgress(participant);
 
-		return liveProgress ?? getPvpProgress(participant);
+		if (messageProgress === undefined) {
+			return resultProgress;
+		}
+
+		return matchMode === 'classic'
+			&& normalizedScoringMode(scoringMode) === 'progress'
+			? Math.max(resultProgress, messageProgress)
+			: messageProgress;
 	}
 
 	function messageSenderName(
@@ -3465,12 +3499,6 @@
 		const kind = messageMetadataKind(message);
 		const minutes = systemChatGraceMinutes(metadata);
 		let content = '';
-
-		if (kind === 'progress_run') {
-			content = $_('pvp.system_message.progress_run', {
-				values: { player: systemParticipantName(metadataText(metadata, 'uid')) }
-			});
-		}
 
 		if (kind === 'death') {
 			const progress = metadataNumber(metadata, 'progress');
@@ -3851,7 +3879,15 @@
 		return value ? `hsl(${value})` : fallback;
 	}
 
-	function progressGraphPlayerColor(uid: string | null) {
+	function progressGraphPlayerColor(
+		uid: string | null,
+		index = 0,
+		useNeutralPlayerColors = false
+	) {
+		if (useNeutralPlayerColors) {
+			return OVERLAY_PLAYER_COLORS[index % OVERLAY_PLAYER_COLORS.length];
+		}
+
 		let hash = 0;
 
 		for (const character of uid || '') {
@@ -3908,11 +3944,21 @@
 	function createProgressChart(node: HTMLCanvasElement, data: ProgressGraphData) {
 		let chart: Chart<'line', ProgressGraphPoint[], unknown> | null =
 			buildProgressChart(node, data);
+		let chartColorMode = data.colorMode;
 
 		return {
 			update(nextData: ProgressGraphData) {
 				if (!chart) {
 					chart = buildProgressChart(node, nextData);
+					chartColorMode = nextData.colorMode;
+
+					return;
+				}
+
+				if (chartColorMode !== nextData.colorMode) {
+					chart.destroy();
+					chart = buildProgressChart(node, nextData);
+					chartColorMode = nextData.colorMode;
 
 					return;
 				}
@@ -4047,8 +4093,6 @@
 							filter: (legendItem, chartData) =>
 								!((chartData.datasets[legendItem.datasetIndex ?? -1] as any)
 									?.isModeSegment)
-									&& !((chartData.datasets[legendItem.datasetIndex ?? -1] as any)
-										?.isRunSegment)
 						}
 					},
 					tooltip: {
@@ -4074,15 +4118,6 @@
 		const timeline = [
 			0,
 			...data.series.flatMap((item) => item.points.map((point) => point.x)),
-			...data.runSegments.flatMap((segment) => [
-				...segment.points.map((point) => point.x),
-				...(segment.points.length >= 2
-					? [
-						(segment.points[0].x
-							+ segment.points[segment.points.length - 1].x) / 2
-					]
-					: [])
-			]),
 			...data.modeSegments.flatMap((segment) => [
 				segment.startX,
 				segment.endX
@@ -4098,8 +4133,7 @@
 			playerUid: item.uid,
 			data: progressGraphTimelinePoints(
 				item.points,
-				timeline,
-				data.runSegments.filter((segment) => segment.uid === item.uid)
+				timeline
 			),
 			borderColor: item.color,
 			backgroundColor: item.color,
@@ -4113,24 +4147,6 @@
 			pointRadius: 0,
 			pointHoverRadius: 6
 		}));
-		const runDatasets = data.runSegments.map((segment) => ({
-			label: segment.label,
-			playerUid: segment.uid,
-			data: [...segment.points].sort((left, right) => left.x - right.x),
-			borderColor: segment.color,
-			backgroundColor: segment.color,
-			borderWidth: 2,
-			fill: false,
-			tension: 0,
-			spanGaps: false,
-			pointBackgroundColor: chartColor('--background', '#ffffff'),
-			pointBorderColor: segment.color,
-			pointBorderWidth: 2,
-			pointRadius: 0,
-			pointHoverRadius: 6,
-			isRunSegment: true
-		}));
-
 		const modeDatasets = data.modeSegments.map((segment) => ({
 			label: segment.label,
 			data: progressGraphModeTimelinePoints(segment, timeline),
@@ -4147,13 +4163,12 @@
 			isModeSegment: true
 		}));
 
-		return [...progressDatasets, ...runDatasets, ...modeDatasets];
+		return [...progressDatasets, ...modeDatasets];
 	}
 
 	function progressGraphTimelinePoints(
 		points: ProgressGraphPoint[],
-		timeline: number[],
-		runSegments: ProgressGraphRunSegment[] = []
+		timeline: number[]
 	) {
 		const sorted = [...points].sort((left, right) => left.x - right.x);
 		let pointIndex = 0;
@@ -4165,15 +4180,7 @@
 				pointIndex += 1;
 			}
 
-			const insideRun = runSegments.some((segment) => {
-				const start = segment.points[0]?.x;
-				const end = segment.points[segment.points.length - 1]?.x;
-
-				return Number.isFinite(start) && Number.isFinite(end)
-					&& x > start && x < end;
-			});
-
-			return { x, y: insideRun ? Number.NaN : currentValue };
+			return { x, y: currentValue };
 		});
 	}
 
@@ -4313,12 +4320,16 @@
 		showRate = deathCountShowRate,
 		usePlayerGlobalDeathCount = comparePlayerGlobalDeathCount,
 		playerDeathCounts = playerGlobalDeathCounts,
-		playerDeathCountsReady = playerGlobalDeathCountsReady
+		playerDeathCountsReady = playerGlobalDeathCountsReady,
+		useNeutralPlayerColors = false,
+		colorMode: OverlayColorMode = overlayColorMode
 	): DeathCountChartData {
 		const labels = Array.from({ length: 100 }, (_, index) => `${index}%`);
 		const series = items.slice(0, 2)
 			.map((participant, index) => {
-				const color = index === 0
+				const color = useNeutralPlayerColors
+					? OVERLAY_PLAYER_COLORS[index % OVERLAY_PLAYER_COLORS.length]
+					: index === 0
 					? chartColor('--primary', '#2563eb')
 					: chartColor('--destructive', '#dc2626');
 				const uid = getPvpParticipantUid(participant);
@@ -4361,9 +4372,9 @@
 		return {
 			labels,
 			datasets: series,
-			hasPoints: series.some((item) => item.rawData.some((count) => count > 0)),
 			maxY,
-			showRate
+			showRate,
+			colorMode
 		};
 	}
 
@@ -4392,11 +4403,21 @@
 			node,
 			data
 		);
+		let chartColorMode = data.colorMode;
 
 		return {
 			update(nextData: DeathCountChartData) {
 				if (!chart) {
 					chart = buildDeathCountChart(node, nextData);
+					chartColorMode = nextData.colorMode;
+
+					return;
+				}
+
+				if (chartColorMode !== nextData.colorMode) {
+					chart.destroy();
+					chart = buildDeathCountChart(node, nextData);
+					chartColorMode = nextData.colorMode;
 
 					return;
 				}
@@ -4634,6 +4655,16 @@
 			?? null
 		);
 	}
+
+	function toggleOverlayColorMode() {
+		const nextMode: OverlayColorMode = overlayColorMode === 'dark'
+			? 'light'
+			: 'dark';
+
+		setMode(nextMode);
+		document.documentElement.setAttribute('data-theme', nextMode);
+		localStorage.setItem('theme', nextMode);
+	}
 </script>
 
 <svelte:head>
@@ -4643,6 +4674,26 @@
 </svelte:head>
 
 <main class={overlayMode ? 'match-page overlay-mode' : 'match-page'}>
+  {#if overlayMode}
+    {@const nextOverlayColorMode = overlayColorMode === 'dark' ? 'light' : 'dark'}
+    <div class="overlay-theme-toggle">
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        on:click={toggleOverlayColorMode}
+        aria-label={$_(`settings.general.theme.${nextOverlayColorMode}`)}
+        title={$_(`settings.general.theme.${nextOverlayColorMode}`)}
+      >
+        {#if nextOverlayColorMode === 'light'}
+          <Sun class="h-4 w-4" />
+        {:else}
+          <Moon class="h-4 w-4" />
+        {/if}
+      </Button>
+    </div>
+  {/if}
+
   {#if showGeodeAlert && !overlayMode}
     <Alert.Root
       class="relative mb-4 border-yellow-300 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/40"
@@ -4853,7 +4904,12 @@
                             participantResultLabel
                           }</Badge>
                         {/if}
-                        {#if participantPracticeModeActive(participant)}
+                        {#if participantPaused(participant, messages)}
+                          <Badge variant="secondary">
+                            {$_('pvp.progress_graph.paused')}
+                          </Badge>
+                        {/if}
+                        {#if participantPracticeModeActive(participant, messages)}
                           <Badge variant="outline">
                             {$_('pvp.progress_graph.practice_mode')}
                           </Badge>
@@ -4904,7 +4960,7 @@
                             formatPvpProgressValue(
                               participantDisplayProgress(
                                 participant,
-                                runningPlayerProgressByUid
+                                playerProgressByUid
                               ),
                               matchMode,
                               scoringMode,
@@ -4923,8 +4979,10 @@
                               class="progress-bar"
                               style={`width: ${participantProgressBarWidth(
                                 participant,
-                                runningPlayerProgressByUid
-                              )}%;`}
+                                playerProgressByUid
+                              )}%;${overlayMode
+                                ? ` background-color: ${overlayColorMode === 'dark' ? '#ffffff' : '#000000'};`
+                                : ''}`}
                             />
                           </div>
                         {/if}
@@ -5309,15 +5367,13 @@
               <div class="empty-state">
                 {$_('pvp.death_count.platformer_empty')}
               </div>
-            {:else if deathCountChartData.hasPoints}
+            {:else}
               <div class="death-count-chart-canvas overlay-death-count-chart-canvas">
                 <canvas
                   use:createDeathCountChart={deathCountChartData}
                   aria-label={$_('pvp.death_count.title')}
                 />
               </div>
-            {:else}
-              <div class="empty-state">{$_('pvp.death_count.empty')}</div>
             {/if}
           </div>
         </section>
@@ -5528,9 +5584,7 @@
                   <div class="empty-state">
                     {$_('pvp.death_count.platformer_empty')}
                   </div>
-                {:else if orderedParticipants.length === 0}
-                  <div class="empty-state">{$_('pvp.death_count.empty')}</div>
-                {:else}
+				{:else}
                   <div class="death-count-summary">
                     {#each orderedParticipants as participant}
                       {@const participantPlayer = getPvpParticipantPlayer(participant)}
@@ -5561,7 +5615,12 @@
                                 {participantLabel(participant, currentUid)}
                               </Badge>
                             {/if}
-                            {#if participantPracticeModeActive(participant)}
+                            {#if participantPaused(participant, messages)}
+                              <Badge variant="secondary">
+                                {$_('pvp.progress_graph.paused')}
+                              </Badge>
+                            {/if}
+                            {#if participantPracticeModeActive(participant, messages)}
                               <Badge variant="outline">
                                 {$_('pvp.progress_graph.practice_mode')}
                               </Badge>
@@ -5605,7 +5664,7 @@
                       </div>
                     {/if}
                   </div>
-                  {#if deathCountChartData.hasPoints && desktopActivityTab === 'deaths'}
+                  {#if desktopActivityTab === 'deaths'}
                     <div class="death-count-chart-canvas">
                       <canvas
                         use:createDeathCountChart={deathCountChartData}
@@ -5823,9 +5882,7 @@
                   <div class="empty-state">
                     {$_('pvp.death_count.platformer_empty')}
                   </div>
-                {:else if orderedParticipants.length === 0}
-                  <div class="empty-state">{$_('pvp.death_count.empty')}</div>
-                {:else}
+				{:else}
                   <div class="death-count-summary">
                     {#each orderedParticipants as participant}
                       {@const participantPlayer = getPvpParticipantPlayer(participant)}
@@ -5856,7 +5913,12 @@
                                 {participantLabel(participant, currentUid)}
                               </Badge>
                             {/if}
-                            {#if participantPracticeModeActive(participant)}
+                            {#if participantPaused(participant, messages)}
+                              <Badge variant="secondary">
+                                {$_('pvp.progress_graph.paused')}
+                              </Badge>
+                            {/if}
+                            {#if participantPracticeModeActive(participant, messages)}
                               <Badge variant="outline">
                                 {$_('pvp.progress_graph.practice_mode')}
                               </Badge>
@@ -5900,7 +5962,7 @@
                       </div>
                     {/if}
                   </div>
-                  {#if deathCountChartData.hasPoints && mobileActivityTab === 'deaths'}
+                  {#if mobileActivityTab === 'deaths'}
                     <div class="death-count-chart-canvas mobile-death-count-chart-canvas">
                       <canvas
                         use:createDeathCountChart={deathCountChartData}
@@ -5940,6 +6002,21 @@
   min-height: min(100vh, 1920px);
   padding: 8px 0 10px;
   background: transparent;
+}
+
+.overlay-theme-toggle {
+  position: fixed;
+  z-index: 50;
+  top: 10px;
+  right: 10px;
+}
+
+.overlay-theme-toggle :global(button) {
+  border-color: hsl(var(--border) / 0.8);
+  background: hsl(var(--background) / 0.82);
+  color: hsl(var(--foreground));
+  box-shadow: 0 4px 14px hsl(var(--foreground) / 0.08);
+  backdrop-filter: blur(8px);
 }
 
 .match-page.overlay-mode :global(.bg-card) {
