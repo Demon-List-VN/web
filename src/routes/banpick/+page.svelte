@@ -8,6 +8,7 @@
 	import { onMount } from 'svelte';
 	import * as Avatar from '$lib/components/ui/avatar';
 	import { isActive } from '$lib/client/isSupporterActive';
+	import { _ } from 'svelte-i18n';
 
 	export let data: PageData;
 
@@ -30,7 +31,12 @@
 		logs[index] = data.players[turn];
 		phase++;
 
-		toast.info(`${data.players[turn].name} banned ${data.levels[index].name}`);
+		toast.info($_('pvp.ban_pick.player_banned', {
+			values: {
+				player: data.players[turn].name,
+				level: data.levels[index].name
+			}
+		}));
 
 		turn = 1 - turn;
 	}
@@ -49,11 +55,13 @@
 
 		pickedBy[phase - 3] = data.players[turn];
 
-		toast.info(
-			`${data.players[turn].name} picked ${data.levels[index].name} as the ${
-				formatOrder(phase - 2)
-			} level!`
-		);
+		toast.info($_('pvp.ban_pick.player_picked', {
+			values: {
+				player: data.players[turn].name,
+				level: data.levels[index].name,
+				order: formatOrder(phase - 2)
+			}
+		}));
 
 		turn = 1 - turn;
 		phase++;
@@ -61,15 +69,15 @@
 
 	function formatOrder(x: number) {
 		if (x == 1) {
-			return '1st';
+			return $_('pvp.ban_pick.first');
 		}
 
 		if (x == 2) {
-			return '2nd';
+			return $_('pvp.ban_pick.second');
 		}
 
 		if (x == 3) {
-			return 'Tiebreaker';
+			return $_('pvp.ban_pick.tiebreaker');
 		}
 	}
 
@@ -93,7 +101,7 @@
     src={`https://cdn.gdvn.net/banners/${data.players[0].uid}${
         data.players[0].isBannerGif ? '.gif' : '.jpg'
     }?version=${data.players[0].bannerVersion}`}
-    alt="banner"
+    alt={$_('pvp.ban_pick.player_banner', { values: { player: data.players[0].name } })}
   />
 {/if}
 {#if isActive(data.players[1].supporterUntil) && !isBannerFailedToLoad[1]}
@@ -106,7 +114,7 @@
     src={`https://cdn.gdvn.net/banners/${data.players[1].uid}${
         data.players[1].isBannerGif ? '.gif' : '.jpg'
     }?version=${data.players[1].bannerVersion}`}
-    alt="banner"
+    alt={$_('pvp.ban_pick.player_banner', { values: { player: data.players[1].name } })}
   />
 {/if}
 
@@ -163,7 +171,11 @@
         class="flex w-[200px] flex-col items-center gap-[10px] rounded-md border-[1px] p-[10px] text-center transition-all duration-300"
         style="backdrop-filter: blur(10px)"
       >
-        <div class="font-bold">{formatOrder(index + 1)} level</div>
+        <div class="font-bold">{
+          $_('pvp.ban_pick.level_order', {
+            values: { order: formatOrder(index + 1) }
+          })
+        }</div>
         <div class="">
           {#if !level}
             <div class="text-bold h-[90px] animate-pulse opacity-50">?</div>
@@ -173,10 +185,16 @@
               in:scale={{ duration: 400, easing: quintOut }}
             >
               <b>{level.name}</b><br />
-              <span class="text-sm opacity-50">by {level.author}</span><br />
+              <span class="text-sm opacity-50">{
+                $_('pvp.ban_pick.by_author', { values: { author: level.author } })
+              }</span><br />
               <span class="text-sm">{level.difficulty}</span><br />
               {#if index != 2}
-                <span class="text-sm">Picked by {pickedBy[index].name}</span>
+                <span class="text-sm">{
+                  $_('pvp.ban_pick.picked_by', {
+                    values: { player: pickedBy[index].name }
+                  })
+                }</span>
               {/if}
             </div>
           {/if}
@@ -199,8 +217,8 @@
           in:fly={{ x: -50, duration: 400, delay: 100 * index, easing: quintOut }}
         >
           <div class="text-bold">
-            <b>{level.name}</b> <span class="text-sm opacity-50">by {
-                level.author
+            <b>{level.name}</b> <span class="text-sm opacity-50">{
+                $_('pvp.ban_pick.by_author', { values: { author: level.author } })
               }</span><br />
             <span class="text-sm">{level.difficulty}</span>
           </div>
@@ -209,24 +227,30 @@
               variant="destructive"
               class="ml-auto transition-all duration-200"
               disabled
-            >Banned by {logs[index].name}</Button>
+            >{
+              $_('pvp.ban_pick.banned_by', {
+                values: { player: logs[index].name }
+              })
+            }</Button>
           {:else if order[index]}
             <Button class="ml-auto transition-all duration-200" disabled>{
               logs[index].name == 'Tiebreaker'
-              ? 'Tiebreaker'
-              : `Picked by ${logs[index].name}`
+              ? $_('pvp.ban_pick.tiebreaker')
+              : $_('pvp.ban_pick.picked_by', {
+                  values: { player: logs[index].name }
+                })
             }</Button>
           {:else if phase < 3}
             <Button
               variant="destructive"
               class="ml-auto transition-all duration-200"
               on:click={() => ban(index)}
-            >Ban</Button>
+            >{$_('pvp.ban_pick.ban')}</Button>
           {:else}
             <Button
               class="ml-auto transition-all duration-200"
               on:click={() => pick(index)}
-            >Pick</Button>
+            >{$_('pvp.ban_pick.pick')}</Button>
           {/if}
         </div>
       {/each}
@@ -238,9 +262,9 @@
     >
       <div class="mb-4 text-center">
         <h2 class="mb-2 text-xl font-bold">
-          Flip a coin to decide who goes first
+          {$_('pvp.ban_pick.flip_heading')}
         </h2>
-        <p class="text-sm opacity-70">Winner bans first</p>
+        <p class="text-sm opacity-70">{$_('pvp.ban_pick.flip_hint')}</p>
       </div>
       <div
         class="coin-container"
@@ -259,7 +283,9 @@
           class:flipping={isCoinFlipping}
           on:animationend={() => {
               coinFlipped = true;
-              toast.info(`${data.players[turn].name} goes first!`);
+              toast.info($_('pvp.ban_pick.goes_first', {
+                values: { player: data.players[turn].name }
+              }));
           }}
         >
           <div class="side front text-black">{data.players[0].name}</div>
@@ -272,7 +298,7 @@
             isCoinFlipping = true;
         }}
       >
-        Flip coin
+        {$_('pvp.ban_pick.flip_coin')}
       </Button>
     </div>
     {#if turn == 0}
