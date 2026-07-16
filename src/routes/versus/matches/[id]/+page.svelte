@@ -8,6 +8,7 @@
 	import BanPickPanel from './components/BanPickPanel.svelte';
 	import MatchReportDialog from './components/MatchReportDialog.svelte';
 	import MatchTopbar from './components/MatchTopbar.svelte';
+	import OverlayAttemptCount from './components/OverlayAttemptCount.svelte';
 	import PvpXpToast from '$lib/components/pvp/PvpXpToast.svelte';
 	import { user } from '$lib/client';
 	import { Badge } from '$lib/components/ui/badge';
@@ -40,6 +41,7 @@
 		getPvpMatchStartMs,
 		getPvpMessageSenderIsAnonymous,
 		getPvpParticipants,
+		getPvpDeathCount,
 		getPvpDeathCountArray,
 		getPvpMatchRoomId,
 		getPvpMatchRoomName,
@@ -4907,14 +4909,20 @@
                         ? null
                         : getEquippedTheme(participantPlayer)}
                     {@const participantThemeStyle = getThemeStyle(participantTheme)}
-                    <div
-                      class:left-side={index === 0}
-                      class:right-side={index === 1}
-                      class:winner={winnerUid && getPvpParticipantUid(participant) === winnerUid}
-                      class:themed={Boolean(participantThemeStyle)}
-                      class="participant-card"
-                      style={participantThemeStyle}
-                    >
+                    <div class="participant-slot">
+                      {#if overlayMode}
+                        <OverlayAttemptCount
+                          attempt={getPvpDeathCount(participant) + 1}
+                        />
+                      {/if}
+                      <div
+                        class:left-side={index === 0}
+                        class:right-side={index === 1}
+                        class:winner={winnerUid && getPvpParticipantUid(participant) === winnerUid}
+                        class:themed={Boolean(participantThemeStyle)}
+                        class="participant-card"
+                        style={participantThemeStyle}
+                      >
                       {#if participantTheme}
                         <img
                           class="participant-banner"
@@ -5070,6 +5078,7 @@
                             {/if}
                           </div>
                         {/if}
+                      </div>
                       </div>
                     </div>
                   {/each}
@@ -6282,6 +6291,12 @@
   grid-template-columns: 1fr;
 }
 
+.participant-slot {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+
 .timer-display {
   min-height: 54px;
   border: 1px solid hsl(var(--border));
@@ -6465,8 +6480,15 @@
 }
 
 .overlay-mode .participant-card {
+  height: 160px;
   gap: 9px;
+  grid-template-rows: 22px auto 1fr;
+  align-content: start;
   padding: 12px;
+}
+
+.overlay-mode .participant-card:not(.themed) {
+  background: #18181b;
 }
 
 .participant-card.winner {
@@ -6527,6 +6549,10 @@
 
 .participant-topline {
   justify-content: space-between;
+}
+
+.overlay-mode .participant-topline {
+  min-height: 22px;
 }
 
 .participant-identity {
