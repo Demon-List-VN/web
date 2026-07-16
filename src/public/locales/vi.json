@@ -4192,6 +4192,7 @@
             "override_success": "Đã cập nhật kết quả",
             "start_match": "Bắt đầu trận",
             "open_match": "Mở trận PvP",
+            "open_overlay": "Mở overlay",
             "match_started": "Đã tạo trận PvP",
             "level_id": "ID màn chơi",
             "automatic_level_notice": "Màn chơi sẽ được chọn tự động theo cấu hình giải đấu.",
@@ -4345,7 +4346,13 @@
             "status_pending": "Sẵn sàng",
             "status_ready": "Đang khởi tạo",
             "status_in_progress": "Đang thi đấu",
-            "status_completed": "Đã hoàn tất"
+            "status_completed": "Đã hoàn tất",
+            "overlay_game": "Game {game}",
+            "overlay_series_score": "Tỷ số loạt đấu",
+            "overlay_waiting": "Đang chờ trận PvP bắt đầu",
+            "overlay_waiting_hint": "Overlay sẽ tự động hiển thị trận PvP mới nhất của cặp đấu này.",
+            "overlay_not_found": "Không tìm thấy cặp đấu trong nhánh đấu.",
+            "overlay_load_failed": "Không thể tải overlay trận đấu"
         }
     }
 }

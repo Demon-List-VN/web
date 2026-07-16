@@ -29,6 +29,7 @@
   <p class="text-center text-muted-foreground">{$_('tournament.loading')}</p>
 {:else if bracket}
   <Bracket
+    tournamentId={tournament.id}
     rounds={bracket.rounds}
     thirdPlaceMatch={bracket.thirdPlaceMatch}
     champion={bracket.champion}

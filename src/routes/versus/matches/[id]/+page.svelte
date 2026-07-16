@@ -125,6 +125,12 @@
 		Zap
 	} from 'lucide-svelte';
 
+	export let matchIdOverride: number | string | null = null;
+	export let forceOverlay = false;
+	export let forceSpectator = false;
+	export let overlayTopOffset = 0;
+	export let placeholderMatch: PvpMatch | null = null;
+
 	const PVP_GEODE_ALERT_DISMISSED_KEY = 'gdvn:pvp-geode-alert-dismissed';
 	const PVP_HIDE_OPPONENT_INFO_KEY = 'gdvn:pvp-hide-opponent-info';
 	const PVP_CHAT_MUTED_KEY = 'gdvn:pvp-chat-muted';
@@ -263,6 +269,7 @@
 	type PowerupSkillConfig = NonNullable<PvpPowerupState['skills']>[number];
 
 	let match: PvpMatch | null = null;
+	let appliedPlaceholderMatch: PvpMatch | null = null;
 	let loading = false;
 	let initializedFor = '';
 	let cleanupRealtime: (() => Promise<void>) | null = null;
@@ -315,10 +322,20 @@
 	let managerManaLoadingUid = '';
 	let overlayColorMode: OverlayColorMode = 'dark';
 
-	$: matchId = $page.params.id;
-	$: overlayMode = $page.url.searchParams.has('overlay');
+	$: matchId = matchIdOverride === null || matchIdOverride === undefined
+		? $page.params.id
+		: String(matchIdOverride);
+	$: if (
+		!matchId
+		&& placeholderMatch
+		&& appliedPlaceholderMatch !== placeholderMatch
+	) {
+		appliedPlaceholderMatch = placeholderMatch;
+		setMatch(placeholderMatch);
+	}
+	$: overlayMode = forceOverlay || $page.url.searchParams.has('overlay');
 	$: overlayColorMode = $mode === 'light' ? 'light' : 'dark';
-	$: isSpectateRoute = $page.url.searchParams.get('spectate') === '1';
+	$: isSpectateRoute = forceSpectator || $page.url.searchParams.get('spectate') === '1';
 	$: isSpectator = !$user.loggedIn
 		|| isSpectateRoute
 		|| match?.viewerRole === 'spectator'
@@ -362,7 +379,8 @@
 		&& !banPickWaitingToStart
 		&& banPickRemainingMs > 0
 		&& !banPickTurnSubmitted;
-	$: playerInfoConfirmed = isPvpMatchConfirmedByBoth(match);
+	$: playerInfoConfirmed = Boolean(!matchId && placeholderMatch)
+		|| isPvpMatchConfirmedByBoth(match);
 	$: levelConfirmed = playerInfoConfirmed;
 	$: visibleLevel = levelConfirmed && !isBanPick ? level : null;
 	$: levelVideoId = getYouTubeVideoId(visibleLevel?.videoID);
@@ -687,6 +705,12 @@
 	async function initializeRealtime(id: string) {
 		initializedFor = `${currentUid || 'public'}:${id}`;
 		cleanupRealtime?.();
+
+		if (String(getPvpMatchId(match) ?? '') !== String(id)) {
+			match = null;
+			messages = [];
+			powerupState = null;
+		}
 
 		try {
 			const token = await $user.token();
@@ -4711,10 +4735,17 @@
 <svelte:head>
   <title>{matchTitle} - {$_('head.site_name')}</title>
   <meta name="description" content={$_('pvp.match_meta_description')} />
-  <link rel="canonical" href={matchUrl} />
+  {#if matchId}
+    <link rel="canonical" href={matchUrl} />
+  {/if}
 </svelte:head>
 
-<main class={overlayMode ? 'match-page overlay-mode' : 'match-page'}>
+<main
+  class={overlayMode ? 'match-page overlay-mode' : 'match-page'}
+  style={overlayMode && overlayTopOffset > 0
+    ? `--overlay-top-offset: ${overlayTopOffset}px;`
+    : undefined}
+>
   {#if overlayMode}
     {@const nextOverlayColorMode = overlayColorMode === 'dark' ? 'light' : 'dark'}
     <div class="overlay-theme-toggle">
@@ -6044,7 +6075,7 @@
   width: 100vw;
   max-width: none;
   min-height: min(100vh, 1920px);
-  padding: 8px 0 10px;
+  padding: calc(8px + var(--overlay-top-offset, 0px)) 0 10px;
   background: transparent;
 }
 

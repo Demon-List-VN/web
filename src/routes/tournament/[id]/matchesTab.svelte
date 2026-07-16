@@ -123,6 +123,16 @@
               {$_('tournament.bracket.open_match')}
             </Button>
           {/if}
+          <Button
+            size="sm"
+            variant="outline"
+            class={!node.currentPvpMatchId ? 'ml-auto' : ''}
+            href={`/tournament/${tournament.id}/matches/${node.id}/overlay`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {$_('tournament.bracket.open_overlay')}
+          </Button>
         </div>
 
         {#if games.length}

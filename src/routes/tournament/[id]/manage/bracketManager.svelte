@@ -386,6 +386,7 @@
   {/if}
 
   <Bracket
+    tournamentId={tournament.id}
     rounds={displayedBracket.rounds}
     thirdPlaceMatch={displayedBracket.thirdPlaceMatch}
     champion={displayedBracket.champion}

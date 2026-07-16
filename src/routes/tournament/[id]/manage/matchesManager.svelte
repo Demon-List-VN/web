@@ -135,6 +135,15 @@
           </div>
 
           <div class="flex flex-wrap gap-[8px]">
+            <Button
+              size="sm"
+              variant="outline"
+              href={`/tournament/${tournament.id}/matches/${node.id}/overlay`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {$_('tournament.bracket.open_overlay')}
+            </Button>
             {#if node.currentPvpMatchId}
               <Button
                 size="sm"

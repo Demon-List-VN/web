@@ -4193,6 +4193,7 @@
             "override_success": "Result updated",
             "start_match": "Start match",
             "open_match": "Open PvP match",
+            "open_overlay": "Open overlay",
             "match_started": "PvP match created",
             "level_id": "Level ID",
             "automatic_level_notice": "The level will be selected automatically using the tournament format.",
@@ -4346,7 +4347,13 @@
             "status_pending": "Ready",
             "status_ready": "Starting",
             "status_in_progress": "In progress",
-            "status_completed": "Completed"
+            "status_completed": "Completed",
+            "overlay_game": "Game {game}",
+            "overlay_series_score": "Series score",
+            "overlay_waiting": "Waiting for the PvP game to start",
+            "overlay_waiting_hint": "This overlay will automatically show the latest PvP game for this bracket match.",
+            "overlay_not_found": "This bracket match could not be found.",
+            "overlay_load_failed": "Unable to load the match overlay"
         }
     }
 }

@@ -10,6 +10,7 @@
 	export let rounds: any[] = [];
 	export let thirdPlaceMatch: any = null;
 	export let champion: any = null;
+	export let tournamentId: number | string | null = null;
 	export let editable = false;
 	export let participants: any[] = [];
 	export let showActions = false;
@@ -152,8 +153,17 @@
 	function hasFooter(node: any) {
 		return Boolean(
 			node.currentPvpMatchId
+			|| canOpenOverlay(node)
 			|| (showActions && node.player1Uid && node.player2Uid)
 		);
+	}
+
+	function canOpenOverlay(node: any) {
+		return Boolean(tournamentId && node?.id);
+	}
+
+	function overlayHref(node: any) {
+		return `/tournament/${tournamentId}/matches/${node.id}/overlay`;
 	}
 
 	// Zoom, pan & fullscreen
@@ -397,6 +407,16 @@
                         {$_('tournament.bracket.start_match')}
                       </button>
                     {/if}
+                    {#if canOpenOverlay(node)}
+                      <a
+                        class="flex flex-1 items-center justify-center border-l border-[hsl(var(--border))] text-primary hover:bg-muted"
+                        href={overlayHref(node)}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {$_('tournament.bracket.open_overlay')}
+                      </a>
+                    {/if}
                     {#if showActions && node.player1Uid && node.player2Uid}
                       <button class="flex-1 border-l border-[hsl(var(--border))] hover:bg-muted" on:click={() => onOverride?.(node)}>
                         {$_('tournament.bracket.edit_result')}
@@ -459,6 +479,17 @@
                   </div>
                 {/each}
               </div>
+              {#if canOpenOverlay(thirdPlaceMatch)}
+                <a
+                  class="mt-[2px] flex h-[26px] items-center justify-center rounded-[6px] border border-[hsl(var(--border))] bg-muted/40 text-xs text-primary hover:bg-muted"
+                  href={overlayHref(thirdPlaceMatch)}
+                  target="_blank"
+                  rel="noreferrer"
+                  data-no-pan
+                >
+                  {$_('tournament.bracket.open_overlay')}
+                </a>
+              {/if}
             </div>
           {/if}
         </div>
