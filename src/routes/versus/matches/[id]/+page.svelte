@@ -5336,10 +5336,9 @@
                   <h2>
                     {visibleLevel.name || `#${visibleLevel.id || match.levelId}`}
                   </h2>
-                  <span class="overlay-level-separator" aria-hidden="true">·</span>
                   <p>
                     {#if visibleLevel.creator || visibleLevel.author}
-                      {$_('head.labels.by')} {
+                      by {
                         visibleLevel.creator || visibleLevel.author
                       }
                     {:else}
@@ -6672,13 +6671,6 @@
   flex: 0 1 auto;
   color: hsl(var(--muted-foreground));
   font-weight: 550;
-}
-
-.overlay-level-separator {
-  flex: 0 0 auto;
-  color: hsl(var(--muted-foreground));
-  font-size: clamp(1.35rem, 2.4vw, 2rem);
-  line-height: 1;
 }
 
 .progress-label {
