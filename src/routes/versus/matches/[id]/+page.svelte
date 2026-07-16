@@ -10,7 +10,6 @@
 	import MatchTopbar from './components/MatchTopbar.svelte';
 	import PvpXpToast from '$lib/components/pvp/PvpXpToast.svelte';
 	import { user } from '$lib/client';
-	import supabase from '$lib/client/supabase';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Textarea } from '$lib/components/ui/textarea';
@@ -105,7 +104,6 @@
 		ExternalLink,
 		Gauge,
 		Loader2,
-		LogIn,
 		MessageCircle,
 		Moon,
 		MousePointerClick,
@@ -319,7 +317,8 @@
 	$: overlayMode = $page.url.searchParams.has('overlay');
 	$: overlayColorMode = $mode === 'light' ? 'light' : 'dark';
 	$: isSpectateRoute = $page.url.searchParams.get('spectate') === '1';
-	$: isSpectator = isSpectateRoute
+	$: isSpectator = !$user.loggedIn
+		|| isSpectateRoute
 		|| match?.viewerRole === 'spectator'
 		|| match?.viewerRole === 'tournament_staff';
 	$: matchUrl = `${siteUrl}/versus/matches/${matchId}`;
@@ -630,9 +629,8 @@
 
 	$: if (
 		$user.checked
-		&& $user.loggedIn
 		&& matchId
-		&& initializedFor !== `${currentUid}:${matchId}`
+		&& initializedFor !== `${currentUid || 'public'}:${matchId}`
 	) {
 		initializeRealtime(matchId);
 	}
@@ -685,7 +683,7 @@
 	});
 
 	async function initializeRealtime(id: string) {
-		initializedFor = `${currentUid}:${id}`;
+		initializedFor = `${currentUid || 'public'}:${id}`;
 		cleanupRealtime?.();
 
 		try {
@@ -726,7 +724,7 @@
 	}
 
 	async function refreshMatch() {
-		if (!$user.loggedIn || !matchId) {
+		if (!matchId) {
 			return;
 		}
 
@@ -749,7 +747,7 @@
 	async function refreshMessages(
 		options: { incremental?: boolean; silent?: boolean; } = {}
 	) {
-		if (!$user.loggedIn || !matchId || messageRefreshInFlight) {
+		if (!matchId || messageRefreshInFlight) {
 			return;
 		}
 
@@ -1797,19 +1795,6 @@
 		} finally {
 			actionLoading = '';
 		}
-	}
-
-	async function signIn() {
-		await supabase.auth.signInWithOAuth({
-			provider: 'google',
-			options: {
-				queryParams: {
-					access_type: 'offline',
-					prompt: 'consent'
-				},
-				redirectTo: window.location.origin
-			}
-		});
 	}
 
 	function statusLabel(value: unknown) {
@@ -4824,19 +4809,6 @@
       <Card.Content class="state-content">
         <Loader2 class="h-5 w-5 animate-spin" />
         <span>{$_('general.loading')}</span>
-      </Card.Content>
-    </Card.Root>
-  {:else if !$user.loggedIn}
-    <Card.Root>
-      <Card.Content class="auth-content">
-        <div>
-          <h2>{$_('pvp.sign_in_title')}</h2>
-          <p>{$_('pvp.sign_in_hint')}</p>
-        </div>
-        <Button on:click={signIn}>
-          <LogIn class="mr-2 h-4 w-4" />
-          {$_('nav.sign_in')}
-        </Button>
       </Card.Content>
     </Card.Root>
   {:else if loading && !match}
