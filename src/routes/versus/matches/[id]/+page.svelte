@@ -4180,6 +4180,10 @@
 	}
 
 	function getProgressChartDatasets(data: ProgressGraphData) {
+		if (!data.hasPoints) {
+			return [];
+		}
+
 		const timeline = [
 			0,
 			...data.series.flatMap((item) => item.points.map((point) => point.x)),
@@ -5327,22 +5331,25 @@
 
           {#if overlayMode}
             <section class="overlay-level-title">
-              {#if visibleLevel}
-                <h2>
-                  {visibleLevel.name || `#${visibleLevel.id || match.levelId}`}
-                </h2>
-                <p>
-                  {#if visibleLevel.creator || visibleLevel.author}
-                    by {
-                      visibleLevel.creator || visibleLevel.author
-                    }
-                  {:else}
-                    {$_('pvp.level_pending')}
-                  {/if}
-                </p>
-              {:else}
-                <h2>{$_('pvp.level_pending')}</h2>
-              {/if}
+              <div class="overlay-level-line">
+                {#if visibleLevel}
+                  <h2>
+                    {visibleLevel.name || `#${visibleLevel.id || match.levelId}`}
+                  </h2>
+                  <span class="overlay-level-separator" aria-hidden="true">·</span>
+                  <p>
+                    {#if visibleLevel.creator || visibleLevel.author}
+                      {$_('head.labels.by')} {
+                        visibleLevel.creator || visibleLevel.author
+                      }
+                    {:else}
+                      {$_('pvp.level_pending')}
+                    {/if}
+                  </p>
+                {:else}
+                  <h2>{$_('pvp.level_pending')}</h2>
+                {/if}
+              </div>
             </section>
           {:else}
             <Card.Root>
@@ -5423,18 +5430,12 @@
       {#if overlayMode}
         <section class="overlay-graphs-panel">
           <div class="progress-graph-panel">
-            {#if progressGraphData.hasPoints}
-              <div class="progress-graph-canvas overlay-progress-graph-canvas">
-                <canvas
-                  use:createProgressChart={progressGraphData}
-                  aria-label={$_('pvp.progress_graph.title')}
-                />
-              </div>
-            {:else}
-              <div class="empty-state">
-                {$_('pvp.progress_graph.empty')}
-              </div>
-            {/if}
+            <div class="progress-graph-canvas overlay-progress-graph-canvas">
+              <canvas
+                use:createProgressChart={progressGraphData}
+                aria-label={$_('pvp.progress_graph.title')}
+              />
+            </div>
           </div>
 
           <div class="death-count-panel">
@@ -6632,29 +6633,52 @@
 }
 
 .overlay-level-title {
-  display: grid;
+  display: flex;
   min-height: 86px;
-  align-content: center;
-  justify-items: center;
-  gap: 4px;
+  align-items: center;
+  justify-content: center;
   text-align: center;
+}
+
+.overlay-level-line {
+  display: flex;
+  width: min(100%, 1200px);
+  min-width: 0;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.4em;
+  padding-inline: 12px;
+  white-space: nowrap;
+}
+
+.overlay-level-title h2,
+.overlay-level-title p {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: clamp(1.35rem, 2.4vw, 2rem);
+  line-height: 1.1;
 }
 
 .overlay-level-title h2 {
   max-width: min(100%, 920px);
-  margin: 0;
-  overflow-wrap: anywhere;
-  font-size: 2rem;
+  flex: 0 1 auto;
   font-weight: 850;
-  line-height: 1.08;
 }
 
 .overlay-level-title p {
-  margin: 0;
+  flex: 0 1 auto;
   color: hsl(var(--muted-foreground));
-  font-size: 1rem;
-  font-weight: 400;
-  line-height: 1.25;
+  font-weight: 550;
+}
+
+.overlay-level-separator {
+  flex: 0 0 auto;
+  color: hsl(var(--muted-foreground));
+  font-size: clamp(1.35rem, 2.4vw, 2rem);
+  line-height: 1;
 }
 
 .progress-label {
