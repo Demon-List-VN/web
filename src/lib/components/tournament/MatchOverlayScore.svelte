@@ -1,12 +1,15 @@
 <script lang="ts">
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import { cn } from '$lib/utils.js';
+	import { getTournamentMatchOverlaySides } from '$lib/utils/tournamentMatchOverlay';
 	import { _ } from 'svelte-i18n';
 
 	export let tournament: any;
 	export let match: any;
 	export let totalRounds = 0;
 	export let gameIndex: number | null = null;
+
+	$: [leftSide, rightSide] = getTournamentMatchOverlaySides(match);
 
 	function roundLabel() {
 		if (match?.isThirdPlace) {
@@ -63,26 +66,26 @@
 
   <div class="score-row">
     <div class="player player-one">
-      {#if match?.player1}
-        <PlayerLink player={match.player1} showAvatar avatarSize={28} truncate={18} />
+      {#if leftSide.player}
+        <PlayerLink player={leftSide.player} showAvatar avatarSize={28} truncate={18} />
       {:else}
         <span class="pending">{$_('tournament.bracket.pending_player')}</span>
       {/if}
     </div>
 
     <div class="score" aria-label={$_('tournament.matches.overlay_series_score')}>
-      <strong class:winner={match?.winnerUid && match?.winnerUid === match?.player1Uid}>
-        {match?.score1 ?? 0}
+      <strong class:winner={match?.winnerUid && String(match.winnerUid) === leftSide.uid}>
+        {leftSide.score ?? 0}
       </strong>
       <span>-</span>
-      <strong class:winner={match?.winnerUid && match?.winnerUid === match?.player2Uid}>
-        {match?.score2 ?? 0}
+      <strong class:winner={match?.winnerUid && String(match.winnerUid) === rightSide.uid}>
+        {rightSide.score ?? 0}
       </strong>
     </div>
 
     <div class="player player-two">
-      {#if match?.player2}
-        <PlayerLink player={match.player2} showAvatar avatarSize={28} truncate={18} />
+      {#if rightSide.player}
+        <PlayerLink player={rightSide.player} showAvatar avatarSize={28} truncate={18} />
       {:else}
         <span class="pending">{$_('tournament.bracket.pending_player')}</span>
       {/if}
@@ -161,11 +164,11 @@
 
 .score-row {
   display: grid;
-  height: 58px;
+  min-height: 112px;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: 14px;
-  padding: 0 18px;
+  padding: 8px 18px 16px;
 }
 
 .player {
@@ -192,14 +195,19 @@
   gap: 9px;
   text-align: center;
   font-family: "UTM Bebas", sans-serif;
-  font-size: 24px;
+  font-size: 72px;
   font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 
 .score span {
-  color: #fff;
-  font-size: 16px;
-  font-weight: 700;
+  width: 18px;
+  height: 3px;
+  border-radius: 999px;
+  background: #fff;
+  color: transparent;
+  font-size: 0;
+  transform: translateY(7px);
 }
 
 .score .winner {
@@ -230,13 +238,18 @@
   }
 
   .score-row {
+    min-height: 96px;
     gap: 8px;
-    padding: 0 10px;
+    padding: 8px 10px 14px;
   }
 
   .score {
     gap: 8px;
-    font-size: 20px;
+    font-size: 60px;
+  }
+
+  .score span {
+    transform: translateY(1px);
   }
 }
 </style>

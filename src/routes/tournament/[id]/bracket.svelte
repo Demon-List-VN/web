@@ -14,6 +14,7 @@
 	export let editable = false;
 	export let participants: any[] = [];
 	export let showActions = false;
+	export let showOverlay = false;
 	export let onSlotChange: ((position: number, slot: 1 | 2, uid: string | null) => void) | null = null;
 	export let onStart: ((node: any) => void) | null = null;
 	export let onOverride: ((node: any) => void) | null = null;
@@ -159,7 +160,7 @@
 	}
 
 	function canOpenOverlay(node: any) {
-		return Boolean(tournamentId && node?.id);
+		return Boolean(showOverlay && tournamentId && node?.id);
 	}
 
 	function overlayHref(node: any) {

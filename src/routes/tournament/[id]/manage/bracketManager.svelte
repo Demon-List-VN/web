@@ -393,6 +393,7 @@
     editable={preStart && bracketMode === 'setup'}
     participants={bracketParticipants}
     showActions={bracketMode === 'matches' && (tournament.status === 'ongoing' || tournament.status === 'finished')}
+    showOverlay
     onSlotChange={changeSlot}
     onStart={(node) => matchActions.openStart(node)}
     onOverride={(node) => matchActions.openOverride(node)}

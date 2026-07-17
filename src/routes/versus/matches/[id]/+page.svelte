@@ -130,6 +130,7 @@
 	export let forceSpectator = false;
 	export let overlayTopOffset = 0;
 	export let placeholderMatch: PvpMatch | null = null;
+	export let participantOrderUids: Array<string | number> = [];
 
 	const PVP_GEODE_ALERT_DISMISSED_KEY = 'gdvn:pvp-geode-alert-dismissed';
 	const PVP_HIDE_OPPONENT_INFO_KEY = 'gdvn:pvp-hide-opponent-info';
@@ -397,7 +398,9 @@
 		: getMatchTitle(participants, effectiveHideOpponentInfo, currentUid);
 	$: matchBackHref = isRoomMatch && roomId ? `/versus/rooms/${roomId}` : '/versus/play';
 	$: matchBackLabel = isRoomMatch ? $_('pvp.rooms.room') : $_('pvp.lobby_title');
-	$: orderedParticipants = isRoomMatch || participants.length > 2
+	$: orderedParticipants = participantOrderUids.length > 0
+		? orderParticipantsByUid(participants, participantOrderUids)
+		: isRoomMatch || participants.length > 2
 		? getPvpParticipantsSortedByProgress(participants, matchMode)
 		: orderParticipants(participants, currentUid);
 	$: winnerUid = getPvpWinnerUid(match);
@@ -2061,6 +2064,27 @@
 			...items.slice(0, selfIndex),
 			...items.slice(selfIndex + 1)
 		];
+	}
+
+	function orderParticipantsByUid(
+		items: PvpParticipant[],
+		orderedUids: Array<string | number>
+	) {
+		const rankByUid = new Map(
+			orderedUids.map((uid, index) => [String(uid), index])
+		);
+
+		return items
+			.map((participant, index) => ({ participant, index }))
+			.sort((left, right) => {
+				const leftRank = rankByUid.get(String(getPvpParticipantUid(left.participant)));
+				const rightRank = rankByUid.get(String(getPvpParticipantUid(right.participant)));
+
+				return (leftRank ?? Number.MAX_SAFE_INTEGER)
+					- (rightRank ?? Number.MAX_SAFE_INTEGER)
+					|| left.index - right.index;
+			})
+			.map(({ participant }) => participant);
 	}
 
 	function participantLabel(
@@ -6757,7 +6781,7 @@
   height: auto;
   min-height: 0;
   grid-template-rows: minmax(0, 1fr);
-  background: rgb(0 0 0 / 0.8);
+  background: rgb(0 0 0 / 0.9);
   backdrop-filter: blur(2px);
 }
 

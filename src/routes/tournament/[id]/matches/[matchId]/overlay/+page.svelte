@@ -4,13 +4,14 @@
 	import { _ } from 'svelte-i18n';
 	import { tournamentFetch } from '$lib/client/tournament';
 	import MatchOverlayScore from '$lib/components/tournament/MatchOverlayScore.svelte';
+	import { getTournamentMatchOverlaySides } from '$lib/utils/tournamentMatchOverlay';
 	import PvpMatchPage from '../../../../../versus/matches/[id]/+page.svelte';
 	import type { PageData } from './$types';
 
 	export let data: PageData;
 
 	const POLL_INTERVAL_MS = 3000;
-	const PVP_OVERLAY_TOP_OFFSET = 94;
+	const PVP_OVERLAY_TOP_OFFSET = 150;
 
 	let tournament: any = null;
 	let bracket: any = null;
@@ -23,6 +24,11 @@
 	$: games = Array.isArray(match?.games) ? [...match.games].sort(compareGames) : [];
 	$: latestGame = games[0] ?? null;
 	$: latestPvpMatchId = match?.currentPvpMatchId ?? latestGame?.pvpMatchId ?? null;
+	$: orderedPlayerUids = match
+		? getTournamentMatchOverlaySides(match)
+			.map((side) => side.uid)
+			.filter((uid): uid is string => Boolean(uid))
+		: [];
 	$: placeholderPvpMatch = createPlaceholderPvpMatch(tournament, match);
 
 	function compareGames(a: any, b: any) {
@@ -48,6 +54,8 @@
 			return null;
 		}
 
+		const orderedSides = getTournamentMatchOverlaySides(sourceMatch);
+
 		return {
 			status: 'idle',
 			mode: sourceTournament.pvpFormat?.mode ?? 'classic',
@@ -55,10 +63,9 @@
 			level: null,
 			tournamentMatchId: sourceMatch.id,
 			viewerRole: 'spectator',
-			participants: [
-				placeholderParticipant(sourceMatch.player1Uid, sourceMatch.player1, 1),
-				placeholderParticipant(sourceMatch.player2Uid, sourceMatch.player2, 2)
-			]
+			participants: orderedSides.map((side, index) =>
+				placeholderParticipant(side.uid, side.player, index + 1)
+			)
 		};
 	}
 
@@ -140,6 +147,7 @@
       forceOverlay
       forceSpectator
       overlayTopOffset={PVP_OVERLAY_TOP_OFFSET}
+      participantOrderUids={orderedPlayerUids}
     />
   {:else if placeholderPvpMatch}
     <PvpMatchPage
@@ -148,6 +156,7 @@
       forceOverlay
       forceSpectator
       overlayTopOffset={PVP_OVERLAY_TOP_OFFSET}
+      participantOrderUids={orderedPlayerUids}
     />
   {:else}
     <section class="waiting-state">
