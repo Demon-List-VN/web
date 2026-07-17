@@ -74,7 +74,7 @@
       <strong class:winner={match?.winnerUid && match?.winnerUid === match?.player1Uid}>
         {match?.score1 ?? 0}
       </strong>
-      <span>–</span>
+      <span>-</span>
       <strong class:winner={match?.winnerUid && match?.winnerUid === match?.player2Uid}>
         {match?.score2 ?? 0}
       </strong>
@@ -91,6 +91,12 @@
 </section>
 
 <style>
+@font-face {
+  font-family: "UTM Bebas";
+  src: url("/UTM Bebas.ttf") format("truetype");
+  font-display: swap;
+}
+
 .tournament-match-score {
   position: fixed;
   z-index: 40;
@@ -180,18 +186,20 @@
 
 .score {
   display: grid;
-  min-width: 94px;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: repeat(3, auto);
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 9px;
   text-align: center;
+  font-family: "UTM Bebas", sans-serif;
   font-size: 24px;
   font-variant-numeric: tabular-nums;
 }
 
 .score span {
-  color: hsl(var(--muted-foreground));
+  color: #fff;
   font-size: 16px;
+  font-weight: 700;
 }
 
 .score .winner {
@@ -227,8 +235,7 @@
   }
 
   .score {
-    min-width: 72px;
-    gap: 5px;
+    gap: 8px;
     font-size: 20px;
   }
 }
