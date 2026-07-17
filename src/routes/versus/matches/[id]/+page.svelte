@@ -6757,7 +6757,7 @@
   height: auto;
   min-height: 0;
   grid-template-rows: minmax(0, 1fr);
-  background: rgb(0 0 0 / 0.24);
+  background: rgb(0 0 0 / 0.8);
   backdrop-filter: blur(2px);
 }
 
