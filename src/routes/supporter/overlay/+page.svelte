@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
+	import { page } from '$app/stores';
 	import { fade } from 'svelte/transition';
 	import { Trophy } from 'lucide-svelte';
 	import PlayerLink from '$lib/components/playerLink.svelte';
@@ -25,6 +26,7 @@
 	let lastAnimatedPrizePool = animatedPrizePool;
 
 	$: topSupporters = overlay?.topSupporters ?? [];
+	$: hideLeaderboard = $page.url.searchParams.has('hidelb');
 	$: progress = (overlay?.progress ?? null) as SupporterProgress | null;
 	$: parsedTotalRevenue = Number(progress?.totalRevenue);
 	$: totalRevenue = Number.isFinite(parsedTotalRevenue)
@@ -206,45 +208,47 @@
     </section>
   {/if}
 
-  <aside class="topPanel">
-    <div class="panelTitle">
-      <Trophy size={18} />
-      <span>Top Ủng Hộ</span>
-    </div>
-    <div class="supporterList">
-      {#each topSupporters.slice(0, 3) as supporter, index}
-        <div class="supporterRow">
-          <div class="rank">#{index + 1}</div>
-          <div class="supporterMeta">
-            {#if supporter.player}
-              <div class="nameplate">
-                <PlayerLink
-                  player={supporter.player}
-                  showAvatar
-                  avatarSize={34}
-                  truncate={18}
-                />
-              </div>
-            {:else}
-              <strong>Người ủng hộ</strong>
-            {/if}
-            <small>{formatPrice(supporter.totalAmount ?? 0)}</small>
+  {#if !hideLeaderboard}
+    <aside class="topPanel">
+      <div class="panelTitle">
+        <Trophy size={18} />
+        <span>Top Ủng Hộ</span>
+      </div>
+      <div class="supporterList">
+        {#each topSupporters.slice(0, 3) as supporter, index}
+          <div class="supporterRow">
+            <div class="rank">#{index + 1}</div>
+            <div class="supporterMeta">
+              {#if supporter.player}
+                <div class="nameplate">
+                  <PlayerLink
+                    player={supporter.player}
+                    showAvatar
+                    avatarSize={34}
+                    truncate={18}
+                  />
+                </div>
+              {:else}
+                <strong>Người ủng hộ</strong>
+              {/if}
+              <small>{formatPrice(supporter.totalAmount ?? 0)}</small>
+            </div>
+          </div>
+        {/each}
+      </div>
+      {#if progress}
+        <div class="prizePool">
+          <div class="prizePoolLabel">GDVN Cup 2026 Prize Pool</div>
+          <div class="prizePoolAmount" aria-live="polite">
+            {formatPrizePool(animatedPrizePool)}
+          </div>
+          <div class="prizePoolNote">
+            50% doanh thu từ 01/07
           </div>
         </div>
-      {/each}
-    </div>
-    {#if progress}
-      <div class="prizePool">
-        <div class="prizePoolLabel">GDVN Cup 2026 Prize Pool</div>
-        <div class="prizePoolAmount" aria-live="polite">
-          {formatPrizePool(animatedPrizePool)}
-        </div>
-        <div class="prizePoolNote">
-          50% doanh thu từ 01/07
-        </div>
-      </div>
-    {/if}
-  </aside>
+      {/if}
+    </aside>
+  {/if}
 </main>
 
 <style lang="scss">
