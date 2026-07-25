@@ -45,6 +45,7 @@
             "featured_list_points": "Featured List Points",
             "contest_rating": "Contest Rating",
             "records": "Records",
+            "contributions": "Contributions",
             "clan": "Clan"
         },
         "titles": {
@@ -1732,6 +1733,7 @@
             "community": "Community",
             "levels": "Levels",
             "records": "Records",
+            "contributions": "Contributions",
             "members": "Members",
             "invitations": "Invitations",
             "settings": "Settings"
@@ -2491,6 +2493,7 @@
             "coverage": "Coverage",
             "leaderboard": "Leaderboard",
             "completed": "Completed",
+            "contributed": "Credited levels",
             "levels": "levels",
             "completed_levels": "completed levels",
             "completion_rate": "completion rate",
@@ -3403,6 +3406,7 @@
                 "levels": "Levels",
                 "leaderboard": "Leaderboard",
                 "my_record": "My record",
+                "my_contributions": "My contributions",
                 "staff": "Staff",
                 "records": "Record points",
                 "community": "Community posts"
@@ -3413,13 +3417,24 @@
                 "subhead_rating": "Total score is the sum of each record's weighted(x) final score after records are sorted per player by score(x).",
                 "score_label": "Total score",
                 "view_records_label": "View record points",
+                "view_contributions_label": "View level contributions",
+                "contributor_label": "Contributor",
+                "contributions_label": "Contributions",
+                "subhead_creator": "Total score is the sum of each credited level's weighted(x) score.",
                 "eligible_records_label": "Eligible Records",
                 "empty": "No eligible records yet.",
+                "empty_creator": "No eligible level contributions yet.",
                 "failed_load": "Failed to load leaderboard"
             },
             "records": {
                 "heading": "{title} record points",
                 "my_record_heading": "My record points",
+                "contributions_heading": "{title} level contributions",
+                "my_contributions_heading": "My level contributions",
+                "contributions_subhead": "Each accepted created or submitted level is scored when the leaderboard is refreshed.",
+                "role_label": "Credit",
+                "role_creator": "Creator",
+                "role_submitter": "Submitter",
                 "subhead_top": "Each eligible record's final points are precalculated from weighted(x) when the leaderboard is refreshed.",
                 "subhead_rating": "Each eligible record's final points are precalculated from weighted(x) when the leaderboard is refreshed.",
                 "position_label": "Position",
@@ -3429,7 +3444,8 @@
                 "select_player": "Click the view button at the end of a row to inspect that player's record points.",
                 "variable_values_label": "Variable values",
                 "empty": "No eligible records yet.",
-                "failed_load": "Failed to load record points"
+                "failed_load": "Failed to load record points",
+                "failed_load_contributions": "Failed to load level contributions"
             },
             "staff": {
                 "heading": "Staff",
@@ -3489,6 +3505,13 @@
                 "asset_upload_hint": "Upload an image file. Uploaded files fill this setting automatically; save changes to apply them.",
                 "leaderboard_enabled_label": "Leaderboard",
                 "leaderboard_enabled_hint": "Enable ranked player standings and the My record tab for this list.",
+                "leaderboard_enabled_creator_hint": "Enable ranked contributor standings and the My contributions tab for this list.",
+                "leaderboard_mode_label": "Leaderboard mode",
+                "leaderboard_mode_player": "Player",
+                "leaderboard_mode_creator": "Creator",
+                "leaderboard_mode_player_hint": "Rank players from eligible completion records.",
+                "leaderboard_mode_creator_hint": "Rank contributors from accepted levels they created or submitted.",
+                "leaderboard_mode_official_hint": "Official lists currently support player leaderboards only.",
                 "top_enabled_label": "Show level top",
                 "top_enabled_hint": "Show each level's list position on level cards and on the level detail list badges.",
                 "preview_heading": "Preview",
@@ -3623,6 +3646,7 @@
             "sort_direction_ascending": "Ascending",
             "sort_direction_descending": "Descending",
             "type_label": "List type",
+            "leaderboard_mode_label": "Leaderboard mode",
             "type_hint": "Choose Platformer if this list should only contain platformer levels.",
             "community_label": "Community posts",
             "community_hint": "Allow community posts to be attached to this list. Enabled by default.",
@@ -3658,6 +3682,7 @@
             },
             "record_filter": {
                 "heading": "Leaderboard record filter",
+                "player_mode_only": "These filters only affect player-mode leaderboards and are preserved if you switch modes.",
                 "platform_label": "Platform",
                 "platform_hint": "Choose which device platform counts toward this list leaderboard.",
                 "platform_any": "Any platform",
@@ -3832,6 +3857,7 @@
         },
         "formula": {
             "heading": "Scoring formulas",
+            "creator_mode_hint": "In creator mode, formulas score credited levels. Classic contributions use 100% progress; platformer contributions use the effective base time.",
             "label": "Scoring formulas",
             "record_score_label": "Record score formula",
             "record_score_placeholder": "1",
@@ -3909,6 +3935,7 @@
             "aredl_crawled": "AREDL sync complete. Added {added}. Updated {updated}. Skipped {skipped}. Removed {removed}. Failed {failed}.",
             "leaderboard_refreshed_players": "Leaderboard refreshed ({total} ranked players)",
             "leaderboard_refreshed_records": "Leaderboard refreshed ({total} ranked players, {totalRecords} records)",
+            "leaderboard_refreshed_contributions": "Leaderboard refreshed ({total} contributors, {totalContributions} level contributions)",
             "list_deleted": "List deleted",
             "list_created": "List created",
             "level_added": "Level added to list",

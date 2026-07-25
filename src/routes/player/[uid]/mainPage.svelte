@@ -51,7 +51,9 @@
     ? `${data.selectedList.title}: ${
         Math.round(data.selectedList.score * 10) / 10
     } #${data.selectedList.rank}\n${
-        $_('head.labels.records')
+        $_(data.selectedList.leaderboardMode === 'creator'
+          ? 'head.labels.contributions'
+          : 'head.labels.records')
     }: ${data.selectedList.completedCount}\n${
         $_('head.labels.contest_rating')
     }: ${data.player.elo}`

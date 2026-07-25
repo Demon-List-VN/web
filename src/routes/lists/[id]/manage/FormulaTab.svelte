@@ -9,6 +9,9 @@
 <div class="tabContent">
   <div class="toolCard">
     <h2 class="toolHeading">{$_('custom_lists.formula.heading')}</h2>
+    {#if editForm.leaderboardMode === 'creator'}
+      <p class="modeNotice">{$_('custom_lists.formula.creator_mode_hint')}</p>
+    {/if}
     <div class="formGrid">
       <div class="field">
         <label for="list-record-score-formula">{
@@ -88,6 +91,16 @@ label {
   font-size: 0.8rem;
   color: hsl(var(--muted-foreground));
   margin: 0;
+}
+
+.modeNotice {
+  margin: 0;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--muted) / 0.45);
+  padding: 10px 12px;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.85rem;
 }
 
 @media (max-width: 760px) {

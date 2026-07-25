@@ -19,7 +19,9 @@
 		ArrowUp,
 		ArrowDown,
 		Gamepad2,
-		Footprints
+		Footprints,
+		Users,
+		Hammer
 	} from 'lucide-svelte';
 	import { _ } from 'svelte-i18n';
 
@@ -27,6 +29,7 @@
 	type Mode = 'rating' | 'top';
 	type ItemSort = 'mode_default' | 'created_at';
 	type ListType = 'classic' | 'platformer';
+	type LeaderboardMode = 'player' | 'creator';
 
 	let form: {
 		title: string;
@@ -36,6 +39,7 @@
 		itemSort: ItemSort | null;
 		itemSortAscending: boolean | null;
 		listType: ListType | null;
+		leaderboardMode: LeaderboardMode;
 		tagsInput: string;
 	} = {
 		title: '',
@@ -45,6 +49,7 @@
 		itemSort: null,
 		itemSortAscending: null,
 		listType: null,
+		leaderboardMode: 'player',
 		tagsInput: ''
 	};
 
@@ -113,7 +118,8 @@
 				mode: form.mode,
 				itemSort: form.itemSort,
 				itemSortAscending: form.itemSortAscending,
-				isPlatformer: form.listType === 'platformer'
+				isPlatformer: form.listType === 'platformer',
+				leaderboardMode: form.leaderboardMode
 			};
 
 			const tags = parseTags(form.tagsInput);
@@ -303,6 +309,37 @@
               <ArrowDown size={16} /> {$_('custom_lists.new.sort_direction_descending')}
             </button>
           </div>
+        </div>
+
+        <div class="field">
+          <span class="fieldLabel">{
+            $_('custom_lists.new.leaderboard_mode_label')
+          }</span>
+          <div class="optionRow">
+            <button
+              type="button"
+              class="optionBtn"
+              class:selected={form.leaderboardMode === 'player'}
+              on:click={() => (form.leaderboardMode = 'player')}
+            >
+              <Users size={16} />
+              {$_('custom_lists.detail.edit.leaderboard_mode_player')}
+            </button>
+            <button
+              type="button"
+              class="optionBtn"
+              class:selected={form.leaderboardMode === 'creator'}
+              on:click={() => (form.leaderboardMode = 'creator')}
+            >
+              <Hammer size={16} />
+              {$_('custom_lists.detail.edit.leaderboard_mode_creator')}
+            </button>
+          </div>
+          <p class="hint">
+            {form.leaderboardMode === 'creator'
+              ? $_('custom_lists.detail.edit.leaderboard_mode_creator_hint')
+              : $_('custom_lists.detail.edit.leaderboard_mode_player_hint')}
+          </p>
         </div>
 
         <div class="field">

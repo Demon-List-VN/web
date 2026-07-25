@@ -22,7 +22,7 @@ function normalizePlayerListRecordsResponse(
     return {
         list: response.list ?? fallback.list,
         data,
-        total: data.length,
+        total: typeof response.total === 'number' ? response.total : data.length,
         lastRefreshedAt:
             typeof response.lastRefreshedAt === 'string' || response.lastRefreshedAt === null
                 ? response.lastRefreshedAt
@@ -53,6 +53,7 @@ function normalizePlayerRecords(value: unknown, uid: string): PlayerListRecordEn
             timestamp: Number.isFinite(Number(record.timestamp)) ? Number(record.timestamp) : null,
             acceptedManually: Boolean(record.acceptedManually),
             acceptedAuto: Boolean(record.acceptedAuto),
+            sourceRoles: Array.isArray(record.sourceRoles) ? record.sourceRoles : undefined,
             mobile: record.mobile ?? null,
             refreshRate: record.refreshRate ?? null,
             rankedList: record.rankedList ?? null,
@@ -111,7 +112,15 @@ export async function getPlayerData(player: any, fetch: any, url: URL) {
             try {
                 const rawResponse = await (
                     await fetch(
-                        `${import.meta.env.VITE_API_URL}/lists/${listSummary.id}/records?uid=${player.uid}&end=5000&ignoreRecordSettings=true`
+                        `${import.meta.env.VITE_API_URL}/lists/${listSummary.id}/${
+                            listSummary.leaderboardMode === 'creator'
+                                ? 'contributions'
+                                : 'records'
+                        }?uid=${player.uid}&end=5000${
+                            listSummary.leaderboardMode === 'creator'
+                                ? ''
+                                : '&ignoreRecordSettings=true'
+                        }`
                     )
                 ).json();
                 response = normalizePlayerListRecordsResponse(rawResponse, emptyRecordsResponse);
@@ -134,15 +143,18 @@ export async function getPlayerData(player: any, fetch: any, url: URL) {
 
     const allListRecordData = listRecordResponses
         .flatMap(({ listSummary, response }) =>
-            response.data.map((record) => ({
-                ...record,
-                rankedList: {
-                    id: listSummary.id,
-                    identifier: listSummary.identifier,
-                    title: listSummary.title,
-                    isPlatformer: listSummary.isPlatformer
-                }
-            }))
+            listSummary.leaderboardMode === 'creator'
+                ? []
+                : response.data.map((record) => ({
+                    ...record,
+                    rankedList: {
+                        id: listSummary.id,
+                        identifier: listSummary.identifier,
+                        title: listSummary.title,
+                        isPlatformer: listSummary.isPlatformer,
+                        leaderboardMode: listSummary.leaderboardMode
+                    }
+                }))
         )
         .sort((left, right) => {
             const createdAtDiff = new Date(right.createdAt ?? 0)

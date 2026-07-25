@@ -2,7 +2,17 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Switch } from '$lib/components/ui/switch';
-	import { ArrowDown, ArrowUp, EyeOff, Globe2, ListOrdered, Lock, Star } from 'lucide-svelte';
+	import {
+		ArrowDown,
+		ArrowUp,
+		EyeOff,
+		Globe2,
+		Hammer,
+		ListOrdered,
+		Lock,
+		Star,
+		Users
+	} from 'lucide-svelte';
 	import { _ } from 'svelte-i18n';
 
 	export let editForm: any;
@@ -71,6 +81,39 @@
         />
       </div>
       <div class="field">
+        <span class="fieldLabel">{
+          $_('custom_lists.detail.edit.leaderboard_mode_label')
+        }</span>
+        <div class="optionRow">
+          <button
+            type="button"
+            class="optionBtn"
+            class:selected={editForm.leaderboardMode === 'player'}
+            on:click={() => (editForm.leaderboardMode = 'player')}
+          >
+            <Users class="h-3.5 w-3.5" />
+            {$_('custom_lists.detail.edit.leaderboard_mode_player')}
+          </button>
+          <button
+            type="button"
+            class="optionBtn"
+            class:selected={editForm.leaderboardMode === 'creator'}
+            on:click={() => (editForm.leaderboardMode = 'creator')}
+            disabled={list.isOfficial}
+          >
+            <Hammer class="h-3.5 w-3.5" />
+            {$_('custom_lists.detail.edit.leaderboard_mode_creator')}
+          </button>
+        </div>
+        <p class="hint">
+          {list.isOfficial
+            ? $_('custom_lists.detail.edit.leaderboard_mode_official_hint')
+            : editForm.leaderboardMode === 'creator'
+            ? $_('custom_lists.detail.edit.leaderboard_mode_creator_hint')
+            : $_('custom_lists.detail.edit.leaderboard_mode_player_hint')}
+        </p>
+      </div>
+      <div class="field">
         <div class="switchRow">
           <div>
             <label for="list-platformer">{
@@ -112,7 +155,9 @@
               $_('custom_lists.detail.edit.leaderboard_enabled_label')
             }</label>
             <p class="hint">
-              {$_('custom_lists.detail.edit.leaderboard_enabled_hint')}
+              {editForm.leaderboardMode === 'creator'
+                ? $_('custom_lists.detail.edit.leaderboard_enabled_creator_hint')
+                : $_('custom_lists.detail.edit.leaderboard_enabled_hint')}
             </p>
           </div>
           <div class="switchControl">

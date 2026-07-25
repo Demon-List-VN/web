@@ -271,7 +271,11 @@
         >Leaderboard</span>
       </div>
       <div class="stat-item flex flex-col items-center gap-1 rounded-lg bg-muted/50 px-4 py-3">
-        <span class="text-xs text-muted-foreground">Records</span>
+        <span class="text-xs text-muted-foreground">
+          {selectedList.leaderboardMode === 'creator'
+            ? $_('player.overview.contributions')
+            : $_('player.overview.records')}
+        </span>
         <span class="text-xl font-bold">{selectedList.completedCount}</span>
         {#if selectedList.lastRefreshedAt}
           <span class="text-xs font-semibold text-muted-foreground">

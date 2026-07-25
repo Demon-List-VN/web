@@ -140,6 +140,10 @@
 	$: selectedListTotalLevels =
 		Array.isArray(data.selectedListRecords?.list?.items)
 			? data.selectedListRecords.list.items.length
+			: Number.isFinite(Number(data.selectedListRecords?.list?.levelCount))
+			? Number(data.selectedListRecords.list.levelCount)
+			: Number.isFinite(Number(selectedList?.levelCount))
+			? Number(selectedList?.levelCount)
 			: null;
 	$: selectedListCoverage = selectedListTotalLevels && selectedListTotalLevels > 0
 		? Math.round((selectedListTotalRecords / selectedListTotalLevels) * 100)
@@ -930,9 +934,17 @@
               <small>{$_('player.overview.leaderboard')}</small>
             </div>
             <div class="summary-stat">
-              <span>{$_('player.overview.records')}</span>
+              <span>
+                {selectedList.leaderboardMode === 'creator'
+                  ? $_('player.overview.contributions')
+                  : $_('player.overview.records')}
+              </span>
               <strong>{selectedListTotalRecords}</strong>
-              <small>{$_('player.overview.completed')}</small>
+              <small>
+                {selectedList.leaderboardMode === 'creator'
+                  ? $_('player.overview.contributed')
+                  : $_('player.overview.completed')}
+              </small>
             </div>
             <div class="summary-stat">
               <span>{$_('player.overview.coverage')}</span>

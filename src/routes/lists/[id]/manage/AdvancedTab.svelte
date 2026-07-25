@@ -482,6 +482,10 @@
 			return $_('custom_lists.detail.edit.level_submission_label');
 		}
 
+		if (field === 'leaderboardMode') {
+			return $_('custom_lists.detail.edit.leaderboard_mode_label');
+		}
+
 		if (field === 'logoUrl') {
 			return $_('custom_lists.detail.edit.logo_url_label');
 		}
@@ -556,6 +560,12 @@
 			return value === 'rating'
 				? $_('custom_lists.detail.edit.mode_rating')
 				: $_('custom_lists.detail.edit.mode_top');
+		}
+
+		if (field === 'leaderboardMode' && typeof value === 'string') {
+			return value === 'creator'
+				? $_('custom_lists.detail.edit.leaderboard_mode_creator')
+				: $_('custom_lists.detail.edit.leaderboard_mode_player');
 		}
 
 		if (field === 'itemSort' && typeof value === 'string') {

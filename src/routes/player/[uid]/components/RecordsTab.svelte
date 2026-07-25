@@ -173,7 +173,11 @@
 		const optionsById = new Map<number, ListSelectorOption>();
 
 		for (const list of listSummaries) {
-			if (!Number.isFinite(list.id) || optionsById.has(list.id)) {
+			if (
+				list.leaderboardMode === 'creator'
+				|| !Number.isFinite(list.id)
+				|| optionsById.has(list.id)
+			) {
 				continue;
 			}
 
@@ -213,7 +217,7 @@
 		list:
 			| Pick<
 				PlayerRankedListSummary,
-				'id' | 'identifier' | 'title' | 'isPlatformer'
+				'id' | 'identifier' | 'title' | 'isPlatformer' | 'leaderboardMode'
 			>
 			| null
 			| undefined
@@ -226,7 +230,8 @@
 			id: list.id,
 			identifier: list.identifier,
 			title: list.title,
-			isPlatformer: list.isPlatformer
+			isPlatformer: list.isPlatformer,
+			leaderboardMode: list.leaderboardMode
 		};
 	}
 
@@ -273,7 +278,10 @@
 			id,
 			identifier,
 			title,
-			isPlatformer: Boolean(list.isPlatformer)
+			isPlatformer: Boolean(list.isPlatformer),
+			leaderboardMode: list.leaderboardMode === 'creator'
+				? 'creator'
+				: 'player'
 		} satisfies PlayerListRecordEntry['rankedList'];
 	}
 

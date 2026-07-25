@@ -98,6 +98,7 @@
 		borderColor?: string | null;
 		communityEnabled: boolean;
 		leaderboardEnabled?: boolean;
+		leaderboardMode?: 'player' | 'creator';
 		faviconUrl?: string | null;
 		isBanned: boolean;
 		isMirror?: boolean;
@@ -140,9 +141,12 @@
 			levelCount: number;
 			top: number;
 			rating: number;
+			time: number;
+			baseTime: number;
 			minProgress: number;
 			progress: number;
 		};
+		sourceRoles?: Array<'record' | 'creator' | 'submitter'>;
 		player: any | null;
 		level: {
 			id: number;
@@ -657,6 +661,24 @@
 
 		selectedLeaderboardPlayerUid = player.uid;
 		recordPointsDialogOpen = true;
+	}
+
+	function getLeaderboardDetailLabel() {
+		return list?.leaderboardMode === 'creator'
+			? $_('custom_lists.detail.leaderboard.view_contributions_label')
+			: $_('custom_lists.detail.leaderboard.view_records_label');
+	}
+
+	function getContributionRoleLabel(role: string) {
+		return role === 'creator'
+			? $_('custom_lists.detail.records.role_creator')
+			: $_('custom_lists.detail.records.role_submitter');
+	}
+
+	function getLeaderboardEntryLoadError() {
+		return list?.leaderboardMode === 'creator'
+			? $_('custom_lists.detail.records.failed_load_contributions')
+			: $_('custom_lists.detail.records.failed_load');
 	}
 
 	function formatScore(score: number) {
@@ -1238,8 +1260,11 @@
 				Authorization: `Bearer ${await $user.token()}`
 			}
 			: undefined;
+		const detailResource = list?.leaderboardMode === 'creator'
+			? 'contributions'
+			: 'records';
 		const res = await fetch(
-			`${import.meta.env.VITE_API_URL}/lists/${$page.params.id}/records?${query.toString()}`,
+			`${import.meta.env.VITE_API_URL}/lists/${$page.params.id}/${detailResource}?${query.toString()}`,
 			{
 				headers
 			}
@@ -1248,7 +1273,7 @@
 			.catch(() => null);
 
 		if (!res.ok) {
-			throw new Error(payload?.error || $_('custom_lists.detail.records.failed_load'));
+			throw new Error(payload?.error || getLeaderboardEntryLoadError());
 		}
 
 		return payload;
@@ -1276,7 +1301,7 @@
 			recordPoints = [];
 			recordPointsCount = 0;
 			recordPointsError =
-				error instanceof Error ? error.message : $_('custom_lists.detail.records.failed_load');
+				error instanceof Error ? error.message : getLeaderboardEntryLoadError();
 		} finally {
 			if (fetchKey === recordPointsFetchKey) {
 				recordPointsLoading = false;
@@ -1306,7 +1331,7 @@
 			myRecordPoints = [];
 			myRecordPointsCount = 0;
 			myRecordPointsError =
-				error instanceof Error ? error.message : $_('custom_lists.detail.records.failed_load');
+				error instanceof Error ? error.message : getLeaderboardEntryLoadError();
 		} finally {
 			if (fetchKey === myRecordPointsFetchKey) {
 				myRecordPointsLoading = false;
@@ -1372,7 +1397,7 @@
 		myRecordPointsFetchKey = '';
 	}
 	$: if (list?.id && canShowLeaderboard && activeTab === 'leaderboard') {
-		const nextKey = `${list.id}:${activeLeaderboardPage}:${$user.loggedIn ? $user.data?.uid || 'authed' : 'anon'}`;
+		const nextKey = `${list.id}:${list.leaderboardMode ?? 'player'}:${activeLeaderboardPage}:${$user.loggedIn ? $user.data?.uid || 'authed' : 'anon'}`;
 
 		if (nextKey !== leaderboardFetchKey) {
 			leaderboardFetchKey = nextKey;
@@ -1380,7 +1405,7 @@
 		}
 	}
 	$: if (list?.id && canShowMyRecord && activeTab === 'my-record' && $user.data?.uid) {
-		const nextKey = `${list.id}:${$user.data.uid}:${myRecordPointsPage}:${$user.loggedIn ? $user.data?.uid || 'authed' : 'anon'}`;
+		const nextKey = `${list.id}:${list.leaderboardMode ?? 'player'}:${$user.data.uid}:${myRecordPointsPage}:${$user.loggedIn ? $user.data?.uid || 'authed' : 'anon'}`;
 
 		if (nextKey !== myRecordPointsFetchKey) {
 			myRecordPointsFetchKey = nextKey;
@@ -1403,7 +1428,7 @@
 		recordPointsDialogOpen &&
 		selectedLeaderboardPlayer
 	) {
-		const nextKey = `${list.id}:${selectedLeaderboardPlayer.uid}:${recordPointsPage}:${$user.loggedIn ? $user.data?.uid || 'authed' : 'anon'}`;
+		const nextKey = `${list.id}:${list.leaderboardMode ?? 'player'}:${selectedLeaderboardPlayer.uid}:${recordPointsPage}:${$user.loggedIn ? $user.data?.uid || 'authed' : 'anon'}`;
 
 		if (nextKey !== recordPointsFetchKey) {
 			recordPointsFetchKey = nextKey;
@@ -1615,7 +1640,9 @@
 					{/if}
 					{#if canShowMyRecord}
 						<Tabs.Trigger value="my-record" on:click={() => switchTab('my-record')}>
-							{$_('custom_lists.detail.tabs.my_record')}
+							{list.leaderboardMode === 'creator'
+								? $_('custom_lists.detail.tabs.my_contributions')
+								: $_('custom_lists.detail.tabs.my_record')}
 						</Tabs.Trigger>
 					{/if}
 					{#if canShowStaffTab}
@@ -1718,7 +1745,9 @@
 								{$_('custom_lists.detail.leaderboard.heading', { values: { title: list.title } })}
 							</h2>
 							<p class="leaderboardSubhead">
-								{list.mode === 'top'
+								{list.leaderboardMode === 'creator'
+									? $_('custom_lists.detail.leaderboard.subhead_creator')
+									: list.mode === 'top'
 									? $_('custom_lists.detail.leaderboard.subhead_top')
 									: $_('custom_lists.detail.leaderboard.subhead_rating')}
 							</p>
@@ -1735,7 +1764,11 @@
 						</div>
 					{:else if leaderboard.length === 0}
 						<div class="emptyState slim">
-							<p>{$_('custom_lists.detail.leaderboard.empty')}</p>
+							<p>
+								{list.leaderboardMode === 'creator'
+									? $_('custom_lists.detail.leaderboard.empty_creator')
+									: $_('custom_lists.detail.leaderboard.empty')}
+							</p>
 						</div>
 					{:else}
 						<div class="tableWrapper">
@@ -1743,13 +1776,22 @@
 								<Table.Header>
 									<Table.Row>
 										<Table.Head class="w-[55px]">{$_('list.tabs.rank')}</Table.Head>
-										<Table.Head>{$_('list.tabs.player')}</Table.Head>
+										<Table.Head>
+											{list.leaderboardMode === 'creator'
+												? $_('custom_lists.detail.leaderboard.contributor_label')
+												: $_('list.tabs.player')}
+										</Table.Head>
 										<Table.Head class="w-[100px] text-right">
 											{$_('custom_lists.detail.leaderboard.score_label')}
 										</Table.Head>
+										{#if list.leaderboardMode === 'creator'}
+											<Table.Head class="w-[130px] text-right">
+												{$_('custom_lists.detail.leaderboard.contributions_label')}
+											</Table.Head>
+										{/if}
 										<Table.Head class="w-[56px] text-right">
 											<span class="sr-only"
-												>{$_('custom_lists.detail.leaderboard.view_records_label')}</span
+												>{getLeaderboardDetailLabel()}</span
 											>
 										</Table.Head>
 									</Table.Row>
@@ -1766,13 +1808,16 @@
 												</div>
 											</Table.Cell>
 											<Table.Cell class="text-right">{formatScore(player.score)}</Table.Cell>
+											{#if list.leaderboardMode === 'creator'}
+												<Table.Cell class="text-right">{player.completedCount}</Table.Cell>
+											{/if}
 											<Table.Cell class="text-right">
 												<Button
 													variant="ghost"
 													size="icon"
 													class="ml-auto h-8 w-8"
-													title={$_('custom_lists.detail.leaderboard.view_records_label')}
-													aria-label={`${$_('custom_lists.detail.leaderboard.view_records_label')}: ${player.name || player.uid}`}
+													title={getLeaderboardDetailLabel()}
+													aria-label={`${getLeaderboardDetailLabel()}: ${player.name || player.uid}`}
 													aria-pressed={selectedLeaderboardPlayerUid === player.uid}
 													on:click={() => selectLeaderboardPlayer(player)}
 												>
@@ -1828,10 +1873,18 @@
 								<Dialog.Content class="max-h-[90vh] overflow-y-auto sm:max-w-[900px]">
 									<Dialog.Header>
 										<Dialog.Title>
-											{$_('custom_lists.detail.records.heading', { values: { title: list.title } })}
+											{list.leaderboardMode === 'creator'
+												? $_('custom_lists.detail.records.contributions_heading', {
+													values: { title: list.title }
+												})
+												: $_('custom_lists.detail.records.heading', {
+													values: { title: list.title }
+												})}
 										</Dialog.Title>
 										<Dialog.Description>
-											{list.mode === 'top'
+											{list.leaderboardMode === 'creator'
+												? $_('custom_lists.detail.records.contributions_subhead')
+												: list.mode === 'top'
 												? $_('custom_lists.detail.records.subhead_top')
 												: $_('custom_lists.detail.records.subhead_rating')}
 										</Dialog.Description>
@@ -1867,7 +1920,11 @@
 											</div>
 										{:else if recordPoints.length === 0}
 											<div class="emptyState slim">
-												<p>{$_('custom_lists.detail.records.empty')}</p>
+												<p>
+													{list.leaderboardMode === 'creator'
+														? $_('custom_lists.detail.leaderboard.empty_creator')
+														: $_('custom_lists.detail.records.empty')}
+												</p>
 											</div>
 										{:else}
 											<div class="tableWrapper">
@@ -1880,18 +1937,26 @@
 															<Table.Head
 																>{$_('custom_lists.detail.records.level_label')}</Table.Head
 															>
-															<Table.Head class="w-[70px] text-center"
-																>{$_('acceptance.short_label')}</Table.Head
-															>
-															<Table.Head class="w-[110px] text-right"
-																>{$_('custom_lists.detail.records.progress_label')}</Table.Head
-															>
+															{#if list.leaderboardMode === 'creator'}
+																<Table.Head class="w-[180px]">
+																	{$_('custom_lists.detail.records.role_label')}
+																</Table.Head>
+															{:else}
+																<Table.Head class="w-[70px] text-center"
+																	>{$_('acceptance.short_label')}</Table.Head
+																>
+																<Table.Head class="w-[110px] text-right"
+																	>{$_('custom_lists.detail.records.progress_label')}</Table.Head
+																>
+															{/if}
 															<Table.Head class="w-[150px] text-right"
 																>{$_('custom_lists.detail.records.point_label')}</Table.Head
 															>
-															<Table.Head class="w-[90px] text-right">
-																<span class="sr-only">{$_('record_detail.tabs.detail')}</span>
-															</Table.Head>
+															{#if list.leaderboardMode !== 'creator'}
+																<Table.Head class="w-[90px] text-right">
+																	<span class="sr-only">{$_('record_detail.tabs.detail')}</span>
+																</Table.Head>
+															{/if}
 														</Table.Row>
 													</Table.Header>
 													<Table.Body>
@@ -1909,16 +1974,28 @@
 																		<div class="recordLevelMeta">{entry.level.creator}</div>
 																	{/if}
 																</Table.Cell>
-																<Table.Cell class="text-center">
-																	<AcceptanceBadge
-																		acceptedManually={entry.acceptedManually}
-																		acceptedAuto={entry.acceptedAuto}
-																		compact
-																	/>
-																</Table.Cell>
-																<Table.Cell class="text-right"
-																	>{formatRecordProgress(entry.progress)}</Table.Cell
-																>
+																{#if list.leaderboardMode === 'creator'}
+																	<Table.Cell>
+																		<div class="sourceRoleList">
+																			{#each entry.sourceRoles ?? [] as role}
+																				<span class="sourceRoleBadge">
+																					{getContributionRoleLabel(role)}
+																				</span>
+																			{/each}
+																		</div>
+																	</Table.Cell>
+																{:else}
+																	<Table.Cell class="text-center">
+																		<AcceptanceBadge
+																			acceptedManually={entry.acceptedManually}
+																			acceptedAuto={entry.acceptedAuto}
+																			compact
+																		/>
+																	</Table.Cell>
+																	<Table.Cell class="text-right"
+																		>{formatRecordProgress(entry.progress)}</Table.Cell
+																	>
+																{/if}
 																<Table.Cell class="text-right">
 																	<div class="recordPointCell">
 																		<span>{formatPoint(entry.point)}</span>
@@ -2008,18 +2085,20 @@
 																		</Popover.Root>
 																	</div>
 																</Table.Cell>
-																<Table.Cell class="text-right">
-																	<Button
-																		variant="ghost"
-																		size="sm"
-																		on:click={() => openRecordDetail(entry)}
-																		title={$_('record_detail.tabs.detail')}
-																		aria-label={$_('record_detail.tabs.detail')}
-																	>
-																		<InfoCircled class="mr-2 h-4 w-4" />
-																		{$_('record_detail.tabs.detail')}
-																	</Button>
-																</Table.Cell>
+																{#if list.leaderboardMode !== 'creator'}
+																	<Table.Cell class="text-right">
+																		<Button
+																			variant="ghost"
+																			size="sm"
+																			on:click={() => openRecordDetail(entry)}
+																			title={$_('record_detail.tabs.detail')}
+																			aria-label={$_('record_detail.tabs.detail')}
+																		>
+																			<InfoCircled class="mr-2 h-4 w-4" />
+																			{$_('record_detail.tabs.detail')}
+																		</Button>
+																	</Table.Cell>
+																{/if}
 															</Table.Row>
 														{/each}
 													</Table.Body>
@@ -2078,9 +2157,15 @@
 					<div class="levelsSection">
 						<div class="leaderboardHeader">
 							<div>
-								<h2>{$_('custom_lists.detail.records.my_record_heading')}</h2>
+								<h2>
+									{list.leaderboardMode === 'creator'
+										? $_('custom_lists.detail.records.my_contributions_heading')
+										: $_('custom_lists.detail.records.my_record_heading')}
+								</h2>
 								<p class="leaderboardSubhead">
-									{list.mode === 'top'
+									{list.leaderboardMode === 'creator'
+										? $_('custom_lists.detail.records.contributions_subhead')
+										: list.mode === 'top'
 										? $_('custom_lists.detail.records.subhead_top')
 										: $_('custom_lists.detail.records.subhead_rating')}
 								</p>
@@ -2097,7 +2182,11 @@
 							</div>
 						{:else if myRecordPoints.length === 0}
 							<div class="emptyState slim">
-								<p>{$_('custom_lists.detail.records.empty')}</p>
+								<p>
+									{list.leaderboardMode === 'creator'
+										? $_('custom_lists.detail.leaderboard.empty_creator')
+										: $_('custom_lists.detail.records.empty')}
+								</p>
 							</div>
 						{:else}
 							<div class="tableWrapper">
@@ -2108,12 +2197,18 @@
 												>{$_('custom_lists.detail.records.position_label')}</Table.Head
 											>
 											<Table.Head>{$_('custom_lists.detail.records.level_label')}</Table.Head>
-											<Table.Head class="w-[70px] text-center"
-												>{$_('acceptance.short_label')}</Table.Head
-											>
-											<Table.Head class="w-[110px] text-right"
-												>{$_('custom_lists.detail.records.progress_label')}</Table.Head
-											>
+											{#if list.leaderboardMode === 'creator'}
+												<Table.Head class="w-[180px]">
+													{$_('custom_lists.detail.records.role_label')}
+												</Table.Head>
+											{:else}
+												<Table.Head class="w-[70px] text-center"
+													>{$_('acceptance.short_label')}</Table.Head
+												>
+												<Table.Head class="w-[110px] text-right"
+													>{$_('custom_lists.detail.records.progress_label')}</Table.Head
+												>
+											{/if}
 											<Table.Head class="w-[150px] text-right"
 												>{$_('custom_lists.detail.records.point_label')}</Table.Head
 											>
@@ -2134,16 +2229,28 @@
 														<div class="recordLevelMeta">{entry.level.creator}</div>
 													{/if}
 												</Table.Cell>
-												<Table.Cell class="text-center">
-													<AcceptanceBadge
-														acceptedManually={entry.acceptedManually}
-														acceptedAuto={entry.acceptedAuto}
-														compact
-													/>
-												</Table.Cell>
-												<Table.Cell class="text-right"
-													>{formatRecordProgress(entry.progress)}</Table.Cell
-												>
+												{#if list.leaderboardMode === 'creator'}
+													<Table.Cell>
+														<div class="sourceRoleList">
+															{#each entry.sourceRoles ?? [] as role}
+																<span class="sourceRoleBadge">
+																	{getContributionRoleLabel(role)}
+																</span>
+															{/each}
+														</div>
+													</Table.Cell>
+												{:else}
+													<Table.Cell class="text-center">
+														<AcceptanceBadge
+															acceptedManually={entry.acceptedManually}
+															acceptedAuto={entry.acceptedAuto}
+															compact
+														/>
+													</Table.Cell>
+													<Table.Cell class="text-right"
+														>{formatRecordProgress(entry.progress)}</Table.Cell
+													>
+												{/if}
 												<Table.Cell class="text-right">
 													<div class="recordPointCell">
 														<span>{formatPoint(entry.point)}</span>
@@ -2695,6 +2802,24 @@
 	.recordLevelMeta {
 		font-size: 0.8rem;
 		color: hsl(var(--muted-foreground));
+	}
+
+	.sourceRoleList {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+
+	.sourceRoleBadge {
+		display: inline-flex;
+		align-items: center;
+		border: 1px solid hsl(var(--border));
+		border-radius: 999px;
+		background: hsl(var(--muted) / 0.55);
+		padding: 2px 8px;
+		font-size: 0.75rem;
+		font-weight: 600;
+		white-space: nowrap;
 	}
 
 	.tableWrapper {

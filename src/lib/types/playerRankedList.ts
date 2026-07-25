@@ -9,6 +9,8 @@ export type PlayerRankedListSummary = {
     isVerified: boolean;
     mode: string;
     isPlatformer: boolean;
+    leaderboardMode: 'player' | 'creator';
+    levelCount?: number;
     rank: number;
     score: number;
     completedCount: number;
@@ -27,10 +29,14 @@ export type PlayerListRecordEntry = {
     timestamp: number | null;
     acceptedManually: boolean;
     acceptedAuto: boolean;
+    sourceRoles?: Array<'record' | 'creator' | 'submitter'>;
     mobile?: boolean | null;
     refreshRate?: number | null;
     rankedList?:
-        | Pick<PlayerRankedListSummary, 'id' | 'identifier' | 'title' | 'isPlatformer'>
+        | Pick<
+            PlayerRankedListSummary,
+            'id' | 'identifier' | 'title' | 'isPlatformer' | 'leaderboardMode'
+        >
         | null;
     level: any;
     player: any;
@@ -67,7 +73,7 @@ export function resolvePlayerRankedListSelection(
 }
 
 export function getPlayerRankedListScoreLabel(
-    list: Pick<PlayerRankedListSummary, 'mode'> | null | undefined
+    list: Pick<PlayerRankedListSummary, 'mode' | 'leaderboardMode'> | null | undefined
 ) {
-    return list?.mode === 'top' ? 'Score' : 'Rating';
+    return list?.leaderboardMode === 'creator' || list?.mode === 'top' ? 'Score' : 'Rating';
 }

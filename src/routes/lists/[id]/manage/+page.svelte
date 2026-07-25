@@ -193,6 +193,7 @@
 		borderColor?: string | null;
 		communityEnabled: boolean;
 		leaderboardEnabled?: boolean;
+		leaderboardMode?: 'player' | 'creator';
 		faviconUrl?: string | null;
 		isBanned: boolean;
 		isPlatformer: boolean;
@@ -333,6 +334,7 @@
 		borderColor: string;
 		communityEnabled: boolean;
 		leaderboardEnabled: boolean;
+		leaderboardMode: 'player' | 'creator';
 		levelSubmissionEnabled: boolean;
 		staffListEnabled: boolean;
 		faviconUrl: string;
@@ -500,6 +502,7 @@
 		borderColor: '',
 		communityEnabled: true,
 		leaderboardEnabled: true,
+		leaderboardMode: 'player' as 'player' | 'creator',
 		levelSubmissionEnabled: false,
 		staffListEnabled: true,
 		faviconUrl: '',
@@ -981,6 +984,7 @@
 		editForm.borderColor = list.borderColor || '';
 		editForm.communityEnabled = list.communityEnabled;
 		editForm.leaderboardEnabled = list.leaderboardEnabled ?? true;
+		editForm.leaderboardMode = list.leaderboardMode === 'creator' ? 'creator' : 'player';
 		editForm.levelSubmissionEnabled = list.levelSubmissionEnabled ?? false;
 		editForm.staffListEnabled = list.staffListEnabled ?? true;
 		editForm.faviconUrl = list.faviconUrl || '';
@@ -1044,6 +1048,7 @@
 			borderColor: currentList.borderColor || '',
 			communityEnabled: currentList.communityEnabled,
 			leaderboardEnabled: currentList.leaderboardEnabled ?? true,
+			leaderboardMode: currentList.leaderboardMode === 'creator' ? 'creator' : 'player',
 			levelSubmissionEnabled: currentList.levelSubmissionEnabled ?? false,
 			staffListEnabled: currentList.staffListEnabled ?? true,
 			faviconUrl: currentList.faviconUrl || '',
@@ -1078,6 +1083,7 @@
 			borderColor: currentForm.borderColor,
 			communityEnabled: currentForm.communityEnabled,
 			leaderboardEnabled: currentForm.leaderboardEnabled,
+			leaderboardMode: currentForm.leaderboardMode,
 			levelSubmissionEnabled: currentForm.levelSubmissionEnabled,
 			staffListEnabled: currentForm.staffListEnabled,
 			faviconUrl: currentForm.faviconUrl,
@@ -1127,6 +1133,8 @@
 			!== savedSettingsSnapshot.recordFilterAcceptanceStatus
 			|| editableSettingsSnapshot.leaderboardEnabled
 			!== savedSettingsSnapshot.leaderboardEnabled
+			|| editableSettingsSnapshot.leaderboardMode
+			!== savedSettingsSnapshot.leaderboardMode
 		);
 	}
 
@@ -2445,7 +2453,12 @@
 	}
 
 	function getLeaderboardRefreshToastMessage(
-		payload: { total?: number; totalRecords?: number; } | null
+		payload: {
+			leaderboardMode?: 'player' | 'creator';
+			total?: number;
+			totalRecords?: number;
+			totalContributions?: number;
+		} | null
 	) {
 		const refreshedTotal = typeof payload?.total === 'number'
 			? payload.total
@@ -2453,9 +2466,22 @@
 		const refreshedRecordTotal = typeof payload?.totalRecords === 'number'
 			? payload.totalRecords
 			: null;
+		const refreshedContributionTotal =
+			typeof payload?.totalContributions === 'number'
+				? payload.totalContributions
+				: null;
 
 		if (refreshedTotal == null) {
 			return $_('custom_lists.toast.leaderboard_refreshed');
+		}
+
+		if (payload?.leaderboardMode === 'creator') {
+			return $_('custom_lists.toast.leaderboard_refreshed_contributions', {
+				values: {
+					total: refreshedTotal,
+					totalContributions: refreshedContributionTotal ?? 0
+				}
+			});
 		}
 
 		if (refreshedRecordTotal == null) {
@@ -2482,6 +2508,7 @@
 			borderColor: editForm.borderColor,
 			communityEnabled: editForm.communityEnabled,
 			leaderboardEnabled: editForm.leaderboardEnabled,
+			leaderboardMode: editForm.leaderboardMode,
 			levelSubmissionEnabled: editForm.levelSubmissionEnabled,
 			staffListEnabled: editForm.staffListEnabled,
 			faviconUrl: editForm.faviconUrl,
@@ -3912,6 +3939,10 @@
 			return $_('custom_lists.detail.edit.leaderboard_enabled_label');
 		}
 
+		if (field === 'leaderboardMode') {
+			return $_('custom_lists.detail.edit.leaderboard_mode_label');
+		}
+
 		if (field === 'faviconUrl') {
 			return $_('custom_lists.detail.edit.favicon_url_label');
 		}
@@ -4021,6 +4052,12 @@
 			return value === 'rating'
 				? $_('custom_lists.detail.edit.mode_rating')
 				: $_('custom_lists.detail.edit.mode_top');
+		}
+
+		if (field === 'leaderboardMode' && typeof value === 'string') {
+			return value === 'creator'
+				? $_('custom_lists.detail.edit.leaderboard_mode_creator')
+				: $_('custom_lists.detail.edit.leaderboard_mode_player');
 		}
 
 		if (field === 'itemSort' && typeof value === 'string') {
@@ -5434,6 +5471,11 @@
               <h2 class="toolHeading">
                 {$_('custom_lists.manage.record_filter.heading')}
               </h2>
+              {#if editForm.leaderboardMode === 'creator'}
+                <p class="recordFilterModeNotice">
+                  {$_('custom_lists.manage.record_filter.player_mode_only')}
+                </p>
+              {/if}
               <div class="recordFilterFormGrid">
                 <div class="recordFilterField">
                   <span class="recordFilterFieldLabel">{
@@ -6132,6 +6174,16 @@
 
 .recordFilterTabContent {
   margin-top: 16px;
+}
+
+.recordFilterModeNotice {
+  margin: 0;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--muted) / 0.45);
+  padding: 10px 12px;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.85rem;
 }
 
 .recordFilterFormGrid {
