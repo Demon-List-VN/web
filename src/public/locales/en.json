@@ -3511,7 +3511,6 @@
                 "leaderboard_mode_creator": "Creator",
                 "leaderboard_mode_player_hint": "Rank players from eligible completion records.",
                 "leaderboard_mode_creator_hint": "Rank contributors from accepted levels they created or submitted.",
-                "leaderboard_mode_official_hint": "Official lists currently support player leaderboards only.",
                 "top_enabled_label": "Show level top",
                 "top_enabled_hint": "Show each level's list position on level cards and on the level detail list badges.",
                 "preview_heading": "Preview",

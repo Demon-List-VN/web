@@ -3510,7 +3510,6 @@
                 "leaderboard_mode_creator": "Creator",
                 "leaderboard_mode_player_hint": "Xếp hạng người chơi bằng các record hoàn thành hợp lệ.",
                 "leaderboard_mode_creator_hint": "Xếp hạng người đóng góp bằng các level đã duyệt mà họ tạo hoặc nộp.",
-                "leaderboard_mode_official_hint": "Danh sách chính thức hiện chỉ hỗ trợ bảng xếp hạng người chơi.",
                 "top_enabled_label": "Hiện top của level",
                 "top_enabled_hint": "Hiển thị thứ hạng của level trên level card và trong huy hiệu danh sách ở trang level.",
                 "preview_heading": "Xem trước",

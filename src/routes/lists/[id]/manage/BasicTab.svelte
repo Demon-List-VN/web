@@ -99,16 +99,13 @@
             class="optionBtn"
             class:selected={editForm.leaderboardMode === 'creator'}
             on:click={() => (editForm.leaderboardMode = 'creator')}
-            disabled={list.isOfficial}
           >
             <Hammer class="h-3.5 w-3.5" />
             {$_('custom_lists.detail.edit.leaderboard_mode_creator')}
           </button>
         </div>
         <p class="hint">
-          {list.isOfficial
-            ? $_('custom_lists.detail.edit.leaderboard_mode_official_hint')
-            : editForm.leaderboardMode === 'creator'
+          {editForm.leaderboardMode === 'creator'
             ? $_('custom_lists.detail.edit.leaderboard_mode_creator_hint')
             : $_('custom_lists.detail.edit.leaderboard_mode_player_hint')}
         </p>
