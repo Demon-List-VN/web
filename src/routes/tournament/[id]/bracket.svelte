@@ -480,16 +480,33 @@
                   </div>
                 {/each}
               </div>
-              {#if canOpenOverlay(thirdPlaceMatch)}
-                <a
-                  class="mt-[2px] flex h-[26px] items-center justify-center rounded-[6px] border border-[hsl(var(--border))] bg-muted/40 text-xs text-primary hover:bg-muted"
-                  href={overlayHref(thirdPlaceMatch)}
-                  target="_blank"
-                  rel="noreferrer"
-                  data-no-pan
-                >
-                  {$_('tournament.bracket.open_overlay')}
-                </a>
+              {#if hasFooter(thirdPlaceMatch)}
+                <div class="mt-[2px] flex h-[26px] overflow-hidden rounded-[6px] border border-[hsl(var(--border))] bg-muted/40 text-xs" data-no-pan>
+                  {#if thirdPlaceMatch.currentPvpMatchId}
+                    <a class="flex flex-1 items-center justify-center text-primary hover:bg-muted" href={`/versus/matches/${thirdPlaceMatch.currentPvpMatchId}`}>
+                      {$_('tournament.bracket.open_match')}
+                    </a>
+                  {:else if showActions && thirdPlaceMatch.status === 'pending'}
+                    <button class="flex-1 hover:bg-muted" on:click={() => onStart?.(thirdPlaceMatch)}>
+                      {$_('tournament.bracket.start_match')}
+                    </button>
+                  {/if}
+                  {#if canOpenOverlay(thirdPlaceMatch)}
+                    <a
+                      class="flex flex-1 items-center justify-center border-l border-[hsl(var(--border))] text-primary hover:bg-muted"
+                      href={overlayHref(thirdPlaceMatch)}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {$_('tournament.bracket.open_overlay')}
+                    </a>
+                  {/if}
+                  {#if showActions && thirdPlaceMatch.player1Uid && thirdPlaceMatch.player2Uid}
+                    <button class="flex-1 border-l border-[hsl(var(--border))] hover:bg-muted" on:click={() => onOverride?.(thirdPlaceMatch)}>
+                      {$_('tournament.bracket.edit_result')}
+                    </button>
+                  {/if}
+                </div>
               {/if}
             </div>
           {/if}
