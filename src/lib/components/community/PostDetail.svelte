@@ -48,7 +48,7 @@
 	export let apiPrefix: string = `${import.meta.env.VITE_API_URL}/community`;
 	export let initialPost: any = null;
 	export let initialComments: any[] | null = null;
-	export let backLink: string = '/community';
+	export let backLink: string = '/';
 	export let backLabel: string = '';
 	export let postId: string | number;
 
@@ -841,7 +841,7 @@
 
 	$: youtubeId = post?.videoUrl ? getYouTubeId(post.videoUrl) : null;
 
-	$: resolvedBackLabel = backLabel || (post?.clanId ? $_('clan.tabs.community') : $_('community.title'));
+	$: resolvedBackLabel = backLabel || (post?.clanId ? $_('clan.tabs.community') : $_('head.site_name'));
 </script>
 
 <div class="postPage">

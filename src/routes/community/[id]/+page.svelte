@@ -91,5 +91,5 @@
   postId={$page.params.id || ''}
   initialPost={data.post}
   initialComments={data.comments}
-  backLink={data.post?.clanId ? `/clan/${data.post.clanId}` : '/community'}
+  backLink={data.post?.clanId ? `/clan/${data.post.clanId}` : '/'}
 />

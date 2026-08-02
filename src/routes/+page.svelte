@@ -166,27 +166,6 @@
 		communityInitialized = true;
 	}
 
-	function handleQuickPostCreated(event: CustomEvent<any>) {
-		const createdPost = event.detail;
-
-		if (!createdPost?.id) {
-			return;
-		}
-
-		const currentHomepagePosts = homeData?.communityPosts ?? [];
-		homeData = {
-			...(homeData ?? {}),
-			communityPosts: [
-				createdPost,
-				...currentHomepagePosts.filter((post: any) => post.id !== createdPost.id)
-			]
-		};
-		communityFeedPosts = [
-			createdPost,
-			...communityFeedPosts.filter((post) => post.id !== createdPost.id)
-		];
-	}
-
 	async function loadMoreCommunity() {
 		if (!communityInitialized || communityLoadingMore || !communityHasMore) {
 			return;
@@ -586,7 +565,7 @@
         </div>
       </div>
 
-      <QuickPostComposer on:created={handleQuickPostCreated} />
+      <QuickPostComposer />
 
       {#if $user.loggedIn && $user.data && $user.data.onboarding_done === false}
         <div class="onboarding-feed-item">

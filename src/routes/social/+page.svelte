@@ -42,7 +42,7 @@
       <span><LockKeyhole size={24} /></span>
       <h2>{text('Sign in to connect', 'Đăng nhập để kết nối')}</h2>
       <p>{text('Use the sign-in button in the top bar to access friends and messages.', 'Dùng nút đăng nhập trên thanh trên cùng để truy cập bạn bè và tin nhắn.')}</p>
-      <a href="/community">{text('Browse the community', 'Xem cộng đồng')}</a>
+      <a href="/">{text('Open the home feed', 'Mở bảng tin')}</a>
     </section>
   {/if}
 </main>

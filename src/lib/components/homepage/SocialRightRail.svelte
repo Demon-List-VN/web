@@ -78,9 +78,9 @@
           <span class="shortcut-icon green"><PencilLine size={17} /></span>
           <span>{text('Create a post', 'Tạo bài viết')}</span>
         </a>
-        <a href="/community">
+        <a href="/">
           <span class="shortcut-icon amber"><Users size={17} /></span>
-          <span>{text('Community', 'Cộng đồng')}</span>
+          <span>{text('Home feed', 'Bảng tin')}</span>
         </a>
         <a href="/versus">
           <span class="shortcut-icon red"><Swords size={17} /></span>
@@ -174,7 +174,7 @@
       <h2>{text('Connect with GDVN', 'Kết nối với GDVN')}</h2>
       <p>{text('Sign in to see friends, messages, and community shortcuts.', 'Đăng nhập để xem bạn bè, tin nhắn và lối tắt cộng đồng.')}</p>
       <div class="guest-links">
-        <a href="/community">{text('Browse community', 'Xem cộng đồng')}</a>
+        <a href="/">{text('Open home feed', 'Mở bảng tin')}</a>
         <a href="/versus">{text('Explore PvP', 'Khám phá PvP')}</a>
       </div>
     </section>

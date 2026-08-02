@@ -486,7 +486,7 @@
 
 			if (created.moderationStatus === 'pending') {
 				toast.success($_('community.create.pending_review'));
-				goto(clanId ? `/clan/${clanId}` : '/community');
+				goto(clanId ? `/clan/${clanId}` : '/');
 			} else {
 				toast.success($_('community.create.success'));
 				goto(`/community/${created.id}`);
@@ -505,9 +505,9 @@
 
 <div class="createPage">
   <div class="backNav">
-    <a href={clanId ? `/clan/${clanId}` : '/community'} class="backLink">
+    <a href={clanId ? `/clan/${clanId}` : '/'} class="backLink">
       <ArrowLeft class="h-4 w-4" />
-      <span>{clanId ? $_('clan.tabs.community') : $_('community.title')}</span>
+      <span>{clanId ? $_('clan.tabs.community') : $_('head.site_name')}</span>
     </a>
   </div>
 
@@ -962,7 +962,7 @@
     </div>
 
     <div class="createFooter">
-      <Button variant="outline" on:click={() => goto('/community')}>
+      <Button variant="outline" on:click={() => goto('/')}>
         {$_('general.close')}
       </Button>
       <Button on:click={handleCreate} disabled={submitting || uploading}>
