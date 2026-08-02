@@ -1179,7 +1179,7 @@
               <Input
                 bind:value={messageQuery}
                 on:input={scheduleMessageSearch}
-                placeholder={text('Search Messenger', 'Tìm kiếm trên Messenger')}
+                placeholder={text('Search', 'Tìm kiếm')}
               />
             </div>
 
@@ -1514,13 +1514,10 @@
 
 .socialPageCenter {
   width: 100%;
-  height: min(760px, calc(100vh - 92px));
-  min-height: 620px;
+  height: calc(100vh - 56px);
+  min-height: 0;
   overflow: hidden;
-  border: 1px solid var(--border1);
-  border-radius: 18px;
   background: hsl(var(--card));
-  box-shadow: 0 12px 36px rgb(0 0 0 / 10%);
 }
 
 .socialTabs {
@@ -2082,9 +2079,6 @@
   .socialPageCenter {
     height: calc(100vh - 56px);
     min-height: 0;
-    border-right: 0;
-    border-left: 0;
-    border-radius: 0;
   }
 
   .socialHeader {

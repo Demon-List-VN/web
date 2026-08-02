@@ -49,10 +49,10 @@
 
 <style lang="scss">
 .social-page {
-  width: min(1180px, calc(100% - 32px));
+  width: 100%;
   min-height: calc(100vh - 56px);
-  margin: 0 auto;
-  padding: 18px 0;
+  margin: 0;
+  padding: 0;
 }
 
 .sign-in-state h2,
@@ -66,8 +66,6 @@
   flex-direction: column;
   gap: 16px;
   padding: 20px;
-  border: 1px solid hsl(var(--border));
-  border-radius: 16px;
   background: hsl(var(--card));
 }
 
@@ -99,8 +97,6 @@
   justify-content: center;
   flex-direction: column;
   padding: 32px;
-  border: 1px solid hsl(var(--border));
-  border-radius: 16px;
   background: hsl(var(--card));
   text-align: center;
 }
@@ -147,12 +143,6 @@
     padding: 0;
   }
 
-  .social-page-skeleton,
-  .sign-in-state {
-    border-right: 0;
-    border-left: 0;
-    border-radius: 0;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
