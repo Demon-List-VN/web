@@ -38,6 +38,7 @@ type SocialMessageNotificationMetadata = {
 
 export const friendsStore = writable<SocialPlayer[]>([]);
 export const conversationsStore = writable<SocialConversation[]>([]);
+export const socialFriendsLoadState = writable<'idle' | 'loading' | 'ready' | 'error'>('idle');
 
 let currentUid = '';
 let dbPromise: Promise<IDBDatabase> | null = null;
@@ -135,6 +136,7 @@ export function setSocialCacheUser(uid: string) {
     currentUid = uid;
     friendsStore.set([]);
     conversationsStore.set([]);
+    socialFriendsLoadState.set('idle');
 
     for (const store of messageStores.values()) {
         store.set([]);
@@ -165,24 +167,34 @@ export async function hydrateSocialCache(uid: string) {
 
     friendsStore.set(friendsRecord?.data || []);
     conversationsStore.set(sortConversations(conversationsRecord?.data || []));
+    socialFriendsLoadState.set(friendsRecord ? 'ready' : 'loading');
 }
 
 export async function refreshSocialFriends(uid: string, token?: string | null) {
-    const friends = await getSocialFriends(token);
+    socialFriendsLoadState.set('loading');
 
-    if (currentUid !== uid) {
+    try {
+        const friends = await getSocialFriends(token);
+
+        if (currentUid !== uid) {
+            return friends;
+        }
+
+        friendsStore.set(friends);
+        await writeRecord<SocialPlayer[]>(FRIENDS_STORE, {
+            key: uid,
+            uid,
+            data: friends,
+            updatedAt: nowIso()
+        });
+        socialFriendsLoadState.set('ready');
+
         return friends;
+    } catch (error) {
+        socialFriendsLoadState.set('error');
+
+        throw error;
     }
-
-    friendsStore.set(friends);
-    await writeRecord<SocialPlayer[]>(FRIENDS_STORE, {
-        key: uid,
-        uid,
-        data: friends,
-        updatedAt: nowIso()
-    });
-
-    return friends;
 }
 
 export async function refreshSocialConversations(uid: string, token?: string | null) {

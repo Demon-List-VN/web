@@ -66,6 +66,7 @@
 		subscribeToSocialPresence,
 		type AggregatedSocialPresence
 	} from '$lib/client/socialPresence';
+	import { socialCenterRequest } from '$lib/client/socialUi';
 	import { locale } from 'svelte-i18n';
 	import { toast } from 'svelte-sonner';
 
@@ -96,6 +97,8 @@
 	let lastMarkedReadKey = '';
 	let messageListElement: HTMLDivElement | null = null;
 	let lastScrolledMessageKey = '';
+	let popoverOpen = false;
+	let handledSocialCenterRequestId = 0;
 
 	const unsubscribeFriends = friendsStore.subscribe((value) => {
 		friends = value;
@@ -156,6 +159,18 @@
 				resetSocialCacheState();
 				clearSelectedConversation();
 			}
+		}
+	}
+	$: if (
+		browser
+		&& $socialCenterRequest.id > handledSocialCenterRequestId
+	) {
+		handledSocialCenterRequestId = $socialCenterRequest.id;
+		activeTab = $socialCenterRequest.tab;
+		popoverOpen = true;
+
+		if ($socialCenterRequest.player && $user.loggedIn) {
+			void startMessage($socialCenterRequest.player);
 		}
 	}
 
@@ -894,7 +909,7 @@
 	});
 </script>
 
-<Popover.Root>
+<Popover.Root bind:open={popoverOpen}>
   <Popover.Trigger asChild let:builder>
     <button
       {...builder}

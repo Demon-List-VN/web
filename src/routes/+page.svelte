@@ -20,6 +20,7 @@
 	import { user } from '$lib/client';
 	import CommunityPostCard from '$lib/components/communityPostCard.svelte';
 	import OnboardingProgress from '$lib/components/homepage/OnboardingProgress.svelte';
+	import SocialRightRail from '$lib/components/homepage/SocialRightRail.svelte';
 	import OnboardingModal from '$lib/components/OnboardingModal.svelte';
 
 	export let data: any;
@@ -926,7 +927,9 @@
         {/if}
         </div>
     </section>
-
+    <div class="right-rail-column">
+      <SocialRightRail />
+    </div>
   </div>
 </main>
 
@@ -940,12 +943,20 @@
 }
 
 .feed-layout {
-  width: min(700px, calc(100% - 32px));
+  display: grid;
+  grid-template-columns: minmax(0, 700px) minmax(260px, 300px);
+  gap: 24px;
+  width: min(1024px, calc(100% - 32px));
   margin: 0 auto;
   padding: 28px 0 56px;
+  align-items: start;
 }
 
 .feed-column {
+  min-width: 0;
+}
+
+.right-rail-column {
   min-width: 0;
 }
 
@@ -1693,10 +1704,15 @@
   to { background-position: -90% 0; }
 }
 
-@media (max-width: 1020px) {
+@media (max-width: 1240px) {
   .feed-layout {
+    display: block;
     width: min(700px, calc(100% - 24px));
     padding-top: 22px;
+  }
+
+  .right-rail-column {
+    display: none;
   }
 }
 
