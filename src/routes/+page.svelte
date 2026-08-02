@@ -23,7 +23,6 @@
 	import CommunityPostCard from '$lib/components/communityPostCard.svelte';
 	import OnboardingProgress from '$lib/components/homepage/OnboardingProgress.svelte';
 	import OnboardingModal from '$lib/components/OnboardingModal.svelte';
-	import PlayerCard from '$lib/components/playerCard.svelte';
 
 	export let data: any;
 
@@ -80,7 +79,6 @@
 	$: feedSeed = Number(homeData?.feedSeed ?? 1);
 	$: activeSeason = homeData?.activeSeason ?? null;
 	$: battlepassProgress = homeData?.battlepassProgress ?? null;
-	$: starredListCount = Number(homeData?.starredListCount ?? 0);
 	$: levelFeed = homeData?.levelFeed?.length
 		? homeData.levelFeed
 		: buildLegacyLevelFeed(homeData?.levels);
@@ -964,63 +962,6 @@
       {/if}
     </section>
 
-    <aside class="pulse-rail" aria-label={tr('Feed shortcuts', 'Lối tắt bảng tin')}>
-      <div class="rail-card">
-        {#if $user.loggedIn}
-          <div class="rail-player-card">
-            <PlayerCard player={$user.data} active={false} listSummaries={[]} />
-            <div class="rail-personalization">
-              <Star size={14} fill="currentColor" />
-              {tr(`${starredListCount} starred lists shape this feed`, `${starredListCount} danh sách đã theo dõi tạo nên bảng tin`)}
-            </div>
-          </div>
-        {:else}
-          <div class="rail-welcome">
-            <div class="rail-logo"><Sparkles size={19} /></div>
-            <div>
-              <strong>{tr('Make it yours', 'Biến nó thành của bạn')}</strong>
-              <span>{tr('Sign in and star lists to personalize the feed.', 'Đăng nhập và theo dõi danh sách để cá nhân hóa bảng tin.')}</span>
-            </div>
-          </div>
-        {/if}
-
-        <div class="rail-divider"></div>
-
-        <a href="/events" class="rail-link">
-          <span class="rail-icon orange"><CalendarDays size={16} /></span>
-          <span>
-            <strong>{tr('Events running', 'Sự kiện đang chạy')}</strong>
-            <small>{events?.length ?? 0} {tr('live now', 'đang diễn ra')}</small>
-          </span>
-          <ArrowRight size={15} />
-        </a>
-        <a href="/tournaments" class="rail-link">
-          <span class="rail-icon purple"><Trophy size={16} /></span>
-          <span>
-            <strong>{tr('Official tournaments', 'Giải đấu chính thức')}</strong>
-            <small>{officialTournaments?.length ?? 0} {tr('open or live', 'đang mở hoặc live')}</small>
-          </span>
-          <ArrowRight size={15} />
-        </a>
-        <a href="/versus/play" class="rail-link">
-          <span class="rail-icon cyan"><Swords size={16} /></span>
-          <span>
-            <strong>1v1 Versus</strong>
-            <small>{tr('Queue for a ranked match', 'Ghép một trận xếp hạng')}</small>
-          </span>
-          <ArrowRight size={15} />
-        </a>
-        <a href="/lists" class="rail-link">
-          <span class="rail-icon blue"><Layers3 size={16} /></span>
-          <span>
-            <strong>{tr('Discover lists', 'Khám phá danh sách')}</strong>
-            <small>{tr('Star a list to tune your feed', 'Theo dõi để điều chỉnh bảng tin')}</small>
-          </span>
-          <ArrowRight size={15} />
-        </a>
-
-      </div>
-    </aside>
   </div>
 </main>
 
@@ -1034,12 +975,8 @@
 }
 
 .feed-layout {
-  width: min(1120px, calc(100% - 32px));
+  width: min(700px, calc(100% - 32px));
   margin: 0 auto;
-  display: grid;
-  grid-template-columns: minmax(0, 700px) minmax(312px, 384px);
-  align-items: start;
-  gap: 28px;
   padding: 28px 0 56px;
 }
 
@@ -1867,171 +1804,10 @@
   to { background-position: -90% 0; }
 }
 
-.pulse-rail {
-  position: sticky;
-  top: 76px;
-}
-
-.rail-card {
-  padding: 16px;
-  border: 1px solid var(--feed-border);
-  border-radius: 18px;
-  background: hsl(var(--card) / 0.82);
-  box-shadow: 0 8px 28px hsl(222 40% 2% / 0.05);
-  backdrop-filter: blur(14px);
-}
-
-.rail-welcome {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  padding: 5px;
-
-  > div:not(.rail-logo) {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  strong {
-    color: hsl(var(--foreground));
-    font-size: 14px;
-    font-weight: 850;
-  }
-
-  span {
-    display: flex;
-    align-items: flex-start;
-    gap: 5px;
-    color: hsl(var(--muted-foreground));
-    font-size: 11px;
-    line-height: 1.4;
-  }
-}
-
-.rail-welcome .rail-logo {
-  width: 50px;
-  height: 50px;
-  flex: 0 0 50px;
-  border-radius: 14px;
-  object-fit: cover;
-}
-
-.rail-player-card {
-  display: grid;
-  gap: 10px;
-
-  :global(.playerCardFrame) {
-    border-radius: 12px;
-  }
-
-  :global(.playerCardRoot) {
-    border-radius: 12px;
-    transition: none;
-  }
-}
-
-.rail-personalization {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  padding: 0 4px;
-  color: hsl(var(--muted-foreground));
-  font-size: 10px;
-  line-height: 1.4;
-
-  :global(svg) {
-    flex: none;
-    color: hsl(43 90% 48%);
-  }
-}
-
-.rail-logo {
-  display: grid;
-  place-items: center;
-  color: hsl(199 89% 44%);
-  background: hsl(199 89% 48% / 0.1);
-
-  :global(svg) {
-    width: 23px;
-    height: 23px;
-  }
-}
-
-.rail-divider {
-  height: 1px;
-  margin: 14px 5px;
-  background: hsl(var(--border) / 0.75);
-}
-
-.rail-link {
-  display: grid;
-  grid-template-columns: 41px minmax(0, 1fr) 18px;
-  align-items: center;
-  gap: 11px;
-  min-height: 58px;
-  padding: 6px;
-  border-radius: 12px;
-  color: hsl(var(--muted-foreground));
-  text-decoration: none;
-  &:hover {
-    color: hsl(var(--foreground));
-    background: hsl(var(--muted) / 0.45);
-  }
-
-  > span:nth-child(2) {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  strong {
-    color: hsl(var(--foreground));
-    font-size: 13px;
-    font-weight: 780;
-  }
-
-  small {
-    color: hsl(var(--muted-foreground));
-    font-size: 11px;
-    line-height: 1.35;
-  }
-
-  > :global(svg) {
-    width: 18px;
-    height: 18px;
-  }
-}
-
-.rail-icon {
-  display: grid;
-  width: 41px;
-  height: 41px;
-  place-items: center;
-  border-radius: 11px;
-
-  :global(svg) {
-    width: 19px;
-    height: 19px;
-  }
-
-  &.orange { color: hsl(25 95% 52%); background: hsl(25 95% 52% / 0.1); }
-  &.purple { color: hsl(268 78% 59%); background: hsl(268 78% 59% / 0.1); }
-  &.cyan { color: hsl(184 76% 42%); background: hsl(184 76% 42% / 0.1); }
-  &.blue { color: hsl(199 89% 48%); background: hsl(199 89% 48% / 0.1); }
-}
-
 @media (max-width: 1020px) {
   .feed-layout {
     width: min(700px, calc(100% - 24px));
-    grid-template-columns: minmax(0, 1fr);
     padding-top: 22px;
-  }
-
-  .pulse-rail {
-    display: none;
   }
 }
 
