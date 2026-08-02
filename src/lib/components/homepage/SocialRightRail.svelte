@@ -183,8 +183,6 @@
 
 <style lang="scss">
 .social-right-rail {
-  position: sticky;
-  top: 76px;
   width: 100%;
   max-height: calc(100vh - 92px);
   padding: 2px 4px 20px;

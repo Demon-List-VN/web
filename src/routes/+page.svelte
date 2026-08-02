@@ -20,6 +20,7 @@
 	import { user } from '$lib/client';
 	import CommunityPostCard from '$lib/components/communityPostCard.svelte';
 	import OnboardingProgress from '$lib/components/homepage/OnboardingProgress.svelte';
+	import QuickPostComposer from '$lib/components/homepage/QuickPostComposer.svelte';
 	import SocialRightRail from '$lib/components/homepage/SocialRightRail.svelte';
 	import OnboardingModal from '$lib/components/OnboardingModal.svelte';
 
@@ -163,6 +164,27 @@
 		communityLoadingMore = false;
 		communityLoadError = false;
 		communityInitialized = true;
+	}
+
+	function handleQuickPostCreated(event: CustomEvent<any>) {
+		const createdPost = event.detail;
+
+		if (!createdPost?.id) {
+			return;
+		}
+
+		const currentHomepagePosts = homeData?.communityPosts ?? [];
+		homeData = {
+			...(homeData ?? {}),
+			communityPosts: [
+				createdPost,
+				...currentHomepagePosts.filter((post: any) => post.id !== createdPost.id)
+			]
+		};
+		communityFeedPosts = [
+			createdPost,
+			...communityFeedPosts.filter((post) => post.id !== createdPost.id)
+		];
 	}
 
 	async function loadMoreCommunity() {
@@ -564,6 +586,8 @@
         </div>
       </div>
 
+      <QuickPostComposer on:created={handleQuickPostCreated} />
+
       {#if $user.loggedIn && $user.data && $user.data.onboarding_done === false}
         <div class="onboarding-feed-item">
           <OnboardingProgress
@@ -957,7 +981,10 @@
 }
 
 .right-rail-column {
+  position: sticky;
+  top: 76px;
   min-width: 0;
+  align-self: start;
 }
 
 .feed-tabs {
