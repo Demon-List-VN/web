@@ -23,4 +23,5 @@ mkdir -p "$dist_root/server" "$dist_root/client"
     --external:cloudflare:workers \
     --outfile="$dist_root/server/index.js"
 
-rsync -a --exclude '_worker.js' "$cloudflare_build/" "$dist_root/client/"
+cp -R "$cloudflare_build/." "$dist_root/client/"
+rm "$dist_root/client/_worker.js"
