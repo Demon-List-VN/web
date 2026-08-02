@@ -345,10 +345,18 @@
   <meta property="og:image" content={`${homepageUrl}/og.png`} />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
+  <meta
+    property="og:image:alt"
+    content="GDVN Social — new levels, live events, PvP, and official tournaments in one feed"
+  />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content={homepageTitle} />
   <meta name="twitter:description" content={homepageDescription} />
   <meta name="twitter:image" content={`${homepageUrl}/og.png`} />
+  <meta
+    name="twitter:image:alt"
+    content="GDVN Social — play what’s happening now"
+  />
 </svelte:head>
 
 <main class="social-home">
