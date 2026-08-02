@@ -2,7 +2,6 @@
 	import {
 		ArrowRight,
 		BadgeCheck,
-		BarChart3,
 		CalendarDays,
 		Clock3,
 		Flame,
@@ -23,12 +22,13 @@
 	import CommunityPostCard from '$lib/components/communityPostCard.svelte';
 	import OnboardingProgress from '$lib/components/homepage/OnboardingProgress.svelte';
 	import OnboardingModal from '$lib/components/OnboardingModal.svelte';
+	import PlayerCard from '$lib/components/playerCard.svelte';
 
 	export let data: any;
 
 	type FeedTab = 'for-you' | 'community';
 	type FeedItem = {
-		kind: 'community' | 'event' | 'level' | 'promo' | 'pvp' | 'tournament';
+		kind: 'community' | 'event' | 'level' | 'promo' | 'pvp' | 'supporter' | 'tournament';
 		key: string;
 		data: any;
 	};
@@ -65,7 +65,9 @@
 	$: events = homeData?.events ?? null;
 	$: communityPosts = homeData?.communityPosts ?? null;
 	$: officialTournaments = homeData?.officialTournaments ?? null;
+	$: topSupporters = homeData?.topSupporters ?? [];
 	$: pvp = homeData?.pvp ?? null;
+	$: feedSeed = Number(homeData?.feedSeed ?? 1);
 	$: activeSeason = homeData?.activeSeason ?? null;
 	$: battlepassProgress = homeData?.battlepassProgress ?? null;
 	$: starredListCount = Number(homeData?.starredListCount ?? 0);
@@ -77,9 +79,11 @@
 		posts: communityPosts ?? [],
 		events: events ?? [],
 		tournaments: officialTournaments ?? [],
+		supporters: topSupporters,
 		pvp,
 		activeSeason,
-		battlepassProgress
+		battlepassProgress,
+		seed: feedSeed
 	});
 
 	async function loadHomepageAuth() {
@@ -97,7 +101,11 @@
 			});
 
 			if (response.ok) {
-				homeData = await response.json();
+				const personalizedData = await response.json();
+				homeData = {
+					...personalizedData,
+					feedSeed: personalizedData?.feedSeed ?? homeData?.feedSeed ?? 1
+				};
 			}
 		} catch {
 		// Keep server-rendered public content if personalization is unavailable.
@@ -157,9 +165,11 @@
 		posts: any[];
 		events: any[];
 		tournaments: any[];
+		supporters: any[];
 		pvp: any;
 		activeSeason: any;
 		battlepassProgress: any;
+		seed: number;
 	}) {
 		const items: FeedItem[] = [];
 		const used = {
@@ -196,6 +206,15 @@
 		take('event', input.events, 'events');
 		take('level', input.levels, 'levels');
 		take('tournament', input.tournaments, 'tournaments');
+
+		if (input.supporters.length) {
+			items.push({
+				kind: 'supporter',
+				key: 'top-supporters',
+				data: input.supporters.slice(0, 3)
+			});
+		}
+
 		take('community', input.posts, 'posts');
 		items.push({
 			kind: 'promo',
@@ -218,7 +237,27 @@
 			}
 		}
 
-		return items;
+		return seededShuffle(items, input.seed);
+	}
+
+	function seededShuffle<T>(source: T[], seed: number) {
+		const shuffled = [...source];
+		let state = (Math.floor(seed) || 1) >>> 0;
+
+		for (let index = shuffled.length - 1; index > 0; index -= 1) {
+			state = (state + 0x6d2b79f5) >>> 0;
+			let value = state;
+			value = Math.imul(value ^ (value >>> 15), value | 1);
+			value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+			const random = ((value ^ (value >>> 14)) >>> 0) / 4_294_967_296;
+			const swapIndex = Math.floor(random * (index + 1));
+			[shuffled[index], shuffled[swapIndex]] = [
+				shuffled[swapIndex],
+				shuffled[index]
+			];
+		}
+
+		return shuffled;
 	}
 
 	function timeAgo(value: string | null | undefined) {
@@ -324,13 +363,6 @@
 			: tr('Single elimination', 'Loại trực tiếp');
 	}
 
-	function pvpWinRate(viewer: any) {
-		if (Number.isFinite(Number(viewer?.winrate))) {
-			return `${Math.round(Number(viewer.winrate))}%`;
-		}
-
-		return '—';
-	}
 </script>
 
 <svelte:head>
@@ -495,7 +527,9 @@
                 </div>
               {:else if item.kind === 'pvp'}
                 {@const viewerPvp = item.data?.viewer}
-                {@const leaderboard = item.data?.leaderboard ?? []}
+                {@const viewerMatches = Number(viewerPvp?.matches ?? viewerPvp?.pvpRatedMatchCount ?? 0)}
+                {@const viewerWins = Number(viewerPvp?.wins ?? 0)}
+                {@const viewerLosses = Math.max(0, viewerMatches - viewerWins)}
                 <article class="feed-card pvp-post">
                   <div class="post-head">
                     <div class="source-avatar pvp-source"><Swords size={19} /></div>
@@ -508,68 +542,39 @@
                     </div>
                   </div>
 
-                  <div class="pvp-hero">
+                  <a class="pvp-hero pvp-cta-card" href="/versus/play">
                     <div class="pvp-copy">
                       <span class="content-label cyan-label">
-                        <BarChart3 size={13} />
-                        {viewerPvp ? tr('Your PvP snapshot', 'PvP của bạn') : tr('PvP right now', 'PvP lúc này')}
+                        <Swords size={13} />
+                        {tr('Your PvP hub', 'Trung tâm PvP')}
                       </span>
                       <h2>
                         {viewerPvp
-                          ? tr(`You’re #${viewerPvp.rank} on the ladder`, `Bạn đang hạng #${viewerPvp.rank}`)
-                          : tr('The ranked ladder is moving.', 'Bảng xếp hạng đang chuyển động.')}
+                          ? tr('Your next match starts here.', 'Trận tiếp theo của bạn bắt đầu tại đây.')
+                          : tr('Play, track, and climb.', 'Thi đấu, theo dõi và leo hạng.')}
                       </h2>
-                      <p>
-                        {viewerPvp
-                          ? tr('One match can change the board.', 'Một trận đấu có thể thay đổi thứ hạng.')
-                          : tr('Queue up, face a close rival, and climb.', 'Ghép trận, đấu đối thủ ngang tầm và leo hạng.')}
-                      </p>
+                      <p>{tr('W/L stats, match history, ranked queue, and the full leaderboard.', 'Thống kê thắng/thua, lịch sử đấu, ghép trận xếp hạng và bảng xếp hạng đầy đủ.')}</p>
                     </div>
 
                     <div class="pvp-stats">
                       <div>
+                        <span>W / L</span>
+                        <strong>{viewerPvp ? `${viewerWins} / ${viewerLosses}` : '— / —'}</strong>
+                      </div>
+                      <div>
+                        <span>{tr('Leaderboard', 'Xếp hạng')}</span>
+                        <strong>{viewerPvp?.rank ? `#${viewerPvp.rank}` : '—'}</strong>
+                      </div>
+                      <div>
                         <span>{tr('Rating', 'Điểm hạng')}</span>
                         <strong>{formatNumber(viewerPvp?.pvpRating)}</strong>
                       </div>
-                      <div>
-                        <span>{tr('Win rate', 'Tỉ lệ thắng')}</span>
-                        <strong>{pvpWinRate(viewerPvp)}</strong>
-                      </div>
-                      <div>
-                        <span>{tr('Matches', 'Số trận')}</span>
-                        <strong>{formatNumber(viewerPvp?.matches ?? viewerPvp?.pvpRatedMatchCount)}</strong>
-                      </div>
                     </div>
-                  </div>
-
-                  {#if leaderboard.length}
-                    <div class="leaderboard-strip">
-                      <span class="leaderboard-label"><Trophy size={14} /> Top 3</span>
-                      {#each leaderboard.slice(0, 3) as player, index}
-                        <a href={`/player/${player.uid}`} class="leaderboard-player">
-                          <span class="leaderboard-rank">{index + 1}</span>
-                          <img
-                            src={`https://cdn.gdvn.net/avatars/${player.uid}${player.isAvatarGif ? '.gif' : '.jpg'}?version=${player.avatarVersion ?? 0}`}
-                            alt=""
-                            loading="lazy"
-                          />
-                          <span>{player.name}</span>
-                          <strong>{formatNumber(player.pvpRating)}</strong>
-                        </a>
-                      {/each}
-                    </div>
-                  {/if}
-
-                  <div class="post-actions pvp-actions">
-                    <a href="/versus/play" class="primary-action">
-                      <Swords size={16} />
-                      {tr('Find a match', 'Tìm trận')}
-                    </a>
-                    <a href="/versus/play">
-                      <Trophy size={16} />
-                      {tr('Leaderboard', 'Bảng xếp hạng')}
-                    </a>
-                  </div>
+                    <span class="pvp-open-cta">
+                      {tr('Open PvP', 'Mở PvP')}
+                      <ArrowRight size={17} />
+                    </span>
+                  </a>
                 </article>
               {:else if item.kind === 'event'}
                 {@const event = item.data}
@@ -655,6 +660,42 @@
                     <a href="/tournaments">
                       <ArrowRight size={16} />
                       {tr('Browse all', 'Xem tất cả')}
+                    </a>
+                  </div>
+                </article>
+              {:else if item.kind === 'supporter'}
+                <article class="feed-card supporter-post">
+                  <div class="post-head">
+                    <div class="source-avatar supporter-source"><Star size={18} fill="currentColor" /></div>
+                    <div class="source-copy">
+                      <div class="source-line">
+                        <a href="/supporter/top">GDVN Supporters</a>
+                        <BadgeCheck size={15} class="verified" />
+                      </div>
+                      <span>{tr('Community-powered', 'Được cộng đồng chung tay')}</span>
+                    </div>
+                  </div>
+
+                  <div class="supporter-spotlight">
+                    <span class="content-label supporter-label"><Trophy size={13} /> {tr('TOP SUPPORTERS', 'TOP NGƯỜI ỦNG HỘ')}</span>
+                    <h2>{tr('The players powering GDVN.', 'Những người chơi tiếp sức cho GDVN.')}</h2>
+                    <div class="supporter-list">
+                      {#each item.data as supporter, index}
+                        <a href={`/player/${supporter.player?.uid}`} class="supporter-row">
+                          <strong>#{index + 1}</strong>
+                          <img
+                            src={`https://cdn.gdvn.net/avatars/${supporter.player?.uid}${supporter.player?.isAvatarGif ? '.gif' : '.jpg'}?version=${supporter.player?.avatarVersion ?? 0}`}
+                            alt=""
+                            loading="lazy"
+                          />
+                          <span>{supporter.player?.name}</span>
+                          <small>{formatNumber(supporter.totalAmount)}₫</small>
+                        </a>
+                      {/each}
+                    </div>
+                    <a class="supporter-cta" href="/supporter/top">
+                      {tr('View supporter leaderboard', 'Xem bảng xếp hạng ủng hộ')}
+                      <ArrowRight size={16} />
                     </a>
                   </div>
                 </article>
@@ -757,17 +798,11 @@
     <aside class="pulse-rail" aria-label={tr('Feed shortcuts', 'Lối tắt bảng tin')}>
       <div class="rail-card">
         {#if $user.loggedIn}
-          <div class="rail-profile">
-            <img
-              src={`https://cdn.gdvn.net/avatars/${$user.data?.uid}${$user.data?.isAvatarGif ? '.gif' : '.jpg'}?version=${$user.data?.avatarVersion ?? 0}`}
-              alt=""
-            />
-            <div>
-              <strong>{$user.data?.name}</strong>
-              <span>
-                <Star size={12} fill="currentColor" />
-                {tr(`${starredListCount} starred lists shape this feed`, `${starredListCount} danh sách đã theo dõi tạo nên bảng tin`)}
-              </span>
+          <div class="rail-player-card">
+            <PlayerCard player={$user.data} active={false} listSummaries={[]} />
+            <div class="rail-personalization">
+              <Star size={14} fill="currentColor" />
+              {tr(`${starredListCount} starred lists shape this feed`, `${starredListCount} danh sách đã theo dõi tạo nên bảng tin`)}
             </div>
           </div>
         {:else}
@@ -830,10 +865,10 @@
 }
 
 .feed-layout {
-  width: min(1220px, calc(100% - 32px));
+  width: min(1120px, calc(100% - 32px));
   margin: 0 auto;
   display: grid;
-  grid-template-columns: minmax(0, 700px) minmax(390px, 480px);
+  grid-template-columns: minmax(0, 700px) minmax(312px, 384px);
   align-items: start;
   gap: 28px;
   padding: 28px 0 56px;
@@ -996,6 +1031,11 @@
 .promo-source {
   color: hsl(327 82% 58%);
   background: hsl(327 82% 58% / 0.11);
+}
+
+.supporter-source {
+  color: hsl(43 90% 45%);
+  background: hsl(43 95% 52% / 0.12);
 }
 
 .source-copy {
@@ -1201,6 +1241,11 @@
     radial-gradient(circle at 85% 10%, rgba(45, 212, 191, 0.32), transparent 36%),
     linear-gradient(145deg, #0d3940, #091b28 70%);
   overflow: hidden;
+  text-decoration: none;
+}
+
+.pvp-cta-card {
+  display: block;
 }
 
 .pvp-copy {
@@ -1261,69 +1306,16 @@
   }
 }
 
-.leaderboard-strip {
-  display: grid;
-  gap: 2px;
-  margin: 9px 12px 0;
-  padding: 8px;
-  border: 1px solid hsl(var(--border) / 0.7);
-  border-radius: 10px;
-  background: hsl(var(--muted) / 0.28);
-}
-
-.leaderboard-label {
-  display: flex;
+.pvp-open-cta {
+  display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 2px 6px 5px;
-  color: hsl(var(--muted-foreground));
-  font-size: 9px;
-  font-weight: 850;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.leaderboard-player {
-  display: grid;
-  grid-template-columns: 22px 28px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px;
-  min-height: 36px;
-  padding: 3px 6px;
-  border-radius: 7px;
-  color: hsl(var(--foreground));
+  gap: 7px;
+  margin-top: 18px;
+  padding: 9px 13px;
+  border-radius: 9px;
+  color: #082822;
+  background: #ccfbf1;
   font-size: 11px;
-  text-decoration: none;
-
-  &:hover {
-    background: hsl(var(--muted) / 0.65);
-  }
-
-  img {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    object-fit: cover;
-  }
-
-  > span:not(.leaderboard-rank) {
-    min-width: 0;
-    overflow: hidden;
-    font-weight: 700;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  strong {
-    color: hsl(var(--muted-foreground));
-    font-size: 11px;
-    font-variant-numeric: tabular-nums;
-  }
-}
-
-.leaderboard-rank {
-  color: hsl(var(--muted-foreground));
-  text-align: center;
   font-weight: 850;
 }
 
@@ -1386,6 +1378,89 @@
   font-weight: 850;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+
+.supporter-spotlight {
+  margin: 2px 12px 12px;
+  padding: 22px;
+  border-radius: 11px;
+  color: #fff9e9;
+  background:
+    radial-gradient(circle at 88% 5%, rgba(250, 204, 21, 0.28), transparent 38%),
+    linear-gradient(145deg, #3b2808, #17130d 68%);
+
+  h2 {
+    margin: 9px 0 16px;
+    font-size: clamp(22px, 4vw, 30px);
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+    font-weight: 870;
+  }
+}
+
+.supporter-label {
+  color: #fff1a8;
+  border-color: rgba(253, 224, 71, 0.22);
+  background: rgba(234, 179, 8, 0.14);
+}
+
+.supporter-list {
+  display: grid;
+  gap: 6px;
+}
+
+.supporter-row {
+  display: grid;
+  grid-template-columns: 28px 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  min-height: 48px;
+  padding: 5px 9px;
+  border: 1px solid rgba(253, 224, 71, 0.1);
+  border-radius: 9px;
+  color: #fff9e9;
+  background: rgba(255, 255, 255, 0.045);
+  text-decoration: none;
+
+  > strong {
+    color: #fde047;
+    font-size: 12px;
+    text-align: center;
+  }
+
+  img {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  > span {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 12px;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  small {
+    color: rgba(255, 249, 233, 0.64);
+    font-size: 10px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.supporter-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 14px;
+  color: #fde68a;
+  font-size: 11px;
+  font-weight: 800;
+  text-decoration: none;
 }
 
 .promo-creative {
@@ -1653,51 +1728,78 @@
 }
 
 .rail-card {
-  padding: 20px;
+  padding: 16px;
   border: 1px solid var(--feed-border);
-  border-radius: 22px;
+  border-radius: 18px;
   background: hsl(var(--card) / 0.82);
   box-shadow: 0 8px 28px hsl(222 40% 2% / 0.05);
   backdrop-filter: blur(14px);
 }
 
-.rail-profile,
 .rail-welcome {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 6px;
+  gap: 13px;
+  padding: 5px;
 
   > div:not(.rail-logo) {
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 4px;
   }
 
   strong {
     color: hsl(var(--foreground));
-    font-size: 18px;
+    font-size: 14px;
     font-weight: 850;
   }
 
   span {
     display: flex;
     align-items: flex-start;
-    gap: 6px;
+    gap: 5px;
     color: hsl(var(--muted-foreground));
-    font-size: 13px;
+    font-size: 11px;
     line-height: 1.4;
   }
 }
 
-.rail-profile > img,
 .rail-welcome .rail-logo {
-  width: 63px;
-  height: 63px;
-  flex: 0 0 63px;
-  border-radius: 18px;
+  width: 50px;
+  height: 50px;
+  flex: 0 0 50px;
+  border-radius: 14px;
   object-fit: cover;
+}
+
+.rail-player-card {
+  display: grid;
+  gap: 10px;
+
+  :global(.playerCardFrame) {
+    border-radius: 12px;
+  }
+
+  :global(.playerCardRoot) {
+    border-radius: 12px;
+    transition: none;
+  }
+}
+
+.rail-personalization {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 0 4px;
+  color: hsl(var(--muted-foreground));
+  font-size: 10px;
+  line-height: 1.4;
+
+  :global(svg) {
+    flex: none;
+    color: hsl(43 90% 48%);
+  }
 }
 
 .rail-logo {
@@ -1707,25 +1809,25 @@
   background: hsl(199 89% 48% / 0.1);
 
   :global(svg) {
-    width: 29px;
-    height: 29px;
+    width: 23px;
+    height: 23px;
   }
 }
 
 .rail-divider {
   height: 1px;
-  margin: 18px 6px;
+  margin: 14px 5px;
   background: hsl(var(--border) / 0.75);
 }
 
 .rail-link {
   display: grid;
-  grid-template-columns: 51px minmax(0, 1fr) 23px;
+  grid-template-columns: 41px minmax(0, 1fr) 18px;
   align-items: center;
-  gap: 14px;
-  min-height: 72px;
-  padding: 8px;
-  border-radius: 15px;
+  gap: 11px;
+  min-height: 58px;
+  padding: 6px;
+  border-radius: 12px;
   color: hsl(var(--muted-foreground));
   text-decoration: none;
   &:hover {
@@ -1737,37 +1839,37 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 2px;
   }
 
   strong {
     color: hsl(var(--foreground));
-    font-size: 16px;
+    font-size: 13px;
     font-weight: 780;
   }
 
   small {
     color: hsl(var(--muted-foreground));
-    font-size: 13px;
+    font-size: 11px;
     line-height: 1.35;
   }
 
   > :global(svg) {
-    width: 23px;
-    height: 23px;
+    width: 18px;
+    height: 18px;
   }
 }
 
 .rail-icon {
   display: grid;
-  width: 51px;
-  height: 51px;
+  width: 41px;
+  height: 41px;
   place-items: center;
-  border-radius: 14px;
+  border-radius: 11px;
 
   :global(svg) {
-    width: 24px;
-    height: 24px;
+    width: 19px;
+    height: 19px;
   }
 
   &.orange { color: hsl(25 95% 52%); background: hsl(25 95% 52% / 0.1); }
@@ -1776,7 +1878,7 @@
   &.blue { color: hsl(199 89% 48%); background: hsl(199 89% 48% / 0.1); }
 }
 
-@media (max-width: 1150px) {
+@media (max-width: 1020px) {
   .feed-layout {
     width: min(700px, calc(100% - 24px));
     grid-template-columns: minmax(0, 1fr);
@@ -1849,7 +1951,7 @@
   .event-media,
   .tournament-media,
   .pvp-hero,
-  .leaderboard-strip,
+  .supporter-spotlight,
   .promo-creative {
     margin-right: 8px;
     margin-left: 8px;
@@ -1884,16 +1986,6 @@
 
     strong {
       font-size: 17px;
-    }
-  }
-
-  .leaderboard-player {
-    grid-template-columns: 18px 26px minmax(0, 1fr) auto;
-    gap: 6px;
-
-    img {
-      width: 26px;
-      height: 26px;
     }
   }
 

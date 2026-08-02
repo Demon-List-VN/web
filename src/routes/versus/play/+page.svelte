@@ -145,6 +145,7 @@
 		'gdvn:pvp-last-auto-redirected-match-id';
 	const REALTIME_COALESCE_MS = 200;
 	const PVP_STANDINGS_PAGE_SIZE = 50;
+	const PVP_MATCH_HISTORY_PAGE_SIZE = 30;
 	const PVP_MODES: PvpMode[] = ['classic', 'platformer'];
 	const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://gdvn.net').replace(
 		/\/$/,
@@ -283,6 +284,11 @@
 	let summaryOpen = false;
 	let loading = false;
 	let matchHistoryLoading = false;
+	let matchHistoryLoadingMore = false;
+	let matchHistoryPage = 1;
+	let matchHistoryTotal = 0;
+	let matchHistoryHasMore = false;
+	let matchHistoryWinCounts: Partial<Record<PvpMode, number>> = {};
 	let leaderboardLoading = true;
 	let leaderboardError = '';
 	let weeklyRaceLoading = true;
@@ -400,7 +406,9 @@
 		&& !isPvpRatingStable(pvpRatingDeviation);
 	$: pvpWinLossStats = getPvpWinLossStats(
 		matches.filter((match) => getPvpMode(match) === selectedBaseMode),
-		currentUid
+		currentUid,
+		matchHistoryWinCounts[selectedBaseMode],
+		pvpRatedMatchCount
 	);
 	$: currentWeeklyRacePoints = getCurrentWeeklyRacePoints(
 		weeklyRace,
@@ -500,6 +508,11 @@
 		initializedForUid = '';
 		lobbyReady = false;
 		matchHistoryLoading = false;
+		matchHistoryLoadingMore = false;
+		matchHistoryPage = 1;
+		matchHistoryTotal = 0;
+		matchHistoryHasMore = false;
+		matchHistoryWinCounts = {};
 		routedMatchId = null;
 	}
 
@@ -640,17 +653,17 @@
 		try {
 			const token = await $user.token();
 			setPvpRealtimeAuth(token);
-			await Promise.all([
-				refreshLobby(),
+			await refreshLobby();
+			lobbyReady = true;
+			cleanupRealtime = subscribeToPvpLobby(uid, handleLobbyRealtimeEvent);
+
+			void Promise.all([
 				refreshMatchHistory(),
 				refreshRooms(),
 				recordMissionLobbyVisit(),
 				refreshWeeklyRace(),
 				refreshClanRace()
 			]);
-			lobbyReady = true;
-
-			cleanupRealtime = subscribeToPvpLobby(uid, handleLobbyRealtimeEvent);
 		} catch (error) {
 			lobbyReady = true;
 			toast.error(
@@ -738,13 +751,53 @@
 		matchHistoryLoading = true;
 
 		try {
-			matches = await getPvpMatches(await $user.token());
+			const response = await getPvpMatches(
+				await $user.token(),
+				1,
+				PVP_MATCH_HISTORY_PAGE_SIZE
+			);
+			matches = response.data;
+			matchHistoryPage = response.page;
+			matchHistoryTotal = response.total;
+			matchHistoryHasMore = Boolean(response.hasMore);
+			matchHistoryWinCounts = response.winCounts ?? {};
 		} catch (error) {
 			toast.error(
 				error instanceof Error ? error.message : $_('pvp.toast.load_failed')
 			);
 		} finally {
 			matchHistoryLoading = false;
+		}
+	}
+
+	async function loadMoreMatchHistory() {
+		if (!$user.loggedIn || matchHistoryLoadingMore || !matchHistoryHasMore) {
+			return;
+		}
+
+		matchHistoryLoadingMore = true;
+
+		try {
+			const response = await getPvpMatches(
+				await $user.token(),
+				matchHistoryPage + 1,
+				PVP_MATCH_HISTORY_PAGE_SIZE
+			);
+			const knownIds = new Set(matches.map((match) => String(getPvpMatchId(match))));
+			const nextMatches = response.data.filter(
+				(match) => !knownIds.has(String(getPvpMatchId(match)))
+			);
+
+			matches = sortMatches([...matches, ...nextMatches]);
+			matchHistoryPage = response.page;
+			matchHistoryTotal = response.total;
+			matchHistoryHasMore = Boolean(response.hasMore);
+		} catch (error) {
+			toast.error(
+				error instanceof Error ? error.message : $_('pvp.toast.load_failed')
+			);
+		} finally {
+			matchHistoryLoadingMore = false;
 		}
 	}
 
@@ -1624,6 +1677,10 @@
 			: [nextMatch, ...matches];
 
 		matches = sortMatches(nextMatches);
+
+		if (existingIndex < 0) {
+			matchHistoryTotal += 1;
+		}
 	}
 
 	function sortMatches(items: PvpMatch[]) {
@@ -1684,10 +1741,22 @@
 
 	function getPvpWinLossStats(
 		sourceMatches: PvpMatch[],
-		uid: string | null | undefined
+		uid: string | null | undefined,
+		serverWins?: number,
+		serverMatches?: number
 	) {
 		if (!uid) {
 			return { wins: 0, losses: 0 };
+		}
+
+		if (
+			Number.isFinite(Number(serverWins))
+			&& Number.isFinite(Number(serverMatches))
+		) {
+			const wins = Math.max(0, Number(serverWins));
+			const matches = Math.max(0, Number(serverMatches));
+
+			return { wins, losses: Math.max(0, matches - wins) };
 		}
 
 		return sourceMatches.reduce<{ wins: number; losses: number; }>(
@@ -3389,6 +3458,20 @@
               {/each}
             </div>
           {/if}
+          {#if matchHistoryHasMore}
+            <div class="history-more">
+              <Button
+                variant="outline"
+                disabled={matchHistoryLoadingMore}
+                on:click={loadMoreMatchHistory}
+              >
+                {#if matchHistoryLoadingMore}
+                  <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+                {/if}
+                {$_('pvp.load_more_matches')}
+              </Button>
+            </div>
+          {/if}
         </section>
       {/if}
     </Tabs.Content>
@@ -4543,6 +4626,12 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
+}
+
+.history-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
 }
 
 .rooms-toolbar,

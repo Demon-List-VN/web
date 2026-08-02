@@ -8,7 +8,10 @@ export const load: PageLoad = async ({ fetch }) => {
             const data = await response.json();
 
             return {
-                homeData: data
+                homeData: {
+                    ...data,
+                    feedSeed: data?.feedSeed ?? Math.floor(Math.random() * 2_147_483_647)
+                }
             };
         }
     } catch {}

@@ -439,6 +439,7 @@
         "rejoin_ongoing_match": "Rejoin ongoing match",
         "view_match": "View match",
         "refresh": "Refresh",
+        "load_more_matches": "Load more matches",
         "rematch": "Rematch",
         "requeue": "Requeue",
         "match_end_special": {

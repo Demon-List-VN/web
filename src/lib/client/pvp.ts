@@ -381,6 +381,8 @@ export type PvpMatchesPage = {
     total: number;
     page: number;
     limit: number;
+    hasMore?: boolean;
+    winCounts?: Partial<Record<PvpMode, number>>;
 };
 
 export type PvpPagination = {
@@ -1391,8 +1393,49 @@ export async function sendPvpRoomMessage(
     });
 }
 
-export async function getPvpMatches(token?: string | null) {
-    return normalizePvpMatches(await pvpRequest('/pvp/matches', { token }));
+export async function getPvpMatches(
+    token?: string | null,
+    page = 1,
+    limit = 30
+): Promise<PvpMatchesPage> {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    const payload = await pvpRequest<PvpMatchesPage | PvpMatch[]>(
+        `/pvp/matches?${params}`,
+        { token }
+    );
+
+    if (Array.isArray(payload)) {
+        return {
+            data: normalizePvpMatches(payload),
+            total: payload.length,
+            page,
+            limit,
+            hasMore: false,
+            winCounts: undefined
+        };
+    }
+
+    const data = normalizePvpMatches(payload?.data ?? []);
+    const total = Number.isFinite(Number(payload?.total))
+        ? Number(payload.total)
+        : data.length;
+    const resolvedPage = Number.isFinite(Number(payload?.page))
+        ? Number(payload.page)
+        : page;
+    const resolvedLimit = Number.isFinite(Number(payload?.limit))
+        ? Number(payload.limit)
+        : limit;
+
+    return {
+        data,
+        total,
+        page: resolvedPage,
+        limit: resolvedLimit,
+        hasMore: typeof payload?.hasMore === 'boolean'
+            ? payload.hasMore
+            : resolvedPage * resolvedLimit < total,
+        winCounts: payload?.winCounts
+    };
 }
 
 export async function getPvpLeaderboard(limit = 50, mode: PvpMode = 'classic') {

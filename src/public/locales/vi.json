@@ -439,6 +439,7 @@
         "rejoin_ongoing_match": "Vào lại trận đang diễn ra",
         "view_match": "Xem trận",
         "refresh": "Tải lại",
+        "load_more_matches": "Tải thêm trận đấu",
         "rematch": "Tái đấu",
         "requeue": "Ghép trận lại",
         "match_end_special": {
