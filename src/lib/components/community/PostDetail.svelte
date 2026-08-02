@@ -108,7 +108,8 @@
 		guide: BookOpen,
 		announcement: Megaphone,
 		review: Star,
-		collab: Users
+		collab: Users,
+		wiki: BookOpen
 	};
 
 	const typeColors: Record<string, string> = {
@@ -116,7 +117,8 @@
 		media: 'text-purple-500',
 		guide: 'text-emerald-500',
 		announcement: 'text-amber-500',
-		review: 'text-yellow-500'
+		review: 'text-yellow-500',
+		wiki: 'text-cyan-500'
 	};
 
 	const typeBgColors: Record<string, string> = {
@@ -124,7 +126,8 @@
 		media: 'bg-purple-500/10',
 		guide: 'bg-emerald-500/10',
 		announcement: 'bg-amber-500/10',
-		review: 'bg-yellow-500/10'
+		review: 'bg-yellow-500/10',
+		wiki: 'bg-cyan-500/10'
 	};
 
 	function formatDate(dateStr: string) {
@@ -542,15 +545,12 @@
 				body.content = editContent;
 			}
 
-			// Admin (not owner) can only edit type
-			if (isAdminNotOwner) {
+			// Managers can classify posts without being able to edit another author's content.
+			if (canManageType) {
 				body.type = editType;
 			}
 
-			const endpoint = isAdminNotOwner && !post.clanId
-				? `${import.meta.env.VITE_API_URL}/community/admin/posts/${post.id}`
-				: `${apiPrefix}/posts/${post.id}`;
-			const res = await fetch(endpoint, {
+			const res = await fetch(`${apiPrefix}/posts/${post.id}`, {
 				method: 'PUT',
 				headers,
 				body: JSON.stringify(body)
@@ -563,22 +563,24 @@
 			const updated = await res.json();
 			post = { ...post, ...updated };
 
-			// Save tags
-			try {
-				const tagRes = await fetch(
-					`${apiPrefix}/posts/${post.id}/tags`,
-					{
-						method: 'PUT',
-						headers,
-						body: JSON.stringify({ tagIds: editTagIds })
-					}
-				);
+			// Managers classifying another author's post do not alter its regular tags.
+			if (isOwner || isAdmin) {
+				try {
+					const tagRes = await fetch(
+						`${apiPrefix}/posts/${post.id}/tags`,
+						{
+							method: 'PUT',
+							headers,
+							body: JSON.stringify({ tagIds: editTagIds })
+						}
+					);
 
-				if (tagRes.ok) {
-					await fetchPost();
+					if (tagRes.ok) {
+						await fetchPost();
+					}
+				} catch {
+				// Tag save failed but post save succeeded.
 				}
-			} catch {
-			// Tag save failed but post save succeeded
 			}
 
 			editing = false;
@@ -817,8 +819,9 @@
 		.filter(Boolean);
 	$: isOwner = $user.loggedIn && post && $user.data?.uid === post.uid;
 	$: isAdmin = $user.loggedIn && $user.data?.isAdmin;
-	$: isAdminNotOwner = isAdmin && !isOwner;
-	$: canEdit = $user.loggedIn && post && (isOwner || isAdmin);
+	$: isManager = $user.loggedIn && $user.data?.isManager;
+	$: canManageType = Boolean(isAdmin || isManager);
+	$: canEdit = $user.loggedIn && post && (isOwner || canManageType);
 	$: canDelete = $user.loggedIn && post && ($user.data?.uid === post.uid || $user.data?.isAdmin);
 	$: canPin = $user.loggedIn && ($user.data?.isAdmin || (post?.clanId && $user.data?.clan == post.clanId));
 
@@ -900,7 +903,7 @@
 				{/if}
 
 				{#if editing}
-					{#if isAdminNotOwner}
+					{#if canManageType}
 						<div class="editTypeSelector">
 							<span class="editLabel">Change Post Type</span>
 							<Select.Root
@@ -923,7 +926,10 @@
 									<Select.Item value="media">Media</Select.Item>
 									<Select.Item value="guide">Guide</Select.Item>
 									<Select.Item value="review">Review</Select.Item>
-									<Select.Item value="announcement">Announcement</Select.Item>
+									{#if isAdmin}
+										<Select.Item value="announcement">Announcement</Select.Item>
+									{/if}
+									<Select.Item value="wiki">Wiki</Select.Item>
 								</Select.Content>
 							</Select.Root>
 						</div>

@@ -16,6 +16,7 @@
 	} from 'lucide-svelte';
 	import { upload } from '$lib/client/storage';
 	import { _ } from 'svelte-i18n';
+	import { isActive } from '$lib/client/isSupporterActive';
 
 	// --- State ---
 	let step = 1;
@@ -72,8 +73,12 @@
 	$: playerUID = $user.data?.uid ?? '';
 	$: playerName = $user.data?.name ?? '';
 	$: clanTag = $user.data?.clans?.tag ?? null;
-	$: clanTagBg = $user.data?.clans?.tagBgColor ?? null;
-	$: clanTagText = $user.data?.clans?.tagTextColor ?? null;
+	$: clanTagBg = isActive($user.data?.clans?.boostedUntil)
+		? $user.data?.clans?.tagBgColor ?? null
+		: null;
+	$: clanTagText = isActive($user.data?.clans?.boostedUntil)
+		? $user.data?.clans?.tagTextColor ?? null
+		: null;
 	$: levelName = selectedRecord?.levels?.name ?? '';
 	$: creator = selectedRecord?.levels?.creator ?? null;
 	$: progress = selectedRecord?.progress ?? null;

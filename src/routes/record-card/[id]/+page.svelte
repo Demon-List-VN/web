@@ -8,6 +8,8 @@
 	import CardBack from '../../vending/CardBack.svelte';
 	import { ExternalLink, Calendar, Trophy, Video, Copy, Check, RotateCw } from 'lucide-svelte';
 	import { _ } from 'svelte-i18n';
+	import { isActive } from '$lib/client/isSupporterActive';
+	import ClanTag from '$lib/components/clan/ClanTag.svelte';
 
 	export let data: PageData;
 
@@ -45,8 +47,10 @@
 		playerUID: player?.uid ?? '',
 		playerName: player?.name ?? '',
 		clanTag: player?.clans?.tag ?? null,
-		clanTagBg: player?.clans?.tagBgColor ?? null,
-		clanTagText: player?.clans?.tagTextColor ?? null,
+		clanTagBg: isActive(player?.clans?.boostedUntil) ? player?.clans?.tagBgColor ?? null : null,
+		clanTagText: isActive(player?.clans?.boostedUntil)
+			? player?.clans?.tagTextColor ?? null
+			: null,
 		levelName: level?.name ?? '',
 		creator: level?.creator ?? null,
 		progress: record?.progress ?? null,
@@ -177,12 +181,7 @@
 				/>
 				<div class="player-details">
 					{#if player.clans?.tag}
-						<span
-							class="clan-badge"
-							style={`background-color: ${player.clans.tagBgColor}; color: ${player.clans.tagTextColor};`}
-						>
-							{player.clans.tag}
-						</span>
+						<ClanTag clan={player.clans} compact />
 					{/if}
 					<a href={`/player/${player.uid}`} class="player-name">{player.name}</a>
 				</div>
@@ -423,14 +422,6 @@
 		align-items: center;
 		gap: 6px;
 		min-width: 0;
-	}
-
-	.clan-badge {
-		font-size: 10px;
-		font-weight: 700;
-		padding: 1px 6px;
-		border-radius: 4px;
-		flex-shrink: 0;
 	}
 
 	.player-name {

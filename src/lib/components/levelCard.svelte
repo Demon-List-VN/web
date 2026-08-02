@@ -17,6 +17,7 @@
 	import PlayerLink from '$lib/components/playerLink.svelte';
 
 	let failedToLoad = false;
+	let hoverThumbnailFailed = false;
 	let thumbnailStatusKey = '';
 
 	async function getThumbnailResponse(url: string) {
@@ -55,6 +56,7 @@
 		: levelThumbUrl;
 	$: if (!hasVideoThumbnail) {
 		failedToLoad = false;
+		hoverThumbnailFailed = false;
 		thumbnailStatusKey = '';
 	} else if (browser) {
 		const nextThumbnailStatusKey = `${id ?? ''}:${videoID}`;
@@ -62,6 +64,7 @@
 		if (thumbnailStatusKey !== nextThumbnailStatusKey) {
 			thumbnailStatusKey = nextThumbnailStatusKey;
 			failedToLoad = false;
+			hoverThumbnailFailed = false;
 			void verifyYoutubeThumbnail(
 				nextThumbnailStatusKey,
 				youtubeThumbnailUrl
@@ -191,13 +194,16 @@
                       failedToLoad = true;
                   }}
                 />
-                {#if hasVideoThumbnail && !failedToLoad}
+                {#if hasVideoThumbnail && !failedToLoad && !hoverThumbnailFailed}
                   <img
                     src={levelThumbUrl}
                     alt=""
                     loading="lazy"
                     decoding="async"
                     class="thumbnail z-1 absolute translate-x-4 opacity-0 transition-all duration-300 ease-in-out hover:translate-x-0 hover:opacity-100"
+                    on:error={() => {
+                        hoverThumbnailFailed = true;
+                    }}
                   />
                 {/if}
               </div>

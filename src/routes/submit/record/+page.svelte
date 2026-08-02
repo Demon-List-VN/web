@@ -138,6 +138,10 @@
 				params.set('progress', String(progress));
 			}
 
+			if (state.target) {
+				params.set('target', String(state.target));
+			}
+
 			const res = await fetch(
 				`${import.meta.env.VITE_API_URL}/lists/levels/${levelId}/eligible${
 					params.size ? `?${params.toString()}` : ''
@@ -233,6 +237,11 @@
 	onMount(() => {
 		const params = $page.url.searchParams;
 		const levelId = params.get('levelId');
+		const target = Number(params.get('target'));
+
+		if (Number.isInteger(target) && target > 0) {
+			state.target = target;
+		}
 
 		if (levelId) {
 			const id = parseInt(levelId);
@@ -405,7 +414,8 @@
 			raw: state.raw,
 			mobile: state.mobile?.value ?? null,
 			suggestedRating: state.suggestedRating,
-			comment: state.comment
+			comment: state.comment,
+			target: state.target
 		};
 
 		if (state.selectedVariantId) {
@@ -543,6 +553,7 @@
                     time={state.time}
                     suggestedRating={state.suggestedRating}
                     comment={state.comment}
+                    bind:target={state.target}
                     lists={eligibleLists}
                     loading={eligibleListsLoading}
                     errorMessage={eligibleListsError}
@@ -583,7 +594,8 @@
                 raw: state.raw,
                 mobile: state.mobile,
                 suggestedRating: state.suggestedRating,
-                comment: state.comment
+                comment: state.comment,
+                target: state.target
             }}
             apiLevel={state.apiLevel}
             time={state.time}

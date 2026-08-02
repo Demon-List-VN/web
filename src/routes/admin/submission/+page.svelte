@@ -38,6 +38,10 @@
 		return Array.isArray(record?.lists) ? record.lists : [];
 	}
 
+	function getTargetList(record: any) {
+		return Array.isArray(record?.targetList) ? record.targetList[0] : record?.targetList;
+	}
+
 	function toListOption(list: any): ListSelectorOption | null {
 		const id = Number(list?.id);
 		const title = typeof list?.title === 'string' ? list.title.trim() : '';
@@ -181,38 +185,40 @@
 		const player = record.players;
 		const reason = prompt('Reason for rejection');
 
+		if (reason === null) {
+			return;
+		}
+
 		if (!confirm('Reject this record?')) {
 			return;
 		}
 
-		toast.loading('Submitting verdict... This page will be refreshed.');
-		const recordQuery = record.id ? `?id=${record.id}` : '';
+		const loadingToast = toast.loading('Saving rejected submission...');
 
-		await fetch(
-			`${import.meta.env.VITE_API_URL}/records/${player.uid}/${level.id}${recordQuery}`,
-			{
-				method: 'DELETE',
-				headers: {
-					Authorization: `Bearer ${await $user.token()}`
+		try {
+			const response = await fetch(
+				`${import.meta.env.VITE_API_URL}/records/${player.uid}/${level.id}`,
+				{
+					method: 'PATCH',
+					body: JSON.stringify({ id: record.id, reason }),
+					headers: {
+						Authorization: `Bearer ${await $user.token()}`,
+						'Content-Type': 'application/json'
+					}
 				}
-			}
-		);
+			);
 
-		await fetch(`${import.meta.env.VITE_API_URL}/notifications`, {
-			method: 'POST',
-			body: JSON.stringify({
-				to: player.uid,
-				status: 2,
-				content:
-					`Your ${level.name} (${level.id}) submission has been rejected by a moderator. Reason: ${reason}`
-			}),
-			headers: {
-				Authorization: `Bearer ${await $user.token()}`,
-				'Content-Type': 'application/json'
+			if (!response.ok) {
+				throw new Error(response.statusText);
 			}
-		});
 
-		window.location.reload();
+			records = records.filter((item) => item.id !== record.id);
+			toast.success('Submission rejected and saved');
+		} catch {
+			toast.error('Failed to save the rejected submission');
+		} finally {
+			toast.dismiss(loadingToast);
+		}
 	}
 </script>
 
@@ -248,7 +254,7 @@
       <Table.Row>
         <Table.Head class="w-[80px] text-center">Queue</Table.Head>
         <Table.Head>Level</Table.Head>
-        <Table.Head>Lists</Table.Head>
+        <Table.Head>Target</Table.Head>
         <Table.Head class="w-[100px] text-center">Submitted by</Table.Head>
         <Table.Head class="w-[100px] text-center">Device</Table.Head>
         <Table.Head class="w-[80px] text-center">Progress</Table.Head>
@@ -284,20 +290,12 @@
             </a>
           </Table.Cell>
           <Table.Cell>
-            {#if getRecordLists(record).length}
-              <div class="listBadges">
-                {#each getRecordLists(record)
-.slice(0, 3) as list (list.id)}
-                  <a class="listBadge" href={getListHref(list)}>{list.title}</a>
-                {/each}
-                {#if getRecordLists(record).length > 3}
-                  <span class="listBadge muted">+{
-                      getRecordLists(record).length - 3
-                    }</span>
-                {/if}
-              </div>
+            {#if getTargetList(record)}
+              <a class="listBadge" href={getListHref(getTargetList(record))}>
+                {getTargetList(record).title}
+              </a>
             {:else}
-              <span class="text-muted-foreground">No list</span>
+              <span class="listBadge global">Global</span>
             {/if}
           </Table.Cell>
           <Table.Cell class="text-center"><a
@@ -357,12 +355,6 @@
   width: min(360px, 100%);
 }
 
-.listBadges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
 .listBadge {
   display: inline-flex;
   max-width: 180px;
@@ -374,16 +366,9 @@
   line-height: 1.5;
   color: hsl(var(--foreground));
   text-decoration: none;
-}
-
-.listBadge:not(.muted) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.listBadge.muted {
-  color: hsl(var(--muted-foreground));
 }
 
 @media screen and (max-width: 900px) {

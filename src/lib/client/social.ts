@@ -167,6 +167,23 @@ export async function updateSocialPresenceSettings(
     });
 }
 
+export async function getSocialFeedSettings(token: string | null | undefined) {
+    return socialRequest<{ socialUnverifiedRecordsVisible: boolean; }>('/social/feed-settings', {
+        token
+    });
+}
+
+export async function updateSocialFeedSettings(
+    token: string | null | undefined,
+    socialUnverifiedRecordsVisible: boolean
+) {
+    return socialRequest<{ socialUnverifiedRecordsVisible: boolean; }>('/social/feed-settings', {
+        method: 'PATCH',
+        token,
+        body: { socialUnverifiedRecordsVisible }
+    });
+}
+
 export async function sendFriendRequest(token: string | null | undefined, toUid: string) {
     return socialRequest('/social/friend-requests', {
         method: 'POST',

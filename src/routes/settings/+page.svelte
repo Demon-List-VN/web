@@ -6,7 +6,12 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
+	import { Switch } from '$lib/components/ui/switch/index.js';
 	import { user } from '$lib/client';
+	import {
+		getSocialFeedSettings,
+		updateSocialFeedSettings
+	} from '$lib/client/social';
 	import { DISCORD_OAUTH_URL } from '$lib/client/discord';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import supabase from '$lib/client/supabase';
@@ -19,6 +24,7 @@
 		ChevronRight,
 		Cloud,
 		ExternalLink,
+		Eye,
 		KeyRound,
 		Link2,
 		LoaderCircle,
@@ -31,7 +37,7 @@
 		WalletCards
 	} from 'lucide-svelte';
 
-	type SettingsTab = 'general' | 'auth' | 'subscriptions' | 'connections' | 'sync';
+	type SettingsTab = 'general' | 'feed' | 'auth' | 'subscriptions' | 'connections' | 'sync';
 	type SyncResult = {
 		synced: number;
 		created: number;
@@ -40,6 +46,7 @@
 
 	const settingsTabs: SettingsTab[] = [
 		'general',
+		'feed',
 		'auth',
 		'subscriptions',
 		'connections',
@@ -68,6 +75,10 @@
 	let showRelinkForm = false;
 	let syncingLevels = false;
 	let lastSyncResult: SyncResult | null = null;
+	let socialFeedSettingsLoadedForUid = '';
+	let loadingSocialFeedSettings = false;
+	let savingSocialFeedSettings = false;
+	let socialUnverifiedRecordsVisible = true;
 
 	$: requestedTab = $page.url.searchParams.get('tab') as SettingsTab | null;
 	$: activeTab = requestedTab && settingsTabs.includes(requestedTab)
@@ -79,6 +90,12 @@
 			label: text('General', 'Chung'),
 			description: text('Appearance and language', 'Giao diện và ngôn ngữ'),
 			icon: UserRound
+		},
+		{
+			id: 'feed' as const,
+			label: text('Feed', 'Bảng tin'),
+			description: text('Content preferences', 'Tùy chọn nội dung'),
+			icon: Eye
 		},
 		{
 			id: 'auth' as const,
@@ -123,6 +140,15 @@
 	) {
 		void fetchGeometryDashStatus($user.data.uid);
 	}
+	$: if (
+		$user.checked
+		&& $user.loggedIn
+		&& $user.data?.uid
+		&& socialFeedSettingsLoadedForUid !== $user.data.uid
+		&& !loadingSocialFeedSettings
+	) {
+		void loadSocialFeedSettings($user.data.uid);
+	}
 
 	function text(en: string, vi: string) {
 		return $locale === 'vi' ? vi : en;
@@ -143,6 +169,46 @@
 			.catch(() => null);
 
 		return typeof body?.error === 'string' ? body.error : fallback;
+	}
+
+	async function loadSocialFeedSettings(uid: string) {
+		loadingSocialFeedSettings = true;
+
+		try {
+			const result = await getSocialFeedSettings(await getToken());
+			socialUnverifiedRecordsVisible = result.socialUnverifiedRecordsVisible !== false;
+		} catch {
+			socialUnverifiedRecordsVisible = true;
+		} finally {
+			socialFeedSettingsLoadedForUid = uid;
+			loadingSocialFeedSettings = false;
+		}
+	}
+
+	async function setUnverifiedRecordVisibility() {
+		if (savingSocialFeedSettings) {
+			return;
+		}
+
+		const previousValue = socialUnverifiedRecordsVisible;
+		const nextValue = !previousValue;
+		socialUnverifiedRecordsVisible = nextValue;
+		savingSocialFeedSettings = true;
+
+		try {
+			const result = await updateSocialFeedSettings(await getToken(), nextValue);
+			socialUnverifiedRecordsVisible = result.socialUnverifiedRecordsVisible !== false;
+			toast.success(
+				text('Feed settings updated.', 'Đã cập nhật cài đặt bảng tin.')
+			);
+		} catch {
+			socialUnverifiedRecordsVisible = previousValue;
+			toast.error(
+				text('Could not update this setting.', 'Không thể cập nhật cài đặt này.')
+			);
+		} finally {
+			savingSocialFeedSettings = false;
+		}
 	}
 
 	async function signIn() {
@@ -606,6 +672,54 @@
             </Button>
           </div>
         </section>
+      {:else if activeTab === 'feed'}
+        <section class="section-heading">
+          <h2>{text('Feed', 'Bảng tin')}</h2>
+          <p>
+            {text(
+              'Choose which activity appears in your social feeds.',
+              'Chọn hoạt động xuất hiện trên bảng tin xã hội của bạn.'
+            )}
+          </p>
+        </section>
+
+        {#if !$user.checked || loadingSocialFeedSettings}
+          <div class="loading-panel">
+            <span class="spin"><LoaderCircle size={22} /></span>
+          </div>
+        {:else if !$user.loggedIn}
+          <section class="empty-card">
+            <Eye size={24} />
+            <h3>{text('Sign in to manage your feed', 'Đăng nhập để quản lý bảng tin')}</h3>
+            <p>
+              {text(
+                'Social feed settings are tied to your player profile.',
+                'Cài đặt bảng tin xã hội được liên kết với hồ sơ người chơi của bạn.'
+              )}
+            </p>
+            <Button on:click={signIn}>{$_('nav.sign_in')}</Button>
+          </section>
+        {:else}
+          <section class="settings-card">
+            <div class="card-row">
+              <div>
+                <h3>{text('Show unverified records', 'Hiển thị kỷ lục chưa xác minh')}</h3>
+                <p>
+                  {text(
+                    'Include auto-accepted runs that are still waiting for manual verification in your Friends and Clan tabs.',
+                    'Hiển thị các lượt chơi được tự động duyệt nhưng vẫn đang chờ xác minh thủ công trong tab Bạn bè và Bang hội.'
+                  )}
+                </p>
+              </div>
+              <Switch
+                checked={socialUnverifiedRecordsVisible}
+                disabled={savingSocialFeedSettings}
+                aria-label={text('Show unverified records', 'Hiển thị kỷ lục chưa xác minh')}
+                on:click={setUnverifiedRecordVisibility}
+              />
+            </div>
+          </section>
+        {/if}
       {:else if activeTab === 'auth'}
         <section class="section-heading">
           <h2>{text('Authentication', 'Xác thực')}</h2>

@@ -77,8 +77,10 @@
         <Textarea
           id="list-description"
           bind:value={editForm.description}
-          rows={3}
+          rows={8}
+          maxlength={2000}
         />
+        <p class="hint">{$_('custom_lists.detail.edit.description_hint')}</p>
       </div>
       <div class="field">
         <span class="fieldLabel">{

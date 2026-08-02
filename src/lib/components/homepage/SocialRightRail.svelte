@@ -1,9 +1,21 @@
 <script lang="ts">
 	import {
+		CalendarDays,
+		Check,
+		ChevronDown,
+		ChevronUp,
+		Layers3,
 		MessageCircle,
 		PencilLine,
 		Search,
+		Send,
+		Settings2,
+		Shield,
+		Sparkles,
+		Star,
 		Swords,
+		Trophy,
+		X,
 		UserPlus,
 		UserRound,
 		Users
@@ -19,8 +31,70 @@
 	import type { SocialPlayer } from '$lib/client/social';
 	import * as Avatar from '$lib/components/ui/avatar';
 	import PlayerCard from '$lib/components/playerCard.svelte';
+	import { toast } from 'svelte-sonner';
 
 	const MAX_VISIBLE_FRIENDS = 12;
+	const MAX_SHORTCUTS = 6;
+	type ShortcutId =
+		| 'find-friends'
+		| 'messages'
+		| 'create-post'
+		| 'home'
+		| 'pvp'
+		| 'lists'
+		| 'submit-record'
+		| 'events'
+		| 'tournaments'
+		| 'battlepass'
+		| 'clan'
+		| 'supporter';
+	type ShortcutDefinition = {
+		id: ShortcutId;
+		icon: any;
+		color: string;
+		label: [string, string];
+	};
+	const DEFAULT_SHORTCUTS: ShortcutId[] = [
+		'find-friends',
+		'messages',
+		'create-post',
+		'home',
+		'pvp'
+	];
+	const SHORTCUTS: ShortcutDefinition[] = [
+		{ id: 'find-friends', icon: UserPlus, color: 'blue', label: ['Find friends', 'Tìm bạn bè'] },
+		{ id: 'messages', icon: MessageCircle, color: 'violet', label: ['Messages', 'Tin nhắn'] },
+		{ id: 'create-post', icon: PencilLine, color: 'green', label: ['Create a post', 'Tạo bài viết'] },
+		{ id: 'home', icon: Users, color: 'amber', label: ['Home feed', 'Bảng tin'] },
+		{ id: 'pvp', icon: Swords, color: 'red', label: ['Play PvP', 'Chơi PvP'] },
+		{ id: 'lists', icon: Layers3, color: 'cyan', label: ['Explore lists', 'Khám phá danh sách'] },
+		{ id: 'submit-record', icon: Send, color: 'indigo', label: ['Submit record', 'Gửi kỷ lục'] },
+		{ id: 'events', icon: CalendarDays, color: 'orange', label: ['Events', 'Sự kiện'] },
+		{ id: 'tournaments', icon: Trophy, color: 'yellow', label: ['Tournaments', 'Giải đấu'] },
+		{ id: 'battlepass', icon: Sparkles, color: 'pink', label: ['GDVN Pass', 'GDVN Pass'] },
+		{ id: 'clan', icon: Shield, color: 'teal', label: ['My clan', 'Bang hội của tôi'] },
+		{ id: 'supporter', icon: Star, color: 'gold', label: ['Supporter', 'Supporter'] }
+	];
+	const SHORTCUT_BY_ID = new Map(SHORTCUTS.map((shortcut) => [shortcut.id, shortcut]));
+
+	let shortcutIds: ShortcutId[] = [...DEFAULT_SHORTCUTS];
+	let draftShortcutIds: ShortcutId[] = [];
+	let shortcutEditorOpen = false;
+	let savingShortcuts = false;
+	let loadedShortcutUid = '';
+
+	$: visibleShortcuts = shortcutIds
+		.map((shortcutId) => SHORTCUT_BY_ID.get(shortcutId))
+		.filter((shortcut): shortcut is ShortcutDefinition => Boolean(shortcut));
+	$: availableShortcuts = SHORTCUTS.filter(
+		(shortcut) => !draftShortcutIds.includes(shortcut.id)
+	);
+	$: if ($user.data?.uid && loadedShortcutUid !== String($user.data.uid)) {
+		loadedShortcutUid = String($user.data.uid);
+		shortcutIds = normalizeShortcutIds($user.data?.overviewData?.homeShortcuts);
+		draftShortcutIds = [...shortcutIds];
+		shortcutEditorOpen = false;
+	}
 
 	$: unreadMessageCount = $conversationsStore.reduce(
 		(total, conversation) => total + Math.max(0, Number(conversation.unreadCount || 0)),
@@ -52,6 +126,107 @@
 			? text('In a PvP match', 'Đang đấu PvP')
 			: text('Friend', 'Bạn bè');
 	}
+
+	function normalizeShortcutIds(value: unknown): ShortcutId[] {
+		if (!Array.isArray(value)) {
+			return [...DEFAULT_SHORTCUTS];
+		}
+
+		const normalized = [...new Set(value)]
+			.filter((shortcutId): shortcutId is ShortcutId =>
+				typeof shortcutId === 'string' && SHORTCUT_BY_ID.has(shortcutId as ShortcutId)
+			)
+			.slice(0, MAX_SHORTCUTS);
+
+		return normalized.length ? normalized : [...DEFAULT_SHORTCUTS];
+	}
+
+	function shortcutHref(shortcutId: ShortcutId) {
+		const hrefs: Record<ShortcutId, string> = {
+			'find-friends': '/social?tab=friends',
+			messages: '/social?tab=conversations',
+			'create-post': '/community/create',
+			home: '/',
+			pvp: '/versus',
+			lists: '/lists',
+			'submit-record': '/submit/record',
+			events: '/events',
+			tournaments: '/tournaments',
+			battlepass: '/battlepass',
+			clan: $user.data?.clan ? `/clan/${$user.data.clan}` : '/clans',
+			supporter: '/supporter'
+		};
+
+		return hrefs[shortcutId];
+	}
+
+	function openShortcutEditor() {
+		draftShortcutIds = [...shortcutIds];
+		shortcutEditorOpen = true;
+	}
+
+	function moveShortcut(index: number, direction: -1 | 1) {
+		const targetIndex = index + direction;
+
+		if (targetIndex < 0 || targetIndex >= draftShortcutIds.length) {
+			return;
+		}
+
+		const next = [...draftShortcutIds];
+		[next[index], next[targetIndex]] = [next[targetIndex], next[index]];
+		draftShortcutIds = next;
+	}
+
+	function removeShortcut(shortcutId: ShortcutId) {
+		if (draftShortcutIds.length <= 1) {
+			return;
+		}
+
+		draftShortcutIds = draftShortcutIds.filter((id) => id !== shortcutId);
+	}
+
+	function addShortcut(shortcutId: ShortcutId) {
+		if (draftShortcutIds.length >= MAX_SHORTCUTS) {
+			return;
+		}
+
+		draftShortcutIds = [...draftShortcutIds, shortcutId];
+	}
+
+	async function saveShortcuts() {
+		if (savingShortcuts || !draftShortcutIds.length) {
+			return;
+		}
+
+		savingShortcuts = true;
+
+		try {
+			const response = await fetch(
+				`${import.meta.env.VITE_API_URL}/social/shortcut-settings`,
+				{
+					method: 'PATCH',
+					headers: {
+						'Content-Type': 'application/json',
+						Authorization: `Bearer ${await $user.token()}`
+					},
+					body: JSON.stringify({ shortcutIds: draftShortcutIds })
+				}
+			);
+
+			if (!response.ok) {
+				throw new Error('Failed to save shortcuts');
+			}
+
+			shortcutIds = [...draftShortcutIds];
+			shortcutEditorOpen = false;
+			toast.success(text('Shortcuts saved', 'Đã lưu lối tắt'));
+			void $user.refresh();
+		} catch {
+			toast.error(text('Could not save shortcuts', 'Không thể lưu lối tắt'));
+		} finally {
+			savingShortcuts = false;
+		}
+	}
 </script>
 
 <aside class="social-right-rail" aria-label={text('Social shortcuts and contacts', 'Lối tắt xã hội và bạn bè')}>
@@ -61,32 +236,77 @@
     </div>
 
     <section class="rail-section shortcuts-section">
-      <h2>{text('Your shortcuts', 'Lối tắt của bạn')}</h2>
-      <nav class="shortcut-list" aria-label={text('Social shortcuts', 'Lối tắt xã hội')}>
-        <a href="/social?tab=friends">
-          <span class="shortcut-icon blue"><UserPlus size={17} /></span>
-          <span>{text('Find friends', 'Tìm bạn bè')}</span>
-        </a>
-        <a href="/social?tab=conversations">
-          <span class="shortcut-icon violet"><MessageCircle size={17} /></span>
-          <span>{text('Messages', 'Tin nhắn')}</span>
-          {#if unreadMessageCount > 0}
-            <span class="unread-badge">{unreadMessageCount > 99 ? '99+' : unreadMessageCount}</span>
+      <div class="shortcut-heading">
+        <h2>{text('Your shortcuts', 'Lối tắt của bạn')}</h2>
+        {#if !shortcutEditorOpen}
+          <button
+            type="button"
+            on:click={openShortcutEditor}
+            aria-label={text('Customize shortcuts', 'Tùy chỉnh lối tắt')}
+            title={text('Customize shortcuts', 'Tùy chỉnh lối tắt')}
+          >
+            <Settings2 size={16} />
+          </button>
+        {/if}
+      </div>
+
+      {#if shortcutEditorOpen}
+        <div class="shortcut-editor">
+          <p>{text(`Choose and order up to ${MAX_SHORTCUTS} shortcuts.`, `Chọn và sắp xếp tối đa ${MAX_SHORTCUTS} lối tắt.`)}</p>
+          <div class="selected-shortcuts">
+            {#each draftShortcutIds as shortcutId, index (shortcutId)}
+              {@const shortcut = SHORTCUT_BY_ID.get(shortcutId)}
+              {#if shortcut}
+                <div class="shortcut-edit-row">
+                  <span class={`shortcut-icon ${shortcut.color}`}><svelte:component this={shortcut.icon} size={16} /></span>
+                  <strong>{text(shortcut.label[0], shortcut.label[1])}</strong>
+                  <div>
+                    <button type="button" disabled={index === 0} on:click={() => moveShortcut(index, -1)} aria-label={text('Move up', 'Di chuyển lên')}><ChevronUp size={15} /></button>
+                    <button type="button" disabled={index === draftShortcutIds.length - 1} on:click={() => moveShortcut(index, 1)} aria-label={text('Move down', 'Di chuyển xuống')}><ChevronDown size={15} /></button>
+                    <button type="button" disabled={draftShortcutIds.length === 1} on:click={() => removeShortcut(shortcutId)} aria-label={text('Remove shortcut', 'Xóa lối tắt')}><X size={15} /></button>
+                  </div>
+                </div>
+              {/if}
+            {/each}
+          </div>
+
+          {#if availableShortcuts.length && draftShortcutIds.length < MAX_SHORTCUTS}
+            <div class="available-shortcuts">
+              <span>{text('Add shortcut', 'Thêm lối tắt')}</span>
+              <div>
+                {#each availableShortcuts as shortcut (shortcut.id)}
+                  <button type="button" on:click={() => addShortcut(shortcut.id)}>
+                    <svelte:component this={shortcut.icon} size={14} />
+                    {text(shortcut.label[0], shortcut.label[1])}
+                  </button>
+                {/each}
+              </div>
+            </div>
           {/if}
-        </a>
-        <a href="/community/create">
-          <span class="shortcut-icon green"><PencilLine size={17} /></span>
-          <span>{text('Create a post', 'Tạo bài viết')}</span>
-        </a>
-        <a href="/">
-          <span class="shortcut-icon amber"><Users size={17} /></span>
-          <span>{text('Home feed', 'Bảng tin')}</span>
-        </a>
-        <a href="/versus">
-          <span class="shortcut-icon red"><Swords size={17} /></span>
-          <span>{text('Play PvP', 'Chơi PvP')}</span>
-        </a>
-      </nav>
+
+          <div class="shortcut-editor-actions">
+            <button type="button" class="cancel" disabled={savingShortcuts} on:click={() => (shortcutEditorOpen = false)}>
+              {text('Cancel', 'Hủy')}
+            </button>
+            <button type="button" class="save" disabled={savingShortcuts} on:click={saveShortcuts}>
+              <Check size={15} />
+              {savingShortcuts ? text('Saving…', 'Đang lưu…') : text('Save', 'Lưu')}
+            </button>
+          </div>
+        </div>
+      {:else}
+        <nav class="shortcut-list" aria-label={text('Social shortcuts', 'Lối tắt xã hội')}>
+          {#each visibleShortcuts as shortcut (shortcut.id)}
+            <a href={shortcutHref(shortcut.id)}>
+              <span class={`shortcut-icon ${shortcut.color}`}><svelte:component this={shortcut.icon} size={17} /></span>
+              <span>{text(shortcut.label[0], shortcut.label[1])}</span>
+              {#if shortcut.id === 'messages' && unreadMessageCount > 0}
+                <span class="unread-badge">{unreadMessageCount > 99 ? '99+' : unreadMessageCount}</span>
+              {/if}
+            </a>
+          {/each}
+        </nav>
+      {/if}
     </section>
 
     <section class="rail-section contacts-section">
@@ -260,6 +480,28 @@
   letter-spacing: 0.01em;
 }
 
+.shortcut-heading {
+  display: flex;
+  min-height: 32px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px 4px 8px;
+
+  > button {
+    display: grid;
+    width: 32px;
+    height: 32px;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    color: hsl(var(--muted-foreground));
+    background: transparent;
+    cursor: pointer;
+
+    &:hover { color: hsl(var(--foreground)); background: hsl(var(--accent) / 0.75); }
+  }
+}
+
 .shortcut-list {
   display: flex;
   flex-direction: column;
@@ -297,6 +539,132 @@
 .shortcut-icon.green { color: hsl(151 66% 41%); background: hsl(151 66% 41% / 0.12); }
 .shortcut-icon.amber { color: hsl(36 90% 48%); background: hsl(36 90% 48% / 0.12); }
 .shortcut-icon.red { color: hsl(2 74% 56%); background: hsl(2 74% 56% / 0.12); }
+.shortcut-icon.cyan { color: hsl(188 80% 39%); background: hsl(188 80% 45% / 0.12); }
+.shortcut-icon.indigo { color: hsl(232 78% 61%); background: hsl(232 78% 61% / 0.12); }
+.shortcut-icon.orange { color: hsl(24 91% 51%); background: hsl(24 91% 51% / 0.12); }
+.shortcut-icon.yellow { color: hsl(43 90% 43%); background: hsl(43 90% 52% / 0.13); }
+.shortcut-icon.pink { color: hsl(326 78% 56%); background: hsl(326 78% 56% / 0.12); }
+.shortcut-icon.teal { color: hsl(168 70% 38%); background: hsl(168 70% 43% / 0.12); }
+.shortcut-icon.gold { color: hsl(38 88% 44%); background: hsl(38 88% 50% / 0.13); }
+
+.shortcut-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 6px;
+  padding: 10px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  background: hsl(var(--card) / 0.72);
+
+  > p {
+    margin: 0;
+    color: hsl(var(--muted-foreground));
+    font-size: 10px;
+    line-height: 1.45;
+  }
+}
+
+.selected-shortcuts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.shortcut-edit-row {
+  display: flex;
+  min-width: 0;
+  min-height: 38px;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 5px;
+  border-radius: 9px;
+  background: hsl(var(--background) / 0.7);
+
+  > strong {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  > div { display: flex; gap: 1px; }
+
+  button {
+    display: grid;
+    width: 26px;
+    height: 26px;
+    place-items: center;
+    border: 0;
+    border-radius: 7px;
+    color: hsl(var(--muted-foreground));
+    background: transparent;
+    cursor: pointer;
+
+    &:hover:not(:disabled) { color: hsl(var(--foreground)); background: hsl(var(--accent)); }
+    &:disabled { opacity: 0.28; cursor: default; }
+  }
+}
+
+.available-shortcuts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  > span {
+    color: hsl(var(--muted-foreground));
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  > div { display: flex; gap: 5px; flex-wrap: wrap; }
+
+  button {
+    display: inline-flex;
+    min-height: 29px;
+    align-items: center;
+    gap: 5px;
+    padding: 0 8px;
+    border: 1px solid hsl(var(--border));
+    border-radius: 8px;
+    color: hsl(var(--foreground));
+    background: hsl(var(--background));
+    font-size: 9px;
+    font-weight: 700;
+    cursor: pointer;
+
+    &:hover { border-color: hsl(205 90% 48% / 0.55); }
+  }
+}
+
+.shortcut-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  padding-top: 2px;
+
+  button {
+    display: inline-flex;
+    min-height: 32px;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 0 11px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 800;
+    cursor: pointer;
+
+    &:disabled { opacity: 0.55; cursor: wait; }
+  }
+
+  .cancel { border: 1px solid hsl(var(--border)); color: hsl(var(--foreground)); background: transparent; }
+  .save { border: 1px solid hsl(205 90% 44%); color: white; background: hsl(205 90% 44%); }
+}
 
 .unread-badge {
   min-width: 20px;

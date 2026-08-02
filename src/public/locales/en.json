@@ -120,7 +120,8 @@
         "short_label": "Accept",
         "manual": "Verified",
         "auto": "Unverified",
-        "pending": "Pending acceptance"
+        "pending": "Pending acceptance",
+        "rejected": "Rejected"
     },
     "time_unit": {
         "second": "second",
@@ -1683,6 +1684,8 @@
         "rating": "Suggested rating",
         "rating_change": "Change suggested rating",
         "comment": "Comment",
+        "target": "Target",
+        "global_target": "Global — every list",
         "reviewed_by": "Reviewed by",
         "reviewer_cmt": "Reviewer's comment",
         "prioritized_by": "Prioritized by",
@@ -2038,6 +2041,7 @@
         "time": "Time",
         "queue_no": "Queue no.",
         "forwarded": "Forwarded",
+        "rejection_reason": "Rejection reason",
         "detail": "Detail",
         "boost": "Boost",
         "cancel": {
@@ -2201,7 +2205,8 @@
             "guide": "Knowledge",
             "announcement": "Announcement",
             "review": "Review",
-            "collab": "Collab"
+            "collab": "Collab",
+            "wiki": "Wiki"
         },
         "create": {
             "button": "New Post",
@@ -2210,6 +2215,18 @@
             "post_title": "Title",
             "title_placeholder": "Enter a title...",
             "post_type": "Type",
+            "post_target": "Post to",
+            "target_global": "Global",
+            "target_global_hint": "Share with the whole GDVN community",
+            "target_clan": "Clan",
+            "target_clan_unavailable": "Join a clan to post",
+            "target_list": "List",
+            "target_list_hint": "Choose a public list community",
+            "search_lists": "Search list communities...",
+            "no_target_lists": "No list communities found",
+            "target_list_disabled": "This list does not accept community posts",
+            "validation_clan_target": "You must join a clan before posting there",
+            "validation_list_target": "Choose a target list",
             "post_content": "Content",
             "content_placeholder": "Write your post content...",
             "image": "Image",
@@ -3197,10 +3214,13 @@
     "wiki": {
         "created_at": "Created at:",
         "last_updated": "Last updated at:",
-        "description": "Guides, rules, news, and changelogs",
+        "description": "Manager-curated guides, rules, news, and reference articles",
         "categories": "Categories",
         "latest_articles": "Latest Articles",
         "no_articles": "No articles yet",
+        "new_article": "New Wiki article",
+        "manager_only": "Only managers can publish and assign the Wiki type.",
+        "retry": "Try again",
         "items": "items",
         "subfolders": "Subfolders",
         "articles": "Articles",
@@ -3306,6 +3326,7 @@
             "manage": "Manage list",
             "star": "Star list",
             "unstar": "Unstar list",
+            "submit_record": "Submit record",
             "post_about": "Post about this list"
         },
         "visibility": {
@@ -3404,6 +3425,7 @@
             "starred_empty": "No starred custom lists include this level yet.",
             "community_empty": "No community posts about this list yet.",
             "tabs": {
+                "overview": "Overview",
                 "levels": "Levels",
                 "leaderboard": "Leaderboard",
                 "my_record": "My record",
@@ -3411,6 +3433,9 @@
                 "staff": "Staff",
                 "records": "Record points",
                 "community": "Community posts"
+            },
+            "overview": {
+                "heading": "About this list"
             },
             "leaderboard": {
                 "heading": "{title} leaderboard",
@@ -3457,6 +3482,7 @@
                 "heading": "Edit metadata",
                 "title_label": "Title",
                 "description_label": "Description",
+                "description_hint": "Shown in the Overview tab. Markdown is supported.",
                 "community_label": "Community posts",
                 "community_hint": "Allow community posts to be attached to this list.",
                 "level_submission_label": "Level submissions",

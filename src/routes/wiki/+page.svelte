@@ -1,210 +1,232 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { locale, _ } from 'svelte-i18n';
+	import { _ } from 'svelte-i18n';
 	import BigTitle from '$lib/components/bigTitle.svelte';
-	import WikiCard from '$lib/components/wikiCard.svelte';
-	import FolderCard from '$lib/components/folderCard.svelte';
-	import * as Carousel from '$lib/components/ui/carousel/index.js';
-	import * as Alert from '$lib/components/ui/alert';
-	import Ads from '$lib/components/ads.svelte';
-	import {
-		BookOpen,
-		FileText,
-		Scale,
-		Newspaper,
-		History,
-		AlertCircle
-	} from 'lucide-svelte';
-	import { Button } from '$lib/components/ui/button/index.js';
+	import CommunityPostCard from '$lib/components/communityPostCard.svelte';
+	import { Button } from '$lib/components/ui/button';
+	import { user } from '$lib/client';
+	import { BookOpen, ChevronLeft, ChevronRight, Plus, RefreshCw } from 'lucide-svelte';
 
-	interface WikiFile {
-		path: string;
-		type: 'file' | 'folder';
-		parent: string;
-		level: number;
-		count: number | null;
-		created_at: string;
-		metadata?: Record<string, any>;
-		items?: WikiFile[];
-	}
+	const PAGE_SIZE = 12;
+	let posts: any[] | null = null;
+	let total = 0;
+	let currentPage = 0;
+	let loadError = false;
 
-	interface WikiResponse {
-		path: string;
-		type: 'folder';
-		items: WikiFile[];
-	}
+	$: canPublishWiki = Boolean($user.data?.isManager || $user.data?.isAdmin);
+	$: pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-	let isLoading = true;
-	let hasError = false;
-	let latestFiles: WikiFile[] = [];
+	async function fetchWikiPosts() {
+		posts = null;
+		loadError = false;
+		const params = new URLSearchParams({
+			type: 'wiki',
+			limit: String(PAGE_SIZE),
+			offset: String(currentPage * PAGE_SIZE),
+			sortBy: 'createdAt',
+			ascending: 'false'
+		});
+		const headers: Record<string, string> = {};
 
-	async function fetchLatestFiles() {
-		try {
-			const query = new URLSearchParams({
-				limit: '8'
-			});
-
-			if ($locale) {
-				query.set('locale', $locale);
+		if ($user.loggedIn) {
+			try {
+				headers.Authorization = `Bearer ${await $user.token()}`;
+			} catch {
+			// The public Wiki feed remains available if token refresh fails.
 			}
+		}
 
-			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/wiki/latest?${query.toString()}`
+		try {
+			const response = await fetch(
+				`${import.meta.env.VITE_API_URL}/community/posts?${params}`,
+				{ headers }
 			);
 
-			if (!res.ok) {
-				throw new Error(`HTTP ${res.status}`);
+			if (!response.ok) {
+				throw new Error('Failed to load Wiki posts');
 			}
 
-			latestFiles = await res.json();
-			hasError = false;
-		} catch (err) {
-			console.error('Failed to fetch latest wiki files:', err);
-			hasError = true;
-		} finally {
-			isLoading = false;
+			const result = await response.json();
+			posts = Array.isArray(result?.data) ? result.data : [];
+			total = Number(result?.total) || 0;
+		} catch {
+			posts = [];
+			total = 0;
+			loadError = true;
 		}
+	}
+
+	function changePage(page: number) {
+		if (page < 0 || page >= pageCount || page === currentPage) {
+			return;
+		}
+
+		currentPage = page;
+		void fetchWikiPosts();
+		window.scrollTo({ top: 0, behavior: 'smooth' });
 	}
 
 	onMount(() => {
-		fetchLatestFiles();
+		void fetchWikiPosts();
 	});
-
-	$: quickLinks = [
-		{ icon: Scale, labelKey: 'wiki.quick_links.rules', href: 'wiki/rules' },
-		{ icon: Newspaper, labelKey: 'wiki.quick_links.news', href: '/wiki/news' },
-		{
-			icon: History,
-			labelKey: 'wiki.quick_links.changelog',
-			href: '/wiki/changelogs'
-		},
-		{
-			icon: FileText,
-			labelKey: 'wiki.quick_links.guides',
-			href: '/wiki/guides'
-		}
-	];
 </script>
 
 <svelte:head>
-  <title>{$_('head.titles.wiki')} - {$_('head.site_name')}</title>
-  <meta
-    name="description"
-    content={$_('head.descriptions.wiki')}
-  />
+	<title>{$_('head.titles.wiki')} - {$_('head.site_name')}</title>
+	<meta name="description" content={$_('head.descriptions.wiki')} />
 </svelte:head>
 
 <BigTitle value="Wiki" description={$_('wiki.description')} />
 
-<Ads />
+<main class="wikiPage">
+	<div class="wikiToolbar">
+		<div class="wikiIntro">
+			<BookOpen class="h-5 w-5 text-cyan-500" />
+			<div>
+				<h2>{$_('wiki.latest_articles')}</h2>
+				<p>{$_('wiki.manager_only')}</p>
+			</div>
+		</div>
+		{#if canPublishWiki}
+			<a href="/community/create?type=wiki">
+				<Button size="sm">
+					<Plus class="mr-1 h-4 w-4" />
+					{$_('wiki.new_article')}
+				</Button>
+			</a>
+		{/if}
+	</div>
 
-<div class="wrapper">
-  <!-- Quick Links Section -->
-  <section class="quick-links">
-    <div class="quick-links-grid">
-      {#each quickLinks as link}
-        <a href={link.href}>
-          <Button
-            variant="outline"
-            class="quick-link-btn h-auto w-full flex-col gap-2 py-6"
-          >
-            <svelte:component this={link.icon} class="h-8 w-8 text-primary" />
-            <span class="text-sm font-medium">{$_(link.labelKey)}</span>
-          </Button>
-        </a>
-      {/each}
-    </div>
-  </section>
+	{#if posts === null}
+		<div class="wikiFeed" aria-label="Loading Wiki articles">
+			{#each { length: 3 } as _}
+				<CommunityPostCard post={null} compact={false} />
+			{/each}
+		</div>
+	{:else if loadError}
+		<div class="emptyState">
+			<RefreshCw class="h-8 w-8" />
+			<h2>{$_('wiki.error_title')}</h2>
+			<p>{$_('wiki.error_description')}</p>
+			<Button variant="outline" size="sm" on:click={fetchWikiPosts}>
+				{$_('wiki.retry')}
+			</Button>
+		</div>
+	{:else if posts.length === 0}
+		<div class="emptyState">
+			<BookOpen class="h-8 w-8" />
+			<p>{$_('wiki.no_articles')}</p>
+		</div>
+	{:else}
+		<div class="wikiFeed">
+			{#each posts as post (post.id)}
+				<CommunityPostCard {post} compact={false} />
+			{/each}
+		</div>
 
-  <!-- Latest Articles -->
-  <section class="section">
-    <h2 class="section-title">
-      <FileText class="mr-2 inline h-5 w-5" />
-      {$_('wiki.latest_articles')}
-    </h2>
-    <div class="carouselWrapper">
-      {#if isLoading}
-        <Carousel.Root>
-          <Carousel.Content>
-            {#each { length: 4 } as _}
-              <Carousel.Item
-                class="sm:basis-1/1 md:basis-1/2 lg:basis-1/3 xl:basis-1/4"
-              >
-                <WikiCard item={null} locale={String($locale)} />
-              </Carousel.Item>
-            {/each}
-          </Carousel.Content>
-          <Carousel.Previous />
-          <Carousel.Next />
-        </Carousel.Root>
-      {:else if latestFiles.length > 0}
-        <Carousel.Root>
-          <Carousel.Content>
-            {#each latestFiles as file}
-              <Carousel.Item
-                class="sm:basis-1/1 md:basis-1/2 lg:basis-1/3 xl:basis-1/4"
-              >
-                <WikiCard item={file} locale={String($locale)} />
-              </Carousel.Item>
-            {/each}
-          </Carousel.Content>
-          <Carousel.Previous />
-          <Carousel.Next />
-        </Carousel.Root>
-      {:else}
-        <p class="text-center text-foreground/60">{$_('wiki.no_articles')}</p>
-      {/if}
-    </div>
-  </section>
-</div>
+		{#if pageCount > 1}
+			<nav class="pagination" aria-label="Wiki pagination">
+				<Button
+					variant="outline"
+					size="sm"
+					disabled={currentPage === 0}
+					on:click={() => changePage(currentPage - 1)}
+				>
+					<ChevronLeft class="h-4 w-4" />
+				</Button>
+				<span>{currentPage + 1} / {pageCount}</span>
+				<Button
+					variant="outline"
+					size="sm"
+					disabled={currentPage + 1 >= pageCount}
+					on:click={() => changePage(currentPage + 1)}
+				>
+					<ChevronRight class="h-4 w-4" />
+				</Button>
+			</nav>
+		{/if}
+	{/if}
+</main>
 
 <style lang="scss">
-.wrapper {
-  padding-inline: 50px;
-  max-width: 1500px;
-  margin: 0 auto;
-}
+	.wikiPage {
+		width: min(900px, calc(100% - 32px));
+		margin: 0 auto 64px;
+	}
 
-.quick-links {
-  margin-bottom: 40px;
-}
+	.wikiToolbar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 16px;
+		padding: 16px;
+		margin-bottom: 18px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 14px;
+		background: hsl(var(--card));
+	}
 
-.quick-links-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-}
+	.wikiIntro {
+		display: flex;
+		align-items: flex-start;
+		gap: 10px;
 
-.section {
-  margin-bottom: 40px;
-}
+		h2 {
+			margin: 0;
+			font-size: 16px;
+			font-weight: 700;
+		}
 
-.section-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-}
+		p {
+			margin: 3px 0 0;
+			font-size: 12px;
+			color: hsl(var(--muted-foreground));
+		}
+	}
 
-.carouselWrapper {
-  max-width: 100%;
-}
+	.wikiFeed {
+		display: flex;
+		flex-direction: column;
+		gap: 14px;
+	}
 
-@media screen and (max-width: 900px) {
-  .wrapper {
-    padding-inline: 15px;
-  }
+	.emptyState {
+		display: flex;
+		min-height: 260px;
+		align-items: center;
+		justify-content: center;
+		flex-direction: column;
+		gap: 10px;
+		padding: 32px;
+		text-align: center;
+		color: hsl(var(--muted-foreground));
+		border: 1px dashed hsl(var(--border));
+		border-radius: 14px;
 
-  .quick-links-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
+		h2,
+		p {
+			margin: 0;
+		}
+	}
 
-@media screen and (max-width: 480px) {
-  .quick-links-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
-}
+	.pagination {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 12px;
+		margin-top: 22px;
+		font-size: 13px;
+		color: hsl(var(--muted-foreground));
+	}
+
+	@media screen and (max-width: 640px) {
+		.wikiPage {
+			width: min(100% - 20px, 900px);
+		}
+
+		.wikiToolbar {
+			align-items: flex-start;
+			flex-direction: column;
+		}
+	}
 </style>

@@ -135,11 +135,12 @@
 	async function getEstimatedQueueNo(
 		userID: string,
 		levelID: number,
-		prioritizedBy: number
+		prioritizedBy: number,
+		recordId?: number
 	): Promise<number> {
 		const res = await (
 			await fetch(
-				`${import.meta.env.VITE_API_URL}/records/${userID}/${levelID}/getEstimatedQueue/${prioritizedBy}`,
+				`${import.meta.env.VITE_API_URL}/records/${userID}/${levelID}/getEstimatedQueue/${prioritizedBy}${recordId ? `?id=${recordId}` : ''}`,
 				{
 					method: 'GET',
 					headers: {
@@ -178,7 +179,7 @@
 		disableBtn = true;
 		toast.promise(
 			fetch(
-				`${import.meta.env.VITE_API_URL}/records/${uid}/${levelID}/changeSuggestedRating/${record.data.suggestedRating}`,
+				`${import.meta.env.VITE_API_URL}/records/${uid}/${levelID}/changeSuggestedRating/${record.data.suggestedRating}?id=${record.data.id}`,
 				{
 					method: 'PUT',
 					headers: {
@@ -292,7 +293,7 @@
 	}
 
 	function getShareLink() {
-		return `${$page.url.origin}/record/${record.data.userid}/${record.data.levelid}`;
+		return `${$page.url.origin}/record/${record.data.userid}/${record.data.levelid}?id=${record.data.id}`;
 	}
 
 	function formatPrice(x: number) {
@@ -315,7 +316,8 @@
 			estimatedQueueNo = await getEstimatedQueueNo(
 				record.data.userid,
 				record.data.levelid,
-				prioritizedMs
+				prioritizedMs,
+				record.data.id
 			);
 			skipAheadState = 1;
 			estimatedQueueLoading = false;
@@ -338,6 +340,7 @@
 						},
 						body: JSON.stringify({
 							levelID: record.data.levelid,
+							recordId: record.data.id,
 							quantity: daysToSkip[0]
 						})
 					}
@@ -378,7 +381,8 @@
 					},
 					body: JSON.stringify({
 						userID: record.data.userid,
-						levelID: record.data.levelid
+						levelID: record.data.levelid,
+						recordId: record.data.id
 					})
 				}
 			)
@@ -425,13 +429,13 @@
             <Tabs.Trigger value="share">{
               $_('record_detail.tabs.share')
             }</Tabs.Trigger>
-            {#if !record.data.isChecked && $user.loggedIn
+            {#if !record.data.isChecked && !record.data.rejectedAt && $user.loggedIn
     && $user.data.uid == record.data.userid}
               <Tabs.Trigger value="skipAhead">{
                 $_('record_detail.tabs.skip_ahead')
               }</Tabs.Trigger>
             {/if}
-            {#if record.data.reviewer != null && $user.loggedIn
+            {#if !record.data.rejectedAt && record.data.reviewer != null && $user.loggedIn
     && record.data.reviewer.uid == $user.data.uid
     && record.data.needMod == false}
               <Tabs.Trigger value="review">{
@@ -486,6 +490,18 @@
                     new Date(record.data.timestamp)
 .toLocaleString('vi-VN')
                   }</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">{$_('record_detail.target')}</span>
+                  <span class="detail-value">
+                    {#if record.data.targetList}
+                      <a href={`/lists/${record.data.targetList.slug || record.data.targetList.id}`}>
+                        {record.data.targetList.title}
+                      </a>
+                    {:else}
+                      {$_('record_detail.global_target')}
+                    {/if}
+                  </span>
                 </div>
                 {#if $user.loggedIn && $user.data.uid == record.data.userid}
                   <div class="detail-row">
@@ -619,7 +635,7 @@
                     {/if}
                   </div>
                 </div>
-                {#if $user.loggedIn && $user.data.isAdmin && record.data.reviewerComment}
+                {#if record.data.reviewerComment && $user.loggedIn && ($user.data.isAdmin || (record.data.rejectedAt && $user.data.uid === record.data.userid))}
                   <div class="detail-row">
                     <span class="detail-label">{
                       $_('record_detail.reviewer_cmt')

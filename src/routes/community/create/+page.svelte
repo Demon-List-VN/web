@@ -25,17 +25,26 @@
 		ThumbsDown,
 		Eye,
 		ArrowLeft,
+		Globe2,
+		Shield,
 		Tag,
 		Users
 	} from 'lucide-svelte';
 
-	$: clanId = $page.url.searchParams.get('clanId');
-	$: presetListId = $page.url.searchParams.get('listId');
+	const presetClanId = $page.url.searchParams.get('clanId');
+	const presetListId = $page.url.searchParams.get('listId');
+	const presetPostType = $page.url.searchParams.get('type');
+	type PostTarget = 'global' | 'clan' | 'list';
+	let postTarget: PostTarget = presetClanId
+		? 'clan'
+		: presetListId
+		? 'list'
+		: 'global';
 
 	const newPost = {
 		title: '',
 		content: '',
-		type: 'discussion',
+		type: presetPostType === 'wiki' ? 'wiki' : 'discussion',
 		imageUrl: '',
 		videoUrl: ''
 	};
@@ -60,6 +69,20 @@
 	let selectedList: any = null;
 	let loadingListAttachment = false;
 	let selectedListKey = '';
+	let targetLists: any[] = [];
+	let targetListSearch = '';
+	let loadingTargetLists = false;
+	let targetListSearchTimer: ReturnType<typeof setTimeout>;
+	$: userClan = Array.isArray($user.data?.clans)
+		? $user.data.clans[0]
+		: $user.data?.clans;
+	$: targetBackHref = postTarget === 'clan' && $user.data?.clan
+		? `/clan/${$user.data.clan}`
+		: postTarget === 'list' && selectedList?.id
+		? `/lists/${selectedList.slug || selectedList.id}?tab=community`
+		: newPost.type === 'wiki'
+		? '/wiki'
+		: '/';
 
 	// Review state
 	let isRecommended: boolean = true;
@@ -74,6 +97,15 @@
 
 	// Participants state
 	let maxParticipants: string = '';
+	let wikiAccessChecked = false;
+	$: canAssignWiki = Boolean($user.data?.isManager || $user.data?.isAdmin);
+	$: if ($user.checked && !wikiAccessChecked) {
+		if (newPost.type === 'wiki' && !canAssignWiki) {
+			newPost.type = 'discussion';
+		}
+
+		wikiAccessChecked = true;
+	}
 
 	async function fetchTags() {
 		loadingTags = true;
@@ -112,7 +144,13 @@
 
 	import { onMount } from 'svelte';
 	onMount(() => {
-		fetchTags();
+		void fetchTags();
+
+		if (presetListId) {
+			void prefillListAttachment(presetListId);
+		} else if (postTarget === 'list') {
+			void fetchTargetLists();
+		}
 	});
 
 	async function prefillListAttachment(listId: string) {
@@ -135,8 +173,17 @@
 			}
 
 			const list = await res.json();
+
+			if (list.visibility === 'private' || list.communityEnabled === false) {
+				selectedList = null;
+				toast.error($_('community.create.target_list_disabled'));
+
+				return;
+			}
+
 			selectedList = {
 				id: list.id,
+				slug: list.slug,
 				title: list.title,
 				ownerName: list.ownerData?.name || null,
 				levelCount: list.levelCount,
@@ -148,6 +195,79 @@
 		} finally {
 			loadingListAttachment = false;
 		}
+	}
+
+	function changePostTarget(target: PostTarget) {
+		if (target === 'clan' && !$user.data?.clan) {
+			return;
+		}
+
+		postTarget = target;
+
+		if (target === 'list' && !selectedList && targetLists.length === 0) {
+			void fetchTargetLists();
+		}
+	}
+
+	async function fetchTargetLists() {
+		loadingTargetLists = true;
+
+		try {
+			const params = new URLSearchParams({
+				limit: '20',
+				offset: '0'
+			});
+			const query = targetListSearch.trim();
+
+			if (query) {
+				params.set('search', query);
+			}
+
+			const token = await $user.token()
+				.catch(() => undefined);
+			const response = await fetch(
+				`${import.meta.env.VITE_API_URL}/lists?${params}`,
+				{
+					headers: token ? { Authorization: `Bearer ${token}` } : {}
+				}
+			);
+
+			if (!response.ok) {
+				throw new Error('Failed to load lists');
+			}
+
+			const result = await response.json();
+			targetLists = (result.data || []).filter(
+				(list: any) => list.visibility !== 'private' && list.communityEnabled === true
+			);
+		} catch {
+			targetLists = [];
+		} finally {
+			loadingTargetLists = false;
+		}
+	}
+
+	function debouncedTargetListSearch() {
+		clearTimeout(targetListSearchTimer);
+		targetListSearchTimer = setTimeout(() => void fetchTargetLists(), 300);
+	}
+
+	function selectTargetList(list: any) {
+		selectedList = {
+			id: list.id,
+			slug: list.slug,
+			title: list.title,
+			ownerName: list.ownerData?.name || null,
+			levelCount: list.levelCount,
+			isPlatformer: list.isPlatformer,
+			mode: list.mode
+		};
+	}
+
+	function clearTargetList() {
+		selectedList = null;
+		selectedListKey = '';
+		void fetchTargetLists();
 	}
 
 	function getYouTubeId(url: string): string | null {
@@ -286,13 +406,6 @@
 		attachmentType = 'none';
 	}
 
-	$: if (presetListId) {
-		prefillListAttachment(presetListId);
-	} else {
-		selectedList = null;
-		selectedListKey = '';
-	}
-
 	async function searchReviewLevels() {
 		loadingReviewLevels = true;
 
@@ -387,6 +500,18 @@
 			return;
 		}
 
+		if (postTarget === 'clan' && !$user.data?.clan) {
+			toast.error($_('community.create.validation_clan_target'));
+
+			return;
+		}
+
+		if (postTarget === 'list' && !selectedList?.id) {
+			toast.error($_('community.create.validation_list_target'));
+
+			return;
+		}
+
 		if (newPost.type === 'collab') {
 			const parsed = parseInt(maxParticipants);
 
@@ -421,12 +546,14 @@
 				body.videoUrl = newPost.videoUrl;
 			}
 
-			if (newPost.type !== 'review' && selectedList?.id) {
+			if (postTarget === 'list' && selectedList?.id) {
 				body.attachedList = {
 					id: selectedList.id,
 					title: selectedList.title
 				};
-			} else if (selectedRecord) {
+			}
+
+			if (selectedRecord) {
 				body.attachedRecord = {
 					levelid: selectedRecord.levelid,
 					levelName: selectedRecord.levels?.name,
@@ -464,8 +591,9 @@
 				}
 			}
 
-			const apiUrl = clanId
-				? `${import.meta.env.VITE_API_URL}/clans/${clanId}/community/posts`
+			const targetClanId = postTarget === 'clan' ? $user.data?.clan : null;
+			const apiUrl = targetClanId
+				? `${import.meta.env.VITE_API_URL}/clans/${targetClanId}/community/posts`
 				: `${import.meta.env.VITE_API_URL}/community/posts`;
 
 			const res = await fetch(apiUrl, {
@@ -486,10 +614,18 @@
 
 			if (created.moderationStatus === 'pending') {
 				toast.success($_('community.create.pending_review'));
-				goto(clanId ? `/clan/${clanId}` : '/');
+				goto(targetClanId
+					? `/clan/${targetClanId}`
+					: postTarget === 'list'
+					? `/lists/${selectedList.slug || selectedList.id}?tab=community`
+					: newPost.type === 'wiki'
+					? '/wiki'
+					: '/');
 			} else {
 				toast.success($_('community.create.success'));
-				goto(`/community/${created.id}`);
+				goto(targetClanId
+					? `/clan/${targetClanId}/community/${created.id}`
+					: `/community/${created.id}`);
 			}
 		} catch (e: any) {
 			toast.error(e.message);
@@ -505,9 +641,9 @@
 
 <div class="createPage">
   <div class="backNav">
-    <a href={clanId ? `/clan/${clanId}` : '/'} class="backLink">
+    <a href={targetBackHref} class="backLink">
       <ArrowLeft class="h-4 w-4" />
-      <span>{clanId ? $_('clan.tabs.community') : $_('head.site_name')}</span>
+      <span>{postTarget === 'clan' ? $_('clan.tabs.community') : postTarget === 'list' && selectedList ? selectedList.title : $_('head.site_name')}</span>
     </a>
   </div>
 
@@ -518,6 +654,64 @@
     </div>
 
     <div class="createForm">
+      <div class="formField targetField">
+        <span class="fieldLabel">{$_('community.create.post_target') || 'Post to'}</span>
+        <div class="targetOptions">
+          <button type="button" class:active={postTarget === 'global'} on:click={() => changePostTarget('global')}>
+            <span class="targetIcon global"><Globe2 size={18} /></span>
+            <span><strong>{$_('community.create.target_global') || 'Global'}</strong><small>{$_('community.create.target_global_hint') || 'Share with the whole GDVN community'}</small></span>
+          </button>
+          <button type="button" class:active={postTarget === 'clan'} disabled={!$user.data?.clan} on:click={() => changePostTarget('clan')}>
+            <span class="targetIcon clan"><Shield size={18} /></span>
+            <span><strong>{$_('community.create.target_clan') || 'Clan'}</strong><small>{$user.data?.clan ? (userClan?.name || `#${$user.data.clan}`) : ($_('community.create.target_clan_unavailable') || 'Join a clan to post')}</small></span>
+          </button>
+          <button type="button" class:active={postTarget === 'list'} on:click={() => changePostTarget('list')}>
+            <span class="targetIcon list"><Layers size={18} /></span>
+            <span><strong>{$_('community.create.target_list') || 'List'}</strong><small>{selectedList?.title || ($_('community.create.target_list_hint') || 'Choose a public list community')}</small></span>
+          </button>
+        </div>
+
+        {#if postTarget === 'list'}
+          <div class="targetListPicker">
+            {#if loadingListAttachment}
+              <p class="attachmentLoading">{$_('general.loading')}...</p>
+            {:else if selectedList}
+              <div class="selectedTargetList">
+                <span class="targetIcon list"><Layers size={17} /></span>
+                <span><strong>{selectedList.title}</strong><small>{selectedList.ownerName || `${selectedList.levelCount || 0} levels`}</small></span>
+                <button type="button" on:click={clearTargetList} aria-label="Change list"><X size={15} /></button>
+              </div>
+            {:else}
+              <div class="attachmentSearch">
+                <div class="searchInputWrap">
+                  <Search class="h-3.5 w-3.5" />
+                  <input
+                    type="text"
+                    bind:value={targetListSearch}
+                    placeholder={$_('community.create.search_lists') || 'Search list communities'}
+                    on:input={debouncedTargetListSearch}
+                  />
+                </div>
+              </div>
+              <div class="targetListResults">
+                {#if loadingTargetLists}
+                  <p class="attachmentLoading">{$_('general.loading')}...</p>
+                {:else if targetLists.length === 0}
+                  <p class="attachmentEmpty">{$_('community.create.no_target_lists') || 'No list communities found'}</p>
+                {:else}
+                  {#each targetLists as list (list.id)}
+                    <button type="button" on:click={() => selectTargetList(list)}>
+                      <Layers class="targetResultIcon" size={15} />
+                      <span><strong>{list.title}</strong><small>{list.ownerData?.name || `${list.levelCount || 0} levels`}</small></span>
+                    </button>
+                  {/each}
+                {/if}
+              </div>
+            {/if}
+          </div>
+        {/if}
+      </div>
+
       <div class="formField">
         <label for="post-title">{$_('community.create.post_title')}</label>
         <Input
@@ -530,6 +724,10 @@
       <div class="formField">
         <label for="post-type">{$_('community.create.post_type')}</label>
         <Select.Root
+          selected={{
+            value: newPost.type,
+            label: $_(`community.type.${newPost.type}`)
+          }}
           onSelectedChange={(v) => {
               if (v) {
                   newPost.type = String(v.value);
@@ -563,6 +761,11 @@
             {#if $user.data?.isAdmin}
               <Select.Item value="announcement">{
                 $_('community.type.announcement')
+              }</Select.Item>
+            {/if}
+            {#if canAssignWiki}
+              <Select.Item value="wiki">{
+                $_('community.type.wiki')
               }</Select.Item>
             {/if}
           </Select.Content>
@@ -820,25 +1023,7 @@
             })
           </span>
 
-          {#if loadingListAttachment}
-            <div class="attachmentPreview">
-              <p class="attachmentLoading">{$_('general.loading')}...</p>
-            </div>
-          {:else if selectedList}
-            <div class="attachmentPreview">
-              <div class="attachmentCard">
-                <Layers class="h-4 w-4 text-sky-500" />
-                <div class="attachmentInfo">
-                  <strong>{selectedList.title}</strong>
-                  {#if selectedList.ownerName}
-                    <span class="text-xs text-muted-foreground">{
-                      selectedList.ownerName
-                    }</span>
-                  {/if}
-                </div>
-              </div>
-            </div>
-          {:else if selectedRecord}
+          {#if selectedRecord}
             <div class="attachmentPreview">
               <div class="attachmentCard">
                 <Trophy class="h-4 w-4 text-amber-500" />
@@ -962,7 +1147,7 @@
     </div>
 
     <div class="createFooter">
-      <Button variant="outline" on:click={() => goto('/')}>
+      <Button variant="outline" on:click={() => goto(targetBackHref)}>
         {$_('general.close')}
       </Button>
       <Button on:click={handleCreate} disabled={submitting || uploading}>
@@ -1054,6 +1239,132 @@
     display: flex;
     align-items: center;
     gap: 4px;
+  }
+}
+
+.targetField { gap: 9px; }
+
+.targetOptions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+
+  > button {
+    display: flex;
+    min-width: 0;
+    min-height: 72px;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border: 1px solid hsl(var(--border));
+    border-radius: 10px;
+    color: hsl(var(--foreground));
+    background: hsl(var(--background));
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 150ms ease, background 150ms ease;
+
+    &:hover:not(:disabled) { border-color: hsl(var(--primary) / 0.48); }
+    &.active { border-color: hsl(var(--primary)); background: hsl(var(--primary) / 0.07); }
+    &:disabled { opacity: 0.46; cursor: not-allowed; }
+
+    > span:last-child {
+      display: flex;
+      min-width: 0;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    strong { font-size: 12px; }
+    small {
+      overflow: hidden;
+      color: hsl(var(--muted-foreground));
+      font-size: 9px;
+      line-height: 1.35;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+}
+
+.targetIcon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+  border-radius: 9px;
+
+  &.global { color: hsl(205 87% 46%); background: hsl(205 87% 48% / 0.12); }
+  &.clan { color: hsl(157 63% 39%); background: hsl(157 63% 43% / 0.12); }
+  &.list { color: hsl(266 75% 59%); background: hsl(266 75% 59% / 0.12); }
+}
+
+.targetListPicker {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 10px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 10px;
+  background: hsl(var(--muted) / 0.18);
+}
+
+.selectedTargetList {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+
+  > span:nth-child(2) {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+
+    strong { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+    small { color: hsl(var(--muted-foreground)); font-size: 10px; }
+  }
+
+  > button {
+    display: grid;
+    width: 30px;
+    height: 30px;
+    place-items: center;
+    border: 0;
+    border-radius: 8px;
+    color: hsl(var(--muted-foreground));
+    background: transparent;
+    cursor: pointer;
+
+    &:hover { color: hsl(var(--foreground)); background: hsl(var(--accent)); }
+  }
+}
+
+.targetListResults {
+  display: flex;
+  max-height: 210px;
+  flex-direction: column;
+  gap: 3px;
+  overflow-y: auto;
+
+  > button {
+    display: flex;
+    min-height: 42px;
+    align-items: center;
+    gap: 9px;
+    padding: 6px 8px;
+    border: 0;
+    border-radius: 8px;
+    color: hsl(var(--foreground));
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover { background: hsl(var(--accent)); }
+    :global(.targetResultIcon) { flex: none; color: hsl(266 75% 59%); }
+    > span { display: flex; min-width: 0; flex-direction: column; }
+    strong { overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+    small { color: hsl(var(--muted-foreground)); font-size: 9px; }
   }
 }
 
@@ -1450,5 +1761,7 @@
   .createPage {
     padding: 16px 16px 40px;
   }
+
+  .targetOptions { grid-template-columns: 1fr; }
 }
 </style>

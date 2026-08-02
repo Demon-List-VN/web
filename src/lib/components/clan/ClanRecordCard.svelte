@@ -8,6 +8,7 @@
 		Trophy
 	} from 'lucide-svelte';
 	import { locale } from 'svelte-i18n';
+	import ClanTag from '$lib/components/clan/ClanTag.svelte';
 
 	export let record: any;
 	export let clan: any = null;
@@ -90,7 +91,7 @@
       <div class="record-body">
         <div class="record-kicker">
           {#if clan}
-            <span class="clan-tag">c/{clan.tag || clan.name}</span>
+            <ClanTag {clan} compact />
           {/if}
           <span>{tr('new record', 'kỷ lục mới')}</span>
           <span>·</span>
@@ -109,6 +110,8 @@
           </span>
           {#if record.acceptedManually}
             <span class="accepted"><BadgeCheck size={14} /> {tr('Verified', 'Đã duyệt')}</span>
+          {:else if record.acceptedAuto}
+            <span class="unverified"><BadgeCheck size={14} /> {tr('Unverified', 'Chưa xác minh')}</span>
           {/if}
         </div>
       </div>
@@ -210,11 +213,6 @@
   font-weight: 700;
 }
 
-.clan-tag {
-  color: hsl(199 89% 43%);
-  font-weight: 850;
-}
-
 .record-meta {
   gap: 12px;
   margin-top: 12px;
@@ -227,6 +225,7 @@
   }
 
   .accepted { color: hsl(157 64% 39%); }
+  .unverified { color: hsl(43 84% 44%); }
 }
 
 .compact .record-link {

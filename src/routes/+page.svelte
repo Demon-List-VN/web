@@ -7,6 +7,7 @@
 		Flame,
 		Gamepad2,
 		Layers3,
+		LockKeyhole,
 		Radio,
 		Shield,
 		Sparkles,
@@ -22,21 +23,30 @@
 	import CommunityPostCard from '$lib/components/communityPostCard.svelte';
 	import OnboardingProgress from '$lib/components/homepage/OnboardingProgress.svelte';
 	import QuickPostComposer from '$lib/components/homepage/QuickPostComposer.svelte';
+	import FriendLevelCard from '$lib/components/homepage/FriendLevelCard.svelte';
 	import SocialRightRail from '$lib/components/homepage/SocialRightRail.svelte';
 	import OnboardingModal from '$lib/components/OnboardingModal.svelte';
 	import ClanRecordCard from '$lib/components/clan/ClanRecordCard.svelte';
+	import ClanTag from '$lib/components/clan/ClanTag.svelte';
+	import { isActive } from '$lib/client/isSupporterActive';
 
 	export let data: any;
 
 	type FeedItem = {
-		kind: 'community' | 'event' | 'level' | 'promo' | 'pvp' | 'supporter' | 'tournament';
+		kind: 'community' | 'event' | 'level' | 'promo' | 'pvp' | 'record-progress' | 'supporter' | 'tournament';
 		key: string;
 		data: any;
 	};
 	type HomepageRequestMode = 'auth' | 'public';
-	type HomeFeedTab = 'for-you' | 'clan';
+	type HomeFeedTab = 'for-you' | 'friends' | 'clan';
 	type ClanFeedItem = {
-		kind: 'record' | 'community';
+		kind: 'record' | 'level' | 'community';
+		key: string;
+		data: any;
+		timestamp: number;
+	};
+	type FriendFeedItem = {
+		kind: 'record' | 'level' | 'community';
 		key: string;
 		data: any;
 		timestamp: number;
@@ -63,13 +73,12 @@
 	let activeFeedTab: HomeFeedTab = 'for-you';
 	let homeData: any = data?.homeData || null;
 	let homepageRequestMode: HomepageRequestMode | null = null;
-	let communityFeedPosts: any[] = [];
-	let communityOffset = 0;
-	let communityTotal: number | null = null;
-	let communityHasMore = false;
-	let communityLoadingMore = false;
-	let communityLoadError = false;
-	let communityInitialized = false;
+	let loadedFeedItems: FeedItem[] = [];
+	let feedCursor: { before: string; beforeKey: string; } | null = null;
+	let feedHasMore = false;
+	let feedLoadingMore = false;
+	let feedLoadError = false;
+	let feedInitialized = false;
 
 	$: if (data?.homeData) {
 		homeData = data.homeData;
@@ -87,7 +96,11 @@
 	$: feedSeed = Number(homeData?.feedSeed ?? 1);
 	$: activeSeason = homeData?.activeSeason ?? null;
 	$: battlepassProgress = homeData?.battlepassProgress ?? null;
+	$: latestUnverifiedRecord = homeData?.latestUnverifiedRecord ?? null;
+	$: friendFeed = homeData?.friendFeed ?? null;
+	$: friendActivity = buildFriendActivity(friendFeed);
 	$: clanFeed = homeData?.clanFeed ?? null;
+	$: clanBoosted = isActive(clanFeed?.clan?.boostedUntil);
 	$: clanActivity = buildClanActivity(clanFeed);
 	$: levelFeed = homeData?.levelFeed?.length
 		? homeData.levelFeed
@@ -101,16 +114,20 @@
 		pvp,
 		activeSeason,
 		battlepassProgress,
+		latestUnverifiedRecord,
 		seed: feedSeed
 	});
-	$: mixedCommunityPostIds = new Set(
-		mixedFeed
-			.filter((item) => item.kind === 'community')
-			.map((item) => String(item.data?.id))
+	$: mixedContentItems = mixedFeed.filter(
+		(item) => item.kind === 'community'
+			|| item.kind === 'level'
+			|| item.kind === 'event'
+			|| item.kind === 'tournament'
 	);
-	$: communityContinuationPosts = communityFeedPosts.filter(
-		(post) => !mixedCommunityPostIds.has(String(post.id))
+	$: mixedScrollableItems = mixedContentItems.filter(
+		(item) => item.kind === 'community' || item.kind === 'level'
 	);
+	$: mixedScrollableKeys = new Set(mixedScrollableItems.map((item) => item.key));
+	$: feedContinuationItems = mergeFeedItems(loadedFeedItems);
 
 	function ensureHomepageLoaded(authenticated: boolean) {
 		const mode: HomepageRequestMode = authenticated ? 'auth' : 'public';
@@ -132,7 +149,7 @@
 			} catch {
 				if (homepageRequestMode === mode && homeData === null) {
 					homeData = {};
-					initializeCommunityFeed([]);
+					initializeFeedContinuation();
 				}
 
 				return;
@@ -159,32 +176,31 @@
 				feedSeed: loadedData?.feedSeed
 					?? Math.floor(Math.random() * 2_147_483_647)
 			};
-			initializeCommunityFeed(loadedData?.communityPosts ?? []);
+			initializeFeedContinuation();
 		} catch {
 			if (homepageRequestMode === mode && homeData === null) {
 				homeData = {};
-				initializeCommunityFeed([]);
+				initializeFeedContinuation();
 			}
 		}
 	}
 
-	function initializeCommunityFeed(posts: any[]) {
-		communityFeedPosts = [...posts];
-		communityOffset = posts.length;
-		communityTotal = null;
-		communityHasMore = true;
-		communityLoadingMore = false;
-		communityLoadError = false;
-		communityInitialized = true;
+	function initializeFeedContinuation() {
+		loadedFeedItems = [];
+		feedCursor = null;
+		feedHasMore = true;
+		feedLoadingMore = false;
+		feedLoadError = false;
+		feedInitialized = true;
 	}
 
-	async function loadMoreCommunity() {
-		if (!communityInitialized || communityLoadingMore || !communityHasMore) {
+	async function loadMoreFeed() {
+		if (!feedInitialized || feedLoadingMore || !feedHasMore) {
 			return;
 		}
 
-		communityLoadingMore = true;
-		communityLoadError = false;
+		feedLoadingMore = true;
+		feedLoadError = false;
 		const headers: Record<string, string> = {};
 
 		if ($user.loggedIn) {
@@ -194,54 +210,64 @@
 		}
 
 		try {
+			const cursor = feedCursor ?? getFeedCursor(mixedContentItems);
+
+			if (!cursor) {
+				feedHasMore = false;
+
+				return;
+			}
+
 			const params = new URLSearchParams({
 				limit: String(COMMUNITY_PAGE_SIZE),
-				offset: String(communityOffset),
-				sortBy: 'createdAt',
-				ascending: 'false'
+				before: cursor.before,
+				beforeKey: cursor.beforeKey
 			});
 			const response = await fetch(
-				`${import.meta.env.VITE_API_URL}/community/posts?${params}`,
+				`${import.meta.env.VITE_API_URL}/homepage/feed?${params}`,
 				{ headers }
 			);
 
 			if (!response.ok) {
-				throw new Error('Failed to load community posts');
+				throw new Error('Failed to load feed');
 			}
 
 			const result = await response.json();
-			const incoming = Array.isArray(result?.data) ? result.data : [];
-			const knownPostIds = new Set(communityFeedPosts.map((post) => post.id));
-			const uniquePosts = incoming.filter((post: any) => !knownPostIds.has(post.id));
+			const incoming: FeedItem[] = Array.isArray(result?.data) ? result.data : [];
+			const knownKeys = new Set([
+				...mixedScrollableKeys,
+				...loadedFeedItems.map((item) => item.key)
+			]);
+			const uniqueItems = incoming.filter((item) => !knownKeys.has(item.key));
 
-			communityFeedPosts = [...communityFeedPosts, ...uniquePosts];
-			communityOffset += incoming.length;
-			communityTotal = Number.isFinite(Number(result?.total))
-				? Number(result.total)
-				: null;
-			communityHasMore = communityTotal !== null
-				? communityOffset < communityTotal
-				: incoming.length === COMMUNITY_PAGE_SIZE;
+			loadedFeedItems = [...loadedFeedItems, ...uniqueItems];
+			feedCursor = result?.nextCursor ?? null;
+			feedHasMore = Boolean(result?.hasMore && result?.nextCursor);
 
-			if (headers.Authorization && incoming.length) {
+			const incomingPostIds = incoming
+				.filter((item) => item.kind === 'community')
+				.map((item) => item.data?.id)
+				.filter(Boolean);
+
+			if (headers.Authorization && incomingPostIds.length) {
 				void fetch(`${import.meta.env.VITE_API_URL}/community/posts/views`, {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
 						Authorization: headers.Authorization
 					},
-					body: JSON.stringify({ postIds: incoming.map((post: any) => post.id) })
+					body: JSON.stringify({ postIds: incomingPostIds })
 				})
 					.catch(() => {});
 			}
 		} catch {
-			communityLoadError = true;
+			feedLoadError = true;
 		} finally {
-			communityLoadingMore = false;
+			feedLoadingMore = false;
 		}
 	}
 
-	function observeCommunityEnd(node: HTMLElement) {
+	function observeFeedEnd(node: HTMLElement) {
 		if (!browser || typeof IntersectionObserver === 'undefined') {
 			return {};
 		}
@@ -249,7 +275,7 @@
 		const observer = new IntersectionObserver(
 			(entries) => {
 				if (entries[0]?.isIntersecting) {
-					void loadMoreCommunity();
+					void loadMoreFeed();
 				}
 			},
 			{ rootMargin: '500px 0px' }
@@ -320,6 +346,12 @@
 				data: record,
 				timestamp: normalizeTimestamp(record.timestamp ?? record.createdAt)
 			})),
+			...(value?.levels || []).map((level: any, index: number) => ({
+				kind: 'level' as const,
+				key: `clan-level-${level.id ?? index}`,
+				data: level,
+				timestamp: normalizeTimestamp(level.created_at)
+			})),
 			...(value?.communityPosts || []).map((post: any, index: number) => ({
 				kind: 'community' as const,
 				key: `clan-community-${post.id ?? index}`,
@@ -327,6 +359,31 @@
 				timestamp: normalizeTimestamp(post.createdAt ?? post.created_at)
 			}))
 		].sort((left, right) => right.timestamp - left.timestamp);
+	}
+
+	function buildFriendActivity(value: any): FriendFeedItem[] {
+		return [
+			...(value?.records || []).map((record: any, index: number) => ({
+				kind: 'record' as const,
+				key: `friend-record-${record.id ?? index}`,
+				data: record,
+				timestamp: normalizeTimestamp(record.timestamp ?? record.createdAt)
+			})),
+			...(value?.levels || []).map((level: any, index: number) => ({
+				kind: 'level' as const,
+				key: `friend-level-${level.id ?? index}`,
+				data: level,
+				timestamp: normalizeTimestamp(level.created_at)
+			})),
+			...(value?.communityPosts || []).map((post: any, index: number) => ({
+				kind: 'community' as const,
+				key: `friend-community-${post.id ?? index}`,
+				data: post,
+				timestamp: normalizeTimestamp(post.createdAt ?? post.created_at)
+			}))
+		]
+			.sort((left, right) => right.timestamp - left.timestamp)
+			.slice(0, 30);
 	}
 
 	function normalizeTimestamp(value: string | number | null | undefined) {
@@ -343,6 +400,60 @@
 		return Number.isFinite(timestamp) ? timestamp : 0;
 	}
 
+	function buildScrollableFeedItems(levels: any[], posts: any[]): FeedItem[] {
+		return [
+			...levels.map((entry, index) => ({
+				kind: 'level' as const,
+				key: `level-${entry.feedKey ?? entry.id ?? entry.level?.id ?? index}`,
+				data: entry
+			})),
+			...posts.map((entry, index) => ({
+				kind: 'community' as const,
+				key: `community-${entry.id ?? index}`,
+				data: entry
+			}))
+		].sort((left, right) => {
+			const timeDifference = feedItemTimestamp(right) - feedItemTimestamp(left);
+
+			return timeDifference || left.key.localeCompare(right.key);
+		});
+	}
+
+	function mergeFeedItems(...groups: FeedItem[][]) {
+		const seen = new Set<string>();
+
+		return groups.flat()
+			.filter((item) => {
+				if (seen.has(item.key)) {
+					return false;
+				}
+
+				seen.add(item.key);
+
+				return true;
+			})
+			.sort((left, right) => {
+				const timeDifference = feedItemTimestamp(right) - feedItemTimestamp(left);
+
+				return timeDifference || left.key.localeCompare(right.key);
+			});
+	}
+
+	function getFeedCursor(items: FeedItem[]) {
+		const lastItem = mergeFeedItems(items)
+			.at(-1);
+
+		if (!lastItem) {
+			return null;
+		}
+
+		return {
+			before: new Date(feedItemTimestamp(lastItem))
+				.toISOString(),
+			beforeKey: lastItem.key
+		};
+	}
+
 	function buildMixedFeed(input: {
 		levels: any[];
 		posts: any[];
@@ -352,19 +463,11 @@
 		pvp: any;
 		activeSeason: any;
 		battlepassProgress: any;
+		latestUnverifiedRecord: any;
 		seed: number;
 	}) {
 		const contentItems: FeedItem[] = [
-			...input.levels.map((entry, index) => ({
-				kind: 'level' as const,
-				key: `level-${entry.id ?? entry.level?.id ?? index}`,
-				data: entry
-			})),
-			...input.posts.map((entry, index) => ({
-				kind: 'community' as const,
-				key: `community-${entry.id ?? index}`,
-				data: entry
-			})),
+			...buildScrollableFeedItems(input.levels, input.posts),
 			...input.events.map((entry, index) => ({
 				kind: 'event' as const,
 				key: `event-${entry.id ?? index}`,
@@ -403,7 +506,15 @@
 			}
 		});
 
-		return insertPromotedItems(contentItems, promotedItems, input.seed);
+		const mixedItems = insertPromotedItems(contentItems, promotedItems, input.seed);
+
+		return input.latestUnverifiedRecord
+			? [{
+				kind: 'record-progress' as const,
+				key: `record-progress-${input.latestUnverifiedRecord.id}`,
+				data: input.latestUnverifiedRecord
+			}, ...mixedItems]
+			: mixedItems;
 	}
 
 	function feedItemTimestamp(item: FeedItem) {
@@ -539,6 +650,35 @@
 			: `https://levelthumbs.prevter.me/thumbnail/${level?.id}/small`;
 	}
 
+	function getRecordLevel(record: any) {
+		return Array.isArray(record?.levels) ? record.levels[0] : record?.levels;
+	}
+
+	function isCompletedRecord(record: any) {
+		const level = getRecordLevel(record);
+
+		return Boolean(level?.isPlatformer) || Number(record?.progress) >= 100;
+	}
+
+	function formatRecordProgress(record: any) {
+		const value = Number(record?.progress);
+		const level = getRecordLevel(record);
+
+		if (!Number.isFinite(value)) {
+			return '—';
+		}
+
+		if (!level?.isPlatformer) {
+			return `${Math.min(100, Math.max(0, value))}%`;
+		}
+
+		const minutes = Math.floor(value / 60_000);
+		const seconds = Math.floor((value % 60_000) / 1000);
+		const milliseconds = Math.floor(value % 1000);
+
+		return `${minutes}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(3, '0')}`;
+	}
+
 	function useLevelThumbnailFallback(event: Event, levelId: number | string) {
 		const image = event.currentTarget as HTMLImageElement;
 		const fallback = `https://levelthumbs.prevter.me/thumbnail/${levelId}/small`;
@@ -610,16 +750,28 @@
         >
           <Flame size={16} />
           {tr('For you', 'Dành cho bạn')}
-        </button>
-        <button
-          type="button"
+	        </button>
+	        <button
+	          type="button"
+	          class="feed-tab"
+	          class:active={activeFeedTab === 'friends'}
+	          on:click={() => (activeFeedTab = 'friends')}
+	        >
+	          <Users size={16} />
+	          {tr('Friends', 'Bạn bè')}
+	          {#if friendActivity.length}
+	            <span class="tab-dot" aria-label={tr('New friend activity', 'Hoạt động mới từ bạn bè')}></span>
+	          {/if}
+	        </button>
+	        <button
+	          type="button"
           class="feed-tab"
           class:active={activeFeedTab === 'clan'}
           on:click={() => (activeFeedTab = 'clan')}
         >
           <Shield size={16} />
           {tr('Clan', 'Bang hội')}
-          {#if clanFeed?.communityPosts?.length || clanFeed?.records?.length}
+          {#if clanBoosted && (clanFeed?.communityPosts?.length || clanFeed?.records?.length || clanFeed?.levels?.length)}
             <span class="tab-dot" aria-label={tr('New clan activity', 'Hoạt động bang hội mới')}></span>
           {/if}
         </button>
@@ -653,9 +805,56 @@
             {/each}
           </div>
         {:else}
-          <div class="feed-stream">
-            {#each mixedFeed as item (item.key)}
-              {#if item.kind === 'level'}
+	          <div class="feed-stream">
+	            {#each mixedFeed as item (item.key)}
+	              {#if item.kind === 'record-progress'}
+	                {@const record = item.data}
+	                {@const level = getRecordLevel(record)}
+	                {@const completed = isCompletedRecord(record)}
+	                <article class="feed-card record-progress-post">
+	                  <div class="post-head">
+	                    <div class="source-avatar record-progress-source"><Target size={19} /></div>
+	                    <div class="source-copy">
+	                      <div class="source-line">
+	                        <a href={`/level/${level?.id ?? record.levelid}`}>{tr('Your latest run', 'Lượt chơi mới nhất')}</a>
+	                      </div>
+	                      <span>{tr('Unverified record', 'Kỷ lục chưa xác minh')} · {timeAgo(record.timestamp)}</span>
+	                    </div>
+	                  </div>
+
+	                  <a
+	                    class="record-progress-creative"
+	                    href={completed
+	                      ? `/submit/record?levelId=${level?.id ?? record.levelid}`
+	                      : `/level/${level?.id ?? record.levelid}`}
+	                    style={`background-image: linear-gradient(105deg, rgba(5,10,20,.95), rgba(5,10,20,.62)), url('${getLevelThumbnail(level)}')`}
+	                  >
+	                    <span class="content-label record-progress-label">
+	                      <Target size={13} />
+	                      {completed ? tr('LEVEL COMPLETE', 'HOÀN THÀNH LEVEL') : tr('KEEP GOING', 'TIẾP TỤC NÀO')}
+	                    </span>
+	                    <h2>
+	                      {completed
+	                        ? tr(`Great job on ${level?.name || `#${record.levelid}`}!`, `Làm tốt lắm với ${level?.name || `#${record.levelid}`}!`)
+	                        : tr(`Good job — ${formatRecordProgress(record)} on ${level?.name || `#${record.levelid}`}.`, `Tốt lắm — ${formatRecordProgress(record)} ở ${level?.name || `#${record.levelid}`}.`)}
+	                    </h2>
+	                    <p>
+	                      {completed
+	                        ? tr('Submit your run with proof to get the record manually verified.', 'Gửi lượt chơi kèm bằng chứng để kỷ lục được xác minh thủ công.')
+	                        : tr('Keep the momentum going and push your progress further.', 'Giữ vững phong độ và tiếp tục nâng tiến độ của bạn.')}
+	                    </p>
+	                    {#if !completed && !level?.isPlatformer}
+	                      <div class="record-progress-bar" aria-label={formatRecordProgress(record)}>
+	                        <span style={`width: ${Math.min(100, Math.max(0, Number(record.progress) || 0))}%`}></span>
+	                      </div>
+	                    {/if}
+	                    <span class="record-progress-cta">
+	                      {completed ? tr('Submit this record', 'Gửi kỷ lục này') : tr('Continue with this level', 'Tiếp tục level này')}
+	                      <ArrowRight size={16} />
+	                    </span>
+	                  </a>
+	                </article>
+	              {:else if item.kind === 'level'}
                 {@const entry = item.data}
                 {@const level = entry.level}
                 <article class="feed-card level-post">
@@ -894,10 +1093,16 @@
                         </a>
                       {/each}
                     </div>
-                    <a class="supporter-cta" href="/supporter/top">
-                      {tr('View supporter leaderboard', 'Xem bảng xếp hạng ủng hộ')}
-                      <ArrowRight size={16} />
-                    </a>
+                    <div class="supporter-actions">
+                      <a class="supporter-buy-cta" href="/supporter">
+                        <Star size={15} fill="currentColor" />
+                        {tr('Buy Supporter', 'Mua Supporter')}
+                      </a>
+                      <a class="supporter-cta" href="/supporter/top">
+                        {tr('View leaderboard', 'Xem bảng xếp hạng')}
+                        <ArrowRight size={16} />
+                      </a>
+                    </div>
                   </div>
                 </article>
               {:else if item.kind === 'promo'}
@@ -952,21 +1157,90 @@
               </div>
             {/if}
 
-            {#if !communityInitialized}
+            {#if !feedInitialized}
               {#each { length: 2 } as _}
                 <div class="community-feed-item">
                   <CommunityPostCard post={null} />
                 </div>
               {/each}
             {:else}
-              {#each communityContinuationPosts as post (post.id)}
-                <div class="community-feed-item">
-                  <CommunityPostCard {post} compact={false} />
-                </div>
+              {#each feedContinuationItems as item (item.key)}
+                {#if item.kind === 'level'}
+                  {@const entry = item.data}
+                  {@const level = entry.level}
+                  <article class="feed-card level-post">
+                    <div class="post-head">
+                      <div class="source-avatar level-source">
+                        {#if entry.sourceKind === 'starred'}
+                          <Star size={18} fill="currentColor" />
+                        {:else}
+                          <Layers3 size={18} />
+                        {/if}
+                      </div>
+                      <div class="source-copy">
+                        <div class="source-line">
+                          <a href={entry.sourceHref}>{entry.sourceTitle}</a>
+                          {#if entry.sourceKind === 'official'}
+                            <BadgeCheck size={15} class="verified" />
+                          {:else}
+                            <span class="following-chip">{tr('Starred', 'Đã theo dõi')}</span>
+                          {/if}
+                        </div>
+                        <span>{tr('added a new level', 'vừa thêm level mới')} · {timeAgo(entry.addedAt)}</span>
+                      </div>
+                    </div>
+
+                    <p class="post-caption">
+                      {tr('Fresh in the list:', 'Mới có trong danh sách:')}
+                      <strong>{level?.name}</strong>
+                      {tr('by', 'bởi')} {level?.creator || tr('Unknown creator', 'Chưa rõ tác giả')}.
+                    </p>
+
+                    <a class="level-media" href={`/level/${level?.id}`} aria-label={level?.name}>
+                      <img
+                        src={getLevelThumbnail(level)}
+                        alt={level?.name || ''}
+                        loading="lazy"
+                        on:error={(event) => useLevelThumbnailFallback(event, level?.id)}
+                      />
+                      <div class="media-shade"></div>
+                      <div class="level-overlay">
+                        <div>
+                          <span class="content-label">
+                            <Gamepad2 size={13} />
+                            {tr('New level', 'Level mới')}
+                          </span>
+                          <h2>{level?.name}</h2>
+                          <p>{level?.creator}</p>
+                        </div>
+                        {#if level?.dlTop || level?.flTop || entry.listType === 'custom-top'}
+                          <span class="rank-pill">#{level?.dlTop || level?.flTop || level?.position || '—'}</span>
+                        {:else if level?.rating}
+                          <span class="rank-pill">{formatNumber(level.rating)} pt</span>
+                        {/if}
+                      </div>
+                    </a>
+
+                    <div class="post-actions">
+                      <a href={`/level/${level?.id}`}>
+                        <Target size={16} />
+                        {tr('View level', 'Xem level')}
+                      </a>
+                      <a href={entry.sourceHref}>
+                        <Layers3 size={16} />
+                        {tr('Open list', 'Mở danh sách')}
+                      </a>
+                    </div>
+                  </article>
+                {:else if item.kind === 'community'}
+                  <div class="community-feed-item">
+                    <CommunityPostCard post={item.data} compact={false} />
+                  </div>
+                {/if}
               {/each}
             {/if}
 
-            {#if communityLoadingMore}
+            {#if feedLoadingMore}
               {#each { length: 2 } as _}
                 <div class="community-feed-item">
                   <CommunityPostCard post={null} />
@@ -974,23 +1248,75 @@
               {/each}
             {/if}
 
-            {#if communityLoadError}
-              <button class="community-retry" type="button" on:click={loadMoreCommunity}>
+            {#if feedLoadError}
+              <button class="community-retry" type="button" on:click={loadMoreFeed}>
                 {tr('Could not load more. Try again', 'Không thể tải thêm. Thử lại')}
               </button>
-            {:else if communityHasMore}
-              {#key communityOffset}
+            {:else if feedHasMore}
+              {#key `${feedCursor?.before ?? 'initial'}:${feedCursor?.beforeKey ?? ''}`}
                 <div
                   class="community-load-sentinel"
-                  use:observeCommunityEnd
-                  aria-label={tr('Load more community posts', 'Tải thêm bài cộng đồng')}
+                  use:observeFeedEnd
+                  aria-label={tr('Load more feed content', 'Tải thêm nội dung bảng tin')}
                 ></div>
               {/key}
             {/if}
           </div>
         {/if}
         </div>
-      {:else if homeData === null}
+	      {:else if activeFeedTab === 'friends'}
+	        {#if homeData === null || ($user.loggedIn && friendFeed === null)}
+	          <div class="feed-stream" aria-label={tr('Loading friends feed', 'Đang tải bảng tin bạn bè')}>
+	            {#each { length: 4 } as _}
+	              <div class="feed-card skeleton-card" aria-hidden="true">
+	                <div class="skeleton-row">
+	                  <span class="skeleton-avatar"></span>
+	                  <span class="skeleton-line medium"></span>
+	                </div>
+	                <span class="skeleton-line wide"></span>
+	                <span class="skeleton-media"></span>
+	              </div>
+	            {/each}
+	          </div>
+	        {:else if !$user.loggedIn}
+	          <div class="friend-gate empty-feed">
+	            <Users size={28} />
+	            <h2>{tr('See what your friends are playing.', 'Xem bạn bè của bạn đang chơi gì.')}</h2>
+	            <p>{tr('Sign in to follow their newest records, levels, and community posts.', 'Đăng nhập để theo dõi kỷ lục, level và bài viết cộng đồng mới nhất của họ.')}</p>
+	            <a href="/social?tab=friends">{tr('Open friends', 'Mở danh sách bạn bè')} <ArrowRight size={15} /></a>
+	          </div>
+	        {:else if Number(friendFeed?.friendCount || 0) === 0}
+	          <div class="friend-gate empty-feed">
+	            <Users size={28} />
+	            <h2>{tr('Build your friends feed.', 'Tạo bảng tin bạn bè của bạn.')}</h2>
+	            <p>{tr('Add friends to see their newest achievements and creations here.', 'Thêm bạn bè để xem thành tích và sáng tạo mới nhất của họ tại đây.')}</p>
+	            <a href="/social?tab=friends">{tr('Find friends', 'Tìm bạn bè')} <ArrowRight size={15} /></a>
+	          </div>
+	        {:else}
+	          <div class="feed-stream friend-feed-stream">
+	            {#each friendActivity as item (item.key)}
+	              {#if item.kind === 'record'}
+	                <ClanRecordCard record={item.data} />
+	              {:else if item.kind === 'level'}
+	                <FriendLevelCard level={item.data} />
+	              {:else}
+	                <div class="community-feed-item">
+	                  <CommunityPostCard post={item.data} compact={false} />
+	                </div>
+	              {/if}
+	            {/each}
+
+	            {#if friendActivity.length === 0}
+	              <div class="empty-feed">
+	                <Sparkles size={24} />
+	                <h2>{tr('No recent friend activity.', 'Chưa có hoạt động mới từ bạn bè.')}</h2>
+	                <p>{tr('New records, accepted levels, and posts will appear here.', 'Kỷ lục, level đã duyệt và bài viết mới sẽ xuất hiện tại đây.')}</p>
+	                <a href="/social?tab=friends">{tr('View friends', 'Xem bạn bè')} <ArrowRight size={15} /></a>
+	              </div>
+	            {/if}
+	          </div>
+	        {/if}
+	      {:else if homeData === null}
         <div class="feed-stream" aria-label={tr('Loading clan feed', 'Đang tải bảng tin bang hội')}>
           {#each { length: 4 } as _}
             <div class="feed-card skeleton-card" aria-hidden="true">
@@ -1024,7 +1350,7 @@
             style={`background-image: linear-gradient(90deg, rgba(4,8,16,.9), rgba(4,8,16,.48)), url('https://cdn.gdvn.net/clan-photos/${clanFeed.clan.id}.jpg?version=${clanFeed.clan.imageVersion ?? 0}')`}
           >
             <div>
-              <span class="clan-community-label"><Shield size={13} /> c/{clanFeed.clan.tag || clanFeed.clan.name}</span>
+              <span class="clan-community-label"><Shield size={13} /> <ClanTag clan={clanFeed.clan} compact /></span>
               <h2>{clanFeed.clan.name}</h2>
               <p><Users size={14} /> {formatNumber(clanFeed.clan.memberCount)} {tr('members', 'thành viên')}</p>
             </div>
@@ -1032,32 +1358,43 @@
           </div>
         </section>
 
-        <QuickPostComposer clan={clanFeed.clan} />
+        {#if clanBoosted}
+          <QuickPostComposer clan={clanFeed.clan} />
 
-        <div class="feed-stream clan-feed-stream">
-          {#each clanActivity as item (item.key)}
-            {#if item.kind === 'record'}
-              <ClanRecordCard record={item.data} clan={clanFeed.clan} />
-            {:else}
-              <div class="community-feed-item">
-                <CommunityPostCard
-                  post={item.data}
-                  compact={false}
-                  apiPrefix={`${import.meta.env.VITE_API_URL}/clans/${clanFeed.clan.id}/community`}
-                />
+          <div class="feed-stream clan-feed-stream">
+	            {#each clanActivity as item (item.key)}
+	              {#if item.kind === 'record'}
+	                <ClanRecordCard record={item.data} clan={clanFeed.clan} />
+	              {:else if item.kind === 'level'}
+	                <FriendLevelCard level={item.data} context="clan" />
+	              {:else}
+                <div class="community-feed-item">
+                  <CommunityPostCard
+                    post={item.data}
+                    compact={false}
+                    apiPrefix={`${import.meta.env.VITE_API_URL}/clans/${clanFeed.clan.id}/community`}
+                  />
+                </div>
+              {/if}
+            {/each}
+
+            {#if clanActivity.length === 0}
+              <div class="empty-feed">
+                <Sparkles size={24} />
+                <h2>{tr('Start the clan conversation.', 'Bắt đầu cuộc trò chuyện bang hội.')}</h2>
+	                <p>{tr('New records, clan-created levels, and community posts will appear here.', 'Kỷ lục mới, level do bang hội tạo và bài viết cộng đồng sẽ xuất hiện tại đây.')}</p>
+                <a href={`/community/create?clanId=${clanFeed.clan.id}`}>{tr('Create the first post', 'Tạo bài viết đầu tiên')} <ArrowRight size={15} /></a>
               </div>
             {/if}
-          {/each}
-
-          {#if clanActivity.length === 0}
-            <div class="empty-feed">
-              <Sparkles size={24} />
-              <h2>{tr('Start the clan conversation.', 'Bắt đầu cuộc trò chuyện bang hội.')}</h2>
-              <p>{tr('New records and clan community posts will appear here.', 'Kỷ lục mới và bài viết cộng đồng bang hội sẽ xuất hiện tại đây.')}</p>
-              <a href={`/community/create?clanId=${clanFeed.clan.id}`}>{tr('Create the first post', 'Tạo bài viết đầu tiên')} <ArrowRight size={15} /></a>
-            </div>
-          {/if}
-        </div>
+          </div>
+        {:else}
+          <div class="clan-gate empty-feed">
+            <LockKeyhole size={28} />
+            <h2>{tr('Boost this clan to unlock its feed.', 'Boost bang hội để mở khóa bảng tin.')}</h2>
+            <p>{tr('Clan posts, records, levels, and activity are available while the clan is boosted.', 'Bài viết, kỷ lục, level và hoạt động bang hội khả dụng trong thời gian boost.')}</p>
+            <a href={`/clan/${clanFeed.clan.id}`}>{tr('Open player list', 'Mở danh sách người chơi')} <ArrowRight size={15} /></a>
+          </div>
+        {/if}
       {/if}
     </section>
     <div class="right-rail-column">
@@ -1101,7 +1438,7 @@
   top: 56px;
   z-index: 20;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   height: 52px;
   margin-bottom: 12px;
   border: 1px solid var(--feed-border);
@@ -1286,6 +1623,11 @@
 .promo-source {
   color: hsl(327 82% 58%);
   background: hsl(327 82% 58% / 0.11);
+}
+
+.record-progress-source {
+  color: hsl(153 72% 42%);
+  background: hsl(153 72% 45% / 0.11);
 }
 
 .supporter-source {
@@ -1706,15 +2048,109 @@
   }
 }
 
+.supporter-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.supporter-buy-cta,
 .supporter-cta {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  margin-top: 14px;
+  min-height: 36px;
+  text-decoration: none;
+}
+
+.supporter-buy-cta {
+  padding: 0 13px;
+  border: 1px solid rgba(255, 241, 168, 0.8);
+  border-radius: 9px;
+  color: #2a1d05;
+  background: linear-gradient(135deg, #fde68a, #facc15);
+  box-shadow: 0 8px 22px rgba(234, 179, 8, 0.16);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.supporter-cta {
   color: #fde68a;
   font-size: 11px;
   font-weight: 800;
+}
+
+.record-progress-creative {
+  position: relative;
+  display: flex;
+  min-height: 285px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 9px;
+  margin: 2px 12px 12px;
+  padding: 26px;
+  border-radius: 11px;
+  color: white;
+  background-color: #08130f;
+  background-position: center;
+  background-size: cover;
+  overflow: hidden;
   text-decoration: none;
+
+  h2 {
+    max-width: 520px;
+    margin: 3px 0 0;
+    font-size: clamp(24px, 4.5vw, 36px);
+    line-height: 1.05;
+    letter-spacing: -0.035em;
+    font-weight: 900;
+  }
+
+  p {
+    max-width: 470px;
+    margin: 0;
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+}
+
+.record-progress-label {
+  color: #d1fae5;
+  border-color: rgba(167, 243, 208, 0.26);
+  background: rgba(16, 185, 129, 0.2);
+}
+
+.record-progress-bar {
+  width: min(100%, 410px);
+  height: 6px;
+  margin: 4px 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+
+  span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #34d399, #a7f3d0);
+  }
+}
+
+.record-progress-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 3px;
+  padding: 9px 13px;
+  border-radius: 9px;
+  color: #082117;
+  background: #d1fae5;
+  font-size: 11px;
+  font-weight: 850;
 }
 
 .promo-creative {
@@ -1970,6 +2406,13 @@
     }
   }
 
+  .record-progress-creative {
+    min-height: 250px;
+    margin-right: 8px;
+    margin-left: 8px;
+    padding: 20px;
+  }
+
   .feed-stream {
     gap: 8px;
   }
@@ -1982,7 +2425,8 @@
     border-radius: 0;
   }
 
-  .clan-feed-stream :global(.clan-record-card) {
+  .clan-feed-stream :global(.clan-record-card),
+  .friend-feed-stream :global(.clan-record-card) {
     border-right: 0;
     border-left: 0;
     border-radius: 0;

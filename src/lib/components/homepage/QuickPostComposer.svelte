@@ -4,6 +4,7 @@
 	import { user } from '$lib/client';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import * as Avatar from '$lib/components/ui/avatar';
+	import ClanTag from '$lib/components/clan/ClanTag.svelte';
 
 	export let clan: any = null;
 
@@ -43,7 +44,11 @@
   {/if}
 
   <span class="composer-prompt">
-    <strong>{clan ? text(`Post to c/${clan.tag || clan.name}`, `Đăng vào c/${clan.tag || clan.name}`) : text("What's happening?", 'Bạn đang nghĩ gì?')}</strong>
+    {#if clan}
+      <strong class="clan-prompt">{text('Post to', 'Đăng vào')} <ClanTag {clan} compact /></strong>
+    {:else}
+      <strong>{text("What's happening?", 'Bạn đang nghĩ gì?')}</strong>
+    {/if}
     <small>{clan ? text('Share with your clan', 'Chia sẻ với bang hội') : text('Create a community post', 'Tạo bài viết cộng đồng')}</small>
   </span>
   <span class="post-button">{text('Post', 'Đăng')}</span>
@@ -96,6 +101,12 @@
     font-weight: 650;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .clan-prompt {
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
 
   small {

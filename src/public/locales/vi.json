@@ -120,7 +120,8 @@
         "short_label": "Duyệt",
         "manual": "Đã xác minh",
         "auto": "Chưa xác minh",
-        "pending": "Chờ duyệt"
+        "pending": "Chờ duyệt",
+        "rejected": "Bị từ chối"
     },
     "time_unit": {
         "second": "giây",
@@ -1682,6 +1683,8 @@
         "rating": "Điểm đề xuất",
         "rating_change": "Thay đổi điểm đề xuất",
         "comment": "Bình luận",
+        "target": "List đích",
+        "global_target": "Global — mọi list",
         "reviewed_by": "Đánh giá bởi",
         "reviewer_cmt": "Bình luận của người đánh giá",
         "prioritized_by": "Được ưu tiên bởi",
@@ -2036,6 +2039,7 @@
         "time": "Thời gian",
         "queue_no": "Số thứ tự",
         "forwarded": "Đã chuyển tiếp",
+        "rejection_reason": "Lý do từ chối",
         "detail": "Chi tiết",
         "boost": "Tăng tốc duyệt",
         "cancel": {
@@ -2199,7 +2203,8 @@
             "guide": "Kiến thức",
             "announcement": "Thông báo",
             "review": "Đánh giá",
-            "collab": "Collab"
+            "collab": "Collab",
+            "wiki": "Wiki"
         },
         "create": {
             "button": "Bài mới",
@@ -2208,6 +2213,18 @@
             "post_title": "Tiêu đề",
             "title_placeholder": "Nhập tiêu đề...",
             "post_type": "Loại",
+            "post_target": "Đăng lên",
+            "target_global": "Toàn cộng đồng",
+            "target_global_hint": "Chia sẻ với toàn bộ cộng đồng GDVN",
+            "target_clan": "Bang hội",
+            "target_clan_unavailable": "Tham gia bang hội để đăng bài",
+            "target_list": "Danh sách",
+            "target_list_hint": "Chọn cộng đồng của danh sách công khai",
+            "search_lists": "Tìm cộng đồng danh sách...",
+            "no_target_lists": "Không tìm thấy cộng đồng danh sách",
+            "target_list_disabled": "Danh sách này không cho phép bài viết cộng đồng",
+            "validation_clan_target": "Bạn phải tham gia bang hội trước khi đăng tại đó",
+            "validation_list_target": "Hãy chọn danh sách đích",
             "post_content": "Nội dung",
             "content_placeholder": "Viết nội dung bài viết...",
             "image": "Hình ảnh",
@@ -3196,10 +3213,13 @@
     "wiki": {
         "created_at": "Được tạo lúc:",
         "last_updated": "Cập nhật lần cuối:",
-        "description": "Hướng dẫn, luật lệ, tin tức và cập nhật",
+        "description": "Hướng dẫn, luật lệ, tin tức và tài liệu do manager biên soạn",
         "categories": "Danh mục",
         "latest_articles": "Bài viết mới nhất",
         "no_articles": "Chưa có bài viết nào",
+        "new_article": "Bài Wiki mới",
+        "manager_only": "Chỉ manager mới có thể đăng và gán loại Wiki.",
+        "retry": "Thử lại",
         "items": "mục",
         "subfolders": "Thư mục con",
         "articles": "Bài viết",
@@ -3305,6 +3325,7 @@
             "manage": "Quản lý danh sách",
             "star": "Gắn sao danh sách",
             "unstar": "Bỏ sao danh sách",
+            "submit_record": "Nộp record",
             "post_about": "Đăng bài về danh sách này"
         },
         "visibility": {
@@ -3403,6 +3424,7 @@
             "starred_empty": "Chưa có danh sách cộng đồng được gắn sao nào chứa level này.",
             "community_empty": "Chưa có bài viết cộng đồng nào về danh sách này.",
             "tabs": {
+                "overview": "Tổng quan",
                 "levels": "Levels",
                 "leaderboard": "Bảng xếp hạng",
                 "my_record": "Record của tôi",
@@ -3410,6 +3432,9 @@
                 "staff": "Staff",
                 "records": "Điểm bản ghi",
                 "community": "Bài viết cộng đồng"
+            },
+            "overview": {
+                "heading": "Giới thiệu danh sách"
             },
             "leaderboard": {
                 "heading": "Bảng xếp hạng {title}",
@@ -3456,6 +3481,7 @@
                 "heading": "Chỉnh sửa thông tin",
                 "title_label": "Tên",
                 "description_label": "Mô tả",
+                "description_hint": "Hiển thị trong tab Tổng quan. Có hỗ trợ Markdown.",
                 "community_label": "Bài viết cộng đồng",
                 "community_hint": "Cho phép gắn bài viết cộng đồng vào danh sách này.",
                 "level_submission_label": "Nộp level",

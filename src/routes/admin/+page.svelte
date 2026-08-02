@@ -2,6 +2,7 @@
 	import Title from '$lib/components/Title.svelte';
 	import { user } from '$lib/client';
 	import { Button } from '$lib/components/ui/button/index.js';
+	import { crawlAllMirrorLists as runAllMirrorCrawlers } from '$lib/client/mirrorCrawler';
 	import { toast } from 'svelte-sonner';
 
 	type AdminItem = {
@@ -10,6 +11,8 @@
 		type?: 'button';
 		href?: string;
 		managerAccess?: boolean;
+		disabled?: () => boolean;
+		label?: () => string;
 	};
 
 	type AdminCategory = {
@@ -17,6 +20,8 @@
 		icon: string;
 		items: AdminItem[];
 	};
+
+	let crawlingAllMirrors = false;
 
 	async function copyToken() {
 		await navigator.clipboard.writeText((await $user.token())!);
@@ -53,6 +58,36 @@
 				error: 'Failed to calculate contest rating.'
 			}
 		);
+	}
+
+	async function crawlAllMirrorLists() {
+		if (crawlingAllMirrors) {
+			return;
+		}
+
+		crawlingAllMirrors = true;
+
+		try {
+			const result = await runAllMirrorCrawlers<unknown>({
+				apiUrl: import.meta.env.VITE_API_URL,
+				getToken: () => $user.token(),
+				failedMessage: 'Failed to crawl mirror lists'
+			});
+
+			if (result.failed > 0) {
+				toast.warning(
+					`Crawled ${result.succeeded}/${result.total} mirror lists. ${result.failed} failed.`
+				);
+			} else {
+				toast.success(`Crawled all ${result.succeeded} mirror lists.`);
+			}
+		} catch (error) {
+			toast.error(
+				error instanceof Error ? error.message : 'Failed to crawl mirror lists.'
+			);
+		} finally {
+			crawlingAllMirrors = false;
+		}
 	}
 
 	async function testDiscordGeneralMessage() {
@@ -105,7 +140,16 @@
 				{ name: 'Submission', href: '/admin/submission' },
 				{ name: 'Level Submissions', href: '/admin/levelSubmissions' },
 				{ name: 'LDM Variant Submissions', href: '/admin/ldmVariants' },
-				{ name: 'Add Record', href: '/admin/addRecord' }
+				{ name: 'Add Record', href: '/admin/addRecord' },
+				{
+					name: 'Crawl All Mirror Lists',
+					action: crawlAllMirrorLists,
+					type: 'button',
+					disabled: () => crawlingAllMirrors,
+					label: () => crawlingAllMirrors
+						? 'Crawling Mirror Lists…'
+						: 'Crawl All Mirror Lists'
+				}
 			]
 		},
 		{
@@ -214,8 +258,9 @@
                 on:click={() => item.action?.()}
                 class="admin-button"
                 variant="outline"
+				disabled={item.disabled?.() ?? false}
               >
-                {item.name}
+				{item.label?.() ?? item.name}
               </Button>
             {:else}
               <a href={item.href ?? '#'} class="admin-link">

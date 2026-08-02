@@ -48,6 +48,7 @@
 	export let time: SubmitTime = { m: null, s: null, ms: null };
 	export let suggestedRating: number = NaN;
 	export let comment = '';
+	export let target: number | null = null;
 	export let lists: ReviewListEntry[] = [];
 	export let loading = false;
 	export let errorMessage = '';
@@ -201,6 +202,12 @@
 		return checks;
 	}
 
+	function canTargetList(list: ReviewedListEntry) {
+		return !list.isOfficial
+			&& Boolean(list.eligible)
+			&& list.filterChecks.every((filter) => filter.matched);
+	}
+
 	$: reviewedLists = [...lists]
 		.map((list) => ({
 			...list,
@@ -217,6 +224,8 @@
 
 			return left.title.localeCompare(right.title);
 		}) as ReviewedListEntry[];
+	$: targetableLists = reviewedLists.filter((list) => !list.isOfficial);
+	$: selectedTargetList = reviewedLists.find((list) => list.id === target) ?? null;
 </script>
 
 <div class="review-layout">
@@ -271,6 +280,14 @@
         </dd>
       </div>
       <div class="summary-span">
+        <dt>{t('Phạm vi record', 'Record scope')}</dt>
+        <dd>
+          {selectedTargetList
+            ? selectedTargetList.title
+            : t('Global — áp dụng cho mọi list', 'Global — valid for every list')}
+        </dd>
+      </div>
+      <div class="summary-span">
         <dt>{t('Video hoàn thành', 'Completion video')}</dt>
         <dd>
           {#if videoLink}
@@ -303,12 +320,46 @@
 
   <section class="review-panel">
     <div class="review-header">
+      <h3>{t('Chọn phạm vi record', 'Choose record scope')}</h3>
+      <p>
+        {
+          t(
+              'Record global sẽ hợp lệ trên mọi list. Nếu chọn một custom list, record chỉ hợp lệ trên list đó.',
+              'A global record is valid for every list. If you select a custom list, the record is valid only for that list.'
+          )
+        }
+      </p>
+    </div>
+
+    <div class="target-field">
+      <label for="record-target">{t('List đích', 'Target list')}</label>
+      <select id="record-target" bind:value={target} disabled={loading}>
+        <option value={null}>{t('Global — mọi list', 'Global — every list')}</option>
+        {#each targetableLists as list}
+          <option value={list.id} disabled={!canTargetList(list)}>
+            {list.title}{canTargetList(list)
+              ? ''
+              : ` — ${t('không phù hợp', 'not eligible')}`}
+          </option>
+        {/each}
+      </select>
+      <p>
+        {
+          t(
+              'Chỉ custom list chứa level và khớp tiến trình, nền tảng, FPS mới có thể được chọn.',
+              'Only custom lists containing this level and matching its progress, platform, and FPS can be selected.'
+          )
+        }
+      </p>
+    </div>
+
+    <div class="review-header filter-review-header">
       <h3>{t('Đối chiếu bộ lọc record', 'Record filter review')}</h3>
       <p>
         {
           t(
-              'Các bộ lọc nền tảng và FPS được đối chiếu trực tiếp từ thông tin submit. Bộ lọc chấp nhận sẽ áp dụng sau khi record được duyệt.',
-              'Platform and FPS filters are checked directly against your submit details. Acceptance filters apply after the record is reviewed.'
+              'Bộ lọc chấp nhận sẽ áp dụng sau khi record được duyệt.',
+              'Acceptance filters apply after the record is reviewed.'
           )
         }
       </p>
@@ -513,6 +564,38 @@
 
 .review-status.error {
   color: hsl(var(--destructive));
+}
+
+.target-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+
+  label {
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  select {
+    width: 100%;
+    min-height: 40px;
+    padding: 0 11px;
+    border: 1px solid hsl(var(--border));
+    border-radius: 9px;
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-size: 13px;
+  }
+
+  p {
+    font-size: 11px;
+    line-height: 1.45;
+    color: hsl(var(--muted-foreground));
+  }
+}
+
+.filter-review-header {
+  padding-top: 2px;
 }
 
 .review-list-grid {

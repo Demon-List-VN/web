@@ -11,6 +11,7 @@
 	import { ExclamationTriangle } from 'svelte-radix';
 	import { _ } from 'svelte-i18n';
 	import CardPreview from '../../vending/CardPreview.svelte';
+	import { isActive } from '$lib/client/isSupporterActive';
 
 	const MATERIAL_PRICES: Record<string, number> = {
 		paper: 29000,
@@ -60,8 +61,12 @@
 	$: cartPlayerUID = $user.data?.uid ?? '';
 	$: cartPlayerName = $user.data?.name ?? '';
 	$: cartClanTag = $user.data?.clans?.tag ?? null;
-	$: cartClanTagBg = $user.data?.clans?.tagBgColor ?? null;
-	$: cartClanTagText = $user.data?.clans?.tagTextColor ?? null;
+	$: cartClanTagBg = isActive($user.data?.clans?.boostedUntil)
+		? $user.data?.clans?.tagBgColor ?? null
+		: null;
+	$: cartClanTagText = isActive($user.data?.clans?.boostedUntil)
+		? $user.data?.clans?.tagTextColor ?? null
+		: null;
 	$: hasItems = $cart.items.length > 0;
 
 	$: productTotal = data.reduce((total, product) => {

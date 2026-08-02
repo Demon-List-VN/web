@@ -14,6 +14,7 @@ export interface SubmitState {
     mobile: { value: boolean; label: string; } | null;
     suggestedRating: number;
     comment: string;
+    target: number | null;
     time: { m: number | null; s: number | null; ms: number | null; };
 
     // Level submission fields
@@ -50,6 +51,7 @@ export function createDefaultState(uid: string): SubmitState {
         mobile: null,
         suggestedRating: NaN,
         comment: '',
+        target: null,
         time: { m: null, s: null, ms: null },
         levelSubmission: { levelId: NaN, comment: '', videoLink: '' },
         apiLevel: null,

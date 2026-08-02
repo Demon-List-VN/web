@@ -26,6 +26,19 @@ export type MirrorCrawlResult<TList> = MirrorCrawlCounters & {
     }>;
 };
 
+export type AllMirrorCrawlResult<TList> = {
+    total: number;
+    succeeded: number;
+    failed: number;
+    results: Array<{
+        listId: number;
+        source: string;
+        status: 'crawled' | 'failed';
+        result?: MirrorCrawlResult<TList>;
+        error?: string;
+    }>;
+};
+
 type MirrorCrawlerOptions = {
     apiUrl: string;
     listId: number;
@@ -34,7 +47,9 @@ type MirrorCrawlerOptions = {
     failedMessage?: string;
 };
 
-async function getAuthorizationHeader(options: MirrorCrawlerOptions) {
+async function getAuthorizationHeader(
+    options: Pick<MirrorCrawlerOptions, 'failedMessage' | 'getToken'>
+) {
     const token = await options.getToken();
 
     if (!token) {
@@ -63,4 +78,25 @@ export async function crawlMirrorList<TList>(
     }
 
     return payload as MirrorCrawlResult<TList>;
+}
+
+export async function crawlAllMirrorLists<TList>(
+    options: Omit<MirrorCrawlerOptions, 'listId'>
+): Promise<AllMirrorCrawlResult<TList>> {
+    const fetcher = options.fetcher ?? fetch;
+    const res = await fetcher(`${options.apiUrl}/lists/mirrors/crawl`, {
+        method: 'POST',
+        headers: {
+            Authorization: await getAuthorizationHeader(options),
+            'Content-Type': 'application/json'
+        }
+    });
+    const payload = await res.json()
+        .catch(() => null);
+
+    if (!res.ok) {
+        throw new Error(payload?.error || options.failedMessage || 'Failed to crawl mirror lists');
+    }
+
+    return payload as AllMirrorCrawlResult<TList>;
 }

@@ -3,6 +3,7 @@
 	import LevelCard from '$lib/components/levelCard.svelte';
 	import AcceptanceBadge from '$lib/components/AcceptanceBadge.svelte';
 	import CommunityPostCard from '$lib/components/communityPostCard.svelte';
+	import Markdown from '$lib/components/markdown.svelte';
 	import { toLevelCardProps } from '$lib/components/levelCardProps';
 	import ListFilter from '$lib/components/listFilter.svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -39,6 +40,7 @@
 		Star,
 		MessageSquare,
 		RefreshCw,
+		FilePlus2,
 		ChevronUp,
 		Users
 	} from 'lucide-svelte';
@@ -167,7 +169,7 @@
 		name: string;
 	} & Record<string, any>;
 
-	type DetailTab = 'levels' | 'leaderboard' | 'my-record' | 'staff' | 'community';
+	type DetailTab = 'overview' | 'levels' | 'leaderboard' | 'my-record' | 'staff' | 'community';
 
 	let list: CustomList | null = data?.list ?? null;
 	let loadingError = data?.error ?? '';
@@ -178,7 +180,7 @@
 	let relatedPostsKey = '';
 	let loadingRelatedPosts = false;
 	let starLoading = false;
-	let activeTab: DetailTab = 'levels';
+	let activeTab: DetailTab = 'overview';
 	let leaderboard: any[] = [];
 	let leaderboardCount = 0;
 	let leaderboardError = '';
@@ -573,6 +575,10 @@
 	function getRequestedTab(searchParams: URLSearchParams): DetailTab {
 		const tab = searchParams.get('tab');
 
+		if (tab === 'levels') {
+			return 'levels';
+		}
+
 		if (tab === 'leaderboard') {
 			return 'leaderboard';
 		}
@@ -593,7 +599,7 @@
 			return 'community';
 		}
 
-		return 'levels';
+		return 'overview';
 	}
 
 	function getRequestedLeaderboardPage(searchParams: URLSearchParams) {
@@ -605,7 +611,7 @@
 	function buildDetailUrl(nextTab: DetailTab, nextPage: number = 1) {
 		const query = new URLSearchParams($page.url.searchParams);
 
-		if (nextTab === 'levels') {
+		if (nextTab === 'overview') {
 			query.delete('tab');
 			query.delete('page');
 		} else {
@@ -1358,13 +1364,13 @@
 	$: activeLeaderboardPage = getRequestedLeaderboardPage($page.url.searchParams);
 	$: activeTab =
 		requestedTab === 'community' && !canShowCommunity
-			? 'levels'
+			? 'overview'
 			: requestedTab === 'leaderboard' && !canShowLeaderboard
-			? 'levels'
+			? 'overview'
 			: requestedTab === 'my-record' && !canShowMyRecord
-			? 'levels'
+			? 'overview'
 			: requestedTab === 'staff' && !canShowStaffTab
-			? 'levels'
+			? 'overview'
 			: requestedTab;
 	$: selectedLeaderboardPlayer =
 		(leaderboard.find((player) => player.uid === selectedLeaderboardPlayerUid) as
@@ -1529,14 +1535,19 @@
 			<div class="heroTop">
 				<div class="heroText">
 					<h1>{list.title}</h1>
-					{#if list.description}
-						<p class="heroDesc">{list.description}</p>
-					{:else}
-						<p class="heroDesc muted">{$_('custom_lists.detail.no_description')}</p>
-					{/if}
 				</div>
-				{#if canCrawlMirror || canStarList}
+				{#if canCrawlMirror || canStarList || ($user.loggedIn && !list.isOfficial && !list.isBanned && list.visibility !== 'private')}
 					<div class="heroActions">
+						{#if $user.loggedIn && !list.isOfficial && !list.isBanned && list.visibility !== 'private'}
+							<Button
+								variant="outline"
+								size="sm"
+								href={`/submit/record?target=${list.id}`}
+							>
+								<FilePlus2 class="mr-2 h-4 w-4" />
+								{$_('custom_lists.actions.submit_record')}
+							</Button>
+						{/if}
 						{#if canCrawlMirror}
 							<Button
 								variant="outline"
@@ -1630,6 +1641,9 @@
 		<Tabs.Root value={activeTab}>
 			<div class="tabsList">
 				<Tabs.List>
+					<Tabs.Trigger value="overview" on:click={() => switchTab('overview')}>
+						{$_('custom_lists.detail.tabs.overview')}
+					</Tabs.Trigger>
 					<Tabs.Trigger value="levels" on:click={() => switchTab('levels')}>
 						{$_('custom_lists.detail.tabs.levels')}
 					</Tabs.Trigger>
@@ -1657,6 +1671,26 @@
 					{/if}
 				</Tabs.List>
 			</div>
+
+			<Tabs.Content value="overview">
+				<section class="overviewSection">
+					<div class="sectionHeader overviewHeader">
+						<div class="sectionTitleRow">
+							<Info class="h-4 w-4" />
+							<h2>{$_('custom_lists.detail.overview.heading')}</h2>
+						</div>
+					</div>
+					{#if list.description?.trim()}
+						<div class="overviewMarkdown">
+							<Markdown content={list.description} />
+						</div>
+					{:else}
+						<div class="emptyState slim overviewEmpty">
+							<p>{$_('custom_lists.detail.no_description')}</p>
+						</div>
+					{/if}
+				</section>
+			</Tabs.Content>
 
 			<Tabs.Content value="levels">
 				<div class="levelsSection">
@@ -2568,18 +2602,6 @@
 		background: rgba(234, 179, 8, 0.12);
 	}
 
-	.heroDesc {
-		margin: 6px 0 0;
-		font-size: 0.95rem;
-		color: var(--custom-surface-foreground, hsl(var(--foreground)));
-		line-height: 1.5;
-	}
-
-	.heroDesc.muted {
-		color: var(--custom-surface-muted, hsl(var(--muted-foreground)));
-		font-style: italic;
-	}
-
 	.heroMeta {
 		display: flex;
 		flex-wrap: wrap;
@@ -2709,6 +2731,42 @@
 	}
 
 	/* Levels */
+	.overviewSection {
+		display: flex;
+		flex-direction: column;
+		gap: 18px;
+		min-height: 180px;
+		padding: clamp(18px, 3vw, 28px);
+		border: 1px solid hsl(var(--border));
+		border-radius: 14px;
+		background: hsl(var(--card));
+	}
+
+	.overviewHeader {
+		padding-bottom: 14px;
+		border-bottom: 1px solid hsl(var(--border));
+	}
+
+	.sectionTitleRow {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.overviewMarkdown {
+		min-width: 0;
+		overflow-wrap: anywhere;
+		color: hsl(var(--foreground));
+	}
+
+	.overviewMarkdown :global(.markdown > :last-child) {
+		margin-bottom: 0;
+	}
+
+	.overviewEmpty {
+		min-height: 100px;
+	}
+
 	.levelsSection {
 		display: flex;
 		flex-direction: column;

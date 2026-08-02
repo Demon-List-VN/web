@@ -73,6 +73,8 @@
 	let moderationDetailOpen = false;
 	let moderationDetailPost: any = null;
 	let showModerationRaw = false;
+	let selectedPendingPostIds: number[] = [];
+	let bulkPostActionInProgress = false;
 
 	// Comment moderation state
 	let pendingComments: any[] | null = null;
@@ -81,6 +83,8 @@
 	let commentModerationDetailOpen = false;
 	let commentModerationDetailComment: any = null;
 	let showCommentModerationRaw = false;
+	let selectedPendingCommentIds: number[] = [];
+	let bulkCommentActionInProgress = false;
 
 	// All comments state
 	let allComments: any[] | null = null;
@@ -99,7 +103,8 @@
 		media: Image,
 		guide: BookOpen,
 		announcement: Megaphone,
-		review: Star
+		review: Star,
+		wiki: BookOpen
 	};
 
 	const typeColors: Record<string, string> = {
@@ -107,7 +112,8 @@
 		media: 'text-purple-500',
 		guide: 'text-emerald-500',
 		announcement: 'text-amber-500',
-		review: 'text-yellow-500'
+		review: 'text-yellow-500',
+		wiki: 'text-cyan-500'
 	};
 
 	async function getAuthHeaders() {
@@ -539,6 +545,7 @@
 
 	async function fetchPendingPosts() {
 		pendingPosts = null;
+		selectedPendingPostIds = [];
 		const params = new URLSearchParams({
 			limit: String(PAGE_SIZE),
 			offset: String(pendingPage * PAGE_SIZE)
@@ -616,10 +623,79 @@
 		moderationDetailOpen = true;
 	}
 
+	function togglePendingPostSelection(id: number) {
+		selectedPendingPostIds = selectedPendingPostIds.includes(id)
+			? selectedPendingPostIds.filter((selectedId) => selectedId !== id)
+			: [...selectedPendingPostIds, id];
+	}
+
+	function isPendingPostSelected(id: unknown) {
+		return selectedPendingPostIds.includes(Number(id));
+	}
+
+	function toggleAllPendingPosts() {
+		const pageIds = pendingPosts?.map((post) => Number(post.id)) ?? [];
+		const allSelected = pageIds.length > 0
+			&& pageIds.every((id) => selectedPendingPostIds.includes(id));
+		selectedPendingPostIds = allSelected ? [] : pageIds;
+	}
+
+	async function runBulkPostAction(action: 'approve' | 'reject') {
+		const ids = [...selectedPendingPostIds];
+
+		if (ids.length === 0 || bulkPostActionInProgress) {
+			return;
+		}
+
+		if (
+			!confirm(
+				`${action === 'approve' ? 'Approve' : 'Reject'} ${ids.length} selected post${ids.length === 1 ? '' : 's'}?`
+			)
+		) {
+			return;
+		}
+
+		bulkPostActionInProgress = true;
+
+		try {
+			const headers = await getAuthHeaders();
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/community/admin/moderation/bulk`,
+				{
+					method: 'POST',
+					headers,
+					body: JSON.stringify({ ids, action })
+				}
+			);
+			const result = await res.json();
+
+			if (!res.ok) {
+				throw new Error(result?.error || 'Bulk action failed');
+			}
+
+			await fetchPendingPosts();
+
+			if (result.failed?.length) {
+				toast.warning(
+					`${result.succeeded.length} post${result.succeeded.length === 1 ? '' : 's'} updated; ${result.failed.length} failed`
+				);
+			} else {
+				toast.success(
+					`${result.succeeded.length} post${result.succeeded.length === 1 ? '' : 's'} ${action === 'approve' ? 'approved' : 'rejected'}`
+				);
+			}
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : 'Bulk post action failed');
+		} finally {
+			bulkPostActionInProgress = false;
+		}
+	}
+
 	// ---- Comment Moderation ----
 
 	async function fetchPendingComments() {
 		pendingComments = null;
+		selectedPendingCommentIds = [];
 		const params = new URLSearchParams({
 			limit: String(PAGE_SIZE),
 			offset: String(pendingCommentsPage * PAGE_SIZE)
@@ -695,6 +771,76 @@
 	function openCommentModerationDetail(comment: any) {
 		commentModerationDetailComment = comment;
 		commentModerationDetailOpen = true;
+	}
+
+	function togglePendingCommentSelection(id: number) {
+		selectedPendingCommentIds = selectedPendingCommentIds.includes(id)
+			? selectedPendingCommentIds.filter((selectedId) => selectedId !== id)
+			: [...selectedPendingCommentIds, id];
+	}
+
+	function isPendingCommentSelected(id: unknown) {
+		return selectedPendingCommentIds.includes(Number(id));
+	}
+
+	function toggleAllPendingComments() {
+		const pageIds = pendingComments?.map((comment) => Number(comment.id)) ?? [];
+		const allSelected = pageIds.length > 0
+			&& pageIds.every((id) => selectedPendingCommentIds.includes(id));
+		selectedPendingCommentIds = allSelected ? [] : pageIds;
+	}
+
+	async function runBulkCommentAction(action: 'approve' | 'reject') {
+		const ids = [...selectedPendingCommentIds];
+
+		if (ids.length === 0 || bulkCommentActionInProgress) {
+			return;
+		}
+
+		const rejectWarning = action === 'reject' ? ' Rejected comments will be deleted.' : '';
+
+		if (
+			!confirm(
+				`${action === 'approve' ? 'Approve' : 'Reject'} ${ids.length} selected comment${ids.length === 1 ? '' : 's'}?${rejectWarning}`
+			)
+		) {
+			return;
+		}
+
+		bulkCommentActionInProgress = true;
+
+		try {
+			const headers = await getAuthHeaders();
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/community/admin/moderation/comments/bulk`,
+				{
+					method: 'POST',
+					headers,
+					body: JSON.stringify({ ids, action })
+				}
+			);
+			const result = await res.json();
+
+			if (!res.ok) {
+				throw new Error(result?.error || 'Bulk action failed');
+			}
+
+			await fetchPendingComments();
+
+			if (result.failed?.length) {
+				toast.warning(
+					`${result.succeeded.length} comment${result.succeeded.length === 1 ? '' : 's'} updated; ${result.failed.length} failed`
+				);
+			} else {
+				toast.success(
+					`${result.succeeded.length} comment${result.succeeded.length === 1 ? '' : 's'} ${action === 'approve' ? 'approved' : 'rejected'}`
+				);
+			}
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : 'Bulk comment action failed');
+		} finally {
+			bulkCommentActionInProgress = false;
+		}
 	}
 
 	function getFlaggedCategories(moderationResult: any): string[] | null {
@@ -934,6 +1080,7 @@
 						<Select.Item value="guide">Guide</Select.Item>
 						<Select.Item value="review">Review</Select.Item>
 						<Select.Item value="announcement">Announcement</Select.Item>
+						<Select.Item value="wiki">Wiki</Select.Item>
 					</Select.Content>
 				</Select.Root>
 			</div>
@@ -1407,10 +1554,48 @@
 
 	{#if activeTab === 'moderation'}
 		<!-- Moderation: Pending Posts -->
+		{#if pendingPosts && pendingPosts.length > 0}
+			<div class="bulkToolbar">
+				<span class="bulkSelectionCount">
+					{selectedPendingPostIds.length} of {pendingPosts.length} selected
+				</span>
+				<div class="bulkActions">
+					<Button
+						variant="outline"
+						size="sm"
+						disabled={selectedPendingPostIds.length === 0 || bulkPostActionInProgress}
+						on:click={() => runBulkPostAction('approve')}
+					>
+						<Check class="mr-1 h-3.5 w-3.5" />
+						Approve selected
+					</Button>
+					<Button
+						variant="destructive"
+						size="sm"
+						disabled={selectedPendingPostIds.length === 0 || bulkPostActionInProgress}
+						on:click={() => runBulkPostAction('reject')}
+					>
+						<X class="mr-1 h-3.5 w-3.5" />
+						Reject selected
+					</Button>
+				</div>
+			</div>
+		{/if}
 		<div class="tableContainer">
 			<table class="postsTable">
 				<thead>
 					<tr>
+						<th class="selectCol">
+							<input
+								type="checkbox"
+								aria-label="Select all posts on this page"
+								checked={Boolean(
+									pendingPosts?.length
+										&& pendingPosts.every((post) => isPendingPostSelected(post.id))
+								)}
+								on:change={toggleAllPendingPosts}
+							/>
+						</th>
 						<th>ID</th>
 						<th>Type</th>
 						<th>Title</th>
@@ -1425,7 +1610,15 @@
 						{#each pendingPosts as post}
 							{@const TypeIcon = typeIcons[post.type] || MessageCircle}
 							{@const flagged = getFlaggedCategories(post.moderationResult)}
-							<tr>
+							<tr class:selectedRow={isPendingPostSelected(post.id)}>
+								<td class="selectCol">
+									<input
+										type="checkbox"
+										aria-label="Select post {post.id}"
+										checked={isPendingPostSelected(post.id)}
+										on:change={() => togglePendingPostSelection(Number(post.id))}
+									/>
+								</td>
 								<td class="idCol">{post.id}</td>
 								<td>
 									<div class="typeBadge {typeColors[post.type]}">
@@ -1487,13 +1680,13 @@
 						{/each}
 						{#if pendingPosts.length === 0}
 							<tr>
-								<td colspan="7" class="emptyRow">No posts pending moderation</td>
+								<td colspan="8" class="emptyRow">No posts pending moderation</td>
 							</tr>
 						{/if}
 					{:else}
 						{#each { length: 3 } as _}
 							<tr class="skeleton">
-								<td colspan="7"><div class="skeletonLine"></div></td>
+								<td colspan="8"><div class="skeletonLine"></div></td>
 							</tr>
 						{/each}
 					{/if}
@@ -1535,10 +1728,49 @@
 
 	{#if activeTab === 'comment-moderation'}
 		<!-- Comment Moderation: Pending Comments -->
+		{#if pendingComments && pendingComments.length > 0}
+			<div class="bulkToolbar">
+				<span class="bulkSelectionCount">
+					{selectedPendingCommentIds.length} of {pendingComments.length} selected
+				</span>
+				<div class="bulkActions">
+					<Button
+						variant="outline"
+						size="sm"
+						disabled={selectedPendingCommentIds.length === 0 || bulkCommentActionInProgress}
+						on:click={() => runBulkCommentAction('approve')}
+					>
+						<Check class="mr-1 h-3.5 w-3.5" />
+						Approve selected
+					</Button>
+					<Button
+						variant="destructive"
+						size="sm"
+						disabled={selectedPendingCommentIds.length === 0 || bulkCommentActionInProgress}
+						on:click={() => runBulkCommentAction('reject')}
+					>
+						<X class="mr-1 h-3.5 w-3.5" />
+						Reject selected
+					</Button>
+				</div>
+			</div>
+		{/if}
 		<div class="tableContainer">
 			<table class="postsTable">
 				<thead>
 					<tr>
+						<th class="selectCol">
+							<input
+								type="checkbox"
+								aria-label="Select all comments on this page"
+								checked={Boolean(
+									pendingComments?.length
+										&& pendingComments.every((comment) =>
+											isPendingCommentSelected(comment.id))
+								)}
+								on:change={toggleAllPendingComments}
+							/>
+						</th>
 						<th>ID</th>
 						<th>Post</th>
 						<th>Content</th>
@@ -1554,7 +1786,15 @@
 							{@const flagged = getFlaggedCategories(
 								comment.communityCommentsAdmin?.moderationResult
 							)}
-							<tr>
+							<tr class:selectedRow={isPendingCommentSelected(comment.id)}>
+								<td class="selectCol">
+									<input
+										type="checkbox"
+										aria-label="Select comment {comment.id}"
+										checked={isPendingCommentSelected(comment.id)}
+										on:change={() => togglePendingCommentSelection(Number(comment.id))}
+									/>
+								</td>
 								<td class="idCol">{comment.id}</td>
 								<td class="titleCol">
 									{#if comment.communityPosts}
@@ -1625,13 +1865,13 @@
 						{/each}
 						{#if pendingComments.length === 0}
 							<tr>
-								<td colspan="7" class="emptyRow">No comments pending moderation</td>
+								<td colspan="8" class="emptyRow">No comments pending moderation</td>
 							</tr>
 						{/if}
 					{:else}
 						{#each { length: 3 } as _}
 							<tr class="skeleton">
-								<td colspan="7"><div class="skeletonLine"></div></td>
+								<td colspan="8"><div class="skeletonLine"></div></td>
 							</tr>
 						{/each}
 					{/if}
@@ -2134,6 +2374,7 @@
 							<Select.Item value="guide">Guide</Select.Item>
 							<Select.Item value="review">Review</Select.Item>
 							<Select.Item value="announcement">Announcement</Select.Item>
+							<Select.Item value="wiki">Wiki</Select.Item>
 						</Select.Content>
 					</Select.Root>
 				</div>
@@ -2194,6 +2435,29 @@
 		flex-wrap: wrap;
 	}
 
+	.bulkToolbar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		margin-bottom: 12px;
+		padding: 10px 12px;
+		border: 1px solid hsl(var(--border));
+		border-radius: 10px;
+		background: hsl(var(--muted) / 0.25);
+	}
+
+	.bulkSelectionCount {
+		font-size: 13px;
+		font-weight: 600;
+	}
+
+	.bulkActions {
+		display: flex;
+		gap: 8px;
+		flex-wrap: wrap;
+	}
+
 	.searchBox {
 		display: flex;
 		align-items: center;
@@ -2246,6 +2510,22 @@
 		tr.hiddenPost {
 			background: hsl(0 84% 60% / 0.05);
 			opacity: 0.7;
+		}
+
+		tr.selectedRow {
+			background: hsl(var(--primary) / 0.06);
+		}
+	}
+
+	.selectCol {
+		width: 44px;
+		text-align: center !important;
+
+		input {
+			width: 16px;
+			height: 16px;
+			accent-color: hsl(var(--primary));
+			cursor: pointer;
 		}
 	}
 
@@ -2402,6 +2682,11 @@
 	@media screen and (max-width: 768px) {
 		.wrapper {
 			padding: 1rem;
+		}
+
+		.bulkToolbar {
+			align-items: flex-start;
+			flex-direction: column;
 		}
 	}
 

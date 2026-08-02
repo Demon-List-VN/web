@@ -21,6 +21,7 @@
 	import { Switch } from '$lib/components/ui/switch';
 	import * as RadioGroup from '$lib/components/ui/radio-group';
 	import * as Tabs from '$lib/components/ui/tabs';
+	import ClanTag from '$lib/components/clan/ClanTag.svelte';
 	import {
 		ExternalLink,
 		Copy,
@@ -238,7 +239,7 @@
 		disableBtn = true;
 		toast.promise(
 			fetch(
-				`${import.meta.env.VITE_API_URL}/records/${record.data.userid}/${record.data.levelid}/changeSuggestedRating/${record.data.suggestedRating}`,
+				`${import.meta.env.VITE_API_URL}/records/${record.data.userid}/${record.data.levelid}/changeSuggestedRating/${record.data.suggestedRating}?id=${record.data.id}`,
 				{
 					method: 'PUT',
 					headers: { Authorization: 'Bearer ' + (await $user.token())! }
@@ -390,11 +391,12 @@
 	async function getEstimatedQueueNo(
 		userID: string,
 		levelID: number,
-		prioritizedBy: number
+		prioritizedBy: number,
+		recordId?: number
 	) {
 		const res = await (
 			await fetch(
-				`${import.meta.env.VITE_API_URL}/records/${userID}/${levelID}/getEstimatedQueue/${prioritizedBy}`
+				`${import.meta.env.VITE_API_URL}/records/${userID}/${levelID}/getEstimatedQueue/${prioritizedBy}${recordId ? `?id=${recordId}` : ''}`
 			)
 		).json();
 
@@ -422,7 +424,8 @@
 			estimatedQueueNo = await getEstimatedQueueNo(
 				record.data.userid,
 				record.data.levelid,
-				ms
+				ms,
+				record.data.id
 			);
 			skipAheadState = 1;
 		} catch {
@@ -445,6 +448,7 @@
 						},
 						body: JSON.stringify({
 							levelID: record.data.levelid,
+							recordId: record.data.id,
 							quantity: daysToSkip[0]
 						})
 					}
@@ -483,7 +487,8 @@
 					},
 					body: JSON.stringify({
 						userID: record.data.userid,
-						levelID: record.data.levelid
+						levelID: record.data.levelid,
+						recordId: record.data.id
 					})
 				}
 			)
@@ -589,12 +594,7 @@
               <div class="hero-names">
                 <h1 class="hero-player-name">{record.data.players.name}</h1>
                 {#if record.data.players.clans}
-                  <span
-                    class="clan-tag"
-                    style="background: {record.data.players.clans.tagBgColor}; color: {record.data.players.clans.tagTextColor}"
-                  >
-                    {record.data.players.clans.tag}
-                  </span>
+                  <ClanTag clan={record.data.players.clans} />
                 {/if}
               </div>
             </div>
@@ -689,7 +689,7 @@
                   <span>{$_('record_detail.tabs.share')}</span>
                   {#if activeTab === 'share'}<div class="tab-glow"></div>{/if}
                 </button>
-                {#if !record.data.isChecked && $user.loggedIn
+                {#if !record.data.isChecked && !record.data.rejectedAt && $user.loggedIn
     && $user.data.uid === record.data.userid}
                   <button
                     class="tab-btn"
@@ -703,7 +703,7 @@
                       </div>{/if}
                   </button>
                 {/if}
-                {#if record.data.reviewer && $user.loggedIn
+                {#if !record.data.rejectedAt && record.data.reviewer && $user.loggedIn
     && record.data.reviewer.uid === $user.data.uid && !record.data.needMod}
                   <button
                     class="tab-btn"
@@ -888,7 +888,20 @@
                         <AcceptanceBadge
                           acceptedManually={record.data.acceptedManually}
                           acceptedAuto={record.data.acceptedAuto}
+                          rejectedAt={record.data.rejectedAt}
                         />
+                      </span>
+                    </div>
+                    <div class="info-row">
+                      <span class="row-label">{$_('record_detail.target')}</span>
+                      <span class="row-value">
+                        {#if record.data.targetList}
+                          <a href={`/lists/${record.data.targetList.slug || record.data.targetList.id}`}>
+                            {record.data.targetList.title}
+                          </a>
+                        {:else}
+                          {$_('record_detail.global_target')}
+                        {/if}
                       </span>
                     </div>
                     <div class="info-row">
@@ -918,7 +931,7 @@
                         }
                       </span>
                     </div>
-                    {#if $user.loggedIn && $user.data.isAdmin && record.data.reviewerComment}
+                    {#if record.data.reviewerComment && $user.loggedIn && ($user.data.isAdmin || (record.data.rejectedAt && $user.data.uid === record.data.userid))}
                       <div class="comment-block">
                         <span class="row-label">{
                           $_('record_detail.reviewer_cmt')
@@ -1346,14 +1359,6 @@
   color: #fff;
   line-height: 1.1;
   letter-spacing: -0.02em;
-}
-
-.clan-tag {
-  display: inline-block;
-  padding: 2px 10px;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 700;
 }
 
 /* ── Big stat ── */

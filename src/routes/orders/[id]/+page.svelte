@@ -15,6 +15,7 @@
 	import { _ } from 'svelte-i18n';
 	import { Printer, Eye, Check, RotateCw, Nfc } from 'lucide-svelte';
 	import * as Select from '$lib/components/ui/select';
+	import { isActive } from '$lib/client/isSupporterActive';
 
 	const CARD_SIZES = [
 		{ id: 'CR80', label: 'CR80 (85.6 × 54mm)', w: '85.6mm', h: '53.98mm' },
@@ -59,6 +60,14 @@
 
 	function bgImage(rc: any) {
 		return rc?.img || `https://levelthumbs.prevter.me/thumbnail/${rc?.levelID}/high`;
+	}
+
+	function clanTagBackground(clan: any) {
+		return isActive(clan?.boostedUntil) ? clan?.tagBgColor ?? null : null;
+	}
+
+	function clanTagText(clan: any) {
+		return isActive(clan?.boostedUntil) ? clan?.tagTextColor ?? null : null;
 	}
 
 	function openView(rc: any) {
@@ -248,11 +257,11 @@
 			>
 				<CardPreview
 					data={{
-						playerUID: cardPlayerUID,
-						playerName: cardPlayer?.name ?? 'Player',
-						clanTag: cardPlayer?.clans?.tag ?? null,
-						clanTagBg: cardPlayer?.clans?.tagBgColor ?? null,
-						clanTagText: cardPlayer?.clans?.tagTextColor ?? null,
+											playerUID: cardPlayerUID,
+											playerName: cardPlayer?.name ?? 'Player',
+											clanTag: cardPlayer?.clans?.tag ?? null,
+											clanTagBg: clanTagBackground(cardPlayer?.clans),
+											clanTagText: clanTagText(cardPlayer?.clans),
 						levelName: rc.levels?.name || `Level #${rc.levelID}`,
 						creator: rc.levels?.creator || '',
 						progress: rc.records?.progress ?? null,
@@ -278,8 +287,8 @@
 					playerUID: cardPlayerUID,
 					playerName: cardPlayer?.name ?? 'Player',
 					clanTag: cardPlayer?.clans?.tag ?? null,
-					clanTagBg: cardPlayer?.clans?.tagBgColor ?? null,
-					clanTagText: cardPlayer?.clans?.tagTextColor ?? null,
+					clanTagBg: clanTagBackground(cardPlayer?.clans),
+					clanTagText: clanTagText(cardPlayer?.clans),
 					levelName: selectedCard.levels?.name || `Level #${selectedCard.levelID}`,
 					creator: selectedCard.levels?.creator || '',
 					progress: selectedCard.records?.progress ?? null,
@@ -388,8 +397,8 @@
 													playerUID: cardPlayerUID,
 													playerName: cardPlayer?.name ?? 'Player',
 													clanTag: cardPlayer?.clans?.tag ?? null,
-													clanTagBg: cardPlayer?.clans?.tagBgColor ?? null,
-													clanTagText: cardPlayer?.clans?.tagTextColor ?? null,
+											clanTagBg: clanTagBackground(cardPlayer?.clans),
+											clanTagText: clanTagText(cardPlayer?.clans),
 													levelName: rc.levels?.name || `Level #${rc.levelID}`,
 													creator: rc.levels?.creator || '',
 													progress: rc.records?.progress ?? null,
@@ -574,8 +583,8 @@
 									playerUID: cardPlayerUID,
 									playerName: cardPlayer?.name ?? 'Player',
 									clanTag: cardPlayer?.clans?.tag ?? null,
-									clanTagBg: cardPlayer?.clans?.tagBgColor ?? null,
-									clanTagText: cardPlayer?.clans?.tagTextColor ?? null,
+									clanTagBg: clanTagBackground(cardPlayer?.clans),
+									clanTagText: clanTagText(cardPlayer?.clans),
 									levelName: selectedCard.levels?.name || `Level #${selectedCard.levelID}`,
 									creator: selectedCard.levels?.creator || '',
 									progress: selectedCard.records?.progress ?? null,
@@ -678,8 +687,8 @@
 										playerUID: cardPlayerUID,
 										playerName: cardPlayer?.name ?? 'Player',
 										clanTag: cardPlayer?.clans?.tag ?? null,
-										clanTagBg: cardPlayer?.clans?.tagBgColor ?? null,
-										clanTagText: cardPlayer?.clans?.tagTextColor ?? null,
+										clanTagBg: clanTagBackground(cardPlayer?.clans),
+										clanTagText: clanTagText(cardPlayer?.clans),
 										levelName: rc.levels?.name || `Level #${rc.levelID}`,
 										creator: rc.levels?.creator || '',
 										progress: rc.records?.progress ?? null,

@@ -19,7 +19,7 @@
 	const PAGE_SIZE = 20;
 
 	let rankedLists: any[] = [];
-	let selectedListId = '';
+	let selectedListId = 'created';
 	let activeList: any = null;
 	let levels: any[] = [];
 	let total = 0;
@@ -29,7 +29,8 @@
 	let requestVersion = 0;
 
 	$: hasMore = levels.length < total;
-	$: coverage = activeList?.levelCount > 0
+	$: isCreatedCategory = selectedListId === 'created';
+	$: coverage = !isCreatedCategory && activeList?.levelCount > 0
 		? Math.round((total / activeList.levelCount) * 100)
 		: null;
 
@@ -46,12 +47,14 @@
 			: '—';
 	}
 
-	function cardType() {
-		return activeList?.isPlatformer ? 'pl' : 'dl';
+	function cardType(entry: any) {
+		return (isCreatedCategory ? entry.level?.isPlatformer : activeList?.isPlatformer)
+			? 'pl'
+			: 'dl';
 	}
 
 	function cardProps(entry: any) {
-		return toLevelCardProps(entry.level || {}, cardType(), {
+		return toLevelCardProps(entry.level || {}, cardType(entry), {
 			top: entry.position ?? null,
 			rating: entry.rating ?? entry.level?.rating ?? null,
 			minProgress: entry.minProgress ?? null,
@@ -88,17 +91,14 @@
 			}
 
 			rankedLists = await response.json();
-
-			if (rankedLists.length) {
-				selectedListId = String(rankedLists[0].id);
-				await fetchLevels(false);
-			}
 		} catch {
 			rankedLists = [];
-			loadError = true;
 		} finally {
 			loadingLists = false;
 		}
+
+		selectedListId = 'created';
+		await fetchLevels(false);
 	}
 
 	async function fetchLevels(append: boolean) {
@@ -116,9 +116,10 @@
 		});
 
 		try {
-			const response = await fetch(
-				`${import.meta.env.VITE_API_URL}/clans/${clan.id}/list-levels/${selectedListId}?${params}`
-			);
+			const endpoint = isCreatedCategory
+				? `${import.meta.env.VITE_API_URL}/clans/${clan.id}/created-levels?${params}`
+				: `${import.meta.env.VITE_API_URL}/clans/${clan.id}/list-levels/${selectedListId}?${params}`;
+			const response = await fetch(endpoint);
 
 			if (!response.ok) {
 				throw new Error('Failed to load clan list levels');
@@ -130,18 +131,38 @@
 				return;
 			}
 
-			activeList = result.list;
+			activeList = isCreatedCategory
+				? {
+					id: 'created',
+					title: tr('Levels created by clan', 'Level được tạo bởi bang hội'),
+					isCreatedCategory: true
+				}
+				: result.list;
 			total = Number(result.total || 0);
-			levels = append ? [...levels, ...(result.data || [])] : (result.data || []);
+			const incoming = isCreatedCategory
+				? (result.data || []).map((level: any) => ({
+					id: level.id,
+					level,
+					clanMemberCount: 1,
+					clanSourceRoles: ['creator']
+				}))
+				: (result.data || []);
+			levels = append ? [...levels, ...incoming] : incoming;
 		} catch {
 			if (version === requestVersion) {
 				loadError = true;
 
 				if (!append) {
 					levels = [];
-					activeList = rankedLists.find(
-						(list) => String(list.id) === selectedListId
-					) || null;
+					activeList = isCreatedCategory
+						? {
+							id: 'created',
+							title: tr('Levels created by clan', 'Level được tạo bởi bang hội'),
+							isCreatedCategory: true
+						}
+						: rankedLists.find(
+							(list) => String(list.id) === selectedListId
+						) || null;
 				}
 			}
 		} finally {
@@ -169,49 +190,62 @@
 <div class="clan-levels">
   <section class="levels-toolbar">
     <div class="toolbar-copy">
-      <span><Layers3 size={14} /> {tr('Custom-list progress', 'Tiến độ danh sách tùy chỉnh')}</span>
-      <h2>{tr('Levels active in this clan', 'Level có hoạt động trong bang hội')}</h2>
-      <p>{tr('Choose an official or verified list to see the levels completed or contributed by clan members.', 'Chọn danh sách chính thức hoặc đã xác minh để xem các level thành viên đã hoàn thành hoặc đóng góp.')}</p>
+      <span><Layers3 size={14} /> {tr('Clan level categories', 'Danh mục level bang hội')}</span>
+      <h2>{tr('Levels connected to this clan', 'Level liên quan đến bang hội')}</h2>
+      <p>{tr('See levels created by clan members, or choose an official or verified list to follow clan progress.', 'Xem level do thành viên tạo, hoặc chọn danh sách chính thức hay đã xác minh để theo dõi tiến độ bang hội.')}</p>
     </div>
 
-    {#if rankedLists.length}
+    {#if !loadingLists}
       <label class="list-picker" for="clan-level-list">
-        <span>{tr('Ranking system', 'Hệ thống xếp hạng')}</span>
+        <span>{tr('Category', 'Danh mục')}</span>
         <select
           id="clan-level-list"
           value={selectedListId}
           on:change={(event) => changeList(event.currentTarget.value)}
         >
-          {#each rankedLists as list}
-            <option value={String(list.id)}>{list.title} · {formatNumber(list.rankedMemberCount)}</option>
-          {/each}
+          <option value="created">{tr('Levels created by clan', 'Level được tạo bởi bang hội')}</option>
+          {#if rankedLists.length}
+            <optgroup label={tr('Ranked-list progress', 'Tiến độ danh sách xếp hạng')}>
+              {#each rankedLists as list}
+                <option value={String(list.id)}>{list.title} · {formatNumber(list.rankedMemberCount)}</option>
+              {/each}
+            </optgroup>
+          {/if}
         </select>
       </label>
     {/if}
   </section>
 
   {#if activeList}
-    <section class="list-summary">
+    <section class="list-summary" class:created-summary={isCreatedCategory}>
       <div class="list-identity">
         <span class="list-icon"><Trophy size={18} /></span>
         <div>
           <span class="list-badges">
-            {#if activeList.isOfficial}<span><BadgeCheck size={12} /> {tr('Official', 'Chính thức')}</span>{:else if activeList.isVerified}<span><BadgeCheck size={12} /> {tr('Verified', 'Đã xác minh')}</span>{/if}
-            <span>{activeList.leaderboardMode === 'creator' ? tr('Creator list', 'Danh sách sáng tạo') : tr('Player list', 'Danh sách người chơi')}</span>
+            {#if isCreatedCategory}
+              <span><Users size={12} /> {tr('Clan creators', 'Nhà sáng tạo bang hội')}</span>
+            {:else}
+              {#if activeList.isOfficial}<span><BadgeCheck size={12} /> {tr('Official', 'Chính thức')}</span>{:else if activeList.isVerified}<span><BadgeCheck size={12} /> {tr('Verified', 'Đã xác minh')}</span>{/if}
+              <span>{activeList.leaderboardMode === 'creator' ? tr('Creator list', 'Danh sách sáng tạo') : tr('Player list', 'Danh sách người chơi')}</span>
+            {/if}
           </span>
           <h3>{activeList.title}</h3>
         </div>
       </div>
 
       <div class="summary-metrics">
-        <span><strong>{formatNumber(total)}</strong><small>{tr('Clan levels', 'Level bang hội')}</small></span>
-        <span><strong>{formatNumber(activeList.levelCount)}</strong><small>{tr('List levels', 'Level trong list')}</small></span>
-        <span><strong>{coverage === null ? '—' : `${coverage}%`}</strong><small>{tr('Coverage', 'Độ phủ')}</small></span>
+        <span><strong>{formatNumber(total)}</strong><small>{isCreatedCategory ? tr('Created levels', 'Level đã tạo') : tr('Clan levels', 'Level bang hội')}</small></span>
+        {#if !isCreatedCategory}
+          <span><strong>{formatNumber(activeList.levelCount)}</strong><small>{tr('List levels', 'Level trong list')}</small></span>
+          <span><strong>{coverage === null ? '—' : `${coverage}%`}</strong><small>{tr('Coverage', 'Độ phủ')}</small></span>
+        {/if}
       </div>
 
-      <a href={`/lists/${activeList.identifier}`}>
-        {tr('Open list', 'Mở danh sách')} <ArrowRight size={15} />
-      </a>
+      {#if !isCreatedCategory}
+        <a href={`/lists/${activeList.identifier}`}>
+          {tr('Open list', 'Mở danh sách')} <ArrowRight size={15} />
+        </a>
+      {/if}
     </section>
   {/if}
 
@@ -227,7 +261,7 @@
       <h3>{tr('Could not load clan levels', 'Không thể tải level bang hội')}</h3>
       <button type="button" on:click={() => rankedLists.length ? fetchLevels(false) : fetchRankedLists()}>{tr('Try again', 'Thử lại')}</button>
     </div>
-  {:else if rankedLists.length === 0}
+  {:else if !isCreatedCategory && rankedLists.length === 0}
     <div class="levels-empty">
       <Sparkles size={25} />
       <h3>{tr('No ranked-list activity yet', 'Chưa có hoạt động trên danh sách xếp hạng')}</h3>
@@ -237,8 +271,8 @@
   {:else if levels.length === 0}
     <div class="levels-empty">
       <Activity size={25} />
-      <h3>{tr('No level activity on this list', 'Chưa có hoạt động level trên danh sách này')}</h3>
-      <p>{tr('Try another list from the selector above.', 'Hãy thử danh sách khác ở bộ chọn phía trên.')}</p>
+      <h3>{isCreatedCategory ? tr('No clan-created levels yet', 'Chưa có level do bang hội tạo') : tr('No level activity on this list', 'Chưa có hoạt động level trên danh sách này')}</h3>
+      <p>{isCreatedCategory ? tr('Accepted levels created by current clan members will appear here.', 'Level đã được duyệt do thành viên hiện tại tạo sẽ xuất hiện tại đây.') : tr('Try another list from the selector above.', 'Hãy thử danh sách khác ở bộ chọn phía trên.')}</p>
     </div>
   {:else}
     <div class="levels-grid">
@@ -246,12 +280,17 @@
         <article class="clan-level-entry">
           <LevelCard
             {...cardProps(entry)}
-            type={cardType()}
+            type={cardType(entry)}
             ratingPrediction={false}
           />
           <footer>
-            <span><Users size={14} /> {formatNumber(entry.clanMemberCount)} {tr('members', 'thành viên')}</span>
-            <span><Activity size={14} /> {activityLabel(entry)}</span>
+            {#if isCreatedCategory}
+              <span><Users size={14} /> {entry.level?.creatorData?.name || entry.level?.creator || tr('Clan member', 'Thành viên bang hội')}</span>
+              <span><Layers3 size={14} /> {tr('Created by clan member', 'Do thành viên bang hội tạo')}</span>
+            {:else}
+              <span><Users size={14} /> {formatNumber(entry.clanMemberCount)} {tr('members', 'thành viên')}</span>
+              <span><Activity size={14} /> {activityLabel(entry)}</span>
+            {/if}
           </footer>
         </article>
       {/each}
@@ -279,6 +318,10 @@
   border-radius: 16px;
   background: hsl(var(--card));
   box-shadow: 0 4px 18px hsl(222 40% 2% / 0.035);
+}
+
+.list-summary.created-summary {
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 
 .levels-toolbar {

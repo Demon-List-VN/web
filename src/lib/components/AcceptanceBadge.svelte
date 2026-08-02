@@ -1,17 +1,32 @@
 <script lang="ts">
-	import { Clock3, Shield, Zap } from 'lucide-svelte';
+	import { Clock3, Shield, XCircle, Zap } from 'lucide-svelte';
 	import { _ } from 'svelte-i18n';
 
 	export let acceptedManually: boolean | null | undefined = false;
 	export let acceptedAuto: boolean | null | undefined = false;
+	export let rejectedAt: string | null | undefined = null;
 	export let compact = false;
 
-	$: status = acceptedManually ? 'manual' : acceptedAuto ? 'auto' : 'pending';
-	$: Icon = status === 'manual' ? Shield : status === 'auto' ? Zap : Clock3;
+	$: status = acceptedManually
+		? 'manual'
+		: acceptedAuto
+		? 'auto'
+		: rejectedAt
+		? 'rejected'
+		: 'pending';
+	$: Icon = status === 'manual'
+		? Shield
+		: status === 'auto'
+		? Zap
+		: status === 'rejected'
+		? XCircle
+		: Clock3;
 	$: label = status === 'manual'
 		? $_('acceptance.manual')
 		: status === 'auto'
 		? $_('acceptance.auto')
+		: status === 'rejected'
+		? $_('acceptance.rejected')
 		: $_('acceptance.pending');
 </script>
 
@@ -19,6 +34,7 @@
   class="acceptanceBadge"
   class:manual={status === 'manual'}
   class:auto={status === 'auto'}
+  class:rejected={status === 'rejected'}
   class:pending={status === 'pending'}
   class:compact
   title={label}
@@ -68,6 +84,12 @@
     background: rgba(148, 163, 184, 0.12);
     border-color: rgba(148, 163, 184, 0.3);
     color: #cbd5e1;
+  }
+
+  &.rejected {
+    background: rgba(239, 68, 68, 0.13);
+    border-color: rgba(239, 68, 68, 0.38);
+    color: #f87171;
   }
 }
 </style>

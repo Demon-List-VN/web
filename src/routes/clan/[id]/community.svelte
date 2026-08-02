@@ -65,7 +65,8 @@
 		{ value: 'media', label: 'media', icon: Image },
 		{ value: 'guide', label: 'guide', icon: BookOpen },
 		{ value: 'collab', label: 'collab', icon: Users },
-		{ value: 'review', label: 'review', icon: Star }
+		{ value: 'review', label: 'review', icon: Star },
+		{ value: 'wiki', label: 'wiki', icon: BookOpen }
 	];
 
 	async function fetchPosts(append = false) {

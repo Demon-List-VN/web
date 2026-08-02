@@ -74,7 +74,8 @@
 		guide: BookOpen,
 		announcement: Megaphone,
 		review: Star,
-		collab: Users
+		collab: Users,
+		wiki: BookOpen
 	};
 
 	const typeColors: Record<string, string> = {
@@ -83,7 +84,8 @@
 		guide: 'text-emerald-500',
 		announcement: 'text-amber-500',
 		review: 'text-yellow-500',
-		collab: 'text-indigo-500'
+		collab: 'text-indigo-500',
+		wiki: 'text-cyan-500'
 	};
 
 	const typeBgColors: Record<string, string> = {
@@ -92,7 +94,8 @@
 		guide: 'bg-emerald-500/10',
 		announcement: 'bg-amber-500/10',
 		review: 'bg-yellow-500/10',
-		collab: 'bg-indigo-500/10'
+		collab: 'bg-indigo-500/10',
+		wiki: 'bg-cyan-500/10'
 	};
 
 	function timeAgo(dateStr: string) {

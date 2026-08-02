@@ -91,5 +91,14 @@
   postId={$page.params.id || ''}
   initialPost={data.post}
   initialComments={data.comments}
-  backLink={data.post?.clanId ? `/clan/${data.post.clanId}` : '/'}
+  backLink={data.post?.clanId
+    ? `/clan/${data.post.clanId}`
+    : data.post?.attachedList?.id
+    ? `/lists/${data.post.attachedList.id}?tab=community`
+    : data.post?.type === 'wiki'
+    ? '/wiki'
+    : '/'}
+  backLabel={data.post?.type === 'wiki'
+    ? 'Wiki'
+    : data.post?.attachedList?.title || ''}
 />

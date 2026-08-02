@@ -18,6 +18,7 @@
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import { _ } from 'svelte-i18n';
 	import { EllipsisIcon, FileText, Gauge, SkipForward } from 'lucide-svelte';
+	import AcceptanceBadge from '$lib/components/AcceptanceBadge.svelte';
 
 	export let data: PageData;
 	let alertOpened = false;
@@ -97,6 +98,10 @@
 
 	function isBoosting(id: number) {
 		return boosting.includes(id);
+	}
+
+	function isPendingSubmission(record: any) {
+		return !record.acceptedManually && !record.acceptedAuto && !record.rejectedAt;
 	}
 
 	async function boostSubmission(levelid: number) {
@@ -369,6 +374,9 @@
               <Table.Head class="w-[90px] text-center">{
                 $_('submissions.progress')
               }</Table.Head>
+              <Table.Head class="w-[130px] text-center">{
+                $_('acceptance.label')
+              }</Table.Head>
               <Table.Head class="w-[100px] text-center">{
                 $_('submissions.queue_no')
               }</Table.Head>
@@ -382,7 +390,7 @@
             {#each data.records as record, index}
               {#if index !== 0 && index % 50 === 0}
                 <Table.Row class="hover:bg-transparent">
-                  <Table.Cell colspan={7} class="p-0">
+                  <Table.Cell colspan={8} class="p-0">
                     <Ads />
                   </Table.Cell>
                 </Table.Row>
@@ -394,7 +402,7 @@
                         return;
                     }
 
-                    goto(`/record/${record.userid}/${record.levels.id}`);
+                    goto(`/record/${record.userid}/${record.levels.id}?id=${record.id}`);
                 }}
               >
                 <Table.Cell class="font-medium">
@@ -404,6 +412,14 @@
                   >
                     {record.levels.name}
                   </a>
+                  {#if record.rejectedAt && record.reviewerComment}
+                    <small class="rejection-reason">
+                      {$_('submissions.rejection_reason')}: {record.reviewerComment}
+                    </small>
+                  {/if}
+                  <small class="record-target">
+                    {$_('record_detail.target')}: {record.targetList?.title ?? $_('record_detail.global_target')}
+                  </small>
                 </Table.Cell>
                 <Table.Cell class="text-center">
                   {new Date(record.timestamp)
@@ -425,7 +441,16 @@
                   }
                 </Table.Cell>
                 <Table.Cell class="text-center">
-                  {#if record.needMod}
+                  <AcceptanceBadge
+                    acceptedManually={record.acceptedManually}
+                    acceptedAuto={record.acceptedAuto}
+                    rejectedAt={record.rejectedAt}
+                  />
+                </Table.Cell>
+                <Table.Cell class="text-center">
+                  {#if !isPendingSubmission(record)}
+                    <span class="muted">-</span>
+                  {:else if record.needMod}
                     <Badge variant="outline">{
                       $_('submissions.forwarded')
                     }</Badge>
@@ -436,18 +461,22 @@
                   {/if}
                 </Table.Cell>
                 <Table.Cell class="text-center">
-                  <Button
-                    size="sm"
-                    variant="default"
-                    class="boost-btn"
-                    disabled={isBoosting(record.levelid)}
-                    on:click={(e) => {
-                        e.stopPropagation();
-                        goto(`/record/${record.userid}/${record.levels.id}?tab=skipAhead`);
-                    }}
-                  >
-                    <SkipForward size={14} />
-                  </Button>
+                  {#if !isPendingSubmission(record)}
+                    <span class="muted">-</span>
+                  {:else}
+                    <Button
+                      size="sm"
+                      variant="default"
+                      class="boost-btn"
+                      disabled={isBoosting(record.levelid)}
+                      on:click={(e) => {
+                          e.stopPropagation();
+                          goto(`/record/${record.userid}/${record.levels.id}?id=${record.id}&tab=skipAhead`);
+                      }}
+                    >
+                      <SkipForward size={14} />
+                    </Button>
+                  {/if}
                 </Table.Cell>
                 <Table.Cell>
                   <div class="actions">
@@ -457,7 +486,7 @@
                       title="Chi tiết"
                       on:click={(e) => {
                           e.stopPropagation();
-                          goto(`/record/${record.userid}/${record.levels.id}`);
+                          goto(`/record/${record.userid}/${record.levels.id}?id=${record.id}`);
                       }}
                     >
                       <EllipsisIcon size={16} />
@@ -471,19 +500,21 @@
                     >
                       <ExternalLink size={16} />
                     </Button>
-                    <Button
-                      size="icon"
-                      variant="destructive"
-                      title="Huỷ nộp"
-                      on:click={(e) => {
-                          e.stopPropagation();
-                          lvID = record.levelid;
-                          recID = typeof record.id === 'number' ? record.id : null;
-                          alertOpened = true;
-                      }}
-                    >
-                      <CrossCircled size={16} />
-                    </Button>
+                    {#if isPendingSubmission(record)}
+                      <Button
+                        size="icon"
+                        variant="destructive"
+                        title="Huỷ nộp"
+                        on:click={(e) => {
+                            e.stopPropagation();
+                            lvID = record.levelid;
+                            recID = typeof record.id === 'number' ? record.id : null;
+                            alertOpened = true;
+                        }}
+                      >
+                        <CrossCircled size={16} />
+                      </Button>
+                    {/if}
                   </div>
                 </Table.Cell>
               </Table.Row>
@@ -796,6 +827,23 @@
   font-size: 0.7rem;
   color: hsl(var(--muted-foreground));
   display: block;
+}
+
+.rejection-reason {
+  display: block;
+  max-width: 260px;
+  margin-top: 4px;
+  color: hsl(0 72% 58%);
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.record-target {
+  display: block;
+  margin-top: 3px;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.7rem;
 }
 
 .muted {

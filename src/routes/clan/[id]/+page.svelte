@@ -6,11 +6,9 @@
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Switch } from '$lib/components/ui/switch';
 	import { Button } from '$lib/components/ui/button';
-	import { Badge } from '$lib/components/ui/badge';
 	import type { PageData } from './$types';
 	import PlayerHoverCard from '$lib/components/playerLink.svelte';
 	import { onMount } from 'svelte';
-	import { page } from '$app/stores';
 	import { user } from '$lib/client';
 	import { toast } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
@@ -25,6 +23,7 @@
 	import ClanCommunity from './community.svelte';
 	import ActivityFeed from './ActivityFeed.svelte';
 	import ClanRecordCard from '$lib/components/clan/ClanRecordCard.svelte';
+	import ClanTag from '$lib/components/clan/ClanTag.svelte';
 	import { _, locale } from 'svelte-i18n';
 	import {
 		normalizeCustomListRankBadges,
@@ -53,7 +52,7 @@
 	export let data: PageData;
 
 	const editedData = structuredClone(data) as any;
-	let currentTab = 'activity';
+	let currentTab = isActive(data.boostedUntil) ? 'activity' : 'members';
 	let members: any[] = [];
 	let records: any[] = [];
 	let invitations: any[] = [];
@@ -131,6 +130,13 @@
 			'initialActivity'
 		]) {
 			delete payload[key];
+		}
+
+		if (!boosted) {
+			delete payload.homeContent;
+			delete payload.mode;
+			delete payload.tagBgColor;
+			delete payload.tagTextColor;
 		}
 
 		return payload;
@@ -460,19 +466,20 @@
 	}
 
 	onMount(() => {
-		void Promise.all([
-			fetchMembers(),
-			fetchRecords(),
-			fetchInvitations(),
-			fetchRankedLists()
-		]);
+		const requests = [fetchMembers(), fetchInvitations()];
+
+		if (boosted) {
+			requests.push(fetchRecords(), fetchRankedLists());
+		}
+
+		void Promise.all(requests);
 	});
 </script>
 
 <svelte:head>
   <title>{$_('head.labels.clan')} {data.name} - {$_('head.site_name')}</title>
   <meta property="og:title" content={`${data.name} · ${$_('head.site_name')}`} />
-  <meta property="og:description" content={`${data.memberCount} ${tr('members in', 'thành viên trong')} c/${data.tag || data.name}`} />
+  <meta property="og:description" content={`${data.memberCount} ${tr('members in', 'thành viên trong')} ${data.tag || data.name}`} />
   <meta property="og:image" content={clanImage} />
 </svelte:head>
 
@@ -494,7 +501,7 @@
       </div>
       <div class="hero-copy">
         <div class="hero-eyebrow">
-          <span><Shield size={13} /> c/{data.tag || data.name}</span>
+          <span><Shield size={13} /> <ClanTag clan={data} compact /></span>
           {#if boosted}<span class="boosted"><Zap size={12} /> {tr('Boosted', 'Đã boost')}</span>{/if}
         </div>
         <h1>{data.name}</h1>
@@ -509,10 +516,12 @@
           <Button on:click={() => acceptInvitation(Number(data.id))}>{tr('Accept invite', 'Chấp nhận')}</Button>
           <Button variant="outline" on:click={() => rejectInvitation(Number(data.id))}>{tr('Decline', 'Từ chối')}</Button>
         {:else if isMember}
-          {#if data.isPublic || isOwner}<InviteButton />{/if}
-          <a class="create-post-action" href={`/community/create?clanId=${data.id}`}>
-            <MessageCircle size={16} /> {tr('Create post', 'Tạo bài viết')}
-          </a>
+          {#if boosted && (data.isPublic || isOwner)}<InviteButton />{/if}
+          {#if boosted}
+            <a class="create-post-action" href={`/community/create?clanId=${data.id}`}>
+              <MessageCircle size={16} /> {tr('Create post', 'Tạo bài viết')}
+            </a>
+          {/if}
         {:else if $user.loggedIn && data.isPublic && (data.memberCount < data.memberLimit || data.memberLimit == 0)}
           <Button on:click={joinClan}><UserPlus size={16} class="mr-2" /> {tr('Join clan', 'Tham gia')}</Button>
         {:else if !$user.loggedIn}
@@ -526,11 +535,17 @@
   <div class="clan-shell">
     <div class="clan-main">
       <Tabs.Root bind:value={currentTab}>
+        {#if !boosted}
+          <div class="feature-lock-note">
+            <LockKeyhole size={16} />
+            <span>{tr('This clan is not boosted. The player list remains available; activity, posts, records, levels, and custom features are locked.', 'Bang hội chưa được boost. Danh sách người chơi vẫn khả dụng; hoạt động, bài viết, kỷ lục, level và tính năng tùy chỉnh đang bị khóa.')}</span>
+          </div>
+        {/if}
         <div class="tab-strip">
           <Tabs.List class="clan-tabs">
-            <Tabs.Trigger value="activity"><Activity size={15} /> {tr('Overview', 'Tổng quan')}</Tabs.Trigger>
-            <Tabs.Trigger value="community"><MessageCircle size={15} /> {tr('Posts', 'Bài viết')}</Tabs.Trigger>
-            <Tabs.Trigger value="records"><Trophy size={15} /> {tr('Records', 'Kỷ lục')}</Tabs.Trigger>
+            {#if boosted}<Tabs.Trigger value="activity"><Activity size={15} /> {tr('Overview', 'Tổng quan')}</Tabs.Trigger>{/if}
+            {#if boosted}<Tabs.Trigger value="community"><MessageCircle size={15} /> {tr('Posts', 'Bài viết')}</Tabs.Trigger>{/if}
+            {#if boosted}<Tabs.Trigger value="records"><Trophy size={15} /> {tr('Records', 'Kỷ lục')}</Tabs.Trigger>{/if}
             <Tabs.Trigger value="members"><Users size={15} /> {tr('Members', 'Thành viên')}</Tabs.Trigger>
             {#if boosted}<Tabs.Trigger value="levels"><Layers3 size={15} /> {tr('Levels', 'Level')}</Tabs.Trigger>{/if}
             {#if boosted && data.homeContent}<Tabs.Trigger value="about"><BookOpen size={15} /> {tr('About', 'Giới thiệu')}</Tabs.Trigger>{/if}
@@ -539,7 +554,7 @@
           </Tabs.List>
         </div>
 
-        <Tabs.Content value="activity" class="tab-content">
+        {#if boosted}<Tabs.Content value="activity" class="tab-content">
           <div class="section-heading">
             <div>
               <span>{tr('Clan feed', 'Bảng tin bang hội')}</span>
@@ -550,13 +565,13 @@
             {/if}
           </div>
           <ActivityFeed clan={data} initialActivity={data.initialActivity} />
-        </Tabs.Content>
+        </Tabs.Content>{/if}
 
-        <Tabs.Content value="community" class="tab-content">
+        {#if boosted}<Tabs.Content value="community" class="tab-content">
           <ClanCommunity clan={data} />
-        </Tabs.Content>
+        </Tabs.Content>{/if}
 
-        <Tabs.Content value="records" class="tab-content">
+        {#if boosted}<Tabs.Content value="records" class="tab-content">
           <div class="section-heading filter-heading">
             <div>
               <span>{tr('Verified activity', 'Hoạt động đã duyệt')}</span>
@@ -592,7 +607,7 @@
               {recordsLoading ? tr('Loading…', 'Đang tải…') : tr('Load more records', 'Tải thêm kỷ lục')}
             </button>
           {/if}
-        </Tabs.Content>
+        </Tabs.Content>{/if}
 
         <Tabs.Content value="members" class="tab-content">
           <div class="section-heading filter-heading">
@@ -704,12 +719,12 @@
                 <label for="clan-member-limit"><span>{tr('Member limit', 'Giới hạn thành viên')}</span><Input id="clan-member-limit" bind:value={editedData.memberLimit} type="number" inputmode="numeric" /></label>
                 <div class="switch-field"><span>{tr('Public community', 'Cộng đồng công khai')}</span><Switch id="clan-public" bind:checked={editedData.isPublic} /></div>
               </div>
-              <Button variant="outline" on:click={() => fileinput.click()}>{tr('Change clan cover', 'Đổi ảnh bìa bang hội')}</Button>
+              <Button disabled={!boosted} variant="outline" on:click={() => fileinput.click()}>{tr('Change clan cover', 'Đổi ảnh bìa bang hội')}</Button>
               <div class="tag-colors">
-                <Badge style={`background-color: ${editedData.tagBgColor}; color: ${editedData.tagTextColor};`}>{data.tag}</Badge>
+                <ClanTag clan={{ ...editedData, boostedUntil: data.boostedUntil }} />
                 <Input disabled={!boosted} type="color" bind:value={editedData.tagBgColor} />
                 <Input disabled={!boosted} type="color" bind:value={editedData.tagTextColor} />
-                <Button variant="outline" on:click={() => {
+                <Button disabled={!boosted} variant="outline" on:click={() => {
  editedData.tagTextColor = null; editedData.tagBgColor = null;
 }}>{tr('Reset', 'Đặt lại')}</Button>
               </div>
@@ -820,8 +835,8 @@
 .clan-mark img { width: 100%; height: 100%; object-fit: cover; }
 .hero-copy { min-width: 0; }
 .hero-eyebrow, .hero-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.hero-eyebrow span, .hero-meta span { display: inline-flex; align-items: center; gap: 5px; }
-.hero-eyebrow span { padding: 5px 8px; border: 1px solid rgba(255,255,255,.18); border-radius: 999px; background: rgba(5,9,17,.34); backdrop-filter: blur(9px); font-size: 10px; font-weight: 850; }
+.hero-eyebrow > span, .hero-meta > span { display: inline-flex; align-items: center; gap: 5px; }
+.hero-eyebrow > span { padding: 5px 8px; border: 1px solid rgba(255,255,255,.18); border-radius: 999px; background: rgba(5,9,17,.34); backdrop-filter: blur(9px); font-size: 10px; font-weight: 850; }
 .hero-eyebrow .boosted { color: #fde68a; }
 .hero-copy h1 { margin: 8px 0 7px; overflow: hidden; font-size: clamp(32px, 5vw, 52px); font-weight: 900; letter-spacing: -.045em; line-height: .96; text-overflow: ellipsis; white-space: nowrap; }
 .hero-meta { color: rgba(255,255,255,.76); font-size: 11px; font-weight: 700; }
@@ -830,6 +845,8 @@
 
 .clan-shell { display: grid; grid-template-columns: minmax(0, 820px) minmax(270px, 330px); gap: 24px; width: min(1180px, calc(100% - 32px)); margin: 24px auto 0; align-items: start; }
 .clan-main { min-width: 0; }
+.feature-lock-note { display: flex; align-items: flex-start; gap: 9px; margin-bottom: 12px; padding: 12px 14px; border: 1px solid hsl(43 90% 52% / .25); border-radius: 12px; color: hsl(43 70% 43%); background: hsl(43 90% 52% / .08); font-size: 11px; font-weight: 700; line-height: 1.5; }
+.feature-lock-note :global(svg) { flex: 0 0 auto; margin-top: 1px; }
 .tab-strip { position: sticky; top: 56px; z-index: 20; margin-bottom: 16px; padding: 6px; border: 1px solid var(--clan-border); border-radius: 14px; background: hsl(var(--background) / .88); box-shadow: 0 8px 28px hsl(222 40% 2% / .05); backdrop-filter: blur(18px); overflow-x: auto; }
 :global(.clan-tabs) { display: flex !important; width: max-content !important; min-width: 100%; height: auto !important; gap: 3px; justify-content: flex-start !important; }
 :global(.clan-tabs button) { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; white-space: nowrap; }

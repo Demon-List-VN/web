@@ -39,7 +39,7 @@
 
   {#if submissionType === 'record'}
     <div class="rules-grid">
-      <a href={`/wiki/${$locale}/rules`} class="rule-card accent">
+      <a href="/wiki" class="rule-card accent">
         <div class="rule-icon">
           <ScrollText size={20} />
         </div>
