@@ -17,6 +17,7 @@
 		Trophy,
 		Users
 	} from 'lucide-svelte';
+	import { browser } from '$app/environment';
 	import { _, locale } from 'svelte-i18n';
 	import { user } from '$lib/client';
 	import CommunityPostCard from '$lib/components/communityPostCard.svelte';
@@ -32,6 +33,9 @@
 		key: string;
 		data: any;
 	};
+	type HomepageRequestMode = 'auth' | 'public';
+
+	const COMMUNITY_PAGE_SIZE = 8;
 
 	const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://gdvn.net').replace(
 		/\/$/,
@@ -51,15 +55,21 @@
 	let activeFeedTab: FeedTab = 'for-you';
 	let showOnboardingModal = false;
 	let homeData: any = data?.homeData || null;
-	let loadedAuth = false;
+	let homepageRequestMode: HomepageRequestMode | null = null;
+	let communityFeedPosts: any[] = [];
+	let communityOffset = 0;
+	let communityTotal: number | null = null;
+	let communityHasMore = false;
+	let communityLoadingMore = false;
+	let communityLoadError = false;
+	let communityInitialized = false;
 
 	$: if (data?.homeData) {
 		homeData = data.homeData;
 	}
 
-	$: if ($user.checked && $user.loggedIn && !loadedAuth) {
-		loadedAuth = true;
-		void loadHomepageAuth();
+	$: if (browser && $user.checked) {
+		ensureHomepageLoaded($user.loggedIn);
 	}
 
 	$: events = homeData?.events ?? null;
@@ -86,13 +96,31 @@
 		seed: feedSeed
 	});
 
-	async function loadHomepageAuth() {
+	function ensureHomepageLoaded(authenticated: boolean) {
+		const mode: HomepageRequestMode = authenticated ? 'auth' : 'public';
+
+		if (homepageRequestMode === mode) {
+			return;
+		}
+
+		homepageRequestMode = mode;
+		void loadHomepage(mode);
+	}
+
+	async function loadHomepage(mode: HomepageRequestMode) {
 		const headers: Record<string, string> = {};
 
-		try {
-			headers.Authorization = `Bearer ${await $user.token()}`;
-		} catch {
-			return;
+		if (mode === 'auth') {
+			try {
+				headers.Authorization = `Bearer ${await $user.token()}`;
+			} catch {
+				if (homepageRequestMode === mode && homeData === null) {
+					homeData = {};
+					initializeCommunityFeed([]);
+				}
+
+				return;
+			}
 		}
 
 		try {
@@ -100,16 +128,124 @@
 				headers
 			});
 
-			if (response.ok) {
-				const personalizedData = await response.json();
-				homeData = {
-					...personalizedData,
-					feedSeed: personalizedData?.feedSeed ?? homeData?.feedSeed ?? 1
-				};
+			if (!response.ok) {
+				throw new Error('Failed to load homepage');
+			}
+
+			const loadedData = await response.json();
+
+			if (homepageRequestMode !== mode) {
+				return;
+			}
+
+			homeData = {
+				...loadedData,
+				feedSeed: loadedData?.feedSeed
+					?? Math.floor(Math.random() * 2_147_483_647)
+			};
+			initializeCommunityFeed(loadedData?.communityPosts ?? []);
+		} catch {
+			if (homepageRequestMode === mode && homeData === null) {
+				homeData = {};
+				initializeCommunityFeed([]);
+			}
+		}
+	}
+
+	function initializeCommunityFeed(posts: any[]) {
+		communityFeedPosts = [...posts];
+		communityOffset = posts.length;
+		communityTotal = null;
+		communityHasMore = true;
+		communityLoadingMore = false;
+		communityLoadError = false;
+		communityInitialized = true;
+	}
+
+	async function loadMoreCommunity() {
+		if (!communityInitialized || communityLoadingMore || !communityHasMore) {
+			return;
+		}
+
+		communityLoadingMore = true;
+		communityLoadError = false;
+		const headers: Record<string, string> = {};
+
+		if ($user.loggedIn) {
+			try {
+				headers.Authorization = `Bearer ${await $user.token()}`;
+			} catch {}
+		}
+
+		try {
+			const params = new URLSearchParams({
+				limit: String(COMMUNITY_PAGE_SIZE),
+				offset: String(communityOffset),
+				sortBy: 'createdAt',
+				ascending: 'false'
+			});
+			const response = await fetch(
+				`${import.meta.env.VITE_API_URL}/community/posts?${params}`,
+				{ headers }
+			);
+
+			if (!response.ok) {
+				throw new Error('Failed to load community posts');
+			}
+
+			const result = await response.json();
+			const incoming = Array.isArray(result?.data) ? result.data : [];
+			const knownPostIds = new Set(communityFeedPosts.map((post) => post.id));
+			const uniquePosts = incoming.filter((post: any) => !knownPostIds.has(post.id));
+
+			communityFeedPosts = [...communityFeedPosts, ...uniquePosts];
+			communityOffset += incoming.length;
+			communityTotal = Number.isFinite(Number(result?.total))
+				? Number(result.total)
+				: null;
+			communityHasMore = communityTotal !== null
+				? communityOffset < communityTotal
+				: incoming.length === COMMUNITY_PAGE_SIZE;
+
+			if (headers.Authorization && incoming.length) {
+				void fetch(`${import.meta.env.VITE_API_URL}/community/posts/views`, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						Authorization: headers.Authorization
+					},
+					body: JSON.stringify({ postIds: incoming.map((post: any) => post.id) })
+				})
+					.catch(() => {});
 			}
 		} catch {
-		// Keep server-rendered public content if personalization is unavailable.
+			communityLoadError = true;
+		} finally {
+			communityLoadingMore = false;
 		}
+	}
+
+	function observeCommunityEnd(node: HTMLElement) {
+		if (!browser || typeof IntersectionObserver === 'undefined') {
+			return {};
+		}
+
+		const observer = new IntersectionObserver(
+			(entries) => {
+				if (entries[0]?.isIntersecting) {
+					void loadMoreCommunity();
+				}
+			},
+			{ rootMargin: '500px 0px' }
+		);
+
+		observer.observe(node);
+
+		return {
+			destroy() {
+				observer.disconnect();
+			}
+		};
 	}
 
 	function tr(english: string, vietnamese: string) {
@@ -171,52 +307,47 @@
 		battlepassProgress: any;
 		seed: number;
 	}) {
-		const items: FeedItem[] = [];
-		const used = {
-			levels: 0,
-			posts: 0,
-			events: 0,
-			tournaments: 0
-		};
-
-		const take = (
-			kind: 'level' | 'community' | 'event' | 'tournament',
-			collection: any[],
-			counter: keyof typeof used
-		) => {
-			const index = used[counter];
-			const entry = collection[index];
-
-			if (!entry) {
-				return;
-			}
-
-			used[counter] += 1;
-			items.push({
-				kind,
-				key: `${kind}-${entry.id ?? entry.level?.id ?? index}`,
+		const contentItems: FeedItem[] = [
+			...input.levels.map((entry, index) => ({
+				kind: 'level' as const,
+				key: `level-${entry.id ?? entry.level?.id ?? index}`,
 				data: entry
-			});
-		};
+			})),
+			...input.posts.map((entry, index) => ({
+				kind: 'community' as const,
+				key: `community-${entry.id ?? index}`,
+				data: entry
+			})),
+			...input.events.map((entry, index) => ({
+				kind: 'event' as const,
+				key: `event-${entry.id ?? index}`,
+				data: entry
+			})),
+			...input.tournaments.map((entry, index) => ({
+				kind: 'tournament' as const,
+				key: `tournament-${entry.id ?? index}`,
+				data: entry
+			}))
+		]
+			.sort((left, right) => {
+				const timeDifference = feedItemTimestamp(right) - feedItemTimestamp(left);
 
-		// The order deliberately alternates content types, like a social home feed.
-		take('level', input.levels, 'levels');
-		take('community', input.posts, 'posts');
-		items.push({ kind: 'pvp', key: 'pvp-pulse', data: input.pvp });
-		take('event', input.events, 'events');
-		take('level', input.levels, 'levels');
-		take('tournament', input.tournaments, 'tournaments');
+				return timeDifference || left.key.localeCompare(right.key);
+			})
+			.slice(0, 15);
+		const promotedItems: FeedItem[] = [
+			{ kind: 'pvp', key: 'pvp-pulse', data: input.pvp }
+		];
 
 		if (input.supporters.length) {
-			items.push({
+			promotedItems.push({
 				kind: 'supporter',
 				key: 'top-supporters',
 				data: input.supporters.slice(0, 3)
 			});
 		}
 
-		take('community', input.posts, 'posts');
-		items.push({
+		promotedItems.push({
 			kind: 'promo',
 			key: 'gdvn-promo',
 			data: {
@@ -225,19 +356,48 @@
 			}
 		});
 
-		while (items.length < 18) {
-			const before = items.length;
-			take('level', input.levels, 'levels');
-			take('community', input.posts, 'posts');
-			take('event', input.events, 'events');
-			take('tournament', input.tournaments, 'tournaments');
+		return insertPromotedItems(contentItems, promotedItems, input.seed);
+	}
 
-			if (items.length === before) {
-				break;
-			}
-		}
+	function feedItemTimestamp(item: FeedItem) {
+		const value = item.kind === 'level'
+			? item.data?.addedAt ?? item.data?.level?.created_at
+			: item.kind === 'community'
+			? item.data?.createdAt ?? item.data?.created_at
+			: item.kind === 'event'
+			? item.data?.start ?? item.data?.createdAt ?? item.data?.created_at
+			: item.data?.created_at
+				?? item.data?.createdAt
+				?? item.data?.registrationStart
+				?? item.data?.start;
+		const timestamp = new Date(value || 0)
+			.getTime();
 
-		return seededShuffle(items, input.seed);
+		return Number.isFinite(timestamp) ? timestamp : 0;
+	}
+
+	function insertPromotedItems(content: FeedItem[], promoted: FeedItem[], seed: number) {
+		const result = [...content];
+		const slots = seededShuffle(
+			Array.from(
+				{ length: Math.max(1, content.length) },
+				(_, index) => Math.min(content.length, index + 1)
+			),
+			seed ^ 0x9e3779b9
+		)
+			.slice(0, promoted.length);
+		const placements = seededShuffle(promoted, seed)
+			.map((item, index) => ({
+				item,
+				slot: slots[index] ?? content.length
+			}))
+			.sort((left, right) => left.slot - right.slot);
+
+		placements.forEach((placement, index) => {
+			result.splice(placement.slot + index, 0, placement.item);
+		});
+
+		return result;
 	}
 
 	function seededShuffle<T>(source: T[], seed: number) {
@@ -416,14 +576,7 @@
         >
           <MessageCircle size={16} />
           {tr('Community', 'Cộng đồng')}
-          {#if communityPosts?.length}
-            <span class="tab-count">{communityPosts.length}</span>
-          {/if}
         </button>
-        <a class="create-post" href="/community/create">
-          <Plus size={16} />
-          <span>{tr('Post', 'Đăng bài')}</span>
-        </a>
       </div>
 
       {#if $user.loggedIn && $user.data && $user.data.onboarding_done === false}
@@ -771,24 +924,40 @@
         </div>
 
         <div class="feed-stream community-only-stream">
-          {#if communityPosts === null}
+          {#if !communityInitialized}
             {#each { length: 4 } as _}
               <CommunityPostCard post={null} />
             {/each}
-          {:else if communityPosts.length}
-            {#each communityPosts as post (post.id)}
-              <CommunityPostCard {post} compact={false} />
-            {/each}
-            <a class="more-community" href="/community">
-              {tr('See more from the community', 'Xem thêm từ cộng đồng')}
-              <ArrowRight size={16} />
-            </a>
           {:else}
-            <div class="empty-feed">
-              <MessageCircle size={24} />
-              <h2>{tr('Start the conversation.', 'Bắt đầu cuộc trò chuyện.')}</h2>
-              <a href="/community/create">{tr('Create the first post', 'Tạo bài viết đầu tiên')} <ArrowRight size={15} /></a>
-            </div>
+            {#if communityFeedPosts.length}
+              {#each communityFeedPosts as post (post.id)}
+                <CommunityPostCard {post} compact={false} />
+              {/each}
+            {/if}
+
+            {#if communityLoadingMore}
+              {#each { length: 2 } as _}
+                <CommunityPostCard post={null} />
+              {/each}
+            {:else if !communityFeedPosts.length && !communityHasMore}
+              <div class="empty-feed">
+                <MessageCircle size={24} />
+                <h2>{tr('Start the conversation.', 'Bắt đầu cuộc trò chuyện.')}</h2>
+                <a href="/community/create">{tr('Create the first post', 'Tạo bài viết đầu tiên')} <ArrowRight size={15} /></a>
+              </div>
+            {/if}
+          {/if}
+
+          {#if communityLoadError}
+            <button class="community-retry" type="button" on:click={loadMoreCommunity}>
+              {tr('Could not load more. Try again', 'Không thể tải thêm. Thử lại')}
+            </button>
+          {:else if communityHasMore}
+            <div
+              class="community-load-sentinel"
+              use:observeCommunityEnd
+              aria-label={tr('Load more community posts', 'Tải thêm bài cộng đồng')}
+            ></div>
           {/if}
         </div>
         </div>
@@ -878,30 +1047,12 @@
   min-width: 0;
 }
 
-.create-post {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  min-height: 38px;
-  padding: 0 15px;
-  margin: 7px 8px;
-  border: 1px solid hsl(0 0% 84%);
-  border-radius: 9px;
-  color: #111;
-  background: #fff;
-  box-shadow: 0 1px 4px hsl(222 40% 2% / 0.1);
-  font-size: 13px;
-  font-weight: 800;
-  text-decoration: none;
-}
-
 .feed-tabs {
   position: sticky;
   top: 56px;
   z-index: 20;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   height: 52px;
   margin-bottom: 12px;
   border: 1px solid var(--feed-border);
@@ -949,19 +1100,6 @@
       transform: scaleX(1);
     }
   }
-}
-
-.tab-count {
-  display: inline-grid;
-  min-width: 19px;
-  height: 19px;
-  place-items: center;
-  padding: 0 5px;
-  border-radius: 999px;
-  color: hsl(var(--muted-foreground));
-  background: hsl(var(--muted));
-  font-size: 10px;
-  font-weight: 800;
 }
 
 .onboarding-feed-item {
@@ -1622,23 +1760,21 @@
   text-decoration: none;
 }
 
-.more-community {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  min-height: 48px;
+.community-load-sentinel {
+  width: 100%;
+  height: 1px;
+}
+
+.community-retry {
+  min-height: 44px;
   border: 1px solid var(--feed-border);
   border-radius: 12px;
-  color: hsl(var(--muted-foreground));
+  color: hsl(var(--foreground));
+  background: hsl(var(--card));
+  font: inherit;
   font-size: 12px;
   font-weight: 750;
-  text-decoration: none;
-
-  &:hover {
-    color: hsl(var(--foreground));
-    background: hsl(var(--muted) / 0.35);
-  }
+  cursor: pointer;
 }
 
 .empty-feed {
@@ -1697,8 +1833,16 @@
 .skeleton-media {
   display: block;
   border-radius: 8px;
-  background: hsl(var(--muted));
-  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  background:
+    linear-gradient(
+      100deg,
+      transparent 20%,
+      hsl(var(--background) / 0.6) 40%,
+      transparent 60%
+    ),
+    hsl(var(--muted));
+  background-size: 220% 100%;
+  animation: skeleton-shimmer 1.35s linear infinite;
 }
 
 .skeleton-avatar {
@@ -1718,8 +1862,9 @@
   min-height: 210px;
 }
 
-@keyframes skeleton-pulse {
-  50% { opacity: 0.48; }
+@keyframes skeleton-shimmer {
+  from { background-position: 130% 0; }
+  to { background-position: -90% 0; }
 }
 
 .pulse-rail {
@@ -1900,15 +2045,6 @@
     padding: 18px 0 32px;
   }
 
-  .create-post {
-    min-width: 38px;
-    padding: 0 10px;
-
-    span {
-      display: none;
-    }
-  }
-
   .feed-tabs {
     top: 55px;
     margin: 0 8px 10px;
@@ -2000,6 +2136,14 @@
 
   .prompt-action {
     font-size: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-avatar,
+  .skeleton-line,
+  .skeleton-media {
+    animation: none;
   }
 }
 

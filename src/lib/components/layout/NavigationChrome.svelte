@@ -5,7 +5,6 @@
 		Calendar,
 		Users,
 		Download,
-		MessageCircle,
 		BookOpen,
 		ShoppingBag,
 		MoreHorizontal,
@@ -49,11 +48,6 @@
 			name: $locale === 'en' ? 'Community' : 'Cộng đồng',
 			icon: Users,
 			routes: [
-				{
-					route: '/community',
-					name: $locale === 'en' ? 'Community Hub' : 'Cộng đồng',
-					icon: MessageCircle
-				},
 				{
 					route: '/players',
 					name: $locale === 'en' ? 'Players' : 'Người chơi',
