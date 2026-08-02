@@ -7,8 +7,6 @@
 		Flame,
 		Gamepad2,
 		Layers3,
-		MessageCircle,
-		Plus,
 		Radio,
 		Sparkles,
 		Star,
@@ -26,7 +24,6 @@
 
 	export let data: any;
 
-	type FeedTab = 'for-you' | 'community';
 	type FeedItem = {
 		kind: 'community' | 'event' | 'level' | 'promo' | 'pvp' | 'supporter' | 'tournament';
 		key: string;
@@ -51,7 +48,6 @@
 	$: homepageTitle = $_('head.site_name');
 	$: homepageDescription = $_('head.descriptions.homepage');
 
-	let activeFeedTab: FeedTab = 'for-you';
 	let showOnboardingModal = false;
 	let homeData: any = data?.homeData || null;
 	let homepageRequestMode: HomepageRequestMode | null = null;
@@ -93,6 +89,14 @@
 		battlepassProgress,
 		seed: feedSeed
 	});
+	$: mixedCommunityPostIds = new Set(
+		mixedFeed
+			.filter((item) => item.kind === 'community')
+			.map((item) => String(item.data?.id))
+	);
+	$: communityContinuationPosts = communityFeedPosts.filter(
+		(post) => !mixedCommunityPostIds.has(String(post.id))
+	);
 
 	function ensureHomepageLoaded(authenticated: boolean) {
 		const mode: HomepageRequestMode = authenticated ? 'auth' : 'public';
@@ -552,29 +556,11 @@
 <main class="social-home">
   <div class="feed-layout">
     <section class="feed-column" aria-label={tr('Home feed', 'Bảng tin')}>
-      <div class="feed-tabs" role="tablist" aria-label={tr('Feed views', 'Chế độ bảng tin')}>
-        <button
-          type="button"
-          role="tab"
-          aria-controls="for-you-panel"
-          class:active={activeFeedTab === 'for-you'}
-          aria-selected={activeFeedTab === 'for-you'}
-          on:click={() => (activeFeedTab = 'for-you')}
-        >
+      <div class="feed-tabs" aria-label={tr('Home feed', 'Bảng tin')}>
+        <div class="feed-tab">
           <Flame size={16} />
           {tr('For you', 'Dành cho bạn')}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-controls="community-panel"
-          class:active={activeFeedTab === 'community'}
-          aria-selected={activeFeedTab === 'community'}
-          on:click={() => (activeFeedTab = 'community')}
-        >
-          <MessageCircle size={16} />
-          {tr('Community', 'Cộng đồng')}
-        </button>
+        </div>
       </div>
 
       {#if $user.loggedIn && $user.data && $user.data.onboarding_done === false}
@@ -587,8 +573,7 @@
         <OnboardingModal bind:open={showOnboardingModal} />
       {/if}
 
-      {#if activeFeedTab === 'for-you'}
-        <div id="for-you-panel" role="tabpanel">
+      <div id="for-you-panel">
         {#if homeData === null}
           <div class="feed-stream" aria-label={tr('Loading feed', 'Đang tải bảng tin')}>
             {#each { length: 5 } as _}
@@ -901,65 +886,45 @@
                 <a href="/lists">{tr('Explore lists', 'Khám phá danh sách')} <ArrowRight size={15} /></a>
               </div>
             {/if}
-          </div>
-        {/if}
-        </div>
-      {:else}
-        <div id="community-panel" role="tabpanel">
-        <div class="community-tab-intro">
-          <div class="community-prompt-avatar">
-            {#if $user.loggedIn}
-              <img
-                src={`https://cdn.gdvn.net/avatars/${$user.data?.uid}${$user.data?.isAvatarGif ? '.gif' : '.jpg'}?version=${$user.data?.avatarVersion ?? 0}`}
-                alt=""
-              />
-            {:else}
-              <MessageCircle size={18} />
-            {/if}
-          </div>
-          <a href="/community/create">{tr('Share a run, question, guide, or discovery…', 'Chia sẻ thành tích, câu hỏi, hướng dẫn hoặc khám phá…')}</a>
-          <a class="prompt-action" href="/community/create"><Plus size={16} /> {tr('Create', 'Tạo bài')}</a>
-        </div>
 
-        <div class="feed-stream community-only-stream">
-          {#if !communityInitialized}
-            {#each { length: 4 } as _}
-              <CommunityPostCard post={null} />
-            {/each}
-          {:else}
-            {#if communityFeedPosts.length}
-              {#each communityFeedPosts as post (post.id)}
-                <CommunityPostCard {post} compact={false} />
+            {#if !communityInitialized}
+              {#each { length: 2 } as _}
+                <div class="community-feed-item">
+                  <CommunityPostCard post={null} />
+                </div>
+              {/each}
+            {:else}
+              {#each communityContinuationPosts as post (post.id)}
+                <div class="community-feed-item">
+                  <CommunityPostCard {post} compact={false} />
+                </div>
               {/each}
             {/if}
 
             {#if communityLoadingMore}
               {#each { length: 2 } as _}
-                <CommunityPostCard post={null} />
+                <div class="community-feed-item">
+                  <CommunityPostCard post={null} />
+                </div>
               {/each}
-            {:else if !communityFeedPosts.length && !communityHasMore}
-              <div class="empty-feed">
-                <MessageCircle size={24} />
-                <h2>{tr('Start the conversation.', 'Bắt đầu cuộc trò chuyện.')}</h2>
-                <a href="/community/create">{tr('Create the first post', 'Tạo bài viết đầu tiên')} <ArrowRight size={15} /></a>
-              </div>
             {/if}
-          {/if}
 
-          {#if communityLoadError}
-            <button class="community-retry" type="button" on:click={loadMoreCommunity}>
-              {tr('Could not load more. Try again', 'Không thể tải thêm. Thử lại')}
-            </button>
-          {:else if communityHasMore}
-            <div
-              class="community-load-sentinel"
-              use:observeCommunityEnd
-              aria-label={tr('Load more community posts', 'Tải thêm bài cộng đồng')}
-            ></div>
-          {/if}
+            {#if communityLoadError}
+              <button class="community-retry" type="button" on:click={loadMoreCommunity}>
+                {tr('Could not load more. Try again', 'Không thể tải thêm. Thử lại')}
+              </button>
+            {:else if communityHasMore}
+              {#key communityOffset}
+                <div
+                  class="community-load-sentinel"
+                  use:observeCommunityEnd
+                  aria-label={tr('Load more community posts', 'Tải thêm bài cộng đồng')}
+                ></div>
+              {/key}
+            {/if}
+          </div>
+        {/if}
         </div>
-        </div>
-      {/if}
     </section>
 
   </div>
@@ -989,7 +954,7 @@
   top: 56px;
   z-index: 20;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   height: 52px;
   margin-bottom: 12px;
   border: 1px solid var(--feed-border);
@@ -999,19 +964,16 @@
   backdrop-filter: blur(18px);
   overflow: hidden;
 
-  button {
+  .feed-tab {
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    border: 0;
-    color: hsl(var(--muted-foreground));
-    background: transparent;
-    font: inherit;
+    color: hsl(var(--foreground));
     font-size: 13px;
     font-weight: 750;
-    cursor: pointer;
+
     &::after {
       content: '';
       position: absolute;
@@ -1021,20 +983,6 @@
       height: 3px;
       border-radius: 999px 999px 0 0;
       background: hsl(199 89% 48%);
-      transform: scaleX(0);
-    }
-
-    &:hover {
-      color: hsl(var(--foreground));
-      background: hsl(var(--muted) / 0.35);
-    }
-
-    &.active {
-      color: hsl(var(--foreground));
-    }
-
-    &.active::after {
-      transform: scaleX(1);
     }
   }
 }
@@ -1054,7 +1002,6 @@
 }
 
 .feed-card,
-.community-tab-intro,
 .empty-feed {
   border: 1px solid var(--feed-border);
   border-radius: 14px;
@@ -1289,8 +1236,7 @@
   }
 }
 
-.community-feed-item,
-.community-only-stream {
+.community-feed-item {
   :global(.communityPost) {
     border-radius: 14px;
     border-color: var(--feed-border);
@@ -1640,63 +1586,6 @@
   font-weight: 850;
 }
 
-.community-tab-intro {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-  padding: 12px;
-
-  > a:not(.prompt-action) {
-    min-width: 0;
-    flex: 1;
-    padding: 10px 13px;
-    border-radius: 999px;
-    color: hsl(var(--muted-foreground));
-    background: hsl(var(--muted) / 0.55);
-    font-size: 12px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    text-decoration: none;
-
-    &:hover {
-      color: hsl(var(--foreground));
-      background: hsl(var(--muted) / 0.8);
-    }
-  }
-}
-
-.community-prompt-avatar {
-  display: grid;
-  width: 36px;
-  height: 36px;
-  flex: 0 0 36px;
-  place-items: center;
-  border-radius: 50%;
-  color: hsl(var(--muted-foreground));
-  background: hsl(var(--muted));
-  overflow: hidden;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-}
-
-.prompt-action {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  color: hsl(199 89% 43%);
-  font-size: 11px;
-  font-weight: 800;
-  text-decoration: none;
-}
-
 .community-load-sentinel {
   width: 100%;
   height: 1px;
@@ -1832,10 +1721,8 @@
   }
 
   .feed-card,
-  .community-tab-intro,
   .empty-feed,
-  .community-feed-item :global(.communityPost),
-  .community-only-stream :global(.communityPost) {
+  .community-feed-item :global(.communityPost) {
     border-right: 0;
     border-left: 0;
     border-radius: 0;
@@ -1906,13 +1793,6 @@
     padding: 20px;
   }
 
-  .community-tab-intro {
-    margin-bottom: 8px;
-  }
-
-  .prompt-action {
-    font-size: 0;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
