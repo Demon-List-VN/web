@@ -1,69 +1,335 @@
 <script lang="ts">
-	import * as Carousel from '$lib/components/ui/carousel/index.js';
-	import LevelCard from '$lib/components/levelCard.svelte';
-	import { toLevelCardProps } from '$lib/components/levelCardProps';
-	import { _ } from 'svelte-i18n';
-	import { ArrowRight, Users } from 'lucide-svelte';
+	import {
+		ArrowRight,
+		BadgeCheck,
+		BarChart3,
+		CalendarDays,
+		Clock3,
+		Flame,
+		Gamepad2,
+		Layers3,
+		MessageCircle,
+		Plus,
+		Radio,
+		Sparkles,
+		Star,
+		Swords,
+		Target,
+		Trophy,
+		Users
+	} from 'lucide-svelte';
+	import { _, locale } from 'svelte-i18n';
 	import { user } from '$lib/client';
 	import CommunityPostCard from '$lib/components/communityPostCard.svelte';
-	import ActiveEventsStrip from '$lib/components/homepage/ActiveEventsStrip.svelte';
-	import BattlepassHomeWidget from '$lib/components/homepage/BattlepassHomeWidget.svelte';
-	import ClanSpotlight from '$lib/components/homepage/ClanSpotlight.svelte';
-	import SupporterSocialProof from '$lib/components/homepage/SupporterSocialProof.svelte';
-	import FeatureDiscovery from '$lib/components/homepage/FeatureDiscovery.svelte';
 	import OnboardingProgress from '$lib/components/homepage/OnboardingProgress.svelte';
 	import OnboardingModal from '$lib/components/OnboardingModal.svelte';
-	import PvpOneVsOnePromo from '$lib/components/homepage/PvpOneVsOnePromo.svelte';
-	import LevelFeedbackPromo from '$lib/components/homepage/LevelFeedbackPromo.svelte';
 
 	export let data: any;
+
+	type FeedTab = 'for-you' | 'community';
+	type FeedItem = {
+		kind: 'community' | 'event' | 'level' | 'promo' | 'pvp' | 'tournament';
+		key: string;
+		data: any;
+	};
 
 	const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://gdvn.net').replace(
 		/\/$/,
 		''
 	);
 	const homepageUrl = siteUrl || 'https://gdvn.net';
+	const officialListMeta: Record<string, { title: string; href: string; }> = {
+		dl: { title: 'Demon List', href: '/lists/dl' },
+		fl: { title: 'Featured List', href: '/lists/fl' },
+		pl: { title: 'Platformer List', href: '/lists/pl' },
+		cl: { title: 'Challenge List', href: '/lists/cl' }
+	};
 
 	$: homepageTitle = $_('head.site_name');
 	$: homepageDescription = $_('head.descriptions.homepage');
 
+	let activeFeedTab: FeedTab = 'for-you';
 	let showOnboardingModal = false;
-
-	let activeTab: 'dl' | 'fl' | 'pl' | 'cl' = 'dl';
-
 	let homeData: any = data?.homeData || null;
 	let loadedAuth = false;
-	$: events = homeData?.events ?? null;
-	$: levels = homeData?.levels ?? { dl: null, fl: null, pl: null, cl: null };
-	$: communityPosts = homeData?.communityPosts ?? null;
-	$: topClans = homeData?.topClans ?? null;
-	$: topSupporters = homeData?.topSupporters ?? null;
-	$: activeSeason = homeData?.activeSeason ?? null;
-	$: battlepassProgress = homeData?.battlepassProgress ?? null;
 
-	// Auto-update if navigation provides new data
 	$: if (data?.homeData) {
 		homeData = data.homeData;
 	}
 
 	$: if ($user.checked && $user.loggedIn && !loadedAuth) {
 		loadedAuth = true;
-		loadHomepageAuth();
+		void loadHomepageAuth();
 	}
+
+	$: events = homeData?.events ?? null;
+	$: communityPosts = homeData?.communityPosts ?? null;
+	$: officialTournaments = homeData?.officialTournaments ?? null;
+	$: pvp = homeData?.pvp ?? null;
+	$: activeSeason = homeData?.activeSeason ?? null;
+	$: battlepassProgress = homeData?.battlepassProgress ?? null;
+	$: starredListCount = Number(homeData?.starredListCount ?? 0);
+	$: levelFeed = homeData?.levelFeed?.length
+		? homeData.levelFeed
+		: buildLegacyLevelFeed(homeData?.levels);
+	$: mixedFeed = buildMixedFeed({
+		levels: levelFeed ?? [],
+		posts: communityPosts ?? [],
+		events: events ?? [],
+		tournaments: officialTournaments ?? [],
+		pvp,
+		activeSeason,
+		battlepassProgress
+	});
 
 	async function loadHomepageAuth() {
 		const headers: Record<string, string> = {};
 
 		try {
-			headers['Authorization'] = `Bearer ${await $user.token()}`;
-		} catch {}
+			headers.Authorization = `Bearer ${await $user.token()}`;
+		} catch {
+			return;
+		}
 
-		fetch(`${import.meta.env.VITE_API_URL}/homepage`, { headers })
-			.then((res) => res.json())
-			.then((data) => {
-				homeData = data;
+		try {
+			const response = await fetch(`${import.meta.env.VITE_API_URL}/homepage`, {
+				headers
+			});
+
+			if (response.ok) {
+				homeData = await response.json();
+			}
+		} catch {
+		// Keep server-rendered public content if personalization is unavailable.
+		}
+	}
+
+	function tr(english: string, vietnamese: string) {
+		return $locale === 'vi' ? vietnamese : english;
+	}
+
+	function buildLegacyLevelFeed(levels: Record<string, any[]> | null | undefined) {
+		if (!levels) {
+			return null;
+		}
+
+		const seen = new Set<number>();
+
+		return Object.entries(levels)
+			.flatMap(([listType, entries]) => {
+				const source = officialListMeta[listType] ?? {
+					title: 'Official List',
+					href: '/lists'
+				};
+
+				return (entries || []).map((level) => ({
+					level,
+					listType,
+					sourceKind: 'official',
+					sourceTitle: source.title,
+					sourceHref: source.href,
+					addedAt: level?.created_at
+				}));
 			})
-			.catch(() => {});
+			.sort(
+				(left, right) =>
+					new Date(right.addedAt || 0)
+						.getTime()
+						- new Date(left.addedAt || 0)
+							.getTime()
+			)
+			.filter((entry) => {
+				const id = Number(entry.level?.id);
+
+				if (!id || seen.has(id)) {
+					return false;
+				}
+
+				seen.add(id);
+
+				return true;
+			})
+			.slice(0, 12);
+	}
+
+	function buildMixedFeed(input: {
+		levels: any[];
+		posts: any[];
+		events: any[];
+		tournaments: any[];
+		pvp: any;
+		activeSeason: any;
+		battlepassProgress: any;
+	}) {
+		const items: FeedItem[] = [];
+		const used = {
+			levels: 0,
+			posts: 0,
+			events: 0,
+			tournaments: 0
+		};
+
+		const take = (
+			kind: 'level' | 'community' | 'event' | 'tournament',
+			collection: any[],
+			counter: keyof typeof used
+		) => {
+			const index = used[counter];
+			const entry = collection[index];
+
+			if (!entry) {
+				return;
+			}
+
+			used[counter] += 1;
+			items.push({
+				kind,
+				key: `${kind}-${entry.id ?? entry.level?.id ?? index}`,
+				data: entry
+			});
+		};
+
+		// The order deliberately alternates content types, like a social home feed.
+		take('level', input.levels, 'levels');
+		take('community', input.posts, 'posts');
+		items.push({ kind: 'pvp', key: 'pvp-pulse', data: input.pvp });
+		take('event', input.events, 'events');
+		take('level', input.levels, 'levels');
+		take('tournament', input.tournaments, 'tournaments');
+		take('community', input.posts, 'posts');
+		items.push({
+			kind: 'promo',
+			key: 'gdvn-promo',
+			data: {
+				activeSeason: input.activeSeason,
+				battlepassProgress: input.battlepassProgress
+			}
+		});
+
+		while (items.length < 18) {
+			const before = items.length;
+			take('level', input.levels, 'levels');
+			take('community', input.posts, 'posts');
+			take('event', input.events, 'events');
+			take('tournament', input.tournaments, 'tournaments');
+
+			if (items.length === before) {
+				break;
+			}
+		}
+
+		return items;
+	}
+
+	function timeAgo(value: string | null | undefined) {
+		if (!value) {
+			return tr('Recently', 'Gần đây');
+		}
+
+		const seconds = Math.max(
+			0,
+			Math.floor((Date.now() - new Date(value)
+				.getTime()) / 1000)
+		);
+
+		if (!Number.isFinite(seconds) || seconds < 60) {
+			return tr('Just now', 'Vừa xong');
+		}
+
+		const minutes = Math.floor(seconds / 60);
+
+		if (minutes < 60) {
+			return `${minutes}m`;
+		}
+
+		const hours = Math.floor(minutes / 60);
+
+		if (hours < 24) {
+			return `${hours}h`;
+		}
+
+		const days = Math.floor(hours / 24);
+
+		return days < 30
+			? `${days}d`
+			: new Date(value)
+				.toLocaleDateString($locale || 'en');
+	}
+
+	function formatTimeLeft(end: string | null | undefined) {
+		if (!end) {
+			return tr('Open-ended', 'Không giới hạn');
+		}
+
+		const remaining = new Date(end)
+			.getTime() - Date.now();
+
+		if (!Number.isFinite(remaining) || remaining <= 0) {
+			return tr('Ending soon', 'Sắp kết thúc');
+		}
+
+		const days = Math.floor(remaining / 86_400_000);
+		const hours = Math.floor((remaining % 86_400_000) / 3_600_000);
+
+		return days > 0
+			? tr(`${days}d ${hours}h left`, `Còn ${days} ngày ${hours} giờ`)
+			: tr(`${hours}h left`, `Còn ${hours} giờ`);
+	}
+
+	function formatNumber(value: unknown) {
+		const number = Number(value);
+
+		return Number.isFinite(number)
+			? new Intl.NumberFormat($locale === 'vi' ? 'vi-VN' : 'en-US', {
+				maximumFractionDigits: 0
+			})
+				.format(number)
+			: '—';
+	}
+
+	function getLevelThumbnail(level: any) {
+		return level?.videoID
+			? `https://img.youtube.com/vi/${level.videoID}/maxresdefault.jpg`
+			: `https://levelthumbs.prevter.me/thumbnail/${level?.id}/small`;
+	}
+
+	function useLevelThumbnailFallback(event: Event, levelId: number | string) {
+		const image = event.currentTarget as HTMLImageElement;
+		const fallback = `https://levelthumbs.prevter.me/thumbnail/${levelId}/small`;
+
+		if (image.src !== fallback) {
+			image.src = fallback;
+		}
+	}
+
+	function getEventThumbnail(event: any) {
+		return event?.imgUrl || `https://cdn.gdvn.net/event-banner/${event?.id}.webp`;
+	}
+
+	function tournamentStatus(status: string) {
+		const labels: Record<string, [string, string]> = {
+			registration_open: ['Registration open', 'Đang mở đăng ký'],
+			registration_closed: ['Registration closed', 'Đã đóng đăng ký'],
+			ready: ['Starting soon', 'Sắp bắt đầu'],
+			ongoing: ['Live now', 'Đang diễn ra']
+		};
+		const label = labels[status] ?? ['Official tournament', 'Giải đấu chính thức'];
+
+		return tr(label[0], label[1]);
+	}
+
+	function tournamentFormat(format: string) {
+		return format === 'contest'
+			? tr('Progress contest', 'Đua tiến độ')
+			: tr('Single elimination', 'Loại trực tiếp');
+	}
+
+	function pvpWinRate(viewer: any) {
+		if (Number.isFinite(Number(viewer?.winrate))) {
+			return `${Math.round(Number(viewer.winrate))}%`;
+		}
+
+		return '—';
 	}
 </script>
 
@@ -76,386 +342,1636 @@
   <meta property="og:url" content={homepageUrl} />
   <meta property="og:description" content={homepageDescription} />
   <meta property="og:site_name" content={$_('head.site_name')} />
-  <meta name="twitter:card" content="summary" />
+  <meta property="og:image" content={`${homepageUrl}/og.png`} />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content={homepageTitle} />
   <meta name="twitter:description" content={homepageDescription} />
+  <meta name="twitter:image" content={`${homepageUrl}/og.png`} />
 </svelte:head>
 
-<!-- Active Events Strip -->
-<div class="postHeroSpacing">
-  <ActiveEventsStrip {events} />
-</div>
-
-<div class="wrapper">
-  <!-- Top promos -->
-  <div class="promoRow">
-    <PvpOneVsOnePromo />
-    <LevelFeedbackPromo />
-  </div>
-
-  <!-- Onboarding progress banner (new users only) -->
-  {#if $user.loggedIn && $user.data && $user.data.onboarding_done === false}
-    <div class="onboardingWrap">
-      <OnboardingProgress
-        step={$user.data.onboarding_step ?? 1}
-        onResume={() => (showOnboardingModal = true)}
-      />
-    </div>
-    <OnboardingModal bind:open={showOnboardingModal} />
-  {/if}
-
-  <!-- Full-width top: Battlepass + Supporter -->
-  <div class="topRow">
-    <BattlepassHomeWidget {activeSeason} {battlepassProgress} />
-    <SupporterSocialProof {topSupporters} />
-  </div>
-
-  <!-- 2-Column Desktop Layout: Community+Levels | Clans -->
-  <div class="twoColGrid">
-    <!-- Main Column: Community + Levels -->
-    <div class="mainCol">
-      <!-- Community Hub -->
-      <section class="section">
-        <div class="sectionHeader">
-          <div class="flex items-center gap-2">
-            <Users class="h-5 w-5 text-indigo-500" />
-            <h4>{$_('community.hub_title')}</h4>
-          </div>
-          <a href="/community" class="viewAllBtn">
-            {$_('community.view_all')}
-            <ArrowRight class="ml-1 h-4 w-4" />
-          </a>
+<main class="social-home">
+  <div class="feed-layout">
+    <section class="feed-column" aria-label={tr('Home feed', 'Bảng tin')}>
+      <header class="feed-header">
+        <div>
+          <span class="feed-kicker">
+            <Sparkles size={14} />
+            {tr('Your GDVN pulse', 'Nhịp đập GDVN của bạn')}
+          </span>
+          <h1>{tr('Play what’s happening now.', 'Chơi những gì đang diễn ra.')}</h1>
         </div>
-        <div class="communityGrid">
-          {#if communityPosts}
-            {#if communityPosts.length > 0}
-              {#each communityPosts as post}
-                <CommunityPostCard {post} compact={true} />
-              {/each}
-            {:else}
-              <div class="communityEmpty">
-                <p>{$_('community.no_posts')}</p>
+        <a class="create-post" href="/community/create">
+          <Plus size={16} />
+          <span>{tr('Post', 'Đăng bài')}</span>
+        </a>
+      </header>
+
+      <div class="feed-tabs" role="tablist" aria-label={tr('Feed views', 'Chế độ bảng tin')}>
+        <button
+          type="button"
+          role="tab"
+          aria-controls="for-you-panel"
+          class:active={activeFeedTab === 'for-you'}
+          aria-selected={activeFeedTab === 'for-you'}
+          on:click={() => (activeFeedTab = 'for-you')}
+        >
+          <Flame size={16} />
+          {tr('For you', 'Dành cho bạn')}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-controls="community-panel"
+          class:active={activeFeedTab === 'community'}
+          aria-selected={activeFeedTab === 'community'}
+          on:click={() => (activeFeedTab = 'community')}
+        >
+          <MessageCircle size={16} />
+          {tr('Community', 'Cộng đồng')}
+          {#if communityPosts?.length}
+            <span class="tab-count">{communityPosts.length}</span>
+          {/if}
+        </button>
+      </div>
+
+      {#if $user.loggedIn && $user.data && $user.data.onboarding_done === false}
+        <div class="onboarding-feed-item">
+          <OnboardingProgress
+            step={$user.data.onboarding_step ?? 1}
+            onResume={() => (showOnboardingModal = true)}
+          />
+        </div>
+        <OnboardingModal bind:open={showOnboardingModal} />
+      {/if}
+
+      {#if activeFeedTab === 'for-you'}
+        <div id="for-you-panel" role="tabpanel">
+        {#if homeData === null}
+          <div class="feed-stream" aria-label={tr('Loading feed', 'Đang tải bảng tin')}>
+            {#each { length: 5 } as _}
+              <div class="feed-card skeleton-card" aria-hidden="true">
+                <div class="skeleton-row">
+                  <span class="skeleton-avatar"></span>
+                  <span class="skeleton-line medium"></span>
+                </div>
+                <span class="skeleton-line wide"></span>
+                <span class="skeleton-media"></span>
+              </div>
+            {/each}
+          </div>
+        {:else}
+          <div class="feed-stream">
+            {#each mixedFeed as item (item.key)}
+              {#if item.kind === 'level'}
+                {@const entry = item.data}
+                {@const level = entry.level}
+                <article class="feed-card level-post">
+                  <div class="post-head">
+                    <div class="source-avatar level-source">
+                      {#if entry.sourceKind === 'starred'}
+                        <Star size={18} fill="currentColor" />
+                      {:else}
+                        <Layers3 size={18} />
+                      {/if}
+                    </div>
+                    <div class="source-copy">
+                      <div class="source-line">
+                        <a href={entry.sourceHref}>{entry.sourceTitle}</a>
+                        {#if entry.sourceKind === 'official'}
+                          <BadgeCheck size={15} class="verified" />
+                        {:else}
+                          <span class="following-chip">{tr('Starred', 'Đã theo dõi')}</span>
+                        {/if}
+                      </div>
+                      <span>{tr('added a new level', 'vừa thêm level mới')} · {timeAgo(entry.addedAt)}</span>
+                    </div>
+                  </div>
+
+                  <p class="post-caption">
+                    {tr('Fresh in the list:', 'Mới có trong danh sách:')}
+                    <strong>{level?.name}</strong>
+                    {tr('by', 'bởi')} {level?.creator || tr('Unknown creator', 'Chưa rõ tác giả')}.
+                  </p>
+
+                  <a class="level-media" href={`/level/${level?.id}`} aria-label={level?.name}>
+                    <img
+                      src={getLevelThumbnail(level)}
+                      alt={level?.name || ''}
+                      loading="lazy"
+                      on:error={(event) => useLevelThumbnailFallback(event, level?.id)}
+                    />
+                    <div class="media-shade"></div>
+                    <div class="level-overlay">
+                      <div>
+                        <span class="content-label">
+                          <Gamepad2 size={13} />
+                          {tr('New level', 'Level mới')}
+                        </span>
+                        <h2>{level?.name}</h2>
+                        <p>{level?.creator}</p>
+                      </div>
+                      {#if level?.dlTop || level?.flTop || entry.listType === 'custom-top'}
+                        <span class="rank-pill">#{level?.dlTop || level?.flTop || level?.position || '—'}</span>
+                      {:else if level?.rating}
+                        <span class="rank-pill">{formatNumber(level.rating)} pt</span>
+                      {/if}
+                    </div>
+                  </a>
+
+                  <div class="post-actions">
+                    <a href={`/level/${level?.id}`}>
+                      <Target size={16} />
+                      {tr('View level', 'Xem level')}
+                    </a>
+                    <a href={entry.sourceHref}>
+                      <Layers3 size={16} />
+                      {tr('Open list', 'Mở danh sách')}
+                    </a>
+                  </div>
+                </article>
+              {:else if item.kind === 'community'}
+                <div class="community-feed-item">
+                  <CommunityPostCard post={item.data} compact={false} />
+                </div>
+              {:else if item.kind === 'pvp'}
+                {@const viewerPvp = item.data?.viewer}
+                {@const leaderboard = item.data?.leaderboard ?? []}
+                <article class="feed-card pvp-post">
+                  <div class="post-head">
+                    <div class="source-avatar pvp-source"><Swords size={19} /></div>
+                    <div class="source-copy">
+                      <div class="source-line">
+                        <a href="/versus/play">GDVN Versus</a>
+                        <BadgeCheck size={15} class="verified" />
+                      </div>
+                      <span><Radio size={11} /> {tr('Ranked pulse · Live stats', 'Nhịp xếp hạng · Thống kê trực tiếp')}</span>
+                    </div>
+                  </div>
+
+                  <div class="pvp-hero">
+                    <div class="pvp-copy">
+                      <span class="content-label cyan-label">
+                        <BarChart3 size={13} />
+                        {viewerPvp ? tr('Your PvP snapshot', 'PvP của bạn') : tr('PvP right now', 'PvP lúc này')}
+                      </span>
+                      <h2>
+                        {viewerPvp
+                          ? tr(`You’re #${viewerPvp.rank} on the ladder`, `Bạn đang hạng #${viewerPvp.rank}`)
+                          : tr('The ranked ladder is moving.', 'Bảng xếp hạng đang chuyển động.')}
+                      </h2>
+                      <p>
+                        {viewerPvp
+                          ? tr('One match can change the board.', 'Một trận đấu có thể thay đổi thứ hạng.')
+                          : tr('Queue up, face a close rival, and climb.', 'Ghép trận, đấu đối thủ ngang tầm và leo hạng.')}
+                      </p>
+                    </div>
+
+                    <div class="pvp-stats">
+                      <div>
+                        <span>{tr('Rating', 'Điểm hạng')}</span>
+                        <strong>{formatNumber(viewerPvp?.pvpRating)}</strong>
+                      </div>
+                      <div>
+                        <span>{tr('Win rate', 'Tỉ lệ thắng')}</span>
+                        <strong>{pvpWinRate(viewerPvp)}</strong>
+                      </div>
+                      <div>
+                        <span>{tr('Matches', 'Số trận')}</span>
+                        <strong>{formatNumber(viewerPvp?.matches ?? viewerPvp?.pvpRatedMatchCount)}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  {#if leaderboard.length}
+                    <div class="leaderboard-strip">
+                      <span class="leaderboard-label"><Trophy size={14} /> Top 3</span>
+                      {#each leaderboard.slice(0, 3) as player, index}
+                        <a href={`/player/${player.uid}`} class="leaderboard-player">
+                          <span class="leaderboard-rank">{index + 1}</span>
+                          <img
+                            src={`https://cdn.gdvn.net/avatars/${player.uid}${player.isAvatarGif ? '.gif' : '.jpg'}?version=${player.avatarVersion ?? 0}`}
+                            alt=""
+                            loading="lazy"
+                          />
+                          <span>{player.name}</span>
+                          <strong>{formatNumber(player.pvpRating)}</strong>
+                        </a>
+                      {/each}
+                    </div>
+                  {/if}
+
+                  <div class="post-actions pvp-actions">
+                    <a href="/versus/play" class="primary-action">
+                      <Swords size={16} />
+                      {tr('Find a match', 'Tìm trận')}
+                    </a>
+                    <a href="/versus/play">
+                      <Trophy size={16} />
+                      {tr('Leaderboard', 'Bảng xếp hạng')}
+                    </a>
+                  </div>
+                </article>
+              {:else if item.kind === 'event'}
+                {@const event = item.data}
+                <article class="feed-card event-post">
+                  <div class="post-head">
+                    <div class="source-avatar event-source"><CalendarDays size={18} /></div>
+                    <div class="source-copy">
+                      <div class="source-line">
+                        <a href="/events">GDVN Events</a>
+                        <BadgeCheck size={15} class="verified" />
+                      </div>
+                      <span>{tr('An event is running now', 'Sự kiện đang diễn ra')} · {timeAgo(event.start)}</span>
+                    </div>
+                  </div>
+
+                  <a class="event-media" href={`/event/${event.id}`}>
+                    <img src={getEventThumbnail(event)} alt={event.title || ''} loading="lazy" />
+                    <div class="media-shade event-shade"></div>
+                    <div class="event-live"><Radio size={12} /> {tr('LIVE EVENT', 'SỰ KIỆN LIVE')}</div>
+                    <div class="event-overlay">
+                      <h2>{event.title}</h2>
+                      <div>
+                        <span><Clock3 size={14} /> {formatTimeLeft(event.end)}</span>
+                        {#if event.exp}
+                          <span><Sparkles size={14} /> {event.exp} EXP</span>
+                        {/if}
+                      </div>
+                    </div>
+                  </a>
+
+                  <div class="post-actions">
+                    <a href={`/event/${event.id}`} class="primary-action">
+                      <ArrowRight size={16} />
+                      {tr('Join event', 'Tham gia')}
+                    </a>
+                    <a href="/events">
+                      <CalendarDays size={16} />
+                      {tr('All events', 'Mọi sự kiện')}
+                    </a>
+                  </div>
+                </article>
+              {:else if item.kind === 'tournament'}
+                {@const tournament = item.data}
+                <article class="feed-card tournament-post">
+                  <div class="post-head">
+                    <div class="source-avatar tournament-source"><Trophy size={18} /></div>
+                    <div class="source-copy">
+                      <div class="source-line">
+                        <a href="/tournaments">GDVN Tournaments</a>
+                        <BadgeCheck size={15} class="verified" />
+                      </div>
+                      <span>{tournamentStatus(tournament.status)} · {timeAgo(tournament.created_at)}</span>
+                    </div>
+                  </div>
+
+                  <p class="post-caption">
+                    {tr('The official bracket is open. Watch, register, or follow the race.', 'Giải đấu chính thức đã mở. Xem, đăng ký hoặc theo dõi cuộc đua.')}
+                  </p>
+
+                  <a class="tournament-media" href={`/tournament/${tournament.id}`}>
+                    <img
+                      src={`https://cdn.gdvn.net/tournament-banner/${tournament.id}.webp?v=${tournament.bannerVersion ?? 0}`}
+                      alt={tournament.name || ''}
+                      loading="lazy"
+                    />
+                    <div class="media-shade tournament-shade"></div>
+                    <div class="official-pill"><BadgeCheck size={13} /> {tr('OFFICIAL', 'CHÍNH THỨC')}</div>
+                    <div class="tournament-overlay">
+                      <span>{tournamentFormat(tournament.format)}</span>
+                      <h2>{tournament.name}</h2>
+                      <div>
+                        <span><Users size={14} /> {tournament.participantCount ?? 0}{tournament.maxPlayers ? `/${tournament.maxPlayers}` : ''}</span>
+                        <span><Radio size={14} /> {tournamentStatus(tournament.status)}</span>
+                      </div>
+                    </div>
+                  </a>
+
+                  <div class="post-actions">
+                    <a href={`/tournament/${tournament.id}`} class="primary-action">
+                      <Trophy size={16} />
+                      {tr('Open tournament', 'Mở giải đấu')}
+                    </a>
+                    <a href="/tournaments">
+                      <ArrowRight size={16} />
+                      {tr('Browse all', 'Xem tất cả')}
+                    </a>
+                  </div>
+                </article>
+              {:else if item.kind === 'promo'}
+                {@const season = item.data?.activeSeason}
+                {@const progress = item.data?.battlepassProgress}
+                <article class="feed-card promo-post">
+                  <div class="post-head">
+                    <div class="source-avatar promo-source"><Sparkles size={18} /></div>
+                    <div class="source-copy">
+                      <div class="source-line">
+                        <a href="/battlepass">GDVN</a>
+                        <BadgeCheck size={15} class="verified" />
+                      </div>
+                      <span>{tr('Promoted', 'Quảng bá')} · {tr('Made for active players', 'Dành cho người chơi năng động')}</span>
+                    </div>
+                  </div>
+
+                  <a
+                    class="promo-creative"
+                    class:has-season={Boolean(season)}
+                    href={season ? '/battlepass' : '/supporter'}
+                    style={season ? `background-image: linear-gradient(105deg, rgba(8,10,18,.93), rgba(8,10,18,.42)), url('${season.backgroundUrl || `https://cdn.gdvn.net/battlepasses/${season.id}.webp`}')` : ''}
+                  >
+                    <span class="content-label promo-label"><Sparkles size={13} /> {season ? 'GDVN PASS' : tr('SUPPORT GDVN', 'ỦNG HỘ GDVN')}</span>
+                    <h2>{season?.title || tr('Keep the community moving.', 'Giữ cộng đồng luôn chuyển động.')}</h2>
+                    <p>
+                      {season
+                        ? tr('Play daily, earn rewards, and make every session count.', 'Chơi mỗi ngày, nhận phần thưởng và biến mỗi phiên chơi thành tiến độ.')
+                        : tr('Unlock supporter perks and help fund official events.', 'Mở khóa đặc quyền và góp sức cho các sự kiện chính thức.')}
+                    </p>
+                    {#if season && progress}
+                      <div class="promo-progress">
+                        <div><span style={`width: ${Math.min(100, Number(progress.xp || 0) % 100)}%`}></span></div>
+                        <strong>{formatNumber(progress.xp)} XP</strong>
+                      </div>
+                    {/if}
+                    <span class="promo-cta">
+                      {season ? tr('Open your pass', 'Mở Pass của bạn') : tr('Become a supporter', 'Trở thành supporter')}
+                      <ArrowRight size={16} />
+                    </span>
+                  </a>
+                </article>
+              {/if}
+            {/each}
+
+            {#if mixedFeed.length === 0}
+              <div class="empty-feed">
+                <Sparkles size={24} />
+                <h2>{tr('Your feed is warming up.', 'Bảng tin đang khởi động.')}</h2>
+                <p>{tr('Explore lists or meet the community while new posts arrive.', 'Khám phá danh sách hoặc ghé cộng đồng trong lúc chờ nội dung mới.')}</p>
+                <a href="/lists">{tr('Explore lists', 'Khám phá danh sách')} <ArrowRight size={15} /></a>
               </div>
             {/if}
-          {:else}
-            {#each { length: 3 } as _}
+          </div>
+        {/if}
+        </div>
+      {:else}
+        <div id="community-panel" role="tabpanel">
+        <div class="community-tab-intro">
+          <div class="community-prompt-avatar">
+            {#if $user.loggedIn}
+              <img
+                src={`https://cdn.gdvn.net/avatars/${$user.data?.uid}${$user.data?.isAvatarGif ? '.gif' : '.jpg'}?version=${$user.data?.avatarVersion ?? 0}`}
+                alt=""
+              />
+            {:else}
+              <MessageCircle size={18} />
+            {/if}
+          </div>
+          <a href="/community/create">{tr('Share a run, question, guide, or discovery…', 'Chia sẻ thành tích, câu hỏi, hướng dẫn hoặc khám phá…')}</a>
+          <a class="prompt-action" href="/community/create"><Plus size={16} /> {tr('Create', 'Tạo bài')}</a>
+        </div>
+
+        <div class="feed-stream community-only-stream">
+          {#if communityPosts === null}
+            {#each { length: 4 } as _}
               <CommunityPostCard post={null} />
             {/each}
+          {:else if communityPosts.length}
+            {#each communityPosts as post (post.id)}
+              <CommunityPostCard {post} compact={false} />
+            {/each}
+            <a class="more-community" href="/community">
+              {tr('See more from the community', 'Xem thêm từ cộng đồng')}
+              <ArrowRight size={16} />
+            </a>
+          {:else}
+            <div class="empty-feed">
+              <MessageCircle size={24} />
+              <h2>{tr('Start the conversation.', 'Bắt đầu cuộc trò chuyện.')}</h2>
+              <a href="/community/create">{tr('Create the first post', 'Tạo bài viết đầu tiên')} <ArrowRight size={15} /></a>
+            </div>
           {/if}
         </div>
-      </section>
-    </div>
+        </div>
+      {/if}
+    </section>
 
-    <!-- Side Column: Clans -->
-    <div class="sideCol">
-      <ClanSpotlight {topClans} />
-    </div>
+    <aside class="pulse-rail" aria-label={tr('Feed shortcuts', 'Lối tắt bảng tin')}>
+      <div class="rail-card">
+        {#if $user.loggedIn}
+          <div class="rail-profile">
+            <img
+              src={`https://cdn.gdvn.net/avatars/${$user.data?.uid}${$user.data?.isAvatarGif ? '.gif' : '.jpg'}?version=${$user.data?.avatarVersion ?? 0}`}
+              alt=""
+            />
+            <div>
+              <strong>{$user.data?.name}</strong>
+              <span>
+                <Star size={12} fill="currentColor" />
+                {tr(`${starredListCount} starred lists shape this feed`, `${starredListCount} danh sách đã theo dõi tạo nên bảng tin`)}
+              </span>
+            </div>
+          </div>
+        {:else}
+          <div class="rail-welcome">
+            <div class="rail-logo"><Sparkles size={19} /></div>
+            <div>
+              <strong>{tr('Make it yours', 'Biến nó thành của bạn')}</strong>
+              <span>{tr('Sign in and star lists to personalize the feed.', 'Đăng nhập và theo dõi danh sách để cá nhân hóa bảng tin.')}</span>
+            </div>
+          </div>
+        {/if}
+
+        <div class="rail-divider"></div>
+
+        <a href="/events" class="rail-link">
+          <span class="rail-icon orange"><CalendarDays size={16} /></span>
+          <span>
+            <strong>{tr('Events running', 'Sự kiện đang chạy')}</strong>
+            <small>{events?.length ?? 0} {tr('live now', 'đang diễn ra')}</small>
+          </span>
+          <ArrowRight size={15} />
+        </a>
+        <a href="/tournaments" class="rail-link">
+          <span class="rail-icon purple"><Trophy size={16} /></span>
+          <span>
+            <strong>{tr('Official tournaments', 'Giải đấu chính thức')}</strong>
+            <small>{officialTournaments?.length ?? 0} {tr('open or live', 'đang mở hoặc live')}</small>
+          </span>
+          <ArrowRight size={15} />
+        </a>
+        <a href="/versus/play" class="rail-link">
+          <span class="rail-icon cyan"><Swords size={16} /></span>
+          <span>
+            <strong>1v1 Versus</strong>
+            <small>{tr('Queue for a ranked match', 'Ghép một trận xếp hạng')}</small>
+          </span>
+          <ArrowRight size={15} />
+        </a>
+        <a href="/lists" class="rail-link">
+          <span class="rail-icon blue"><Layers3 size={16} /></span>
+          <span>
+            <strong>{tr('Discover lists', 'Khám phá danh sách')}</strong>
+            <small>{tr('Star a list to tune your feed', 'Theo dõi để điều chỉnh bảng tin')}</small>
+          </span>
+          <ArrowRight size={15} />
+        </a>
+
+        <div class="rail-divider"></div>
+
+        <div class="rail-tip">
+          <Flame size={15} />
+          <span>{tr('New posts are mixed by freshness and relevance—no category walls.', 'Nội dung được trộn theo độ mới và liên quan—không chia khu vực.')}</span>
+        </div>
+      </div>
+    </aside>
   </div>
-
-  <!-- Feature Discovery (non-supporters only) — full width -->
-  <section class="section fullWidthSection">
-    <FeatureDiscovery />
-  </section>
-</div>
+</main>
 
 <style lang="scss">
-.postHeroSpacing {
-  padding-top: 20px;
+.social-home {
+  --feed-border: hsl(var(--border) / 0.9);
+  min-height: calc(100vh - 56px);
+  background:
+    radial-gradient(circle at 52% -20%, hsl(206 100% 55% / 0.075), transparent 31rem),
+    hsl(var(--background));
 }
 
-.promoRow {
+.feed-layout {
+  width: min(1080px, calc(100% - 32px));
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 700px) minmax(260px, 320px);
+  align-items: start;
+  gap: 28px;
+  padding: 28px 0 56px;
+}
+
+.feed-column {
+  min-width: 0;
+}
+
+.feed-header {
+  min-height: 94px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 4px 4px 20px;
+
+  h1 {
+    max-width: 560px;
+    margin: 8px 0 0;
+    font-size: clamp(28px, 4vw, 42px);
+    line-height: 1.04;
+    letter-spacing: -0.045em;
+    font-weight: 850;
+  }
+}
+
+.feed-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: hsl(199 90% 43%);
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.create-post {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 15px;
+  border: 1px solid hsl(199 80% 43% / 0.25);
+  border-radius: 999px;
+  color: white;
+  background: hsl(199 89% 42%);
+  box-shadow: 0 8px 24px hsl(199 90% 40% / 0.18);
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 11px 28px hsl(199 90% 40% / 0.25);
+  }
+}
+
+.feed-tabs {
+  position: sticky;
+  top: 56px;
+  z-index: 20;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px;
-  padding: 28px 50px 0;
+  height: 52px;
+  margin-bottom: 12px;
+  border: 1px solid var(--feed-border);
+  border-radius: 14px;
+  background: hsl(var(--background) / 0.88);
+  box-shadow: 0 8px 28px hsl(222 40% 2% / 0.06);
+  backdrop-filter: blur(18px);
+  overflow: hidden;
 
-  > :global(*) {
-    min-width: 0;
-  }
+  button {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 0;
+    color: hsl(var(--muted-foreground));
+    background: transparent;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 750;
+    cursor: pointer;
+    transition: color 0.15s ease, background 0.15s ease;
 
-  @media screen and (max-width: 1180px) {
-    :global(.level-feedback-promo),
-    :global(.pvp-one-v-one-promo) {
-      flex-direction: column;
-      align-items: stretch;
+    &::after {
+      content: '';
+      position: absolute;
+      left: 28%;
+      right: 28%;
+      bottom: 0;
+      height: 3px;
+      border-radius: 999px 999px 0 0;
+      background: hsl(199 89% 48%);
+      transform: scaleX(0);
+      transition: transform 0.2s ease;
     }
 
-    :global(.level-feedback-promo .feedback-preview),
-    :global(.pvp-one-v-one-promo .arena-preview) {
-      width: 100%;
+    &:hover {
+      color: hsl(var(--foreground));
+      background: hsl(var(--muted) / 0.35);
+    }
+
+    &.active {
+      color: hsl(var(--foreground));
+    }
+
+    &.active::after {
+      transform: scaleX(1);
     }
   }
+}
 
-  @media screen and (max-width: 900px) {
-    grid-template-columns: minmax(0, 1fr);
-    padding: 24px 16px 0;
+.tab-count {
+  display: inline-grid;
+  min-width: 19px;
+  height: 19px;
+  place-items: center;
+  padding: 0 5px;
+  border-radius: 999px;
+  color: hsl(var(--muted-foreground));
+  background: hsl(var(--muted));
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.onboarding-feed-item {
+  margin-bottom: 12px;
+
+  :global(.onboarding-progress) {
+    margin: 0;
   }
 }
 
-.onboardingWrap {
-  padding: 28px 50px 0;
-
-  @media screen and (max-width: 900px) {
-    padding: 24px 16px 0;
-  }
-}
-
-.wrapper {
-  position: relative;
-  z-index: 1;
-  background-color: hsl(var(--background));
-}
-
-.section {
-  padding-top: 38px;
-}
-
-/* Full-width top row: BP + Supporter side by side */
-.topRow {
-  display: flex;
-  gap: 24px;
-  padding: 28px 50px 0;
-}
-
-.topRow :global(.bpWidget),
-.topRow :global(.supporterProof) {
-  flex: 1;
-  padding: 0 !important;
-  min-width: 0;
-}
-
-/* 2-Column Desktop Grid */
-.twoColGrid {
-  display: grid;
-  grid-template-columns: 1fr 360px;
-  gap: 0 24px;
-  padding: 0 50px;
-}
-
-.mainCol {
-  min-width: 0;
-
-  .sectionHeader {
-    padding-inline: 0;
-  }
-  .carouselWrapper {
-    padding-inline: 0;
-  }
-  .viewAllLink {
-    padding-inline: 0;
-  }
-  .communityGrid {
-    padding-inline: 0;
-  }
-}
-
-.sideCol {
+.feed-stream {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  padding-top: 38px;
-}
-
-.sideCol :global(.clanSpotlight) {
-  padding: 0 !important;
-}
-
-.sideCol :global(.clanGrid) {
-  grid-template-columns: 1fr !important;
-}
-
-.fullWidthSection {
-  padding-bottom: 38px;
-}
-
-.sectionHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-inline: 50px;
-  flex-wrap: wrap;
   gap: 12px;
 }
 
-.sectionHeader h4 {
-  font-weight: 600;
-  font-size: 18px;
-  margin: 0;
+.feed-card,
+.community-tab-intro,
+.empty-feed {
+  border: 1px solid var(--feed-border);
+  border-radius: 14px;
+  background: hsl(var(--card));
+  box-shadow: 0 4px 18px hsl(222 40% 2% / 0.035);
 }
 
-.tabGroup {
+.feed-card {
+  overflow: hidden;
+}
+
+.post-head {
   display: flex;
-  gap: 4px;
-  background: hsl(var(--muted));
-  border-radius: 8px;
-  padding: 4px;
+  align-items: center;
+  gap: 11px;
+  padding: 15px 16px 10px;
 }
 
-.tab {
-  padding: 6px 16px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  color: hsl(var(--muted-foreground));
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-
-  &:hover {
-    color: hsl(var(--foreground));
-  }
+.source-avatar {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  place-items: center;
+  border-radius: 12px;
+  border: 1px solid currentColor;
 }
 
-.tabActive {
-  background: hsl(var(--background));
-  color: hsl(var(--foreground));
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+.level-source {
+  color: hsl(43 90% 48%);
+  background: hsl(43 90% 52% / 0.11);
 }
 
-.carouselWrapper {
-  margin-top: 20px;
-  max-width: 100%;
-  padding-inline: 50px;
+.pvp-source {
+  color: hsl(184 76% 42%);
+  background: hsl(184 80% 45% / 0.11);
+}
+
+.event-source {
+  color: hsl(25 95% 52%);
+  background: hsl(25 95% 52% / 0.11);
+}
+
+.tournament-source {
+  color: hsl(268 78% 59%);
+  background: hsl(268 78% 59% / 0.11);
+}
+
+.promo-source {
+  color: hsl(327 82% 58%);
+  background: hsl(327 82% 58% / 0.11);
+}
+
+.source-copy {
+  min-width: 0;
   display: flex;
   flex-direction: column;
+  gap: 3px;
+
+  > span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: hsl(var(--muted-foreground));
+    font-size: 11px;
+    line-height: 1.35;
+  }
 }
 
-.viewAllLink {
+.source-line {
   display: flex;
-  justify-content: flex-end;
-  padding-inline: 50px;
-  margin-top: 16px;
+  align-items: center;
+  gap: 5px;
+
+  a {
+    min-width: 0;
+    overflow: hidden;
+    color: hsl(var(--foreground));
+    font-size: 13px;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-decoration: none;
+  }
 }
 
-.viewAllBtn {
+:global(.verified) {
+  flex: none;
+  color: hsl(199 89% 48%);
+}
+
+.following-chip {
+  display: inline-flex;
+  padding: 2px 6px;
+  border-radius: 999px;
+  color: hsl(43 80% 40%);
+  background: hsl(43 90% 52% / 0.12);
+  font-size: 9px;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.post-caption {
+  margin: 0;
+  padding: 2px 16px 13px;
+  color: hsl(var(--muted-foreground));
+  font-size: 13px;
+  line-height: 1.55;
+
+  strong {
+    color: hsl(var(--foreground));
+    font-weight: 800;
+  }
+}
+
+.level-media,
+.event-media,
+.tournament-media {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 8.6;
+  margin: 0 12px;
+  border-radius: 11px;
+  background: hsl(var(--muted));
+  overflow: hidden;
+
+  > img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.35s ease;
+  }
+
+  &:hover > img {
+    transform: scale(1.018);
+  }
+}
+
+.media-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(4, 7, 14, 0.86), transparent 62%);
+}
+
+.level-overlay,
+.event-overlay,
+.tournament-overlay {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px;
+  color: white;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.5);
+
+  h2 {
+    margin: 6px 0 1px;
+    font-size: clamp(21px, 4vw, 30px);
+    line-height: 1;
+    letter-spacing: -0.025em;
+    font-weight: 880;
+  }
+
+}
+
+.level-overlay p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+}
+
+.content-label {
   display: inline-flex;
   align-items: center;
-  font-size: 14px;
-  font-weight: 500;
+  gap: 5px;
+  width: fit-content;
+  padding: 4px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(6, 9, 17, 0.38);
+  backdrop-filter: blur(8px);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.rank-pill {
+  flex: none;
+  padding: 7px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 10px;
+  color: white;
+  background: rgba(5, 8, 15, 0.48);
+  backdrop-filter: blur(10px);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.post-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 12px 11px;
+
+  a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 34px;
+    padding: 0 11px;
+    border-radius: 9px;
+    color: hsl(var(--muted-foreground));
+    font-size: 12px;
+    font-weight: 750;
+    text-decoration: none;
+    transition: color 0.15s ease, background 0.15s ease;
+
+    &:hover {
+      color: hsl(var(--foreground));
+      background: hsl(var(--muted) / 0.7);
+    }
+
+    &.primary-action {
+      color: hsl(var(--foreground));
+      background: hsl(var(--muted) / 0.72);
+    }
+  }
+}
+
+.community-feed-item,
+.community-only-stream {
+  :global(.communityPost) {
+    border-radius: 14px;
+    border-color: var(--feed-border);
+    box-shadow: 0 4px 18px hsl(222 40% 2% / 0.035);
+  }
+}
+
+.pvp-hero {
+  margin: 2px 12px 0;
+  padding: 22px;
+  border-radius: 11px;
+  color: #eaffff;
+  background:
+    radial-gradient(circle at 85% 10%, rgba(45, 212, 191, 0.32), transparent 36%),
+    linear-gradient(145deg, #0d3940, #091b28 70%);
+  overflow: hidden;
+}
+
+.pvp-copy {
+  max-width: 480px;
+
+  h2 {
+    margin: 9px 0 5px;
+    color: white;
+    font-size: clamp(22px, 4vw, 30px);
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+    font-weight: 870;
+  }
+
+  p {
+    margin: 0;
+    color: rgba(223, 255, 255, 0.7);
+    font-size: 12px;
+  }
+}
+
+.cyan-label {
+  color: #b9fff8;
+  border-color: rgba(153, 246, 228, 0.25);
+  background: rgba(20, 184, 166, 0.15);
+}
+
+.pvp-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 20px;
+
+  div {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 11px 12px;
+    border: 1px solid rgba(153, 246, 228, 0.13);
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  span {
+    color: rgba(204, 251, 241, 0.66);
+    font-size: 9px;
+    font-weight: 750;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  strong {
+    color: white;
+    font-size: 20px;
+    line-height: 1;
+    font-weight: 850;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.leaderboard-strip {
+  display: grid;
+  gap: 2px;
+  margin: 9px 12px 0;
+  padding: 8px;
+  border: 1px solid hsl(var(--border) / 0.7);
+  border-radius: 10px;
+  background: hsl(var(--muted) / 0.28);
+}
+
+.leaderboard-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 6px 5px;
   color: hsl(var(--muted-foreground));
-  transition: color 0.2s ease;
+  font-size: 9px;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.leaderboard-player {
+  display: grid;
+  grid-template-columns: 22px 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 3px 6px;
+  border-radius: 7px;
+  color: hsl(var(--foreground));
+  font-size: 11px;
+  text-decoration: none;
+
+  &:hover {
+    background: hsl(var(--muted) / 0.65);
+  }
+
+  img {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  > span:not(.leaderboard-rank) {
+    min-width: 0;
+    overflow: hidden;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  strong {
+    color: hsl(var(--muted-foreground));
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.leaderboard-rank {
+  color: hsl(var(--muted-foreground));
+  text-align: center;
+  font-weight: 850;
+}
+
+.event-live,
+.official-pill {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  color: white;
+  background: hsl(8 85% 52% / 0.92);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.event-overlay,
+.tournament-overlay {
+  display: block;
+
+  > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 9px;
+
+    span {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: rgba(255, 255, 255, 0.82);
+      font-size: 11px;
+      font-weight: 700;
+    }
+  }
+}
+
+.event-shade {
+  background: linear-gradient(to top, rgba(13, 5, 2, 0.9), rgba(12, 6, 2, 0.08) 70%);
+}
+
+.tournament-shade {
+  background: linear-gradient(to top, rgba(17, 5, 31, 0.92), rgba(14, 6, 27, 0.08) 70%);
+}
+
+.official-pill {
+  color: #f4e8ff;
+  background: hsl(268 78% 52% / 0.9);
+}
+
+.tournament-overlay > span {
+  color: rgba(240, 220, 255, 0.85);
+  font-size: 10px;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.promo-creative {
+  position: relative;
+  display: flex;
+  min-height: 310px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 9px;
+  margin: 2px 12px 12px;
+  padding: 26px;
+  border-radius: 11px;
+  color: white;
+  background:
+    radial-gradient(circle at 85% 10%, rgba(244, 114, 182, 0.4), transparent 37%),
+    linear-gradient(145deg, #3f1136, #17101f 65%);
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+  text-decoration: none;
+
+  &::after {
+    content: '';
+    position: absolute;
+    width: 220px;
+    height: 220px;
+    right: -66px;
+    top: -72px;
+    border: 1px solid rgba(255, 255, 255, 0.13);
+    border-radius: 42%;
+    transform: rotate(24deg);
+  }
+
+  > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  h2 {
+    max-width: 520px;
+    margin: 3px 0 0;
+    font-size: clamp(26px, 5vw, 39px);
+    line-height: 1;
+    letter-spacing: -0.04em;
+    font-weight: 900;
+  }
+
+  p {
+    max-width: 470px;
+    margin: 0;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+}
+
+.promo-label {
+  color: #ffe5f5;
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(236, 72, 153, 0.2);
+}
+
+.promo-progress {
+  width: min(100%, 410px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0;
+
+  > div {
+    height: 5px;
+    flex: 1;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.16);
+    overflow: hidden;
+
+    span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #f472b6, #c084fc);
+    }
+  }
+
+  strong {
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.promo-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 3px;
+  padding: 9px 13px;
+  border-radius: 9px;
+  color: #190f1b;
+  background: white;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.community-tab-intro {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 12px;
+
+  > a:not(.prompt-action) {
+    min-width: 0;
+    flex: 1;
+    padding: 10px 13px;
+    border-radius: 999px;
+    color: hsl(var(--muted-foreground));
+    background: hsl(var(--muted) / 0.55);
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-decoration: none;
+
+    &:hover {
+      color: hsl(var(--foreground));
+      background: hsl(var(--muted) / 0.8);
+    }
+  }
+}
+
+.community-prompt-avatar {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  place-items: center;
+  border-radius: 50%;
+  color: hsl(var(--muted-foreground));
+  background: hsl(var(--muted));
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.prompt-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: hsl(199 89% 43%);
+  font-size: 11px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.more-community {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 48px;
+  border: 1px solid var(--feed-border);
+  border-radius: 12px;
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+  font-weight: 750;
+  text-decoration: none;
 
   &:hover {
     color: hsl(var(--foreground));
+    background: hsl(var(--muted) / 0.35);
   }
 }
 
-/* Community Hub */
-.communityGrid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-  padding-inline: 50px;
-  margin-top: 20px;
-}
-
-.communityEmpty {
-  grid-column: 1 / -1;
-  text-align: center;
-  padding: 40px 0;
+.empty-feed {
+  display: flex;
+  min-height: 220px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 30px;
   color: hsl(var(--muted-foreground));
-  font-size: 14px;
+  text-align: center;
+
+  h2 {
+    margin: 3px 0 0;
+    color: hsl(var(--foreground));
+    font-size: 18px;
+    font-weight: 800;
+  }
+
+  p {
+    max-width: 430px;
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    color: hsl(199 89% 43%);
+    font-size: 12px;
+    font-weight: 800;
+    text-decoration: none;
+  }
 }
 
-@media screen and (max-width: 1100px) {
-  .topRow {
+.skeleton-card {
+  display: flex;
+  min-height: 310px;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+}
+
+.skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.skeleton-avatar,
+.skeleton-line,
+.skeleton-media {
+  display: block;
+  border-radius: 8px;
+  background: hsl(var(--muted));
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+}
+
+.skeleton-line {
+  height: 12px;
+
+  &.medium { width: 38%; }
+  &.wide { width: 68%; }
+}
+
+.skeleton-media {
+  min-height: 210px;
+}
+
+@keyframes skeleton-pulse {
+  50% { opacity: 0.48; }
+}
+
+.pulse-rail {
+  position: sticky;
+  top: 76px;
+}
+
+.rail-card {
+  padding: 13px;
+  border: 1px solid var(--feed-border);
+  border-radius: 15px;
+  background: hsl(var(--card) / 0.82);
+  box-shadow: 0 8px 28px hsl(222 40% 2% / 0.05);
+  backdrop-filter: blur(14px);
+}
+
+.rail-profile,
+.rail-welcome {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 4px;
+
+  > div:not(.rail-logo) {
+    min-width: 0;
+    display: flex;
     flex-direction: column;
-    padding: 28px 50px 0;
+    gap: 3px;
   }
 
-  .twoColGrid {
-    grid-template-columns: 1fr;
-    padding: 0;
+  strong {
+    color: hsl(var(--foreground));
+    font-size: 12px;
+    font-weight: 850;
   }
 
-  .mainCol {
-    .sectionHeader {
-      padding-inline: 50px;
-    }
-    .carouselWrapper {
-      padding-inline: 50px;
-    }
-    .viewAllLink {
-      padding-inline: 50px;
-    }
-    .communityGrid {
-      grid-template-columns: repeat(2, 1fr);
-      padding-inline: 50px;
-    }
-  }
-
-  .sideCol {
-    padding: 0;
-  }
-
-  .sideCol :global(.clanSpotlight) {
-    padding: 0 50px !important;
-  }
-
-  .sideCol :global(.clanGrid) {
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)) !important;
+  span {
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+    color: hsl(var(--muted-foreground));
+    font-size: 9px;
+    line-height: 1.4;
   }
 }
 
-@media screen and (max-width: 900px) {
-  .topRow {
-    padding: 24px 16px 0;
+.rail-profile > img,
+.rail-welcome .rail-logo {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.rail-logo {
+  display: grid;
+  place-items: center;
+  color: hsl(199 89% 44%);
+  background: hsl(199 89% 48% / 0.1);
+}
+
+.rail-divider {
+  height: 1px;
+  margin: 12px 4px;
+  background: hsl(var(--border) / 0.75);
+}
+
+.rail-link {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 15px;
+  align-items: center;
+  gap: 9px;
+  min-height: 48px;
+  padding: 5px;
+  border-radius: 10px;
+  color: hsl(var(--muted-foreground));
+  text-decoration: none;
+  transition: color 0.15s ease, background 0.15s ease;
+
+  &:hover {
+    color: hsl(var(--foreground));
+    background: hsl(var(--muted) / 0.45);
   }
 
-  .topRow :global(.topSupportersSection) {
-    grid-template-columns: 1fr !important;
+  > span:nth-child(2) {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
   }
 
-  .twoColGrid {
-    padding: 0;
+  strong {
+    color: hsl(var(--foreground));
+    font-size: 11px;
+    font-weight: 780;
   }
 
-  .mainCol {
-    .sectionHeader {
-      padding-inline: 16px;
-    }
-    .carouselWrapper {
-      padding-inline: 16px;
-    }
-    .viewAllLink {
-      padding-inline: 16px;
-    }
-    .communityGrid {
-      grid-template-columns: 1fr;
-      padding-inline: 16px;
-    }
+  small {
+    color: hsl(var(--muted-foreground));
+    font-size: 9px;
+    line-height: 1.35;
+  }
+}
+
+.rail-icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 9px;
+
+  &.orange { color: hsl(25 95% 52%); background: hsl(25 95% 52% / 0.1); }
+  &.purple { color: hsl(268 78% 59%); background: hsl(268 78% 59% / 0.1); }
+  &.cyan { color: hsl(184 76% 42%); background: hsl(184 76% 42% / 0.1); }
+  &.blue { color: hsl(199 89% 48%); background: hsl(199 89% 48% / 0.1); }
+}
+
+.rail-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 3px 5px 5px;
+  color: hsl(var(--muted-foreground));
+  font-size: 9px;
+  line-height: 1.45;
+
+  :global(svg) {
+    flex: none;
+    color: hsl(25 95% 52%);
+  }
+}
+
+@media (max-width: 900px) {
+  .feed-layout {
+    width: min(700px, calc(100% - 24px));
+    grid-template-columns: minmax(0, 1fr);
+    padding-top: 22px;
   }
 
-  .sideCol :global(.clanSpotlight) {
-    padding: 0 16px !important;
+  .pulse-rail {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .social-home {
+    background: hsl(var(--background));
   }
 
-  .sideCol :global(.clanGrid) {
-    grid-template-columns: 1fr !important;
-  }
-
-  .sectionHeader {
-    padding-inline: 16px;
-  }
-
-  .carouselWrapper {
-    padding-inline: 16px;
-  }
-
-  .viewAllLink {
-    padding-inline: 16px;
-  }
-
-  .communityGrid {
-    grid-template-columns: 1fr;
-    padding-inline: 16px;
-  }
-
-  .tabGroup {
+  .feed-layout {
     width: 100%;
-    overflow-x: auto;
+    padding: 18px 0 32px;
+  }
+
+  .feed-header {
+    min-height: 82px;
+    padding: 0 14px 16px;
+
+    h1 {
+      font-size: 29px;
+    }
+  }
+
+  .create-post {
+    min-width: 38px;
+    padding: 0 10px;
+
+    span {
+      display: none;
+    }
+  }
+
+  .feed-tabs {
+    top: 55px;
+    margin: 0 8px 10px;
+    border-radius: 12px;
+  }
+
+  .feed-stream {
+    gap: 8px;
+  }
+
+  .feed-card,
+  .community-tab-intro,
+  .empty-feed,
+  .community-feed-item :global(.communityPost),
+  .community-only-stream :global(.communityPost) {
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+
+  .onboarding-feed-item {
+    margin: 0 8px 8px;
+  }
+
+  .post-head {
+    padding: 13px 14px 9px;
+  }
+
+  .source-avatar {
+    width: 38px;
+    height: 38px;
+    flex-basis: 38px;
+  }
+
+  .post-caption {
+    padding: 2px 14px 12px;
+  }
+
+  .level-media,
+  .event-media,
+  .tournament-media,
+  .pvp-hero,
+  .leaderboard-strip,
+  .promo-creative {
+    margin-right: 8px;
+    margin-left: 8px;
+  }
+
+  .level-media,
+  .event-media,
+  .tournament-media {
+    aspect-ratio: 4 / 3;
+  }
+
+  .level-overlay,
+  .event-overlay,
+  .tournament-overlay {
+    padding: 14px;
+
+    h2 {
+      font-size: 22px;
+    }
+  }
+
+  .pvp-hero {
+    padding: 18px;
+  }
+
+  .pvp-stats {
+    gap: 5px;
+
+    div {
+      padding: 9px 8px;
+    }
+
+    strong {
+      font-size: 17px;
+    }
+  }
+
+  .leaderboard-player {
+    grid-template-columns: 18px 26px minmax(0, 1fr) auto;
+    gap: 6px;
+
+    img {
+      width: 26px;
+      height: 26px;
+    }
+  }
+
+  .promo-creative {
+    min-height: 330px;
+    padding: 20px;
+  }
+
+  .community-tab-intro {
+    margin-bottom: 8px;
+  }
+
+  .prompt-action {
+    font-size: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .level-media > img,
+  .event-media > img,
+  .tournament-media > img,
+  .create-post {
+    transition: none;
   }
 }
 </style>
