@@ -489,7 +489,12 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
+  padding: 14px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 14px;
+  background: hsl(var(--card));
+  box-shadow: 0 4px 18px hsl(222 40% 2% / 0.035);
 }
 
 .toolbarTop {
@@ -636,9 +641,16 @@
 }
 
 .postsGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 16px;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 12px;
+
+  :global(.communityPost) {
+    width: 100%;
+    border-radius: 14px;
+    box-shadow: 0 4px 18px hsl(222 40% 2% / 0.035);
+  }
 }
 
 .emptyState {
@@ -729,10 +741,6 @@
 }
 
 @media screen and (max-width: 900px) {
-  .postsGrid {
-    grid-template-columns: 1fr;
-  }
-
   .toolbarTop {
     flex-direction: column;
     align-items: stretch;
@@ -759,6 +767,23 @@
   .sortFilters {
     width: 100%;
     justify-content: center;
+  }
+}
+
+@media screen and (max-width: 700px) {
+  .toolbar {
+    margin-right: 8px;
+    margin-left: 8px;
+  }
+
+  .postsGrid {
+    gap: 8px;
+
+    :global(.communityPost) {
+      border-right: 0;
+      border-left: 0;
+      border-radius: 0;
+    }
   }
 }
 

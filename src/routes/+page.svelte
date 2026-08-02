@@ -8,6 +8,7 @@
 		Gamepad2,
 		Layers3,
 		Radio,
+		Shield,
 		Sparkles,
 		Star,
 		Swords,
@@ -23,6 +24,7 @@
 	import QuickPostComposer from '$lib/components/homepage/QuickPostComposer.svelte';
 	import SocialRightRail from '$lib/components/homepage/SocialRightRail.svelte';
 	import OnboardingModal from '$lib/components/OnboardingModal.svelte';
+	import ClanRecordCard from '$lib/components/clan/ClanRecordCard.svelte';
 
 	export let data: any;
 
@@ -32,6 +34,13 @@
 		data: any;
 	};
 	type HomepageRequestMode = 'auth' | 'public';
+	type HomeFeedTab = 'for-you' | 'clan';
+	type ClanFeedItem = {
+		kind: 'record' | 'community';
+		key: string;
+		data: any;
+		timestamp: number;
+	};
 
 	const COMMUNITY_PAGE_SIZE = 8;
 
@@ -51,6 +60,7 @@
 	$: homepageDescription = $_('head.descriptions.homepage');
 
 	let showOnboardingModal = false;
+	let activeFeedTab: HomeFeedTab = 'for-you';
 	let homeData: any = data?.homeData || null;
 	let homepageRequestMode: HomepageRequestMode | null = null;
 	let communityFeedPosts: any[] = [];
@@ -77,6 +87,8 @@
 	$: feedSeed = Number(homeData?.feedSeed ?? 1);
 	$: activeSeason = homeData?.activeSeason ?? null;
 	$: battlepassProgress = homeData?.battlepassProgress ?? null;
+	$: clanFeed = homeData?.clanFeed ?? null;
+	$: clanActivity = buildClanActivity(clanFeed);
 	$: levelFeed = homeData?.levelFeed?.length
 		? homeData.levelFeed
 		: buildLegacyLevelFeed(homeData?.levels);
@@ -298,6 +310,37 @@
 				return true;
 			})
 			.slice(0, 12);
+	}
+
+	function buildClanActivity(value: any): ClanFeedItem[] {
+		return [
+			...(value?.records || []).map((record: any, index: number) => ({
+				kind: 'record' as const,
+				key: `clan-record-${record.id ?? index}`,
+				data: record,
+				timestamp: normalizeTimestamp(record.timestamp ?? record.createdAt)
+			})),
+			...(value?.communityPosts || []).map((post: any, index: number) => ({
+				kind: 'community' as const,
+				key: `clan-community-${post.id ?? index}`,
+				data: post,
+				timestamp: normalizeTimestamp(post.createdAt ?? post.created_at)
+			}))
+		].sort((left, right) => right.timestamp - left.timestamp);
+	}
+
+	function normalizeTimestamp(value: string | number | null | undefined) {
+		if (!value) {
+			return 0;
+		}
+
+		const numeric = Number(value);
+		const parsed = Number.isFinite(numeric)
+			? new Date(numeric < 10_000_000_000 ? numeric * 1000 : numeric)
+			: new Date(value);
+		const timestamp = parsed.getTime();
+
+		return Number.isFinite(timestamp) ? timestamp : 0;
 	}
 
 	function buildMixedFeed(input: {
@@ -559,23 +602,41 @@
   <div class="feed-layout">
     <section class="feed-column" aria-label={tr('Home feed', 'Bảng tin')}>
       <div class="feed-tabs" aria-label={tr('Home feed', 'Bảng tin')}>
-        <div class="feed-tab">
+        <button
+          type="button"
+          class="feed-tab"
+          class:active={activeFeedTab === 'for-you'}
+          on:click={() => (activeFeedTab = 'for-you')}
+        >
           <Flame size={16} />
           {tr('For you', 'Dành cho bạn')}
-        </div>
+        </button>
+        <button
+          type="button"
+          class="feed-tab"
+          class:active={activeFeedTab === 'clan'}
+          on:click={() => (activeFeedTab = 'clan')}
+        >
+          <Shield size={16} />
+          {tr('Clan', 'Bang hội')}
+          {#if clanFeed?.communityPosts?.length || clanFeed?.records?.length}
+            <span class="tab-dot" aria-label={tr('New clan activity', 'Hoạt động bang hội mới')}></span>
+          {/if}
+        </button>
       </div>
 
-      <QuickPostComposer />
+      {#if activeFeedTab === 'for-you'}
+        <QuickPostComposer />
 
-      {#if $user.loggedIn && $user.data && $user.data.onboarding_done === false}
-        <div class="onboarding-feed-item">
-          <OnboardingProgress
-            step={$user.data.onboarding_step ?? 1}
-            onResume={() => (showOnboardingModal = true)}
-          />
-        </div>
-        <OnboardingModal bind:open={showOnboardingModal} />
-      {/if}
+        {#if $user.loggedIn && $user.data && $user.data.onboarding_done === false}
+          <div class="onboarding-feed-item">
+            <OnboardingProgress
+              step={$user.data.onboarding_step ?? 1}
+              onResume={() => (showOnboardingModal = true)}
+            />
+          </div>
+          <OnboardingModal bind:open={showOnboardingModal} />
+        {/if}
 
       <div id="for-you-panel">
         {#if homeData === null}
@@ -929,6 +990,75 @@
           </div>
         {/if}
         </div>
+      {:else if homeData === null}
+        <div class="feed-stream" aria-label={tr('Loading clan feed', 'Đang tải bảng tin bang hội')}>
+          {#each { length: 4 } as _}
+            <div class="feed-card skeleton-card" aria-hidden="true">
+              <div class="skeleton-row">
+                <span class="skeleton-avatar"></span>
+                <span class="skeleton-line medium"></span>
+              </div>
+              <span class="skeleton-line wide"></span>
+              <span class="skeleton-media"></span>
+            </div>
+          {/each}
+        </div>
+      {:else if !$user.loggedIn}
+        <div class="clan-gate empty-feed">
+          <Shield size={28} />
+          <h2>{tr('Your clan feed lives here.', 'Bảng tin bang hội của bạn ở đây.')}</h2>
+          <p>{tr('Sign in to see new records and posts from your clan in one private stream.', 'Đăng nhập để xem kỷ lục mới và bài viết từ bang hội trong một bảng tin riêng.')}</p>
+          <a href="/clans">{tr('Browse clans', 'Khám phá bang hội')} <ArrowRight size={15} /></a>
+        </div>
+      {:else if !clanFeed?.clan}
+        <div class="clan-gate empty-feed">
+          <Users size={28} />
+          <h2>{tr('Find your community.', 'Tìm cộng đồng của bạn.')}</h2>
+          <p>{tr('Join a clan to unlock a dedicated feed for team records, discussions, guides, and collabs.', 'Tham gia bang hội để mở bảng tin riêng cho kỷ lục, thảo luận, hướng dẫn và collab.')}</p>
+          <a href="/clans">{tr('Find a clan', 'Tìm bang hội')} <ArrowRight size={15} /></a>
+        </div>
+      {:else}
+        <section class="clan-feed-header">
+          <div
+            class="clan-feed-cover"
+            style={`background-image: linear-gradient(90deg, rgba(4,8,16,.9), rgba(4,8,16,.48)), url('https://cdn.gdvn.net/clan-photos/${clanFeed.clan.id}.jpg?version=${clanFeed.clan.imageVersion ?? 0}')`}
+          >
+            <div>
+              <span class="clan-community-label"><Shield size={13} /> c/{clanFeed.clan.tag || clanFeed.clan.name}</span>
+              <h2>{clanFeed.clan.name}</h2>
+              <p><Users size={14} /> {formatNumber(clanFeed.clan.memberCount)} {tr('members', 'thành viên')}</p>
+            </div>
+            <a href={`/clan/${clanFeed.clan.id}`}>{tr('Open clan', 'Mở bang hội')} <ArrowRight size={16} /></a>
+          </div>
+        </section>
+
+        <QuickPostComposer clan={clanFeed.clan} />
+
+        <div class="feed-stream clan-feed-stream">
+          {#each clanActivity as item (item.key)}
+            {#if item.kind === 'record'}
+              <ClanRecordCard record={item.data} clan={clanFeed.clan} />
+            {:else}
+              <div class="community-feed-item">
+                <CommunityPostCard
+                  post={item.data}
+                  compact={false}
+                  apiPrefix={`${import.meta.env.VITE_API_URL}/clans/${clanFeed.clan.id}/community`}
+                />
+              </div>
+            {/if}
+          {/each}
+
+          {#if clanActivity.length === 0}
+            <div class="empty-feed">
+              <Sparkles size={24} />
+              <h2>{tr('Start the clan conversation.', 'Bắt đầu cuộc trò chuyện bang hội.')}</h2>
+              <p>{tr('New records and clan community posts will appear here.', 'Kỷ lục mới và bài viết cộng đồng bang hội sẽ xuất hiện tại đây.')}</p>
+              <a href={`/community/create?clanId=${clanFeed.clan.id}`}>{tr('Create the first post', 'Tạo bài viết đầu tiên')} <ArrowRight size={15} /></a>
+            </div>
+          {/if}
+        </div>
+      {/if}
     </section>
     <div class="right-rail-column">
       <SocialRightRail />
@@ -971,7 +1101,7 @@
   top: 56px;
   z-index: 20;
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   height: 52px;
   margin-bottom: 12px;
   border: 1px solid var(--feed-border);
@@ -987,9 +1117,12 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    color: hsl(var(--foreground));
+    border: 0;
+    color: hsl(var(--muted-foreground));
+    background: transparent;
     font-size: 13px;
     font-weight: 750;
+    cursor: pointer;
 
     &::after {
       content: '';
@@ -999,10 +1132,93 @@
       bottom: 0;
       height: 3px;
       border-radius: 999px 999px 0 0;
-      background: hsl(199 89% 48%);
+      background: transparent;
+    }
+
+    &:hover { color: hsl(var(--foreground)); }
+
+    &.active {
+      color: hsl(var(--foreground));
+
+      &::after { background: hsl(199 89% 48%); }
     }
   }
 }
+
+.tab-dot {
+  width: 6px;
+  height: 6px;
+  margin-left: -2px;
+  border-radius: 50%;
+  background: hsl(199 89% 48%);
+  box-shadow: 0 0 0 3px hsl(199 89% 48% / 0.12);
+}
+
+.clan-feed-header {
+  margin-bottom: 12px;
+}
+
+.clan-feed-cover {
+  display: flex;
+  min-height: 164px;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px;
+  border: 1px solid var(--feed-border);
+  border-radius: 14px;
+  color: white;
+  background-position: center;
+  background-size: cover;
+  box-shadow: 0 8px 28px hsl(222 40% 2% / 0.08);
+  overflow: hidden;
+
+  h2 {
+    margin: 8px 0 4px;
+    font-size: clamp(24px, 5vw, 34px);
+    font-weight: 880;
+    letter-spacing: -0.035em;
+  }
+
+  p,
+  > div > span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  p { margin: 0; color: rgba(255, 255, 255, 0.76); font-size: 11px; font-weight: 700; }
+
+  > a {
+    display: inline-flex;
+    min-height: 38px;
+    flex: none;
+    align-items: center;
+    gap: 7px;
+    padding: 0 14px;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 999px;
+    color: #07101c;
+    background: white;
+    font-size: 12px;
+    font-weight: 850;
+    text-decoration: none;
+  }
+}
+
+.clan-community-label {
+  width: fit-content;
+  padding: 5px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  background: rgba(4, 8, 16, 0.4);
+  backdrop-filter: blur(10px);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+}
+
+.clan-gate { min-height: 320px; }
 
 .onboarding-feed-item {
   margin-bottom: 12px;
@@ -1738,6 +1954,22 @@
     border-radius: 12px;
   }
 
+  .clan-feed-header {
+    margin: 0 8px 8px;
+  }
+
+  .clan-feed-cover {
+    min-height: 150px;
+    padding: 18px;
+
+    > a {
+      width: 38px;
+      padding: 0;
+      justify-content: center;
+      font-size: 0;
+    }
+  }
+
   .feed-stream {
     gap: 8px;
   }
@@ -1745,6 +1977,12 @@
   .feed-card,
   .empty-feed,
   .community-feed-item :global(.communityPost) {
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+
+  .clan-feed-stream :global(.clan-record-card) {
     border-right: 0;
     border-left: 0;
     border-radius: 0;

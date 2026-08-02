@@ -37,12 +37,12 @@
 	let selectedList: 'dl' | 'pl' | 'fl' = 'dl';
 
 	async function fetchLevels() {
+		const params = new URLSearchParams({
+			from: String(filter[list].from),
+			to: String(filter[list].to)
+		});
 		fetch(
-			// @ts-expect-error
-			`${import.meta.env.VITE_API_URL}/clans/${clan.id}/list/${list}?${
-				new URLSearchParams(filter[list])
-					.toString()
-			}`
+			`${import.meta.env.VITE_API_URL}/clans/${clan.id}/list/${list}?${params}`
 		)
 			.then((res) => res.json())
 			.then((res: any) => {

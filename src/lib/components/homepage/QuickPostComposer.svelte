@@ -5,6 +5,8 @@
 	import { isActive } from '$lib/client/isSupporterActive';
 	import * as Avatar from '$lib/components/ui/avatar';
 
+	export let clan: any = null;
+
 	function text(english: string, vietnamese: string) {
 		return $locale === 'vi' ? vietnamese : english;
 	}
@@ -18,8 +20,10 @@
 
 <a
   class="quick-post"
-  href="/community/create"
-  aria-label={text('Create a new post', 'Tạo bài viết mới')}
+  href={clan ? `/community/create?clanId=${clan.id}` : '/community/create'}
+  aria-label={clan
+    ? text(`Create a post in ${clan.name}`, `Tạo bài viết trong ${clan.name}`)
+    : text('Create a new post', 'Tạo bài viết mới')}
 >
   {#if !$user.checked}
     <span class="composer-avatar skeleton" aria-hidden="true"></span>
@@ -39,8 +43,8 @@
   {/if}
 
   <span class="composer-prompt">
-    <strong>{text("What's happening?", 'Bạn đang nghĩ gì?')}</strong>
-    <small>{text('Create a community post', 'Tạo bài viết cộng đồng')}</small>
+    <strong>{clan ? text(`Post to c/${clan.tag || clan.name}`, `Đăng vào c/${clan.tag || clan.name}`) : text("What's happening?", 'Bạn đang nghĩ gì?')}</strong>
+    <small>{clan ? text('Share with your clan', 'Chia sẻ với bang hội') : text('Create a community post', 'Tạo bài viết cộng đồng')}</small>
   </span>
   <span class="post-button">{text('Post', 'Đăng')}</span>
 </a>
