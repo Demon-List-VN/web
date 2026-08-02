@@ -362,20 +362,6 @@
 <main class="social-home">
   <div class="feed-layout">
     <section class="feed-column" aria-label={tr('Home feed', 'Bảng tin')}>
-      <header class="feed-header">
-        <div>
-          <span class="feed-kicker">
-            <Sparkles size={14} />
-            {tr('Your GDVN pulse', 'Nhịp đập GDVN của bạn')}
-          </span>
-          <h1>{tr('Play what’s happening now.', 'Chơi những gì đang diễn ra.')}</h1>
-        </div>
-        <a class="create-post" href="/community/create">
-          <Plus size={16} />
-          <span>{tr('Post', 'Đăng bài')}</span>
-        </a>
-      </header>
-
       <div class="feed-tabs" role="tablist" aria-label={tr('Feed views', 'Chế độ bảng tin')}>
         <button
           type="button"
@@ -402,6 +388,10 @@
             <span class="tab-count">{communityPosts.length}</span>
           {/if}
         </button>
+        <a class="create-post" href="/community/create">
+          <Plus size={16} />
+          <span>{tr('Post', 'Đăng bài')}</span>
+        </a>
       </div>
 
       {#if $user.loggedIn && $user.data && $user.data.onboarding_done === false}
@@ -825,12 +815,6 @@
           <ArrowRight size={15} />
         </a>
 
-        <div class="rail-divider"></div>
-
-        <div class="rail-tip">
-          <Flame size={15} />
-          <span>{tr('New posts are mixed by freshness and relevance—no category walls.', 'Nội dung được trộn theo độ mới và liên quan—không chia khu vực.')}</span>
-        </div>
       </div>
     </aside>
   </div>
@@ -846,10 +830,10 @@
 }
 
 .feed-layout {
-  width: min(1080px, calc(100% - 32px));
+  width: min(1220px, calc(100% - 32px));
   margin: 0 auto;
   display: grid;
-  grid-template-columns: minmax(0, 700px) minmax(260px, 320px);
+  grid-template-columns: minmax(0, 700px) minmax(390px, 480px);
   align-items: start;
   gap: 28px;
   padding: 28px 0 56px;
@@ -859,36 +843,6 @@
   min-width: 0;
 }
 
-.feed-header {
-  min-height: 94px;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 4px 4px 20px;
-
-  h1 {
-    max-width: 560px;
-    margin: 8px 0 0;
-    font-size: clamp(28px, 4vw, 42px);
-    line-height: 1.04;
-    letter-spacing: -0.045em;
-    font-weight: 850;
-  }
-}
-
-.feed-kicker {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  color: hsl(199 90% 43%);
-  font-size: 12px;
-  line-height: 1;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
 .create-post {
   display: inline-flex;
   align-items: center;
@@ -896,20 +850,15 @@
   gap: 7px;
   min-height: 38px;
   padding: 0 15px;
-  border: 1px solid hsl(199 80% 43% / 0.25);
-  border-radius: 999px;
-  color: white;
-  background: hsl(199 89% 42%);
-  box-shadow: 0 8px 24px hsl(199 90% 40% / 0.18);
+  margin: 7px 8px;
+  border: 1px solid hsl(0 0% 84%);
+  border-radius: 9px;
+  color: #111;
+  background: #fff;
+  box-shadow: 0 1px 4px hsl(222 40% 2% / 0.1);
   font-size: 13px;
   font-weight: 800;
   text-decoration: none;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-
-  &:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 11px 28px hsl(199 90% 40% / 0.25);
-  }
 }
 
 .feed-tabs {
@@ -917,7 +866,7 @@
   top: 56px;
   z-index: 20;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
   height: 52px;
   margin-bottom: 12px;
   border: 1px solid var(--feed-border);
@@ -940,8 +889,6 @@
     font-size: 13px;
     font-weight: 750;
     cursor: pointer;
-    transition: color 0.15s ease, background 0.15s ease;
-
     &::after {
       content: '';
       position: absolute;
@@ -952,7 +899,6 @@
       border-radius: 999px 999px 0 0;
       background: hsl(199 89% 48%);
       transform: scaleX(0);
-      transition: transform 0.2s ease;
     }
 
     &:hover {
@@ -1130,11 +1076,6 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.35s ease;
-  }
-
-  &:hover > img {
-    transform: scale(1.018);
   }
 }
 
@@ -1221,8 +1162,6 @@
     font-size: 12px;
     font-weight: 750;
     text-decoration: none;
-    transition: color 0.15s ease, background 0.15s ease;
-
     &:hover {
       color: hsl(var(--foreground));
       background: hsl(var(--muted) / 0.7);
@@ -1241,6 +1180,15 @@
     border-radius: 14px;
     border-color: var(--feed-border);
     box-shadow: 0 4px 18px hsl(222 40% 2% / 0.035);
+    transition: none !important;
+  }
+
+  :global(.communityPost:hover) {
+    transform: none;
+  }
+
+  :global(.communityPost *) {
+    transition: none !important;
   }
 }
 
@@ -1705,9 +1653,9 @@
 }
 
 .rail-card {
-  padding: 13px;
+  padding: 20px;
   border: 1px solid var(--feed-border);
-  border-radius: 15px;
+  border-radius: 22px;
   background: hsl(var(--card) / 0.82);
   box-shadow: 0 8px 28px hsl(222 40% 2% / 0.05);
   backdrop-filter: blur(14px);
@@ -1717,38 +1665,38 @@
 .rail-welcome {
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 4px;
+  gap: 16px;
+  padding: 6px;
 
   > div:not(.rail-logo) {
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 5px;
   }
 
   strong {
     color: hsl(var(--foreground));
-    font-size: 12px;
+    font-size: 18px;
     font-weight: 850;
   }
 
   span {
     display: flex;
     align-items: flex-start;
-    gap: 4px;
+    gap: 6px;
     color: hsl(var(--muted-foreground));
-    font-size: 9px;
+    font-size: 13px;
     line-height: 1.4;
   }
 }
 
 .rail-profile > img,
 .rail-welcome .rail-logo {
-  width: 42px;
-  height: 42px;
-  flex: 0 0 42px;
-  border-radius: 12px;
+  width: 63px;
+  height: 63px;
+  flex: 0 0 63px;
+  border-radius: 18px;
   object-fit: cover;
 }
 
@@ -1757,26 +1705,29 @@
   place-items: center;
   color: hsl(199 89% 44%);
   background: hsl(199 89% 48% / 0.1);
+
+  :global(svg) {
+    width: 29px;
+    height: 29px;
+  }
 }
 
 .rail-divider {
   height: 1px;
-  margin: 12px 4px;
+  margin: 18px 6px;
   background: hsl(var(--border) / 0.75);
 }
 
 .rail-link {
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) 15px;
+  grid-template-columns: 51px minmax(0, 1fr) 23px;
   align-items: center;
-  gap: 9px;
-  min-height: 48px;
-  padding: 5px;
-  border-radius: 10px;
+  gap: 14px;
+  min-height: 72px;
+  padding: 8px;
+  border-radius: 15px;
   color: hsl(var(--muted-foreground));
   text-decoration: none;
-  transition: color 0.15s ease, background 0.15s ease;
-
   &:hover {
     color: hsl(var(--foreground));
     background: hsl(var(--muted) / 0.45);
@@ -1786,28 +1737,38 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
   }
 
   strong {
     color: hsl(var(--foreground));
-    font-size: 11px;
+    font-size: 16px;
     font-weight: 780;
   }
 
   small {
     color: hsl(var(--muted-foreground));
-    font-size: 9px;
+    font-size: 13px;
     line-height: 1.35;
+  }
+
+  > :global(svg) {
+    width: 23px;
+    height: 23px;
   }
 }
 
 .rail-icon {
   display: grid;
-  width: 34px;
-  height: 34px;
+  width: 51px;
+  height: 51px;
   place-items: center;
-  border-radius: 9px;
+  border-radius: 14px;
+
+  :global(svg) {
+    width: 24px;
+    height: 24px;
+  }
 
   &.orange { color: hsl(25 95% 52%); background: hsl(25 95% 52% / 0.1); }
   &.purple { color: hsl(268 78% 59%); background: hsl(268 78% 59% / 0.1); }
@@ -1815,22 +1776,7 @@
   &.blue { color: hsl(199 89% 48%); background: hsl(199 89% 48% / 0.1); }
 }
 
-.rail-tip {
-  display: flex;
-  align-items: flex-start;
-  gap: 7px;
-  padding: 3px 5px 5px;
-  color: hsl(var(--muted-foreground));
-  font-size: 9px;
-  line-height: 1.45;
-
-  :global(svg) {
-    flex: none;
-    color: hsl(25 95% 52%);
-  }
-}
-
-@media (max-width: 900px) {
+@media (max-width: 1150px) {
   .feed-layout {
     width: min(700px, calc(100% - 24px));
     grid-template-columns: minmax(0, 1fr);
@@ -1850,15 +1796,6 @@
   .feed-layout {
     width: 100%;
     padding: 18px 0 32px;
-  }
-
-  .feed-header {
-    min-height: 82px;
-    padding: 0 14px 16px;
-
-    h1 {
-      font-size: 29px;
-    }
   }
 
   .create-post {
@@ -1974,12 +1911,4 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .level-media > img,
-  .event-media > img,
-  .tournament-media > img,
-  .create-post {
-    transition: none;
-  }
-}
 </style>
