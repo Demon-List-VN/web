@@ -17,10 +17,10 @@
 		Swords,
 		UserCheck,
 		UserPlus,
+		UserRound,
 		Users
 	} from 'lucide-svelte';
 	import * as Avatar from '$lib/components/ui/avatar';
-	import * as Popover from '$lib/components/ui/popover';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import { Button, buttonVariants } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
@@ -56,6 +56,8 @@
 		replaceCachedMessage,
 		resetSocialCacheState,
 		setSocialCacheUser,
+		socialConversationsLoadState,
+		socialFriendsLoadState,
 		syncCachedConversationNewMessages,
 		updateCachedMessage,
 		updateCachedConversationWithMessage,
@@ -66,9 +68,12 @@
 		subscribeToSocialPresence,
 		type AggregatedSocialPresence
 	} from '$lib/client/socialPresence';
-	import { socialCenterRequest } from '$lib/client/socialUi';
 	import { locale } from 'svelte-i18n';
 	import { toast } from 'svelte-sonner';
+
+	export let pageMode = false;
+	export let initialTab = 'friends';
+	export let messageTargetUid = '';
 
 	let activeTab = 'friends';
 	let friends: SocialPlayer[] = [];
@@ -97,8 +102,7 @@
 	let lastMarkedReadKey = '';
 	let messageListElement: HTMLDivElement | null = null;
 	let lastScrolledMessageKey = '';
-	let popoverOpen = false;
-	let handledSocialCenterRequestId = 0;
+	let handledMessageTargetUid = '';
 
 	const unsubscribeFriends = friendsStore.subscribe((value) => {
 		friends = value;
@@ -142,12 +146,18 @@
 			total + Math.max(0, Number(conversation.unreadCount || 0)),
 		0
 	);
-	$: watchSocialPresence([
-		...friends.map((friend) => friend.uid),
-		...friendResults.map((player) => player.uid),
-		...messageResults.map((player) => player.uid)
-	]);
-	$: if (browser && $user.checked) {
+	$: if (pageMode) {
+		loadingFriends = ['idle', 'loading'].includes($socialFriendsLoadState);
+		loadingConversations = ['idle', 'loading'].includes($socialConversationsLoadState);
+	}
+	$: watchSocialPresence(pageMode
+		? [
+			...friends.map((friend) => friend.uid),
+			...friendResults.map((player) => player.uid),
+			...messageResults.map((player) => player.uid)
+		]
+		: []);
+	$: if (browser && $user.checked && !pageMode) {
 		const uid = $user.loggedIn ? ($user.data?.uid ?? '') : '';
 
 		if (uid !== initializedSocialUid) {
@@ -161,16 +171,23 @@
 			}
 		}
 	}
+	$: if (pageMode && ['friends', 'conversations'].includes(initialTab)) {
+		activeTab = initialTab;
+	}
+	$: if (!messageTargetUid) {
+		handledMessageTargetUid = '';
+	}
 	$: if (
-		browser
-		&& $socialCenterRequest.id > handledSocialCenterRequestId
+		pageMode
+		&& messageTargetUid
+		&& messageTargetUid !== handledMessageTargetUid
+		&& $user.loggedIn
 	) {
-		handledSocialCenterRequestId = $socialCenterRequest.id;
-		activeTab = $socialCenterRequest.tab;
-		popoverOpen = true;
+		const targetPlayer = friends.find((player) => player.uid === messageTargetUid);
 
-		if ($socialCenterRequest.player && $user.loggedIn) {
-			void startMessage($socialCenterRequest.player);
+		if (targetPlayer) {
+			handledMessageTargetUid = messageTargetUid;
+			void startMessage(targetPlayer);
 		}
 	}
 
@@ -535,6 +552,14 @@
 			);
 		} finally {
 			actionLoading = '';
+		}
+	}
+
+	function inviteSelectedConversationPlayer() {
+		const player = selectedConversation?.otherPlayer;
+
+		if (player) {
+			void invitePlayer(player);
 		}
 	}
 
@@ -909,25 +934,8 @@
 	});
 </script>
 
-<Popover.Root bind:open={popoverOpen}>
-  <Popover.Trigger asChild let:builder>
-    <button
-      {...builder}
-      use:builder.action
-      class="socialTrigger"
-      aria-label={text('Social', 'Xã hội')}
-      on:click={refreshAll}
-    >
-      <Users size={18} />
-      {#if unreadMessageCount > 0}
-        <span class="socialBadge">{
-          unreadMessageCount > 99 ? '99+' : unreadMessageCount
-        }</span>
-      {/if}
-    </button>
-  </Popover.Trigger>
-
-  <Popover.Content class="socialCenter px-[10px]" align="end" sideOffset={10}>
+{#if pageMode}
+  <div class="socialPageCenter">
     <Tabs.Root bind:value={activeTab} class="socialTabs">
       <div class="socialHeader">
         <div>
@@ -1157,48 +1165,53 @@
       </Tabs.Content>
 
       <Tabs.Content value="conversations" class="socialPanel conversationPanel">
-        <div class="searchBox">
-          <Search size={16} />
-          <Input
-            bind:value={messageQuery}
-            on:input={scheduleMessageSearch}
-            placeholder={text('Message a player', 'Nhắn tin người chơi')}
-          />
-        </div>
-
-        {#if messageQuery.trim().length >= 2 && messageResults.length > 0}
-          <div class="messageSearchResults">
-            {#each messageResults as player (player.uid)}
-              <button
-                class="messageSearchItem"
-                type="button"
-                on:click|preventDefault|stopPropagation={() => startMessage(player)}
-              >
-                <div class="presenceAvatar small">
-                  <Avatar.Root class="h-7 w-7">
-                    <Avatar.Image
-                      class="object-cover"
-                      src={playerAvatar(player)}
-                      alt={player.name}
-                    />
-                    <Avatar.Fallback>{player.name?.[0] || '?'}</Avatar.Fallback>
-                  </Avatar.Root>
-                  <span
-                    class:online={isPlayerOnline(player)}
-                    class="presenceDot"
-                  ></span>
-                </div>
-                <span>{player.name}</span>
-              </button>
-            {/each}
-          </div>
-        {/if}
-
         <div
           class:mobileChatOpen={selectedConversation}
           class="conversationLayout"
         >
-          <div class="conversationList">
+          <div class="conversationSidebar">
+            <div class="messengerSidebarTitle">
+              <strong>{text('Chats', 'Đoạn chat')}</strong>
+              <span>{conversations.length}</span>
+            </div>
+            <div class="searchBox conversationSearch">
+              <Search size={16} />
+              <Input
+                bind:value={messageQuery}
+                on:input={scheduleMessageSearch}
+                placeholder={text('Search Messenger', 'Tìm kiếm trên Messenger')}
+              />
+            </div>
+
+            {#if messageQuery.trim().length >= 2 && messageResults.length > 0}
+              <div class="messageSearchResults">
+                {#each messageResults as player (player.uid)}
+                  <button
+                    class="messageSearchItem"
+                    type="button"
+                    on:click|preventDefault|stopPropagation={() => startMessage(player)}
+                  >
+                    <div class="presenceAvatar small">
+                      <Avatar.Root class="h-7 w-7">
+                        <Avatar.Image
+                          class="object-cover"
+                          src={playerAvatar(player)}
+                          alt={player.name}
+                        />
+                        <Avatar.Fallback>{player.name?.[0] || '?'}</Avatar.Fallback>
+                      </Avatar.Root>
+                      <span
+                        class:online={isPlayerOnline(player)}
+                        class="presenceDot"
+                      ></span>
+                    </div>
+                    <span>{player.name}</span>
+                  </button>
+                {/each}
+              </div>
+            {/if}
+
+            <div class="conversationList">
             {#if loadingConversations}
               <div class="emptyState">
                 <Loader2 class="h-5 w-5 animate-spin" />
@@ -1221,7 +1234,7 @@
                     on:click={() => selectConversation(conversation)}
                   >
                     <div class="presenceAvatar">
-                      <Avatar.Root class="h-8 w-8">
+                      <Avatar.Root class="h-11 w-11">
                         {#if conversation.otherPlayer}
                           <Avatar.Image
                             class="object-cover"
@@ -1268,7 +1281,7 @@
                   on:click={() => selectConversation(conversation)}
                 >
                   <div class="presenceAvatar">
-                    <Avatar.Root class="h-8 w-8">
+                  <Avatar.Root class="h-11 w-11">
                       {#if conversation.otherPlayer}
                         <Avatar.Image
                           class="object-cover"
@@ -1302,31 +1315,79 @@
                 </button>
               {/each}
             {/if}
+            </div>
           </div>
 
           <div class="messagePane">
             {#if !selectedConversation}
-              <div class="emptyState">
-                <MessageCircle size={20} />
-                <span>{
-                  text('Select a conversation', 'Chọn một hội thoại')
-                }</span>
+              <div class="emptyState messengerEmpty">
+                <span class="messengerEmptyIcon"><MessageCircle size={32} /></span>
+                <strong>{text('Your messages', 'Tin nhắn của bạn')}</strong>
+                <span>{text('Select a chat or start a new conversation.', 'Chọn một đoạn chat hoặc bắt đầu cuộc trò chuyện mới.')}</span>
               </div>
             {:else}
               <div class="messageHeader">
-                <button
-                  type="button"
-                  class="conversationBack"
-                  on:click={clearSelectedConversation}
-                  aria-label={text('Back to conversations', 'Quay lại hội thoại')}
-                >
-                  <ChevronLeft size={17} />
-                </button>
-                <strong>{
-                  selectedConversation.otherPlayer?.name || text('Player', 'Người chơi')
-                }</strong>
-                {#if selectedConversation.conversationStatus !== 'active'}
-                  <span>{text('Pending', 'Đang chờ')}</span>
+                <div class="messageHeaderIdentity">
+                  <button
+                    type="button"
+                    class="conversationBack"
+                    on:click={clearSelectedConversation}
+                    aria-label={text('Back to conversations', 'Quay lại hội thoại')}
+                  >
+                    <ChevronLeft size={17} />
+                  </button>
+                  {#if selectedConversation.otherPlayer}
+                    <div class="presenceAvatar">
+                      <Avatar.Root class="h-10 w-10">
+                        <Avatar.Image
+                          class="object-cover"
+                          src={playerAvatar(selectedConversation.otherPlayer)}
+                          alt={selectedConversation.otherPlayer.name}
+                        />
+                        <Avatar.Fallback>{selectedConversation.otherPlayer.name?.[0] || '?'}</Avatar.Fallback>
+                      </Avatar.Root>
+                      <span
+                        class:online={isPlayerOnline(selectedConversation.otherPlayer)}
+                        class="presenceDot"
+                      ></span>
+                    </div>
+                  {/if}
+                  <div class="messageHeaderCopy">
+                    <strong>{
+                      selectedConversation.otherPlayer?.name || text('Player', 'Người chơi')
+                    }</strong>
+                    <span
+                      class:activeNow={selectedConversation.conversationStatus === 'active'
+                        && isPlayerOnline(selectedConversation.otherPlayer)}
+                      class:pendingStatus={selectedConversation.conversationStatus !== 'active'}
+                    >{
+                      selectedConversation.conversationStatus !== 'active'
+                        ? text('Pending conversation', 'Cuộc trò chuyện đang chờ')
+                        : isPlayerOnline(selectedConversation.otherPlayer)
+                          ? text('Active now', 'Đang hoạt động')
+                          : text('Offline', 'Ngoại tuyến')
+                    }</span>
+                  </div>
+                </div>
+                {#if selectedConversation.otherPlayer}
+                  <div class="messageHeaderActions">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      disabled={Boolean(actionLoading)}
+                      on:click={inviteSelectedConversationPlayer}
+                      title={text('Invite 1v1', 'Mời 1v1')}
+                    >
+                      <Swords class="h-4 w-4" />
+                    </Button>
+                    <a
+                      class={buttonVariants({ variant: 'ghost', size: 'icon' })}
+                      href={`/player/${selectedConversation.otherPlayer.uid}`}
+                      title={text('View profile', 'Xem trang cá nhân')}
+                    >
+                      <UserRound class="h-4 w-4" />
+                    </a>
+                  </div>
                 {/if}
               </div>
               <div class="messageList" bind:this={messageListElement}>
@@ -1393,8 +1454,23 @@
         </div>
       </Tabs.Content>
     </Tabs.Root>
-  </Popover.Content>
-</Popover.Root>
+  </div>
+{:else}
+  <a
+    class="socialTrigger"
+    href="/social"
+    aria-label={text('Social', 'Xã hội')}
+    title={text('Social', 'Xã hội')}
+    on:click={refreshAll}
+  >
+    <Users size={18} />
+    {#if unreadMessageCount > 0}
+      <span class="socialBadge">{
+        unreadMessageCount > 99 ? '99+' : unreadMessageCount
+      }</span>
+    {/if}
+  </a>
+{/if}
 
 <style lang="scss">
 .socialTrigger {
@@ -1409,7 +1485,7 @@
   background: transparent;
   color: var(--textColor2);
   cursor: pointer;
-  transition: background-color 0.12s ease, color 0.12s ease;
+  text-decoration: none;
 
   &:hover {
     background: hsl(var(--accent));
@@ -1436,19 +1512,27 @@
   line-height: 1;
 }
 
-:global(.socialCenter) {
-  width: min(720px, calc(100vw - 24px));
-  max-height: min(680px, calc(100vh - 72px));
-  padding: 0 10px;
+.socialPageCenter {
+  width: 100%;
+  height: min(760px, calc(100vh - 92px));
+  min-height: 620px;
   overflow: hidden;
-  border-color: var(--border1);
-  background: hsl(var(--popover));
-  box-shadow: 0 20px 60px rgb(0 0 0 / 32%);
+  border: 1px solid var(--border1);
+  border-radius: 18px;
+  background: hsl(var(--card));
+  box-shadow: 0 12px 36px rgb(0 0 0 / 10%);
 }
 
-.socialTabs,
+.socialTabs {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+}
+
 .socialPanel {
   min-height: 0;
+  flex: 1;
+  margin-top: 0;
 }
 
 .socialHeader {
@@ -1456,7 +1540,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px;
+  padding: 14px 18px;
   border-bottom: 1px solid var(--border1);
 
   h4,
@@ -1465,8 +1549,9 @@
   }
 
   h4 {
-    font-size: 15px;
-    font-weight: 700;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.025em;
   }
 
   p {
@@ -1484,6 +1569,9 @@
 
 :global(.socialTabList) {
   width: auto;
+  padding: 3px;
+  border-radius: 999px;
+  background: hsl(var(--muted) / 0.72);
 }
 
 :global(.socialTabTrigger) {
@@ -1508,7 +1596,7 @@
 }
 
 .socialPanel {
-  padding: 10px;
+  padding: 16px;
 }
 
 .searchBox {
@@ -1529,7 +1617,7 @@
 }
 
 .scrollRegion {
-  max-height: min(530px, calc(100vh - 190px));
+  max-height: calc(100% - 48px);
   overflow-y: auto;
   padding-right: 2px;
   padding-bottom: 10px;
@@ -1599,7 +1687,7 @@
   min-height: 12px;
   padding: 0;
   box-sizing: border-box;
-  border: 2px solid hsl(var(--popover));
+  border: 2px solid hsl(var(--card));
   border-radius: 50%;
   background: #747f8d;
   aspect-ratio: 1 / 1;
@@ -1639,15 +1727,62 @@
 }
 
 .conversationPanel {
-  display: grid;
-  gap: 8px;
+  display: block;
+  padding: 0;
+  overflow: hidden;
+}
+
+.conversationSidebar {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  border-right: 1px solid var(--border1);
+  background: hsl(var(--card));
+}
+
+.messengerSidebarTitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 16px 10px;
+
+  strong {
+    font-size: 22px;
+    font-weight: 820;
+    letter-spacing: -0.03em;
+  }
+
+  span {
+    display: grid;
+    min-width: 24px;
+    height: 24px;
+    place-items: center;
+    padding: 0 7px;
+    border-radius: 999px;
+    background: hsl(205 90% 48% / 0.12);
+    color: hsl(205 90% 48%);
+    font-size: 11px;
+    font-weight: 800;
+  }
+}
+
+.conversationSearch {
+  margin: 0 14px 10px;
+
+  :global(input) {
+    border-color: transparent;
+    border-radius: 999px;
+    background: hsl(var(--muted) / 0.72);
+  }
 }
 
 .messageSearchResults {
-  max-height: 118px;
+  max-height: 150px;
+  margin: 0 12px 8px;
   overflow-y: auto;
-  border: 1px solid var(--border1);
-  border-radius: 7px;
+  border: 1px solid hsl(var(--border) / 0.8);
+  border-radius: 12px;
 }
 
 .messageSearchItem {
@@ -1668,42 +1803,39 @@
 }
 
 .conversationLayout {
-  height: min(500px, calc(100vh - 250px));
-  min-height: 340px;
-  display: grid;
-  grid-template-columns: minmax(180px, 240px) 1fr;
-  gap: 10px;
-}
-
-.conversationList,
-.messagePane {
+  height: 100%;
   min-height: 0;
-  border: 1px solid var(--border1);
-  border-radius: 7px;
-  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(270px, 320px) minmax(0, 1fr);
 }
 
 .conversationList {
+  min-height: 0;
+  flex: 1;
   overflow-y: auto;
-  padding: 4px;
+  padding: 0 8px 14px;
 }
 
 .conversationItem {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 9px 8px;
+  gap: 11px;
+  min-height: 64px;
+  padding: 9px 10px;
   border: 0;
-  border-radius: 6px;
+  border-radius: 13px;
   background: transparent;
   color: inherit;
   text-align: left;
   cursor: pointer;
 
-  &:hover,
-  &.selectedConversation {
+  &:hover {
     background: hsl(var(--accent));
+  }
+
+  &.selectedConversation {
+    background: hsl(205 90% 48% / 0.12);
   }
 
   &.hasUnread {
@@ -1726,7 +1858,8 @@
   flex: 1;
 
   strong {
-    font-size: 13px;
+    font-size: 14px;
+    line-height: 1.25;
   }
 
   span {
@@ -1756,7 +1889,11 @@
 
 .messagePane {
   display: grid;
+  min-width: 0;
+  min-height: 0;
   grid-template-rows: auto 1fr auto;
+  overflow: hidden;
+  background: hsl(var(--background) / 0.34);
 }
 
 .messageHeader {
@@ -1764,14 +1901,76 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 10px;
+  min-height: 66px;
+  padding: 9px 16px;
   border-bottom: 1px solid var(--border1);
+  background: hsl(var(--card));
   font-size: 13px;
+  box-shadow: 0 2px 10px rgb(0 0 0 / 4%);
 
   span {
     color: var(--textColor2);
     font-size: 12px;
   }
+}
+
+.messageHeaderIdentity,
+.messageHeaderActions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+.messageHeaderCopy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+
+  strong {
+    overflow: hidden;
+    font-size: 14px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  span {
+    color: var(--textColor2);
+    font-size: 11px;
+
+    &.activeNow {
+      color: hsl(145 62% 42%);
+    }
+
+    &.pendingStatus {
+      color: hsl(36 86% 48%);
+    }
+  }
+}
+
+.messengerEmpty {
+  padding: 32px;
+
+  strong {
+    color: var(--textColor);
+    font-size: 18px;
+  }
+
+  > span:last-child {
+    max-width: 320px;
+    line-height: 1.5;
+  }
+}
+
+.messengerEmptyIcon {
+  display: grid;
+  width: 68px;
+  height: 68px;
+  margin-bottom: 6px;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(145deg, hsl(205 96% 56%), hsl(263 82% 61%));
+  color: white;
 }
 
 .conversationBack {
@@ -1798,18 +1997,18 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  padding: 10px;
+  gap: 8px;
+  padding: 18px;
 }
 
 .messageBubble {
-  max-width: 82%;
+  max-width: min(78%, 560px);
   align-self: flex-start;
   display: grid;
   gap: 4px;
-  padding: 8px 10px;
+  padding: 9px 12px;
   border: 1px solid transparent;
-  border-radius: 7px;
+  border-radius: 18px 18px 18px 5px;
   background: hsl(var(--muted));
   color: var(--textColor);
   font-size: 13px;
@@ -1818,8 +2017,9 @@
 
   &.selfMessage {
     align-self: flex-end;
-    background: hsl(var(--primary));
-    color: hsl(var(--primary-foreground));
+    border-radius: 18px 18px 5px 18px;
+    background: hsl(205 90% 48%);
+    color: white;
   }
 
   &.pendingMessage {
@@ -1867,14 +2067,24 @@
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 8px;
-  padding: 10px;
+  padding: 12px 16px;
   border-top: 1px solid var(--border1);
+  background: hsl(var(--card));
+
+  :global(input) {
+    border-color: transparent;
+    border-radius: 999px;
+    background: hsl(var(--muted) / 0.72);
+  }
 }
 
 @media (max-width: 640px) {
-  :global(.socialCenter) {
-    width: calc(100vw - 16px);
-    max-height: calc(100vh - 64px);
+  .socialPageCenter {
+    height: calc(100vh - 56px);
+    min-height: 0;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
   }
 
   .socialHeader {
@@ -1889,7 +2099,7 @@
 
   .conversationLayout {
     grid-template-columns: 1fr;
-    height: min(590px, calc(100vh - 250px));
+    height: 100%;
   }
 
   .conversationLayout:not(.mobileChatOpen) {
@@ -1899,12 +2109,12 @@
   }
 
   .conversationLayout.mobileChatOpen {
-    .conversationList {
+    .conversationSidebar {
       display: none;
     }
   }
 
-  .conversationList,
+  .conversationSidebar,
   .messagePane {
     height: 100%;
   }

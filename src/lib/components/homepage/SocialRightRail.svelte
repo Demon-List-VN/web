@@ -17,7 +17,6 @@
 		socialFriendsLoadState
 	} from '$lib/client/socialCache';
 	import type { SocialPlayer } from '$lib/client/social';
-	import { openSocialCenter } from '$lib/client/socialUi';
 	import * as Avatar from '$lib/components/ui/avatar';
 	import PlayerCard from '$lib/components/playerCard.svelte';
 
@@ -64,17 +63,17 @@
     <section class="rail-section shortcuts-section">
       <h2>{text('Your shortcuts', 'Lối tắt của bạn')}</h2>
       <nav class="shortcut-list" aria-label={text('Social shortcuts', 'Lối tắt xã hội')}>
-        <button type="button" on:click={() => openSocialCenter('friends')}>
+        <a href="/social?tab=friends">
           <span class="shortcut-icon blue"><UserPlus size={17} /></span>
           <span>{text('Find friends', 'Tìm bạn bè')}</span>
-        </button>
-        <button type="button" on:click={() => openSocialCenter('conversations')}>
+        </a>
+        <a href="/social?tab=conversations">
           <span class="shortcut-icon violet"><MessageCircle size={17} /></span>
           <span>{text('Messages', 'Tin nhắn')}</span>
           {#if unreadMessageCount > 0}
             <span class="unread-badge">{unreadMessageCount > 99 ? '99+' : unreadMessageCount}</span>
           {/if}
-        </button>
+        </a>
         <a href="/community/create">
           <span class="shortcut-icon green"><PencilLine size={17} /></span>
           <span>{text('Create a post', 'Tạo bài viết')}</span>
@@ -94,22 +93,20 @@
       <div class="section-heading">
         <h2>{text('Contacts', 'Bạn bè')}</h2>
         <div class="heading-actions">
-          <button
-            type="button"
-            on:click={() => openSocialCenter('friends')}
+          <a
+            href="/social?tab=friends"
             aria-label={text('Search players', 'Tìm người chơi')}
             title={text('Search players', 'Tìm người chơi')}
           >
             <Search size={17} />
-          </button>
-          <button
-            type="button"
-            on:click={() => openSocialCenter('conversations')}
+          </a>
+          <a
+            href="/social?tab=conversations"
             aria-label={text('Open messages', 'Mở tin nhắn')}
             title={text('Open messages', 'Mở tin nhắn')}
           >
             <MessageCircle size={17} />
-          </button>
+          </a>
         </div>
       </div>
 
@@ -126,18 +123,17 @@
         <div class="empty-contacts">
           <Users size={22} />
           <p>{text('Your friends will appear here.', 'Bạn bè của bạn sẽ xuất hiện ở đây.')}</p>
-          <button type="button" on:click={() => openSocialCenter('friends')}>
+          <a href="/social?tab=friends">
             {text('Find players', 'Tìm người chơi')}
-          </button>
+          </a>
         </div>
       {:else}
         <div class="contact-list">
           {#each visibleFriends as friend (friend.uid)}
             <div class="contact-row">
-              <button
-                type="button"
+              <a
                 class="contact-main"
-                on:click={() => openSocialCenter('conversations', friend)}
+                href={`/social?tab=conversations&uid=${encodeURIComponent(friend.uid)}`}
                 aria-label={text(`Message ${friend.name}`, `Nhắn tin cho ${friend.name}`)}
               >
                 <span class="contact-avatar-wrap">
@@ -158,7 +154,7 @@
                   <strong>{friend.name}</strong>
                   <small>{activityLabel(friend)}</small>
                 </span>
-              </button>
+              </a>
               <a
                 class="profile-action"
                 href={`/player/${friend.uid}`}
@@ -199,18 +195,16 @@
 }
 
 .shortcut-list a,
-.shortcut-list button,
 .contact-main,
 .profile-action,
-.heading-actions button {
+.heading-actions a {
   color: inherit;
   text-decoration: none;
 }
 
 .shortcut-list a:hover,
-.shortcut-list button:hover,
 .contact-row:hover,
-.heading-actions button:hover,
+.heading-actions a:hover,
 .profile-action:hover {
   background: hsl(var(--accent) / 0.75);
 }
@@ -275,8 +269,7 @@
   margin-top: 8px;
 }
 
-.shortcut-list a,
-.shortcut-list button {
+.shortcut-list a {
   display: flex;
   width: 100%;
   min-height: 42px;
@@ -333,7 +326,7 @@
   gap: 2px;
 }
 
-.heading-actions button,
+.heading-actions a,
 .profile-action {
   display: grid;
   width: 32px;
@@ -463,7 +456,7 @@
   line-height: 1.5;
 }
 
-.empty-contacts button,
+.empty-contacts a,
 .guest-links a {
   border: 0;
   background: transparent;

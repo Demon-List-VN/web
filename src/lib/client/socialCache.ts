@@ -39,6 +39,7 @@ type SocialMessageNotificationMetadata = {
 export const friendsStore = writable<SocialPlayer[]>([]);
 export const conversationsStore = writable<SocialConversation[]>([]);
 export const socialFriendsLoadState = writable<'idle' | 'loading' | 'ready' | 'error'>('idle');
+export const socialConversationsLoadState = writable<'idle' | 'loading' | 'ready' | 'error'>('idle');
 
 let currentUid = '';
 let dbPromise: Promise<IDBDatabase> | null = null;
@@ -137,6 +138,7 @@ export function setSocialCacheUser(uid: string) {
     friendsStore.set([]);
     conversationsStore.set([]);
     socialFriendsLoadState.set('idle');
+    socialConversationsLoadState.set('idle');
 
     for (const store of messageStores.values()) {
         store.set([]);
@@ -168,6 +170,7 @@ export async function hydrateSocialCache(uid: string) {
     friendsStore.set(friendsRecord?.data || []);
     conversationsStore.set(sortConversations(conversationsRecord?.data || []));
     socialFriendsLoadState.set(friendsRecord ? 'ready' : 'loading');
+    socialConversationsLoadState.set(conversationsRecord ? 'ready' : 'loading');
 }
 
 export async function refreshSocialFriends(uid: string, token?: string | null) {
@@ -198,21 +201,30 @@ export async function refreshSocialFriends(uid: string, token?: string | null) {
 }
 
 export async function refreshSocialConversations(uid: string, token?: string | null) {
-    const conversations = sortConversations(await getSocialConversations(token));
+    socialConversationsLoadState.set('loading');
 
-    if (currentUid !== uid) {
+    try {
+        const conversations = sortConversations(await getSocialConversations(token));
+
+        if (currentUid !== uid) {
+            return conversations;
+        }
+
+        conversationsStore.set(conversations);
+        await writeRecord<SocialConversation[]>(CONVERSATIONS_STORE, {
+            key: uid,
+            uid,
+            data: conversations,
+            updatedAt: nowIso()
+        });
+        socialConversationsLoadState.set('ready');
+
         return conversations;
+    } catch (error) {
+        socialConversationsLoadState.set('error');
+
+        throw error;
     }
-
-    conversationsStore.set(conversations);
-    await writeRecord<SocialConversation[]>(CONVERSATIONS_STORE, {
-        key: uid,
-        uid,
-        data: conversations,
-        updatedAt: nowIso()
-    });
-
-    return conversations;
 }
 
 function conversationStoreValue() {
