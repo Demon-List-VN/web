@@ -494,6 +494,12 @@
 			return $_('custom_lists.detail.edit.non_global_records_label');
 		}
 
+		if (field === 'collaboratorsCanVerifyRecords') {
+			return $_(
+				'custom_lists.detail.edit.collaborators_can_verify_records_label'
+			);
+		}
+
 		if (field === 'logoUrl') {
 			return $_('custom_lists.detail.edit.logo_url_label');
 		}

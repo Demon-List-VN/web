@@ -206,6 +206,30 @@
       <div class="field">
         <div class="switchRow">
           <div>
+            <label for="list-collaborators-can-verify-records">{
+              $_('custom_lists.detail.edit.collaborators_can_verify_records_label')
+            }</label>
+            <p class="hint">
+              {$_('custom_lists.detail.edit.collaborators_can_verify_records_hint')}
+            </p>
+          </div>
+          <div class="switchControl">
+            <span class="switchLabel">{
+              editForm.collaboratorsCanVerifyRecords
+                ? $_('general.yes')
+                : $_('general.no')
+            }</span>
+            <Switch
+              id="list-collaborators-can-verify-records"
+              bind:checked={editForm.collaboratorsCanVerifyRecords}
+              disabled={!editForm.nonGlobalRecordsEnabled}
+            />
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <div class="switchRow">
+          <div>
             <label for="list-level-submission-enabled">{
               $_('custom_lists.detail.edit.level_submission_label')
             }</label>

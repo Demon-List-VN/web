@@ -10,6 +10,7 @@
 	import DangerTab from './DangerTab.svelte';
 	import FormulaTab from './FormulaTab.svelte';
 	import LevelsTab from './LevelsTab.svelte';
+	import PendingRecordsTab from './PendingRecordsTab.svelte';
 	import RankTab from './RankTab.svelte';
 	import SubmissionsTab from './SubmissionsTab.svelte';
 	import imageCompression from 'browser-image-compression';
@@ -45,6 +46,7 @@
 		Award,
 		ListOrdered,
 		Inbox,
+		ClipboardCheck,
 		ShieldAlert,
 		History,
 		SlidersHorizontal
@@ -120,6 +122,31 @@
 		} | null;
 	};
 
+	type CustomListPendingRecord = {
+		id: number;
+		userid: string;
+		levelid: number;
+		progress: number;
+		refreshRate: number | null;
+		videoLink: string | null;
+		raw: string | null;
+		mobile: boolean;
+		suggestedRating: number | null;
+		comment: string | null;
+		timestamp: number | null;
+		level?: {
+			id: number;
+			name: string | null;
+			creator: string | null;
+			difficulty?: string | null;
+			isPlatformer: boolean;
+		} | null;
+		playerData?: {
+			uid: string;
+			name?: string | null;
+		} | null;
+	};
+
 	type CustomListResolvedRole =
 		| 'viewer'
 		| 'owner'
@@ -138,6 +165,7 @@
 	type CustomListPermissionFlags = {
 		canEditSettings: boolean;
 		canEditLevels: boolean;
+		canReviewRecords: boolean;
 		canReviewSubmissions: boolean;
 		canDelete: boolean;
 		canBan: boolean;
@@ -196,6 +224,7 @@
 		leaderboardEnabled?: boolean;
 		leaderboardMode?: 'player' | 'creator';
 		nonGlobalRecordsEnabled?: boolean;
+		collaboratorsCanVerifyRecords?: boolean;
 		faviconUrl?: string | null;
 		isBanned: boolean;
 		isPlatformer: boolean;
@@ -339,6 +368,7 @@
 		leaderboardEnabled: boolean;
 		leaderboardMode: 'player' | 'creator';
 		nonGlobalRecordsEnabled: boolean;
+		collaboratorsCanVerifyRecords: boolean;
 		levelSubmissionEnabled: boolean;
 		staffListEnabled: boolean;
 		faviconUrl: string;
@@ -397,12 +427,14 @@
 		| 'danger'
 		| 'levels'
 		| 'submissions'
+		| 'pending-records'
 		| 'collaboration'
 		| 'changelog';
 
 	const defaultPermissions: CustomListPermissionFlags = {
 		canEditSettings: false,
 		canEditLevels: false,
+		canReviewRecords: false,
 		canReviewSubmissions: false,
 		canDelete: false,
 		canBan: false,
@@ -447,6 +479,10 @@
 	let pendingSubmissionsLoading = false;
 	let pendingSubmissionsError = '';
 	let pendingSubmissionsRequestKey = '';
+	let pendingRecords: CustomListPendingRecord[] = [];
+	let pendingRecordsLoading = false;
+	let pendingRecordsError = '';
+	let pendingRecordsRequestKey = '';
 	let levelsPage = 1;
 	let levelsRequestedPage = 1;
 	let listLevelsLoading = false;
@@ -460,6 +496,7 @@
 		pendingOnly: false
 	};
 	let savingSubmissionId: number | null = null;
+	let savingPendingRecordId: number | null = null;
 	let levelsTabList: (CustomList & { items: CustomListItem[]; }) | null = null;
 	let showPendingLevelChangesDialog = false;
 	let addSavedChangesToChangelog = false;
@@ -509,6 +546,7 @@
 		leaderboardEnabled: true,
 		leaderboardMode: 'player' as 'player' | 'creator',
 		nonGlobalRecordsEnabled: false,
+		collaboratorsCanVerifyRecords: false,
 		levelSubmissionEnabled: false,
 		staffListEnabled: true,
 		faviconUrl: '',
@@ -968,6 +1006,10 @@
 			return 'levels';
 		}
 
+		if (requestedTab === 'submissions' || requestedTab === 'pending-records') {
+			return requestedTab;
+		}
+
 		return 'basic';
 	}
 
@@ -993,6 +1035,7 @@
 		editForm.leaderboardEnabled = list.leaderboardEnabled ?? true;
 		editForm.leaderboardMode = list.leaderboardMode === 'creator' ? 'creator' : 'player';
 		editForm.nonGlobalRecordsEnabled = list.nonGlobalRecordsEnabled ?? false;
+		editForm.collaboratorsCanVerifyRecords = list.collaboratorsCanVerifyRecords ?? false;
 		editForm.levelSubmissionEnabled = list.levelSubmissionEnabled ?? false;
 		editForm.staffListEnabled = list.staffListEnabled ?? true;
 		editForm.faviconUrl = list.faviconUrl || '';
@@ -1059,6 +1102,8 @@
 			leaderboardEnabled: currentList.leaderboardEnabled ?? true,
 			leaderboardMode: currentList.leaderboardMode === 'creator' ? 'creator' : 'player',
 			nonGlobalRecordsEnabled: currentList.nonGlobalRecordsEnabled ?? false,
+			collaboratorsCanVerifyRecords:
+				currentList.collaboratorsCanVerifyRecords ?? false,
 			levelSubmissionEnabled: currentList.levelSubmissionEnabled ?? false,
 			staffListEnabled: currentList.staffListEnabled ?? true,
 			faviconUrl: currentList.faviconUrl || '',
@@ -1096,6 +1141,7 @@
 			leaderboardEnabled: currentForm.leaderboardEnabled,
 			leaderboardMode: currentForm.leaderboardMode,
 			nonGlobalRecordsEnabled: currentForm.nonGlobalRecordsEnabled,
+			collaboratorsCanVerifyRecords: currentForm.collaboratorsCanVerifyRecords,
 			levelSubmissionEnabled: currentForm.levelSubmissionEnabled,
 			staffListEnabled: currentForm.staffListEnabled,
 			faviconUrl: currentForm.faviconUrl,
@@ -1712,6 +1758,85 @@
 		}
 	}
 
+	let pendingRecordsFetchAbortController: AbortController | null = null;
+
+	async function loadPendingRecords(force: boolean = false) {
+		if (
+			!list
+			|| !list.nonGlobalRecordsEnabled
+			|| !canReviewRecords
+			|| !$user.checked
+			|| !$user.loggedIn
+		) {
+			pendingRecords = [];
+			pendingRecordsError = '';
+			pendingRecordsLoading = false;
+			pendingRecordsRequestKey = '';
+			pendingRecordsFetchAbortController?.abort();
+			pendingRecordsFetchAbortController = null;
+
+			return;
+		}
+
+		const key = `${list.id}:${$user.data?.uid || ''}`;
+
+		if (!force && key === pendingRecordsRequestKey) {
+			return;
+		}
+
+		pendingRecordsRequestKey = key;
+		pendingRecordsError = '';
+		pendingRecordsLoading = true;
+		pendingRecordsFetchAbortController?.abort();
+		const requestController = new AbortController();
+		pendingRecordsFetchAbortController = requestController;
+
+		try {
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/lists/${list.id}/record-submissions`,
+				{
+					signal: requestController.signal,
+					headers: {
+						Authorization: `Bearer ${await $user.token()}`
+					}
+				}
+			);
+			const payload = await res.json()
+				.catch(() => null);
+
+			if (!res.ok) {
+				throw new Error(
+					payload?.error
+					|| $_('custom_lists.manage.pending_records.load_failed')
+				);
+			}
+
+			if (pendingRecordsFetchAbortController !== requestController) {
+				return;
+			}
+
+			pendingRecords = Array.isArray(payload) ? payload : [];
+		} catch (error) {
+			if ((error as any)?.name === 'AbortError') {
+				return;
+			}
+
+			if (pendingRecordsFetchAbortController !== requestController) {
+				return;
+			}
+
+			pendingRecords = [];
+			pendingRecordsError = error instanceof Error
+				? error.message
+				: $_('custom_lists.manage.pending_records.load_failed');
+		} finally {
+			if (pendingRecordsFetchAbortController === requestController) {
+				pendingRecordsLoading = false;
+				pendingRecordsFetchAbortController = null;
+			}
+		}
+	}
+
 	function updateItemSort(nextItemSort: 'mode_default' | 'created_at') {
 		if (!list) {
 			return;
@@ -2094,6 +2219,10 @@
 
 		if (tab === 'submissions') {
 			return canReviewSubmissions;
+		}
+
+		if (tab === 'pending-records') {
+			return canReviewRecords && Boolean(list?.nonGlobalRecordsEnabled);
 		}
 
 		if (tab === 'danger') {
@@ -2523,6 +2652,7 @@
 			leaderboardEnabled: editForm.leaderboardEnabled,
 			leaderboardMode: editForm.leaderboardMode,
 			nonGlobalRecordsEnabled: editForm.nonGlobalRecordsEnabled,
+			collaboratorsCanVerifyRecords: editForm.collaboratorsCanVerifyRecords,
 			levelSubmissionEnabled: editForm.levelSubmissionEnabled,
 			staffListEnabled: editForm.staffListEnabled,
 			faviconUrl: editForm.faviconUrl,
@@ -5023,6 +5153,65 @@
 		await reviewPendingSubmission(submission, { accept: false });
 	}
 
+	async function reviewPendingRecord(
+		record: CustomListPendingRecord,
+		payload: { accept: boolean; reason?: string; }
+	) {
+		if (
+			!list
+			|| !list.nonGlobalRecordsEnabled
+			|| !canReviewRecords
+		) {
+			return false;
+		}
+
+		savingPendingRecordId = record.id;
+
+		try {
+			const res = await fetch(
+				`${import.meta.env.VITE_API_URL}/lists/${list.id}/record-submissions/${record.id}`,
+				{
+					method: 'PATCH',
+					headers: {
+						Authorization: `Bearer ${await $user.token()}`,
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify(payload)
+				}
+			);
+			const responsePayload = await res.json()
+				.catch(() => null);
+
+			if (!res.ok) {
+				throw new Error(
+					responsePayload?.error
+					|| $_('custom_lists.manage.pending_records.review_failed')
+				);
+			}
+
+			pendingRecords = pendingRecords.filter((entry) => entry.id !== record.id);
+			toast.success(
+				$_(
+					payload.accept
+						? 'custom_lists.manage.pending_records.accepted_toast'
+						: 'custom_lists.manage.pending_records.rejected_toast'
+				)
+			);
+
+			return true;
+		} catch (error) {
+			toast.error(
+				error instanceof Error
+					? error.message
+					: $_('custom_lists.manage.pending_records.review_failed')
+			);
+
+			return false;
+		} finally {
+			savingPendingRecordId = null;
+		}
+	}
+
 	$: permissions = list?.permissions ?? defaultPermissions;
 	$: canEditSettings = Boolean(list && permissions.canEditSettings);
 	$: canEditLevels = Boolean(list && permissions.canEditLevels);
@@ -5039,6 +5228,7 @@
 		list && permissions.canViewPendingInvitations
 	);
 	$: canRespondToInvitation = Boolean(list && permissions.canRespondToInvitation);
+	$: canReviewRecords = Boolean(list && permissions.canReviewRecords);
 	$: canReviewSubmissions = Boolean(list && permissions.canReviewSubmissions);
 	$: canCrawlMirror = Boolean(list?.isMirror && canEditLevels);
 	$: if (
@@ -5131,6 +5321,27 @@
 		pendingSubmissionsRequestKey = '';
 		pendingSubmissionsLoading = false;
 	}
+	$: if (
+		list?.nonGlobalRecordsEnabled
+		&& $user.checked
+		&& canReviewRecords
+	) {
+		const requestKey = `${list.id}:${$user.data?.uid || ''}`;
+
+		if (
+			pendingRecordsRequestKey !== requestKey
+			&& !pendingRecordsLoading
+		) {
+			void loadPendingRecords();
+		}
+	} else if (pendingRecords.length || pendingRecordsRequestKey) {
+		pendingRecords = [];
+		pendingRecordsError = '';
+		pendingRecordsRequestKey = '';
+		pendingRecordsLoading = false;
+		pendingRecordsFetchAbortController?.abort();
+		pendingRecordsFetchAbortController = null;
+	}
 	$: if (showPendingLevelChangesDialog && !pendingManageAuditEntries.length) {
 		showPendingLevelChangesDialog = false;
 	}
@@ -5187,6 +5398,7 @@
 	onDestroy(() => {
 		batchAddAbortController?.abort();
 		pendingSubmissionsFetchAbortController?.abort();
+		pendingRecordsFetchAbortController?.abort();
 		clearCustomListBranding();
 	});
 </script>
@@ -5439,6 +5651,15 @@
               {/if}
             </Tabs.Trigger>
           {/if}
+          {#if canReviewRecords && list.nonGlobalRecordsEnabled}
+            <Tabs.Trigger value="pending-records" class="manageTab">
+              <ClipboardCheck class="h-4 w-4" />
+              <span>{$_('custom_lists.manage.tabs.pending_records')}</span>
+              {#if pendingRecords.length}
+                <span class="tabCount">{pendingRecords.length}</span>
+              {/if}
+            </Tabs.Trigger>
+          {/if}
           {#if canViewAudit}
             <Tabs.Trigger value="changelog" class="manageTab">
               <History class="h-4 w-4" />
@@ -5648,6 +5869,18 @@
             {savingSubmissionId}
             reviewSubmission={reviewPendingSubmission}
             rejectSubmission={rejectPendingSubmission}
+          />
+        </Tabs.Content>
+      {/if}
+
+      {#if canReviewRecords && list.nonGlobalRecordsEnabled}
+        <Tabs.Content value="pending-records">
+          <PendingRecordsTab
+            records={pendingRecords}
+            loading={pendingRecordsLoading}
+            errorMessage={pendingRecordsError}
+            savingRecordId={savingPendingRecordId}
+            reviewRecord={reviewPendingRecord}
           />
         </Tabs.Content>
       {/if}
