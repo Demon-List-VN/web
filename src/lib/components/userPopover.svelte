@@ -11,7 +11,6 @@
 	import { isActive } from '$lib/client/isSupporterActive';
 	import { goto } from '$app/navigation';
 	import { _ } from 'svelte-i18n';
-	import { toast } from 'svelte-sonner';
 	import {
 		User,
 		Package,
@@ -30,9 +29,6 @@
 	let open = false;
 	let hydratedNavbarPlayer: any = null;
 	let hydratedNavbarPlayerUid = '';
-	let organizations: any[] = [];
-	let organizationsLoadedFor = '';
-	let switchingIdentity = false;
 
 	$: currentPlayer = $user.data;
 	$: if (
@@ -45,16 +41,6 @@
 	}
 	$: navbarFrame = getEquippedFrame(currentPlayer)
 		?? getEquippedFrame(hydratedNavbarPlayer);
-	$: if (open && $user.loggedIn) {
-		const ownerUid = String(
-			$user.data?.authenticatedPlayerUid || $user.data?.uid || ''
-		);
-
-		if (ownerUid && organizationsLoadedFor !== ownerUid) {
-			organizationsLoadedFor = ownerUid;
-			void loadOrganizations();
-		}
-	}
 
 	function navigate(path: string) {
 		open = false;
@@ -77,34 +63,6 @@
 		}
 	}
 
-	async function loadOrganizations() {
-		try {
-			const response = await fetch(
-				`${import.meta.env.VITE_API_URL}/organizations/mine`,
-				{ headers: { Authorization: `Bearer ${await $user.token()}` } }
-			);
-			organizations = response.ok ? await response.json() : [];
-		} catch {
-			organizations = [];
-		}
-	}
-
-	async function switchIdentity(organizationUid: string | null) {
-		switchingIdentity = true;
-
-		try {
-			await $user.switchOrganization(organizationUid);
-			open = false;
-			toast.success(
-				organizationUid ? 'Organization account activated.' : 'Personal account activated.'
-			);
-			goto('/');
-		} catch (error) {
-			toast.error(error instanceof Error ? error.message : 'Could not switch account');
-		} finally {
-			switchingIdentity = false;
-		}
-	}
 </script>
 
 <Popover.Root bind:open>
@@ -219,28 +177,16 @@
       {/if}
     </div>
 
-    {#if organizations.length || $user.data?.isOrganization}
-      <div class="popover-separator" />
-      <div class="identity-section">
-        <span class="identity-label">Switch identity</span>
-        {#if $user.data?.isOrganization}
-          <button class="popover-item" disabled={switchingIdentity} on:click={() => switchIdentity(null)}>
-            <RefreshCw size={16} /><span>Personal account</span>
-          </button>
-        {/if}
-        {#each organizations as membership}
-          {@const organization = membership.players}
-          {#if organization?.uid !== $user.data?.uid}
-            <button class="popover-item" disabled={switchingIdentity} on:click={() => switchIdentity(organization.uid)}>
-              <Building2 size={16} /><span>{organization.name}</span><small>{membership.role}</small>
-            </button>
-          {/if}
-        {/each}
-        <button class="popover-item" on:click={() => navigate('/organizations')}>
-          <Building2 size={16} /><span>Manage organizations</span>
-        </button>
-      </div>
-    {/if}
+    <div class="popover-separator" />
+    <div class="popover-menu">
+      <button class="popover-item account-switcher-item" on:click={() => navigate('/accounts')}>
+        <RefreshCw size={16} />
+        <span><strong>Switch account</strong><small>Personal or organization</small></span>
+      </button>
+      <button class="popover-item" on:click={() => navigate('/organizations')}>
+        <Building2 size={16} /><span>Organizations</span>
+      </button>
+    </div>
 
     <div class="popover-separator" />
 
@@ -298,27 +244,13 @@
   padding: 4px;
 }
 
-.identity-section {
-  padding: 6px 4px;
-}
-
-.identity-label {
-  display: block;
-  padding: 4px 12px 6px;
-  color: var(--textColor2);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
 .organization-header {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 5px;
 
-  svg {
+  :global(svg) {
     color: hsl(var(--primary));
   }
 
@@ -333,11 +265,13 @@
   }
 }
 
-.popover-item small {
-  margin-left: auto;
+.account-switcher-item span {
+  display: grid;
+}
+
+.account-switcher-item small {
   color: var(--textColor2);
   font-size: 11px;
-  text-transform: capitalize;
 }
 
 .popover-item {

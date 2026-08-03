@@ -10,7 +10,7 @@
 	import { toast } from 'svelte-sonner';
 	import { locale } from 'svelte-i18n';
 	import { goto } from '$app/navigation';
-	import { ArrowLeft, Camera, Image, LogIn, Palette, Plus, Save, Trash2, UserRoundCog, Users } from 'lucide-svelte';
+	import { ArrowLeft, Camera, Crown, Image, LogIn, Palette, Plus, Save, Trash2, UserRoundCog, Users } from 'lucide-svelte';
 
 	export let data: PageData;
 
@@ -28,6 +28,7 @@
 	let uploadingBanner = false;
 	let addingCollaborator = false;
 	let switching = false;
+	let transferringUid = '';
 
 	$: role = organization.currentUserRole as 'owner' | 'collaborator' | null;
 	$: isOwner = role === 'owner';
@@ -193,6 +194,32 @@
 		}
 	}
 
+	async function transferOwnership(member: any) {
+		const player = member.players;
+
+		if (!confirm(text(
+			`Transfer ownership of ${organization.name} to ${player.name}? You will become a collaborator.`,
+			`Chuyển quyền sở hữu ${organization.name} cho ${player.name}? Bạn sẽ trở thành cộng tác viên.`
+		))) {
+			return;
+		}
+
+		transferringUid = player.uid;
+
+		try {
+			await api('/ownership', {
+				method: 'POST',
+				body: JSON.stringify({ playerUid: player.uid })
+			});
+			organization = await api();
+			toast.success(text('Ownership transferred.', 'Đã chuyển quyền sở hữu.'));
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : 'Could not transfer ownership');
+		} finally {
+			transferringUid = '';
+		}
+	}
+
 	async function actAsOrganization() {
 		switching = true;
 
@@ -284,7 +311,7 @@
             <div class="add-row"><Input bind:value={collaboratorName} placeholder={text('Exact player name', 'Tên người chơi chính xác')} on:keydown={(event) => event.key === 'Enter' && addCollaborator()} /><Button size="icon" disabled={addingCollaborator} on:click={addCollaborator}><Plus size={16} /></Button></div>
             <div class="collaborator-list">
               {#each collaborators as member}
-                <div class="collaborator"><Avatar.Root class="small-avatar"><Avatar.Image src={`https://cdn.gdvn.net/avatars/${member.players.uid}.jpg?version=${member.players.avatarVersion || 0}`} alt={member.players.name} /><Avatar.Fallback>{member.players.name?.[0]}</Avatar.Fallback></Avatar.Root><span>{member.players.name}</span><button on:click={() => removeCollaborator(member)} aria-label={text('Remove collaborator', 'Xóa cộng tác viên')}><Trash2 size={15} /></button></div>
+                <div class="collaborator"><Avatar.Root class="small-avatar"><Avatar.Image src={`https://cdn.gdvn.net/avatars/${member.players.uid}.jpg?version=${member.players.avatarVersion || 0}`} alt={member.players.name} /><Avatar.Fallback>{member.players.name?.[0]}</Avatar.Fallback></Avatar.Root><span>{member.players.name}</span><button disabled={Boolean(transferringUid)} on:click={() => transferOwnership(member)} aria-label={text('Transfer ownership', 'Chuyển quyền sở hữu')} title={text('Transfer ownership', 'Chuyển quyền sở hữu')}><Crown size={15} /></button><button on:click={() => removeCollaborator(member)} aria-label={text('Remove collaborator', 'Xóa cộng tác viên')}><Trash2 size={15} /></button></div>
               {/each}
               {#if !collaborators.length}<p class="muted">{text('No collaborators yet.', 'Chưa có cộng tác viên.')}</p>{/if}
             </div>
@@ -300,5 +327,5 @@
 </div>
 
 <style>
-  .settings-page{max-width:1180px;margin:0 auto;padding:32px 22px 80px}.settings-header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin-bottom:26px}.settings-header>a{display:inline-flex;align-items:center;gap:7px;color:hsl(var(--muted-foreground));font-size:.9rem}.settings-header>div{text-align:center}.settings-header span{font-size:.74rem;text-transform:uppercase;letter-spacing:.12em;color:hsl(var(--muted-foreground));font-weight:750}.settings-header h1{font-size:2.1rem;font-weight:800;letter-spacing:-.04em}.role-pill{justify-self:end;border:1px solid hsl(var(--border));border-radius:999px;padding:5px 10px}.settings-grid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:16px;align-items:start}.settings-grid main,.settings-grid aside{display:grid;gap:16px}.settings-grid aside{position:sticky;top:72px}.settings-card{border:1px solid hsl(var(--border));border-radius:16px;background:hsl(var(--card));padding:21px}.card-heading{display:flex;justify-content:space-between;align-items:start;gap:16px;margin-bottom:17px}.card-heading>div>span{display:flex;align-items:center;gap:6px;color:hsl(var(--primary));font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;font-weight:800}.card-heading h2,.danger-card h2,.collaborator-note h2{font-size:1.18rem;font-weight:760;margin-top:4px}.card-heading>p,.muted,.danger-card p,.collaborator-note p{font-size:.88rem;color:hsl(var(--muted-foreground))}.banner-preview{height:200px;position:relative;overflow:hidden;border:2px solid;border-radius:13px}.banner-preview>img{width:100%;height:100%;object-fit:cover}.banner-preview:after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgb(0 0 0/.45),transparent)}:global(.settings-avatar){position:absolute;width:82px;height:82px;left:20px;bottom:16px;border:4px solid hsl(var(--card));z-index:1}.upload-actions{display:flex;gap:9px;margin-top:13px}.upload-button{display:inline-flex;align-items:center;gap:7px;border:1px solid hsl(var(--border));border-radius:8px;padding:8px 11px;font-size:.88rem;cursor:pointer}.upload-button input{display:none}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.field{display:grid;gap:7px}.field.full{grid-column:1/-1}.field textarea{resize:vertical;border:1px solid hsl(var(--input));border-radius:8px;background:hsl(var(--background));padding:10px 12px}.color-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.color-grid label{display:grid;grid-template-columns:1fr auto;align-items:center;gap:6px;border:1px solid hsl(var(--border));border-radius:10px;padding:11px}.color-grid input{width:42px;height:30px;border:0;background:transparent}.color-grid code{grid-column:1/-1;color:hsl(var(--muted-foreground));font-size:.78rem}.theme-dot{width:24px;height:24px;border-radius:50%}.save-row{display:flex;justify-content:flex-end;margin-top:17px}.wide{width:100%;margin-top:14px}.add-row{display:flex;gap:7px}.collaborator-list{display:grid;gap:4px;margin-top:12px}.collaborator{display:flex;align-items:center;gap:9px;padding:8px;border-radius:9px;background:hsl(var(--muted)/.45)}:global(.small-avatar){width:31px;height:31px}.collaborator span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}.collaborator button{color:hsl(var(--muted-foreground));padding:5px}.collaborator button:hover{color:hsl(var(--destructive))}.count{border-radius:999px;background:hsl(var(--muted));padding:3px 8px}.danger-card{border-color:hsl(var(--destructive)/.4)}.danger-card p{margin:7px 0}.collaborator-note{display:flex;gap:14px}.collaborator-note svg{color:hsl(var(--primary));flex:none}.loading-card{text-align:center;padding:80px;border:1px dashed hsl(var(--border));border-radius:16px;color:hsl(var(--muted-foreground))}@media(max-width:850px){.settings-grid{grid-template-columns:1fr}.settings-grid aside{position:static}.settings-header{grid-template-columns:1fr auto}.settings-header>div{text-align:right}.role-pill{display:none}}@media(max-width:560px){.settings-page{padding:22px 12px 60px}.settings-header h1{font-size:1.45rem}.form-grid,.color-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.upload-actions{flex-direction:column}.upload-button{justify-content:center}}
+  .settings-page{max-width:1180px;margin:0 auto;padding:32px 22px 80px}.settings-header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin-bottom:26px}.settings-header>a{display:inline-flex;align-items:center;gap:7px;color:hsl(var(--muted-foreground));font-size:.9rem}.settings-header>div{text-align:center}.settings-header span{font-size:.74rem;text-transform:uppercase;letter-spacing:.12em;color:hsl(var(--muted-foreground));font-weight:750}.settings-header h1{font-size:2.1rem;font-weight:800;letter-spacing:-.04em}.role-pill{justify-self:end;border:1px solid hsl(var(--border));border-radius:999px;padding:5px 10px}.settings-grid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:16px;align-items:start}.settings-grid main,.settings-grid aside{display:grid;gap:16px}.settings-grid aside{position:sticky;top:72px}.settings-card{border:1px solid hsl(var(--border));border-radius:16px;background:hsl(var(--card));padding:21px}.card-heading{display:flex;justify-content:space-between;align-items:start;gap:16px;margin-bottom:17px}.card-heading>div>span{display:flex;align-items:center;gap:6px;color:hsl(var(--primary));font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;font-weight:800}.card-heading h2,.danger-card h2,.collaborator-note h2{font-size:1.18rem;font-weight:760;margin-top:4px}.card-heading>p,.muted,.danger-card p,.collaborator-note p{font-size:.88rem;color:hsl(var(--muted-foreground))}.banner-preview{height:200px;position:relative;overflow:hidden;border:2px solid;border-radius:13px}.banner-preview>img{width:100%;height:100%;object-fit:cover}.banner-preview:after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgb(0 0 0/.45),transparent)}:global(.settings-avatar){position:absolute;width:82px;height:82px;left:20px;bottom:16px;border:4px solid hsl(var(--card));z-index:1}.upload-actions{display:flex;gap:9px;margin-top:13px}.upload-button{display:inline-flex;align-items:center;gap:7px;border:1px solid hsl(var(--border));border-radius:8px;padding:8px 11px;font-size:.88rem;cursor:pointer}.upload-button input{display:none}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.field{display:grid;gap:7px}.field.full{grid-column:1/-1}.field textarea{resize:vertical;border:1px solid hsl(var(--input));border-radius:8px;background:hsl(var(--background));padding:10px 12px}.color-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.color-grid label{display:grid;grid-template-columns:1fr auto;align-items:center;gap:6px;border:1px solid hsl(var(--border));border-radius:10px;padding:11px}.color-grid input{width:42px;height:30px;border:0;background:transparent}.color-grid code{grid-column:1/-1;color:hsl(var(--muted-foreground));font-size:.78rem}.theme-dot{width:24px;height:24px;border-radius:50%}.save-row{display:flex;justify-content:flex-end;margin-top:17px}:global(.wide){width:100%;margin-top:14px}.add-row{display:flex;gap:7px}.collaborator-list{display:grid;gap:4px;margin-top:12px}.collaborator{display:flex;align-items:center;gap:9px;padding:8px;border-radius:9px;background:hsl(var(--muted)/.45)}:global(.small-avatar){width:31px;height:31px}.collaborator span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}.collaborator button{color:hsl(var(--muted-foreground));padding:5px}.collaborator button:hover{color:hsl(var(--destructive))}.count{border-radius:999px;background:hsl(var(--muted));padding:3px 8px}.danger-card{border-color:hsl(var(--destructive)/.4)}.danger-card p{margin:7px 0}.collaborator-note{display:flex;gap:14px}.collaborator-note :global(svg){color:hsl(var(--primary));flex:none}.loading-card{text-align:center;padding:80px;border:1px dashed hsl(var(--border));border-radius:16px;color:hsl(var(--muted-foreground))}@media(max-width:850px){.settings-grid{grid-template-columns:1fr}.settings-grid aside{position:static}.settings-header{grid-template-columns:1fr auto}.settings-header>div{text-align:right}.role-pill{display:none}}@media(max-width:560px){.settings-page{padding:22px 12px 60px}.settings-header h1{font-size:1.45rem}.form-grid,.color-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.upload-actions{flex-direction:column}.upload-button{justify-content:center}}
 </style>

@@ -20,6 +20,7 @@
 	import { _, locale } from 'svelte-i18n';
 	import {
 		AlertTriangle,
+		Building2,
 		Check,
 		ChevronRight,
 		Cloud,
@@ -580,6 +581,22 @@
       </a>
     {/if}
   </header>
+
+  {#if $user.loggedIn && $user.data?.isOrganization}
+    <section class="organization-settings-callout">
+      <span class="organization-settings-icon"><Building2 size={20} /></span>
+      <div>
+        <strong>{text('Organization access', 'Quyền truy cập tổ chức')}</strong>
+        <p>{text(
+          `You are using ${$user.data.name} as ${$user.data.organizationRole || 'collaborator'}. Manage collaborators, ownership, and organization access from its settings.`,
+          `Bạn đang dùng ${$user.data.name} với vai trò ${$user.data.organizationRole || 'cộng tác viên'}. Quản lý cộng tác viên, quyền sở hữu và truy cập trong cài đặt tổ chức.`
+        )}</p>
+      </div>
+      <a href={`/org/${encodeURIComponent($user.data.name)}/settings`}>
+        {text('Manage access', 'Quản lý truy cập')} <ChevronRight size={15} />
+      </a>
+    </section>
+  {/if}
 
   <div class="settings-layout">
     <aside class="settings-sidebar">
@@ -1284,6 +1301,48 @@
   }
 }
 
+.organization-settings-callout {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid hsl(var(--primary) / 0.28);
+  border-radius: 14px;
+  background: hsl(var(--primary) / 0.07);
+
+  strong,
+  p {
+    display: block;
+  }
+
+  p {
+    margin-top: 2px;
+    color: var(--textColor2);
+    font-size: 13px;
+  }
+
+  > a {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: hsl(var(--primary));
+    font-size: 13px;
+    font-weight: 700;
+  }
+}
+
+.organization-settings-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 11px;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
 .settings-layout {
   display: grid;
   grid-template-columns: 238px minmax(0, 1fr);
@@ -1649,6 +1708,15 @@
     align-items: flex-start;
     flex-direction: column;
     gap: 14px;
+  }
+
+  .organization-settings-callout {
+    grid-template-columns: auto minmax(0, 1fr);
+
+    > a {
+      grid-column: 1 / -1;
+      justify-content: flex-end;
+    }
   }
 
   .card-row,
