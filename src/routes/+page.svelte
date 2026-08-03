@@ -54,11 +54,11 @@
 
 	const COMMUNITY_PAGE_SIZE = 8;
 
-	const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://gdvn.net').replace(
+	const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://gdlisthub.dev').replace(
 		/\/$/,
 		''
 	);
-	const homepageUrl = siteUrl || 'https://gdvn.net';
+	const homepageUrl = siteUrl || 'https://gdlisthub.dev';
 	const officialListMeta: Record<string, { title: string; href: string; }> = {
 		dl: { title: 'Demon List', href: '/lists/dl' },
 		fl: { title: 'Featured List', href: '/lists/fl' },
@@ -689,7 +689,7 @@
 	}
 
 	function getEventThumbnail(event: any) {
-		return event?.imgUrl || `https://cdn.gdvn.net/event-banner/${event?.id}.webp`;
+		return event?.imgUrl || `https://cdn.gdlisthub.dev/event-banner/${event?.id}.webp`;
 	}
 
 	function tournamentStatus(status: string) {
@@ -1036,7 +1036,7 @@
 
                   <a class="tournament-media" href={`/tournament/${tournament.id}`}>
                     <img
-                      src={`https://cdn.gdvn.net/tournament-banner/${tournament.id}.webp?v=${tournament.bannerVersion ?? 0}`}
+                      src={`https://cdn.gdlisthub.dev/tournament-banner/${tournament.id}.webp?v=${tournament.bannerVersion ?? 0}`}
                       alt={tournament.name || ''}
                       loading="lazy"
                     />
@@ -1084,7 +1084,7 @@
                         <a href={`/player/${supporter.player?.uid}`} class="supporter-row">
                           <strong>#{index + 1}</strong>
                           <img
-                            src={`https://cdn.gdvn.net/avatars/${supporter.player?.uid}${supporter.player?.isAvatarGif ? '.gif' : '.jpg'}?version=${supporter.player?.avatarVersion ?? 0}`}
+                            src={`https://cdn.gdlisthub.dev/avatars/${supporter.player?.uid}${supporter.player?.isAvatarGif ? '.gif' : '.jpg'}?version=${supporter.player?.avatarVersion ?? 0}`}
                             alt=""
                             loading="lazy"
                           />
@@ -1124,7 +1124,7 @@
                     class="promo-creative"
                     class:has-season={Boolean(season)}
                     href={season ? '/battlepass' : '/supporter'}
-                    style={season ? `background-image: linear-gradient(105deg, rgba(8,10,18,.93), rgba(8,10,18,.42)), url('${season.backgroundUrl || `https://cdn.gdvn.net/battlepasses/${season.id}.webp`}')` : ''}
+                    style={season ? `background-image: linear-gradient(105deg, rgba(8,10,18,.93), rgba(8,10,18,.42)), url('${season.backgroundUrl || `https://cdn.gdlisthub.dev/battlepasses/${season.id}.webp`}')` : ''}
                   >
                     <span class="content-label promo-label"><Sparkles size={13} /> {season ? 'GDVN PASS' : tr('SUPPORT GDVN', 'ỦNG HỘ GDVN')}</span>
                     <h2>{season?.title || tr('Keep the community moving.', 'Giữ cộng đồng luôn chuyển động.')}</h2>
@@ -1347,7 +1347,7 @@
         <section class="clan-feed-header">
           <div
             class="clan-feed-cover"
-            style={`background-image: linear-gradient(90deg, rgba(4,8,16,.9), rgba(4,8,16,.48)), url('https://cdn.gdvn.net/clan-photos/${clanFeed.clan.id}.jpg?version=${clanFeed.clan.imageVersion ?? 0}')`}
+            style={`background-image: linear-gradient(90deg, rgba(4,8,16,.9), rgba(4,8,16,.48)), url('https://cdn.gdlisthub.dev/clan-photos/${clanFeed.clan.id}.jpg?version=${clanFeed.clan.imageVersion ?? 0}')`}
           >
             <div>
               <span class="clan-community-label"><Shield size={13} /> <ClanTag clan={clanFeed.clan} compact /></span>

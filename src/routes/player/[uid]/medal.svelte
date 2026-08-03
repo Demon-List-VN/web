@@ -8,7 +8,7 @@
   <div class="flex w-[200px] flex-col items-center rounded-xl p-[15px] transition duration-200 ease-in-out hover:bg-[hsl(var(--secondary))]">
     <img
       class="h-[150px] w-[150px] object-cover"
-      src={`https://cdn.gdvn.net/medals/${medal.itemId}.webp`}
+      src={`https://cdn.gdlisthub.dev/medals/${medal.itemId}.webp`}
       alt=""
     />
     <h3 class="mb-[10px] mt-[10px] text-center text-xl font-bold">

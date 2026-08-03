@@ -34,7 +34,7 @@
 	$: equippedTheme = getEquippedTheme(player);
 	$: hasBannerImage = Boolean(equippedTheme) && !isBannerFailedToLoad;
 	$: profileThemeStyle = getProfileThemeVariables(equippedTheme);
-	$: avatarSrc = `https://cdn.gdvn.net/avatars/${player.uid}${
+	$: avatarSrc = `https://cdn.gdlisthub.dev/avatars/${player.uid}${
 		isActive(player.supporterUntil) && player.isAvatarGif ? '.gif' : '.jpg'
 	}?version=${player.avatarVersion ?? 0}`;
 </script>
@@ -67,7 +67,7 @@
   />
   <meta
     property="og:image"
-    content={`https://cdn.gdvn.net/avatars/${data.player.uid}${
+    content={`https://cdn.gdlisthub.dev/avatars/${data.player.uid}${
         isActive(data.player.supporterUntil) && data.player.isAvatarGif
             ? '.gif'
             : '.jpg'

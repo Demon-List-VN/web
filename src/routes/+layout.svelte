@@ -393,8 +393,8 @@
     <footer>
     <div class="footerFiller"></div>
     <p>
-      © Copyright 2020-2025 gdvn.net.<br />
-      All rights reserved gdvn.net and Geometry Dash Việt Nam are in no way
+      © Copyright 2020-2025 gdlisthub.dev.<br />
+      All rights reserved gdlisthub.dev and Geometry Dash Việt Nam are in no way
       affiliated with RobTopGamesAB ®
     </p>
     <div class="links">
