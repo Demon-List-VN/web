@@ -3435,7 +3435,8 @@
                 "community": "Community posts"
             },
             "overview": {
-                "heading": "About this list"
+                "heading": "About this list",
+                "empty": "No overview yet."
             },
             "leaderboard": {
                 "heading": "{title} leaderboard",
@@ -3482,7 +3483,9 @@
                 "heading": "Edit metadata",
                 "title_label": "Title",
                 "description_label": "Description",
-                "description_hint": "Shown in the Overview tab. Markdown is supported.",
+                "description_hint": "Shown in the list header card.",
+                "overview_label": "Overview",
+                "overview_hint": "Shown in the Overview tab. Markdown is supported.",
                 "community_label": "Community posts",
                 "community_hint": "Allow community posts to be attached to this list.",
                 "level_submission_label": "Level submissions",
@@ -3533,6 +3536,8 @@
                 "leaderboard_enabled_label": "Leaderboard",
                 "leaderboard_enabled_hint": "Enable ranked player standings and the My record tab for this list.",
                 "leaderboard_enabled_creator_hint": "Enable ranked contributor standings and the My contributions tab for this list.",
+                "non_global_records_label": "Accept list-only records",
+                "non_global_records_hint": "Allow records submitted specifically to this list. When enabled, a Submit record button appears on the public list page.",
                 "leaderboard_mode_label": "Leaderboard mode",
                 "leaderboard_mode_player": "Player",
                 "leaderboard_mode_creator": "Creator",
@@ -3656,6 +3661,9 @@
             "title_placeholder": "My awesome list",
             "description_label": "Description",
             "description_placeholder": "Describe what levels are in this list…",
+            "overview_label": "Overview",
+            "overview_placeholder": "Write a detailed introduction to this list…",
+            "overview_hint": "Shown in the Overview tab. Markdown is supported.",
             "visibility_label": "Visibility",
             "visibility_public_hint": "Anyone can discover and view this list.",
             "visibility_unlisted_hint": "Only people with the link can view this list.",

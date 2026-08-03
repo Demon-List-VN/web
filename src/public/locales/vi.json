@@ -3434,7 +3434,8 @@
                 "community": "Bài viết cộng đồng"
             },
             "overview": {
-                "heading": "Giới thiệu danh sách"
+                "heading": "Giới thiệu danh sách",
+                "empty": "Chưa có nội dung tổng quan."
             },
             "leaderboard": {
                 "heading": "Bảng xếp hạng {title}",
@@ -3481,7 +3482,9 @@
                 "heading": "Chỉnh sửa thông tin",
                 "title_label": "Tên",
                 "description_label": "Mô tả",
-                "description_hint": "Hiển thị trong tab Tổng quan. Có hỗ trợ Markdown.",
+                "description_hint": "Hiển thị trong thẻ tiêu đề của danh sách.",
+                "overview_label": "Tổng quan",
+                "overview_hint": "Hiển thị trong tab Tổng quan. Có hỗ trợ Markdown.",
                 "community_label": "Bài viết cộng đồng",
                 "community_hint": "Cho phép gắn bài viết cộng đồng vào danh sách này.",
                 "level_submission_label": "Nộp level",
@@ -3532,6 +3535,8 @@
                 "leaderboard_enabled_label": "Bảng xếp hạng",
                 "leaderboard_enabled_hint": "Bật bảng xếp hạng người chơi và tab record của tôi cho danh sách này.",
                 "leaderboard_enabled_creator_hint": "Bật bảng xếp hạng người đóng góp và tab đóng góp của tôi cho danh sách này.",
+                "non_global_records_label": "Chấp nhận record riêng cho list",
+                "non_global_records_hint": "Cho phép record được gửi riêng đến danh sách này. Khi bật, nút Nộp record sẽ xuất hiện trên trang danh sách công khai.",
                 "leaderboard_mode_label": "Chế độ bảng xếp hạng",
                 "leaderboard_mode_player": "Người chơi",
                 "leaderboard_mode_creator": "Creator",
@@ -3655,6 +3660,9 @@
             "title_placeholder": "Danh sách của tôi",
             "description_label": "Mô tả",
             "description_placeholder": "Mô tả các level trong danh sách này…",
+            "overview_label": "Tổng quan",
+            "overview_placeholder": "Viết phần giới thiệu chi tiết cho danh sách này…",
+            "overview_hint": "Hiển thị trong tab Tổng quan. Có hỗ trợ Markdown.",
             "visibility_label": "Chế độ hiển thị",
             "visibility_public_hint": "Tất cả mọi người đều có thể tìm thấy và xem danh sách này.",
             "visibility_unlisted_hint": "Chỉ người có đường dẫn mới có thể xem danh sách này.",

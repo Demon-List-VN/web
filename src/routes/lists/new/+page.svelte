@@ -34,6 +34,7 @@
 	let form: {
 		title: string;
 		description: string;
+		overview: string;
 		visibility: Visibility | null;
 		mode: Mode | null;
 		itemSort: ItemSort | null;
@@ -44,6 +45,7 @@
 	} = {
 		title: '',
 		description: '',
+		overview: '',
 		visibility: null,
 		mode: null,
 		itemSort: null,
@@ -114,6 +116,7 @@
 			const body: Record<string, unknown> = {
 				title: form.title,
 				description: form.description,
+				overview: form.overview,
 				visibility: form.visibility,
 				mode: form.mode,
 				itemSort: form.itemSort,
@@ -210,6 +213,20 @@
             rows={3}
             placeholder={$_('custom_lists.new.description_placeholder')}
           />
+        </div>
+
+        <div class="field">
+          <label for="list-overview">{
+            $_('custom_lists.new.overview_label')
+          }</label>
+          <Textarea
+            id="list-overview"
+            bind:value={form.overview}
+            rows={6}
+            maxlength={2000}
+            placeholder={$_('custom_lists.new.overview_placeholder')}
+          />
+          <p class="hint">{$_('custom_lists.new.overview_hint')}</p>
         </div>
 
         <div class="field">

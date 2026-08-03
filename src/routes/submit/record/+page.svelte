@@ -15,6 +15,7 @@
 	import StepConfirmLevel from '$lib/components/submit/StepConfirmLevel.svelte';
 	import StepRequiredFields from '$lib/components/submit/StepRequiredFields.svelte';
 	import StepOptionalFields from '$lib/components/submit/StepOptionalFields.svelte';
+	import StepSelectTarget from '$lib/components/submit/StepSelectTarget.svelte';
 	import StepSubmitReview from '$lib/components/submit/StepSubmitReview.svelte';
 	import SubmitResult from '$lib/components/submit/SubmitResult.svelte';
 	import {
@@ -36,6 +37,7 @@
 		mode: 'rating' | 'top';
 		isPlatformer: boolean;
 		isOfficial?: boolean;
+		nonGlobalRecordsEnabled?: boolean;
 		topEnabled?: boolean;
 		recordFilterPlatform?: 'any' | 'pc' | 'mobile' | null;
 		recordFilterMinRefreshRate?: number | null;
@@ -66,12 +68,15 @@
 				Confirm: { vi: 'Xác nhận', en: 'Confirm' },
 				Details: { vi: 'Chi tiết', en: 'Details' },
 				Optional: { vi: 'Tùy chọn', en: 'Optional' },
+				Target: { vi: 'Phạm vi', en: 'Target' },
 				Review: { vi: 'Xem lại', en: 'Review' }
 			};
 
 			return labels[s] ? ($locale == 'vi' ? labels[s].vi : labels[s].en) : s;
 		});
 	$: isLastStep = state.step === steps.length - 1;
+	$: targetStepIndex = getSteps(state.type)
+		.indexOf('Target');
 
 	function t(vi: string, en: string) {
 		return $locale == 'vi' ? vi : en;
@@ -207,7 +212,8 @@
 		state.levelid
 	);
 	$: shouldLoadEligibleLists = state.type === 'record'
-		&& state.step === steps.length - 1
+		&& targetStepIndex >= 0
+		&& state.step >= targetStepIndex
 		&& activeEligibleLevelId !== null
 		&& activeEligibleProgress !== null;
 
@@ -223,7 +229,7 @@
 			eligibleListsError = '';
 			eligibleListsRequestKey = '';
 		} else {
-			const requestKey = `${levelId}:${progress}`;
+			const requestKey = `${levelId}:${progress}:${state.target ?? 'global'}`;
 
 			if (eligibleListsRequestKey !== requestKey) {
 				eligibleListsRequestKey = requestKey;
@@ -379,6 +385,27 @@
 			}
 		}
 
+		if (state.step === targetStepIndex && state.target !== null) {
+			if (eligibleListsLoading) {
+				toast.error(t('Vui lòng chờ kiểm tra list đích', 'Please wait while the target list is checked'));
+
+				return;
+			}
+
+			const selectedList = eligibleLists.find((list) => list.id === state.target);
+
+			if (!selectedList || !canTargetList(selectedList)) {
+				toast.error(
+					t(
+						'List đã chọn không nhận record riêng hoặc không khớp thông tin submit',
+						'The selected list does not accept list-only records or does not match this submission'
+					)
+				);
+
+				return;
+			}
+		}
+
 		if (state.step === steps.length - 1) {
 			submitRecord();
 
@@ -388,6 +415,50 @@
 		direction = 1;
 		state.step++;
 		state = state;
+	}
+
+	function canTargetList(list: EligibleListEntry) {
+		if (
+			list.isOfficial
+			|| list.nonGlobalRecordsEnabled !== true
+			|| !list.eligible
+		) {
+			return false;
+		}
+
+		if (
+			list.recordFilterPlatform === 'mobile'
+			&& state.mobile?.value !== true
+		) {
+			return false;
+		}
+
+		if (
+			list.recordFilterPlatform === 'pc'
+			&& state.mobile?.value !== false
+		) {
+			return false;
+		}
+
+		const refreshRate = Number(state.refreshRate);
+		const minRefreshRate = Number(list.recordFilterMinRefreshRate);
+		const maxRefreshRate = Number(list.recordFilterMaxRefreshRate);
+
+		if (
+			list.recordFilterMinRefreshRate != null
+			&& (!Number.isFinite(refreshRate) || refreshRate < minRefreshRate)
+		) {
+			return false;
+		}
+
+		if (
+			list.recordFilterMaxRefreshRate != null
+			&& (!Number.isFinite(refreshRate) || refreshRate > maxRefreshRate)
+		) {
+			return false;
+		}
+
+		return true;
 	}
 
 	function back() {
@@ -540,6 +611,15 @@
                     bind:comment={state.comment}
                   />
                 {:else if state.step === 5}
+                  <StepSelectTarget
+                    bind:target={state.target}
+                    lists={eligibleLists}
+                    loading={eligibleListsLoading}
+                    errorMessage={eligibleListsError}
+                    refreshRate={state.refreshRate}
+                    mobile={state.mobile}
+                  />
+                {:else if state.step === 6}
                   <StepSubmitReview
                     levelId={state.levelid}
                     selectedVariantId={state.selectedVariantId}
@@ -553,10 +633,8 @@
                     time={state.time}
                     suggestedRating={state.suggestedRating}
                     comment={state.comment}
-                    bind:target={state.target}
+                    target={state.target}
                     lists={eligibleLists}
-                    loading={eligibleListsLoading}
-                    errorMessage={eligibleListsError}
                   />
                 {/if}
               </div>

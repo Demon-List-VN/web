@@ -454,6 +454,10 @@
 			return $_('custom_lists.detail.edit.description_label');
 		}
 
+		if (field === 'overview') {
+			return $_('custom_lists.detail.edit.overview_label');
+		}
+
 		if (field === 'backgroundColor') {
 			return $_('custom_lists.detail.edit.background_color_label');
 		}
@@ -484,6 +488,10 @@
 
 		if (field === 'leaderboardMode') {
 			return $_('custom_lists.detail.edit.leaderboard_mode_label');
+		}
+
+		if (field === 'nonGlobalRecordsEnabled') {
+			return $_('custom_lists.detail.edit.non_global_records_label');
 		}
 
 		if (field === 'logoUrl') {

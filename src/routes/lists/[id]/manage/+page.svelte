@@ -188,12 +188,14 @@
 		owner: string;
 		title: string;
 		description: string;
+		overview: string;
 		backgroundColor?: string | null;
 		bannerUrl?: string | null;
 		borderColor?: string | null;
 		communityEnabled: boolean;
 		leaderboardEnabled?: boolean;
 		leaderboardMode?: 'player' | 'creator';
+		nonGlobalRecordsEnabled?: boolean;
 		faviconUrl?: string | null;
 		isBanned: boolean;
 		isPlatformer: boolean;
@@ -329,12 +331,14 @@
 	type PendingSettingsAuditState = {
 		title: string;
 		description: string;
+		overview: string;
 		backgroundColor: string;
 		bannerUrl: string;
 		borderColor: string;
 		communityEnabled: boolean;
 		leaderboardEnabled: boolean;
 		leaderboardMode: 'player' | 'creator';
+		nonGlobalRecordsEnabled: boolean;
 		levelSubmissionEnabled: boolean;
 		staffListEnabled: boolean;
 		faviconUrl: string;
@@ -497,12 +501,14 @@
 	let editForm = {
 		title: '',
 		description: '',
+		overview: '',
 		backgroundColor: '',
 		bannerUrl: '',
 		borderColor: '',
 		communityEnabled: true,
 		leaderboardEnabled: true,
 		leaderboardMode: 'player' as 'player' | 'creator',
+		nonGlobalRecordsEnabled: false,
 		levelSubmissionEnabled: false,
 		staffListEnabled: true,
 		faviconUrl: '',
@@ -979,12 +985,14 @@
 
 		editForm.title = list.title;
 		editForm.description = list.description;
+		editForm.overview = list.overview || '';
 		editForm.backgroundColor = list.backgroundColor || '';
 		editForm.bannerUrl = list.bannerUrl || '';
 		editForm.borderColor = list.borderColor || '';
 		editForm.communityEnabled = list.communityEnabled;
 		editForm.leaderboardEnabled = list.leaderboardEnabled ?? true;
 		editForm.leaderboardMode = list.leaderboardMode === 'creator' ? 'creator' : 'player';
+		editForm.nonGlobalRecordsEnabled = list.nonGlobalRecordsEnabled ?? false;
 		editForm.levelSubmissionEnabled = list.levelSubmissionEnabled ?? false;
 		editForm.staffListEnabled = list.staffListEnabled ?? true;
 		editForm.faviconUrl = list.faviconUrl || '';
@@ -1043,12 +1051,14 @@
 		return {
 			title: currentList.title,
 			description: currentList.description,
+			overview: currentList.overview || '',
 			backgroundColor: currentList.backgroundColor || '',
 			bannerUrl: currentList.bannerUrl || '',
 			borderColor: currentList.borderColor || '',
 			communityEnabled: currentList.communityEnabled,
 			leaderboardEnabled: currentList.leaderboardEnabled ?? true,
 			leaderboardMode: currentList.leaderboardMode === 'creator' ? 'creator' : 'player',
+			nonGlobalRecordsEnabled: currentList.nonGlobalRecordsEnabled ?? false,
 			levelSubmissionEnabled: currentList.levelSubmissionEnabled ?? false,
 			staffListEnabled: currentList.staffListEnabled ?? true,
 			faviconUrl: currentList.faviconUrl || '',
@@ -1078,12 +1088,14 @@
 		return {
 			title: currentForm.title,
 			description: currentForm.description,
+			overview: currentForm.overview,
 			backgroundColor: currentForm.backgroundColor,
 			bannerUrl: currentForm.bannerUrl,
 			borderColor: currentForm.borderColor,
 			communityEnabled: currentForm.communityEnabled,
 			leaderboardEnabled: currentForm.leaderboardEnabled,
 			leaderboardMode: currentForm.leaderboardMode,
+			nonGlobalRecordsEnabled: currentForm.nonGlobalRecordsEnabled,
 			levelSubmissionEnabled: currentForm.levelSubmissionEnabled,
 			staffListEnabled: currentForm.staffListEnabled,
 			faviconUrl: currentForm.faviconUrl,
@@ -2503,12 +2515,14 @@
 		return {
 			title: editForm.title,
 			description: editForm.description,
+			overview: editForm.overview,
 			backgroundColor: editForm.backgroundColor,
 			bannerUrl: editForm.bannerUrl,
 			borderColor: editForm.borderColor,
 			communityEnabled: editForm.communityEnabled,
 			leaderboardEnabled: editForm.leaderboardEnabled,
 			leaderboardMode: editForm.leaderboardMode,
+			nonGlobalRecordsEnabled: editForm.nonGlobalRecordsEnabled,
 			levelSubmissionEnabled: editForm.levelSubmissionEnabled,
 			staffListEnabled: editForm.staffListEnabled,
 			faviconUrl: editForm.faviconUrl,

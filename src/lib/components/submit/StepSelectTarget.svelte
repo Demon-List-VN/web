@@ -1,0 +1,528 @@
+<script lang="ts">
+	import { locale } from 'svelte-i18n';
+	import { CheckCircle2, CircleSlash, ExternalLink } from 'lucide-svelte';
+
+	type RecordFilterPlatform = 'any' | 'pc' | 'mobile';
+	type RecordFilterAcceptanceStatus = 'manual' | 'auto' | 'any';
+	type SubmitMobileOption = { value: boolean; label: string; } | null;
+	type ReviewFilterCheck = {
+		label: string;
+		matched: boolean;
+	};
+	type ReviewListEntry = {
+		id: number;
+		slug?: string | null;
+		title: string;
+		description?: string;
+		mode: 'rating' | 'top';
+		isPlatformer: boolean;
+		isOfficial?: boolean;
+		nonGlobalRecordsEnabled?: boolean;
+		ownerData?: any | null;
+		eligible?: boolean | null;
+		recordFilterPlatform?: RecordFilterPlatform | null;
+		recordFilterMinRefreshRate?: number | null;
+		recordFilterMaxRefreshRate?: number | null;
+		recordFilterAcceptanceStatus?: RecordFilterAcceptanceStatus | null;
+		recordFilterManualAcceptanceOnly?: boolean | null;
+		item?: {
+			position?: number | null;
+			rating?: number | null;
+			minProgress?: number | null;
+		} | null;
+	};
+	type ReviewedListEntry = ReviewListEntry & {
+		filterChecks: ReviewFilterCheck[];
+		acceptanceStatus: RecordFilterAcceptanceStatus;
+	};
+
+	export let target: number | null = null;
+	export let lists: ReviewListEntry[] = [];
+	export let loading = false;
+	export let errorMessage = '';
+	export let refreshRate = '';
+	export let mobile: SubmitMobileOption = null;
+
+	function t(vi: string, en: string) {
+		return $locale == 'vi' ? vi : en;
+	}
+
+	function getListHref(list: ReviewListEntry) {
+		return `/lists/${list.slug || list.id}`;
+	}
+
+	function getOwnerName(list: ReviewListEntry) {
+		return list.ownerData?.name || null;
+	}
+
+	function getListTypeLabel(list: ReviewListEntry) {
+		return list.isPlatformer ? 'Platformer' : 'Classic';
+	}
+
+	function getAcceptanceStatus(
+		list: ReviewListEntry
+	): RecordFilterAcceptanceStatus {
+		const status = list.recordFilterAcceptanceStatus;
+
+		if (status === 'auto' || status === 'any' || status === 'manual') {
+			return status;
+		}
+
+		return list.recordFilterManualAcceptanceOnly === false ? 'any' : 'manual';
+	}
+
+	function formatAcceptanceStatus(status: RecordFilterAcceptanceStatus) {
+		if (status === 'auto') {
+			return t('Chưa xác minh', 'Unverified only');
+		}
+
+		if (status === 'any') {
+			return t('Đã xác minh hoặc chưa xác minh', 'Verified or unverified');
+		}
+
+		return t('Đã xác minh', 'Verified only');
+	}
+
+	function formatPlatformFilter(platform: RecordFilterPlatform) {
+		if (platform === 'mobile') {
+			return t('Chỉ Mobile', 'Mobile only');
+		}
+
+		if (platform === 'pc') {
+			return t('Chỉ PC', 'PC only');
+		}
+
+		return t('Mọi nền tảng', 'Any platform');
+	}
+
+	function buildFilterChecks(list: ReviewListEntry) {
+		const checks: ReviewFilterCheck[] = [];
+		const platform = list.recordFilterPlatform;
+		const numericRefreshRate = Number(refreshRate);
+		const hasRefreshRate = Number.isFinite(numericRefreshRate);
+
+		if (platform === 'pc' || platform === 'mobile') {
+			checks.push({
+				label: formatPlatformFilter(platform),
+				matched: mobile != null
+					? platform === 'mobile' ? mobile.value : !mobile.value
+					: false
+			});
+		}
+
+		if (
+			Number.isInteger(list.recordFilterMinRefreshRate)
+			&& Number(list.recordFilterMinRefreshRate) > 0
+		) {
+			const minRefreshRate = Number(list.recordFilterMinRefreshRate);
+			checks.push({
+				label: `${t('Tối thiểu', 'Min')} ${minRefreshRate} FPS`,
+				matched: hasRefreshRate
+					? numericRefreshRate >= minRefreshRate
+					: false
+			});
+		}
+
+		if (
+			Number.isInteger(list.recordFilterMaxRefreshRate)
+			&& Number(list.recordFilterMaxRefreshRate) > 0
+		) {
+			const maxRefreshRate = Number(list.recordFilterMaxRefreshRate);
+			checks.push({
+				label: `${t('Tối đa', 'Max')} ${maxRefreshRate} FPS`,
+				matched: hasRefreshRate
+					? numericRefreshRate <= maxRefreshRate
+					: false
+			});
+		}
+
+		return checks;
+	}
+
+	function canTargetList(list: ReviewedListEntry) {
+		return !list.isOfficial
+			&& list.nonGlobalRecordsEnabled === true
+			&& Boolean(list.eligible)
+			&& list.filterChecks.every((filter) => filter.matched);
+	}
+
+	function getUnavailableReason(list: ReviewedListEntry) {
+		if (!list.nonGlobalRecordsEnabled) {
+			return t('chỉ nhận record global', 'global records only');
+		}
+
+		if (!list.eligible) {
+			return t('chưa đạt ngưỡng', 'threshold not met');
+		}
+
+		return t('không khớp bộ lọc', 'filters not matched');
+	}
+
+	$: reviewedLists = [...lists]
+		.map((list) => ({
+			...list,
+			filterChecks: buildFilterChecks(list),
+			acceptanceStatus: getAcceptanceStatus(list)
+		}))
+		.sort((left, right) => {
+			const rightTargetable = canTargetList(right) ? 1 : 0;
+			const leftTargetable = canTargetList(left) ? 1 : 0;
+
+			if (rightTargetable !== leftTargetable) {
+				return rightTargetable - leftTargetable;
+			}
+
+			return left.title.localeCompare(right.title);
+		}) as ReviewedListEntry[];
+	$: customLists = reviewedLists.filter((list) => !list.isOfficial);
+</script>
+
+<div class="target-layout">
+  <section class="target-panel">
+    <div class="target-header">
+      <h3>{t('Chọn phạm vi record', 'Choose record scope')}</h3>
+      <p>
+        {
+          t(
+              'Record global hợp lệ cho mọi list. Record riêng chỉ hợp lệ cho custom list đã chọn.',
+              'A global record is valid for every list. A list-only record is valid only for the selected custom list.'
+          )
+        }
+      </p>
+    </div>
+
+    <div class="target-field">
+      <label for="record-target">{t('List đích', 'Target list')}</label>
+      <select id="record-target" bind:value={target} disabled={loading}>
+        <option value={null}>{t('Global — mọi list', 'Global — every list')}</option>
+        {#each customLists as list}
+          <option value={list.id} disabled={!canTargetList(list)}>
+            {list.title}{canTargetList(list)
+              ? ''
+              : ` — ${getUnavailableReason(list)}`}
+          </option>
+        {/each}
+      </select>
+      <p>
+        {
+          t(
+              'Chỉ list đã bật record riêng, chứa level và khớp tiến trình, nền tảng, FPS mới có thể được chọn.',
+              'Only lists accepting list-only records and matching the level, progress, platform, and FPS can be selected.'
+          )
+        }
+      </p>
+    </div>
+  </section>
+
+  <section class="target-panel">
+    <div class="target-header">
+      <h3>{t('Đối chiếu custom list', 'Custom-list eligibility')}</h3>
+      <p>
+        {
+          t(
+              'Kiểm tra list nào có thể nhận record riêng này trước khi tiếp tục.',
+              'Check which lists can accept this list-only record before continuing.'
+          )
+        }
+      </p>
+    </div>
+
+    {#if loading}
+      <p class="target-status">
+        {t('Đang tải các list liên quan...', 'Loading matching lists...')}
+      </p>
+    {:else if errorMessage}
+      <p class="target-status error">{errorMessage}</p>
+    {:else if customLists.length > 0}
+      <div class="target-list-grid">
+        {#each customLists as list}
+          <a
+            class="target-list-card"
+            href={getListHref(list)}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <div class="target-list-top">
+              <div>
+                <div class="target-list-title-row">
+                  <h4>{list.title}</h4>
+                  {#if list.isOfficial}
+                    <span class="list-chip official">{
+                      t('Chính thức', 'Official')
+                    }</span>
+                  {:else}
+                    <span
+                      class="list-chip"
+                      class:matched={list.nonGlobalRecordsEnabled === true}
+                      class:unmatched={!list.nonGlobalRecordsEnabled}
+                    >
+                      {list.nonGlobalRecordsEnabled
+                        ? t('Nhận record riêng', 'List-only enabled')
+                        : t('Chỉ record global', 'Global only')}
+                    </span>
+                  {/if}
+                  <span
+                    class="list-chip"
+                    class:matched={Boolean(list.eligible)}
+                    class:unmatched={!list.eligible}
+                  >
+                    {list.eligible
+                      ? t('Đạt ngưỡng list', 'List threshold met')
+                      : t('Chưa đạt ngưỡng list', 'List threshold not met')}
+                  </span>
+                </div>
+                <p class="target-list-meta">
+                  {getListTypeLabel(list)}
+                  {#if getOwnerName(list)}
+                    <span>{t(' · tạo bởi ', ' · by ')}{getOwnerName(list)}</span>
+                  {/if}
+                </p>
+              </div>
+              <span class="target-list-link-icon"><ExternalLink size={14} /></span>
+            </div>
+
+            {#if list.description}
+              <p class="target-list-description">{list.description}</p>
+            {/if}
+
+            <div class="filter-block">
+              <p class="filter-label">
+                {t('Bộ lọc khớp với thông tin submit', 'Filters checked against your submit')}
+              </p>
+              {#if list.filterChecks.length > 0}
+                <div class="filter-chip-row">
+                  {#each list.filterChecks as filter}
+                    <span
+                      class="filter-chip"
+                      class:matched={filter.matched}
+                      class:unmatched={!filter.matched}
+                    >
+                      {#if filter.matched}
+                        <CheckCircle2 size={12} />
+                      {:else}
+                        <CircleSlash size={12} />
+                      {/if}
+                      {filter.label}
+                    </span>
+                  {/each}
+                </div>
+              {:else}
+                <p class="filter-empty">
+                  {t(
+                    'List này không có bộ lọc riêng về nền tảng hoặc FPS.',
+                    'This list has no platform- or FPS-specific filters.'
+                  )}
+                </p>
+              {/if}
+            </div>
+
+            <p class="acceptance-note">
+              {t('Chế độ chấp nhận', 'Acceptance mode')}: {
+                formatAcceptanceStatus(list.acceptanceStatus)
+              }
+            </p>
+
+            <div class="target-list-chips">
+              {#if list.item?.position != null}
+                <span class="list-chip">#{list.item.position}</span>
+              {/if}
+              {#if list.item?.rating != null}
+                <span class="list-chip">{list.item.rating}pt</span>
+              {/if}
+            </div>
+          </a>
+        {/each}
+      </div>
+    {:else}
+      <p class="target-status">
+        {t(
+          'Không tìm thấy custom list công khai nào chứa level này.',
+          'No public custom lists currently contain this level.'
+        )}
+      </p>
+    {/if}
+  </section>
+</div>
+
+<style lang="scss">
+.target-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.target-panel {
+  padding: 14px 16px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  background: hsl(var(--muted) / 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.target-header {
+  h3 {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  p {
+    margin-top: 4px;
+    font-size: 12px;
+    line-height: 1.45;
+    color: hsl(var(--muted-foreground));
+  }
+}
+
+.target-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+
+  label {
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  select {
+    width: 100%;
+    min-height: 40px;
+    padding: 0 11px;
+    border: 1px solid hsl(var(--border));
+    border-radius: 9px;
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-size: 13px;
+  }
+
+  p {
+    font-size: 11px;
+    line-height: 1.45;
+    color: hsl(var(--muted-foreground));
+  }
+}
+
+.target-status {
+  font-size: 13px;
+  line-height: 1.45;
+  color: hsl(var(--muted-foreground));
+}
+
+.target-status.error {
+  color: hsl(var(--destructive));
+}
+
+.target-list-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.target-list-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--background));
+  text-decoration: none;
+  color: inherit;
+  transition:
+    border-color 0.15s ease,
+    transform 0.15s ease,
+    background 0.15s ease;
+
+  &:hover {
+    border-color: hsl(var(--primary) / 0.4);
+    background: hsl(var(--primary) / 0.04);
+    transform: translateY(-1px);
+  }
+}
+
+.target-list-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.target-list-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+
+  h4 {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+}
+
+.target-list-meta,
+.target-list-description,
+.acceptance-note,
+.filter-empty {
+  font-size: 12px;
+  line-height: 1.45;
+  color: hsl(var(--muted-foreground));
+}
+
+.target-list-link-icon {
+  display: inline-flex;
+  color: hsl(var(--muted-foreground));
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.filter-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filter-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: hsl(var(--muted-foreground));
+}
+
+.filter-chip-row,
+.target-list-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.filter-chip,
+.list-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid hsl(var(--border));
+  font-size: 11px;
+  font-weight: 600;
+  background: hsl(var(--muted) / 0.25);
+  color: hsl(var(--foreground));
+}
+
+.filter-chip.matched,
+.list-chip.matched,
+.list-chip.official {
+  border-color: hsl(var(--primary) / 0.35);
+  background: hsl(var(--primary) / 0.1);
+  color: hsl(var(--primary));
+}
+
+.filter-chip.unmatched,
+.list-chip.unmatched {
+  border-color: hsl(var(--destructive) / 0.3);
+  background: hsl(var(--destructive) / 0.08);
+  color: hsl(var(--destructive));
+}
+</style>

@@ -95,12 +95,14 @@
 		owner: string;
 		title: string;
 		description: string;
+		overview: string;
 		backgroundColor?: string | null;
 		bannerUrl?: string | null;
 		borderColor?: string | null;
 		communityEnabled: boolean;
 		leaderboardEnabled?: boolean;
 		leaderboardMode?: 'player' | 'creator';
+		nonGlobalRecordsEnabled?: boolean;
 		faviconUrl?: string | null;
 		isBanned: boolean;
 		isMirror?: boolean;
@@ -1535,10 +1537,15 @@
 			<div class="heroTop">
 				<div class="heroText">
 					<h1>{list.title}</h1>
+					{#if list.description?.trim()}
+						<p class="heroDesc">{list.description}</p>
+					{:else}
+						<p class="heroDesc muted">{$_('custom_lists.detail.no_description')}</p>
+					{/if}
 				</div>
-				{#if canCrawlMirror || canStarList || ($user.loggedIn && !list.isOfficial && !list.isBanned && list.visibility !== 'private')}
+				{#if canCrawlMirror || canStarList || (list.nonGlobalRecordsEnabled && !list.isOfficial && !list.isBanned && list.visibility !== 'private')}
 					<div class="heroActions">
-						{#if $user.loggedIn && !list.isOfficial && !list.isBanned && list.visibility !== 'private'}
+						{#if list.nonGlobalRecordsEnabled && !list.isOfficial && !list.isBanned && list.visibility !== 'private'}
 							<Button
 								variant="outline"
 								size="sm"
@@ -1680,13 +1687,13 @@
 							<h2>{$_('custom_lists.detail.overview.heading')}</h2>
 						</div>
 					</div>
-					{#if list.description?.trim()}
+					{#if list.overview?.trim()}
 						<div class="overviewMarkdown">
-							<Markdown content={list.description} />
+							<Markdown content={list.overview} />
 						</div>
 					{:else}
 						<div class="emptyState slim overviewEmpty">
-							<p>{$_('custom_lists.detail.no_description')}</p>
+							<p>{$_('custom_lists.detail.overview.empty')}</p>
 						</div>
 					{/if}
 				</section>
@@ -2585,6 +2592,19 @@
 		font-size: 1.5rem;
 		font-weight: 700;
 		letter-spacing: 0;
+	}
+
+	.heroDesc {
+		margin: 6px 0 0;
+		font-size: 0.95rem;
+		color: var(--custom-surface-foreground, hsl(var(--foreground)));
+		line-height: 1.5;
+		white-space: pre-wrap;
+	}
+
+	.heroDesc.muted {
+		color: var(--custom-surface-muted, hsl(var(--muted-foreground)));
+		font-style: italic;
 	}
 
 	:global(.heroCrawlButton) {

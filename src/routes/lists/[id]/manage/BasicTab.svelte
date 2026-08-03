@@ -77,10 +77,22 @@
         <Textarea
           id="list-description"
           bind:value={editForm.description}
-          rows={8}
+          rows={3}
           maxlength={2000}
         />
         <p class="hint">{$_('custom_lists.detail.edit.description_hint')}</p>
+      </div>
+      <div class="field">
+        <label for="list-overview">{
+          $_('custom_lists.detail.edit.overview_label')
+        }</label>
+        <Textarea
+          id="list-overview"
+          bind:value={editForm.overview}
+          rows={8}
+          maxlength={2000}
+        />
+        <p class="hint">{$_('custom_lists.detail.edit.overview_hint')}</p>
       </div>
       <div class="field">
         <span class="fieldLabel">{
@@ -166,6 +178,27 @@
             <Switch
               id="list-leaderboard-enabled"
               bind:checked={editForm.leaderboardEnabled}
+            />
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <div class="switchRow">
+          <div>
+            <label for="list-non-global-records-enabled">{
+              $_('custom_lists.detail.edit.non_global_records_label')
+            }</label>
+            <p class="hint">
+              {$_('custom_lists.detail.edit.non_global_records_hint')}
+            </p>
+          </div>
+          <div class="switchControl">
+            <span class="switchLabel">{
+              editForm.nonGlobalRecordsEnabled ? $_('general.yes') : $_('general.no')
+            }</span>
+            <Switch
+              id="list-non-global-records-enabled"
+              bind:checked={editForm.nonGlobalRecordsEnabled}
             />
           </div>
         </div>
