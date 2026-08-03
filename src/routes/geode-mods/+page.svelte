@@ -86,7 +86,7 @@
 </script>
 
 <svelte:head>
-  <title>{$_('geode_mods.title')} - GDVN</title>
+  <title>{$_('geode_mods.title')} - GDListHub</title>
   <meta name="description" content={$_('geode_mods.description')} />
 </svelte:head>
 
@@ -125,11 +125,10 @@
       </div>
     </div>
 
-    <div class="packagePanel" aria-label="GDVN Geode package">
-      <img src="/logo.png" alt="GDVN logo" />
+    <div class="packagePanel" aria-label="GDListHub Geode package">
       <div>
         <span>nampe.gdvn.geode</span>
-        <strong>GDVN</strong>
+        <strong>GDListHub</strong>
       </div>
       <a href={releaseUrl} target="_blank" rel="noopener noreferrer">
         {$_('geode_mods.release_link')}
@@ -321,12 +320,6 @@ h1 {
   justify-content: space-between;
   padding: 28px;
   overflow: hidden;
-}
-
-.packagePanel img {
-  width: 124px;
-  height: auto;
-  filter: invert(var(--inverted));
 }
 
 .packagePanel div {

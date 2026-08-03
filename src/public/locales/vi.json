@@ -36,8 +36,8 @@
         "verified": "Đã xác minh"
     },
     "head": {
-        "site_name": "Geometry Dash Việt Nam",
-        "site_short_name": "GDVN",
+        "site_name": "GDListHub",
+        "site_short_name": "GDListHub",
         "labels": {
             "by": "bởi",
             "classic_rating": "Điểm Classic",
@@ -94,25 +94,25 @@
                 "custom": "Danh sách Geometry Dash cộng đồng"
             },
             "index_descriptions": {
-                "official": "Xem các danh sách Geometry Dash chính thức của GDVN gồm Classic, Challenge, Platformer và Featured.",
-                "verified": "Xem các danh sách Geometry Dash đã được đội ngũ GDVN xác minh cho cộng đồng.",
-                "mirror": "Xem các danh sách level Geometry Dash được mirror và lưu trữ trên GDVN.",
-                "custom": "Xem các danh sách Geometry Dash và bộ sưu tập level do cộng đồng tạo trên GDVN."
+                "official": "Xem các danh sách Geometry Dash chính thức của GDListHub gồm Classic, Challenge, Platformer và Featured.",
+                "verified": "Xem các danh sách Geometry Dash đã được đội ngũ GDListHub xác minh cho cộng đồng.",
+                "mirror": "Xem các danh sách level Geometry Dash được mirror và lưu trữ trên GDListHub.",
+                "custom": "Xem các danh sách Geometry Dash và bộ sưu tập level do cộng đồng tạo trên GDListHub."
             },
             "official_descriptions": {
-                "dl": "Xem GDVN Classic List chính thức cho các demon Geometry Dash được xếp hạng, record, điểm và tiến độ người chơi.",
-                "pl": "Xem GDVN Platformer List chính thức cho các level platformer Geometry Dash được xếp hạng, record, điểm và tiến độ người chơi.",
-                "cl": "Xem GDVN Challenge List chính thức cho các challenge Geometry Dash, thứ hạng, record và tiến độ người chơi.",
-                "fl": "Xem GDVN Featured List chính thức cho các level Geometry Dash nổi bật, record, điểm và tiến độ người chơi."
+                "dl": "Xem GDListHub Classic List chính thức cho các demon Geometry Dash được xếp hạng, record, điểm và tiến độ người chơi.",
+                "pl": "Xem GDListHub Platformer List chính thức cho các level platformer Geometry Dash được xếp hạng, record, điểm và tiến độ người chơi.",
+                "cl": "Xem GDListHub Challenge List chính thức cho các challenge Geometry Dash, thứ hạng, record và tiến độ người chơi.",
+                "fl": "Xem GDListHub Featured List chính thức cho các level Geometry Dash nổi bật, record, điểm và tiến độ người chơi."
             },
-            "detail_description": "{title} trên GDVN với {count} level Geometry Dash, record, thứ hạng và tiến độ người chơi."
+            "detail_description": "{title} trên GDListHub với {count} level Geometry Dash, record, thứ hạng và tiến độ người chơi."
         },
         "descriptions": {
-            "homepage": "Website dành cho cộng đồng Geometry Dash Việt Nam",
-            "discord": "Tham gia Discord Geometry Dash Việt Nam, thêm GDVN bot vào server của bạn và dùng dữ liệu list mới nhất ngay trong chat.",
-            "community": "Chia sẻ, thảo luận và kết nối với cộng đồng Geometry Dash Việt Nam",
+            "homepage": "Website dành cho cộng đồng GDListHub",
+            "discord": "Tham gia Discord GDListHub, thêm GDListHub bot vào server của bạn và dùng dữ liệu list mới nhất ngay trong chat.",
+            "community": "Chia sẻ, thảo luận và kết nối với cộng đồng GDListHub",
             "lists": "Xem các danh sách công khai và quản lý bộ sưu tập level của bạn.",
-            "wiki": "Khám phá Wiki của Geometry Dash Việt Nam - hướng dẫn, luật lệ, tin tức và cập nhật"
+            "wiki": "Khám phá Wiki của GDListHub - hướng dẫn, luật lệ, tin tức và cập nhật"
         }
     },
     "acceptance": {
@@ -218,24 +218,24 @@
         "community": "Cộng đồng"
     },
     "geode_mods": {
-        "title": "GDVN Geode Mod",
-        "kicker": "Geometry Dash VN trong game",
-        "description": "Cài mod GDVN để xem thông tin list, tham gia sự kiện, chơi 1v1 Versus và dùng Battle Pass ngay trong Geometry Dash.",
+        "title": "GDListHub Geode Mod",
+        "kicker": "GDListHub trong game",
+        "description": "Cài mod GDListHub để xem thông tin list, tham gia sự kiện, chơi 1v1 Versus và dùng Battle Pass ngay trong Geometry Dash.",
         "download": "Tải nampe.gdvn.geode",
         "geode": "Cài Geode",
         "version_note": "Luôn tải bản phát hành mới nhất",
         "features_title": "Tính năng chính",
         "install_title": "Cách cài đặt",
-        "install_hint": "Hãy khởi động lại Geometry Dash sau khi cài nếu GDVN chưa xuất hiện ngay.",
+        "install_hint": "Hãy khởi động lại Geometry Dash sau khi cài nếu GDListHub chưa xuất hiện ngay.",
         "release_link": "Xem trang phát hành",
-        "popup_title": "Cài GDVN Geode Mod",
+        "popup_title": "Cài GDListHub Geode Mod",
         "popup_description": "Quá trình tải đã bắt đầu. Hãy cài file vừa tải từ Geode bên trong Geometry Dash.",
         "close": "Đóng",
         "step_1_image_alt": "Ảnh hướng dẫn cài từ file trong Geode",
         "features": {
             "list": {
                 "title": "Thông tin list trong game",
-                "description": "Xem trạng thái level, xếp hạng và dữ liệu GDVN mà không cần rời game."
+                "description": "Xem trạng thái level, xếp hạng và dữ liệu GDListHub mà không cần rời game."
             },
             "activities": {
                 "title": "Sự kiện, 1v1 Versus, Battle Pass",
@@ -243,7 +243,7 @@
             },
             "otp": {
                 "title": "Đăng nhập bằng OTP",
-                "description": "Liên kết tài khoản GDVN an toàn bằng mã 6 số trong mod."
+                "description": "Liên kết tài khoản GDListHub an toàn bằng mã 6 số trong mod."
             }
         },
         "steps": {
@@ -256,14 +256,14 @@
         "arena": "1v1 Versus",
         "lobby_title": "Sảnh 1v1 Versus",
         "matches_title": "Trận 1v1 Versus",
-        "play_meta_description": "Vào sảnh GDVN 1v1 Versus để ghép trận PvP Geometry Dash, mời riêng, đấu xếp hạng Elo và xem trận trực tiếp.",
-        "match_meta_description": "Theo dõi trận GDVN 1v1 Versus với tiến độ PvP Geometry Dash trực tiếp, chat, thông tin level và kết quả xếp hạng.",
+        "play_meta_description": "Vào sảnh GDListHub 1v1 Versus để ghép trận PvP Geometry Dash, mời riêng, đấu xếp hạng Elo và xem trận trực tiếp.",
+        "match_meta_description": "Theo dõi trận GDListHub 1v1 Versus với tiến độ PvP Geometry Dash trực tiếp, chat, thông tin level và kết quả xếp hạng.",
         "landing": {
-            "meta_title": "1v1 Versus - Đấu PvP Geometry Dash | GDVN",
-            "meta_description": "Chơi GDVN 1v1 Versus cho PvP Geometry Dash: ghép trận 1v1 xếp hạng, lời mời riêng, tiến độ trực tiếp, Elo và đua tuần.",
+            "meta_title": "1v1 Versus - Đấu PvP Geometry Dash | GDListHub",
+            "meta_description": "Chơi GDListHub 1v1 Versus cho PvP Geometry Dash: ghép trận 1v1 xếp hạng, lời mời riêng, tiến độ trực tiếp, Elo và đua tuần.",
             "eyebrow": "PvP Geometry Dash 1v1",
             "title": "1v1 Versus",
-            "description": "Ghép trận PvP Geometry Dash 1v1 xếp hạng, mời đối thủ trực tiếp, đấu trên cùng một challenge level và leo bảng Elo GDVN Versus.",
+            "description": "Ghép trận PvP Geometry Dash 1v1 xếp hạng, mời đối thủ trực tiếp, đấu trên cùng một challenge level và leo bảng Elo GDListHub Versus.",
             "primary_cta": "Chơi 1v1 Versus",
             "secondary_cta": "Xem xếp hạng",
             "preview_you": "Bạn",
@@ -297,8 +297,8 @@
             "how_title": "Bắt đầu một trận versus Geometry Dash trong vài phút",
             "steps": {
                 "install": {
-                    "title": "Cài GDVN Geode mod",
-                    "description": "Mod kết nối tiến độ Geometry Dash của bạn với GDVN để 1v1 Versus theo dõi trận trực tiếp."
+                    "title": "Cài GDListHub Geode mod",
+                    "description": "Mod kết nối tiến độ Geometry Dash của bạn với GDListHub để 1v1 Versus theo dõi trận trực tiếp."
                 },
                 "queue": {
                     "title": "Ghép xếp hạng hoặc gửi lời mời",
@@ -309,12 +309,12 @@
                     "description": "Hai người chơi vào cùng một challenge, tiến độ cập nhật trực tiếp và kết quả được lưu vào lịch sử Versus."
                 }
             },
-            "mod_title": "Cần cài GDVN Geode mod",
-            "mod_description": "Hãy cài GDVN Geode mod mới nhất trước khi chơi 1v1 Versus trong Geometry Dash.",
+            "mod_title": "Cần cài GDListHub Geode mod",
+            "mod_description": "Hãy cài GDListHub Geode mod mới nhất trước khi chơi 1v1 Versus trong Geometry Dash.",
             "support": {
-                "eyebrow": "Ủng hộ GDVN",
+                "eyebrow": "Ủng hộ GDListHub",
                 "title": "Giữ cho 1v1 Versus luôn miễn phí",
-                "description": "GDVN Versus hoạt động được là nhờ sự ủng hộ của cộng đồng. Trở thành Supporter giúp duy trì máy chủ ghép trận, và bạn cũng nhận thêm vài đặc quyền nho nhỏ.",
+                "description": "GDListHub Versus hoạt động được là nhờ sự ủng hộ của cộng đồng. Trở thành Supporter giúp duy trì máy chủ ghép trận, và bạn cũng nhận thêm vài đặc quyền nho nhỏ.",
                 "benefit_ad_free": "Chơi 1v1 Versus hoàn toàn không quảng cáo",
                 "benefit_badge": "Huy hiệu Supporter có màu cạnh tên bạn trong trận và trên bảng xếp hạng",
                 "benefit_servers": "Trực tiếp góp phần duy trì máy chủ ghép trận 1v1",
@@ -356,8 +356,8 @@
             "progress": "{progress}% tới cấp tiếp theo"
         },
         "geode_alert": {
-            "title": "Cần cài GDVN Geode mod",
-            "description": "Để chơi 1v1 Versus, hãy cài GDVN Geode mod",
+            "title": "Cần cài GDListHub Geode mod",
+            "description": "Để chơi 1v1 Versus, hãy cài GDListHub Geode mod",
             "release_page": "Trang phát hành",
             "dismiss": "Đóng"
         },
@@ -472,63 +472,63 @@
             "supporter_contextual": {
                 "none_vs_none": {
                     "win": [
-                        "🔥 Bạn thắng. Website Geometry Dash VN vẫn đang hoạt động nhờ sự ủng hộ từ cộng đồng.",
+                        "🔥 Bạn thắng. Website GDListHub vẫn đang hoạt động nhờ sự ủng hộ từ cộng đồng.",
                         "⚔️ Chiến thắng thuộc về bạn. Demon List VN luôn trân trọng mọi lượt queue của các bạn.",
                         "🗿 Bạn thắng trận. Cảm ơn những người đã và đang âm thầm giữ lửa cho sân chơi này.",
                         "🤝 Một trận đấu hay. Website này vẫn đang cố gắng tốt lên từng ngày.",
-                        "⭐ Kết quả đẹp. Cảm ơn bạn đã cùng xây dựng cộng đồng Geometry Dash VN."
+                        "⭐ Kết quả đẹp. Cảm ơn bạn đã cùng xây dựng cộng đồng GDListHub."
                     ],
                     "lose": [
                         "💀 Bạn thua. May là website vẫn còn hoạt động tốt để bạn phục thù ngay.",
                         "⚔️ Trận này chưa thuộc về bạn. Demon List VN vẫn đang chờ bạn ở ván tiếp theo.",
-                        "🗿 Kết quả hơi buồn. Nhưng cảm ơn bạn đã là một phần của Geometry Dash VN.",
+                        "🗿 Kết quả hơi buồn. Nhưng cảm ơn bạn đã là một phần của GDListHub.",
                         "🤝 Queue lại nhé? Sự hiện diện của bạn là động lực để website tiếp tục duy trì.",
                         "⭐ Đừng bỏ cuộc. Website này luôn rộng mở nhờ sự đóng góp của cả cộng đồng."
                     ]
                 },
                 "none_vs_supporter": {
                     "win": [
-                        "🔥 Bạn thắng. Cảm ơn đối thủ vì đã góp phần giúp Geometry Dash VN duy trì ổn định.",
+                        "🔥 Bạn thắng. Cảm ơn đối thủ vì đã góp phần giúp GDListHub duy trì ổn định.",
                         "⚔️ Chiến thắng thuộc về bạn. Thật tuyệt khi thấy sự giao lưu giữa các thành viên cộng đồng.",
                         "⭐ Một trận đấu chất lượng với một người bạn đang đồng hành cùng Demon List VN.",
                         "🗿 Kết quả thuộc về bạn. Sự đóng góp của đối thủ giúp website có thêm nhiều tính năng mới.",
-                        "🤝 Cảm ơn cả hai vì một trận đấu đẹp trên nền tảng Geometry Dash VN."
+                        "🤝 Cảm ơn cả hai vì một trận đấu đẹp trên nền tảng GDListHub."
                     ],
                     "lose": [
                         "💀 Bạn thua. Đối thủ của bạn là một trong những người đang giúp website duy trì server.",
                         "⚔️ Trận này thuộc về đối thủ. Cảm ơn họ vì đã góp sức giữ lửa cho Demon List VN.",
                         "⭐ Một người bạn đang đồng hành cùng sự phát triển của website vừa giành chiến thắng.",
                         "🗿 Kết quả chưa ổn. Nhưng nhờ những người như đối thủ, website đang ngày càng ổn hơn.",
-                        "🤝 Trận đấu kết thúc. Cảm ơn sự đóng góp của đối thủ cho cộng đồng Geometry Dash VN."
+                        "🤝 Trận đấu kết thúc. Cảm ơn sự đóng góp của đối thủ cho cộng đồng GDListHub."
                     ]
                 },
                 "supporter_vs_none": {
                     "win": [
-                        "🔥 Bạn thắng. Cảm ơn bạn rất nhiều vì đã giúp Geometry Dash VN duy trì hoạt động.",
+                        "🔥 Bạn thắng. Cảm ơn bạn rất nhiều vì đã giúp GDListHub duy trì hoạt động.",
                         "⭐ Chiến thắng thuộc về bạn. Sự đồng hành của bạn là nền tảng cho sự phát triển của website.",
                         "⚔️ Bạn vừa thắng trận. Cảm ơn vì đã luôn ủng hộ Demon List VN.",
                         "👑 Kết quả đẹp cho một thành viên tích cực của cộng đồng.",
                         "🤝 Cảm ơn bạn đã giúp những trận đấu như thế này có thể diễn ra mỗi ngày."
                     ],
                     "lose": [
-                        "💀 Bạn thua. Nhưng sự hỗ trợ của bạn cho Geometry Dash VN vẫn luôn được trân trọng.",
+                        "💀 Bạn thua. Nhưng sự hỗ trợ của bạn cho GDListHub vẫn luôn được trân trọng.",
                         "⭐ Trận này chưa thuộc về bạn. Cảm ơn bạn vẫn luôn đồng hành cùng Demon List VN.",
                         "⚔️ Kết quả chưa đẹp. Nhưng đóng góp của bạn cho website thì luôn rất tuyệt vời.",
                         "🗿 Queue tiếp đi! Cảm ơn bạn vì đã giúp server luôn sẵn sàng cho mọi người.",
-                        "🤝 Thắng hay thua, Geometry Dash VN luôn biết ơn sự ủng hộ của bạn."
+                        "🤝 Thắng hay thua, GDListHub luôn biết ơn sự ủng hộ của bạn."
                     ]
                 },
                 "both_are_supporters": {
                     "win": [
                         "👑 Hai Supporter chạm trán! Bạn thắng. Muốn nổi bật hơn nữa? Thử khám phá các Tier cao hơn xem sao!",
-                        "🔥 Trận đấu đỉnh cao giữa những người chung tay giữ lửa cho Geometry Dash VN. Chiến thắng thuộc về bạn.",
+                        "🔥 Trận đấu đỉnh cao giữa những người chung tay giữ lửa cho GDListHub. Chiến thắng thuộc về bạn.",
                         "⭐ Bạn thắng trận. Nâng cấp Tier để mở khóa thêm hiệu ứng và đặc quyền độc quyền trên Demon List VN nhé.",
                         "⚔️ Cuộc gặp gỡ giữa hai người bạn đồng hành tích cực. Cảm ơn sự đóng góp của cả hai.",
                         "✨ Thắng đẹp! Trận đấu của bạn trông sẽ ngầu hơn rất nhiều nếu sở hữu các custom từ Tier cao hơn."
                     ],
                     "lose": [
                         "👑 Hai Supporter chạm trán! Trận này đối thủ tạm dẫn trước. Lên Tier cao hơn để lấy lại vị thế nào!",
-                        "💀 Kết quả chưa như ý, nhưng vị thế Supporter của bạn tại Geometry Dash VN luôn được trân trọng.",
+                        "💀 Kết quả chưa như ý, nhưng vị thế Supporter của bạn tại GDListHub luôn được trân trọng.",
                         "⭐ Trận đấu khép lại giữa hai người bạn tâm huyết. Thử lên Tier tiếp theo để mở khóa thêm nhiều quyền lợi mới nhé.",
                         "🗿 Queue tiếp phục thù thôi. Cảm ơn cả hai bạn đã cùng nhau giữ cho server luôn rực lửa.",
                         "✨ Thua keo này bày keo khác. Đầu tư thêm một chút vào Tier cao hơn để nhận thêm các đặc quyền tùy biến khung/tên xem sao?"
@@ -538,7 +538,7 @@
         },
         "supporter_strip": {
             "text": "Ngán quảng cáo? Tắt quảng cáo và mở khóa huy hiệu Supporter của bạn.",
-            "cta": "Ủng hộ GDVN"
+            "cta": "Ủng hộ GDListHub"
         },
         "resign": "Đầu hàng",
         "request_level_change": "Đổi level",
@@ -592,7 +592,7 @@
             }
         },
         "sign_in_title": "Đăng nhập để vào 1v1 Versus",
-        "sign_in_hint": "Ghép trận và lời mời 1v1 Versus dùng tài khoản GDVN của bạn.",
+        "sign_in_hint": "Ghép trận và lời mời 1v1 Versus dùng tài khoản GDListHub của bạn.",
         "options": "Tùy chọn",
         "summary": "Tổng quan",
         "current_elo": "Elo hiện tại",
@@ -1339,7 +1339,7 @@
         }
     },
     "inventory": {
-        "page_title": "Kho đồ - Geometry Dash Việt Nam",
+        "page_title": "Kho đồ - GDListHub",
         "title": "Kho đồ",
         "empty": "Không có vật phẩm trong kho.",
         "failed_load": "Tải kho đồ thất bại",
@@ -1625,7 +1625,7 @@
         "review": {
             "title": "Xem lại đơn hàng",
             "recipent": "Người nhận",
-            "caution": "Vui lòng không đóng cửa sổ thanh toán cho đến khi bạn được chuyển hướng trở lại Geometry Dash Việt Nam",
+            "caution": "Vui lòng không đóng cửa sổ thanh toán cho đến khi bạn được chuyển hướng trở lại GDListHub",
             "proceed": "Tiến hành thanh toán"
         }
     },
@@ -1718,7 +1718,7 @@
         "button": "Tìm kiếm",
         "placeholder": "Nhập và bấm Enter để tìm kiếm...",
         "no_result": "Không có kết quả",
-        "dlvn": "Levels từ Geometry Dash Việt Nam",
+        "dlvn": "Levels từ GDListHub",
         "gd": "Levels từ Geometry Dash",
         "players": "Người chơi"
     },
@@ -1757,7 +1757,7 @@
             "days": "ngày",
             "days_plural": "ngày",
             "recipent_clan": "Hội nhận",
-            "caution": "Vui lòng không đóng cửa sổ thanh toán cho đến khi bạn được chuyển hướng trở lại Geometry Dash Việt Nam",
+            "caution": "Vui lòng không đóng cửa sổ thanh toán cho đến khi bạn được chuyển hướng trở lại GDListHub",
             "proceed": "Tiến hành thanh toán"
         },
         "public": "Công khai",
@@ -2146,7 +2146,7 @@
         "level_feedback_promo": {
             "title": "Feedback Level",
             "price": "Từ 10,000đ",
-            "description": "Nhận góp ý deco rõ ràng từ reviewer của GDVN.",
+            "description": "Nhận góp ý deco rõ ràng từ reviewer của GDListHub.",
             "feature_category": "Review theo hạng mục bạn chọn",
             "feature_price": "Chỉ 5k VND cho mỗi 30 giây",
             "feature_discount": "Giảm 10,000đ cho lần đầu",
@@ -2178,7 +2178,7 @@
     },
     "community": {
         "title": "Cộng đồng",
-        "subtitle": "Chia sẻ, thảo luận và kết nối với cộng đồng Geometry Dash Việt Nam",
+        "subtitle": "Chia sẻ, thảo luận và kết nối với cộng đồng GDListHub",
         "hub_title": "Cộng đồng",
         "view_all": "Xem tất cả bài viết",
         "no_posts": "Chưa có bài viết nào. Hãy là người đầu tiên chia sẻ!",
@@ -2215,7 +2215,7 @@
             "post_type": "Loại",
             "post_target": "Đăng lên",
             "target_global": "Toàn cộng đồng",
-            "target_global_hint": "Chia sẻ với toàn bộ cộng đồng GDVN",
+            "target_global_hint": "Chia sẻ với toàn bộ cộng đồng GDListHub",
             "target_clan": "Bang hội",
             "target_clan_unavailable": "Tham gia bang hội để đăng bài",
             "target_list": "Danh sách",
@@ -2575,22 +2575,22 @@
         "store_button": "Xem cửa hàng của chúng tôi",
         "login_required": "Bạn phải đăng nhập trước khi có thể ủng hộ.",
         "alert": {
-            "title": "Ủng hộ Geometry Dash Việt Nam 💖",
+            "title": "Ủng hộ GDListHub 💖",
             "description": "Trở thành Supporter để ủng hộ và giúp DLVN phát triển hơn, đồng thời nhận các quyền lợi độc quyền!",
             "learn_more": "Tìm hiểu thêm"
         },
         "why_support": {
-            "title": "Tại sao bạn nên ủng hộ Geometry Dash Việt Nam",
+            "title": "Tại sao bạn nên ủng hộ GDListHub",
             "support_team": {
                 "title": "Ủng hộ đội ngũ",
-                "description": "Một đội ngũ nhỏ chỉ có một người phát triển và vận hành Geometry Dash Việt Nam. Sự ủng hộ của bạn mang lại động lực để anh ấy phát triển và duy trì trang web."
+                "description": "Một đội ngũ nhỏ chỉ có một người phát triển và vận hành GDListHub. Sự ủng hộ của bạn mang lại động lực để anh ấy phát triển và duy trì trang web."
             },
             "server_infrastructure": {
                 "title": "Hạ tầng máy chủ",
                 "description": "Sự đóng góp của bạn sẽ được dùng cho các máy chủ để vận hành trang web."
             },
             "self_sustaining": {
-                "title": "Giữ Geometry Dash Việt Nam tự duy trì",
+                "title": "Giữ GDListHub tự duy trì",
                 "description": "Sự đóng góp của bạn giúp trang web độc lập và hoàn toàn không phụ thuộc vào các nhà tài trợ bên ngoài."
             }
         },
@@ -2650,7 +2650,7 @@
             },
             "discord_bot": {
                 "title": "Vai trò Discord cộng đồng",
-                "description": "Đồng bộ vai trò supporter trên server Discord chính thức của GDVN."
+                "description": "Đồng bộ vai trò supporter trên server Discord chính thức của GDListHub."
             }
         },
         "decision": {
@@ -2658,7 +2658,7 @@
             "button": "Ủng hộ chúng tôi chỉ với 49.000₫/tháng"
         },
         "goals": {
-            "title": "Tiến độ gây quỹ GDVN Cup 2026",
+            "title": "Tiến độ gây quỹ GDListHub Cup 2026",
             "server_cost": "Chi phí máy chủ",
             "minecraft_server": "Máy chủ Minecraft",
             "edit_design_team": "Edit/Design Team",
@@ -2668,7 +2668,7 @@
             "hanoi_offline": "Optional: Offline Hà Nội"
         },
         "prize_pool": {
-            "title": "Prize Pool GDVN Cup 2026",
+            "title": "Prize Pool GDListHub Cup 2026",
             "note": "50% của {revenue} tổng doanh thu từ 01/07."
         },
         "tiers": {
@@ -2695,8 +2695,8 @@
         },
         "notes": {
             "title": "Lưu ý:",
-            "non_recurring": "Geometry Dash Việt Nam Supporter không tự động gia hạn.",
-            "non_refundable": "Geometry Dash Việt Nam Supporter không thể hoàn tiền.",
+            "non_recurring": "GDListHub Supporter không tự động gia hạn.",
+            "non_refundable": "GDListHub Supporter không thể hoàn tiền.",
             "extension": "Nếu bạn mua Supporter khi vẫn còn Supporter đang hoạt động, thời gian sẽ được cộng thêm thêm.",
             "duration": "1 Tháng = 30 Ngày."
         },
@@ -2802,7 +2802,7 @@
                 "shipping_fee": "Phí vận chuyển",
                 "total": "Tổng cộng",
                 "free": "Miễn phí",
-                "bank_transfer_note": "Vui lòng không đóng cửa sổ thanh toán cho đến khi bạn được chuyển hướng trở lại Geometry Dash Việt Nam",
+                "bank_transfer_note": "Vui lòng không đóng cửa sổ thanh toán cho đến khi bạn được chuyển hướng trở lại GDListHub",
                 "cod_note": "Phí thanh toán sẽ được thu khi giao hàng bởi đối tác vận chuyển của chúng tôi",
                 "proceed_payment": "Tiến hành thanh toán",
                 "place_order": "Đặt hàng"
@@ -2854,11 +2854,11 @@
     "discord_bot": {
         "title": "Discord Bot",
         "page_title": "Discord",
-        "page_description": "Tra cứu player, level, record và list GDVN ngay trong Discord",
-        "description": "Truy cập Geometry Dash Việt Nam ngay trong Discord",
+        "page_description": "Tra cứu player, level, record và list GDListHub ngay trong Discord",
+        "description": "Truy cập GDListHub ngay trong Discord",
         "hero_badge": "Bot đã mở cho mọi người",
-        "hero_title": "GDVN trong Discord",
-        "hero_description": "Tra cứu player, level, record, leaderboard và bản nộp bằng slash command rõ ràng, nhanh và dùng API GDVN mới.",
+        "hero_title": "GDListHub trong Discord",
+        "hero_description": "Tra cứu player, level, record, leaderboard và bản nộp bằng slash command rõ ràng, nhanh và dùng API GDListHub mới.",
         "join_server": "Tham Gia Server",
         "add_button": "Thêm vào Server",
         "highlights": {
@@ -2897,11 +2897,11 @@
             },
             "community": {
                 "title": "Cộng đồng",
-                "description": "Dùng link nhanh, tra cứu level khi thảo luận và theo dõi hoạt động GDVN."
+                "description": "Dùng link nhanh, tra cứu level khi thảo luận và theo dõi hoạt động GDListHub."
             }
         },
         "features_eyebrow": "Tính năng",
-        "features_title": "Nhanh, rõ, đúng với GDVN hiện tại",
+        "features_title": "Nhanh, rõ, đúng với GDListHub hiện tại",
         "features": {
             "lookup": {
                 "title": "Tra cứu thông minh",
@@ -2967,10 +2967,10 @@
                 "description": "Gợi ý một level ngẫu nhiên từ list."
             },
             "stats": {
-                "description": "Xem tổng quan GDVN hoặc một list cụ thể."
+                "description": "Xem tổng quan GDListHub hoặc một list cụ thể."
             },
             "links": {
-                "description": "Nhận các liên kết GDVN hữu ích."
+                "description": "Nhận các liên kết GDListHub hữu ích."
             },
             "supporter": {
                 "description": "Kiểm tra trạng thái supporter; không mở khóa lệnh bot."
@@ -2989,8 +2989,8 @@
         },
         "param_required": "bắt buộc",
         "param_optional": "tùy chọn",
-        "final_title": "Sẵn sàng đưa GDVN vào server của bạn",
-        "final_description": "Thêm bot để server có lookup, leaderboard và record tools nhất quán với website GDVN."
+        "final_title": "Sẵn sàng đưa GDListHub vào server của bạn",
+        "final_description": "Thêm bot để server có lookup, leaderboard và record tools nhất quán với website GDListHub."
     },
     "dashboard": {
         "welcome": "Chào mừng đến",
@@ -3239,9 +3239,9 @@
     },
     "onboarding": {
         "step_of": "Bước {step}/{total}",
-        "welcome_title": "Chào mừng đến với GDVN!",
+        "welcome_title": "Chào mừng đến với GDListHub!",
         "welcome_desc": "Cộng đồng Geometry Dash lớn nhất Việt Nam. Hãy thiết lập hồ sơ của bạn để bắt đầu.",
-        "welcome_gift": "Hoàn thành thiết lập để cá nhân hóa hồ sơ và mở khóa trải nghiệm GDVN đầy đủ.",
+        "welcome_gift": "Hoàn thành thiết lập để cá nhân hóa hồ sơ và mở khóa trải nghiệm GDListHub đầy đủ.",
         "name_title": "Đặt tên hiển thị",
         "name_desc": "Tên này sẽ xuất hiện trên bảng xếp hạng. Không thể thay đổi trong 30 ngày.",
         "name_placeholder": "VD: NguoiChoiGD",
@@ -3263,18 +3263,18 @@
         "feature_battlepass": "Battle Pass",
         "feature_battlepass_desc": "Hoàn thành thử thách hàng ngày, leo rank và kiếm phần thưởng độc quyền",
         "feature_battlepass_try": "Thử ngay",
-        "discord_title": "Kết nối với cộng đồng GDVN",
+        "discord_title": "Kết nối với cộng đồng GDListHub",
         "discord_desc": "Tham gia server Discord để chat, nhận thông báo sự kiện và giao lưu với cộng đồng.",
         "discord_join": "Tham gia Discord",
-        "geode_title": "Mở khóa toàn bộ GDVN ngay trong game",
-        "geode_desc": "Cài GDVN Geode mod để trải nghiệm đầy đủ ngay trong Geometry Dash.",
+        "geode_title": "Mở khóa toàn bộ GDListHub ngay trong game",
+        "geode_desc": "Cài GDListHub Geode mod để trải nghiệm đầy đủ ngay trong Geometry Dash.",
         "geode_required": "⚠️ Geode mod là bắt buộc để tham gia sự kiện, giải đấu và Battle Pass",
         "geode_feature_rank": "Xem thứ hạng level ngay trong GD",
         "geode_feature_events": "Tham gia sự kiện và giải đấu từ trong game",
         "geode_feature_bp": "Tham gia Battle Pass và nhận phần thưởng trực tiếp",
         "geode_download": "Tải Mod Geode",
-        "support_title": "GDVN là dự án cộng đồng",
-        "support_desc": "Chi phí server và phát triển do cộng đồng đóng góp. Cảm ơn bạn đã là một phần của GDVN.",
+        "support_title": "GDListHub là dự án cộng đồng",
+        "support_desc": "Chi phí server và phát triển do cộng đồng đóng góp. Cảm ơn bạn đã là một phần của GDListHub.",
         "support_supporter_title": "Supporter",
         "support_supporter_price": "49.000đ / tháng",
         "support_supporter_cta": "Ủng hộ ngay",
@@ -3293,7 +3293,7 @@
         "done_desc": "Hồ sơ đã được thiết lập. Bắt đầu hành trình của bạn.",
         "done_gift": "Hồ sơ của bạn đã sẵn sàng. Bạn luôn có thể cập nhật các thông tin này sau trong phần cài đặt hồ sơ.",
         "done_discord_title": "Liên kết tài khoản Discord",
-        "done_discord_desc": "Kết nối Discord để mở khóa role và tính năng độc quyền gắn với tài khoản GDVN của bạn.",
+        "done_discord_desc": "Kết nối Discord để mở khóa role và tính năng độc quyền gắn với tài khoản GDListHub của bạn.",
         "done_discord_link": "Liên kết tài khoản Discord",
         "done_discord_linked": "Đã liên kết Discord ✓",
         "done_go_list": "Xem Classic List",
@@ -3305,16 +3305,16 @@
         "skip_later": "Để sau",
         "saving": "Đang lưu...",
         "progress_title": "Hoàn thành thiết lập hồ sơ",
-        "progress_desc": "Hoàn thành thiết lập hồ sơ để mở khóa trải nghiệm GDVN đầy đủ",
+        "progress_desc": "Hoàn thành thiết lập hồ sơ để mở khóa trải nghiệm GDListHub đầy đủ",
         "progress_continue": "Tiếp tục thiết lập"
     },
     "adblock": {
         "title": "Vui lòng tắt trình chặn quảng cáo",
-        "desc": "Quảng cáo giúp GDVN hoạt động miễn phí cho mọi người. Vui lòng tắt trình chặn quảng cáo để tiếp tục.",
+        "desc": "Quảng cáo giúp GDListHub hoạt động miễn phí cho mọi người. Vui lòng tắt trình chặn quảng cáo để tiếp tục.",
         "button": "Tôi đã tắt AdBlock"
     },
     "custom_lists": {
-        "page_title": "Danh sách - Geometry Dash Việt Nam",
+        "page_title": "Danh sách - GDListHub",
         "back": "Quay lại danh sách",
         "type": {
             "classic": "Classic",
@@ -3364,7 +3364,7 @@
             },
             "official": {
                 "heading": "Danh sách chính thức",
-                "hint": "Các danh sách chính thức được đội ngũ GDVN duy trì.",
+                "hint": "Các danh sách chính thức được đội ngũ GDListHub duy trì.",
                 "search_placeholder": "Tìm kiếm danh sách chính thức theo tên hoặc mô tả",
                 "search_button": "Tìm kiếm",
                 "empty_title": "Không tìm thấy danh sách chính thức",
@@ -3373,7 +3373,7 @@
             },
             "verified": {
                 "heading": "Danh sách đã xác minh",
-                "hint": "Các danh sách đã xác minh đã được đội ngũ GDVN duyệt.",
+                "hint": "Các danh sách đã xác minh đã được đội ngũ GDListHub duyệt.",
                 "search_placeholder": "Tìm kiếm danh sách đã xác minh theo tên hoặc mô tả",
                 "search_button": "Tìm kiếm",
                 "empty_title": "Không tìm thấy danh sách đã xác minh",

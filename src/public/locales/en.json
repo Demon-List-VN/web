@@ -36,8 +36,8 @@
         "verified": "Verified"
     },
     "head": {
-        "site_name": "Geometry Dash Việt Nam",
-        "site_short_name": "GDVN",
+        "site_name": "GDListHub",
+        "site_short_name": "GDListHub",
         "labels": {
             "by": "by",
             "classic_rating": "Classic Rating",
@@ -94,25 +94,25 @@
                 "custom": "Community Geometry Dash Lists"
             },
             "index_descriptions": {
-                "official": "Browse official GDVN Geometry Dash lists including Classic, Challenge, Platformer, and Featured rankings.",
-                "verified": "Browse GDVN-verified Geometry Dash lists reviewed for the community.",
-                "mirror": "Browse mirrored Geometry Dash level lists preserved on GDVN.",
-                "custom": "Browse community-made Geometry Dash lists and level collections on GDVN."
+                "official": "Browse official GDListHub Geometry Dash lists including Classic, Challenge, Platformer, and Featured rankings.",
+                "verified": "Browse GDListHub-verified Geometry Dash lists reviewed for the community.",
+                "mirror": "Browse mirrored Geometry Dash level lists preserved on GDListHub.",
+                "custom": "Browse community-made Geometry Dash lists and level collections on GDListHub."
             },
             "official_descriptions": {
-                "dl": "Browse the official GDVN Classic List for ranked Geometry Dash demon levels, records, ratings, and player progress.",
-                "pl": "Browse the official GDVN Platformer List for ranked Geometry Dash platformer levels, records, ratings, and player progress.",
-                "cl": "Browse the official GDVN Challenge List for Geometry Dash challenge levels, rankings, records, and player progress.",
-                "fl": "Browse the official GDVN Featured List for featured Geometry Dash levels, records, ratings, and player progress."
+                "dl": "Browse the official GDListHub Classic List for ranked Geometry Dash demon levels, records, ratings, and player progress.",
+                "pl": "Browse the official GDListHub Platformer List for ranked Geometry Dash platformer levels, records, ratings, and player progress.",
+                "cl": "Browse the official GDListHub Challenge List for Geometry Dash challenge levels, rankings, records, and player progress.",
+                "fl": "Browse the official GDListHub Featured List for featured Geometry Dash levels, records, ratings, and player progress."
             },
-            "detail_description": "{title} on GDVN with {count} Geometry Dash levels, records, rankings, and player progress."
+            "detail_description": "{title} on GDListHub with {count} Geometry Dash levels, records, rankings, and player progress."
         },
         "descriptions": {
-            "homepage": "A website for the Geometry Dash Việt Nam community",
-            "discord": "Join the Geometry Dash Viet Nam Discord, add the GDVN bot to your server, and use current list data right in chat.",
-            "community": "Share, discuss, and connect with the Geometry Dash Việt Nam community",
+            "homepage": "A website for the GDListHub community",
+            "discord": "Join the GDListHub Discord, add the GDListHub bot to your server, and use current list data right in chat.",
+            "community": "Share, discuss, and connect with the GDListHub community",
             "lists": "Browse public lists and manage your level collections.",
-            "wiki": "Explore the Geometry Dash Việt Nam Wiki with guides, rules, news, and updates"
+            "wiki": "Explore the GDListHub Wiki with guides, rules, news, and updates"
         }
     },
     "acceptance": {
@@ -218,24 +218,24 @@
         "community": "Community"
     },
     "geode_mods": {
-        "title": "GDVN Geode Mod",
-        "kicker": "Geometry Dash VN in-game",
-        "description": "Install the GDVN mod to view list info, join events, play 1v1 Versus, and use Battle Pass directly inside Geometry Dash.",
+        "title": "GDListHub Geode Mod",
+        "kicker": "GDListHub in-game",
+        "description": "Install the GDListHub mod to view list info, join events, play 1v1 Versus, and use Battle Pass directly inside Geometry Dash.",
         "download": "Download nampe.gdvn.geode",
         "geode": "Install Geode",
         "version_note": "Always downloads the latest release",
         "features_title": "Feature Summary",
         "install_title": "Install Instructions",
-        "install_hint": "Restart Geometry Dash after installing if GDVN does not appear immediately.",
+        "install_hint": "Restart Geometry Dash after installing if GDListHub does not appear immediately.",
         "release_link": "View release page",
-        "popup_title": "Install GDVN Geode Mod",
+        "popup_title": "Install GDListHub Geode Mod",
         "popup_description": "Your download has started. Install the downloaded file from Geode inside Geometry Dash.",
         "close": "Close",
         "step_1_image_alt": "Geode install from file screenshot",
         "features": {
             "list": {
                 "title": "In-game list info",
-                "description": "See level status, rankings, and GDVN data without leaving the game."
+                "description": "See level status, rankings, and GDListHub data without leaving the game."
             },
             "activities": {
                 "title": "Events, 1v1 Versus, Battle Pass",
@@ -243,7 +243,7 @@
             },
             "otp": {
                 "title": "OTP account link",
-                "description": "Connect your GDVN account safely with a 6-digit code from the mod."
+                "description": "Connect your GDListHub account safely with a 6-digit code from the mod."
             }
         },
         "steps": {
@@ -256,14 +256,14 @@
         "arena": "1v1 Versus",
         "lobby_title": "1v1 Versus Lobby",
         "matches_title": "1v1 Versus Matches",
-        "play_meta_description": "Enter the GDVN 1v1 Versus lobby for Geometry Dash PvP matchmaking, private invites, ranked Elo, and live matches.",
-        "match_meta_description": "Watch a GDVN 1v1 Versus match with live Geometry Dash PvP progress, chat, level details, and ranked results.",
+        "play_meta_description": "Enter the GDListHub 1v1 Versus lobby for Geometry Dash PvP matchmaking, private invites, ranked Elo, and live matches.",
+        "match_meta_description": "Watch a GDListHub 1v1 Versus match with live Geometry Dash PvP progress, chat, level details, and ranked results.",
         "landing": {
-            "meta_title": "1v1 Versus - Geometry Dash PvP Arena | GDVN",
-            "meta_description": "Play GDVN 1v1 Versus for Geometry Dash PvP: ranked 1v1 matchmaking, private invites, live progress, Elo ratings, and weekly races.",
+            "meta_title": "1v1 Versus - Geometry Dash PvP Arena | GDListHub",
+            "meta_description": "Play GDListHub 1v1 Versus for Geometry Dash PvP: ranked 1v1 matchmaking, private invites, live progress, Elo ratings, and weekly races.",
             "eyebrow": "Geometry Dash PvP 1v1",
             "title": "1v1 Versus",
-            "description": "Queue into ranked Geometry Dash 1v1 PvP, invite a rival directly, race on the same challenge level, and climb the GDVN Versus Elo leaderboard.",
+            "description": "Queue into ranked Geometry Dash 1v1 PvP, invite a rival directly, race on the same challenge level, and climb the GDListHub Versus Elo leaderboard.",
             "primary_cta": "Play 1v1 Versus",
             "secondary_cta": "See rankings",
             "preview_you": "You",
@@ -297,8 +297,8 @@
             "how_title": "Start a Geometry Dash versus match in minutes",
             "steps": {
                 "install": {
-                    "title": "Install the GDVN Geode mod",
-                    "description": "The mod connects your Geometry Dash progress to GDVN so 1v1 Versus can track live match progress."
+                    "title": "Install the GDListHub Geode mod",
+                    "description": "The mod connects your Geometry Dash progress to GDListHub so 1v1 Versus can track live match progress."
                 },
                 "queue": {
                     "title": "Queue ranked or send an invite",
@@ -309,12 +309,12 @@
                     "description": "Both players enter the same challenge, progress updates live, and the result updates your Versus history."
                 }
             },
-            "mod_title": "GDVN Geode mod required",
-            "mod_description": "Install the latest GDVN Geode mod before playing 1v1 Versus inside Geometry Dash.",
+            "mod_title": "GDListHub Geode mod required",
+            "mod_description": "Install the latest GDListHub Geode mod before playing 1v1 Versus inside Geometry Dash.",
             "support": {
-                "eyebrow": "Support GDVN",
+                "eyebrow": "Support GDListHub",
                 "title": "Keep 1v1 Versus free for everyone",
-                "description": "GDVN Versus runs on community support. Becoming a Supporter keeps the matchmaking servers online, and you pick up a few perks along the way.",
+                "description": "GDListHub Versus runs on community support. Becoming a Supporter keeps the matchmaking servers online, and you pick up a few perks along the way.",
                 "benefit_ad_free": "Play 1v1 Versus completely ad-free",
                 "benefit_badge": "A colored Supporter tier badge next to your name in matches and on the leaderboard",
                 "benefit_servers": "Directly funds the 1v1 matchmaking servers",
@@ -356,8 +356,8 @@
             "progress": "{progress}% to next level"
         },
         "geode_alert": {
-            "title": "GDVN Geode mod required",
-            "description": "To play 1v1 Versus, install GDVN Geode mod",
+            "title": "GDListHub Geode mod required",
+            "description": "To play 1v1 Versus, install GDListHub Geode mod",
             "release_page": "Release page",
             "dismiss": "Dismiss"
         },
@@ -472,63 +472,63 @@
             "supporter_contextual": {
                 "none_vs_none": {
                     "win": [
-                        "🔥 You won. Geometry Dash VN stays online thanks to support from the community.",
+                        "🔥 You won. GDListHub stays online thanks to support from the community.",
                         "⚔️ Victory is yours. Demon List VN appreciates every queue from players like you.",
                         "🗿 You won the match. Thanks to everyone quietly helping keep this playground alive.",
                         "🤝 A good match. This website is still trying to get better every day.",
-                        "⭐ Nice result. Thank you for being part of building the Geometry Dash VN community."
+                        "⭐ Nice result. Thank you for being part of building the GDListHub community."
                     ],
                     "lose": [
                         "💀 You lost. Good thing the site is still running smoothly for an immediate comeback.",
                         "⚔️ This match was not yours. Demon List VN is waiting for you in the next game.",
-                        "🗿 Tough result, but thank you for being part of Geometry Dash VN.",
+                        "🗿 Tough result, but thank you for being part of GDListHub.",
                         "🤝 Queue again? Your presence helps keep the website moving.",
                         "⭐ Do not give up. This site stays open because the whole community contributes."
                     ]
                 },
                 "none_vs_supporter": {
                     "win": [
-                        "🔥 You won. Thanks to your opponent for helping Geometry Dash VN stay stable.",
+                        "🔥 You won. Thanks to your opponent for helping GDListHub stay stable.",
                         "⚔️ Victory is yours. It is great to see community members meeting in matches like this.",
                         "⭐ A quality match against someone supporting Demon List VN.",
                         "🗿 The result belongs to you. Your opponent's support helps the site gain more features.",
-                        "🤝 Thanks to both players for a good match on Geometry Dash VN."
+                        "🤝 Thanks to both players for a good match on GDListHub."
                     ],
                     "lose": [
                         "💀 You lost. Your opponent is one of the people helping keep the servers running.",
                         "⚔️ This one belongs to your opponent. Thanks to them for helping keep Demon List VN alive.",
                         "⭐ Someone supporting the website's growth just took the win.",
                         "🗿 Not the result you wanted, but thanks to people like your opponent, the site keeps improving.",
-                        "🤝 Match complete. Thanks to your opponent for supporting the Geometry Dash VN community."
+                        "🤝 Match complete. Thanks to your opponent for supporting the GDListHub community."
                     ]
                 },
                 "supporter_vs_none": {
                     "win": [
-                        "🔥 You won. Thank you so much for helping keep Geometry Dash VN running.",
+                        "🔥 You won. Thank you so much for helping keep GDListHub running.",
                         "⭐ Victory is yours. Your support is part of the foundation for this website's growth.",
                         "⚔️ You just won the match. Thanks for always supporting Demon List VN.",
                         "👑 A strong result from an active member of the community.",
                         "🤝 Thank you for helping matches like this happen every day."
                     ],
                     "lose": [
-                        "💀 You lost, but your support for Geometry Dash VN is still deeply appreciated.",
+                        "💀 You lost, but your support for GDListHub is still deeply appreciated.",
                         "⭐ This one was not yours. Thank you for continuing to stand with Demon List VN.",
                         "⚔️ Not the prettiest result, but your contribution to the website is still excellent.",
                         "🗿 Queue again! Thanks for helping keep the server ready for everyone.",
-                        "🤝 Win or lose, Geometry Dash VN is grateful for your support."
+                        "🤝 Win or lose, GDListHub is grateful for your support."
                     ]
                 },
                 "both_are_supporters": {
                     "win": [
                         "👑 Two Supporters met in battle! You won. Want to stand out even more? Try exploring higher tiers.",
-                        "🔥 A high-level match between people helping keep Geometry Dash VN alive. Victory is yours.",
+                        "🔥 A high-level match between people helping keep GDListHub alive. Victory is yours.",
                         "⭐ You won the match. Upgrade your tier to unlock more effects and exclusive Demon List VN perks.",
                         "⚔️ A meeting between two active supporters. Thank you both for contributing.",
                         "✨ Clean win! Your matches can look even cooler with higher-tier custom perks."
                     ],
                     "lose": [
                         "👑 Two Supporters met in battle! Your opponent takes this one. A higher tier might help you reclaim the spotlight.",
-                        "💀 Not the result you wanted, but your Supporter status at Geometry Dash VN is always appreciated.",
+                        "💀 Not the result you wanted, but your Supporter status at GDListHub is always appreciated.",
                         "⭐ A match between two dedicated supporters comes to a close. Try the next tier for more new perks.",
                         "🗿 Queue again for revenge. Thank you both for helping keep the server alive.",
                         "✨ You lost this round, but there is always another. A higher tier unlocks more frame and name customization perks."
@@ -538,7 +538,7 @@
         },
         "supporter_strip": {
             "text": "Tired of ads? Go ad-free and unlock your Supporter tier badge.",
-            "cta": "Support GDVN"
+            "cta": "Support GDListHub"
         },
         "resign": "Resign",
         "request_level_change": "Change level",
@@ -592,7 +592,7 @@
             }
         },
         "sign_in_title": "Sign in to enter 1v1 Versus",
-        "sign_in_hint": "1v1 Versus matchmaking and invites are tied to your GDVN player account.",
+        "sign_in_hint": "1v1 Versus matchmaking and invites are tied to your GDListHub player account.",
         "options": "Options",
         "summary": "Summary",
         "current_elo": "Current Elo",
@@ -1339,7 +1339,7 @@
         }
     },
     "inventory": {
-        "page_title": "Inventory - Geometry Dash Việt Nam",
+        "page_title": "Inventory - GDListHub",
         "title": "Inventory",
         "empty": "No items in inventory.",
         "failed_load": "Failed to load inventory",
@@ -1626,7 +1626,7 @@
         "review": {
             "title": "Review your order",
             "recipent": "Recipent",
-            "caution": "Please do not close the payment window until you are redirected back to Geometry Dash Việt Nam",
+            "caution": "Please do not close the payment window until you are redirected back to GDListHub",
             "proceed": "Process to payment"
         }
     },
@@ -1719,7 +1719,7 @@
         "button": "Search",
         "placeholder": "Type and press Enter to search...",
         "no_result": "No results found",
-        "dlvn": "Levels from Geometry Dash Việt Nam",
+        "dlvn": "Levels from GDListHub",
         "gd": "Levels from Geometry Dash",
         "players": "Players"
     },
@@ -1759,7 +1759,7 @@
             "days": "day",
             "days_plural": "days",
             "recipent_clan": "Recipent Clan",
-            "caution": "Please do not close the payment window until you are redirected back to Geometry Dash Việt Nam",
+            "caution": "Please do not close the payment window until you are redirected back to GDListHub",
             "proceed": "Proceed to Payment"
         },
         "public": "Public",
@@ -2148,7 +2148,7 @@
         "level_feedback_promo": {
             "title": "Level Feedback",
             "price": "From 10,000đ",
-            "description": "Get clear deco feedback from a GDVN reviewer.",
+            "description": "Get clear deco feedback from a GDListHub reviewer.",
             "feature_category": "Review by the category you choose",
             "feature_price": "Just 5k VND for each 30s",
             "feature_discount": "10,000đ off your first request",
@@ -2180,7 +2180,7 @@
     },
     "community": {
         "title": "Community Hub",
-        "subtitle": "Share, discuss, and connect with the Geometry Dash Việt Nam community",
+        "subtitle": "Share, discuss, and connect with the GDListHub community",
         "hub_title": "Community Hub",
         "view_all": "View all posts",
         "no_posts": "No posts yet. Be the first to share something!",
@@ -2217,7 +2217,7 @@
             "post_type": "Type",
             "post_target": "Post to",
             "target_global": "Global",
-            "target_global_hint": "Share with the whole GDVN community",
+            "target_global_hint": "Share with the whole GDListHub community",
             "target_clan": "Clan",
             "target_clan_unavailable": "Join a clan to post",
             "target_list": "List",
@@ -2555,22 +2555,22 @@
         "store_button": "Check out our store",
         "login_required": "You must log in before you can donate.",
         "alert": {
-            "title": "Support Geometry Dash Việt Nam 💖",
+            "title": "Support GDListHub 💖",
             "description": "Consider becoming a Supporter to help DLVN grow and get exclusive perks!",
             "learn_more": "Learn more"
         },
         "why_support": {
-            "title": "Why should you support Geometry Dash Việt Nam",
+            "title": "Why should you support GDListHub",
             "support_team": {
                 "title": "Support the Team",
-                "description": "A small single person team develops and runs Geometry Dash Việt Nam. Your support gives him the motivation to develop and maintain the website."
+                "description": "A small single person team develops and runs GDListHub. Your support gives him the motivation to develop and maintain the website."
             },
             "server_infrastructure": {
                 "title": "Server Infrastructure",
                 "description": "Contributions go towards the servers for running the website."
             },
             "self_sustaining": {
-                "title": "Keep Geometry Dash Việt Nam self-sustaining",
+                "title": "Keep GDListHub self-sustaining",
                 "description": "Your contributions help keep the site independent and completely free from outside sponsors."
             }
         },
@@ -2630,7 +2630,7 @@
             },
             "discord_bot": {
                 "title": "Community Discord role",
-                "description": "Sync your supporter role on the official GDVN Discord server."
+                "description": "Sync your supporter role on the official GDListHub Discord server."
             }
         },
         "decision": {
@@ -2638,7 +2638,7 @@
             "button": "Support us with just 49.000₫/month"
         },
         "goals": {
-            "title": "GDVN Cup 2026 fundraising progress",
+            "title": "GDListHub Cup 2026 fundraising progress",
             "server_cost": "Server cost",
             "minecraft_server": "Minecraft server",
             "edit_design_team": "Edit/Design Team",
@@ -2648,7 +2648,7 @@
             "hanoi_offline": "Optional: Hanoi meetup"
         },
         "prize_pool": {
-            "title": "GDVN Cup 2026 Prize Pool",
+            "title": "GDListHub Cup 2026 Prize Pool",
             "note": "50% of {revenue} total revenue since 01/07."
         },
         "tiers": {
@@ -2675,8 +2675,8 @@
         },
         "notes": {
             "title": "Note:",
-            "non_recurring": "Geometry Dash Việt Nam Supporter roles are non-recurring payments.",
-            "non_refundable": "Geometry Dash Việt Nam Supporter roles are non-refundable.",
+            "non_recurring": "GDListHub Supporter roles are non-recurring payments.",
+            "non_refundable": "GDListHub Supporter roles are non-refundable.",
             "extension": "If you buy one while you still have an active roles, it will extend the duration in addition to any remaining time.",
             "duration": "1 Month = 30 Days."
         },
@@ -2782,7 +2782,7 @@
                 "shipping_fee": "Shipping Fee",
                 "total": "Total",
                 "free": "Free",
-                "bank_transfer_note": "Please do not close the payment window until you are redirected back to Geometry Dash Việt Nam",
+                "bank_transfer_note": "Please do not close the payment window until you are redirected back to GDListHub",
                 "cod_note": "Payment will be collected upon delivery by our shipping partner",
                 "proceed_payment": "Proceed to Payment",
                 "place_order": "Place Order"
@@ -2855,11 +2855,11 @@
     "discord_bot": {
         "title": "Discord Bot",
         "page_title": "Discord",
-        "page_description": "Look up GDVN players, levels, records, and lists inside Discord",
-        "description": "Access Geometry Dash Viet Nam right in Discord",
+        "page_description": "Look up GDListHub players, levels, records, and lists inside Discord",
+        "description": "Access GDListHub right in Discord",
         "hero_badge": "Bot commands are open to everyone",
-        "hero_title": "GDVN in Discord",
-        "hero_description": "Look up players, levels, records, leaderboards, and submissions with clear slash commands backed by the new GDVN API.",
+        "hero_title": "GDListHub in Discord",
+        "hero_description": "Look up players, levels, records, leaderboards, and submissions with clear slash commands backed by the new GDListHub API.",
         "join_server": "Join Server",
         "add_button": "Add to Server",
         "highlights": {
@@ -2898,11 +2898,11 @@
             },
             "community": {
                 "title": "Community members",
-                "description": "Use quick links, level lookup, and GDVN activity summaries while chatting."
+                "description": "Use quick links, level lookup, and GDListHub activity summaries while chatting."
             }
         },
         "features_eyebrow": "Features",
-        "features_title": "Fast, clear, and current with GDVN",
+        "features_title": "Fast, clear, and current with GDListHub",
         "features": {
             "lookup": {
                 "title": "Smart lookup",
@@ -2968,10 +2968,10 @@
                 "description": "Suggest a random level from a list."
             },
             "stats": {
-                "description": "Show a GDVN overview or stats for a specific list."
+                "description": "Show a GDListHub overview or stats for a specific list."
             },
             "links": {
-                "description": "Get useful GDVN links."
+                "description": "Get useful GDListHub links."
             },
             "supporter": {
                 "description": "Check supporter status; it does not unlock bot commands."
@@ -2990,8 +2990,8 @@
         },
         "param_required": "required",
         "param_optional": "optional",
-        "final_title": "Ready to bring GDVN into your server",
-        "final_description": "Add the bot so your server has lookup, leaderboard, and record tools consistent with the GDVN website."
+        "final_title": "Ready to bring GDListHub into your server",
+        "final_description": "Add the bot so your server has lookup, leaderboard, and record tools consistent with the GDListHub website."
     },
     "dashboard": {
         "welcome": "Welcome to",
@@ -3240,9 +3240,9 @@
     },
     "onboarding": {
         "step_of": "Step {step}/{total}",
-        "welcome_title": "Welcome to GDVN!",
+        "welcome_title": "Welcome to GDListHub!",
         "welcome_desc": "The largest Geometry Dash community in Vietnam. Set up your profile to get started.",
-        "welcome_gift": "Complete setup to personalize your profile and unlock the full GDVN experience.",
+        "welcome_gift": "Complete setup to personalize your profile and unlock the full GDListHub experience.",
         "name_title": "Set display name",
         "name_desc": "This name will appear on leaderboards. Cannot be changed for 30 days.",
         "name_placeholder": "E.g. MyGDName",
@@ -3264,18 +3264,18 @@
         "feature_battlepass": "Battle Pass",
         "feature_battlepass_desc": "Complete daily challenges, level up and earn exclusive rewards",
         "feature_battlepass_try": "Try now",
-        "discord_title": "Connect with the GDVN community",
+        "discord_title": "Connect with the GDListHub community",
         "discord_desc": "Join our Discord server to chat, get event notifications and interact with the community.",
         "discord_join": "Join Discord",
-        "geode_title": "Unlock all of GDVN in-game",
-        "geode_desc": "Install the GDVN Geode mod to enjoy the full experience directly in Geometry Dash.",
+        "geode_title": "Unlock all of GDListHub in-game",
+        "geode_desc": "Install the GDListHub Geode mod to enjoy the full experience directly in Geometry Dash.",
         "geode_required": "⚠️ Geode mod is required to participate in events, tournaments and Battle Pass",
         "geode_feature_rank": "View level rankings inside GD",
         "geode_feature_events": "Join events and tournaments from in-game",
         "geode_feature_bp": "Participate in Battle Pass and claim rewards directly",
         "geode_download": "Download Geode Mod",
-        "support_title": "GDVN is a community project",
-        "support_desc": "Server and development costs are funded by the community. Thank you for being part of GDVN.",
+        "support_title": "GDListHub is a community project",
+        "support_desc": "Server and development costs are funded by the community. Thank you for being part of GDListHub.",
         "support_supporter_title": "Supporter",
         "support_supporter_price": "49,000₫ / month",
         "support_supporter_cta": "Support now",
@@ -3294,7 +3294,7 @@
         "done_desc": "Your profile is ready. Start your GD journey.",
         "done_gift": "Your profile is ready. You can update these details later from your profile settings.",
         "done_discord_title": "Link your Discord account",
-        "done_discord_desc": "Connect Discord to unlock exclusive roles and features tied to your GDVN account.",
+        "done_discord_desc": "Connect Discord to unlock exclusive roles and features tied to your GDListHub account.",
         "done_discord_link": "Link Discord account",
         "done_discord_linked": "Discord account linked ✓",
         "done_go_list": "View Classic List",
@@ -3306,16 +3306,16 @@
         "skip_later": "Later",
         "saving": "Saving...",
         "progress_title": "Complete profile setup",
-        "progress_desc": "Finish setting up your profile to unlock the full GDVN experience",
+        "progress_desc": "Finish setting up your profile to unlock the full GDListHub experience",
         "progress_continue": "Continue setup"
     },
     "adblock": {
         "title": "Please disable your ad blocker",
-        "desc": "Ads help keep GDVN free for everyone. Please disable your ad blocker to continue.",
+        "desc": "Ads help keep GDListHub free for everyone. Please disable your ad blocker to continue.",
         "button": "I disabled AdBlock"
     },
     "custom_lists": {
-        "page_title": "Lists - Geometry Dash Việt Nam",
+        "page_title": "Lists - GDListHub",
         "back": "Back to lists",
         "type": {
             "classic": "Classic",
@@ -3365,7 +3365,7 @@
             },
             "official": {
                 "heading": "Official lists",
-                "hint": "Official lists are maintained by the GDVN team.",
+                "hint": "Official lists are maintained by the GDListHub team.",
                 "search_placeholder": "Search official lists by title or description",
                 "search_button": "Search",
                 "empty_title": "No official lists found",
@@ -3374,7 +3374,7 @@
             },
             "verified": {
                 "heading": "Verified lists",
-                "hint": "Verified lists have been reviewed by the GDVN team.",
+                "hint": "Verified lists have been reviewed by the GDListHub team.",
                 "search_placeholder": "Search verified lists by title or description",
                 "search_button": "Search",
                 "empty_title": "No verified lists found",

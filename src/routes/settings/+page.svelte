@@ -550,12 +550,12 @@
 </script>
 
 <svelte:head>
-  <title>{text('Settings', 'Cài đặt')} · GDVN</title>
+  <title>{text('Settings', 'Cài đặt')} · GDListHub</title>
   <meta
     name="description"
     content={text(
-        'Manage your GDVN account, connections, and data sync.',
-        'Quản lý tài khoản, kết nối và đồng bộ dữ liệu GDVN.'
+        'Manage your GDListHub account, connections, and data sync.',
+        'Quản lý tài khoản, kết nối và đồng bộ dữ liệu GDListHub.'
     )}
   />
 </svelte:head>
@@ -563,7 +563,7 @@
 <div class="settings-shell">
   <header class="page-header">
     <div>
-      <p class="eyebrow">GDVN</p>
+      <p class="eyebrow">GDListHub</p>
       <h1>{text('Settings', 'Cài đặt')}</h1>
       <p>
         {text(
@@ -624,8 +624,8 @@
           <h2>{text('General', 'Chung')}</h2>
           <p>
             {text(
-              'Choose how GDVN looks and which language it uses on this device.',
-              'Chọn giao diện và ngôn ngữ GDVN trên thiết bị này.'
+              'Choose how GDListHub looks and which language it uses on this device.',
+              'Chọn giao diện và ngôn ngữ GDListHub trên thiết bị này.'
             )}
           </p>
         </section>
@@ -989,8 +989,8 @@
           <h2>{text('Connections', 'Kết nối')}</h2>
           <p>
             {text(
-              'Connect the services you use with your GDVN profile.',
-              'Kết nối các dịch vụ bạn sử dụng với hồ sơ GDVN.'
+              'Connect the services you use with your GDListHub profile.',
+              'Kết nối các dịch vụ bạn sử dụng với hồ sơ GDListHub.'
             )}
           </p>
         </section>
@@ -1014,7 +1014,7 @@
                   <h3>Discord</h3>
                   <p>
                     {$user.data.discord
-                      ? text('Connected to your GDVN profile.', 'Đã kết nối với hồ sơ GDVN.')
+                      ? text('Connected to your GDListHub profile.', 'Đã kết nối với hồ sơ GDListHub.')
                       : text('Link Discord for roles and community features.', 'Kết nối Discord để nhận role và tính năng cộng đồng.')}
                   </p>
                 </div>
@@ -1082,8 +1082,8 @@
             <h3>{text('Sign in to sync player data', 'Đăng nhập để đồng bộ dữ liệu')}</h3>
             <p>
               {text(
-                'Your Geometry Dash account is linked to your signed-in GDVN profile.',
-                'Tài khoản Geometry Dash sẽ được liên kết với hồ sơ GDVN đang đăng nhập.'
+                'Your Geometry Dash account is linked to your signed-in GDListHub profile.',
+                'Tài khoản Geometry Dash sẽ được liên kết với hồ sơ GDListHub đang đăng nhập.'
               )}
             </p>
             <Button on:click={signIn}>{$_('nav.sign_in')}</Button>
@@ -1214,8 +1214,8 @@
                 <h3>{text('Created levels', 'Màn chơi đã tạo')}</h3>
                 <p>
                   {text(
-                    'Crawl your public Geometry Dash levels, add missing levels to GDVN, and assign their creator to your player profile.',
-                    'Quét các màn chơi công khai trên Geometry Dash, thêm màn còn thiếu vào GDVN và gán người tạo cho hồ sơ của bạn.'
+                    'Crawl your public Geometry Dash levels, add missing levels to GDListHub, and assign their creator to your player profile.',
+                    'Quét các màn chơi công khai trên Geometry Dash, thêm màn còn thiếu vào GDListHub và gán người tạo cho hồ sơ của bạn.'
                   )}
                 </p>
               </div>

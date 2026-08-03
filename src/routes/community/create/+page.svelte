@@ -659,7 +659,7 @@
         <div class="targetOptions">
           <button type="button" class:active={postTarget === 'global'} on:click={() => changePostTarget('global')}>
             <span class="targetIcon global"><Globe2 size={18} /></span>
-            <span><strong>{$_('community.create.target_global') || 'Global'}</strong><small>{$_('community.create.target_global_hint') || 'Share with the whole GDVN community'}</small></span>
+            <span><strong>{$_('community.create.target_global') || 'Global'}</strong><small>{$_('community.create.target_global_hint') || 'Share with the whole GDListHub community'}</small></span>
           </button>
           <button type="button" class:active={postTarget === 'clan'} disabled={!$user.data?.clan} on:click={() => changePostTarget('clan')}>
             <span class="targetIcon clan"><Shield size={18} /></span>

@@ -192,7 +192,6 @@
 			{#if step === 1}
 				<!-- Welcome -->
 				<div class="space-y-4 text-center">
-					<img src="/logo.png" alt="GDVN" class="mx-auto h-16 invert-0 dark:invert" />
 					<h2 class="text-2xl font-bold">{$_('onboarding.welcome_title')}</h2>
 					<p class="text-muted-foreground">{$_('onboarding.welcome_desc')}</p>
 					<Button class="w-full" on:click={() => goToStep(2)}>

@@ -97,7 +97,7 @@
 </script>
 
 <svelte:head>
-  <title>{text('Organizations', 'Tổ chức')} - Geometry Dash VN</title>
+  <title>{text('Organizations', 'Tổ chức')} - GDListHub</title>
 </svelte:head>
 
 <div class="org-page">
@@ -106,8 +106,8 @@
       <span class="eyebrow"><Building2 size={15} /> {text('Shared accounts', 'Tài khoản dùng chung')}</span>
       <h1>{text('Organizations', 'Tổ chức')}</h1>
       <p>{text(
-        'Create a shared identity for your team, project, or community. Owners control the profile; collaborators can represent the organization across GDVN.',
-        'Tạo danh tính dùng chung cho đội, dự án hoặc cộng đồng. Chủ sở hữu quản lý hồ sơ; cộng tác viên có thể đại diện tổ chức trên GDVN.'
+        'Create a shared identity for your team, project, or community. Owners control the profile; collaborators can represent the organization across GDListHub.',
+        'Tạo danh tính dùng chung cho đội, dự án hoặc cộng đồng. Chủ sở hữu quản lý hồ sơ; cộng tác viên có thể đại diện tổ chức trên GDListHub.'
       )}</p>
     </div>
     {#if $user.loggedIn && !$user.data?.isOrganization}
@@ -121,7 +121,7 @@
     <section class="create-card">
       <div class="field">
         <Label for="organization-name">{text('Organization name', 'Tên tổ chức')}</Label>
-        <Input id="organization-name" bind:value={newName} maxlength={20} placeholder="GDVNTeam" />
+        <Input id="organization-name" bind:value={newName} maxlength={20} placeholder="GDListHubTeam" />
         <small>{text('3-20 letters or numbers; this becomes the profile URL.', '3-20 chữ cái hoặc chữ số; đây sẽ là đường dẫn hồ sơ.')}</small>
       </div>
       <div class="field">
@@ -172,7 +172,7 @@
               <Avatar.Image src={avatarUrl(organization)} alt={organization.name} />
               <Avatar.Fallback>{organization.name?.[0] || '?'}</Avatar.Fallback>
             </Avatar.Root>
-            <div><h3>{organization.name}</h3><p>{organization.organizationDescription || text('GDVN organization', 'Tổ chức GDVN')}</p></div>
+            <div><h3>{organization.name}</h3><p>{organization.organizationDescription || text('GDListHub organization', 'Tổ chức GDListHub')}</p></div>
             <Users size={17} />
           </a>
         {/each}

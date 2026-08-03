@@ -1,7 +1,7 @@
 # Resources
 
-- [Geometry Dash Việt Nam API server](https://github.com/NamPE286/DemonListVN-v3-api)
-- [Geometry Dash Việt Nam Discord server](https://discord.gg/gdvn)
+- [GDListHub API server](https://github.com/NamPE286/DemonListVN-v3-api)
+- [GDListHub Discord server](https://discord.gg/gdvn)
 
 # Contribution Terms and Conditions
 
@@ -50,7 +50,7 @@ Please create an Issue with the following information:
 
 # How to Contribute
 
-You need to set up a local instance of the [Geometry Dash Việt Nam API server](https://github.com/NamPE286/DemonListVN-v3-api) before working on this repository.
+You need to set up a local instance of the [GDListHub API server](https://github.com/NamPE286/DemonListVN-v3-api) before working on this repository.
 
 ## Submitting Changes
 
@@ -58,7 +58,7 @@ Please create a Pull Request that includes:
 
 - A clear list of your changes.
 - Screenshots (if applicable).
-- A link to your Geometry Dash Việt Nam profile so we know who to credit.
+- A link to your GDListHub profile so we know who to credit.
 
 Always write clear commit messages. One-line messages are fine for small changes, but for larger ones, follow this format:
 

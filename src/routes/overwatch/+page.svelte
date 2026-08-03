@@ -158,8 +158,7 @@
     <h2>Overview</h2>
     <ul>
       <li>
-        Overwatch allows the Geometry Dash Việt Nam and Geometry Dash Việt Nam
-        community to regulate itself by providing method for qualified and
+        Overwatch allows the GDListHub community to regulate itself by providing a method for qualified and
         experienced members of community to review submitted records.
       </li>
     </ul>

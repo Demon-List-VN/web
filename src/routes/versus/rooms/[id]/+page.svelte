@@ -1063,7 +1063,7 @@
 </script>
 
 <svelte:head>
-  <title>{room?.name ?? $_('pvp.rooms.room')} - Geometry Dash Việt Nam</title>
+  <title>{room?.name ?? $_('pvp.rooms.room')} - GDListHub</title>
 </svelte:head>
 
 <main class="room-page">

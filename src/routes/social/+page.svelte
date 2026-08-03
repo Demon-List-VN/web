@@ -18,10 +18,10 @@
 </script>
 
 <svelte:head>
-  <title>{text('Social · GDVN', 'Xã hội · GDVN')}</title>
+  <title>{text('Social · GDListHub', 'Xã hội · GDListHub')}</title>
   <meta
     name="description"
-    content={text('Find friends, chat, invite players to PvP, and manage your GDVN social presence.', 'Tìm bạn bè, trò chuyện, mời người chơi PvP và quản lý trạng thái xã hội GDVN.')}
+    content={text('Find friends, chat, invite players to PvP, and manage your GDListHub social presence.', 'Tìm bạn bè, trò chuyện, mời người chơi PvP và quản lý trạng thái xã hội GDListHub.')}
   />
 </svelte:head>
 

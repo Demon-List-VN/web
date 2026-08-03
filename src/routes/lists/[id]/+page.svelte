@@ -321,8 +321,7 @@
 	function getMetaImage(currentList: CustomList | null) {
 		return (
 			getAbsoluteUrl(currentList?.bannerUrl) ||
-			getAbsoluteUrl(currentList?.logoUrl) ||
-			`${siteUrl}/logo.png`
+			getAbsoluteUrl(currentList?.logoUrl)
 		);
 	}
 
@@ -356,7 +355,7 @@
 		currentList: CustomList | null,
 		url: string,
 		description: string,
-		image: string
+		image: string | null
 	) {
 		if (!currentList || currentList.visibility !== 'public') {
 			return '';
@@ -368,7 +367,7 @@
 			name: currentList.title,
 			description,
 			url,
-			image,
+			...(image ? { image } : {}),
 			numberOfItems: currentList.levelCount ?? currentList.items?.length ?? 0,
 			itemListElement: (currentList.items ?? []).slice(0, 50)
 				.map((item, index) => ({
@@ -1476,11 +1475,15 @@
 	<meta property="og:url" content={canonicalUrl} />
 	<meta property="og:description" content={listDescription} />
 	<meta property="og:site_name" content={$_('head.site_name')} />
-	<meta property="og:image" content={listImage} />
-	<meta name="twitter:card" content="summary_large_image" />
+	{#if listImage}
+		<meta property="og:image" content={listImage} />
+	{/if}
+	<meta name="twitter:card" content={listImage ? 'summary_large_image' : 'summary'} />
 	<meta name="twitter:title" content={listTitle} />
 	<meta name="twitter:description" content={listDescription} />
-	<meta name="twitter:image" content={listImage} />
+	{#if listImage}
+		<meta name="twitter:image" content={listImage} />
+	{/if}
 	{#if structuredData}
 		<script type="application/ld+json">{structuredData}</script>
 	{/if}

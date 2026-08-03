@@ -271,7 +271,7 @@
 </script>
 
 <svelte:head>
-  <title>{$_('level_review.page_title')} - GDVN</title>
+  <title>{$_('level_review.page_title')} - GDListHub</title>
 </svelte:head>
 
 <Title value={$_('level_review.title')} />

@@ -726,7 +726,7 @@
   <meta property="og:image:height" content="630" />
   <meta
     property="og:image:alt"
-    content="GDVN Social — new levels, live events, PvP, and official tournaments in one feed"
+    content="GDListHub Social — new levels, live events, PvP, and official tournaments in one feed"
   />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content={homepageTitle} />
@@ -734,7 +734,7 @@
   <meta name="twitter:image" content={`${homepageUrl}/og.png`} />
   <meta
     name="twitter:image:alt"
-    content="GDVN Social — play what’s happening now"
+    content="GDListHub Social — play what’s happening now"
   />
 </svelte:head>
 
@@ -935,7 +935,7 @@
                     <div class="source-avatar pvp-source"><Swords size={19} /></div>
                     <div class="source-copy">
                       <div class="source-line">
-                        <a href="/versus/play">GDVN Versus</a>
+                        <a href="/versus/play">GDListHub Versus</a>
                         <BadgeCheck size={15} class="verified" />
                       </div>
                       <span><Radio size={11} /> {tr('Ranked pulse · Live stats', 'Nhịp xếp hạng · Thống kê trực tiếp')}</span>
@@ -983,7 +983,7 @@
                     <div class="source-avatar event-source"><CalendarDays size={18} /></div>
                     <div class="source-copy">
                       <div class="source-line">
-                        <a href="/events">GDVN Events</a>
+                        <a href="/events">GDListHub Events</a>
                         <BadgeCheck size={15} class="verified" />
                       </div>
                       <span>{tr('An event is running now', 'Sự kiện đang diễn ra')} · {timeAgo(event.start)}</span>
@@ -1023,7 +1023,7 @@
                     <div class="source-avatar tournament-source"><Trophy size={18} /></div>
                     <div class="source-copy">
                       <div class="source-line">
-                        <a href="/tournaments">GDVN Tournaments</a>
+                        <a href="/tournaments">GDListHub Tournaments</a>
                         <BadgeCheck size={15} class="verified" />
                       </div>
                       <span>{tournamentStatus(tournament.status)} · {timeAgo(tournament.created_at)}</span>
@@ -1069,7 +1069,7 @@
                     <div class="source-avatar supporter-source"><Star size={18} fill="currentColor" /></div>
                     <div class="source-copy">
                       <div class="source-line">
-                        <a href="/supporter/top">GDVN Supporters</a>
+                        <a href="/supporter/top">GDListHub Supporters</a>
                         <BadgeCheck size={15} class="verified" />
                       </div>
                       <span>{tr('Community-powered', 'Được cộng đồng chung tay')}</span>
@@ -1078,7 +1078,7 @@
 
                   <div class="supporter-spotlight">
                     <span class="content-label supporter-label"><Trophy size={13} /> {tr('TOP SUPPORTERS', 'TOP NGƯỜI ỦNG HỘ')}</span>
-                    <h2>{tr('The players powering GDVN.', 'Những người chơi tiếp sức cho GDVN.')}</h2>
+                    <h2>{tr('The players powering GDListHub.', 'Những người chơi tiếp sức cho GDListHub.')}</h2>
                     <div class="supporter-list">
                       {#each item.data as supporter, index}
                         <a href={`/player/${supporter.player?.uid}`} class="supporter-row">
@@ -1113,7 +1113,7 @@
                     <div class="source-avatar promo-source"><Sparkles size={18} /></div>
                     <div class="source-copy">
                       <div class="source-line">
-                        <a href="/battlepass">GDVN</a>
+                        <a href="/battlepass">GDListHub</a>
                         <BadgeCheck size={15} class="verified" />
                       </div>
                       <span>{tr('Promoted', 'Quảng bá')} · {tr('Made for active players', 'Dành cho người chơi năng động')}</span>
@@ -1126,7 +1126,7 @@
                     href={season ? '/battlepass' : '/supporter'}
                     style={season ? `background-image: linear-gradient(105deg, rgba(8,10,18,.93), rgba(8,10,18,.42)), url('${season.backgroundUrl || `https://cdn.gdlisthub.dev/battlepasses/${season.id}.webp`}')` : ''}
                   >
-                    <span class="content-label promo-label"><Sparkles size={13} /> {season ? 'GDVN PASS' : tr('SUPPORT GDVN', 'ỦNG HỘ GDVN')}</span>
+                    <span class="content-label promo-label"><Sparkles size={13} /> {season ? 'GDListHub PASS' : tr('SUPPORT GDListHub', 'ỦNG HỘ GDListHub')}</span>
                     <h2>{season?.title || tr('Keep the community moving.', 'Giữ cộng đồng luôn chuyển động.')}</h2>
                     <p>
                       {season

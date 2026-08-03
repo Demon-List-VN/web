@@ -71,7 +71,7 @@
 		{ id: 'submit-record', icon: Send, color: 'indigo', label: ['Submit record', 'Gửi kỷ lục'] },
 		{ id: 'events', icon: CalendarDays, color: 'orange', label: ['Events', 'Sự kiện'] },
 		{ id: 'tournaments', icon: Trophy, color: 'yellow', label: ['Tournaments', 'Giải đấu'] },
-		{ id: 'battlepass', icon: Sparkles, color: 'pink', label: ['GDVN Pass', 'GDVN Pass'] },
+		{ id: 'battlepass', icon: Sparkles, color: 'pink', label: ['GDListHub Pass', 'GDListHub Pass'] },
 		{ id: 'clan', icon: Shield, color: 'teal', label: ['My clan', 'Bang hội của tôi'] },
 		{ id: 'supporter', icon: Star, color: 'gold', label: ['Supporter', 'Supporter'] }
 	];
@@ -391,7 +391,7 @@
   {:else}
     <section class="guest-social">
       <span class="guest-icon"><Users size={22} /></span>
-      <h2>{text('Connect with GDVN', 'Kết nối với GDVN')}</h2>
+      <h2>{text('Connect with GDListHub', 'Kết nối với GDListHub')}</h2>
       <p>{text('Sign in to see friends, messages, and community shortcuts.', 'Đăng nhập để xem bạn bè, tin nhắn và lối tắt cộng đồng.')}</p>
       <div class="guest-links">
         <a href="/">{text('Open home feed', 'Mở bảng tin')}</a>
