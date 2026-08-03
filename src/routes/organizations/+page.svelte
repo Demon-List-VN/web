@@ -41,7 +41,7 @@
 	}
 
 	function avatarUrl(organization: any) {
-		return `https://cdn.gdvn.net/avatars/${organization.uid}.jpg?version=${organization.avatarVersion || 0}`;
+		return `https://cdn.gdlisthub.dev/avatars/${organization.uid}.jpg?version=${organization.avatarVersion || 0}`;
 	}
 
 	async function loadMine() {

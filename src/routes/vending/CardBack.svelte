@@ -9,7 +9,7 @@
 
 	let qrDataUrl = '';
 
-	const FRONTEND_URL = import.meta.env.VITE_FRONTEND_URL || 'https://gdvn.net';
+	const FRONTEND_URL = import.meta.env.VITE_FRONTEND_URL || 'https://gdlisthub.dev';
 
 	$: if (cardID) {
 		QRCode.toDataURL(`${FRONTEND_URL}/record-card/${cardID}`, {
@@ -52,7 +52,7 @@
           <div class="section">
             <p>
               <strong>Kích hoạt thẻ</strong><br />
-              Truy cập vào www.gdvn.net, đăng nhập và quét thẻ này. Thông báo
+              Truy cập vào www.gdlisthub.dev, đăng nhập và quét thẻ này. Thông báo
               liên kết thẻ sẽ hiển thị trên màn hình và thực hiện theo hướng
               dẫn. Hoặc vào Settings &gt; Card và nhập ID của thẻ để liên kết.
             </p>
@@ -78,8 +78,8 @@
           <div class="section support">
             <p>
               <strong>Hỗ trợ khách hàng</strong><br />
-              Email: support@gdvn.net<br />
-              Website: www.gdvn.net
+              Email: support@gdlisthub.dev<br />
+              Website: www.gdlisthub.dev
             </p>
           </div>
 

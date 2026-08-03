@@ -54,7 +54,7 @@
 	const LEVELS_PAGE_SIZE = 50;
 	const LEVELS_AD_FREQUENCY = 6;
 	const OFFICIAL_LIST_SLUGS = new Set(['dl', 'cl', 'pl', 'fl']);
-	const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://gdvn.net').replace(/\/$/, '');
+	const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://gdlisthub.dev').replace(/\/$/, '');
 
 	type CustomListItem = {
 		id: number;

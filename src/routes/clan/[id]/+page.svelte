@@ -86,7 +86,7 @@
 	$: isMember = $user.loggedIn && Number($user.data?.clan) === Number(data.id);
 	$: isOwner = $user.loggedIn && $user.data?.uid === data.owner;
 	$: boosted = isActive(data.boostedUntil);
-	$: clanImage = `https://cdn.gdvn.net/clan-photos/${data.id}.jpg?version=${data.imageVersion ?? 0}`;
+	$: clanImage = `https://cdn.gdlisthub.dev/clan-photos/${data.id}.jpg?version=${data.imageVersion ?? 0}`;
 	$: memberRows = selectedMemberStat.startsWith('list:')
 		? customMemberStats
 		: members.map((player) => ({ player }));

@@ -34,7 +34,7 @@
 	}
 
 	function avatarUrl(account: any) {
-		return `https://cdn.gdvn.net/avatars/${account.uid}.jpg?version=${account.avatarVersion || 0}`;
+		return `https://cdn.gdlisthub.dev/avatars/${account.uid}.jpg?version=${account.avatarVersion || 0}`;
 	}
 
 	async function loadAccounts() {

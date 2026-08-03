@@ -242,7 +242,7 @@
 						briefReview: reviewText,
 						reviewFile: {
 							path,
-							url: `https://cdn.gdvn.net/${path}`,
+							url: `https://cdn.gdlisthub.dev/${path}`,
 							name: file.name,
 							size: file.size,
 							type: file.type || null

@@ -32,7 +32,7 @@
           <div class="player-info">
             <img
               class="avatar"
-              src={data.avatarImage || `https://cdn.gdvn.net/avatars/${data.playerUID}.jpg`}
+              src={data.avatarImage || `https://cdn.gdlisthub.dev/avatars/${data.playerUID}.jpg`}
               alt={data.playerName}
               on:error={(e) => {
                   if (e.target instanceof HTMLImageElement) {
@@ -97,7 +97,7 @@
       <div class="player-info">
         <img
           class="avatar"
-          src={data.avatarImage || `https://cdn.gdvn.net/avatars/${data.playerUID}.jpg`}
+          src={data.avatarImage || `https://cdn.gdlisthub.dev/avatars/${data.playerUID}.jpg`}
           alt={data.playerName}
           on:error={(e) => {
               if (e.target instanceof HTMLImageElement) {

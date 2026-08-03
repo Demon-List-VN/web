@@ -33,8 +33,8 @@
 	$: role = organization.currentUserRole as 'owner' | 'collaborator' | null;
 	$: isOwner = role === 'owner';
 	$: collaborators = (organization.members || []).filter((member: any) => member.role === 'collaborator');
-	$: avatarUrl = `https://cdn.gdvn.net/avatars/${organization.uid}.jpg?version=${organization.avatarVersion || 0}`;
-	$: bannerUrl = `https://cdn.gdvn.net/banners/${organization.uid}.jpg?version=${organization.bannerVersion || 0}`;
+	$: avatarUrl = `https://cdn.gdlisthub.dev/avatars/${organization.uid}.jpg?version=${organization.avatarVersion || 0}`;
+	$: bannerUrl = `https://cdn.gdlisthub.dev/banners/${organization.uid}.jpg?version=${organization.bannerVersion || 0}`;
 	$: if ($user.checked && !privateLoaded) {
 		privateLoaded = true;
 		void loadPrivate();
@@ -311,7 +311,7 @@
             <div class="add-row"><Input bind:value={collaboratorName} placeholder={text('Exact player name', 'Tên người chơi chính xác')} on:keydown={(event) => event.key === 'Enter' && addCollaborator()} /><Button size="icon" disabled={addingCollaborator} on:click={addCollaborator}><Plus size={16} /></Button></div>
             <div class="collaborator-list">
               {#each collaborators as member}
-                <div class="collaborator"><Avatar.Root class="small-avatar"><Avatar.Image src={`https://cdn.gdvn.net/avatars/${member.players.uid}.jpg?version=${member.players.avatarVersion || 0}`} alt={member.players.name} /><Avatar.Fallback>{member.players.name?.[0]}</Avatar.Fallback></Avatar.Root><span>{member.players.name}</span><button disabled={Boolean(transferringUid)} on:click={() => transferOwnership(member)} aria-label={text('Transfer ownership', 'Chuyển quyền sở hữu')} title={text('Transfer ownership', 'Chuyển quyền sở hữu')}><Crown size={15} /></button><button on:click={() => removeCollaborator(member)} aria-label={text('Remove collaborator', 'Xóa cộng tác viên')}><Trash2 size={15} /></button></div>
+                <div class="collaborator"><Avatar.Root class="small-avatar"><Avatar.Image src={`https://cdn.gdlisthub.dev/avatars/${member.players.uid}.jpg?version=${member.players.avatarVersion || 0}`} alt={member.players.name} /><Avatar.Fallback>{member.players.name?.[0]}</Avatar.Fallback></Avatar.Root><span>{member.players.name}</span><button disabled={Boolean(transferringUid)} on:click={() => transferOwnership(member)} aria-label={text('Transfer ownership', 'Chuyển quyền sở hữu')} title={text('Transfer ownership', 'Chuyển quyền sở hữu')}><Crown size={15} /></button><button on:click={() => removeCollaborator(member)} aria-label={text('Remove collaborator', 'Xóa cộng tác viên')}><Trash2 size={15} /></button></div>
               {/each}
               {#if !collaborators.length}<p class="muted">{text('No collaborators yet.', 'Chưa có cộng tác viên.')}</p>{/if}
             </div>

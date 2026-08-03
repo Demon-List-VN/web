@@ -20,8 +20,8 @@
 	$: owner = members.find((member: any) => member.role === 'owner');
 	$: collaborators = members.filter((member: any) => member.role === 'collaborator');
 	$: canManage = Boolean(organization.currentUserRole);
-	$: avatarUrl = `https://cdn.gdvn.net/avatars/${organization.uid}.jpg?version=${organization.avatarVersion || 0}`;
-	$: bannerUrl = `https://cdn.gdvn.net/banners/${organization.uid}.jpg?version=${organization.bannerVersion || 0}`;
+	$: avatarUrl = `https://cdn.gdlisthub.dev/avatars/${organization.uid}.jpg?version=${organization.avatarVersion || 0}`;
+	$: bannerUrl = `https://cdn.gdlisthub.dev/banners/${organization.uid}.jpg?version=${organization.bannerVersion || 0}`;
 	$: themeStyle = `--org-bg:${organization.bgColor || 'hsl(var(--card))'};--org-accent:${organization.borderColor || 'hsl(var(--primary))'};`;
 	$: if ($user.checked && $user.loggedIn) {
 		const key = String($user.data?.authenticatedPlayerUid || $user.data?.uid || '');
@@ -39,7 +39,7 @@
 	function memberAvatar(member: any) {
 		const player = member.players;
 
-		return `https://cdn.gdvn.net/avatars/${player.uid}.jpg?version=${player.avatarVersion || 0}`;
+		return `https://cdn.gdlisthub.dev/avatars/${player.uid}.jpg?version=${player.avatarVersion || 0}`;
 	}
 
 	async function loadPrivateOrganization() {

@@ -477,7 +477,7 @@
 
 			await upload(path, fileToUpload, token);
 
-			return `https://cdn.gdvn.net/${path}`;
+			return `https://cdn.gdlisthub.dev/${path}`;
 		} catch (err) {
 			toast.error($_('community.create.upload_failed'));
 

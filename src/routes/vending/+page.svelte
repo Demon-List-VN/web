@@ -213,7 +213,7 @@
 				const blob = await fetch(customImageDataUrl)
 					.then((r) => r.blob());
 				await upload(path, blob, token!);
-				imgUrl = `https://cdn.gdvn.net/${path}`;
+				imgUrl = `https://cdn.gdlisthub.dev/${path}`;
 			}
 
 			if (customAvatarDataUrl) {
@@ -221,7 +221,7 @@
 				const blob = await fetch(customAvatarDataUrl)
 					.then((r) => r.blob());
 				await upload(path, blob, token!);
-				avatarUrl = `https://cdn.gdvn.net/${path}`;
+				avatarUrl = `https://cdn.gdlisthub.dev/${path}`;
 			}
 		} catch {
 			toast.error('Không thể tải ảnh lên, vui lòng thử lại');
