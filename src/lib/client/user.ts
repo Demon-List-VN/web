@@ -14,6 +14,7 @@ interface userType {
     checked: boolean;
     syncRole: () => Promise<void>;
     refresh: () => Promise<void>;
+    switchOrganization: (organizationUid: string | null) => Promise<void>;
 }
 
 interface CachedUserData {
@@ -116,7 +117,7 @@ function clearCachedUserData() {
     }
 }
 
-async function fetchCurrentPlayer() {
+async function fetchCurrentPlayer(): Promise<any> {
     const response = await fetchWithTimeout(
         `${import.meta.env.VITE_API_URL}/auth/me`,
         {
@@ -184,10 +185,12 @@ async function loadRemoteUser(userId: string) {
     const player = await fetchCurrentPlayer();
     let ratings: Rating[] = [];
 
-    try {
-        ratings = await fetchCurrentPlayerRatings(userId);
-    } catch (err) {
-        console.warn('Failed to load current user ratings:', err);
+    if (!player.isOrganization) {
+        try {
+            ratings = await fetchCurrentPlayerRatings(String(player.uid || userId));
+        } catch (err) {
+            console.warn('Failed to load current user ratings:', err);
+        }
     }
 
     userData.data = player;
@@ -213,7 +216,7 @@ const userData: userType = {
     loggedIn: false,
     checked: false,
     syncRole: async () => {
-        if (!userData.loggedIn) {
+        if (!userData.loggedIn || userData.data?.isOrganization) {
             return;
         }
 
@@ -264,6 +267,28 @@ const userData: userType = {
                 markLoggedOut();
             }
         }
+    },
+    switchOrganization: async (organizationUid: string | null) => {
+        const response = await fetchWithTimeout(
+            `${import.meta.env.VITE_API_URL}/organizations/active`,
+            {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${await userData.token()}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ organizationUid })
+            }
+        );
+
+        if (!response.ok) {
+            const error = await response.json()
+                .catch(() => ({}));
+            throw new Error(error.message || 'Could not switch account');
+        }
+
+        clearCachedUserData();
+        await userData.refresh();
     }
 };
 

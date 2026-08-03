@@ -143,7 +143,9 @@
     >
       {#if isPopoverOpen}
         <a
-          href={`/player/${player.uid}`}
+          href={player.isOrganization
+            ? `/org/${encodeURIComponent(player.name)}`
+            : `/player/${player.uid}`}
           class="rounded-sm underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-8 focus-visible:outline-black"
         >
           <div class="flex items-center gap-[5px]">
@@ -211,7 +213,14 @@
       {/if}
     </Popover.Trigger>
     <Popover.Content class="w-80 border-transparent p-0">
-      <PlayerCard {player} active={isPopoverOpen} />
+      {#if player.isOrganization}
+        <a class="organization-popover" href={`/org/${encodeURIComponent(player.name)}`}>
+          <strong>{player.name}</strong>
+          <span>Organization account · View profile</span>
+        </a>
+      {:else}
+        <PlayerCard {player} active={isPopoverOpen} />
+      {/if}
     </Popover.Content>
   </Popover.Root>
 </div>
@@ -221,6 +230,20 @@
   display: flex;
   align-items: center;
   gap: 7px;
+}
+
+.organization-popover {
+  display: grid;
+  gap: 3px;
+  padding: 16px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  background: hsl(var(--card));
+
+  span {
+    color: hsl(var(--muted-foreground));
+    font-size: 12px;
+  }
 }
 
 .wrapper.large {

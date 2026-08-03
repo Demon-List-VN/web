@@ -341,7 +341,7 @@
       <p class="headerSubtitle">{$_('clans.find_community.description')}</p>
     </div>
     <Dialog.Root>
-      {#if $user.loggedIn && !$user.data.clan}
+      {#if $user.loggedIn && !$user.data.clan && !$user.data?.isOrganization}
         <Dialog.Trigger>
           {#if $user.data.rating || $user.data.totalFLpt}
             <Button>{$_('clans.create.button')}</Button>
@@ -607,7 +607,7 @@
     <div class="tabsBar">
       <Tabs.List>
         <Tabs.Trigger value="clans">{$_('clans.tabs.listing')}</Tabs.Trigger>
-        {#if $user.loggedIn && !$user.data.clan}
+        {#if $user.loggedIn && !$user.data.clan && !$user.data?.isOrganization}
           <Tabs.Trigger value="invitations">{
             $_('clans.tabs.invitations')
           }</Tabs.Trigger>

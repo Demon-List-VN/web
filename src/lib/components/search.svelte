@@ -239,7 +239,9 @@
       {#if result.players.length}
         <Command.Group heading={$_('search.players')}>
           {#each result.players as item}
-            <a href={`/player/${item.uid}`} data-sveltekit-preload-data="tap">
+            <a href={item.isOrganization
+              ? `/org/${encodeURIComponent(item.name)}`
+              : `/player/${item.uid}`} data-sveltekit-preload-data="tap">
               <Command.Item>
                 <Avatar.Root>
                   <Avatar.Image

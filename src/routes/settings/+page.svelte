@@ -572,7 +572,9 @@
       </p>
     </div>
     {#if $user.loggedIn}
-      <a class="profile-link" href={`/player/${$user.data.uid}`}>
+      <a class="profile-link" href={$user.data?.isOrganization
+        ? `/org/${encodeURIComponent($user.data.name)}`
+        : `/player/${$user.data.uid}`}>
         <span>{text('View profile', 'Xem hồ sơ')}</span>
         <ExternalLink size={15} />
       </a>

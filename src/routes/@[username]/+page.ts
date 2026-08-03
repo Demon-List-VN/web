@@ -1,6 +1,6 @@
 import { isActive } from '$lib/client/isSupporterActive.js';
 import { getPlayerData } from '../player/[uid]/getPlayerData.js';
-import { error } from '@sveltejs/kit';
+import { error, redirect } from '@sveltejs/kit';
 import type { PageLoad } from './$types';
 
 export async function load({ params, url, fetch }: Parameters<PageLoad>[0]) {
@@ -8,6 +8,10 @@ export async function load({ params, url, fetch }: Parameters<PageLoad>[0]) {
     const player: any = await (
         await fetch(`${import.meta.env.VITE_API_URL}/players/@${username}`)
     ).json();
+
+    if (player.isOrganization && player.name) {
+        throw redirect(307, `/org/${encodeURIComponent(player.name)}`);
+    }
 
     if (!isActive(player.supporterUntil)) {
         throw error(404, {

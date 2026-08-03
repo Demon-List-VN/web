@@ -57,6 +57,11 @@
 					route: '/clans',
 					name: $locale === 'en' ? 'Clans' : 'Hội',
 					icon: Users
+				},
+				{
+					route: '/organizations',
+					name: $locale === 'en' ? 'Organizations' : 'Tổ chức',
+					icon: Users
 				}
 			]
 		},

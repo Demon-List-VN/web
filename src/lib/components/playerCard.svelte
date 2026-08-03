@@ -124,6 +124,7 @@
 	);
 	$: if (
 		active
+		&& !player?.isOrganization
 		&& player?.uid
 		&& !hasKnownPlayerCardStatLines
 		&& !isLoadingPlayerSettings
@@ -133,6 +134,7 @@
 	}
 	$: if (
 		active
+		&& !player?.isOrganization
 		&& listSummaries === null
 		&& player?.uid
 		&& !hasLoadedRemote
@@ -358,7 +360,9 @@
             <Avatar.Fallback>{cardPlayer.name[0]}</Avatar.Fallback>
           </Avatar.Root>
         </AvatarFrame>
-        <PlayerLevelBadge player={cardPlayer} />
+        {#if !cardPlayer.isOrganization}
+          <PlayerLevelBadge player={cardPlayer} />
+        {/if}
       </div>
       {#if cardPlayer.clan && isActive(cardPlayer.clans.boostedUntil)}
         <a
@@ -375,11 +379,14 @@
           {#if cardPlayer.clan && !isActive(cardPlayer.clans.boostedUntil)}
             <a href={`/clan/${cardPlayer.clan}`}>[{cardPlayer.clans.tag}]</a>
           {/if}
-          <a href={`/player/${cardPlayer.uid}`}>{cardPlayer.name}</a>
+          <a href={cardPlayer.isOrganization
+            ? `/org/${encodeURIComponent(cardPlayer.name)}`
+            : `/player/${cardPlayer.uid}`}>{cardPlayer.name}</a>
         </span>
       </h4>
     </div>
   {/if}
+  {#if !cardPlayer.isOrganization}
   <div class="content">
     <div class="rating">
       <div class="flex justify-center">
@@ -484,6 +491,7 @@
       </div>
     {/if}
   </div>
+  {/if}
 </div>
 </div>
 

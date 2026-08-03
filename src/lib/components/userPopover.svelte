@@ -11,6 +11,7 @@
 	import { isActive } from '$lib/client/isSupporterActive';
 	import { goto } from '$app/navigation';
 	import { _ } from 'svelte-i18n';
+	import { toast } from 'svelte-sonner';
 	import {
 		User,
 		Package,
@@ -19,7 +20,9 @@
 		Users,
 		Shield,
 		MessageSquareText,
-		LogOut
+		LogOut,
+		Building2,
+		RefreshCw
 	} from 'lucide-svelte';
 
 	export let signOut: () => void;
@@ -27,6 +30,9 @@
 	let open = false;
 	let hydratedNavbarPlayer: any = null;
 	let hydratedNavbarPlayerUid = '';
+	let organizations: any[] = [];
+	let organizationsLoadedFor = '';
+	let switchingIdentity = false;
 
 	$: currentPlayer = $user.data;
 	$: if (
@@ -39,6 +45,16 @@
 	}
 	$: navbarFrame = getEquippedFrame(currentPlayer)
 		?? getEquippedFrame(hydratedNavbarPlayer);
+	$: if (open && $user.loggedIn) {
+		const ownerUid = String(
+			$user.data?.authenticatedPlayerUid || $user.data?.uid || ''
+		);
+
+		if (ownerUid && organizationsLoadedFor !== ownerUid) {
+			organizationsLoadedFor = ownerUid;
+			void loadOrganizations();
+		}
+	}
 
 	function navigate(path: string) {
 		open = false;
@@ -58,6 +74,35 @@
 			hydratedNavbarPlayer = await response.json();
 		} catch {
 			hydratedNavbarPlayer = null;
+		}
+	}
+
+	async function loadOrganizations() {
+		try {
+			const response = await fetch(
+				`${import.meta.env.VITE_API_URL}/organizations/mine`,
+				{ headers: { Authorization: `Bearer ${await $user.token()}` } }
+			);
+			organizations = response.ok ? await response.json() : [];
+		} catch {
+			organizations = [];
+		}
+	}
+
+	async function switchIdentity(organizationUid: string | null) {
+		switchingIdentity = true;
+
+		try {
+			await $user.switchOrganization(organizationUid);
+			open = false;
+			toast.success(
+				organizationUid ? 'Organization account activated.' : 'Personal account activated.'
+			);
+			goto('/');
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : 'Could not switch account');
+		} finally {
+			switchingIdentity = false;
 		}
 	}
 </script>
@@ -85,7 +130,9 @@
             <Avatar.Fallback>{$user.data.name[0]}</Avatar.Fallback>
           </Avatar.Root>
         </AvatarFrame>
-        <PlayerLevelBadge player={$user.data} size="sm" />
+        {#if !$user.data?.isOrganization}
+          <PlayerLevelBadge player={$user.data} size="sm" />
+        {/if}
       </span>
     </Button>
   </Popover.Trigger>
@@ -96,17 +143,24 @@
   >
     <!-- Header -->
     <div class="popover-header">
-      <PlayerCard player={$user.data} />
+      {#if $user.data?.isOrganization}
+        <div class="organization-header">
+          <Building2 size={18} />
+          <div><strong>{$user.data.name}</strong><span>Organization account</span></div>
+        </div>
+      {:else}
+        <PlayerCard player={$user.data} />
+      {/if}
     </div>
 
-    {#if isActive($user.data.supporterUntil)}
+    {#if !$user.data?.isOrganization && isActive($user.data.supporterUntil)}
       <div class="tier-progress-wrap">
         <SupporterTierProgress
           supporterUntil={$user.data.supporterUntil}
           compact
         />
       </div>
-    {:else}
+    {:else if !$user.data?.isOrganization}
       <div class="tier-progress-wrap">
         <SupporterTierProgress preview compact nonSupporter />
       </div>
@@ -118,7 +172,9 @@
     <div class="popover-menu">
       <button
         class="popover-item"
-        on:click={() => navigate(`/player/${$user.data.uid}`)}
+        on:click={() => navigate($user.data?.isOrganization
+          ? `/org/${encodeURIComponent($user.data.name)}`
+          : `/player/${$user.data.uid}`)}
       >
         <User size={16} />
         <span>{$_('dropdown.profile')}</span>
@@ -127,6 +183,7 @@
         <Package size={16} />
         <span>{$_('dropdown.inventory')}</span>
       </button>
+      {#if !$user.data?.isOrganization}
       <button
         class="popover-item"
         on:click={() => navigate(`/mySubmission/${$user.data.uid}`)}
@@ -134,11 +191,12 @@
         <LayoutList size={16} />
         <span>{$_('dropdown.submissions')}</span>
       </button>
+      {/if}
       <button class="popover-item" on:click={() => navigate('/orders')}>
         <ShoppingBag size={16} />
         <span>{$_('dropdown.orders')}</span>
       </button>
-      {#if $user.data.clan}
+      {#if !$user.data?.isOrganization && $user.data.clan}
         <button
           class="popover-item"
           on:click={() => navigate(`/clan/${$user.data.clan}`)}
@@ -160,6 +218,29 @@
         </button>
       {/if}
     </div>
+
+    {#if organizations.length || $user.data?.isOrganization}
+      <div class="popover-separator" />
+      <div class="identity-section">
+        <span class="identity-label">Switch identity</span>
+        {#if $user.data?.isOrganization}
+          <button class="popover-item" disabled={switchingIdentity} on:click={() => switchIdentity(null)}>
+            <RefreshCw size={16} /><span>Personal account</span>
+          </button>
+        {/if}
+        {#each organizations as membership}
+          {@const organization = membership.players}
+          {#if organization?.uid !== $user.data?.uid}
+            <button class="popover-item" disabled={switchingIdentity} on:click={() => switchIdentity(organization.uid)}>
+              <Building2 size={16} /><span>{organization.name}</span><small>{membership.role}</small>
+            </button>
+          {/if}
+        {/each}
+        <button class="popover-item" on:click={() => navigate('/organizations')}>
+          <Building2 size={16} /><span>Manage organizations</span>
+        </button>
+      </div>
+    {/if}
 
     <div class="popover-separator" />
 
@@ -215,6 +296,48 @@
 
 .popover-menu {
   padding: 4px;
+}
+
+.identity-section {
+  padding: 6px 4px;
+}
+
+.identity-label {
+  display: block;
+  padding: 4px 12px 6px;
+  color: var(--textColor2);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.organization-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px;
+
+  svg {
+    color: hsl(var(--primary));
+  }
+
+  strong,
+  span {
+    display: block;
+  }
+
+  span {
+    color: var(--textColor2);
+    font-size: 12px;
+  }
+}
+
+.popover-item small {
+  margin-left: auto;
+  color: var(--textColor2);
+  font-size: 11px;
+  text-transform: capitalize;
 }
 
 .popover-item {

@@ -90,6 +90,7 @@
     {#if !$user.loggedIn}
       <Button variant="outline" on:click={signIn}>{$_('nav.sign_in')}</Button>
     {:else}
+      {#if !$user.data?.isOrganization}
       <a
         href="/submit"
         class={`${buttonVariants({ variant: 'ghost', size: 'icon' })} submitIconButton`}
@@ -98,6 +99,7 @@
       >
         <CirclePlus size={18} />
       </a>
+      {/if}
       <SocialButton />
       <NotificationButton />
       <UserPopover {signOut} />
