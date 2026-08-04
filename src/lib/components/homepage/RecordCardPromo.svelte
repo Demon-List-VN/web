@@ -46,8 +46,9 @@
   <div class="demo-card-wrap">
     <div class="demo-card">
       <div class="demo-bg" style="background: {demoBg}"></div>
-      <!-- Top row: progress -->
+      <!-- Top row: logo left, progress right -->
       <div class="demo-top">
+        <img src="/logo.png" alt="GDVN" class="demo-logo" />
         <span class="demo-progress">100%</span>
       </div>
       <!-- Bottom row: player left, level right -->
@@ -194,8 +195,17 @@
   align-items: flex-end;
 }
 
+.demo-logo {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  opacity: 0.9;
+  filter: invert(1);
+  flex-shrink: 0;
+  margin-top: -23px;
+}
+
 .demo-progress {
-  margin-left: auto;
   font-size: 14px;
   font-weight: 800;
   color: #fff;

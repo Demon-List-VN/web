@@ -765,7 +765,7 @@
     <aside class="clan-sidebar">
       <section class="sidebar-card about-card">
         <div class="sidebar-title"><Shield size={17} /><h2>{tr('About this clan', 'Về bang hội')}</h2></div>
-        <p>{tr('A GDListHub community for players to share records, discuss levels, and play together.', 'Cộng đồng GDListHub để người chơi chia sẻ kỷ lục, thảo luận level và cùng thi đấu.')}</p>
+        <p>{tr('A GDVN community for players to share records, discuss levels, and play together.', 'Cộng đồng GDVN để người chơi chia sẻ kỷ lục, thảo luận level và cùng thi đấu.')}</p>
         <div class="sidebar-stats">
           <div><strong>{formatNumber(data.memberCount)}</strong><span>{tr('Members', 'Thành viên')}</span></div>
           <div><strong>{data.memberLimit ? formatNumber(data.memberLimit) : '∞'}</strong><span>{tr('Capacity', 'Sức chứa')}</span></div>

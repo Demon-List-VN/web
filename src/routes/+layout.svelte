@@ -52,6 +52,8 @@
 	let passwordSignInPassword = '';
 	let passwordSignInLoading = false;
 	let passwordInput: HTMLInputElement;
+	const defaultNavLogoSrc = '/logo.png';
+	const defaultFaviconHref = '/favicon.png';
 	const customLogoFailed = writable(false);
 	const localPasswordSignInEmailKey = 'localPasswordSignIn.email';
 
@@ -93,19 +95,20 @@
 	const navLogoSrc = derived(
 		[customListLogoUrl, useCustomListLogo],
 		([$customListLogoUrl, $useCustomListLogo]) =>
-			$useCustomListLogo ? $customListLogoUrl : ''
+			$useCustomListLogo ? $customListLogoUrl : defaultNavLogoSrc
 	);
 	const faviconHref = derived(
 		[customListFaviconUrl, customListLogoUrl, useCustomListLogo],
 		([$customListFaviconUrl, $customListLogoUrl, $useCustomListLogo]) =>
-			$customListFaviconUrl || ($useCustomListLogo ? $customListLogoUrl : '')
+			$customListFaviconUrl
+				|| ($useCustomListLogo ? $customListLogoUrl : defaultFaviconHref)
 	);
 	const navLogoAlt = derived(
 		[customListTitle, useCustomListLogo],
 		([$customListTitle, $useCustomListLogo]) =>
 			$useCustomListLogo && $customListTitle
 				? `${$customListTitle} logo`
-				: 'GDListHub'
+				: 'logo'
 	);
 
 	$: if ($customListLogoUrl !== currentCustomLogoUrl) {
@@ -304,9 +307,7 @@
 <svelte:window on:keydown={handlePasswordSignInKeydown} />
 
 <svelte:head>
-  {#if $faviconHref}
-    <link rel="icon" href={$faviconHref} />
-  {/if}
+  <link rel="icon" href={$faviconHref} />
 </svelte:head>
 
 <ModeWatcher defaultMode="system" />
@@ -393,7 +394,7 @@
     <div class="footerFiller"></div>
     <p>
       © Copyright 2020-2025 gdlisthub.dev.<br />
-      All rights reserved. GDListHub and Geometry Dash are in no way
+      All rights reserved gdlisthub.dev and Geometry Dash Việt Nam are in no way
       affiliated with RobTopGamesAB ®
     </p>
     <div class="links">

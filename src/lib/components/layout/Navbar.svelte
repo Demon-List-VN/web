@@ -55,18 +55,14 @@
       {/if}
     </button>
     <a href="/" class="logo-link" data-sveltekit-preload-data="tap">
-      {#if useCustomListLogo}
-        {#key navLogoSrc}
-          <img
-            src={navLogoSrc}
-            alt={navLogoAlt}
-            class="customListLogo"
-            on:error={onCustomLogoError}
-          />
-        {/key}
-      {:else}
-        <span class="brand-name">GDListHub</span>
-      {/if}
+      {#key navLogoSrc}
+        <img
+          src={navLogoSrc}
+          alt={navLogoAlt}
+          class:customListLogo={useCustomListLogo}
+          on:error={onCustomLogoError}
+        />
+      {/key}
     </a>
   </div>
   <div class="topbar-right">
@@ -200,13 +196,6 @@
     max-width: 120px;
     max-height: 34px;
     margin-bottom: 0;
-  }
-
-  .brand-name {
-    color: var(--textColor1);
-    font-size: 18px;
-    font-weight: 750;
-    letter-spacing: -0.03em;
   }
 }
 

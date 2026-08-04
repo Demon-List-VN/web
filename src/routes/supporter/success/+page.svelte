@@ -26,7 +26,7 @@
   </div>
   <h1 class="mb-[10px] text-5xl">Payment Success</h1>
   <p class="text-lg">
-    Thank you for supporting the development of GDListHub!
+    Thank you for supporting the development of Geometry Dash Việt Nam!
   </p>
   <p class="text-lg">Order ID: {id}</p>
 </div>

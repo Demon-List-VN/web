@@ -293,7 +293,7 @@
           </section>
         {:else}
           <section class="settings-card collaborator-note">
-            <Users size={26} /><div><h2>{text('Collaborator access', 'Quyền cộng tác viên')}</h2><p>{text('You can represent this organization throughout GDListHub. Only the owner can change its name, description, avatar, banner, colors, collaborators, or delete it.', 'Bạn có thể đại diện tổ chức trên GDListHub. Chỉ chủ sở hữu có thể đổi tên, mô tả, ảnh, màu sắc, cộng tác viên hoặc xóa tổ chức.')}</p></div>
+            <Users size={26} /><div><h2>{text('Collaborator access', 'Quyền cộng tác viên')}</h2><p>{text('You can represent this organization throughout GDVN. Only the owner can change its name, description, avatar, banner, colors, collaborators, or delete it.', 'Bạn có thể đại diện tổ chức trên GDVN. Chỉ chủ sở hữu có thể đổi tên, mô tả, ảnh, màu sắc, cộng tác viên hoặc xóa tổ chức.')}</p></div>
           </section>
         {/if}
       </main>

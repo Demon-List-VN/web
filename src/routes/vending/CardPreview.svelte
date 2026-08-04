@@ -24,6 +24,7 @@
           <div class="gold-frame"></div>
         {/if}
         <div class="card-top">
+          <img class="gdvn-logo" src="/logo.png" alt="GDVN" />
           {#if data.progress !== null && data.progress !== undefined}
             <span class="progress-badge">{data.progress}%</span>
           {/if}
@@ -85,8 +86,9 @@
       <div class="gold-frame"></div>
     {/if}
 
-    <!-- Top row: progress -->
+    <!-- Top row: GDVN logo (left) + progress (right) -->
     <div class="card-top">
+      <img class="gdvn-logo" src="/logo.png" alt="GDVN" />
       {#if data.progress !== null && data.progress !== undefined}
         <span class="progress-badge">{data.progress}%</span>
       {/if}
@@ -177,6 +179,11 @@
 /* Scale elements by cqmin (min of width/height) so they stay proportional
    regardless of card shape. Values = original cqw × 1.576 (CR80 ratio),
    so CR80 looks identical to non-fill mode. */
+.card-container.fill .gdvn-logo {
+  width: 23.2cqmin;
+  height: 23.2cqmin;
+  margin-top: -7.4cqmin;
+}
 .card-container.fill .progress-badge {
   font-size: 5.4cqmin;
   padding: 0.76cqmin 2.74cqmin;
@@ -251,8 +258,21 @@
   justify-content: space-between;
 }
 
+.gdvn-logo {
+  width: 14.7cqw;
+  height: 14.7cqw;
+  object-fit: contain;
+  flex-shrink: 0;
+  opacity: 0.9;
+  margin-top: -4.7cqw;
+}
+
+.dark .gdvn-logo,
+.gold .gdvn-logo {
+  filter: invert(1);
+}
+
 .progress-badge {
-  margin-left: auto;
   font-size: 3.42cqw;
   font-weight: 800;
   padding: 0.48cqw 1.74cqw;

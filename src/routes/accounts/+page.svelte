@@ -117,12 +117,12 @@
 	}
 </script>
 
-<svelte:head><title>{text('Switch account', 'Chuyển tài khoản')} - GDListHub</title></svelte:head>
+<svelte:head><title>{text('Switch account', 'Chuyển tài khoản')} - GDVN</title></svelte:head>
 
 <div class="accounts-page">
   <header>
     <a href="/"><ArrowLeft size={16} /> {text('Back', 'Quay lại')}</a>
-    <span class="eyebrow">GDListHub</span>
+    <span class="eyebrow">GDVN</span>
     <h1>{text('Choose an account', 'Chọn tài khoản')}</h1>
     <p>{text(
       'Choose who you want to represent. You can return here from the avatar menu at any time.',
@@ -167,7 +167,7 @@
 
     {#if showCreate}
       <div class="create-form">
-        <div class="field"><Label for="account-org-name">{text('Name', 'Tên')}</Label><Input id="account-org-name" bind:value={newName} maxlength={20} placeholder="GDListHubTeam" /><small>{text('3-20 letters or numbers', '3-20 chữ cái hoặc chữ số')}</small></div>
+        <div class="field"><Label for="account-org-name">{text('Name', 'Tên')}</Label><Input id="account-org-name" bind:value={newName} maxlength={20} placeholder="GDVNTeam" /><small>{text('3-20 letters or numbers', '3-20 chữ cái hoặc chữ số')}</small></div>
         <div class="field"><Label for="account-org-description">{text('Description', 'Mô tả')}</Label><textarea id="account-org-description" bind:value={newDescription} maxlength={500} rows={3} /></div>
         <div class="form-actions"><Button variant="outline" on:click={() => (showCreate = false)}>{text('Cancel', 'Hủy')}</Button><Button disabled={creating} on:click={createOrganization}>{creating ? text('Creating…', 'Đang tạo…') : text('Create and switch', 'Tạo và chuyển')}</Button></div>
       </div>

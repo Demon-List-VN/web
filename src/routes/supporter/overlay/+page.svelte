@@ -172,7 +172,7 @@
 </script>
 
 <svelte:head>
-  <title>Overlay Ủng Hộ GDListHub</title>
+  <title>Overlay Ủng Hộ GDVN</title>
   <meta name="robots" content="noindex,nofollow" />
 </svelte:head>
 
@@ -191,7 +191,7 @@
           truncate={22}
         />
       {:else}
-        <span>Người ủng hộ GDListHub</span>
+        <span>Người ủng hộ GDVN</span>
       {/if}
       {#if visibleEvent.type === 'supporter'}
         <span> đã trở thành Supporter trong </span>
@@ -238,7 +238,7 @@
       </div>
       {#if progress}
         <div class="prizePool">
-          <div class="prizePoolLabel">GDListHub Cup 2026 Prize Pool</div>
+          <div class="prizePoolLabel">GDVN Cup 2026 Prize Pool</div>
           <div class="prizePoolAmount" aria-live="polite">
             {formatPrizePool(animatedPrizePool)}
           </div>

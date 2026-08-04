@@ -378,7 +378,7 @@
       <!-- Upload warning -->
       <div class="upload-alert">
         <strong>Lưu ý:</strong> Ảnh tải lên phải liên quan đến level. Ảnh đại
-        diện và ảnh nền không được chứa nội dung NSFW. GDListHub có quyền từ chối đơn
+        diện và ảnh nền không được chứa nội dung NSFW. GDVN có quyền từ chối đơn
         hàng nếu ảnh không phù hợp.
       </div>
 

@@ -44,6 +44,7 @@
             <Nfc class="nfc-icon" strokeWidth={2} color="#111" />
           {/if}
         </div>
+        <img src="/logo.png" alt="GDVN" class="gdvn-logo" />
       </div>
 
       <!-- Main content -->
@@ -67,8 +68,8 @@
             <p>
               <strong>Điều kiện sử dụng</strong><br />
               Thẻ này không có giá trị quy đổi thành tiền mặt • Thẻ này có giá
-              trị sử dụng tại các ứng dụng và sự kiện do GDListHub quản
-              lí • GDListHub không chịu trách nhiệm các sự cố do thẻ bị
+              trị sử dụng tại các ứng dụng và sự kiện do Geometry Dash VN quản
+              lí • Geometry Dash VN không chịu trách nhiệm các sự cố do thẻ bị
               mất cắp hoặc hư hỏng.
             </p>
           </div>
@@ -139,6 +140,9 @@
   width: 9.46cqmin;
   height: 9.46cqmin;
 }
+.card-back-container.fill .gdvn-logo {
+  width: 23.64cqmin;
+}
 .card-back-container.fill .main-content {
   gap: 3.15cqmin;
 }
@@ -206,6 +210,12 @@
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }
+}
+
+.gdvn-logo {
+  width: 15cqw;
+  height: auto;
+  object-fit: contain;
 }
 
 .main-content {

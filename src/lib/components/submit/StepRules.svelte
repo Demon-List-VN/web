@@ -137,8 +137,8 @@
           <p>
             {
               t(
-                  "Sử dụng Geode mod của GDListHub trong khi chơi level để có cơ hội chấp nhận cao hơn.",
-                  "Use GDListHub's geode mod while playing to have higher chance of acceptance."
+                  "Sử dụng Geometry Dash Việt Nam's geode mod trong khi chơi level để có cơ hội chấp nhận cao hơn.",
+                  "Use Geometry Dash Viet Nam's geode mod while playing to have higher chance of acceptance."
               )
             }
           </p>

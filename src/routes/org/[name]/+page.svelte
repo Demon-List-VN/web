@@ -73,9 +73,9 @@
 </script>
 
 <svelte:head>
-  <title>{organization.name} - GDListHub</title>
+  <title>{organization.name} - Geometry Dash VN</title>
   <meta property="og:title" content={`${organization.name} - Organization`} />
-  <meta property="og:description" content={organization.organizationDescription || 'GDListHub organization'} />
+  <meta property="og:description" content={organization.organizationDescription || 'GDVN organization'} />
   <meta property="og:image" content={avatarUrl} />
 </svelte:head>
 
@@ -95,7 +95,7 @@
       <div class="identity-copy">
         <Badge variant="secondary"><Building2 size={13} /> {text('Organization', 'Tổ chức')}</Badge>
         <h1>{organization.name}</h1>
-        <p>{organization.organizationDescription || text('A shared organization account on GDListHub.', 'Tài khoản tổ chức dùng chung trên GDListHub.')}</p>
+        <p>{organization.organizationDescription || text('A shared organization account on Geometry Dash VN.', 'Tài khoản tổ chức dùng chung trên Geometry Dash VN.')}</p>
       </div>
       {#if canManage}
         <div class="hero-actions">

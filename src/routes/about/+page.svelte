@@ -10,7 +10,7 @@
 
 <BigTitle
   value="About"
-  description="GDListHub maintainers and developers"
+  description="Geometry Dash Việt Nam maintainers and developers"
 />
 
 <div class="wrapper">

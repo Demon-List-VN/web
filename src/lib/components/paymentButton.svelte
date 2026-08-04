@@ -143,7 +143,7 @@
       </Dialog.Header>
       <div class="flex text-sm">
         <p>
-          GDListHub Supporter Role ({quantity[0]} {
+          Geometry Dash Việt Nam Supporter Role ({quantity[0]} {
             $_('general.month')
           }{quantity[0] > 1 && $locale == 'en' ? 's' : ''})
         </p>
