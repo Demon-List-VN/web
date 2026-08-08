@@ -228,7 +228,8 @@
 		faviconUrl?: string | null;
 		isBanned: boolean;
 		isPlatformer: boolean;
-		isOfficial?: boolean;
+		isProtected?: boolean;
+		isVerified?: boolean;
 		levelSubmissionEnabled?: boolean;
 		staffListEnabled?: boolean;
 		logoUrl?: string | null;
@@ -4831,6 +4832,14 @@
 		savedChangesChangelogMode = list?.mode === 'rating' ? 'rating' : 'top';
 	}
 
+	function handleAuditRolledBack(updatedList: CustomList) {
+		discardLevelDrafts();
+		editForm.itemSort = updatedList.itemSort ?? DEFAULT_ITEM_SORT;
+		editForm.itemSortAscending = updatedList.itemSortAscending
+			?? DEFAULT_ITEM_SORT_ASCENDING;
+		applyPagedListPayload(updatedList);
+	}
+
 	async function createChangelogDraftFromAuditIds(
 		auditLogIds: number[],
 		mode: 'top' | 'rating' = list?.mode === 'rating' ? 'rating' : 'top'
@@ -5263,8 +5272,10 @@
 		canViewMembers,
 		canManageMembers,
 		canTransferOwnership,
+		canEditSettings,
 		canEditLevels,
 		canViewAudit,
+		hasUnsavedChanges: hasUnsavedManageChanges,
 		canViewPendingInvitations,
 		pendingInvitationCount: list?.pendingInvitations?.length ?? 0,
 		updateCollaborationSettings,
@@ -5276,6 +5287,7 @@
 		revokePendingInvitation,
 		preferredSection: getInitialCollaborationSection(),
 		onChangelogUpdated: () => (changelogRefreshKey += 1),
+		onAuditRolledBack: handleAuditRolledBack,
 		getRoleLabel,
 		formatDate,
 		formatDateTime

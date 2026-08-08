@@ -8,6 +8,7 @@
 	import { toast } from 'svelte-sonner';
 	import { fly } from 'svelte/transition';
 	import { ArrowLeft } from 'lucide-svelte';
+	import { isBuiltInList } from '$lib/utils/customList';
 
 	import SubmitStepper from '$lib/components/submit/SubmitStepper.svelte';
 	import StepRules from '$lib/components/submit/StepRules.svelte';
@@ -36,7 +37,7 @@
 		description: string;
 		mode: 'rating' | 'top';
 		isPlatformer: boolean;
-		isOfficial?: boolean;
+		isVerified?: boolean;
 		nonGlobalRecordsEnabled?: boolean;
 		topEnabled?: boolean;
 		recordFilterPlatform?: 'any' | 'pc' | 'mobile' | null;
@@ -419,7 +420,7 @@
 
 	function canTargetList(list: EligibleListEntry) {
 		if (
-			list.isOfficial
+			isBuiltInList(list)
 			|| list.nonGlobalRecordsEnabled !== true
 			|| !list.eligible
 		) {

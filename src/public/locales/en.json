@@ -3414,6 +3414,7 @@
             "loading": "Loading list...",
             "error_title": "Unable to open this list",
             "official_badge": "Official",
+            "protected_badge": "Protected",
             "levels_badge": "{count} levels",
             "star_count": "{count} stars",
             "level_badge": "Level {id}",
@@ -3868,7 +3869,8 @@
                 "ban_state_updated": "Ban state updated",
                 "leaderboard_refreshed": "Leaderboard refreshed",
                 "pointercrate_mirror_crawled": "Pointercrate mirror crawled",
-                "aredl_mirror_crawled": "AREDL mirror crawled"
+                "aredl_mirror_crawled": "AREDL mirror crawled",
+                "audit_rollback": "Audit change rolled back"
             },
             "audit_detail": {
                 "actor_label": "Actor",
@@ -3891,7 +3893,15 @@
                 "ban_state_updated": "{actor} performed: {state}.",
                 "leaderboard_refreshed": "{actor} refreshed the leaderboard ({totalPlayers} players, {totalRecords} records).",
                 "pointercrate_mirror_crawled": "{actor} synced Pointercrate ({processed} checked, {inserted} added, {updated} updated, {removed} removed, {failed} failed).",
-                "aredl_mirror_crawled": "{actor} synced AREDL ({processed} checked, {inserted} added, {updated} updated, {removed} removed, {failed} failed)."
+                "aredl_mirror_crawled": "{actor} synced AREDL ({processed} checked, {inserted} added, {updated} updated, {removed} removed, {failed} failed).",
+                "audit_rollback": "{actor} rolled back {action} from audit entry #{auditId}."
+            },
+            "audit_rollback": {
+                "button": "Roll back",
+                "confirm": "Roll back this change? A new audit entry will record the rollback.",
+                "success": "The change was rolled back.",
+                "failed": "Failed to roll back this change.",
+                "unsaved": "Save or discard your pending changes before rolling back an audit entry."
             },
             "unsaved_settings_title": "Unsaved settings",
             "unsaved_settings_hint": "You have changes that have not been saved yet. Save them before leaving this page so the list settings stay in sync.",

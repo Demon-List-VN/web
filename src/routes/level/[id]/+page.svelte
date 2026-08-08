@@ -25,9 +25,9 @@
 		ListPlus
 	} from 'lucide-svelte';
 	import { InfoCircled } from 'svelte-radix';
+	import { isBuiltInList } from '$lib/utils/customList';
 
 	export let data: any;
-	const OFFICIAL_LEVEL_LIST_SLUGS = new Set(['dl', 'pl', 'fl', 'cl']);
 	let levelAPI: any = null;
 	let records: any[] = [];
 	let deathCount: any[] = [];
@@ -47,7 +47,8 @@
 		updated_at: string;
 		mode: 'rating' | 'top';
 		isPlatformer: boolean;
-		isOfficial?: boolean;
+		isProtected?: boolean;
+		isVerified?: boolean;
 		isMirror?: boolean;
 		starCount: number;
 		topEnabled?: boolean;
@@ -231,19 +232,14 @@
 		return `/lists/${list.slug || list.id}`;
 	}
 
-	function isOfficialLevelList(
-		list: Pick<StarredListEntry, 'slug' | 'isOfficial'>
-	) {
-		return Boolean(
-			list.isOfficial
-			|| (list.slug && OFFICIAL_LEVEL_LIST_SLUGS.has(list.slug))
-		);
+	function isBuiltInLevelList(list: Pick<StarredListEntry, 'slug'>) {
+		return isBuiltInList(list);
 	}
 
 	function shouldHideStarredListOwner(
-		list: Pick<StarredListEntry, 'id' | 'slug' | 'isOfficial' | 'isMirror'>
+		list: Pick<StarredListEntry, 'id' | 'slug' | 'isMirror'>
 	) {
-		return Boolean(isOfficialLevelList(list) || list.isMirror);
+		return Boolean(isBuiltInLevelList(list) || list.isMirror);
 	}
 
 	function getOfficialLevelLists(level: any): StarredListEntry[] {
@@ -266,7 +262,8 @@
 					updated_at: updatedAt,
 					mode: 'rating',
 					isPlatformer: false,
-					isOfficial: true,
+					isProtected: true,
+					isVerified: true,
 					starCount: 0,
 					topEnabled: false,
 					item: {
@@ -287,7 +284,8 @@
 					updated_at: updatedAt,
 					mode: 'top',
 					isPlatformer: true,
-					isOfficial: true,
+					isProtected: true,
+					isVerified: true,
 					starCount: 0,
 					topEnabled: true,
 					item: {
@@ -309,7 +307,8 @@
 					updated_at: updatedAt,
 					mode: 'rating',
 					isPlatformer: false,
-					isOfficial: true,
+					isProtected: true,
+					isVerified: true,
 					starCount: 0,
 					topEnabled: false,
 					item: {
@@ -333,7 +332,8 @@
 				updated_at: updatedAt,
 				mode: 'top',
 				isPlatformer: Boolean(level.isPlatformer),
-				isOfficial: true,
+				isProtected: true,
+				isVerified: true,
 				starCount: 0,
 				topEnabled: true,
 				item: {
@@ -366,8 +366,11 @@
 				return {
 					...officialList,
 					...remoteList,
-					isOfficial: Boolean(
-						officialList.isOfficial || remoteList.isOfficial
+					isProtected: Boolean(
+						officialList.isProtected || remoteList.isProtected
+					),
+					isVerified: Boolean(
+						officialList.isVerified || remoteList.isVerified
 					),
 					item: remoteList.item ?? officialList.item
 				};
@@ -580,9 +583,9 @@
                     <div class="starredListHeader">
                       <div class="starredListTitleWrap">
                         <h3>{list.title}</h3>
-                        {#if isOfficialLevelList(list)}
+                        {#if isBuiltInLevelList(list)}
                           <div class="starredListOfficial">
-                            {$_('custom_lists.detail.official_badge')}
+                            {$_('list_selector.verified')}
                           </div>
                         {:else if list.ownerData && !shouldHideStarredListOwner(list)}
                           <div

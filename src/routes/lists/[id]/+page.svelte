@@ -48,12 +48,12 @@
 	import { fly } from 'svelte/transition';
 	import { locale, _ } from 'svelte-i18n';
 	import { InfoCircled } from 'svelte-radix';
+	import { BUILT_IN_LIST_SLUGS, isBuiltInList } from '$lib/utils/customList';
 
 	export let data: any;
 
 	const LEVELS_PAGE_SIZE = 50;
 	const LEVELS_AD_FREQUENCY = 6;
-	const OFFICIAL_LIST_SLUGS = new Set(['dl', 'cl', 'pl', 'fl']);
 	const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://gdlisthub.dev').replace(/\/$/, '');
 
 	type CustomListItem = {
@@ -107,7 +107,8 @@
 		isBanned: boolean;
 		isMirror?: boolean;
 		isPlatformer: boolean;
-		isOfficial?: boolean;
+		isProtected?: boolean;
+		isVerified?: boolean;
 		itemSort?: 'mode_default' | 'created_at';
 		itemSortAscending?: boolean;
 		levelSubmissionEnabled?: boolean;
@@ -333,7 +334,7 @@
 
 		const slug = currentList.slug || '';
 
-		if (currentList.isOfficial && OFFICIAL_LIST_SLUGS.has(slug)) {
+		if (BUILT_IN_LIST_SLUGS.has(slug)) {
 			return $_(`head.list_seo.official_descriptions.${slug}`);
 		}
 
@@ -409,9 +410,9 @@
 	}
 
 	function shouldHideOwnerInfo(
-		currentList: Pick<CustomList, 'id' | 'isOfficial' | 'isMirror'> | null | undefined
+		currentList: Pick<CustomList, 'slug' | 'isMirror'> | null | undefined
 	) {
-		return Boolean(currentList?.isOfficial || currentList?.isMirror);
+		return Boolean(isBuiltInList(currentList) || currentList?.isMirror);
 	}
 
 	function getStaffRoleLabel(role: PublicStaffRole) {
@@ -559,7 +560,7 @@
 	}
 
 	function getItemCardType(item: CustomListItem) {
-		if (list?.isOfficial && list.slug === 'fl') {
+		if (list?.slug === 'fl') {
 			return item.level?.isPlatformer ? 'pl' : 'dl';
 		}
 
@@ -1543,9 +1544,9 @@
 						<p class="heroDesc muted">{$_('custom_lists.detail.no_description')}</p>
 					{/if}
 				</div>
-				{#if canCrawlMirror || canStarList || (list.nonGlobalRecordsEnabled && !list.isOfficial && !list.isBanned && list.visibility !== 'private')}
+				{#if canCrawlMirror || canStarList || (list.nonGlobalRecordsEnabled && !isBuiltInList(list) && !list.isBanned && list.visibility !== 'private')}
 					<div class="heroActions">
-						{#if list.nonGlobalRecordsEnabled && !list.isOfficial && !list.isBanned && list.visibility !== 'private'}
+						{#if list.nonGlobalRecordsEnabled && !isBuiltInList(list) && !list.isBanned && list.visibility !== 'private'}
 							<Button
 								variant="outline"
 								size="sm"
@@ -1612,10 +1613,16 @@
 					<svelte:component this={getModeIcon(list.mode)} class="h-3.5 w-3.5" />
 					{getModeLabel(list.mode)}
 				</span>
-				{#if list.isOfficial}
+				{#if list.isVerified}
 					<span class="metaChip">
 						<Star class="starFilled h-3.5 w-3.5" />
-						{$_('custom_lists.detail.official_badge')}
+						{$_('list_selector.verified')}
+					</span>
+				{/if}
+				{#if list.isProtected}
+					<span class="metaChip">
+						<Lock class="h-3.5 w-3.5" />
+						{$_('custom_lists.detail.protected_badge')}
 					</span>
 				{/if}
 				<span class="metaChip">

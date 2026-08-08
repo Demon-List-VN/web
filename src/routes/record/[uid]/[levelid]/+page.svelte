@@ -52,7 +52,6 @@
 			title: string;
 			mode: 'rating' | 'top';
 			isPlatformer: boolean;
-			isOfficial?: boolean;
 			isVerified?: boolean;
 			topEnabled?: boolean;
 		};
@@ -963,9 +962,7 @@
                               <span class="public-list-title">{
                                 stat.list.title
                               }</span>
-                              {#if stat.list.isOfficial}
-                                <span class="public-list-chip">Official</span>
-                              {:else if stat.list.isVerified}
+                              {#if stat.list.isVerified}
                                 <span class="public-list-chip">Verified</span>
                               {/if}
                             </div>

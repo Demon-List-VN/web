@@ -3413,6 +3413,7 @@
             "loading": "Đang tải danh sách...",
             "error_title": "Không thể mở danh sách này",
             "official_badge": "Chính thức",
+            "protected_badge": "Được bảo vệ",
             "levels_badge": "{count} level",
             "star_count": "{count} sao",
             "level_badge": "Level {id}",
@@ -3867,7 +3868,8 @@
                 "ban_state_updated": "Đã cập nhật trạng thái cấm",
                 "leaderboard_refreshed": "Đã làm mới bảng xếp hạng",
                 "pointercrate_mirror_crawled": "Đã crawl mirror Pointercrate",
-                "aredl_mirror_crawled": "Đã crawl mirror AREDL"
+                "aredl_mirror_crawled": "Đã crawl mirror AREDL",
+                "audit_rollback": "Đã hoàn tác thay đổi audit"
             },
             "audit_detail": {
                 "actor_label": "Người thực hiện",
@@ -3890,7 +3892,15 @@
                 "ban_state_updated": "{actor} đã thực hiện: {state}.",
                 "leaderboard_refreshed": "{actor} đã làm mới bảng xếp hạng ({totalPlayers} người chơi, {totalRecords} bản ghi).",
                 "pointercrate_mirror_crawled": "{actor} đã đồng bộ Pointercrate ({processed} đã kiểm tra, {inserted} thêm, {updated} cập nhật, {removed} xóa, {failed} lỗi).",
-                "aredl_mirror_crawled": "{actor} đã đồng bộ AREDL ({processed} đã kiểm tra, {inserted} thêm, {updated} cập nhật, {removed} xóa, {failed} lỗi)."
+                "aredl_mirror_crawled": "{actor} đã đồng bộ AREDL ({processed} đã kiểm tra, {inserted} thêm, {updated} cập nhật, {removed} xóa, {failed} lỗi).",
+                "audit_rollback": "{actor} đã hoàn tác {action} từ mục audit #{auditId}."
+            },
+            "audit_rollback": {
+                "button": "Hoàn tác",
+                "confirm": "Hoàn tác thay đổi này? Một mục audit mới sẽ ghi lại thao tác hoàn tác.",
+                "success": "Đã hoàn tác thay đổi.",
+                "failed": "Không thể hoàn tác thay đổi này.",
+                "unsaved": "Hãy lưu hoặc hủy các thay đổi đang chờ trước khi hoàn tác một mục audit."
             },
             "unsaved_settings_title": "Có thiết lập chưa lưu",
             "unsaved_settings_hint": "Bạn đang có thay đổi chưa được lưu. Hãy lưu trước khi rời khỏi trang để thiết lập của danh sách không bị lệch.",

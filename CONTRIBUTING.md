@@ -1,7 +1,6 @@
 # Resources
 
 - [Geometry Dash Việt Nam API server](https://github.com/NamPE286/DemonListVN-v3-api)
-- [Geometry Dash Việt Nam Discord server](https://discord.gg/gdvn)
 
 # Contribution Terms and Conditions
 

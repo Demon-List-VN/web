@@ -16,6 +16,7 @@
 		Plus,
 		Save,
 		Search,
+		RotateCcw,
 		Trash2,
 		UserPlus,
 		X
@@ -31,11 +32,14 @@
 	export let canViewMembers = false;
 	export let canManageMembers = false;
 	export let canTransferOwnership = false;
+	export let canEditSettings = false;
 	export let canEditLevels = false;
 	export let canViewAudit = false;
+	export let hasUnsavedChanges = false;
 	export let canViewPendingInvitations = false;
 	export let pendingInvitationCount = 0;
 	export let onChangelogUpdated: () => void = () => {};
+	export let onAuditRolledBack: (updatedList: any) => void | Promise<void> = async () => {};
 
 	export let updateCollaborationSettings: (
 		adminsCanManageHelpers: boolean,
@@ -87,6 +91,7 @@
 	let changelogSettingsSaving = false;
 	let changelogSettingsKey = '';
 	let addingAuditToChangelog = false;
+	let rollingBackAuditId: number | null = null;
 	const changelogAuditActions = new Set([
 		'level_added',
 		'level_updated',
@@ -379,6 +384,84 @@
 
 	function canAddAuditEntryToChangelog(entry: any) {
 		return Boolean(entry?.id && changelogAuditActions.has(entry.action));
+	}
+
+	function hasAuditMetadata(entry: any, key: string) {
+		const value = entry?.metadata?.[key];
+
+		return Boolean(value && typeof value === 'object');
+	}
+
+	function wasAuditEntryRolledBack(entry: any) {
+		return Boolean(
+			entry?.id
+			&& list?.auditLog?.some((candidate: any) =>
+				candidate.action === 'audit_rollback'
+					&& Number(candidate.metadata?.originalAuditLogId) === Number(entry.id)
+			)
+		);
+	}
+
+	function canRollbackAuditEntry(entry: any) {
+		if (!entry?.id || wasAuditEntryRolledBack(entry)) {
+			return false;
+		}
+
+		if (entry.action === 'list_updated') {
+			return canEditSettings
+				&& (hasAuditMetadata(entry, 'changes') || hasAuditMetadata(entry, 'previousState'));
+		}
+
+		if (!canEditLevels || !Number.isInteger(Number(entry.metadata?.levelId))) {
+			return entry.action === 'levels_reordered'
+				&& canEditLevels
+				&& Array.isArray(entry.metadata?.previousLevelIds)
+				&& entry.metadata.previousLevelIds.length > 0;
+		}
+
+		return entry.action === 'level_added'
+			|| ((entry.action === 'level_removed' || entry.action === 'level_updated')
+				&& hasAuditMetadata(entry, 'previousState'));
+	}
+
+	async function rollbackAuditEntry(entry: any) {
+		if (!list || !$user.loggedIn || !canRollbackAuditEntry(entry)) {
+			return;
+		}
+
+		if (hasUnsavedChanges) {
+			toast.error($_('custom_lists.manage.audit_rollback.unsaved'));
+
+			return;
+		}
+
+		if (!confirm($_('custom_lists.manage.audit_rollback.confirm'))) {
+			return;
+		}
+
+		rollingBackAuditId = entry.id;
+
+		try {
+			const response = await fetch(
+				`${import.meta.env.VITE_API_URL}/lists/${list.id}/audit/${entry.id}/rollback`,
+				{
+					method: 'POST',
+					headers: await getAuthHeaders()
+				}
+			);
+			const updatedList = await readPayload(response);
+			await onAuditRolledBack(updatedList);
+			showAuditDetailDialog = false;
+			toast.success($_('custom_lists.manage.audit_rollback.success'));
+		} catch (error) {
+			toast.error(
+				error instanceof Error
+					? error.message
+					: $_('custom_lists.manage.audit_rollback.failed')
+			);
+		} finally {
+			rollingBackAuditId = null;
+		}
 	}
 
 	async function addAuditEntryToChangelog(entry: any) {
@@ -727,6 +810,10 @@
 			return $_('custom_lists.manage.audit.aredl_mirror_crawled');
 		}
 
+		if (action === 'audit_rollback') {
+			return $_('custom_lists.manage.audit.audit_rollback');
+		}
+
 		return action.replaceAll('_', ' ');
 	}
 
@@ -952,6 +1039,16 @@
 					updated: String(metadata.updated ?? '-'),
 					removed: String(metadata.removed ?? '-'),
 					failed: String(metadata.failed ?? '-')
+				}
+			});
+		}
+
+		if (entry.action === 'audit_rollback') {
+			return $_('custom_lists.manage.audit_detail.audit_rollback', {
+				values: {
+					actor,
+					action: String(metadata.originalAction ?? '-'),
+					auditId: String(metadata.originalAuditLogId ?? '-')
 				}
 			});
 		}
@@ -1541,6 +1638,18 @@
         </details>
 
         <Dialog.Footer>
+          {#if canRollbackAuditEntry(auditDetailEntry)}
+            <Button
+              variant="destructive"
+              on:click={() => rollbackAuditEntry(auditDetailEntry)}
+              disabled={rollingBackAuditId !== null}
+            >
+              <RotateCcw class="mr-2 h-4 w-4" />
+              {rollingBackAuditId === auditDetailEntry.id
+                ? `${$_('general.loading')}...`
+                : $_('custom_lists.manage.audit_rollback.button')}
+            </Button>
+          {/if}
           {#if canEditLevels && canAddAuditEntryToChangelog(auditDetailEntry)}
             <Button
               on:click={() => addAuditEntryToChangelog(auditDetailEntry)}

@@ -54,9 +54,7 @@
 			id,
 			title,
 			identifier: typeof list.slug === 'string' ? list.slug : null,
-			subtitle: list.isOfficial
-				? 'Official'
-				: list.isVerified
+			subtitle: list.isVerified
 				? 'Verified'
 				: null
 		};

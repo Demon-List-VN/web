@@ -259,8 +259,6 @@
 			: null;
 		const subtitle = typeof entry.subtitle === 'string'
 			? entry.subtitle
-			: entry.isOfficial
-			? 'Official'
 			: entry.isVerified
 			? 'Verified'
 			: null;

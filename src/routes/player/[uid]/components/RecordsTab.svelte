@@ -185,9 +185,7 @@
 				id: list.id,
 				title: list.title,
 				identifier: list.identifier,
-				subtitle: list.isOfficial
-					? 'Official'
-					: list.isVerified
+				subtitle: list.isVerified
 					? 'Verified'
 					: null
 			});

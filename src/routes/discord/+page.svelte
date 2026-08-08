@@ -24,7 +24,6 @@
 		DISCORD_BOT_INVITE_URL,
 		DISCORD_COMMANDS,
 		DISCORD_OAUTH_URL,
-		DISCORD_SERVER_INVITE_URL,
 		type DiscordCommandGroup
 	} from '$lib/client/discord';
 
@@ -137,16 +136,6 @@
     <h1>{$_('discord_bot.hero_title')}</h1>
     <p>{$_('discord_bot.hero_description')}</p>
     <div class="heroActions">
-      <a
-        href={DISCORD_SERVER_INVITE_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <Button class="heroPrimary">
-          <Users class="h-5 w-5" />
-          {$_('discord_bot.join_server')}
-        </Button>
-      </a>
       <a
         href={DISCORD_BOT_INVITE_URL}
         target="_blank"
@@ -303,16 +292,6 @@
         <Button>
           <ExternalLink class="h-4 w-4" />
           {$_('discord_bot.add_button')}
-        </Button>
-      </a>
-      <a
-        href={DISCORD_SERVER_INVITE_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <Button variant="outline">
-          <Users class="h-4 w-4" />
-          {$_('discord_bot.join_server')}
         </Button>
       </a>
     </div>

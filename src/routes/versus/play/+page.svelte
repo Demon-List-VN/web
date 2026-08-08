@@ -14,7 +14,6 @@
 	import PvpHomeDashboard, { type PvpRecentFormItem } from './PvpHomeDashboard.svelte';
 	import WeeklyRaceTab from './WeeklyRaceTab.svelte';
 	import { user } from '$lib/client';
-	import { DISCORD_SERVER_INVITE_URL } from '$lib/client/discord';
 	import supabase from '$lib/client/supabase';
 	import { showXpAwardToast } from '$lib/client/xpToast';
 	import { Badge } from '$lib/components/ui/badge';
@@ -4082,14 +4081,6 @@
                 </a>
               {:else if currentPvpTip.type === 'discord'}
                 <span>{$_('pvp.tips.discord.text')}</span>
-                <a
-                  href={DISCORD_SERVER_INVITE_URL}
-                  class="pvp-tip-link"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {$_('pvp.tips.discord.link')}
-                </a>
               {:else if currentPvpTip.type === 'shitpost'}
                 {$_(`pvp.tips.shitpost.${currentPvpTip.key}`)}
               {:else}

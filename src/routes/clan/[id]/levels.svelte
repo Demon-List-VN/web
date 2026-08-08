@@ -225,7 +225,7 @@
             {#if isCreatedCategory}
               <span><Users size={12} /> {tr('Clan creators', 'Nhà sáng tạo bang hội')}</span>
             {:else}
-              {#if activeList.isOfficial}<span><BadgeCheck size={12} /> {tr('Official', 'Chính thức')}</span>{:else if activeList.isVerified}<span><BadgeCheck size={12} /> {tr('Verified', 'Đã xác minh')}</span>{/if}
+              {#if activeList.isVerified}<span><BadgeCheck size={12} /> {tr('Verified', 'Đã xác minh')}</span>{/if}
               <span>{activeList.leaderboardMode === 'creator' ? tr('Creator list', 'Danh sách sáng tạo') : tr('Player list', 'Danh sách người chơi')}</span>
             {/if}
           </span>

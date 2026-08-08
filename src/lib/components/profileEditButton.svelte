@@ -230,9 +230,7 @@
 			id: summary.id,
 			title: summary.title,
 			identifier: summary.identifier,
-			subtitle: summary.isOfficial
-				? 'Official'
-				: summary.isVerified
+			subtitle: summary.isVerified
 				? 'Verified'
 				: null
 		}));

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { locale } from 'svelte-i18n';
 	import { CheckCircle2, CircleSlash, ExternalLink } from 'lucide-svelte';
+	import { isBuiltInList } from '$lib/utils/customList';
 
 	type RecordFilterPlatform = 'any' | 'pc' | 'mobile';
 	type RecordFilterAcceptanceStatus = 'manual' | 'auto' | 'any';
@@ -16,7 +17,7 @@
 		description?: string;
 		mode: 'rating' | 'top';
 		isPlatformer: boolean;
-		isOfficial?: boolean;
+		isVerified?: boolean;
 		nonGlobalRecordsEnabled?: boolean;
 		ownerData?: any | null;
 		eligible?: boolean | null;
@@ -140,7 +141,7 @@
 	}
 
 	function canTargetList(list: ReviewedListEntry) {
-		return !list.isOfficial
+		return !isBuiltInList(list)
 			&& list.nonGlobalRecordsEnabled === true
 			&& Boolean(list.eligible)
 			&& list.filterChecks.every((filter) => filter.matched);
@@ -174,7 +175,7 @@
 
 			return left.title.localeCompare(right.title);
 		}) as ReviewedListEntry[];
-	$: customLists = reviewedLists.filter((list) => !list.isOfficial);
+	$: customLists = reviewedLists.filter((list) => !isBuiltInList(list));
 </script>
 
 <div class="target-layout">
@@ -246,21 +247,15 @@
               <div>
                 <div class="target-list-title-row">
                   <h4>{list.title}</h4>
-                  {#if list.isOfficial}
-                    <span class="list-chip official">{
-                      t('Chính thức', 'Official')
-                    }</span>
-                  {:else}
-                    <span
-                      class="list-chip"
-                      class:matched={list.nonGlobalRecordsEnabled === true}
-                      class:unmatched={!list.nonGlobalRecordsEnabled}
-                    >
-                      {list.nonGlobalRecordsEnabled
-                        ? t('Nhận record riêng', 'List-only enabled')
-                        : t('Chỉ record global', 'Global only')}
-                    </span>
-                  {/if}
+                  <span
+                    class="list-chip"
+                    class:matched={list.nonGlobalRecordsEnabled === true}
+                    class:unmatched={!list.nonGlobalRecordsEnabled}
+                  >
+                    {list.nonGlobalRecordsEnabled
+                      ? t('Nhận record riêng', 'List-only enabled')
+                      : t('Chỉ record global', 'Global only')}
+                  </span>
                   <span
                     class="list-chip"
                     class:matched={Boolean(list.eligible)}
@@ -512,8 +507,7 @@
 }
 
 .filter-chip.matched,
-.list-chip.matched,
-.list-chip.official {
+.list-chip.matched {
   border-color: hsl(var(--primary) / 0.35);
   background: hsl(var(--primary) / 0.1);
   color: hsl(var(--primary));

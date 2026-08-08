@@ -101,7 +101,13 @@ export function resolveDefaultPlayerCardStatLineIds(
     for (const summary of listSummaries) {
         const slug = summary.slug || summary.identifier;
 
-        if (!summary.isOfficial || !slug || summariesBySlug.has(slug)) {
+        if (
+            !slug
+            || !DEFAULT_PLAYER_CARD_STAT_LINE_SLUGS.includes(
+                slug as DefaultPlayerCardStatLineSlug
+            )
+            || summariesBySlug.has(slug)
+        ) {
             continue;
         }
 

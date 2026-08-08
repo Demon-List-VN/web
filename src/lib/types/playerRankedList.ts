@@ -5,7 +5,6 @@ export type PlayerRankedListSummary = {
     slug: string | null;
     identifier: string;
     title: string;
-    isOfficial: boolean;
     isVerified: boolean;
     mode: string;
     isPlatformer: boolean;

@@ -78,9 +78,9 @@
             <div>
               <div class="eligible-list-title-row">
                 <h4>{list.title}</h4>
-                {#if list.isOfficial}
+                {#if list.isVerified}
                   <span class="list-chip official">{
-                    t('Chính thức', 'Official')
+                    t('Đã xác minh', 'Verified')
                   }</span>
                 {/if}
               </div>

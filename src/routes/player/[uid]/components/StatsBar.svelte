@@ -76,9 +76,7 @@
 			id: Number(list.id),
 			title: list.title,
 			identifier: list.identifier ?? list.slug ?? String(list.id),
-			subtitle: list.isOfficial
-				? $_('list_selector.official')
-				: list.isVerified
+			subtitle: list.isVerified
 				? $_('list_selector.verified')
 				: null
 		};
@@ -171,13 +169,13 @@
 					token
 				)
 				: Promise.resolve([] as ListSelectorOption[]);
-			const officialPromise = fetchListOptions(
-				`${import.meta.env.VITE_API_URL}/lists?kind=official&limit=20`,
-				$_('list_selector.official')
+			const verifiedPromise = fetchListOptions(
+				`${import.meta.env.VITE_API_URL}/lists?kind=verified&limit=20`,
+				$_('list_selector.verified')
 			);
-			const [starredResult, officialResult] = await Promise.allSettled([
+			const [starredResult, verifiedResult] = await Promise.allSettled([
 				starredPromise,
-				officialPromise
+				verifiedPromise
 			]);
 
 			if (loadKey !== listSuggestionLoadKey) {
@@ -187,11 +185,11 @@
 			const starredOptions = starredResult.status === 'fulfilled'
 				? starredResult.value
 				: [];
-			const officialOptions = officialResult.status === 'fulfilled'
-				? officialResult.value
+			const verifiedOptions = verifiedResult.status === 'fulfilled'
+				? verifiedResult.value
 				: [];
 
-			listSuggestions = mergeListOptions(starredOptions, officialOptions);
+			listSuggestions = mergeListOptions(starredOptions, verifiedOptions);
 		} finally {
 			if (loadKey === listSuggestionLoadKey) {
 				listSuggestionsLoading = false;

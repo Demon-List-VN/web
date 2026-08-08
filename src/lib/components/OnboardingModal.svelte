@@ -6,7 +6,7 @@
 	import * as Select from '$lib/components/ui/select/index.js';
 	import { ScrollArea } from '$lib/components/ui/scroll-area/index.js';
 	import { onMount } from 'svelte';
-	import { DISCORD_OAUTH_URL, DISCORD_SERVER_INVITE_URL } from '$lib/client/discord';
+	import { DISCORD_OAUTH_URL } from '$lib/client/discord';
 
 	export let open = false;
 
@@ -399,11 +399,6 @@
 						<h2 class="text-xl font-bold">{$_('onboarding.discord_title')}</h2>
 						<p class="mt-1 text-sm text-muted-foreground">{$_('onboarding.discord_desc')}</p>
 					</div>
-					<a href={DISCORD_SERVER_INVITE_URL} target="_blank" rel="noopener noreferrer">
-						<Button class="w-full bg-indigo-600 text-white hover:bg-indigo-700">
-							{$_('onboarding.discord_join')}
-						</Button>
-					</a>
 					<div class="flex gap-2">
 						<Button variant="outline" class="flex-1" on:click={() => goToStep(5)}>
 							{$_('onboarding.back')}

@@ -1,8 +1,6 @@
 const DISCORD_CLIENT_ID = import.meta.env.VITE_DISCORD_CLIENT_ID || '1071500325338488843';
 const API_URL = (import.meta.env.VITE_API_URL || 'https://api.gdvn.net').replace(/\/+$/, '');
 
-export const DISCORD_SERVER_INVITE_URL = 'https://discord.gg/fybxJ9Y344';
-
 export const DISCORD_BOT_INVITE_URL = `https://discord.com/oauth2/authorize?${
     new URLSearchParams({
         client_id: DISCORD_CLIENT_ID,

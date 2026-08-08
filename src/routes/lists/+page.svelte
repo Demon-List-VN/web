@@ -24,6 +24,7 @@
 		Star
 	} from 'lucide-svelte';
 	import { _ } from 'svelte-i18n';
+	import { isBuiltInList } from '$lib/utils/customList';
 
 	export let data: any;
 
@@ -57,7 +58,7 @@
 		bannerUrl?: string | null;
 		borderColor?: string | null;
 		isPlatformer: boolean;
-		isOfficial?: boolean;
+		isProtected?: boolean;
 		isMirror?: boolean;
 		isVerified?: boolean;
 		logoUrl?: string | null;
@@ -193,9 +194,9 @@
 	}
 
 	function shouldHideOwnerInfo(
-		list: Pick<ListSummary, 'id' | 'isOfficial' | 'isMirror'>
+		list: Pick<ListSummary, 'slug' | 'isMirror'>
 	) {
-		return Boolean(list.isOfficial || list.isMirror);
+		return Boolean(isBuiltInList(list) || list.isMirror);
 	}
 
 	function isHexColor(value: string | null | undefined) {
@@ -698,10 +699,10 @@
                         <Layers class="h-3.5 w-3.5" />
                         {formatListType(list.isPlatformer)}
                       </span>
-                      {#if list.isOfficial}
+                      {#if list.isVerified}
                         <span class="metaItem">
                           <Star class="h-3.5 w-3.5" />
-                          Official
+                          Verified
                         </span>
                       {/if}
                       <span class="metaItem">
@@ -886,10 +887,10 @@
                       <Layers class="h-3.5 w-3.5" />
                       {formatListType(list.isPlatformer)}
                     </span>
-                    {#if list.isOfficial}
+                    {#if list.isVerified}
                       <span class="metaItem">
                         <Star class="h-3.5 w-3.5" />
-                        Official
+                        Verified
                       </span>
                     {/if}
                     <span class="metaItem">
@@ -1073,10 +1074,10 @@
                       <Layers class="h-3.5 w-3.5" />
                       {formatListType(list.isPlatformer)}
                     </span>
-                    {#if list.isOfficial}
+                    {#if list.isVerified}
                       <span class="metaItem">
                         <Star class="h-3.5 w-3.5" />
-                        Official
+                        Verified
                       </span>
                     {/if}
                     <span class="metaItem">
@@ -1265,10 +1266,10 @@
                         <Layers class="h-3.5 w-3.5" />
                         {formatListType(list.isPlatformer)}
                       </span>
-                      {#if list.isOfficial}
+                      {#if list.isVerified}
                         <span class="metaItem">
                           <Star class="h-3.5 w-3.5" />
-                          Official
+                          Verified
                         </span>
                       {/if}
                       {#if getRoleLabel(list.currentUserRole) && list.currentUserRole !== 'owner'}
@@ -1420,10 +1421,10 @@
                         <Layers class="h-3.5 w-3.5" />
                         {formatListType(list.isPlatformer)}
                       </span>
-                      {#if list.isOfficial}
+                      {#if list.isVerified}
                         <span class="metaItem">
                           <Star class="h-3.5 w-3.5" />
-                          Official
+                          Verified
                         </span>
                       {/if}
                       <span class="metaItem">
