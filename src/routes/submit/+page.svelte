@@ -7,8 +7,7 @@
 		ArrowLeft,
 		ClipboardCheck,
 		Gauge,
-		ListPlus,
-		MessageSquareText
+		ListPlus
 	} from 'lucide-svelte';
 
 	function preserveSearch(path: string) {
@@ -31,10 +30,6 @@
 
 	function chooseChallengeListFlow() {
 		void goto('/lists/cl/submit');
-	}
-
-	function chooseLevelFeedbackFlow() {
-		void goto('/submit/level-feedback');
 	}
 
 	function chooseLdmVariantFlow() {
@@ -95,24 +90,6 @@
               </span>
               <span class="option-description">
                 {$_('submit.flow.challenge_description')}
-              </span>
-            </span>
-          </button>
-
-          <button
-            type="button"
-            class="flow-option"
-            on:click={chooseLevelFeedbackFlow}
-          >
-            <span class="option-icon">
-              <MessageSquareText size={22} />
-            </span>
-            <span class="option-copy">
-              <span class="option-title">
-                {$_('submit.flow.feedback_title')}
-              </span>
-              <span class="option-description">
-                {$_('submit.flow.feedback_description')}
               </span>
             </span>
           </button>

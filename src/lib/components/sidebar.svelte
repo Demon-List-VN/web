@@ -12,7 +12,7 @@
 	import { isActive } from '$lib/client/isSupporterActive';
 	import { _ } from 'svelte-i18n';
 	import ChevronDown from 'svelte-radix/ChevronDown.svelte';
-	import { Heart } from 'lucide-svelte';
+	import { Gem } from 'lucide-svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import type { NavGroup } from '$lib/components/layout/navTypes';
 
@@ -233,7 +233,7 @@
               data-sveltekit-preload-data="tap"
               on:click={handleLinkClick}
             >
-              <Heart size={18} />
+              <Gem size={18} />
               <span>{$_('nav.supporter')}</span>
             </a>
           </Tooltip.Trigger>
@@ -250,7 +250,7 @@
           data-sveltekit-preload-data="tap"
           on:click={handleLinkClick}
         >
-          <Heart size={18} />
+          <Gem size={18} />
           <span>{$_('nav.supporter')}</span>
         </a>
       {/if}
@@ -265,7 +265,7 @@
             data-sveltekit-preload-data="tap"
             on:click={handleLinkClick}
           >
-            <Heart size={18} />
+            <Gem size={18} />
             <span>{$_('nav.supporter')}</span>
           </a>
         </Tooltip.Trigger>
@@ -281,7 +281,7 @@
         data-sveltekit-preload-data="tap"
         on:click={handleLinkClick}
       >
-        <Heart size={18} />
+        <Gem size={18} />
         <span>{$_('nav.supporter')}</span>
       </a>
     {/if}
@@ -440,21 +440,21 @@
 }
 
 .supporter-cta {
-  color: #eab308;
+  color: #06b6d4;
   font-weight: 600;
 
   &:hover {
-    background-color: rgba(234, 179, 8, 0.1);
-    color: #facc15;
+    background-color: rgba(6, 182, 212, 0.1);
+    color: #22d3ee;
   }
 }
 
 .supporter-link {
-  color: #eab308;
+  color: #06b6d4;
 
   &.active {
-    color: #facc15;
-    background-color: rgba(234, 179, 8, 0.1);
+    color: #22d3ee;
+    background-color: rgba(6, 182, 212, 0.1);
   }
 }
 </style>

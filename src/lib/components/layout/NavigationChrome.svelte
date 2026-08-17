@@ -1,16 +1,13 @@
 <script lang="ts">
 	import {
 		LayoutList,
-		Ticket,
 		Calendar,
 		Users,
 		Download,
 		BookOpen,
-		ShoppingBag,
 		MoreHorizontal,
 		Shuffle,
 		GitCompare,
-		CreditCard,
 		Bug,
 		Swords,
 		Trophy
@@ -38,7 +35,6 @@
 			name: $locale === 'en' ? 'Tournaments' : 'Giải đấu',
 			icon: Trophy
 		},
-		{ route: '/battlepass', name: 'Pass', icon: Ticket },
 		{
 			route: '/events',
 			name: $locale === 'en' ? 'Event' : 'Sự kiện',
@@ -72,16 +68,6 @@
 		},
 		{ route: '/discord', name: 'Discord', icon: DiscordLogo },
 		{ route: '/wiki', name: 'Wiki', icon: BookOpen },
-		{
-			route: '/store',
-			name: $locale === 'en' ? 'Store' : 'Cửa hàng',
-			icon: ShoppingBag
-		},
-		{
-			route: '/vending',
-			name: $locale === 'en' ? 'Card Maker' : 'Máy Tạo Thẻ',
-			icon: CreditCard
-		},
 		{
 			route:
 				'https://docs.google.com/forms/d/e/1FAIpQLSdF4pJFdwbrFKQPLU0PPPX-bkrPJpMTSnlJ6XWNbSCpSOUqpQ/viewform?usp=dialog',
