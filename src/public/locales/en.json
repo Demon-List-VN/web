@@ -88,13 +88,13 @@
         },
         "list_seo": {
             "index_titles": {
-                "official": "Official Geometry Dash Lists",
+                "partner": "Partner Geometry Dash Lists",
                 "verified": "Verified Geometry Dash Lists",
                 "mirror": "Mirror Geometry Dash Lists",
                 "custom": "Community Geometry Dash Lists"
             },
             "index_descriptions": {
-                "official": "Browse official GDListHub Geometry Dash lists including Classic, Challenge, Platformer, and Featured rankings.",
+                "partner": "Browse Geometry Dash lists maintained by GDListHub partners.",
                 "verified": "Browse GDListHub-verified Geometry Dash lists reviewed for the community.",
                 "mirror": "Browse mirrored Geometry Dash level lists preserved on GDListHub.",
                 "custom": "Browse community-made Geometry Dash lists and level collections on GDListHub."
@@ -3342,7 +3342,7 @@
                 "browse": "Browse",
                 "custom": "Community",
                 "community": "Community",
-                "official": "Official",
+                "partner": "Partners",
                 "verified": "Verified",
                 "mirror": "Mirror",
                 "mine": "My lists",
@@ -3363,14 +3363,14 @@
                 "add_level": "Add current level",
                 "by": "by"
             },
-            "official": {
-                "heading": "Official lists",
-                "hint": "Official lists are maintained by the GDListHub team.",
-                "search_placeholder": "Search official lists by title or description",
+            "partner": {
+                "heading": "Partner lists",
+                "hint": "These lists are maintained by GDListHub partners.",
+                "search_placeholder": "Search partner lists by title or description",
                 "search_button": "Search",
-                "empty_title": "No official lists found",
+                "empty_title": "No partner lists found",
                 "empty_search_hint": "Try a different search term.",
-                "empty_browse_hint": "Official lists will appear here once they are available."
+                "empty_browse_hint": "Partner lists will appear here once they are available."
             },
             "verified": {
                 "heading": "Verified lists",

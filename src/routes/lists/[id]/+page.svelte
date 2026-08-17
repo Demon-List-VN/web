@@ -575,6 +575,11 @@
 
 	function getRequestedTab(searchParams: URLSearchParams): DetailTab {
 		const tab = searchParams.get('tab');
+		const defaultTab: DetailTab = list?.overview?.trim() ? 'overview' : 'levels';
+
+		if (tab === 'overview') {
+			return 'overview';
+		}
 
 		if (tab === 'levels') {
 			return 'levels';
@@ -600,7 +605,7 @@
 			return 'community';
 		}
 
-		return 'overview';
+		return defaultTab;
 	}
 
 	function getRequestedLeaderboardPage(searchParams: URLSearchParams) {
@@ -612,7 +617,9 @@
 	function buildDetailUrl(nextTab: DetailTab, nextPage: number = 1) {
 		const query = new URLSearchParams($page.url.searchParams);
 
-		if (nextTab === 'overview') {
+		const defaultTab: DetailTab = list?.overview?.trim() ? 'overview' : 'levels';
+
+		if (nextTab === defaultTab) {
 			query.delete('tab');
 			query.delete('page');
 		} else {

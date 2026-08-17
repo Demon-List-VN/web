@@ -88,13 +88,13 @@
         },
         "list_seo": {
             "index_titles": {
-                "official": "Danh sách Geometry Dash chính thức",
+                "partner": "Danh sách Geometry Dash đối tác",
                 "verified": "Danh sách Geometry Dash đã xác minh",
                 "mirror": "Danh sách Geometry Dash mirror",
                 "custom": "Danh sách Geometry Dash cộng đồng"
             },
             "index_descriptions": {
-                "official": "Xem các danh sách Geometry Dash chính thức của GDListHub gồm Classic, Challenge, Platformer và Featured.",
+                "partner": "Xem các danh sách Geometry Dash từ các đối tác của GDListHub.",
                 "verified": "Xem các danh sách Geometry Dash đã được đội ngũ GDListHub xác minh cho cộng đồng.",
                 "mirror": "Xem các danh sách level Geometry Dash được mirror và lưu trữ trên GDListHub.",
                 "custom": "Xem các danh sách Geometry Dash và bộ sưu tập level do cộng đồng tạo trên GDListHub."
@@ -3341,7 +3341,7 @@
                 "browse": "Khám phá",
                 "custom": "Cộng đồng",
                 "community": "Cộng đồng",
-                "official": "Chính thức",
+                "partner": "Đối tác",
                 "verified": "Đã xác minh",
                 "mirror": "Mirror",
                 "mine": "Danh sách của tôi",
@@ -3362,14 +3362,14 @@
                 "add_level": "Thêm level hiện tại",
                 "by": "bởi"
             },
-            "official": {
-                "heading": "Danh sách chính thức",
-                "hint": "Các danh sách chính thức được đội ngũ GDListHub duy trì.",
-                "search_placeholder": "Tìm kiếm danh sách chính thức theo tên hoặc mô tả",
+            "partner": {
+                "heading": "Danh sách đối tác",
+                "hint": "Các danh sách được duy trì bởi đối tác của GDListHub.",
+                "search_placeholder": "Tìm kiếm danh sách đối tác theo tên hoặc mô tả",
                 "search_button": "Tìm kiếm",
-                "empty_title": "Không tìm thấy danh sách chính thức",
+                "empty_title": "Không tìm thấy danh sách đối tác",
                 "empty_search_hint": "Hãy thử từ khóa khác.",
-                "empty_browse_hint": "Danh sách chính thức sẽ xuất hiện ở đây khi sẵn sàng."
+                "empty_browse_hint": "Danh sách đối tác sẽ xuất hiện ở đây khi sẵn sàng."
             },
             "verified": {
                 "heading": "Danh sách đã xác minh",

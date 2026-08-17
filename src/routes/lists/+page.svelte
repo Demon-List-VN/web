@@ -27,9 +27,9 @@
 
 	export let data: any;
 
-	const PUBLIC_TABS = ['official', 'verified', 'mirror', 'custom'] as const;
+	const PUBLIC_TABS = ['partner', 'verified', 'mirror', 'custom'] as const;
 	type PublicListTab = (typeof PUBLIC_TABS)[number];
-	type PublicListSection = 'official' | 'verified' | 'mirror' | 'browse';
+	type PublicListSection = 'partner' | 'verified' | 'mirror' | 'browse';
 	type ListTab = PublicListTab | 'mine' | 'starred';
 	type CustomListResolvedRole =
 		| 'viewer'
@@ -42,7 +42,7 @@
 		''
 	);
 	const PUBLIC_TAB_SECTIONS: Record<PublicListTab, PublicListSection> = {
-		official: 'official',
+		partner: 'partner',
 		verified: 'verified',
 		mirror: 'mirror',
 		custom: 'browse'
@@ -59,6 +59,7 @@
 		isPlatformer: boolean;
 		isOfficial?: boolean;
 		isMirror?: boolean;
+		isPartner?: boolean;
 		isVerified?: boolean;
 		logoUrl?: string | null;
 		visibility: 'private' | 'unlisted' | 'public';
@@ -81,7 +82,7 @@
 	$: pageSize = data?.pageSize ?? 12;
 	$: searchQuery = data?.search ?? '';
 	$: publicTab =
-		(isPublicListTab(data?.tab) ? data.tab : 'official') as PublicListTab;
+		(isPublicListTab(data?.tab) ? data.tab : 'partner') as PublicListTab;
 	$: totalPages = Math.max(1, Math.ceil(total / pageSize));
 	let activeTab: ListTab = publicTab;
 	$: pageTitle = `${$_(`head.list_seo.index_titles.${publicTab}`)} - ${
@@ -89,7 +90,7 @@
 	}`;
 	$: pageDescription = $_(`head.list_seo.index_descriptions.${publicTab}`);
 	$: canonicalUrl = `${siteUrl}/lists${
-		publicTab === 'official' ? '' : `?tab=${publicTab}`
+		publicTab === 'partner' ? '' : `?tab=${publicTab}`
 	}`;
 
 	// Own lists (client-only, requires auth)
@@ -307,7 +308,7 @@
 		const nextPage = options.page ?? 1;
 		const nextSearch = (options.search ?? '').trim();
 
-		if (tab !== 'official') {
+		if (tab !== 'partner') {
 			params.set('tab', tab);
 		}
 
@@ -584,8 +585,8 @@
   <Tabs.Root bind:value={activeTab}>
     <div class="tabsList">
       <Tabs.List>
-        <Tabs.Trigger value="official" on:click={() => selectTab('official')}>{
-          $_('custom_lists.index.tabs.official')
+        <Tabs.Trigger value="partner" on:click={() => selectTab('partner')}>{
+          $_('custom_lists.index.tabs.partner')
         }</Tabs.Trigger>
         <Tabs.Trigger value="verified" on:click={() => selectTab('verified')}>{
           $_('custom_lists.index.tabs.verified')
@@ -794,14 +795,14 @@
       </Tabs.Content>
     {/if}
 
-    <Tabs.Content value="official">
+    <Tabs.Content value="partner">
       <section class="section">
         <div class="sectionHeader">
           <div class="sectionTitleRow">
-            <h2>{$_('custom_lists.index.official.heading')}</h2>
+            <h2>{$_('custom_lists.index.partner.heading')}</h2>
             <Badge variant="outline">{total}</Badge>
           </div>
-          <p class="sectionHint">{$_('custom_lists.index.official.hint')}</p>
+          <p class="sectionHint">{$_('custom_lists.index.partner.hint')}</p>
         </div>
 
         <div class="searchRow">
@@ -809,23 +810,23 @@
             <span class="searchIcon"><Search class="h-4 w-4" /></span>
             <Input
               bind:value={searchInput}
-              placeholder={$_('custom_lists.index.official.search_placeholder')}
+              placeholder={$_('custom_lists.index.partner.search_placeholder')}
               on:keydown={handleSearchKeydown}
             />
           </div>
           <Button variant="outline" on:click={handleSearch}>{
-            $_('custom_lists.index.official.search_button')
+            $_('custom_lists.index.partner.search_button')
           }</Button>
         </div>
 
         {#if lists.length === 0}
           <div class="emptyState">
-            <h3>{$_('custom_lists.index.official.empty_title')}</h3>
+            <h3>{$_('custom_lists.index.partner.empty_title')}</h3>
             <p>
               {
                 searchQuery
-                ? $_('custom_lists.index.official.empty_search_hint')
-                : $_('custom_lists.index.official.empty_browse_hint')
+                ? $_('custom_lists.index.partner.empty_search_hint')
+                : $_('custom_lists.index.partner.empty_browse_hint')
               }
             </p>
           </div>
