@@ -7,12 +7,16 @@
 	import * as Avatar from '$lib/components/ui/avatar';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import * as Tabs from '$lib/components/ui/tabs';
+	import * as Pagination from '$lib/components/ui/pagination';
+	import { goto } from '$app/navigation';
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import PendingInvitationsTab from './PendingInvitationsTab.svelte';
 	import { isActive } from '$lib/client/isSupporterActive';
 	import {
 		ArrowUpDown,
+		Check,
 		Crown,
+		LogOut,
 		Plus,
 		Save,
 		Search,
@@ -34,6 +38,7 @@
 	export let canEditLevels = false;
 	export let canViewAudit = false;
 	export let canViewPendingInvitations = false;
+	export let canResign = false;
 	export let pendingInvitationCount = 0;
 	export let onChangelogUpdated: () => void = () => {};
 
@@ -87,6 +92,27 @@
 	let changelogSettingsSaving = false;
 	let changelogSettingsKey = '';
 	let addingAuditToChangelog = false;
+	let resigning = false;
+	let auditPage = 1;
+	let auditEntries: any[] = [];
+	let auditTotal = 0;
+	let auditLoading = false;
+	let auditError = '';
+	let auditRequestKey = '';
+	const AUDIT_PAGE_SIZE = 10;
+	const permissionRows = [
+		'canEditSettings',
+		'canEditLevels',
+		'canReviewSubmissions',
+		'canReviewRecords',
+		'canViewMembers',
+		'canManageMembers',
+		'canViewPendingInvitations',
+		'canViewAudit',
+		'canTransferOwnership',
+		'canDelete',
+		'canResign'
+	] as const;
 	const changelogAuditActions = new Set([
 		'level_added',
 		'level_updated',
@@ -124,6 +150,92 @@
 
 		if (nextKey !== changelogSettingsKey && !changelogSettingsLoading) {
 			void loadChangelogSettings(nextKey);
+		}
+	}
+	$: if (list && canViewAudit && $user.loggedIn) {
+		const nextAuditKey = `${list.id}:${auditPage}:${$user.data?.uid ?? ''}`;
+
+		if (nextAuditKey !== auditRequestKey && !auditLoading) {
+			void loadAuditPage(nextAuditKey);
+		}
+	}
+
+	async function loadAuditPage(key: string) {
+		auditRequestKey = key;
+		auditLoading = true;
+		auditError = '';
+
+		try {
+			const response = await fetch(
+				`${import.meta.env.VITE_API_URL}/lists/${list.id}/audit?page=${auditPage}&pageSize=${AUDIT_PAGE_SIZE}`,
+				{ headers: await getAuthHeaders() }
+			);
+			const payload = await readPayload(response);
+
+			if (key !== auditRequestKey) {
+				return;
+			}
+
+			auditEntries = payload.data ?? [];
+			auditTotal = payload.total ?? 0;
+			const lastPage = Math.max(1, Math.ceil(auditTotal / AUDIT_PAGE_SIZE));
+
+			if (auditPage > lastPage) {
+				auditPage = lastPage;
+				auditLoading = false;
+				auditRequestKey = '';
+			}
+		} catch (error) {
+			if (key !== auditRequestKey) {
+				return;
+			}
+
+			auditEntries = [];
+			auditTotal = 0;
+			auditError = error instanceof Error ? error.message : 'Failed to load audit log';
+		} finally {
+			if (key === auditRequestKey) {
+				auditLoading = false;
+			}
+		}
+	}
+
+	function setAuditPage(page: number) {
+		if (page < 1 || page === auditPage) {
+			return;
+		}
+
+		auditPage = page;
+		auditRequestKey = '';
+	}
+
+	function retryAuditPage() {
+		auditRequestKey = '';
+	}
+
+	async function resignFromList() {
+		if (!list || !canResign || resigning || !$user.loggedIn) {
+			return;
+		}
+
+		if (!confirm($_('custom_lists.manage.resign.confirm'))) {
+			return;
+		}
+
+		resigning = true;
+
+		try {
+			const response = await fetch(
+				`${import.meta.env.VITE_API_URL}/lists/${list.id}/membership`,
+				{ method: 'DELETE', headers: await getAuthHeaders() }
+			);
+			const payload = await readPayload(response);
+			toast.success($_('custom_lists.manage.resign.success'));
+			await goto(payload.redirect || '/lists', { replaceState: true });
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : $_('custom_lists.manage.resign.failed'));
+		} finally {
+			resigning = false;
 		}
 	}
 
@@ -462,6 +574,10 @@
 			return $_('custom_lists.detail.edit.background_color_label');
 		}
 
+		if (field === 'appearanceLayout') {
+			return $_('custom_lists.manage.appearance.layout_heading');
+		}
+
 		if (field === 'bannerUrl') {
 			return $_('custom_lists.detail.edit.banner_url_label');
 		}
@@ -594,6 +710,10 @@
 				: $_('custom_lists.detail.edit.item_sort_descending');
 		}
 
+		if (field === 'appearanceLayout' && typeof value === 'string') {
+			return $_(`custom_lists.manage.appearance.layouts.${value}.label`);
+		}
+
 		if (field === 'isPlatformer' && typeof value === 'boolean') {
 			return value
 				? $_('custom_lists.type.platformer')
@@ -699,6 +819,10 @@
 			return $_('custom_lists.manage.audit.member_removed');
 		}
 
+		if (action === 'member_resigned') {
+			return $_('custom_lists.manage.audit.member_resigned');
+		}
+
 		if (action === 'member_role_updated') {
 			return $_('custom_lists.manage.audit.member_role_updated');
 		}
@@ -778,6 +902,17 @@
 		if (entry.action === 'levels_reordered') {
 			return $_('custom_lists.manage.audit_detail.levels_reordered', {
 				values: { actor }
+			});
+		}
+
+		if (entry.action === 'member_resigned') {
+			return $_('custom_lists.manage.audit_detail.member_resigned', {
+				values: {
+					actor,
+					role: getRoleLabel(
+						String(metadata.role || 'helper') as CollaboratorRole
+					)
+				}
 			});
 		}
 
@@ -961,6 +1096,43 @@
 </script>
 
 <div class="tabContent">
+  {#if list.rolePermissions}
+    <section class="card">
+      <header class="cardHead">
+        <h2 class="cardTitle">{$_('custom_lists.manage.permissions.title')}</h2>
+        <p class="hint">{$_('custom_lists.manage.permissions.hint')}</p>
+      </header>
+      <div class="permissionTableWrap">
+        <table class="permissionTable">
+          <thead>
+            <tr>
+              <th>{$_('custom_lists.manage.permissions.capability')}</th>
+              <th>{$_('custom_lists.manage.roles.owner')}</th>
+              <th>{$_('custom_lists.manage.roles.admin')}</th>
+              <th>{$_('custom_lists.manage.roles.helper')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {#each permissionRows as permission}
+              <tr>
+                <th>{$_(`custom_lists.manage.permissions.rows.${permission}`)}</th>
+                {#each ['owner', 'admin', 'helper'] as role}
+                  <td>
+                    {#if list.rolePermissions[role]?.[permission]}
+                      <Check class="permissionYes h-4 w-4" aria-label={$_('general.yes')} />
+                    {:else}
+                      <X class="permissionNo h-4 w-4" aria-label={$_('general.no')} />
+                    {/if}
+                  </td>
+                {/each}
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
+      <p class="hint">{$_('custom_lists.manage.permissions.conditional_hint')}</p>
+    </section>
+  {/if}
   {#if canEditLevels || canConfigureCollaboration}
     <section class="card advancedSettingsCard">
       <header class="cardHead">
@@ -1277,9 +1449,16 @@
         </h2>
         <p class="hint">{$_('custom_lists.manage.collaboration.audit_hint')}</p>
       </header>
-      {#if list.auditLog?.length}
+      {#if auditLoading}
+        <p class="hint">{$_('general.loading')}...</p>
+      {:else if auditError}
+        <div class="auditError">
+          <p class="hint">{auditError}</p>
+          <Button variant="outline" size="sm" on:click={retryAuditPage}>{$_('general.retry')}</Button>
+        </div>
+      {:else if auditEntries.length}
         <div class="auditList">
-          {#each list.auditLog as entry}
+          {#each auditEntries as entry}
             <button
               type="button"
               class="auditRow"
@@ -1295,6 +1474,23 @@
             </button>
           {/each}
         </div>
+        {#if auditTotal > AUDIT_PAGE_SIZE}
+          <Pagination.Root count={auditTotal} perPage={AUDIT_PAGE_SIZE} page={auditPage} let:pages let:currentPage>
+            <Pagination.Content>
+              <Pagination.Item><Pagination.PrevButton on:click={() => setAuditPage(Math.max(1, currentPage - 1))} /></Pagination.Item>
+              {#each pages as pageItem (pageItem.key)}
+                {#if pageItem.type === 'ellipsis'}
+                  <Pagination.Item><Pagination.Ellipsis /></Pagination.Item>
+                {:else}
+                  <Pagination.Item isVisible={currentPage === pageItem.value}>
+                    <Pagination.Link page={pageItem} isActive={currentPage === pageItem.value} on:click={() => setAuditPage(pageItem.value)}>{pageItem.value}</Pagination.Link>
+                  </Pagination.Item>
+                {/if}
+              {/each}
+              <Pagination.Item><Pagination.NextButton on:click={() => setAuditPage(currentPage + 1)} /></Pagination.Item>
+            </Pagination.Content>
+          </Pagination.Root>
+        {/if}
       {:else}
         <p class="hint">
           {$_('custom_lists.manage.collaboration.audit_empty')}
@@ -1302,6 +1498,23 @@
       {/if}
     </section>
   {/if}
+
+  <section class="card resignCard">
+    <div>
+      <h2 class="cardTitle">{$_('custom_lists.manage.resign.title')}</h2>
+      <p class="hint">
+        {canResign
+          ? $_('custom_lists.manage.resign.hint')
+          : $_('custom_lists.manage.resign.owner_hint')}
+      </p>
+    </div>
+    {#if canResign}
+      <Button variant="destructive" on:click={resignFromList} disabled={resigning}>
+        <LogOut class="mr-2 h-4 w-4" />
+        {resigning ? `${$_('general.loading')}...` : $_('custom_lists.manage.resign.button')}
+      </Button>
+    {/if}
+  </section>
 </div>
 
 <!-- Add collaborator dialog -->
@@ -1610,6 +1823,18 @@
   font-size: 1.1rem;
   font-weight: 600;
 }
+
+.permissionTableWrap { overflow-x: auto; }
+.permissionTable { width: 100%; border-collapse: collapse; min-width: 560px; }
+.permissionTable th,
+.permissionTable td { padding: 10px 12px; border-bottom: 1px solid hsl(var(--border)); }
+.permissionTable thead th { color: hsl(var(--muted-foreground)); font-size: .76rem; text-transform: uppercase; letter-spacing: .05em; }
+.permissionTable tbody th { text-align: left; font-size: .84rem; font-weight: 500; }
+.permissionTable td { text-align: center; }
+:global(.permissionYes) { color: #16a34a; margin: 0 auto; }
+:global(.permissionNo) { color: hsl(var(--muted-foreground) / .55); margin: 0 auto; }
+.auditError { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.resignCard { flex-direction: row; align-items: center; justify-content: space-between; border-color: hsl(var(--destructive) / .28); }
 
 .hint {
   font-size: 0.8rem;

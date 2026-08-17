@@ -1,5 +1,5 @@
 import { redirect } from '@sveltejs/kit';
 
 export function load({ url }: { url: URL }) {
-    redirect(308, `/premium/top${url.search}`);
+    redirect(308, `/premium/success${url.search}`);
 }

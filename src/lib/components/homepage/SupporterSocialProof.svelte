@@ -68,7 +68,7 @@
       <Heart class="h-5 w-5 text-pink-500" />
       <h4>{$_('homepage.supporters.title')}</h4>
     </div>
-    <a href="/supporter/top" class="viewAllBtn">
+    <a href="/premium/top" class="viewAllBtn">
       {$_('homepage.supporters.view_leaderboard')}
       <ArrowRight class="ml-1 h-4 w-4" />
     </a>
@@ -160,7 +160,7 @@
           </span>
         </div>
         <Button
-          href="/supporter"
+          href="/premium"
           variant="outline"
           size="sm"
           class="supportCta"

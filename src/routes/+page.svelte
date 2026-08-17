@@ -1168,7 +1168,7 @@
                     <div class="source-avatar supporter-source"><Star size={18} fill="currentColor" /></div>
                     <div class="source-copy">
                       <div class="source-line">
-                        <a href="/supporter/top">GDListHub Premium</a>
+                        <a href="/premium/top">GDListHub Premium</a>
                         <BadgeCheck size={15} class="verified" />
                       </div>
                       <span>{tr('Community-powered', 'Được cộng đồng chung tay')}</span>
@@ -1193,11 +1193,11 @@
                       {/each}
                     </div>
                     <div class="supporter-actions">
-                      <a class="supporter-buy-cta" href="/supporter">
+                      <a class="supporter-buy-cta" href="/premium">
                         <Star size={15} fill="currentColor" />
                         {tr('Get Premium', 'Mua Premium')}
                       </a>
-                      <a class="supporter-cta" href="/supporter/top">
+                      <a class="supporter-cta" href="/premium/top">
                         {tr('View leaderboard', 'Xem bảng xếp hạng')}
                         <ArrowRight size={16} />
                       </a>
@@ -1222,7 +1222,7 @@
                   <a
                     class="promo-creative"
                     class:has-season={Boolean(season)}
-                    href={season ? '/battlepass' : '/supporter'}
+                    href={season ? '/battlepass' : '/premium'}
                     style={season ? `background-image: linear-gradient(105deg, rgba(8,10,18,.93), rgba(8,10,18,.42)), url('${season.backgroundUrl || `https://cdn.gdlisthub.dev/battlepasses/${season.id}.webp`}')` : ''}
                   >
                     <span class="content-label promo-label"><Sparkles size={13} /> {season ? 'GDListHub PASS' : tr('SUPPORT GDListHub', 'ỦNG HỘ GDListHub')}</span>

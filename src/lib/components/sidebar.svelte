@@ -227,9 +227,9 @@
             <a
               {...builder}
               use:builder.action
-              href="/supporter"
+              href="/premium"
               class="nav-item supporter-link"
-              class:active={isLinkActive('/supporter')}
+              class:active={isLinkActive('/premium')}
               data-sveltekit-preload-data="tap"
               on:click={handleLinkClick}
             >
@@ -244,9 +244,9 @@
         </Tooltip.Root>
       {:else}
         <a
-          href="/supporter"
+          href="/premium"
           class="nav-item supporter-link"
-          class:active={isLinkActive('/supporter')}
+          class:active={isLinkActive('/premium')}
           data-sveltekit-preload-data="tap"
           on:click={handleLinkClick}
         >
@@ -260,7 +260,7 @@
           <a
             {...builder}
             use:builder.action
-            href="/supporter"
+            href="/premium"
             class="nav-item supporter-cta"
             data-sveltekit-preload-data="tap"
             on:click={handleLinkClick}
@@ -276,7 +276,7 @@
       </Tooltip.Root>
     {:else}
       <a
-        href="/supporter"
+        href="/premium"
         class="nav-item supporter-cta"
         data-sveltekit-preload-data="tap"
         on:click={handleLinkClick}

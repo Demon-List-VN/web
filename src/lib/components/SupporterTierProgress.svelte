@@ -47,7 +47,7 @@
 
 {#if tierInfo || preview}
   <a
-    href="/supporter"
+    href="/premium"
     class:compact
     class="supporter-tier-card"
     style={tierStyle}

@@ -97,6 +97,7 @@
 		description: string;
 		overview: string;
 		backgroundColor?: string | null;
+		appearanceLayout?: 'grid' | 'list' | 'aredl_tsl' | 'pointercrate';
 		bannerUrl?: string | null;
 		borderColor?: string | null;
 		communityEnabled: boolean;
@@ -212,6 +213,25 @@
 	let showScrollToTop = false;
 	let crawlingMirror = false;
 	let publicStaffEntries: PublicStaffEntry[] = [];
+	let selectedLayoutLevelId: number | null = null;
+
+	function getAppearanceLayout(currentList: CustomList | null) {
+		const value = currentList?.appearanceLayout;
+
+		return value === 'list' || value === 'aredl_tsl' || value === 'pointercrate'
+			? value
+			: 'grid';
+	}
+
+	function selectLayoutLevel(item: CustomListItem) {
+		selectedLayoutLevelId = item.levelId;
+	}
+
+	function getLayoutThumbnail(item: CustomListItem | null | undefined) {
+		const videoId = item?.videoID || item?.level?.videoID;
+
+		return videoId ? `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg` : null;
+	}
 
 	type LevelFilters = {
 		topStart: string | null;
@@ -542,6 +562,25 @@
 			getListThemeBackgroundColor(currentList),
 			getListThemeBorderColor(currentList)
 		);
+	}
+
+	function getListPageThemeStyle(currentList: CustomList | null) {
+		const backgroundColor = getListThemeBackgroundColor(currentList);
+		const borderColor = getListThemeBorderColor(currentList);
+		const styles: string[] = [];
+
+		if (backgroundColor) {
+			const lightBackground = isLightColor(backgroundColor);
+			styles.push(`--custom-surface-background: ${backgroundColor}`);
+			styles.push(`--custom-surface-foreground: ${lightBackground ? '#0f172a' : '#f8fafc'}`);
+			styles.push(`--custom-surface-muted: ${lightBackground ? 'rgba(15, 23, 42, 0.72)' : 'rgba(248, 250, 252, 0.78)'}`);
+		}
+
+		if (borderColor) {
+			styles.push(`--custom-surface-border: ${borderColor}`);
+		}
+
+		return styles.length ? `${styles.join('; ')};` : undefined;
 	}
 
 	function getListHeroBannerStyle(currentList: CustomList | null) {
@@ -1361,6 +1400,10 @@
 			list.permissions?.canViewMembers)
 	);
 	$: listItems = list?.items ?? [];
+	$: appearanceLayout = getAppearanceLayout(list);
+	$: selectedLayoutItem = listItems.find((item) => item.levelId === selectedLayoutLevelId)
+		?? listItems.find((item) => item.level)
+		?? null;
 	$: listCardType = list?.isPlatformer ? 'pl' : 'dl';
 	$: canStarList = Boolean(list && list.id > 0 && list.visibility !== 'private');
 	$: canCrawlMirror = Boolean(list?.isMirror && list?.permissions?.canEditLevels);
@@ -1496,7 +1539,11 @@
 	{/if}
 </svelte:head>
 
-<div class="page">
+<div
+	class={`page layout-${appearanceLayout}`}
+	data-appearance-layout={appearanceLayout}
+	style={getListPageThemeStyle(list)}
+>
 	<!-- Toolbar -->
 	<div class="toolbar">
 		<Button variant="ghost" size="sm" on:click={() => goto('/lists')}>
@@ -1545,6 +1592,9 @@
 				</div>
 			{/if}
 			<div class="heroTop">
+				{#if list.logoUrl}
+					<img class="heroLogo" src={list.logoUrl} alt="" loading="lazy" decoding="async" />
+				{/if}
 				<div class="heroText">
 					<h1>{list.title}</h1>
 					{#if list.description?.trim()}
@@ -1733,7 +1783,59 @@
 									: $_('custom_lists.detail.levels.empty_visitor')}
 							</p>
 						</div>
+					{:else if appearanceLayout === 'aredl_tsl'}
+						<div class="aredlLayout">
+							<section class="aredlRankPane" aria-label={$_('custom_lists.detail.levels.heading')}>
+								{#each listItems as item, i}
+									<button
+										type="button"
+										class="aredlRankItem"
+										class:selected={selectedLayoutItem?.levelId === item.levelId}
+										on:click={() => selectLayoutLevel(item)}
+									>
+										<strong>#{getListItemTop(item, i)}</strong>
+										<span>{item.level?.name || `Level #${item.levelId}`}</span>
+									</button>
+								{/each}
+							</section>
+							<section class="aredlDetailPane">
+								{#if selectedLayoutItem}
+									{#if getLayoutThumbnail(selectedLayoutItem)}
+										<img class="aredlVideo" src={getLayoutThumbnail(selectedLayoutItem)} alt="" loading="lazy" decoding="async" />
+									{/if}
+									<div class="aredlDetailCopy">
+										<span class="aredlRank">#{getListItemTop(selectedLayoutItem, listItems.indexOf(selectedLayoutItem))}</span>
+										<h3>{selectedLayoutItem.level?.name || `Level #${selectedLayoutItem.levelId}`}</h3>
+										<p>{selectedLayoutItem.level?.creator || '-'}</p>
+										<div class="aredlStats">
+											<span>{list.mode === 'rating' ? selectedLayoutItem.rating : `#${selectedLayoutItem.position ?? '-'}`}</span>
+											<span>ID {selectedLayoutItem.levelId}</span>
+										</div>
+										<Button href={getLevelDetailHref(selectedLayoutItem)}>{$_('record_detail.tabs.detail')}</Button>
+									</div>
+								{/if}
+							</section>
+							<aside class="aredlMetaPane">
+								<h3>{list.title}</h3>
+								<p>{list.description || $_('custom_lists.detail.no_description')}</p>
+								<div class="aredlMetaStats">
+									<span><strong>{list.levelCount}</strong>{$_('custom_lists.detail.tabs.levels')}</span>
+									<span><strong>{publicStaffEntries.length}</strong>{$_('custom_lists.detail.tabs.staff')}</span>
+								</div>
+								{#if publicStaffEntries.length}
+									<div class="layoutStaffList">
+										{#each publicStaffEntries.slice(0, 6) as staffMember}
+											<span>{staffMember.playerData?.name || staffMember.uid}<small>{getStaffRoleLabel(staffMember.role)}</small></span>
+										{/each}
+									</div>
+								{/if}
+							</aside>
+						</div>
+						{#if hasMoreLevels(list)}
+							<div bind:this={listLevelsSentinel} class="loadMoreSentinel">{#if listLevelsLoading}<span class="loadMoreStatus">{$_('general.loading')}...</span>{/if}</div>
+						{/if}
 					{:else}
+						<div class:pointercrateFrame={appearanceLayout === 'pointercrate'}>
 						<div class="levels">
 							{#each listItems as item, i}
 								{#if item.level}
@@ -1770,6 +1872,22 @@
 									</div>
 								{/if}
 							{/each}
+						</div>
+						{#if appearanceLayout === 'pointercrate'}
+							<aside class="pointercrateAside">
+								<h3>{list.title}</h3>
+								<p>{list.description || $_('custom_lists.detail.no_description')}</p>
+								<div class="tagRow">{#each list.tags as tag}<Badge variant="outline">{tag}</Badge>{/each}</div>
+								{#if publicStaffEntries.length}
+									<h4>{$_('custom_lists.detail.staff.heading')}</h4>
+									<div class="layoutStaffList">
+										{#each publicStaffEntries.slice(0, 8) as staffMember}
+											<span>{staffMember.playerData?.name || staffMember.uid}<small>{getStaffRoleLabel(staffMember.role)}</small></span>
+										{/each}
+									</div>
+								{/if}
+							</aside>
+						{/if}
 						</div>
 						{#if hasMoreLevels(list)}
 							<div bind:this={listLevelsSentinel} class="loadMoreSentinel">
@@ -2581,6 +2699,14 @@
 		min-width: 0;
 	}
 
+	.heroLogo {
+		width: 64px;
+		height: 64px;
+		object-fit: contain;
+		flex: 0 0 64px;
+		filter: drop-shadow(0 6px 16px rgb(0 0 0 / 0.22));
+	}
+
 	.heroTop {
 		display: flex;
 		align-items: flex-start;
@@ -2847,6 +2973,104 @@
 		grid-template-columns: repeat(2, 1fr);
 	}
 
+	/* Saved public appearance layouts */
+	.layout-list { max-width: 980px; gap: 14px; }
+	.layout-list .hero { padding: 18px 20px; border-radius: 10px; }
+	.layout-list .heroBanner { margin: -18px -20px 0; }
+	.layout-list .heroBanner img { height: 130px; }
+	.layout-list .levels { grid-template-columns: 1fr; gap: 8px; }
+	.layout-list .overviewSection,
+	.layout-list .staffSection { border-radius: 10px; }
+
+	.layout-aredl_tsl,
+	.layout-pointercrate { max-width: 1360px; }
+	.layout-aredl_tsl .hero { border-radius: 18px; border-width: 2px; }
+	.layout-aredl_tsl .heroTop h1 {
+		font-size: clamp(1.7rem, 3vw, 2.5rem);
+		text-transform: uppercase;
+		letter-spacing: .035em;
+	}
+
+	.aredlLayout {
+		display: grid;
+		grid-template-columns: minmax(210px, .8fr) minmax(360px, 1.75fr) minmax(220px, .9fr);
+		gap: 14px;
+		align-items: start;
+	}
+	.aredlRankPane,
+	.aredlDetailPane,
+	.aredlMetaPane,
+	.pointercrateAside {
+		border: 1px solid var(--custom-surface-border, hsl(var(--border)));
+		border-radius: 14px;
+		background: var(--custom-surface-background, hsl(var(--card)));
+		color: var(--custom-surface-foreground, hsl(var(--foreground)));
+	}
+	.aredlRankPane {
+		display: flex;
+		flex-direction: column;
+		gap: 3px;
+		max-height: 72vh;
+		overflow-y: auto;
+		padding: 8px;
+	}
+	.aredlRankItem {
+		display: grid;
+		grid-template-columns: 48px minmax(0, 1fr);
+		gap: 8px;
+		align-items: center;
+		width: 100%;
+		padding: 10px 9px;
+		border: 1px solid transparent;
+		border-radius: 8px;
+		background: transparent;
+		color: inherit;
+		text-align: left;
+		cursor: pointer;
+	}
+	.aredlRankItem span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+	.aredlRankItem:hover { background: hsl(var(--muted) / .55); }
+	.aredlRankItem.selected {
+		border-color: var(--custom-surface-border, hsl(var(--primary)));
+		background: hsl(var(--primary) / .12);
+		color: hsl(var(--primary));
+	}
+	.aredlDetailPane { overflow: hidden; min-height: 390px; }
+	.aredlVideo { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+	.aredlDetailCopy { display: grid; gap: 8px; padding: 22px; }
+	.aredlDetailCopy h3 { margin: 0; font-size: 1.55rem; }
+	.aredlDetailCopy p { margin: 0; color: var(--custom-surface-muted, hsl(var(--muted-foreground))); }
+	.aredlRank { color: hsl(var(--primary)); font-size: .8rem; font-weight: 800; letter-spacing: .08em; }
+	.aredlStats { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0; }
+	.aredlStats span { padding: 5px 9px; border-radius: 999px; background: hsl(var(--muted) / .6); font-size: .78rem; }
+	.aredlMetaPane,
+	.pointercrateAside { display: grid; gap: 12px; padding: 18px; }
+	.aredlMetaPane h3,
+	.pointercrateAside h3,
+	.pointercrateAside h4 { margin: 0; }
+	.aredlMetaPane p,
+	.pointercrateAside p { margin: 0; color: var(--custom-surface-muted, hsl(var(--muted-foreground))); line-height: 1.5; }
+	.aredlMetaStats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+	.aredlMetaStats span { display: grid; gap: 2px; padding: 10px; border-radius: 9px; background: hsl(var(--muted) / .45); font-size: .72rem; }
+	.aredlMetaStats strong { font-size: 1.1rem; }
+	.layoutStaffList { display: grid; gap: 7px; }
+	.layoutStaffList > span { display: flex; justify-content: space-between; gap: 8px; font-size: .82rem; }
+	.layoutStaffList small { color: var(--custom-surface-muted, hsl(var(--muted-foreground))); }
+
+	.pointercrateFrame {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) 290px;
+		gap: 18px;
+		align-items: start;
+	}
+	.pointercrateFrame .levels { grid-template-columns: 1fr; gap: 14px; }
+	.pointercrateAside { position: sticky; top: 18px; }
+	.layout-pointercrate .hero { border-radius: 4px; box-shadow: 0 12px 34px rgb(0 0 0 / .12); }
+	.layout-pointercrate .overviewSection,
+	.layout-pointercrate .staffSection,
+	.layout-pointercrate .tableWrapper { border-radius: 4px; }
+	.layout-pointercrate :global(.levels > *) { box-shadow: 0 8px 24px rgb(0 0 0 / .08); }
+
 	.relatedGrid {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -3053,6 +3277,11 @@
 		.levels {
 			grid-template-columns: 1fr;
 		}
+
+		.aredlLayout { grid-template-columns: minmax(180px, .75fr) minmax(0, 1.5fr); }
+		.aredlMetaPane { grid-column: 1 / -1; }
+		.pointercrateFrame { grid-template-columns: 1fr; }
+		.pointercrateAside { position: static; }
 	}
 
 	@media (max-width: 480px) {
@@ -3090,6 +3319,11 @@
 			flex-direction: column;
 			align-items: flex-start;
 		}
+
+		.heroLogo { width: 48px; height: 48px; flex-basis: 48px; }
+		.aredlLayout { grid-template-columns: 1fr; }
+		.aredlRankPane { max-height: 300px; }
+		.aredlMetaPane { grid-column: auto; }
 	}
 
 	.scrollToTop {

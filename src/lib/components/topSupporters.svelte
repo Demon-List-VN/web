@@ -78,7 +78,7 @@
     </div>
     <div class="mt-4 text-center">
       <a
-        href="/supporter/top"
+        href="/premium/top"
         class="text-sm text-muted-foreground hover:underline"
       >
         {$_('supporter.top_supporters.view_leaderboard')}

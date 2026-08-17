@@ -696,7 +696,7 @@
 
 	function pickPvpTip() {
 		const roll = Math.random();
-		// Don't show donate/supporter tips to players who already support us.
+		// Don't show Premium upgrade tips to players with active access.
 		const supporterActive =
 			$user.loggedIn && isActive($user.data?.supporterUntil);
 
@@ -4077,7 +4077,7 @@
             <Alert.Description class="pvp-tip-description">
               {#if currentPvpTip.type === 'supporter'}
                 <span>{$_(`pvp.tips.supporter.${currentPvpTip.key}`)}</span>
-                <a href="/supporter" class="pvp-tip-link">
+                <a href="/premium" class="pvp-tip-link">
                   {$_('pvp.tips.supporter_link')}
                 </a>
               {:else if currentPvpTip.type === 'discord'}

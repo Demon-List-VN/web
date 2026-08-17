@@ -2509,7 +2509,7 @@
 			}
 
 			if (action === 'REDIRECT_TO_DONATE' || action === 'REDIRECT_TO_UPGRADE') {
-				void goto('/supporter');
+				void goto('/premium');
 			}
 		}
 	}

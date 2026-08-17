@@ -37,7 +37,7 @@
       <h1 class="heroTitle">{$_('homepage.hero.supporter_title')}</h1>
       <p class="heroSubtitle">{$_('homepage.hero.supporter_subtitle')}</p>
       <div class="heroCtas">
-        <Button href="/supporter" class="heroBtn supporterPrimaryBtn">
+        <Button href="/premium" class="heroBtn supporterPrimaryBtn">
           <Sparkles class="h-4 w-4 mr-2" />
           {$_('homepage.hero.become_supporter')} — 49.000₫/{
             $_('homepage.hero.month')

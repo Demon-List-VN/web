@@ -21,6 +21,11 @@
 	let bannerFileInput: HTMLInputElement | null = null;
 	let faviconFileInput: HTMLInputElement | null = null;
 	let logoFileInput: HTMLInputElement | null = null;
+	const appearanceLayouts = ['grid', 'list', 'aredl_tsl', 'pointercrate'] as const;
+
+	function selectAppearanceLayout(layout: typeof appearanceLayouts[number]) {
+		editForm = { ...editForm, appearanceLayout: layout };
+	}
 
 	$: if (list) {
 		bannerAssetMode = inferAssetInputMode(list.bannerUrl);
@@ -223,6 +228,36 @@
 />
 
 <div class="tabContent">
+  <div class="toolCard">
+    <div>
+      <h2 class="toolHeading">{$_('custom_lists.manage.appearance.layout_heading')}</h2>
+      <p class="hint">{$_('custom_lists.manage.appearance.layout_hint')}</p>
+    </div>
+    <div class="layoutPicker" role="radiogroup" aria-label={$_('custom_lists.manage.appearance.layout_heading')}>
+      {#each appearanceLayouts as layout}
+        <button
+          type="button"
+          class="layoutOption"
+          class:selected={editForm.appearanceLayout === layout}
+          role="radio"
+          aria-checked={editForm.appearanceLayout === layout}
+          on:click={() => selectAppearanceLayout(layout)}
+        >
+          <span class={`layoutPreview layoutPreview-${layout}`} aria-hidden="true">
+            <span class="previewHero"></span>
+            <span class="previewNav"></span>
+            <span class="previewBody">
+              <span></span><span></span><span></span>
+            </span>
+          </span>
+          <span class="layoutCopy">
+            <strong>{$_(`custom_lists.manage.appearance.layouts.${layout}.label`)}</strong>
+            <small>{$_(`custom_lists.manage.appearance.layouts.${layout}.description`)}</small>
+          </span>
+        </button>
+      {/each}
+    </div>
+  </div>
   <div class="toolCard">
     <h2 class="toolHeading">
       {$_('custom_lists.detail.edit.appearance_heading')}
@@ -514,6 +549,75 @@
   gap: 14px;
 }
 
+.layoutPicker {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.layoutOption {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
+}
+
+.layoutOption:hover {
+  transform: translateY(-1px);
+  border-color: hsl(var(--primary) / 0.55);
+}
+
+.layoutOption.selected {
+  border-color: hsl(var(--primary));
+  background: hsl(var(--primary) / 0.08);
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.12);
+}
+
+.layoutPreview {
+  width: 104px;
+  height: 72px;
+  flex: 0 0 104px;
+  display: grid;
+  grid-template-rows: 18px 8px 1fr;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 8px;
+  background: hsl(var(--muted));
+  overflow: hidden;
+}
+
+.previewHero,
+.previewNav,
+.previewBody span {
+  display: block;
+  border-radius: 3px;
+  background: hsl(var(--foreground) / 0.18);
+}
+
+.previewNav { width: 70%; }
+.previewBody { display: grid; gap: 3px; }
+.layoutPreview-grid .previewBody { grid-template-columns: repeat(2, 1fr); }
+.layoutPreview-list .previewBody { grid-template-columns: 1fr; }
+.layoutPreview-aredl_tsl .previewBody { grid-template-columns: .65fr 1.5fr .8fr; }
+.layoutPreview-pointercrate .previewBody { grid-template-columns: 1.7fr .75fr; }
+
+.layoutCopy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.layoutCopy strong { font-size: 0.9rem; }
+.layoutCopy small { color: hsl(var(--muted-foreground)); line-height: 1.35; }
+
 .field {
   display: flex;
   flex-direction: column;
@@ -612,5 +716,7 @@ label,
   .toolCard {
     padding: 16px;
   }
+
+  .layoutPicker { grid-template-columns: 1fr; }
 }
 </style>

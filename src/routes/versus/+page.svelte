@@ -158,7 +158,7 @@
           <p>{$_('pvp.landing.support.supporter_state')}</p>
         </div>
       {:else}
-        <a class="support-cta" href="/supporter">
+        <a class="support-cta" href="/premium">
           <Heart class="h-4 w-4" />
           {$_('pvp.landing.support.cta')}
         </a>

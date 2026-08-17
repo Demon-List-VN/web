@@ -24,7 +24,8 @@
         "no": "Không",
         "previous": "Trước",
         "loading": "Đang tải",
-        "refresh": "Làm mới"
+        "refresh": "Làm mới",
+        "retry": "Thử lại"
     },
     "list_selector": {
         "search_placeholder": "Tìm danh sách...",
@@ -312,14 +313,14 @@
             "mod_title": "Cần cài GDListHub Geode mod",
             "mod_description": "Hãy cài GDListHub Geode mod mới nhất trước khi chơi 1v1 Versus trong Geometry Dash.",
             "support": {
-                "eyebrow": "Ủng hộ GDListHub",
-                "title": "Giữ cho 1v1 Versus luôn miễn phí",
-                "description": "GDListHub Versus hoạt động được là nhờ sự ủng hộ của cộng đồng. Trở thành Premium giúp duy trì máy chủ ghép trận, và bạn cũng nhận thêm vài đặc quyền nho nhỏ.",
+                "eyebrow": "GDListHub Premium",
+                "title": "Nâng cấp trải nghiệm 1v1 Versus",
+                "description": "Premium mang đến trải nghiệm không quảng cáo, huy hiệu hạng có màu, tùy chỉnh hồ sơ và các tính năng thành viên trên GDListHub.",
                 "benefit_ad_free": "Chơi 1v1 Versus hoàn toàn không quảng cáo",
                 "benefit_badge": "Huy hiệu Premium có màu cạnh tên bạn trong trận và trên bảng xếp hạng",
-                "benefit_servers": "Trực tiếp góp phần duy trì máy chủ ghép trận 1v1",
+                "benefit_servers": "Sử dụng quyền lợi Premium trên Versus và các tính năng GDListHub được hỗ trợ",
                 "cta": "Trở thành Premium",
-                "supporter_state": "Cảm ơn bạn đã giúp Versus luôn hoạt động."
+                "supporter_state": "Quyền lợi Premium của bạn đang hoạt động."
             }
         },
         "dashboard": {
@@ -446,7 +447,7 @@
         "match_end_special": {
             "cta": {
                 "requeue": "Queue tiếp ngay",
-                "donate": "Ủng hộ ngay",
+                "donate": "Mua Premium",
                 "upgrade": "Nâng tier ngay"
             },
             "generic": {
@@ -472,65 +473,65 @@
             "supporter_contextual": {
                 "none_vs_none": {
                     "win": [
-                        "🔥 Bạn thắng. Website GDListHub vẫn đang hoạt động nhờ sự ủng hộ từ cộng đồng.",
-                        "⚔️ Chiến thắng thuộc về bạn. Demon List VN luôn trân trọng mọi lượt queue của các bạn.",
-                        "🗿 Bạn thắng trận. Cảm ơn những người đã và đang âm thầm giữ lửa cho sân chơi này.",
-                        "🤝 Một trận đấu hay. Website này vẫn đang cố gắng tốt lên từng ngày.",
-                        "⭐ Kết quả đẹp. Cảm ơn bạn đã cùng xây dựng cộng đồng GDListHub."
+                        "🔥 Bạn thắng. Premium giúp trận thắng tiếp theo hoàn toàn không quảng cáo.",
+                        "⚔️ Chiến thắng thuộc về bạn. Huy hiệu hạng Premium sẽ làm kết quả nổi bật hơn nữa.",
+                        "🗿 Bạn thắng trận. Khám phá ảnh động hồ sơ và các tùy chỉnh Premium khác.",
+                        "🤝 Một trận đấu hay. Quyền lợi Premium áp dụng trên Versus và GDListHub.",
+                        "⭐ Kết quả đẹp. Premium bổ sung thêm nhiều cách cá nhân hóa trải nghiệm GDListHub."
                     ],
                     "lose": [
-                        "💀 Bạn thua. May là website vẫn còn hoạt động tốt để bạn phục thù ngay.",
-                        "⚔️ Trận này chưa thuộc về bạn. Demon List VN vẫn đang chờ bạn ở ván tiếp theo.",
-                        "🗿 Kết quả hơi buồn. Nhưng cảm ơn bạn đã là một phần của GDListHub.",
-                        "🤝 Queue lại nhé? Sự hiện diện của bạn là động lực để website tiếp tục duy trì.",
-                        "⭐ Đừng bỏ cuộc. Website này luôn rộng mở nhờ sự đóng góp của cả cộng đồng."
+                        "💀 Bạn thua. Premium loại bỏ quảng cáo để bạn tập trung phục thù.",
+                        "⚔️ Trận này chưa thuộc về bạn. Huy hiệu hạng Premium sẵn sàng cho ván tiếp theo.",
+                        "🗿 Kết quả hơi buồn. Khám phá tùy chỉnh hồ sơ Premium trước khi queue lại.",
+                        "🤝 Queue lại nhé? Premium mang đến trải nghiệm Versus gọn gàng, không quảng cáo.",
+                        "⭐ Đừng bỏ cuộc. Premium mở khóa thêm nhiều cách tùy chỉnh hồ sơ của bạn."
                     ]
                 },
                 "none_vs_supporter": {
                     "win": [
-                        "🔥 Bạn thắng. Cảm ơn đối thủ vì đã góp phần giúp GDListHub duy trì ổn định.",
-                        "⚔️ Chiến thắng thuộc về bạn. Thật tuyệt khi thấy sự giao lưu giữa các thành viên cộng đồng.",
-                        "⭐ Một trận đấu chất lượng với một người bạn đang đồng hành cùng Demon List VN.",
-                        "🗿 Kết quả thuộc về bạn. Sự đóng góp của đối thủ giúp website có thêm nhiều tính năng mới.",
-                        "🤝 Cảm ơn cả hai vì một trận đấu đẹp trên nền tảng GDListHub."
+                        "🔥 Bạn thắng một thành viên Premium. Hãy khám phá các quyền lợi hồ sơ và danh tính tương tự.",
+                        "⚔️ Chiến thắng thuộc về bạn. Huy hiệu có màu của đối thủ là một quyền lợi Premium trong trận.",
+                        "⭐ Một trận đấu chất lượng với thành viên Premium.",
+                        "🗿 Kết quả thuộc về bạn. Premium có thể mang đến diện mạo cá nhân hơn cho trận tiếp theo.",
+                        "🤝 Trận đấu hay. Quyền lợi Premium có trên Versus và GDListHub."
                     ],
                     "lose": [
-                        "💀 Bạn thua. Đối thủ của bạn là một trong những người đang giúp website duy trì server.",
-                        "⚔️ Trận này thuộc về đối thủ. Cảm ơn họ vì đã góp sức giữ lửa cho Demon List VN.",
-                        "⭐ Một người bạn đang đồng hành cùng sự phát triển của website vừa giành chiến thắng.",
-                        "🗿 Kết quả chưa ổn. Nhưng nhờ những người như đối thủ, website đang ngày càng ổn hơn.",
-                        "🤝 Trận đấu kết thúc. Cảm ơn sự đóng góp của đối thủ cho cộng đồng GDListHub."
+                        "💀 Bạn thua một thành viên Premium. Huy hiệu hạng có màu là một phần của dịch vụ.",
+                        "⚔️ Trận này thuộc về đối thủ. Premium có thể giúp hồ sơ của bạn nổi bật tương tự.",
+                        "⭐ Một thành viên Premium vừa giành chiến thắng.",
+                        "🗿 Kết quả chưa ổn. Trải nghiệm Premium không quảng cáo giúp bạn tập trung cho lượt queue tiếp theo.",
+                        "🤝 Trận đấu kết thúc. Khám phá các tính năng Premium đang hiển thị trên hồ sơ đối thủ."
                     ]
                 },
                 "supporter_vs_none": {
                     "win": [
-                        "🔥 Bạn thắng. Cảm ơn bạn rất nhiều vì đã giúp GDListHub duy trì hoạt động.",
-                        "⭐ Chiến thắng thuộc về bạn. Sự đồng hành của bạn là nền tảng cho sự phát triển của website.",
-                        "⚔️ Bạn vừa thắng trận. Cảm ơn vì đã luôn ủng hộ Demon List VN.",
-                        "👑 Kết quả đẹp cho một thành viên tích cực của cộng đồng.",
-                        "🤝 Cảm ơn bạn đã giúp những trận đấu như thế này có thể diễn ra mỗi ngày."
+                        "🔥 Bạn thắng. Quyền lợi Premium giúp chiến thắng trông nổi bật hơn.",
+                        "⭐ Chiến thắng thuộc về bạn. Huy hiệu hạng Premium có màu đang được hiển thị.",
+                        "⚔️ Bạn vừa thắng trận với danh tính Premium đang hoạt động.",
+                        "👑 Kết quả đẹp cho một thành viên Premium đang hoạt động.",
+                        "🤝 Quyền lợi hồ sơ Premium và Versus của bạn đang hoạt động trên toàn GDListHub."
                     ],
                     "lose": [
-                        "💀 Bạn thua. Nhưng sự hỗ trợ của bạn cho GDListHub vẫn luôn được trân trọng.",
-                        "⭐ Trận này chưa thuộc về bạn. Cảm ơn bạn vẫn luôn đồng hành cùng Demon List VN.",
-                        "⚔️ Kết quả chưa đẹp. Nhưng đóng góp của bạn cho website thì luôn rất tuyệt vời.",
-                        "🗿 Queue tiếp đi! Cảm ơn bạn vì đã giúp server luôn sẵn sàng cho mọi người.",
-                        "🤝 Thắng hay thua, GDListHub luôn biết ơn sự ủng hộ của bạn."
+                        "💀 Bạn thua, nhưng hồ sơ Premium vẫn nổi bật.",
+                        "⭐ Trận này chưa thuộc về bạn. Trải nghiệm Premium không quảng cáo đã sẵn sàng cho màn phục thù.",
+                        "⚔️ Kết quả chưa đẹp, nhưng huy hiệu hạng Premium vẫn rất ấn tượng.",
+                        "🗿 Queue tiếp đi! Quyền lợi Premium vẫn hoạt động cho trận tiếp theo.",
+                        "🤝 Thắng hay thua, các tùy chỉnh Premium vẫn theo bạn trên toàn GDListHub."
                     ]
                 },
                 "both_are_supporters": {
                     "win": [
                         "👑 Hai Premium chạm trán! Bạn thắng. Muốn nổi bật hơn nữa? Thử khám phá các Tier cao hơn xem sao!",
-                        "🔥 Trận đấu đỉnh cao giữa những người chung tay giữ lửa cho GDListHub. Chiến thắng thuộc về bạn.",
+                        "🔥 Trận đấu đỉnh cao giữa hai thành viên Premium. Chiến thắng thuộc về bạn.",
                         "⭐ Bạn thắng trận. Nâng cấp Tier để mở khóa thêm hiệu ứng và đặc quyền độc quyền trên Demon List VN nhé.",
-                        "⚔️ Cuộc gặp gỡ giữa hai người bạn đồng hành tích cực. Cảm ơn sự đóng góp của cả hai.",
+                        "⚔️ Cuộc gặp giữa hai thành viên Premium với huy hiệu hạng đang được hiển thị.",
                         "✨ Thắng đẹp! Trận đấu của bạn trông sẽ ngầu hơn rất nhiều nếu sở hữu các custom từ Tier cao hơn."
                     ],
                     "lose": [
                         "👑 Hai Premium chạm trán! Trận này đối thủ tạm dẫn trước. Lên Tier cao hơn để lấy lại vị thế nào!",
                         "💀 Kết quả chưa như ý, nhưng vị thế Premium của bạn tại GDListHub luôn được trân trọng.",
                         "⭐ Trận đấu khép lại giữa hai người bạn tâm huyết. Thử lên Tier tiếp theo để mở khóa thêm nhiều quyền lợi mới nhé.",
-                        "🗿 Queue tiếp phục thù thôi. Cảm ơn cả hai bạn đã cùng nhau giữ cho server luôn rực lửa.",
+                        "🗿 Queue tiếp phục thù thôi. Quyền lợi Premium đã sẵn sàng cho trận tiếp theo.",
                         "✨ Thua keo này bày keo khác. Đầu tư thêm một chút vào Tier cao hơn để nhận thêm các đặc quyền tùy biến khung/tên xem sao?"
                     ]
                 }
@@ -538,7 +539,7 @@
         },
         "supporter_strip": {
             "text": "Ngán quảng cáo? Tắt quảng cáo và mở khóa huy hiệu Premium của bạn.",
-            "cta": "Ủng hộ GDListHub"
+            "cta": "Mua Premium"
         },
         "resign": "Đầu hàng",
         "request_level_change": "Đổi level",
@@ -2102,7 +2103,7 @@
             "get_premium": "Mua Premium",
             "view_rewards": "Xem phần thưởng",
             "supporter_badge": "Premium",
-            "supporter_title": "Ủng hộ cộng đồng mà bạn yêu thích",
+            "supporter_title": "Nâng cấp trải nghiệm GDListHub",
             "supporter_subtitle": "Nhận đặc quyền, tùy chỉnh hồ sơ, ảnh GIF và hơn thế nữa.",
             "become_supporter": "Trở thành Premium",
             "month": "tháng",
@@ -2112,7 +2113,7 @@
             "continue_bp": "Tiếp tục Pass",
             "inventory": "Kho đồ",
             "active_supporter": "Premium đang hoạt động",
-            "supporter_welcome_subtitle": "Cảm ơn bạn đã ủng hộ! Đây là các liên kết nhanh.",
+            "supporter_welcome_subtitle": "Quyền lợi Premium của bạn đang hoạt động. Đây là các liên kết nhanh.",
             "my_profile": "Hồ sơ",
             "submissions": "Bản nộp"
         },
@@ -2142,7 +2143,7 @@
             "title": "Top Premium",
             "view_leaderboard": "Xem bảng xếp hạng",
             "server_cost": "Chi phí máy chủ",
-            "help_reach": "Giúp chúng tôi duy trì server"
+            "help_reach": "Khám phá quyền lợi Premium"
         },
         "level_feedback_promo": {
             "title": "Feedback Level",
@@ -2569,34 +2570,17 @@
         }
     },
     "supporter": {
-        "title": "Trở thành Premium 💖",
-        "description": "Nhận những đặc quyền và giúp chúng tôi phát triển!",
-        "price": "49.000₫/tháng",
-        "or": "hoặc",
-        "store_button": "Xem cửa hàng của chúng tôi",
+        "title": "GDListHub Premium 💎",
+        "description": "Nâng cấp trải nghiệm GDListHub với duyệt web không quảng cáo, ảnh động cho hồ sơ, URL hồ sơ ngắn và các tính năng độc quyền.",
+        "price": "Mua Premium — 49.000₫/tháng",
         "login_required": "Bạn phải đăng nhập trước khi mua Premium.",
         "alert": {
-            "title": "Ủng hộ GDListHub 💖",
-            "description": "Trở thành Premium để ủng hộ và giúp DLVN phát triển hơn, đồng thời nhận các quyền lợi độc quyền!",
+            "title": "Nâng cấp Premium 💎",
+            "description": "Duyệt web không quảng cáo, dùng ảnh động cho hồ sơ, URL hồ sơ ngắn và các tính năng Premium độc quyền.",
             "learn_more": "Tìm hiểu thêm"
         },
-        "why_support": {
-            "title": "Tại sao bạn nên ủng hộ GDListHub",
-            "support_team": {
-                "title": "Ủng hộ đội ngũ",
-                "description": "Một đội ngũ nhỏ chỉ có một người phát triển và vận hành GDListHub. Sự ủng hộ của bạn mang lại động lực để anh ấy phát triển và duy trì trang web."
-            },
-            "server_infrastructure": {
-                "title": "Hạ tầng máy chủ",
-                "description": "Sự đóng góp của bạn sẽ được dùng cho các máy chủ để vận hành trang web."
-            },
-            "self_sustaining": {
-                "title": "Giữ GDListHub tự duy trì",
-                "description": "Sự đóng góp của bạn giúp trang web độc lập và hoàn toàn không phụ thuộc vào các nhà tài trợ bên ngoài."
-            }
-        },
         "perks": {
-            "title": "Bạn sẽ nhận được những đặc quyền gì",
+            "title": "Mọi quyền lợi đi kèm Premium",
             "highlighted_name": {
                 "title": "Tên được làm nổi bật",
                 "description": "Nổi bật trên bảng xếp hạng với tên màu vàng bắt mắt."
@@ -2646,8 +2630,8 @@
                 "description": "Lọc level với độ chính xác cao - tìm kiếm theo phạm vi top, điểm số, tên level hoặc creator. Tìm chính xác những gì bạn đang tìm kiếm!"
             },
             "more_coming": {
-                "title": "Ừm... đó là tất cả",
-                "description": "Đừng lo lắng. Sẽ có thêm nhiều tính năng cho Premium trong tương lai."
+                "title": "Thêm nhiều tính năng Premium",
+                "description": "Các tính năng và cải tiến Premium mới sẽ được bổ sung khi dịch vụ phát triển."
             },
             "discord_bot": {
                 "title": "Vai trò Discord cộng đồng",
@@ -2655,8 +2639,8 @@
             }
         },
         "decision": {
-            "title": "Vậy... Bạn đã quyết định chưa?",
-            "button": "Ủng hộ chúng tôi chỉ với 49.000₫/tháng"
+            "title": "Sẵn sàng nâng cấp trải nghiệm?",
+            "button": "Mua Premium — 49.000₫/tháng"
         },
         "goals": {
             "title": "Tiến độ gây quỹ GDListHub Cup 2026",
@@ -2696,10 +2680,10 @@
         },
         "notes": {
             "title": "Lưu ý:",
-            "non_recurring": "GDListHub Premium không tự động gia hạn.",
-            "non_refundable": "GDListHub Premium không thể hoàn tiền.",
-            "extension": "Nếu bạn mua Premium khi vẫn còn Premium đang hoạt động, thời gian sẽ được cộng thêm thêm.",
-            "duration": "1 Tháng = 30 Ngày."
+            "non_recurring": "GDListHub Premium là giao dịch một lần và không tự động gia hạn.",
+            "non_refundable": "Giao dịch mua GDListHub Premium không thể hoàn tiền.",
+            "extension": "Nếu mua thêm khi Premium vẫn còn hiệu lực, thời hạn mới sẽ được cộng vào thời gian còn lại.",
+            "duration": "Một tháng Premium tương đương 30 ngày."
         },
         "top_supporters": {
             "title": "Premium Hàng Đầu (30 Ngày Qua)",
@@ -2743,7 +2727,7 @@
             "added_to_cart": "Đã thêm {quantity} {product} vào giỏ hàng!",
             "out_of_stock": "Hết hàng",
             "in_stock": "Còn {stock} trong kho",
-            "go_to_supporter": "Đến trang ủng hộ",
+            "go_to_supporter": "Đến trang Premium",
             "quantity": "Số lượng",
             "image_alt": "Ảnh của {product}",
             "thumbnail_alt": "Ảnh thu nhỏ sản phẩm {index}",
@@ -2833,7 +2817,7 @@
     "misc": {
         "supporter_feature": {
             "title": "Tính Năng Premium",
-            "description": "Phần này chứa các tính năng độc quyền dành cho Premium. Vui lòng xem xét ủng hộ chúng tôi để mở khóa các tính năng cao cấp này!",
+            "description": "Tính năng này dành cho thành viên Premium. Nâng cấp Premium để mở khóa quyền truy cập.",
             "go_home": "Về Trang Chủ",
             "become_supporter": "Trở Thành Premium"
         }
@@ -3684,6 +3668,61 @@
                 "submissions": "Nộp level",
                 "pending_records": "Record chờ duyệt"
             },
+            "navigation": {
+                "label": "Các mục quản lý danh sách",
+                "setup": "Thiết lập",
+                "content": "Nội dung",
+                "ranking": "Xếp hạng",
+                "team_publishing": "Đội ngũ & xuất bản",
+                "safety": "An toàn"
+            },
+            "appearance": {
+                "layout_heading": "Bố cục trang công khai",
+                "layout_hint": "Chọn cấu trúc khách truy cập sẽ thấy. Màu sắc và hình ảnh của danh sách áp dụng cho mọi bố cục.",
+                "layouts": {
+                    "grid": { "label": "Lưới", "description": "Bố cục thẻ hai cột hiện tại." },
+                    "list": {
+                        "label": "Danh sách",
+                        "description": "Các hàng level gọn, chiếm toàn bộ chiều rộng."
+                    },
+                    "aredl_tsl": {
+                        "label": "AREDL / TSL",
+                        "description": "Bộ chọn thứ hạng, chi tiết level và thông tin danh sách."
+                    },
+                    "pointercrate": {
+                        "label": "Pointercrate",
+                        "description": "Luồng thẻ với thanh thông tin hỗ trợ."
+                    }
+                }
+            },
+            "permissions": {
+                "title": "So sánh quyền",
+                "hint": "Quyền hiện tại của từng vai trò nhân sự có thể cấp trong danh sách này.",
+                "capability": "Khả năng",
+                "conditional_hint": "Giá trị phản ánh thiết lập cộng tác, duyệt record, trạng thái cấm và bảo vệ hiện tại.",
+                "rows": {
+                    "canEditSettings": "Sửa thiết lập danh sách",
+                    "canEditLevels": "Quản lý level",
+                    "canReviewSubmissions": "Duyệt level được gửi",
+                    "canReviewRecords": "Duyệt record",
+                    "canViewMembers": "Xem cộng tác viên",
+                    "canManageMembers": "Mời hoặc xóa cộng tác viên",
+                    "canViewPendingInvitations": "Xem lời mời đang chờ",
+                    "canViewAudit": "Xem nhật ký kiểm tra",
+                    "canTransferOwnership": "Chuyển quyền sở hữu",
+                    "canDelete": "Xóa danh sách",
+                    "canResign": "Rời vị trí nhân sự"
+                }
+            },
+            "resign": {
+                "title": "Rời đội ngũ danh sách",
+                "hint": "Tự xóa quyền nhân sự của bạn. Thay đổi có hiệu lực ngay lập tức.",
+                "owner_hint": "Chủ sở hữu phải chuyển quyền sở hữu trước khi rời danh sách.",
+                "button": "Xin rời",
+                "confirm": "Rời đội ngũ danh sách này? Bạn sẽ mất quyền quản lý ngay lập tức.",
+                "success": "Bạn đã rời đội ngũ danh sách.",
+                "failed": "Không thể rời đội ngũ danh sách."
+            },
             "pending_records": {
                 "heading": "Record riêng đang chờ duyệt",
                 "hint": "Duyệt các record được gửi riêng đến list này. Bản gửi cũ nhất hiển thị trước.",
@@ -3829,6 +3868,7 @@
                 "member_invitation_rejected": "Đã từ chối lời mời",
                 "member_invitation_revoked": "Đã thu hồi lời mời",
                 "member_removed": "Đã xóa cộng tác viên",
+                "member_resigned": "Cộng tác viên đã xin rời",
                 "member_role_updated": "Đã cập nhật vai trò cộng tác viên",
                 "ownership_transferred": "Đã chuyển quyền sở hữu",
                 "collaboration_settings_updated": "Đã cập nhật thiết lập cộng tác",
@@ -3847,6 +3887,7 @@
                 "level_updated": "{actor} đã cập nhật level #{levelId}: {fields}.",
                 "levels_reordered": "{actor} đã sắp xếp lại danh sách level.",
                 "member_changed": "{actor} đã thay đổi {target} ({role}).",
+                "member_resigned": "{actor} đã rời đội ngũ danh sách với vai trò {role}.",
                 "member_invited": "{actor} đã mời {target} với vai trò {role}.",
                 "member_invitation_updated": "{actor} đã đổi lời mời của {target} từ {fromRole} sang {toRole}.",
                 "member_invitation_accepted": "{actor} đã chấp nhận lời mời với vai trò {role}.",

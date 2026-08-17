@@ -24,7 +24,8 @@
         "no": "No",
         "previous": "Previous",
         "loading": "Loading",
-        "refresh": "Refresh"
+        "refresh": "Refresh",
+        "retry": "Try again"
     },
     "list_selector": {
         "search_placeholder": "Search lists...",
@@ -312,14 +313,14 @@
             "mod_title": "GDListHub Geode mod required",
             "mod_description": "Install the latest GDListHub Geode mod before playing 1v1 Versus inside Geometry Dash.",
             "support": {
-                "eyebrow": "Support GDListHub",
-                "title": "Keep 1v1 Versus free for everyone",
-                "description": "GDListHub Versus runs on community support. Getting Premium keeps the matchmaking servers online, and you pick up a few perks along the way.",
+                "eyebrow": "GDListHub Premium",
+                "title": "Upgrade your 1v1 Versus experience",
+                "description": "Premium adds an ad-free experience, a colored tier badge, profile customization, and member features across GDListHub.",
                 "benefit_ad_free": "Play 1v1 Versus completely ad-free",
                 "benefit_badge": "A colored Premium tier badge next to your name in matches and on the leaderboard",
-                "benefit_servers": "Directly funds the 1v1 matchmaking servers",
+                "benefit_servers": "Use your Premium benefits across Versus and supported GDListHub features",
                 "cta": "Get Premium",
-                "supporter_state": "Thank you for keeping Versus online."
+                "supporter_state": "Your Premium benefits are active."
             }
         },
         "dashboard": {
@@ -446,7 +447,7 @@
         "match_end_special": {
             "cta": {
                 "requeue": "Queue again",
-                "donate": "Support now",
+                "donate": "Get Premium",
                 "upgrade": "Upgrade tier"
             },
             "generic": {
@@ -472,65 +473,65 @@
             "supporter_contextual": {
                 "none_vs_none": {
                     "win": [
-                        "🔥 You won. GDListHub stays online thanks to support from the community.",
-                        "⚔️ Victory is yours. Demon List VN appreciates every queue from players like you.",
-                        "🗿 You won the match. Thanks to everyone quietly helping keep this playground alive.",
-                        "🤝 A good match. This website is still trying to get better every day.",
-                        "⭐ Nice result. Thank you for being part of building the GDListHub community."
+                        "🔥 You won. Premium can make the next victory completely ad-free.",
+                        "⚔️ Victory is yours. A Premium tier badge can make the result stand out even more.",
+                        "🗿 You won the match. Explore animated profile media and other Premium customizations.",
+                        "🤝 A good match. Premium benefits apply across Versus and GDListHub.",
+                        "⭐ Nice result. Premium adds more ways to personalize your GDListHub experience."
                     ],
                     "lose": [
-                        "💀 You lost. Good thing the site is still running smoothly for an immediate comeback.",
-                        "⚔️ This match was not yours. Demon List VN is waiting for you in the next game.",
-                        "🗿 Tough result, but thank you for being part of GDListHub.",
-                        "🤝 Queue again? Your presence helps keep the website moving.",
-                        "⭐ Do not give up. This site stays open because the whole community contributes."
+                        "💀 You lost. Premium removes ads so you can focus on the comeback.",
+                        "⚔️ This match was not yours. A Premium tier badge is ready for the next one.",
+                        "🗿 Tough result. Explore Premium profile options before queueing again.",
+                        "🤝 Queue again? Premium gives Versus a cleaner, ad-free experience.",
+                        "⭐ Do not give up. Premium unlocks more ways to make your profile your own."
                     ]
                 },
                 "none_vs_supporter": {
                     "win": [
-                        "🔥 You won. Thanks to your opponent for helping GDListHub stay stable.",
-                        "⚔️ Victory is yours. It is great to see community members meeting in matches like this.",
-                        "⭐ A quality match against someone supporting Demon List VN.",
-                        "🗿 The result belongs to you. Your opponent's support helps the site gain more features.",
-                        "🤝 Thanks to both players for a good match on GDListHub."
+                        "🔥 You won against a Premium member. Explore the same profile and identity benefits.",
+                        "⚔️ Victory is yours. Your opponent's colored badge is one of the Premium match perks.",
+                        "⭐ A quality match against a Premium member.",
+                        "🗿 The result belongs to you. Premium can give your next match a more personal look.",
+                        "🤝 Good match. Premium benefits are available across Versus and GDListHub."
                     ],
                     "lose": [
-                        "💀 You lost. Your opponent is one of the people helping keep the servers running.",
-                        "⚔️ This one belongs to your opponent. Thanks to them for helping keep Demon List VN alive.",
-                        "⭐ Someone supporting the website's growth just took the win.",
-                        "🗿 Not the result you wanted, but thanks to people like your opponent, the site keeps improving.",
-                        "🤝 Match complete. Thanks to your opponent for supporting the GDListHub community."
+                        "💀 You lost to a Premium member. Their colored tier badge is part of the service.",
+                        "⚔️ This one belongs to your opponent. Premium can give your profile the same standout look.",
+                        "⭐ A Premium member just took the win.",
+                        "🗿 Not the result you wanted. An ad-free Premium experience can keep the next queue focused.",
+                        "🤝 Match complete. Explore the Premium features visible on your opponent's profile."
                     ]
                 },
                 "supporter_vs_none": {
                     "win": [
-                        "🔥 You won. Thank you so much for helping keep GDListHub running.",
-                        "⭐ Victory is yours. Your support is part of the foundation for this website's growth.",
-                        "⚔️ You just won the match. Thanks for always supporting Demon List VN.",
-                        "👑 A strong result from an active member of the community.",
-                        "🤝 Thank you for helping matches like this happen every day."
+                        "🔥 You won. Your Premium benefits make the victory look even sharper.",
+                        "⭐ Victory is yours. Your colored Premium tier badge is on display.",
+                        "⚔️ You just won the match with your Premium identity active.",
+                        "👑 A strong result from an active Premium member.",
+                        "🤝 Your Premium profile and Versus benefits are active across GDListHub."
                     ],
                     "lose": [
-                        "💀 You lost, but your support for GDListHub is still deeply appreciated.",
-                        "⭐ This one was not yours. Thank you for continuing to stand with Demon List VN.",
-                        "⚔️ Not the prettiest result, but your contribution to the website is still excellent.",
-                        "🗿 Queue again! Thanks for helping keep the server ready for everyone.",
-                        "🤝 Win or lose, GDListHub is grateful for your support."
+                        "💀 You lost, but your Premium profile still stands out.",
+                        "⭐ This one was not yours. Your ad-free Premium experience is ready for the rematch.",
+                        "⚔️ Not the prettiest result, but the Premium tier badge still looks excellent.",
+                        "🗿 Queue again! Your Premium benefits remain active for the next match.",
+                        "🤝 Win or lose, your Premium customizations stay with you across GDListHub."
                     ]
                 },
                 "both_are_supporters": {
                     "win": [
                         "👑 Two Premium members met in battle! You won. Want to stand out even more? Try exploring higher tiers.",
-                        "🔥 A high-level match between people helping keep GDListHub alive. Victory is yours.",
+                        "🔥 A high-level match between Premium members. Victory is yours.",
                         "⭐ You won the match. Upgrade your tier to unlock more effects and exclusive Demon List VN perks.",
-                        "⚔️ A meeting between two active Premium members. Thank you both for contributing.",
+                        "⚔️ A meeting between two active Premium members with their tier badges on display.",
                         "✨ Clean win! Your matches can look even cooler with higher-tier custom perks."
                     ],
                     "lose": [
                         "👑 Two Premium members met in battle! Your opponent takes this one. A higher tier might help you reclaim the spotlight.",
                         "💀 Not the result you wanted, but your Premium status at GDListHub is always appreciated.",
                         "⭐ A match between two dedicated Premium members comes to a close. Try the next tier for more new perks.",
-                        "🗿 Queue again for revenge. Thank you both for helping keep the server alive.",
+                        "🗿 Queue again for revenge. Your Premium benefits are ready for the next match.",
                         "✨ You lost this round, but there is always another. A higher tier unlocks more frame and name customization perks."
                     ]
                 }
@@ -538,7 +539,7 @@
         },
         "supporter_strip": {
             "text": "Tired of ads? Go ad-free and unlock your Premium tier badge.",
-            "cta": "Support GDListHub"
+            "cta": "Get Premium"
         },
         "resign": "Resign",
         "request_level_change": "Change level",
@@ -2104,7 +2105,7 @@
             "get_premium": "Get Premium",
             "view_rewards": "View Rewards",
             "supporter_badge": "Premium",
-            "supporter_title": "Support the community you love",
+            "supporter_title": "Upgrade your GDListHub experience",
             "supporter_subtitle": "Get exclusive perks, custom profile, GIF avatar, and more.",
             "become_supporter": "Get Premium",
             "month": "month",
@@ -2114,7 +2115,7 @@
             "continue_bp": "Continue Pass",
             "inventory": "Inventory",
             "active_supporter": "Active Premium",
-            "supporter_welcome_subtitle": "Thank you for supporting us! Here are your quick links.",
+            "supporter_welcome_subtitle": "Your Premium benefits are active. Here are your quick links.",
             "my_profile": "My Profile",
             "submissions": "Submissions"
         },
@@ -2144,7 +2145,7 @@
             "title": "Top Premium members",
             "view_leaderboard": "View leaderboard",
             "server_cost": "Server Cost",
-            "help_reach": "Help us keep the lights on"
+            "help_reach": "Explore Premium benefits"
         },
         "level_feedback_promo": {
             "title": "Level Feedback",
@@ -2549,34 +2550,17 @@
         }
     },
     "supporter": {
-        "title": "Get Premium 💖",
-        "description": "Get exclusive perks and help us grow!",
-        "price": "49.000₫/month",
-        "or": "or",
-        "store_button": "Check out our store",
+        "title": "GDListHub Premium 💎",
+        "description": "Upgrade your GDListHub experience with ad-free browsing, animated profile media, a shorter profile URL, and exclusive member features.",
+        "price": "Get Premium — 49.000₫/month",
         "login_required": "You must log in before purchasing Premium.",
         "alert": {
-            "title": "Support GDListHub 💖",
-            "description": "Get Premium to help GDListHub grow and unlock exclusive perks!",
+            "title": "Upgrade to Premium 💎",
+            "description": "Get ad-free browsing, animated profile media, a shorter profile URL, and exclusive Premium features.",
             "learn_more": "Learn more"
         },
-        "why_support": {
-            "title": "Why should you support GDListHub",
-            "support_team": {
-                "title": "Support the Team",
-                "description": "A small single person team develops and runs GDListHub. Your support gives him the motivation to develop and maintain the website."
-            },
-            "server_infrastructure": {
-                "title": "Server Infrastructure",
-                "description": "Contributions go towards the servers for running the website."
-            },
-            "self_sustaining": {
-                "title": "Keep GDListHub self-sustaining",
-                "description": "Your contributions help keep the site independent and completely free from outside sponsors."
-            }
-        },
         "perks": {
-            "title": "What perks will you get",
+            "title": "Everything included with Premium",
             "highlighted_name": {
                 "title": "Highlighted name",
                 "description": "Stand out on the leaderboard with a flashy golden name."
@@ -2626,8 +2610,8 @@
                 "description": "Filter levels with precision - search by top range, rating, level name, or creator. Find exactly what you're looking for!"
             },
             "more_coming": {
-                "title": "Umm... that pretty much it",
-                "description": "Don't worry. More feature for Premium members will be added in the future."
+                "title": "More Premium features",
+                "description": "New Premium features and improvements will be added as the service evolves."
             },
             "discord_bot": {
                 "title": "Community Discord role",
@@ -2635,8 +2619,8 @@
             }
         },
         "decision": {
-            "title": "So... Have you made your decision?",
-            "button": "Support us with just 49.000₫/month"
+            "title": "Ready to upgrade your experience?",
+            "button": "Get Premium — 49.000₫/month"
         },
         "goals": {
             "title": "GDListHub Cup 2026 fundraising progress",
@@ -2676,10 +2660,10 @@
         },
         "notes": {
             "title": "Note:",
-            "non_recurring": "GDListHub Premium roles are non-recurring payments.",
-            "non_refundable": "GDListHub Premium roles are non-refundable.",
-            "extension": "If you buy one while you still have an active roles, it will extend the duration in addition to any remaining time.",
-            "duration": "1 Month = 30 Days."
+            "non_recurring": "GDListHub Premium is a one-time, non-recurring purchase.",
+            "non_refundable": "GDListHub Premium purchases are non-refundable.",
+            "extension": "If you purchase Premium while access is active, the new duration is added to your remaining time.",
+            "duration": "One month of Premium access equals 30 days."
         },
         "top_supporters": {
             "title": "Top Premium members (Last 30 Days)",
@@ -2813,7 +2797,7 @@
     "misc": {
         "supporter_feature": {
             "title": "Premium Feature",
-            "description": "This section contains exclusive features for Premium members. Please consider supporting us to unlock these premium features!",
+            "description": "This feature is available to Premium members. Upgrade to Premium to unlock access.",
             "go_home": "Go Home",
             "become_supporter": "Get Premium"
         }
@@ -3685,6 +3669,61 @@
                 "submissions": "Submissions",
                 "pending_records": "Pending records"
             },
+            "navigation": {
+                "label": "List management sections",
+                "setup": "Setup",
+                "content": "Content",
+                "ranking": "Ranking",
+                "team_publishing": "Team & publishing",
+                "safety": "Safety"
+            },
+            "appearance": {
+                "layout_heading": "Public page layout",
+                "layout_hint": "Choose the structure visitors see across this list page. Your colors and images apply to every layout.",
+                "layouts": {
+                    "grid": {
+                        "label": "Grid",
+                        "description": "The current two-column card layout."
+                    },
+                    "list": { "label": "List", "description": "Compact, full-width level rows." },
+                    "aredl_tsl": {
+                        "label": "AREDL / TSL",
+                        "description": "Rank selector, focused level details, and list information."
+                    },
+                    "pointercrate": {
+                        "label": "Pointercrate",
+                        "description": "A panel stream with a supporting information sidebar."
+                    }
+                }
+            },
+            "permissions": {
+                "title": "Permission comparison",
+                "hint": "Effective permissions for each assignable staff role on this list.",
+                "capability": "Capability",
+                "conditional_hint": "Values reflect the current collaboration, record-review, ban, and protection settings.",
+                "rows": {
+                    "canEditSettings": "Edit list settings",
+                    "canEditLevels": "Manage levels",
+                    "canReviewSubmissions": "Review level submissions",
+                    "canReviewRecords": "Review records",
+                    "canViewMembers": "View collaborators",
+                    "canManageMembers": "Invite or remove collaborators",
+                    "canViewPendingInvitations": "View pending invitations",
+                    "canViewAudit": "View audit history",
+                    "canTransferOwnership": "Transfer ownership",
+                    "canDelete": "Delete list",
+                    "canResign": "Resign from staff"
+                }
+            },
+            "resign": {
+                "title": "Leave list staff",
+                "hint": "Remove your own staff access. This takes effect immediately.",
+                "owner_hint": "Owners must transfer ownership before they can leave the list.",
+                "button": "Resign",
+                "confirm": "Resign from this list's staff? You will immediately lose management access.",
+                "success": "You have resigned from the list staff.",
+                "failed": "Failed to resign from the list."
+            },
             "pending_records": {
                 "heading": "Pending list-only records",
                 "hint": "Review records submitted specifically to this list. Oldest submissions appear first.",
@@ -3830,6 +3869,7 @@
                 "member_invitation_rejected": "Invitation declined",
                 "member_invitation_revoked": "Invitation revoked",
                 "member_removed": "Collaborator removed",
+                "member_resigned": "Collaborator resigned",
                 "member_role_updated": "Collaborator role updated",
                 "ownership_transferred": "Ownership transferred",
                 "collaboration_settings_updated": "Collaboration settings updated",
@@ -3848,6 +3888,7 @@
                 "level_updated": "{actor} updated level #{levelId}: {fields}.",
                 "levels_reordered": "{actor} reordered the level list.",
                 "member_changed": "{actor} changed {target} ({role}).",
+                "member_resigned": "{actor} resigned from the list staff as {role}.",
                 "member_invited": "{actor} invited {target} as {role}.",
                 "member_invitation_updated": "{actor} updated {target}'s invitation from {fromRole} to {toRole}.",
                 "member_invitation_accepted": "{actor} accepted the invitation as {role}.",

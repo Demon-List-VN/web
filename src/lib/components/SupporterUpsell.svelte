@@ -13,7 +13,7 @@
 </script>
 
 {#if !hidden}
-  <a class="supporter-upsell" href="/supporter" data-nosnippet>
+  <a class="supporter-upsell" href="/premium" data-nosnippet>
     <span class="supporter-upsell-icon" aria-hidden="true">
       <Heart class="h-4 w-4" />
     </span>

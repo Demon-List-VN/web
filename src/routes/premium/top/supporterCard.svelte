@@ -37,7 +37,7 @@
 	}
 </script>
 
-<div class="relative">
+<div class="relative" data-premium-member>
   <div class="flex items-center gap-2 mb-[10px]">
     <Badge
       variant={getRankBadgeVariant(rank)}

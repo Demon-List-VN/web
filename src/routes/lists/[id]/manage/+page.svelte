@@ -25,7 +25,7 @@
 		normalizeCustomListRankBadges,
 		type CustomListRankBadge
 	} from '$lib/utils/customListRank';
-	import { beforeNavigate, goto } from '$app/navigation';
+	import { beforeNavigate, goto, replaceState } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { user } from '$lib/client';
 	import { toast } from 'svelte-sonner';
@@ -176,6 +176,7 @@
 		canViewAudit: boolean;
 		canViewPendingInvitations: boolean;
 		canRespondToInvitation: boolean;
+		canResign: boolean;
 	};
 
 	type CustomListMember = {
@@ -196,17 +197,6 @@
 		updated_at: string;
 		playerData?: any | null;
 		invitedByData?: any | null;
-	};
-
-	type CustomListAuditLogEntry = {
-		id: number;
-		created_at: string;
-		action: string;
-		actorUid: string | null;
-		targetUid: string | null;
-		metadata?: Record<string, any> | null;
-		actorData?: any | null;
-		targetData?: any | null;
 	};
 
 	type CustomList = {
@@ -231,6 +221,7 @@
 		isOfficial?: boolean;
 		levelSubmissionEnabled?: boolean;
 		staffListEnabled?: boolean;
+		appearanceLayout?: 'grid' | 'list' | 'aredl_tsl' | 'pointercrate';
 		logoUrl?: string | null;
 		topEnabled?: boolean;
 		isMirror?: boolean;
@@ -244,10 +235,10 @@
 		lastRefreshedAt?: string | null;
 		currentUserRole?: CustomListResolvedRole;
 		permissions?: CustomListPermissionFlags;
+		rolePermissions?: Record<'owner' | 'admin' | 'helper', CustomListPermissionFlags>;
 		members?: CustomListMember[];
 		pendingInvitations?: CustomListInvitation[];
 		pendingInvitation?: CustomListInvitation | null;
-		auditLog?: CustomListAuditLogEntry[];
 		createdAuditLogIds?: number[];
 		rankBadges?: CustomListRankBadge[];
 		recordScoreFormula?: string;
@@ -371,6 +362,7 @@
 		collaboratorsCanVerifyRecords: boolean;
 		levelSubmissionEnabled: boolean;
 		staffListEnabled: boolean;
+		appearanceLayout: 'grid' | 'list' | 'aredl_tsl' | 'pointercrate';
 		faviconUrl: string;
 		isPlatformer: boolean;
 		logoUrl: string;
@@ -444,7 +436,8 @@
 		canViewMembers: false,
 		canViewAudit: false,
 		canViewPendingInvitations: false,
-		canRespondToInvitation: false
+		canRespondToInvitation: false,
+		canResign: false
 	};
 
 	// SSR data - hydrate into reactive local state
@@ -549,6 +542,7 @@
 		collaboratorsCanVerifyRecords: false,
 		levelSubmissionEnabled: false,
 		staffListEnabled: true,
+		appearanceLayout: 'grid' as 'grid' | 'list' | 'aredl_tsl' | 'pointercrate',
 		faviconUrl: '',
 		isPlatformer: false,
 		logoUrl: '',
@@ -1020,6 +1014,31 @@
 			: 'members';
 	}
 
+	function selectManageTab(tab: ManageTab) {
+		if (!isTabAllowed(tab)) {
+			return;
+		}
+
+		activeTab = tab;
+
+		if (browser) {
+			const nextUrl = new URL($page.url);
+			nextUrl.searchParams.set('tab', tab);
+			replaceState(
+				`${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`,
+				$page.state
+			);
+		}
+	}
+
+	function handleMobileTabChange(event: Event) {
+		const target = event.currentTarget;
+
+		if (target instanceof HTMLSelectElement) {
+			selectManageTab(target.value as ManageTab);
+		}
+	}
+
 	function syncForm() {
 		if (!list) {
 			return;
@@ -1038,6 +1057,7 @@
 		editForm.collaboratorsCanVerifyRecords = list.collaboratorsCanVerifyRecords ?? false;
 		editForm.levelSubmissionEnabled = list.levelSubmissionEnabled ?? false;
 		editForm.staffListEnabled = list.staffListEnabled ?? true;
+		editForm.appearanceLayout = list.appearanceLayout || 'grid';
 		editForm.faviconUrl = list.faviconUrl || '';
 		editForm.isPlatformer = list.isPlatformer;
 		editForm.logoUrl = list.logoUrl || '';
@@ -1106,6 +1126,7 @@
 				currentList.collaboratorsCanVerifyRecords ?? false,
 			levelSubmissionEnabled: currentList.levelSubmissionEnabled ?? false,
 			staffListEnabled: currentList.staffListEnabled ?? true,
+			appearanceLayout: currentList.appearanceLayout || 'grid',
 			faviconUrl: currentList.faviconUrl || '',
 			isPlatformer: currentList.isPlatformer,
 			logoUrl: currentList.logoUrl || '',
@@ -1144,6 +1165,7 @@
 			collaboratorsCanVerifyRecords: currentForm.collaboratorsCanVerifyRecords,
 			levelSubmissionEnabled: currentForm.levelSubmissionEnabled,
 			staffListEnabled: currentForm.staffListEnabled,
+			appearanceLayout: currentForm.appearanceLayout,
 			faviconUrl: currentForm.faviconUrl,
 			isPlatformer: currentForm.isPlatformer,
 			logoUrl: currentForm.logoUrl,
@@ -2655,6 +2677,7 @@
 			collaboratorsCanVerifyRecords: editForm.collaboratorsCanVerifyRecords,
 			levelSubmissionEnabled: editForm.levelSubmissionEnabled,
 			staffListEnabled: editForm.staffListEnabled,
+			appearanceLayout: editForm.appearanceLayout,
 			faviconUrl: editForm.faviconUrl,
 			isPlatformer: editForm.isPlatformer,
 			logoUrl: editForm.logoUrl,
@@ -4067,6 +4090,10 @@
 			return $_('custom_lists.detail.edit.background_color_label');
 		}
 
+		if (field === 'appearanceLayout') {
+			return $_('custom_lists.manage.appearance.layout_heading');
+		}
+
 		if (field === 'bannerUrl') {
 			return $_('custom_lists.detail.edit.banner_url_label');
 		}
@@ -4214,6 +4241,10 @@
 			return value
 				? $_('custom_lists.detail.edit.item_sort_ascending')
 				: $_('custom_lists.detail.edit.item_sort_descending');
+		}
+
+		if (field === 'appearanceLayout' && typeof value === 'string') {
+			return $_(`custom_lists.manage.appearance.layouts.${value}.label`);
 		}
 
 		if (field === 'recordFilterPlatform' && typeof value === 'string') {
@@ -5228,6 +5259,7 @@
 		list && permissions.canViewPendingInvitations
 	);
 	$: canRespondToInvitation = Boolean(list && permissions.canRespondToInvitation);
+	$: canResign = Boolean(list && permissions.canResign);
 	$: canReviewRecords = Boolean(list && permissions.canReviewRecords);
 	$: canReviewSubmissions = Boolean(list && permissions.canReviewSubmissions);
 	$: canCrawlMirror = Boolean(list?.isMirror && canEditLevels);
@@ -5266,6 +5298,7 @@
 		canEditLevels,
 		canViewAudit,
 		canViewPendingInvitations,
+		canResign,
 		pendingInvitationCount: list?.pendingInvitations?.length ?? 0,
 		updateCollaborationSettings,
 		searchPlayersForCollaboration,
@@ -5614,73 +5647,85 @@
     {/if}
 
     <Tabs.Root bind:value={activeTab}>
-      <div class="tabRail">
-        <Tabs.List class="tabBar">
+      <div class="mobileManageNav">
+        <label for="manage-section-select">{$_('custom_lists.manage.navigation.label')}</label>
+        <select id="manage-section-select" value={activeTab} on:change={handleMobileTabChange}>
           {#if canEditSettings}
-            <Tabs.Trigger value="basic" class="manageTab">
-              <Settings class="h-4 w-4" />
-              <span>{$_('custom_lists.manage.tabs.basic')}</span>
-            </Tabs.Trigger>
-            <Tabs.Trigger value="appearance" class="manageTab">
-              <Palette class="h-4 w-4" />
-              <span>{$_('custom_lists.manage.tabs.appearance')}</span>
-            </Tabs.Trigger>
-            <Tabs.Trigger value="formula" class="manageTab">
-              <Calculator class="h-4 w-4" />
-              <span>{$_('custom_lists.manage.tabs.formula')}</span>
-            </Tabs.Trigger>
-            <Tabs.Trigger value="record-filter" class="manageTab">
-              <Filter class="h-4 w-4" />
-              <span>{$_('custom_lists.manage.tabs.record_filter')}</span>
-            </Tabs.Trigger>
-            <Tabs.Trigger value="rank" class="manageTab">
-              <Award class="h-4 w-4" />
-              <span>{$_('custom_lists.manage.tabs.rank')}</span>
-            </Tabs.Trigger>
+            <optgroup label={$_('custom_lists.manage.navigation.setup')}>
+              <option value="basic">{$_('custom_lists.manage.tabs.basic')}</option>
+              <option value="appearance">{$_('custom_lists.manage.tabs.appearance')}</option>
+            </optgroup>
           {/if}
-          <Tabs.Trigger value="levels" class="manageTab">
-            <ListOrdered class="h-4 w-4" />
-            <span>{$_('custom_lists.manage.tabs.levels')}</span>
-          </Tabs.Trigger>
-          {#if canReviewSubmissions}
-            <Tabs.Trigger value="submissions" class="manageTab">
-              <Inbox class="h-4 w-4" />
-              <span>{$_('custom_lists.manage.tabs.submissions')}</span>
-              {#if pendingSubmissions?.length}
-                <span class="tabCount">{pendingSubmissions.length}</span>
-              {/if}
-            </Tabs.Trigger>
+          <optgroup label={$_('custom_lists.manage.navigation.content')}>
+            <option value="levels">{$_('custom_lists.manage.tabs.levels')}</option>
+            {#if canReviewSubmissions}<option value="submissions">{$_('custom_lists.manage.tabs.submissions')}</option>{/if}
+            {#if canReviewRecords && list.nonGlobalRecordsEnabled}<option value="pending-records">{$_('custom_lists.manage.tabs.pending_records')}</option>{/if}
+          </optgroup>
+          {#if canEditSettings}
+            <optgroup label={$_('custom_lists.manage.navigation.ranking')}>
+              <option value="formula">{$_('custom_lists.manage.tabs.formula')}</option>
+              <option value="record-filter">{$_('custom_lists.manage.tabs.record_filter')}</option>
+              <option value="rank">{$_('custom_lists.manage.tabs.rank')}</option>
+            </optgroup>
           {/if}
-          {#if canReviewRecords && list.nonGlobalRecordsEnabled}
-            <Tabs.Trigger value="pending-records" class="manageTab">
-              <ClipboardCheck class="h-4 w-4" />
-              <span>{$_('custom_lists.manage.tabs.pending_records')}</span>
-              {#if pendingRecords.length}
-                <span class="tabCount">{pendingRecords.length}</span>
-              {/if}
-            </Tabs.Trigger>
-          {/if}
-          {#if canViewAudit}
-            <Tabs.Trigger value="changelog" class="manageTab">
-              <History class="h-4 w-4" />
-              <span>{$_('custom_lists.manage.tabs.changelog')}</span>
-            </Tabs.Trigger>
-          {/if}
-
-          {#if canShowCollaboration}
-            <Tabs.Trigger value="collaboration" class="manageTab">
-              <SlidersHorizontal class="h-4 w-4" />
-              <span>{$_('custom_lists.manage.tabs.advanced')}</span>
-            </Tabs.Trigger>
+          {#if canViewAudit || canShowCollaboration}
+            <optgroup label={$_('custom_lists.manage.navigation.team_publishing')}>
+              {#if canViewAudit}<option value="changelog">{$_('custom_lists.manage.tabs.changelog')}</option>{/if}
+              {#if canShowCollaboration}<option value="collaboration">{$_('custom_lists.manage.tabs.advanced')}</option>{/if}
+            </optgroup>
           {/if}
           {#if canBan || canDelete}
-            <Tabs.Trigger value="danger" class="manageTab dangerTabTrigger">
-              <ShieldAlert class="h-4 w-4" />
-              <span>{$_('custom_lists.manage.tabs.danger')}</span>
-            </Tabs.Trigger>
+            <optgroup label={$_('custom_lists.manage.navigation.safety')}>
+              <option value="danger">{$_('custom_lists.manage.tabs.danger')}</option>
+            </optgroup>
           {/if}
-        </Tabs.List>
+        </select>
       </div>
+
+      <div class="manageShell">
+        <aside class="manageSidebar" aria-label={$_('custom_lists.manage.navigation.label')}>
+          <Tabs.List class="manageSidebarList">
+            {#if canEditSettings}
+              <div class="manageNavGroup">
+                <span>{$_('custom_lists.manage.navigation.setup')}</span>
+                <Tabs.Trigger value="basic" class="manageTab" on:click={() => selectManageTab('basic')}><Settings class="h-4 w-4" />{$_('custom_lists.manage.tabs.basic')}</Tabs.Trigger>
+                <Tabs.Trigger value="appearance" class="manageTab" on:click={() => selectManageTab('appearance')}><Palette class="h-4 w-4" />{$_('custom_lists.manage.tabs.appearance')}</Tabs.Trigger>
+              </div>
+            {/if}
+            <div class="manageNavGroup">
+              <span>{$_('custom_lists.manage.navigation.content')}</span>
+              <Tabs.Trigger value="levels" class="manageTab" on:click={() => selectManageTab('levels')}><ListOrdered class="h-4 w-4" />{$_('custom_lists.manage.tabs.levels')}</Tabs.Trigger>
+              {#if canReviewSubmissions}
+                <Tabs.Trigger value="submissions" class="manageTab" on:click={() => selectManageTab('submissions')}><Inbox class="h-4 w-4" />{$_('custom_lists.manage.tabs.submissions')}{#if pendingSubmissions?.length}<span class="tabCount">{pendingSubmissions.length}</span>{/if}</Tabs.Trigger>
+              {/if}
+              {#if canReviewRecords && list.nonGlobalRecordsEnabled}
+                <Tabs.Trigger value="pending-records" class="manageTab" on:click={() => selectManageTab('pending-records')}><ClipboardCheck class="h-4 w-4" />{$_('custom_lists.manage.tabs.pending_records')}{#if pendingRecords.length}<span class="tabCount">{pendingRecords.length}</span>{/if}</Tabs.Trigger>
+              {/if}
+            </div>
+            {#if canEditSettings}
+              <div class="manageNavGroup">
+                <span>{$_('custom_lists.manage.navigation.ranking')}</span>
+                <Tabs.Trigger value="formula" class="manageTab" on:click={() => selectManageTab('formula')}><Calculator class="h-4 w-4" />{$_('custom_lists.manage.tabs.formula')}</Tabs.Trigger>
+                <Tabs.Trigger value="record-filter" class="manageTab" on:click={() => selectManageTab('record-filter')}><Filter class="h-4 w-4" />{$_('custom_lists.manage.tabs.record_filter')}</Tabs.Trigger>
+                <Tabs.Trigger value="rank" class="manageTab" on:click={() => selectManageTab('rank')}><Award class="h-4 w-4" />{$_('custom_lists.manage.tabs.rank')}</Tabs.Trigger>
+              </div>
+            {/if}
+            {#if canViewAudit || canShowCollaboration}
+              <div class="manageNavGroup">
+                <span>{$_('custom_lists.manage.navigation.team_publishing')}</span>
+                {#if canViewAudit}<Tabs.Trigger value="changelog" class="manageTab" on:click={() => selectManageTab('changelog')}><History class="h-4 w-4" />{$_('custom_lists.manage.tabs.changelog')}</Tabs.Trigger>{/if}
+                {#if canShowCollaboration}<Tabs.Trigger value="collaboration" class="manageTab" on:click={() => selectManageTab('collaboration')}><SlidersHorizontal class="h-4 w-4" />{$_('custom_lists.manage.tabs.advanced')}</Tabs.Trigger>{/if}
+              </div>
+            {/if}
+            {#if canBan || canDelete}
+              <div class="manageNavGroup manageNavDanger">
+                <span>{$_('custom_lists.manage.navigation.safety')}</span>
+                <Tabs.Trigger value="danger" class="manageTab dangerTabTrigger" on:click={() => selectManageTab('danger')}><ShieldAlert class="h-4 w-4" />{$_('custom_lists.manage.tabs.danger')}</Tabs.Trigger>
+              </div>
+            {/if}
+          </Tabs.List>
+        </aside>
+        <main class="manageContent">
 
       {#if canEditSettings}
         <Tabs.Content value="basic">
@@ -5884,6 +5929,8 @@
           />
         </Tabs.Content>
       {/if}
+        </main>
+      </div>
     </Tabs.Root>
 
     <Dialog.Root bind:open={showPendingLevelChangesDialog}>
@@ -6123,7 +6170,7 @@
 
 <style lang="scss">
 .page {
-  max-width: 1120px;
+  max-width: 1280px;
   margin: 0 auto;
   padding: 16px 16px 160px;
   display: flex;
@@ -6289,60 +6336,111 @@
   color: var(--custom-surface-muted, hsl(var(--muted-foreground)));
 }
 
-/* Tabs */
-.tabRail {
+/* Grouped navigation */
+.manageShell {
+  display: grid;
+  grid-template-columns: 224px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.manageSidebar {
   position: sticky;
-  top: 52px;
-  z-index: 10;
-  margin: 0 -16px;
-  padding: 8px 16px;
-  background: hsl(var(--background) / 0.85);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border-bottom: 1px solid hsl(var(--border) / 0.6);
-  overflow-x: auto;
-  scrollbar-width: thin;
+  top: 68px;
+  max-height: calc(100vh - 84px);
+  overflow-y: auto;
+  padding: 10px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 14px;
+  background: hsl(var(--card));
 }
 
-.tabRail :global(.tabBar) {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  width: 100%;
-  min-width: fit-content;
-  background: transparent;
-  padding: 4px;
+.manageSidebar :global(.manageSidebarList) {
+  display: grid;
   height: auto;
+  padding: 0;
+  background: transparent;
 }
 
-.tabRail :global(.manageTab) {
+.manageNavGroup {
+  display: grid;
+  gap: 3px;
+  padding: 8px 0;
+  border-bottom: 1px solid hsl(var(--border) / 0.65);
+}
+
+.manageNavGroup:last-child { border-bottom: 0; }
+
+.manageNavGroup > span {
+  padding: 4px 10px;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.manageSidebar :global(.manageTab) {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 14px;
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
   border-radius: 8px;
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   font-weight: 500;
   color: hsl(var(--muted-foreground));
   background: transparent;
   border: 1px solid transparent;
-  white-space: nowrap;
+  white-space: normal;
+  text-align: left;
   transition:
     color 120ms ease,
     background-color 120ms ease,
     border-color 120ms ease;
 }
 
-.tabRail :global(.manageTab:hover) {
+.manageSidebar :global(.manageTab:hover) {
   color: hsl(var(--foreground));
   background: hsl(var(--muted) / 0.5);
 }
 
-.tabRail :global(.manageTab[data-state="active"]) {
+.manageSidebar :global(.manageTab[data-state="active"]) {
   color: hsl(var(--foreground));
+  background: hsl(var(--primary) / 0.1);
+  border-color: hsl(var(--primary) / 0.22);
+}
+
+.manageContent { min-width: 0; }
+
+.mobileManageNav {
+  display: none;
+  position: sticky;
+  top: 52px;
+  z-index: 10;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  background: hsl(var(--background) / 0.94);
+  backdrop-filter: blur(10px);
+}
+
+.mobileManageNav label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: hsl(var(--muted-foreground));
+}
+
+.mobileManageNav select {
+  width: 100%;
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
   background: hsl(var(--card));
-  border-color: hsl(var(--border));
-  box-shadow: 0 1px 2px hsl(var(--foreground) / 0.06);
+  color: hsl(var(--foreground));
+  padding: 9px 10px;
 }
 
 .tabCount {
@@ -6358,11 +6456,6 @@
   font-size: 0.7rem;
   font-weight: 700;
   line-height: 1;
-}
-
-.tabSpacer {
-  flex: 1;
-  min-width: 16px;
 }
 
 :global(.dangerTabTrigger) {
@@ -6746,11 +6839,9 @@
     font-size: 1.3rem;
   }
 
-  .tabRail {
-    top: 52px;
-    margin: 0 -12px;
-    padding: 6px 12px;
-  }
+  .mobileManageNav { display: grid; }
+  .manageShell { display: block; }
+  .manageSidebar { display: none; }
 
   .pendingChangeFieldRow {
     grid-template-columns: 1fr;
@@ -6779,9 +6870,5 @@
     grid-template-columns: 1fr;
   }
 
-  .tabRail :global(.manageTab) {
-    padding: 7px 10px;
-    font-size: 0.82rem;
-  }
 }
 </style>

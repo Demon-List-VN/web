@@ -132,7 +132,7 @@
     </div>
     <Markdown content={data.description} />
     {#if data.id == 1}
-      <a href="/supporter">
+      <a href="/premium">
         <Button class="h-[50px] w-[260px] text-[16px] font-semibold" size="lg">
           {t('store.product.go_to_supporter')}
         </Button>

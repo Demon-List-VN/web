@@ -154,7 +154,7 @@
 			tournaments: '/tournaments',
 			battlepass: '/battlepass',
 			clan: $user.data?.clan ? `/clan/${$user.data.clan}` : '/clans',
-			supporter: '/supporter'
+			supporter: '/premium'
 		};
 
 		return hrefs[shortcutId];

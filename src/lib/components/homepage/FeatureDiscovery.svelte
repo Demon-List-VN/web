@@ -30,7 +30,7 @@
             <span class="featurePrice">49.000₫<small>/{
                   $_('homepage.features.month')
                 }</small></span>
-            <Button href="/supporter" size="sm" variant="outline">
+            <Button href="/premium" size="sm" variant="outline">
               {$_('homepage.features.learn_more')}
               <ArrowRight class="ml-1 h-3.5 w-3.5" />
             </Button>
