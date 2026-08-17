@@ -3,10 +3,13 @@
 	import { Button } from '$lib/components/ui/button/index.js';
 
 	export let step: number = 1;
+	export let skipName = false;
 	export let onResume: () => void;
 
-	const TOTAL = 9;
-	$: percent = Math.round((step / TOTAL) * 100);
+	const TOTAL = 7;
+	$: visibleTotal = skipName ? TOTAL - 1 : TOTAL;
+	$: visibleStep = Math.min(visibleTotal, skipName && step >= 3 ? step - 1 : step);
+	$: percent = Math.round((visibleStep / visibleTotal) * 100);
 </script>
 
 <div class="onboarding-progress">
@@ -23,7 +26,7 @@
 				<div class="bar-track">
 					<div class="bar-fill" style="width: {percent}%"></div>
 				</div>
-				<span class="percent">{step}/{TOTAL}</span>
+				<span class="percent">{visibleStep}/{visibleTotal}</span>
 			</div>
 		</div>
 		<Button class="resume-btn" on:click={onResume}>
@@ -109,7 +112,7 @@
 			white-space: nowrap;
 		}
 
-		.resume-btn {
+		:global(.resume-btn) {
 			flex-shrink: 0;
 		}
 	}

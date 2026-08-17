@@ -784,6 +784,7 @@
           <div class="onboarding-feed-item">
             <OnboardingProgress
               step={$user.data.onboarding_step ?? 1}
+			  skipName={$user.data.renameCooldown != null}
               onResume={() => (showOnboardingModal = true)}
             />
           </div>
