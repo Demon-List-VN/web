@@ -75,7 +75,7 @@
             "store": "Store",
             "submit_level": "Submit level",
             "success": "Success!",
-            "supporter": "Support Us",
+            "supporter": "Premium",
             "vending": "Record Card Maker",
             "wiki": "Wiki"
         },
@@ -213,7 +213,7 @@
         "mod": "Mod",
         "rules": "Rules",
         "store": "Store",
-        "supporter": "Support Us",
+        "supporter": "Premium",
         "sign_in": "Sign In",
         "community": "Community"
     },
@@ -268,7 +268,7 @@
             "secondary_cta": "See rankings",
             "preview_you": "You",
             "preview_rival": "Rival",
-            "preview_supporter": "Supporter",
+            "preview_supporter": "Premium",
             "preview_level": "Shared level",
             "features_label": "1v1 Versus features",
             "features": {
@@ -314,11 +314,11 @@
             "support": {
                 "eyebrow": "Support GDListHub",
                 "title": "Keep 1v1 Versus free for everyone",
-                "description": "GDListHub Versus runs on community support. Becoming a Supporter keeps the matchmaking servers online, and you pick up a few perks along the way.",
+                "description": "GDListHub Versus runs on community support. Getting Premium keeps the matchmaking servers online, and you pick up a few perks along the way.",
                 "benefit_ad_free": "Play 1v1 Versus completely ad-free",
-                "benefit_badge": "A colored Supporter tier badge next to your name in matches and on the leaderboard",
+                "benefit_badge": "A colored Premium tier badge next to your name in matches and on the leaderboard",
                 "benefit_servers": "Directly funds the 1v1 matchmaking servers",
-                "cta": "Become a Supporter",
+                "cta": "Get Premium",
                 "supporter_state": "Thank you for keeping Versus online."
             }
         },
@@ -368,10 +368,10 @@
         },
         "tips": {
             "supporter": {
-                "tip_1": "🏅 The Supporter badge will not help you fluke, but it will help you flex when you do.",
-                "tip_2": "✨ Supporter makes you stand out in PvP, even when your attempt does not.",
-                "tip_3": "💛 Donate to the web so the web can make even more deeply unserious tips for you.",
-                "tip_4": "🎨 Unlock Supporter visual perks so even losing looks stylish."
+                "tip_1": "🏅 The Premium badge will not help you fluke, but it will help you flex when you do.",
+                "tip_2": "✨ Premium makes you stand out in PvP, even when your attempt does not.",
+                "tip_3": "💛 Get Premium so the web can make even more deeply unserious tips for you.",
+                "tip_4": "🎨 Unlock Premium visual perks so even losing looks stylish."
             },
             "supporter_link": "View benefit",
             "shitpost": {
@@ -520,16 +520,16 @@
                 },
                 "both_are_supporters": {
                     "win": [
-                        "👑 Two Supporters met in battle! You won. Want to stand out even more? Try exploring higher tiers.",
+                        "👑 Two Premium members met in battle! You won. Want to stand out even more? Try exploring higher tiers.",
                         "🔥 A high-level match between people helping keep GDListHub alive. Victory is yours.",
                         "⭐ You won the match. Upgrade your tier to unlock more effects and exclusive Demon List VN perks.",
-                        "⚔️ A meeting between two active supporters. Thank you both for contributing.",
+                        "⚔️ A meeting between two active Premium members. Thank you both for contributing.",
                         "✨ Clean win! Your matches can look even cooler with higher-tier custom perks."
                     ],
                     "lose": [
-                        "👑 Two Supporters met in battle! Your opponent takes this one. A higher tier might help you reclaim the spotlight.",
-                        "💀 Not the result you wanted, but your Supporter status at GDListHub is always appreciated.",
-                        "⭐ A match between two dedicated supporters comes to a close. Try the next tier for more new perks.",
+                        "👑 Two Premium members met in battle! Your opponent takes this one. A higher tier might help you reclaim the spotlight.",
+                        "💀 Not the result you wanted, but your Premium status at GDListHub is always appreciated.",
+                        "⭐ A match between two dedicated Premium members comes to a close. Try the next tier for more new perks.",
                         "🗿 Queue again for revenge. Thank you both for helping keep the server alive.",
                         "✨ You lost this round, but there is always another. A higher tier unlocks more frame and name customization perks."
                     ]
@@ -537,7 +537,7 @@
             }
         },
         "supporter_strip": {
-            "text": "Tired of ads? Go ad-free and unlock your Supporter tier badge.",
+            "text": "Tired of ads? Go ad-free and unlock your Premium tier badge.",
             "cta": "Support GDListHub"
         },
         "resign": "Resign",
@@ -1537,7 +1537,7 @@
             },
             "dashboard": {
                 "title": "Use dashboard",
-                "supporter_only": "Supporter only"
+                "supporter_only": "Premium only"
             }
         },
         "api": {
@@ -1829,7 +1829,7 @@
     "events": {
         "contest": "Contest",
         "ranked": "Ranked",
-        "supporter_only": "Supporter Only",
+        "supporter_only": "Premium Only",
         "starts_at": "Starts at",
         "ended_at": "Ended at",
         "permanent": "Permanent",
@@ -1915,7 +1915,7 @@
         },
         "alerts": {
             "discord_required": "You need to link your account to a Discord account in order to submit. Go to Settings > Discord to link.",
-            "supporter_only": "This event is Supporter only."
+            "supporter_only": "This event is Premium only."
         },
         "show_death_count": "Show Death Count",
         "raw_required": "Raw Required",
@@ -2102,17 +2102,17 @@
             "bp_subtitle": "Level up your Pass and earn unique cosmetics, badges, and more.",
             "get_premium": "Get Premium",
             "view_rewards": "View Rewards",
-            "supporter_badge": "Supporter",
+            "supporter_badge": "Premium",
             "supporter_title": "Support the community you love",
             "supporter_subtitle": "Get exclusive perks, custom profile, GIF avatar, and more.",
-            "become_supporter": "Become a Supporter",
+            "become_supporter": "Get Premium",
             "month": "month",
             "visit_store": "Visit Store",
             "welcome_back": "Welcome back, {name}!",
             "supporter_bp_subtitle": "Continue your Pass journey or check your inventory.",
             "continue_bp": "Continue Pass",
             "inventory": "Inventory",
-            "active_supporter": "Active Supporter",
+            "active_supporter": "Active Premium",
             "supporter_welcome_subtitle": "Thank you for supporting us! Here are your quick links.",
             "my_profile": "My Profile",
             "submissions": "Submissions"
@@ -2122,7 +2122,7 @@
             "view_all": "View all events",
             "contest": "Contest",
             "ranked": "Ranked",
-            "supporter_only": "Supporter"
+            "supporter_only": "Premium"
         },
         "battlepass": {
             "go_to_pass": "Go to Pass",
@@ -2140,7 +2140,7 @@
             "my_clan": "My Clan"
         },
         "supporters": {
-            "title": "Top Supporters",
+            "title": "Top Premium members",
             "view_leaderboard": "View leaderboard",
             "server_cost": "Server Cost",
             "help_reach": "Help us keep the lights on"
@@ -2157,11 +2157,11 @@
         },
         "features": {
             "title": "Explore Premium Features",
-            "supporter_title": "Supporter",
-            "supporter_desc": "Unlock ads-free browsing, short profile URLs, GIF media, and exclusive supporter identity perks.",
+            "supporter_title": "Premium",
+            "supporter_desc": "Unlock ads-free browsing, short profile URLs, GIF media, and exclusive Premium identity perks.",
             "supporter_b1": "Short profile URL & ads-free browsing",
             "supporter_b2": "GIF avatar & animated banner",
-            "supporter_b3": "Exclusive supporter badge",
+            "supporter_b3": "Exclusive Premium badge",
             "bp_title": "Pass",
             "bp_desc": "Complete challenges, earn XP, and unlock exclusive seasonal rewards.",
             "bp_b1": "100 tiers of rewards",
@@ -2410,7 +2410,7 @@
             "activity": "Activity",
             "collection": "Collection"
         },
-        "supporter_badge": "Supporter",
+        "supporter_badge": "Premium",
         "supporter_expires": "Expires",
         "copy_discord": "Copied Discord username to clipboard!",
         "records_point_sort_notice": "To view records sorted by point, go to the list page > My record.",
@@ -2548,15 +2548,15 @@
         }
     },
     "supporter": {
-        "title": "Become a Supporter 💖",
+        "title": "Get Premium 💖",
         "description": "Get exclusive perks and help us grow!",
         "price": "49.000₫/month",
         "or": "or",
         "store_button": "Check out our store",
-        "login_required": "You must log in before you can donate.",
+        "login_required": "You must log in before purchasing Premium.",
         "alert": {
             "title": "Support GDListHub 💖",
-            "description": "Consider becoming a Supporter to help DLVN grow and get exclusive perks!",
+            "description": "Get Premium to help GDListHub grow and unlock exclusive perks!",
             "learn_more": "Learn more"
         },
         "why_support": {
@@ -2590,7 +2590,7 @@
             },
             "priority_queue": {
                 "title": "Access priority queue",
-                "description": "Supporters enjoy reduced submission wait times, jumping ahead in the review line."
+                "description": "Premium members enjoy reduced submission wait times, jumping ahead in the review line."
             },
             "short_url": {
                 "title": "Short profile URL",
@@ -2605,8 +2605,8 @@
                 "description": "Receive notifications directly through Discord DMs."
             },
             "exclusive_events": {
-                "title": "Supporter-Only events",
-                "description": "Join special events reserved just for our cherished supporters — giveaways, secret games, and more surprises await!"
+                "title": "Premium-Only events",
+                "description": "Join special events reserved just for our cherished Premium members — giveaways, secret games, and more surprises await!"
             },
             "autofill_level": {
                 "title": "Autofill level ID when submit",
@@ -2626,11 +2626,11 @@
             },
             "more_coming": {
                 "title": "Umm... that pretty much it",
-                "description": "Don't worry. More feature for supporters will be added in the future."
+                "description": "Don't worry. More feature for Premium members will be added in the future."
             },
             "discord_bot": {
                 "title": "Community Discord role",
-                "description": "Sync your supporter role on the official GDListHub Discord server."
+                "description": "Sync your Premium role on the official GDListHub Discord server."
             }
         },
         "decision": {
@@ -2652,61 +2652,47 @@
             "note": "50% of {revenue} total revenue since 01/07."
         },
         "tiers": {
-            "title": "Supporter tier",
-            "open_supporter_page": "Open supporter page",
+            "title": "Premium tier",
+            "open_supporter_page": "Open Premium page",
             "day_left": "{days} day left",
             "days_left": "{days} days left",
             "next_tier_at": "{days} days for {tier}",
             "next_tier_in_day": "{days} more day to become {tier}",
             "next_tier_in_days": "{days} more days to become {tier}",
             "preview_start": "Starts at 1 day",
-            "preview_complete": "31 days to become Elite Supporter",
-            "non_supporter": "Non-Supporter",
+            "preview_complete": "31 days to become Elite Premium",
+            "non_supporter": "Free member",
             "names": {
-                "tier_1": "Supporter",
-                "tier_2": "Elite Supporter",
-                "tier_3": "Vanguard Supporter",
-                "tier_4": "Legendary Supporter",
-                "tier_5": "Ascendant Supporter",
-                "tier_6": "Transcendent Supporter",
-                "tier_7": "Zenith Supporter",
-                "tier_8_plus": "Zenith Supporter T{tier}"
+                "tier_1": "Premium",
+                "tier_2": "Elite Premium",
+                "tier_3": "Vanguard Premium",
+                "tier_4": "Legendary Premium",
+                "tier_5": "Ascendant Premium",
+                "tier_6": "Transcendent Premium",
+                "tier_7": "Zenith Premium",
+                "tier_8_plus": "Zenith Premium T{tier}"
             }
         },
         "notes": {
             "title": "Note:",
-            "non_recurring": "GDListHub Supporter roles are non-recurring payments.",
-            "non_refundable": "GDListHub Supporter roles are non-refundable.",
+            "non_recurring": "GDListHub Premium roles are non-recurring payments.",
+            "non_refundable": "GDListHub Premium roles are non-refundable.",
             "extension": "If you buy one while you still have an active roles, it will extend the duration in addition to any remaining time.",
             "duration": "1 Month = 30 Days."
         },
         "top_supporters": {
-            "title": "Top Supporters (Last 30 Days)",
+            "title": "Top Premium members (Last 30 Days)",
             "view_leaderboard": "View full leaderboard →",
-            "page_title": "Top Supporter",
+            "page_title": "Top Premium",
             "last_30_days": "Last 30 Days",
             "last_14_days": "Last 14 Days",
             "last_7_days": "Last 7 Days",
             "total_revenue": "Total Revenue",
-            "from_all_supporters": "From all supporters",
-            "top_supporter": "Top Supporter",
+            "from_all_supporters": "From all Premium members",
+            "top_supporter": "Top Premium",
             "average_spending": "Average Spending",
-            "supporters": "supporters",
+            "supporters": "Premium members",
             "no_buyers_found": "No buyers found"
-        },
-        "direct_donation": "Donate",
-        "select_donate_method": "Select donate method",
-        "donation": {
-            "title": "Donate directly",
-            "description": "Send a one-time donation through SePay and leave a message for the stream overlay.",
-            "amount": "Amount",
-            "message": "Message",
-            "message_placeholder": "Say something nice for the stream...",
-            "message_hint": "{count}/160 characters",
-            "proceed": "Proceed to donate",
-            "processing": "Creating checkout...",
-            "login_required": "Please sign in before donating.",
-            "error": "Failed to create donation."
         }
     },
     "admin_convictions": {
@@ -2736,7 +2722,7 @@
             "added_to_cart": "Added {quantity} {product} to cart!",
             "out_of_stock": "Out of stock",
             "in_stock": "{stock} in stock",
-            "go_to_supporter": "Go to Supporter Page",
+            "go_to_supporter": "Go to Premium Page",
             "quantity": "Quantity",
             "image_alt": "Image of {product}",
             "thumbnail_alt": "Product thumbnail {index}",
@@ -2825,10 +2811,10 @@
     },
     "misc": {
         "supporter_feature": {
-            "title": "Supporter Feature",
-            "description": "This section contains exclusive features for supporters. Please consider supporting us to unlock these premium features!",
+            "title": "Premium Feature",
+            "description": "This section contains exclusive features for Premium members. Please consider supporting us to unlock these premium features!",
             "go_home": "Go Home",
-            "become_supporter": "Become a Supporter"
+            "become_supporter": "Get Premium"
         }
     },
     "players": {
@@ -2863,7 +2849,7 @@
         "join_server": "Join Server",
         "add_button": "Add to Server",
         "highlights": {
-            "public": "No supporter-only command limits",
+            "public": "No Premium-only command limits",
             "current_api": "Uses the new list API",
             "custom_lists": "Supports official and custom lists"
         },
@@ -2931,7 +2917,7 @@
         },
         "commands_eyebrow": "Slash commands",
         "commands_title": "Command List",
-        "commands_subtitle": "The command names here match the rebuilt bot. Every command is public; supporter is now informational only.",
+        "commands_subtitle": "The command names here match the rebuilt bot. Every command is public; Premium is now informational only.",
         "command_groups": {
             "players": "Players and levels",
             "records": "Records and submissions",
@@ -2974,7 +2960,7 @@
                 "description": "Get useful GDListHub links."
             },
             "supporter": {
-                "description": "Check supporter status; it does not unlock bot commands."
+                "description": "Check Premium status; it does not unlock bot commands."
             },
             "help": {
                 "description": "Show the available command list."
@@ -3089,8 +3075,8 @@
         "expand": "Expand filter",
         "collapse": "Collapse filter",
         "scroll_to_top": "Scroll to top",
-        "supporter_exclusive": "Supporter Exclusive",
-        "supporter_only": "Advanced filtering is available for supporters only. Become a supporter to unlock this feature!",
+        "supporter_exclusive": "Premium Exclusive",
+        "supporter_only": "Advanced filtering is available for Premium members only. Get Premium to unlock this feature!",
         "top_range": "Top Range",
         "from": "From",
         "to": "To",
@@ -3276,7 +3262,7 @@
         "geode_download": "Download Geode Mod",
         "support_title": "GDListHub is a community project",
         "support_desc": "Server and development costs are funded by the community. Thank you for being part of GDListHub.",
-        "support_supporter_title": "Supporter",
+        "support_supporter_title": "Premium",
         "support_supporter_price": "49,000₫ / month",
         "support_supporter_cta": "Support now",
         "support_queue_title": "Queue Boost",

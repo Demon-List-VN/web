@@ -75,7 +75,7 @@
             "store": "Cửa hàng",
             "submit_level": "Nộp level",
             "success": "Thành công!",
-            "supporter": "Ủng hộ",
+            "supporter": "Premium",
             "vending": "Máy Tạo Thẻ Bản Ghi",
             "wiki": "Wiki"
         },
@@ -213,7 +213,7 @@
         "mod": "Mod",
         "rules": "Luật",
         "store": "Cửa hàng",
-        "supporter": "Ủng hộ",
+        "supporter": "Premium",
         "sign_in": "Đăng nhập",
         "community": "Cộng đồng"
     },
@@ -268,7 +268,7 @@
             "secondary_cta": "Xem xếp hạng",
             "preview_you": "Bạn",
             "preview_rival": "Đối thủ",
-            "preview_supporter": "Supporter",
+            "preview_supporter": "Premium",
             "preview_level": "Level chung",
             "features_label": "Tính năng 1v1 Versus",
             "features": {
@@ -314,11 +314,11 @@
             "support": {
                 "eyebrow": "Ủng hộ GDListHub",
                 "title": "Giữ cho 1v1 Versus luôn miễn phí",
-                "description": "GDListHub Versus hoạt động được là nhờ sự ủng hộ của cộng đồng. Trở thành Supporter giúp duy trì máy chủ ghép trận, và bạn cũng nhận thêm vài đặc quyền nho nhỏ.",
+                "description": "GDListHub Versus hoạt động được là nhờ sự ủng hộ của cộng đồng. Trở thành Premium giúp duy trì máy chủ ghép trận, và bạn cũng nhận thêm vài đặc quyền nho nhỏ.",
                 "benefit_ad_free": "Chơi 1v1 Versus hoàn toàn không quảng cáo",
-                "benefit_badge": "Huy hiệu Supporter có màu cạnh tên bạn trong trận và trên bảng xếp hạng",
+                "benefit_badge": "Huy hiệu Premium có màu cạnh tên bạn trong trận và trên bảng xếp hạng",
                 "benefit_servers": "Trực tiếp góp phần duy trì máy chủ ghép trận 1v1",
-                "cta": "Trở thành Supporter",
+                "cta": "Trở thành Premium",
                 "supporter_state": "Cảm ơn bạn đã giúp Versus luôn hoạt động."
             }
         },
@@ -368,10 +368,10 @@
         },
         "tips": {
             "supporter": {
-                "tip_1": "🏅 Supporter badge không giúp bạn fluke, nhưng giúp bạn flex khi fluke.",
-                "tip_2": "✨ Supporter giúp bạn nổi bật trong PvP, kể cả khi attempt không nổi bật.",
-                "tip_3": "💛 Donate cho web để web có thêm nhiều tip vô tri hơn cho bạn.",
-                "tip_4": "🎨 Mở visual perk Supporter để thua cũng phải thua có phong cách."
+                "tip_1": "🏅 Premium badge không giúp bạn fluke, nhưng giúp bạn flex khi fluke.",
+                "tip_2": "✨ Premium giúp bạn nổi bật trong PvP, kể cả khi attempt không nổi bật.",
+                "tip_3": "💛 Mua Premium để web có thêm nhiều tip vô tri hơn cho bạn.",
+                "tip_4": "🎨 Mở visual perk Premium để thua cũng phải thua có phong cách."
             },
             "supporter_link": "Xem quyền lợi",
             "shitpost": {
@@ -520,15 +520,15 @@
                 },
                 "both_are_supporters": {
                     "win": [
-                        "👑 Hai Supporter chạm trán! Bạn thắng. Muốn nổi bật hơn nữa? Thử khám phá các Tier cao hơn xem sao!",
+                        "👑 Hai Premium chạm trán! Bạn thắng. Muốn nổi bật hơn nữa? Thử khám phá các Tier cao hơn xem sao!",
                         "🔥 Trận đấu đỉnh cao giữa những người chung tay giữ lửa cho GDListHub. Chiến thắng thuộc về bạn.",
                         "⭐ Bạn thắng trận. Nâng cấp Tier để mở khóa thêm hiệu ứng và đặc quyền độc quyền trên Demon List VN nhé.",
                         "⚔️ Cuộc gặp gỡ giữa hai người bạn đồng hành tích cực. Cảm ơn sự đóng góp của cả hai.",
                         "✨ Thắng đẹp! Trận đấu của bạn trông sẽ ngầu hơn rất nhiều nếu sở hữu các custom từ Tier cao hơn."
                     ],
                     "lose": [
-                        "👑 Hai Supporter chạm trán! Trận này đối thủ tạm dẫn trước. Lên Tier cao hơn để lấy lại vị thế nào!",
-                        "💀 Kết quả chưa như ý, nhưng vị thế Supporter của bạn tại GDListHub luôn được trân trọng.",
+                        "👑 Hai Premium chạm trán! Trận này đối thủ tạm dẫn trước. Lên Tier cao hơn để lấy lại vị thế nào!",
+                        "💀 Kết quả chưa như ý, nhưng vị thế Premium của bạn tại GDListHub luôn được trân trọng.",
                         "⭐ Trận đấu khép lại giữa hai người bạn tâm huyết. Thử lên Tier tiếp theo để mở khóa thêm nhiều quyền lợi mới nhé.",
                         "🗿 Queue tiếp phục thù thôi. Cảm ơn cả hai bạn đã cùng nhau giữ cho server luôn rực lửa.",
                         "✨ Thua keo này bày keo khác. Đầu tư thêm một chút vào Tier cao hơn để nhận thêm các đặc quyền tùy biến khung/tên xem sao?"
@@ -537,7 +537,7 @@
             }
         },
         "supporter_strip": {
-            "text": "Ngán quảng cáo? Tắt quảng cáo và mở khóa huy hiệu Supporter của bạn.",
+            "text": "Ngán quảng cáo? Tắt quảng cáo và mở khóa huy hiệu Premium của bạn.",
             "cta": "Ủng hộ GDListHub"
         },
         "resign": "Đầu hàng",
@@ -1536,7 +1536,7 @@
             },
             "dashboard": {
                 "title": "Sử dụng trang tổng quan",
-                "supporter_only": "Chỉ dành cho Supporter"
+                "supporter_only": "Chỉ dành cho Premium"
             }
         },
         "api": {
@@ -1827,7 +1827,7 @@
     "events": {
         "contest": "Cuộc thi",
         "ranked": "Có xếp hạng",
-        "supporter_only": "Chỉ dành cho Supporter",
+        "supporter_only": "Chỉ dành cho Premium",
         "starts_at": "Bắt đầu lúc",
         "ended_at": "Kết thúc lúc",
         "permanent": "Vô thời hạn",
@@ -1913,7 +1913,7 @@
         },
         "alerts": {
             "discord_required": "Bạn cần liên kết tài khoản với Discord để có thể nộp bài. Vào Cài đặt > Discord để liên kết.",
-            "supporter_only": "Sự kiện này chỉ dành cho Supporter."
+            "supporter_only": "Sự kiện này chỉ dành cho Premium."
         },
         "show_death_count": "Hiển thị số lần chết",
         "raw_required": "Yêu cầu Raw",
@@ -2100,17 +2100,17 @@
             "bp_subtitle": "Nâng cấp Pass và nhận cosmetics, huy hiệu độc quyền và hơn thế nữa.",
             "get_premium": "Mua Premium",
             "view_rewards": "Xem phần thưởng",
-            "supporter_badge": "Supporter",
+            "supporter_badge": "Premium",
             "supporter_title": "Ủng hộ cộng đồng mà bạn yêu thích",
             "supporter_subtitle": "Nhận đặc quyền, tùy chỉnh hồ sơ, ảnh GIF và hơn thế nữa.",
-            "become_supporter": "Trở thành Supporter",
+            "become_supporter": "Trở thành Premium",
             "month": "tháng",
             "visit_store": "Ghé cửa hàng",
             "welcome_back": "Chào mừng trở lại, {name}!",
             "supporter_bp_subtitle": "Tiếp tục hành trình Pass hoặc kiểm tra kho đồ.",
             "continue_bp": "Tiếp tục Pass",
             "inventory": "Kho đồ",
-            "active_supporter": "Supporter đang hoạt động",
+            "active_supporter": "Premium đang hoạt động",
             "supporter_welcome_subtitle": "Cảm ơn bạn đã ủng hộ! Đây là các liên kết nhanh.",
             "my_profile": "Hồ sơ",
             "submissions": "Bản nộp"
@@ -2120,7 +2120,7 @@
             "view_all": "Xem tất cả sự kiện",
             "contest": "Cuộc thi",
             "ranked": "Xếp hạng",
-            "supporter_only": "Supporter"
+            "supporter_only": "Premium"
         },
         "battlepass": {
             "go_to_pass": "Đi tới Pass",
@@ -2138,7 +2138,7 @@
             "my_clan": "Clan của tôi"
         },
         "supporters": {
-            "title": "Top Supporter",
+            "title": "Top Premium",
             "view_leaderboard": "Xem bảng xếp hạng",
             "server_cost": "Chi phí máy chủ",
             "help_reach": "Giúp chúng tôi duy trì server"
@@ -2155,11 +2155,11 @@
         },
         "features": {
             "title": "Khám phá tính năng Premium",
-            "supporter_title": "Supporter",
-            "supporter_desc": "Mở khóa trải nghiệm không quảng cáo, URL hồ sơ ngắn, GIF và danh tính supporter độc quyền.",
+            "supporter_title": "Premium",
+            "supporter_desc": "Mở khóa trải nghiệm không quảng cáo, URL hồ sơ ngắn, GIF và danh tính Premium độc quyền.",
             "supporter_b1": "URL hồ sơ ngắn & không quảng cáo",
             "supporter_b2": "Avatar & banner động GIF",
-            "supporter_b3": "Huy hiệu supporter độc quyền",
+            "supporter_b3": "Huy hiệu Premium độc quyền",
             "bp_title": "Pass",
             "bp_desc": "Hoàn thành thử thách, kiếm XP và mở khóa phần thưởng theo mùa.",
             "bp_b1": "100 cấp phần thưởng",
@@ -2408,7 +2408,7 @@
             "activity": "Hoạt động",
             "collection": "Bộ sưu tập"
         },
-        "supporter_badge": "Supporter",
+        "supporter_badge": "Premium",
         "supporter_expires": "Hết hạn",
         "copy_discord": "Đã sao chép tên Discord vào bảng nhớ tạm!",
         "records_point_sort_notice": "Để xem bản ghi được sắp xếp theo điểm, hãy vào trang danh sách > Record của tôi.",
@@ -2568,15 +2568,15 @@
         }
     },
     "supporter": {
-        "title": "Trở thành Supporter 💖",
+        "title": "Trở thành Premium 💖",
         "description": "Nhận những đặc quyền và giúp chúng tôi phát triển!",
         "price": "49.000₫/tháng",
         "or": "hoặc",
         "store_button": "Xem cửa hàng của chúng tôi",
-        "login_required": "Bạn phải đăng nhập trước khi có thể ủng hộ.",
+        "login_required": "Bạn phải đăng nhập trước khi mua Premium.",
         "alert": {
             "title": "Ủng hộ GDListHub 💖",
-            "description": "Trở thành Supporter để ủng hộ và giúp DLVN phát triển hơn, đồng thời nhận các quyền lợi độc quyền!",
+            "description": "Trở thành Premium để ủng hộ và giúp DLVN phát triển hơn, đồng thời nhận các quyền lợi độc quyền!",
             "learn_more": "Tìm hiểu thêm"
         },
         "why_support": {
@@ -2610,7 +2610,7 @@
             },
             "priority_queue": {
                 "title": "Truy cập hàng đợi ưu tiên",
-                "description": "Supporter được giảm thời gian chờ duyệt, nhảy lên trước trong hàng đợi."
+                "description": "Premium được giảm thời gian chờ duyệt, nhảy lên trước trong hàng đợi."
             },
             "short_url": {
                 "title": "URL hồ sơ ngắn gọn",
@@ -2625,8 +2625,8 @@
                 "description": "Nhận thông báo trực tiếp qua Discord DM."
             },
             "exclusive_events": {
-                "title": "Sự kiện chỉ dành cho Supporter",
-                "description": "Tham gia các sự kiện đặc biệt dành riêng cho những supporter được trân trọng của chúng tôi — giveaway, trò chơi bí mật và nhiều bất ngờ khác đang chờ bạn!"
+                "title": "Sự kiện chỉ dành cho Premium",
+                "description": "Tham gia các sự kiện đặc biệt dành riêng cho những Premium được trân trọng của chúng tôi — giveaway, trò chơi bí mật và nhiều bất ngờ khác đang chờ bạn!"
             },
             "autofill_level": {
                 "title": "Tự động điền ID level khi nộp",
@@ -2646,11 +2646,11 @@
             },
             "more_coming": {
                 "title": "Ừm... đó là tất cả",
-                "description": "Đừng lo lắng. Sẽ có thêm nhiều tính năng cho supporter trong tương lai."
+                "description": "Đừng lo lắng. Sẽ có thêm nhiều tính năng cho Premium trong tương lai."
             },
             "discord_bot": {
                 "title": "Vai trò Discord cộng đồng",
-                "description": "Đồng bộ vai trò supporter trên server Discord chính thức của GDListHub."
+                "description": "Đồng bộ vai trò Premium trên server Discord chính thức của GDListHub."
             }
         },
         "decision": {
@@ -2672,61 +2672,47 @@
             "note": "50% của {revenue} tổng doanh thu từ 01/07."
         },
         "tiers": {
-            "title": "Hạng Supporter",
-            "open_supporter_page": "Mở trang Supporter",
+            "title": "Hạng Premium",
+            "open_supporter_page": "Mở trang Premium",
             "day_left": "Còn {days} ngày",
             "days_left": "Còn {days} ngày",
             "next_tier_at": "{days} ngày để đạt {tier}",
             "next_tier_in_day": "Cần thêm {days} ngày để đạt {tier}",
             "next_tier_in_days": "Cần thêm {days} ngày để đạt {tier}",
             "preview_start": "Bắt đầu từ 1 ngày",
-            "preview_complete": "31 ngày để đạt Elite Supporter",
-            "non_supporter": "Non-Supporter",
+            "preview_complete": "31 ngày để đạt Elite Premium",
+            "non_supporter": "Thành viên miễn phí",
             "names": {
-                "tier_1": "Supporter",
-                "tier_2": "Elite Supporter",
-                "tier_3": "Vanguard Supporter",
-                "tier_4": "Legendary Supporter",
-                "tier_5": "Ascendant Supporter",
-                "tier_6": "Transcendent Supporter",
-                "tier_7": "Zenith Supporter",
-                "tier_8_plus": "Zenith Supporter T{tier}"
+                "tier_1": "Premium",
+                "tier_2": "Elite Premium",
+                "tier_3": "Vanguard Premium",
+                "tier_4": "Legendary Premium",
+                "tier_5": "Ascendant Premium",
+                "tier_6": "Transcendent Premium",
+                "tier_7": "Zenith Premium",
+                "tier_8_plus": "Zenith Premium T{tier}"
             }
         },
         "notes": {
             "title": "Lưu ý:",
-            "non_recurring": "GDListHub Supporter không tự động gia hạn.",
-            "non_refundable": "GDListHub Supporter không thể hoàn tiền.",
-            "extension": "Nếu bạn mua Supporter khi vẫn còn Supporter đang hoạt động, thời gian sẽ được cộng thêm thêm.",
+            "non_recurring": "GDListHub Premium không tự động gia hạn.",
+            "non_refundable": "GDListHub Premium không thể hoàn tiền.",
+            "extension": "Nếu bạn mua Premium khi vẫn còn Premium đang hoạt động, thời gian sẽ được cộng thêm thêm.",
             "duration": "1 Tháng = 30 Ngày."
         },
         "top_supporters": {
-            "title": "Supporter Hàng Đầu (30 Ngày Qua)",
+            "title": "Premium Hàng Đầu (30 Ngày Qua)",
             "view_leaderboard": "Xem bảng xếp hạng đầy đủ →",
-            "page_title": "Supporter Hàng Đầu",
+            "page_title": "Premium Hàng Đầu",
             "last_30_days": "30 Ngày Qua",
             "last_14_days": "14 Ngày Qua",
             "last_7_days": "7 Ngày Qua",
             "total_revenue": "Tổng Doanh Thu",
-            "from_all_supporters": "Từ tất cả supporters",
-            "top_supporter": "Supporter Hàng Đầu",
+            "from_all_supporters": "Từ tất cả thành viên Premium",
+            "top_supporter": "Premium Hàng Đầu",
             "average_spending": "Chi Tiêu Trung Bình",
-            "supporters": "supporters",
+            "supporters": "Thành viên Premium",
             "no_buyers_found": "Không tìm thấy người mua"
-        },
-        "direct_donation": "Donate",
-        "select_donate_method": "Lựa chọn phương thức ủng hộ",
-        "donation": {
-            "title": "Donate trực tiếp",
-            "description": "Donate một lần qua SePay và để lại lời nhắn hiển thị trên overlay stream.",
-            "amount": "Số tiền",
-            "message": "Lời nhắn",
-            "message_placeholder": "Gửi lời nhắn cho stream...",
-            "message_hint": "{count}/160 ký tự",
-            "proceed": "Tiếp tục donate",
-            "processing": "Đang tạo thanh toán...",
-            "login_required": "Vui lòng đăng nhập trước khi donate.",
-            "error": "Không thể tạo thanh toán donate."
         }
     },
     "admin_convictions": {
@@ -2845,10 +2831,10 @@
     },
     "misc": {
         "supporter_feature": {
-            "title": "Tính Năng Supporter",
-            "description": "Phần này chứa các tính năng độc quyền dành cho supporter. Vui lòng xem xét ủng hộ chúng tôi để mở khóa các tính năng cao cấp này!",
+            "title": "Tính Năng Premium",
+            "description": "Phần này chứa các tính năng độc quyền dành cho Premium. Vui lòng xem xét ủng hộ chúng tôi để mở khóa các tính năng cao cấp này!",
             "go_home": "Về Trang Chủ",
-            "become_supporter": "Trở Thành Supporter"
+            "become_supporter": "Trở Thành Premium"
         }
     },
     "discord_bot": {
@@ -2862,7 +2848,7 @@
         "join_server": "Tham Gia Server",
         "add_button": "Thêm vào Server",
         "highlights": {
-            "public": "Không còn giới hạn supporter",
+            "public": "Không còn giới hạn Premium",
             "current_api": "Dùng API list mới",
             "custom_lists": "Hỗ trợ official và custom list"
         },
@@ -2930,7 +2916,7 @@
         },
         "commands_eyebrow": "Slash commands",
         "commands_title": "Danh sách lệnh",
-        "commands_subtitle": "Tên lệnh trên trang này khớp với bot mới. Các lệnh đều public; supporter chỉ còn là trạng thái/thông tin riêng.",
+        "commands_subtitle": "Tên lệnh trên trang này khớp với bot mới. Các lệnh đều public; Premium chỉ còn là trạng thái/thông tin riêng.",
         "command_groups": {
             "players": "Player và level",
             "records": "Record và bản nộp",
@@ -2973,7 +2959,7 @@
                 "description": "Nhận các liên kết GDListHub hữu ích."
             },
             "supporter": {
-                "description": "Kiểm tra trạng thái supporter; không mở khóa lệnh bot."
+                "description": "Kiểm tra trạng thái Premium; không mở khóa lệnh bot."
             },
             "help": {
                 "description": "Hiển thị danh sách lệnh có sẵn."
@@ -3088,8 +3074,8 @@
         "expand": "Mở rộng bộ lọc",
         "collapse": "Thu gọn bộ lọc",
         "scroll_to_top": "Cuộn lên đầu",
-        "supporter_exclusive": "Dành cho Supporter",
-        "supporter_only": "Tính năng lọc nâng cao chỉ dành cho supporter. Trở thành supporter để mở khóa tính năng này!",
+        "supporter_exclusive": "Dành cho Premium",
+        "supporter_only": "Tính năng lọc nâng cao chỉ dành cho Premium. Trở thành Premium để mở khóa tính năng này!",
         "top_range": "Phạm vi Top",
         "from": "Từ",
         "to": "Đến",
@@ -3275,7 +3261,7 @@
         "geode_download": "Tải Mod Geode",
         "support_title": "GDListHub là dự án cộng đồng",
         "support_desc": "Chi phí server và phát triển do cộng đồng đóng góp. Cảm ơn bạn đã là một phần của GDListHub.",
-        "support_supporter_title": "Supporter",
+        "support_supporter_title": "Premium",
         "support_supporter_price": "49.000đ / tháng",
         "support_supporter_cta": "Ủng hộ ngay",
         "support_queue_title": "Queue Boost",

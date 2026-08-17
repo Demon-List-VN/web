@@ -207,7 +207,7 @@
 			items: [
 				{ name: 'Revenue Analytics', href: '/admin/revenue' },
 				{
-					name: 'Donation Manager',
+					name: 'Contribution Manager',
 					href: '/admin/donations',
 					managerAccess: true
 				}

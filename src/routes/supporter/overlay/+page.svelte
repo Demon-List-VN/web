@@ -194,11 +194,11 @@
         <span>Người ủng hộ GDListHub</span>
       {/if}
       {#if visibleEvent.type === 'supporter'}
-        <span> đã trở thành Supporter trong </span>
+        <span> đã mua Premium trong </span>
         <span class="goldText">{visibleEvent.months ?? 1}</span>
         <span> tháng</span>
       {:else}
-        <span> đã donate </span>
+        <span> đã đóng góp </span>
         <span class="goldText">{formatPrice(visibleEvent.amount ?? 0)}</span>
         {#if visibleEvent.message}
           <br />

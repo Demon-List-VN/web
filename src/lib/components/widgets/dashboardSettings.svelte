@@ -619,7 +619,7 @@
               <span
                 class="text-xs font-medium text-amber-600 dark:text-amber-400"
               >
-                {$_('dashboard.settings.supporter_only') || '💎 Supporter Only'}
+                {$_('dashboard.settings.supporter_only') || '💎 Premium Only'}
               </span>
             {/if}
           </div>
@@ -636,7 +636,7 @@
               {#if !canCustomizeDashboard}
                 {
                   $_('dashboard.settings.bg_supporter_hint')
-                  || 'Become a supporter to customize your dashboard background'
+                  || 'Get Premium to customize your dashboard background'
                 }
               {:else}
                 {
@@ -727,7 +727,7 @@
               <span
                 class="text-xs font-medium text-amber-600 dark:text-amber-400"
               >
-                {$_('dashboard.settings.supporter_only') || '💎 Supporter Only'}
+                {$_('dashboard.settings.supporter_only') || '💎 Premium Only'}
               </span>
             {/if}
           </div>
@@ -740,7 +740,7 @@
                 {#if !canCustomizeDashboard}
                   {
                     $_('dashboard.settings.search_supporter_hint')
-                    || 'Become a supporter to use web search'
+                    || 'Get Premium to use web search'
                   }
                 {:else}
                   {$_('dashboard.settings.enable_search_hint')}
@@ -836,7 +836,7 @@
                   {#if !canCustomizeDashboard}
                     {
                       $_('dashboard.settings.shortcuts_supporter_hint')
-                      || 'Become a supporter to customize shortcuts'
+                      || 'Get Premium to customize shortcuts'
                     }
                   {:else}
                     {
@@ -1004,7 +1004,7 @@
                   class="text-xs font-medium text-amber-600 dark:text-amber-400"
                 >
                   {
-                    $_('dashboard.settings.supporter_only') || '💎 Supporter Only'
+                    $_('dashboard.settings.supporter_only') || '💎 Premium Only'
                   }
                 </span>
               {/if}
@@ -1013,7 +1013,7 @@
               {#if !canCustomizeDashboard}
                 {
                   $_('dashboard.settings.widgets_supporter_hint')
-                  || 'Become a supporter to customize widget order and visibility'
+                  || 'Get Premium to customize widget order and visibility'
                 }
               {:else}
                 {

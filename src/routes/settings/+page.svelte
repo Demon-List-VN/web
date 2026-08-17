@@ -107,7 +107,7 @@
 		{
 			id: 'subscriptions' as const,
 			label: text('Subscriptions', 'Gói đăng ký'),
-			description: text('Supporter access', 'Quyền Supporter'),
+			description: text('Premium access', 'Quyền Premium'),
 			icon: WalletCards
 		},
 		{
@@ -636,8 +636,8 @@
               <h3>{$_('settings.general.theme.title')}</h3>
               <p>
                 {text(
-                  'Select a light, dark, or supporter color theme.',
-                  'Chọn chủ đề sáng, tối hoặc màu dành cho Supporter.'
+                  'Select a light, dark, or Premium color theme.',
+                  'Chọn chủ đề sáng, tối hoặc màu dành cho Premium.'
                 )}
               </p>
             </div>
@@ -962,7 +962,7 @@
           <section class="settings-card">
             <div class="card-row">
               <div>
-                <h3>Supporter Role</h3>
+				<h3>Premium</h3>
                 <p>
                   {#if $user.data.supporterUntil == null}
                     {text('Not activated', 'Chưa kích hoạt')}

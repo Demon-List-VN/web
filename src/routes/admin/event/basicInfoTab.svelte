@@ -160,7 +160,7 @@
     <Switch bind:checked={event.needProof} />
   </div>
   <div class="input">
-    <Label class="w-[100px]">Supporter only</Label>
+    <Label class="w-[100px]">Premium only</Label>
     <Switch bind:checked={event.isSupporterOnly} />
   </div>
 

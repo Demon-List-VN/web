@@ -43,7 +43,7 @@
 	};
 
 	const stateOptions = [
-		{ value: 'ALL', label: 'All donations' },
+		{ value: 'ALL', label: 'All contributions' },
 		{ value: 'PAID', label: 'Paid' },
 		{ value: 'PENDING', label: 'Pending' },
 		{ value: 'INVALID', label: 'Invalid' }
@@ -109,14 +109,14 @@
 			const data = await res.json();
 
 			if (!res.ok) {
-				throw new Error(data?.message || 'Failed to load donations');
+				throw new Error(data?.message || 'Failed to load contributions');
 			}
 
 			donations = data.donations || [];
 			total = data.total || 0;
 			offset = data.offset || nextOffset;
 		} catch (error: any) {
-			toast.error(error?.message || 'Failed to load donations');
+			toast.error(error?.message || 'Failed to load contributions');
 		} finally {
 			loading = false;
 		}
@@ -130,7 +130,7 @@
 	async function invalidateDonation(donation: ManagedDonation) {
 		if (
 			!confirm(
-				`Remove donation #${donation.id} from overlay and donation totals? This will mark it INVALID.`
+				`Remove contribution #${donation.id} from overlay totals? This will mark it INVALID.`
 			)
 		) {
 			return;
@@ -148,36 +148,36 @@
 						'Content-Type': 'application/json'
 					},
 					body: JSON.stringify({
-						reason: 'Removed from donation manager'
+						reason: 'Removed from contribution manager'
 					})
 				}
 			);
 			const data = await res.json();
 
 			if (!res.ok) {
-				throw new Error(data?.message || 'Failed to remove donation');
+				throw new Error(data?.message || 'Failed to remove contribution');
 			}
 
 			donations = donations
 				.map((item) => item.id === donation.id ? data : item)
 				.filter((item) => selectedState === 'ALL' || item.state === selectedState);
-			toast.success('Donation marked invalid');
+			toast.success('Contribution marked invalid');
 		} catch (error: any) {
-			toast.error(error?.message || 'Failed to remove donation');
+			toast.error(error?.message || 'Failed to remove contribution');
 		} finally {
 			removingId = null;
 		}
 	}
 </script>
 
-<Title value="Donation Manager" />
+<Title value="Contribution Manager" />
 
 {#if $user.loggedIn && ($user.data?.isAdmin || $user.data?.isManager)}
   <main class="page">
     <header class="pageHeader">
       <div>
-        <h1>Donation Manager</h1>
-        <p>View SePay donations and remove invalid entries from overlay totals.</p>
+        <h1>Contribution Manager</h1>
+        <p>View SePay contributions and remove invalid entries from overlay totals.</p>
       </div>
 
       <div class="toolbar">
@@ -209,7 +209,7 @@
       <section class="tableWrap">
         <Table.Root>
           <Table.Caption>
-            Showing {donations.length} of {total} donation orders
+            Showing {donations.length} of {total} contribution orders
           </Table.Caption>
           <Table.Header>
             <Table.Row>
@@ -227,7 +227,7 @@
             {#if donations.length === 0}
               <Table.Row>
                 <Table.Cell colspan={8} class="empty">
-                  No donations found.
+                  No contributions found.
                 </Table.Cell>
               </Table.Row>
             {:else}

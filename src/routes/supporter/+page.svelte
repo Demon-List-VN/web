@@ -2,6 +2,8 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import BigTitle from '$lib/components/bigTitle.svelte';
 	import { fade } from 'svelte/transition';
+	import PaymentButton from '$lib/components/paymentButton.svelte';
+	import { Button } from '$lib/components/ui/button';
 	import { _ } from 'svelte-i18n';
 	import TopSupporters from '$lib/components/topSupporters.svelte';
 	import SupporterTierProgress from '$lib/components/SupporterTierProgress.svelte';
@@ -56,12 +58,17 @@
   />
   <div class="mt-[-20px] flex max-w-[1000px] flex-col items-center">
     <div class="flex flex-col items-center gap-[10px]">
-      <Alert.Root class="max-w-[500px] border-yellow-500/50 text-yellow-400">
-        <AlertTriangle class="h-4 w-4" />
-        <Alert.Title>
-          Supporter access is temporarily unlocked for everyone. Payments are unavailable.
-        </Alert.Title>
-      </Alert.Root>
+      {#if !$user.loggedIn}
+        <Alert.Root class="max-w-[500px] border-yellow-500/50 text-yellow-400">
+          <AlertTriangle class="h-4 w-4" />
+          <Alert.Title>{$_('supporter.login_required')}</Alert.Title>
+        </Alert.Root>
+      {/if}
+      <PaymentButton title={$_('supporter.price')} />
+      <span class="text-gray-400">{$_('supporter.or')}</span>
+      <a href="/store">
+        <Button>{$_('supporter.store_button')}</Button>
+      </a>
     </div>
 
     <div class="tierProgressWrapper">
@@ -174,6 +181,19 @@
           </Card.Description>
         </Card.Header>
       </Card.Root>
+    </div>
+    <h1 class="mb-[40px] mt-[40px] text-center text-3xl font-bold">
+      {$_('supporter.decision.title')}
+    </h1>
+    <PaymentButton title={$_('supporter.decision.button')} />
+    <div class="mt-[100px] w-full pl-[10px] text-sm text-gray-400 lg:pl-[50px]">
+      <p>{$_('supporter.notes.title')}</p>
+      <ul>
+        <li>- {$_('supporter.notes.non_recurring')}</li>
+        <li>- {$_('supporter.notes.non_refundable')}</li>
+        <li>- {$_('supporter.notes.extension')}</li>
+        <li>- {$_('supporter.notes.duration')}</li>
+      </ul>
     </div>
   </div>
 </div>

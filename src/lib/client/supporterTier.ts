@@ -123,21 +123,21 @@ export function getSupporterTier(supporterUntil?: string | null, now = new Date(
 export function getSupporterTierLabel(tier: number | null): string {
     switch (tier) {
         case 1:
-            return 'Supporter';
+            return 'Premium';
         case 2:
-            return 'Elite Supporter';
+            return 'Elite Premium';
         case 3:
-            return 'Vanguard Supporter';
+            return 'Vanguard Premium';
         case 4:
-            return 'Legendary Supporter';
+            return 'Legendary Premium';
         case 5:
-            return 'Ascendant Supporter';
+            return 'Ascendant Premium';
         case 6:
-            return 'Transcendent Supporter';
+            return 'Transcendent Premium';
         case 7:
-            return 'Zenith Supporter';
+            return 'Zenith Premium';
         default:
-            return tier && tier > 7 ? `Zenith Supporter T${tier}` : 'Supporter';
+            return tier && tier > 7 ? `Zenith Premium T${tier}` : 'Premium';
     }
 }
 

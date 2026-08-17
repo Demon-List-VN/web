@@ -73,7 +73,7 @@
 		{ id: 'tournaments', icon: Trophy, color: 'yellow', label: ['Tournaments', 'Giải đấu'] },
 		{ id: 'battlepass', icon: Sparkles, color: 'pink', label: ['GDListHub Pass', 'GDListHub Pass'] },
 		{ id: 'clan', icon: Shield, color: 'teal', label: ['My clan', 'Bang hội của tôi'] },
-		{ id: 'supporter', icon: Star, color: 'gold', label: ['Supporter', 'Supporter'] }
+		{ id: 'supporter', icon: Star, color: 'gold', label: ['Premium', 'Premium'] }
 	];
 	const SHORTCUT_BY_ID = new Map(SHORTCUTS.map((shortcut) => [shortcut.id, shortcut]));
 

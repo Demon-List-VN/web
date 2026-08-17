@@ -143,7 +143,7 @@
       </Dialog.Header>
       <div class="flex text-sm">
         <p>
-          GDListHub Supporter Role ({quantity[0]} {
+          GDListHub Premium ({quantity[0]} {
             $_('general.month')
           }{quantity[0] > 1 && $locale == 'en' ? 's' : ''})
         </p>

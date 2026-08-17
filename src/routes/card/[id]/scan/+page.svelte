@@ -235,13 +235,13 @@
 									<AlertDialog.Description>
 										{#if $locale == 'vi'}
 											Việc này sẽ liên kết vĩnh viễn và cấp <b
-												>{data.supporterIncluded} month{data.supporterIncluded == 1 ? '' : 's'} of Supporter
+												>{data.supporterIncluded} month{data.supporterIncluded == 1 ? '' : 's'} of Premium
 												Role</b
 											>
 											cho tài khoản này ({$user.data.name}).
 										{:else}
 											This will permanently link the card and give <b
-												>{data.supporterIncluded} month{data.supporterIncluded == 1 ? '' : 's'} of Supporter
+												>{data.supporterIncluded} month{data.supporterIncluded == 1 ? '' : 's'} of Premium
 												Role</b
 											>
 											to this account ({$user.data.name}).

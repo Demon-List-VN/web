@@ -392,9 +392,9 @@
     <footer>
     <div class="footerFiller"></div>
     <p>
-      © Copyright 2020-2025 gdlisthub.dev.<br />
-      All rights reserved. GDListHub and Geometry Dash are in no way
-      affiliated with RobTopGamesAB ®
+      © Copyright 2020-2026 gdlisthub.dev.<br />
+      All rights reserved. GDListHub are in no way
+      affiliated with RobTopGamesAB®
     </p>
     <div class="links">
       <a href="/about">About</a>

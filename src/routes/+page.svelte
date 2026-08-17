@@ -1069,7 +1069,7 @@
                     <div class="source-avatar supporter-source"><Star size={18} fill="currentColor" /></div>
                     <div class="source-copy">
                       <div class="source-line">
-                        <a href="/supporter/top">GDListHub Supporters</a>
+                        <a href="/supporter/top">GDListHub Premium</a>
                         <BadgeCheck size={15} class="verified" />
                       </div>
                       <span>{tr('Community-powered', 'Được cộng đồng chung tay')}</span>
@@ -1077,7 +1077,7 @@
                   </div>
 
                   <div class="supporter-spotlight">
-                    <span class="content-label supporter-label"><Trophy size={13} /> {tr('TOP SUPPORTERS', 'TOP NGƯỜI ỦNG HỘ')}</span>
+                    <span class="content-label supporter-label"><Trophy size={13} /> {tr('TOP PREMIUM MEMBERS', 'TOP THÀNH VIÊN PREMIUM')}</span>
                     <h2>{tr('The players powering GDListHub.', 'Những người chơi tiếp sức cho GDListHub.')}</h2>
                     <div class="supporter-list">
                       {#each item.data as supporter, index}
@@ -1096,7 +1096,7 @@
                     <div class="supporter-actions">
                       <a class="supporter-buy-cta" href="/supporter">
                         <Star size={15} fill="currentColor" />
-                        {tr('Buy Supporter', 'Mua Supporter')}
+                        {tr('Get Premium', 'Mua Premium')}
                       </a>
                       <a class="supporter-cta" href="/supporter/top">
                         {tr('View leaderboard', 'Xem bảng xếp hạng')}
@@ -1131,7 +1131,7 @@
                     <p>
                       {season
                         ? tr('Play daily, earn rewards, and make every session count.', 'Chơi mỗi ngày, nhận phần thưởng và biến mỗi phiên chơi thành tiến độ.')
-                        : tr('Unlock supporter perks and help fund official events.', 'Mở khóa đặc quyền và góp sức cho các sự kiện chính thức.')}
+                        : tr('Unlock Premium perks and help fund official events.', 'Mở khóa đặc quyền Premium và góp sức cho các sự kiện chính thức.')}
                     </p>
                     {#if season && progress}
                       <div class="promo-progress">
@@ -1140,7 +1140,7 @@
                       </div>
                     {/if}
                     <span class="promo-cta">
-                      {season ? tr('Open your pass', 'Mở Pass của bạn') : tr('Become a supporter', 'Trở thành supporter')}
+                      {season ? tr('Open your pass', 'Mở Pass của bạn') : tr('Get Premium', 'Mua Premium')}
                       <ArrowRight size={16} />
                     </span>
                   </a>

@@ -11,12 +11,12 @@ By submitting a Pull Request (“PR”) to this repository, you (“Contributor�
 
 Upon submission of a PR, Contributor hereby grants NamPE (Bùi Hùng Nam) a worldwide, non-exclusive, royalty-free, sublicensable, and transferable license to use, modify, reproduce, distribute, publicly display, and create derivative works of the submitted code, features, and ideas, regardless of whether the PR is merged, closed, or rejected.
 
-## 2. Supporter-Exclusive Features
+## 2. Premium-Exclusive Features
 
-NamPE reserves the right to designate any submitted feature as supporter-exclusive content. In such cases:
+NamPE reserves the right to designate any submitted feature as Premium-exclusive content. In such cases:
 
-- Contributor will receive a negotiable amount of compensation per supporter-exclusive feature.
-- NamPE shall provide proper credit to the Contributor in connection with the use of the supporter-exclusive feature, even if the PR is closed.
+- Contributor will receive a negotiable amount of compensation per Premium-exclusive feature.
+- NamPE shall provide proper credit to the Contributor in connection with the use of the Premium-exclusive feature, even if the PR is closed.
 - If NamPE fails to provide agreed-upon compensation or credit, unless NamPE has reached a separate agreement with the Contributor, the feature shall be made freely available to all users.
 
 ## 3. Explicit Assignment of Rights
