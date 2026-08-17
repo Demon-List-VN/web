@@ -10,9 +10,8 @@
 	import { _ } from 'svelte-i18n';
 	import OverviewTab from './tabs/OverviewTab/index.svelte';
 	import ProfileHero from './components/ProfileHero.svelte';
-	import RecordsTab from './components/RecordsTab.svelte';
-	import ActivityTab from './components/ActivityTab.svelte';
-	import CollectionTab from './components/CollectionTab.svelte';
+	import { onMount } from 'svelte';
+	import { loadPlayerDetails } from './getPlayerData';
 	import {
 		bannerImageUrl,
 		getEquippedFrame,
@@ -22,8 +21,15 @@
 
 	export let data: PageData;
 
+	type ProfileTab = 'overview' | 'records' | 'activity' | 'collection';
+
 	let isBannerFailedToLoad = false;
 	let bannerUid = '';
+	let activeTab: ProfileTab = 'overview';
+	let RecordsTabComponent: any = null;
+	let ActivityTabComponent: any = null;
+	let CollectionTabComponent: any = null;
+	let loadingTab: ProfileTab | null = null;
 
 	$: player = data.player;
 	$: if (player?.uid !== bannerUid) {
@@ -37,6 +43,53 @@
 	$: avatarSrc = `https://cdn.gdlisthub.dev/avatars/${player.uid}${
 		isActive(player.supporterUntil) && player.isAvatarGif ? '.gif' : '.jpg'
 	}?version=${player.avatarVersion ?? 0}`;
+	$: if (activeTab !== 'overview') {
+		void loadTabComponent(activeTab);
+	}
+
+	async function loadTabComponent(tab: ProfileTab) {
+		if (
+			(tab === 'records' && RecordsTabComponent)
+			|| (tab === 'activity' && ActivityTabComponent)
+			|| (tab === 'collection' && CollectionTabComponent)
+			|| tab === 'overview'
+		) {
+			return;
+		}
+
+		loadingTab = tab;
+
+		try {
+			if (tab === 'records') {
+				RecordsTabComponent = (await import('./components/RecordsTab.svelte')).default;
+			} else if (tab === 'activity') {
+				ActivityTabComponent = (await import('./components/ActivityTab.svelte')).default;
+			} else if (tab === 'collection') {
+				CollectionTabComponent = (await import('./components/CollectionTab.svelte')).default;
+			}
+		} finally {
+			if (loadingTab === tab) {
+				loadingTab = null;
+			}
+		}
+	}
+
+	onMount(() => {
+		let cancelled = false;
+		const frame = requestAnimationFrame(() => {
+			void loadPlayerDetails(data.player, data.selectedList)
+				.then((details) => {
+					if (!cancelled) {
+						data = { ...data, ...details };
+					}
+				});
+		});
+
+		return () => {
+			cancelled = true;
+			cancelAnimationFrame(frame);
+		};
+	});
 </script>
 
 <svelte:head>
@@ -97,6 +150,7 @@
         class="absolute inset-0 h-full w-full object-cover"
         src={bannerImageUrl(equippedTheme)}
         alt=""
+		fetchpriority="high"
         on:error={() => {
             isBannerFailedToLoad = true;
         }}
@@ -142,7 +196,7 @@
         </div>
       {/if}
 
-      <Tabs.Root value="overview">
+      <Tabs.Root bind:value={activeTab}>
         <div class="flex min-w-0 flex-col gap-4">
           <div class="w-full overflow-x-auto pb-1">
             <Tabs.List class="flex h-fit w-max min-w-max flex-nowrap">
@@ -166,15 +220,31 @@
           </Tabs.Content>
 
           <Tabs.Content value="records" class="min-w-0 w-full">
-            <RecordsTab bind:data />
+			{#if RecordsTabComponent}
+			  <svelte:component this={RecordsTabComponent} bind:data />
+			{:else}
+			  <div class="tab-loading" aria-busy="true"></div>
+			{/if}
           </Tabs.Content>
 
           <Tabs.Content value="activity" class="min-w-0 w-full">
-            <ActivityTab userID={data.player.uid} />
+			{#if ActivityTabComponent}
+			  <svelte:component this={ActivityTabComponent} userID={data.player.uid} />
+			{:else}
+			  <div class="tab-loading" aria-busy="true"></div>
+			{/if}
           </Tabs.Content>
 
           <Tabs.Content value="collection" class="min-w-0 w-full">
-            <CollectionTab userID={data.player.uid} {data} />
+			{#if CollectionTabComponent}
+			  <svelte:component
+				this={CollectionTabComponent}
+				userID={data.player.uid}
+				{data}
+			  />
+			{:else}
+			  <div class="tab-loading" aria-busy="true"></div>
+			{/if}
           </Tabs.Content>
         </div>
       </Tabs.Root>
@@ -200,5 +270,25 @@
       width: 112px;
       height: 112px;
     }
+  }
+
+  .tab-loading {
+	height: 240px;
+	border: 1px solid hsl(var(--border));
+	border-radius: 12px;
+	background: linear-gradient(
+		100deg,
+		hsl(var(--muted) / 0.42) 20%,
+		hsl(var(--muted) / 0.72) 42%,
+		hsl(var(--muted) / 0.42) 64%
+	);
+	background-size: 220% 100%;
+	animation: tab-loading 1.4s ease-in-out infinite;
+  }
+
+  @keyframes tab-loading {
+	to {
+	  background-position-x: -220%;
+	}
   }
 </style>

@@ -18,16 +18,12 @@
 		Users
 	} from 'lucide-svelte';
 	import { browser } from '$app/environment';
+	import { onMount } from 'svelte';
 	import { _, locale } from 'svelte-i18n';
 	import { user } from '$lib/client';
 	import CommunityPostCard from '$lib/components/communityPostCard.svelte';
 	import OnboardingProgress from '$lib/components/homepage/OnboardingProgress.svelte';
 	import QuickPostComposer from '$lib/components/homepage/QuickPostComposer.svelte';
-	import FriendLevelCard from '$lib/components/homepage/FriendLevelCard.svelte';
-	import SocialRightRail from '$lib/components/homepage/SocialRightRail.svelte';
-	import OnboardingModal from '$lib/components/OnboardingModal.svelte';
-	import ClanRecordCard from '$lib/components/clan/ClanRecordCard.svelte';
-	import ClanTag from '$lib/components/clan/ClanTag.svelte';
 	import { isActive } from '$lib/client/isSupporterActive';
 
 	export let data: any;
@@ -79,6 +75,12 @@
 	let feedLoadingMore = false;
 	let feedLoadError = false;
 	let feedInitialized = false;
+	let FriendLevelCardComponent: any = null;
+	let ClanRecordCardComponent: any = null;
+	let ClanTagComponent: any = null;
+	let SocialRightRailComponent: any = null;
+	let OnboardingModalComponent: any = null;
+	let socialFeedComponentsPromise: Promise<void> | null = null;
 
 	$: if (data?.homeData) {
 		homeData = data.homeData;
@@ -86,6 +88,9 @@
 
 	$: if (browser && $user.checked) {
 		ensureHomepageLoaded($user.loggedIn);
+	}
+	$: if (browser && (activeFeedTab === 'friends' || activeFeedTab === 'clan')) {
+		void loadSocialFeedComponents();
 	}
 
 	$: events = homeData?.events ?? null;
@@ -140,12 +145,18 @@
 		void loadHomepage(mode);
 	}
 
-	async function loadHomepage(mode: HomepageRequestMode) {
+	async function loadHomepage(mode: HomepageRequestMode, knownToken?: string) {
 		const headers: Record<string, string> = {};
 
 		if (mode === 'auth') {
 			try {
-				headers.Authorization = `Bearer ${await $user.token()}`;
+				const token = knownToken ?? await $user.token();
+
+				if (!token) {
+					throw new Error('Missing session token');
+				}
+
+				headers.Authorization = `Bearer ${token}`;
 			} catch {
 				if (homepageRequestMode === mode && homeData === null) {
 					homeData = {};
@@ -157,7 +168,7 @@
 		}
 
 		try {
-			const response = await fetch(`${import.meta.env.VITE_API_URL}/homepage`, {
+			const response = await fetch(`${import.meta.env.VITE_API_URL}/homepage?compact=true`, {
 				headers
 			});
 
@@ -184,6 +195,88 @@
 			}
 		}
 	}
+
+	async function loadHomepageFromSession() {
+		try {
+			const token = await $user.token();
+			const mode: HomepageRequestMode = token ? 'auth' : 'public';
+
+			if (homepageRequestMode !== mode) {
+				homepageRequestMode = mode;
+				await loadHomepage(mode, token);
+			}
+		} catch {
+			if (homepageRequestMode === null) {
+				homepageRequestMode = 'public';
+				await loadHomepage('public');
+			}
+		}
+	}
+
+	function loadSocialFeedComponents() {
+		if (!socialFeedComponentsPromise) {
+			socialFeedComponentsPromise = Promise.all([
+				import('$lib/components/homepage/FriendLevelCard.svelte'),
+				import('$lib/components/clan/ClanRecordCard.svelte'),
+				import('$lib/components/clan/ClanTag.svelte')
+			])
+				.then(([friendLevelCard, clanRecordCard, clanTag]) => {
+					FriendLevelCardComponent = friendLevelCard.default;
+					ClanRecordCardComponent = clanRecordCard.default;
+					ClanTagComponent = clanTag.default;
+				});
+		}
+
+		return socialFeedComponentsPromise;
+	}
+
+	async function openOnboardingModal() {
+		if (!OnboardingModalComponent) {
+			OnboardingModalComponent = (
+				await import('$lib/components/OnboardingModal.svelte')
+			).default;
+		}
+
+		showOnboardingModal = true;
+	}
+
+	function loadRightRail(node: HTMLElement) {
+		if (!browser || SocialRightRailComponent) {
+			return {};
+		}
+
+		const load = () => {
+			void import('$lib/components/homepage/SocialRightRail.svelte')
+				.then((module) => {
+					SocialRightRailComponent = module.default;
+				});
+		};
+
+		if (typeof IntersectionObserver === 'undefined') {
+			load();
+
+			return {};
+		}
+
+		const observer = new IntersectionObserver((entries) => {
+			if (entries[0]?.isIntersecting) {
+				observer.disconnect();
+				load();
+			}
+		}, { rootMargin: '240px' });
+
+		observer.observe(node);
+
+		return {
+			destroy() {
+				observer.disconnect();
+			}
+		};
+	}
+
+	onMount(() => {
+		void loadHomepageFromSession();
+	});
 
 	function initializeFeedContinuation() {
 		loadedFeedItems = [];
@@ -785,10 +878,15 @@
             <OnboardingProgress
               step={$user.data.onboarding_step ?? 1}
 			  skipName={$user.data.renameCooldown != null}
-              onResume={() => (showOnboardingModal = true)}
+              onResume={openOnboardingModal}
             />
           </div>
-          <OnboardingModal bind:open={showOnboardingModal} />
+		  {#if OnboardingModalComponent}
+			<svelte:component
+			  this={OnboardingModalComponent}
+			  bind:open={showOnboardingModal}
+			/>
+		  {/if}
         {/if}
 
       <div id="for-you-panel">
@@ -1297,9 +1395,13 @@
 	          <div class="feed-stream friend-feed-stream">
 	            {#each friendActivity as item (item.key)}
 	              {#if item.kind === 'record'}
-	                <ClanRecordCard record={item.data} />
+					{#if ClanRecordCardComponent}
+					  <svelte:component this={ClanRecordCardComponent} record={item.data} />
+					{/if}
 	              {:else if item.kind === 'level'}
-	                <FriendLevelCard level={item.data} />
+					{#if FriendLevelCardComponent}
+					  <svelte:component this={FriendLevelCardComponent} level={item.data} />
+					{/if}
 	              {:else}
 	                <div class="community-feed-item">
 	                  <CommunityPostCard post={item.data} compact={false} />
@@ -1351,7 +1453,14 @@
             style={`background-image: linear-gradient(90deg, rgba(4,8,16,.9), rgba(4,8,16,.48)), url('https://cdn.gdlisthub.dev/clan-photos/${clanFeed.clan.id}.jpg?version=${clanFeed.clan.imageVersion ?? 0}')`}
           >
             <div>
-              <span class="clan-community-label"><Shield size={13} /> <ClanTag clan={clanFeed.clan} compact /></span>
+			  <span class="clan-community-label">
+				<Shield size={13} />
+				{#if ClanTagComponent}
+				  <svelte:component this={ClanTagComponent} clan={clanFeed.clan} compact />
+				{:else}
+				  {clanFeed.clan.name}
+				{/if}
+			  </span>
               <h2>{clanFeed.clan.name}</h2>
               <p><Users size={14} /> {formatNumber(clanFeed.clan.memberCount)} {tr('members', 'thành viên')}</p>
             </div>
@@ -1365,9 +1474,21 @@
           <div class="feed-stream clan-feed-stream">
 	            {#each clanActivity as item (item.key)}
 	              {#if item.kind === 'record'}
-	                <ClanRecordCard record={item.data} clan={clanFeed.clan} />
+					{#if ClanRecordCardComponent}
+					  <svelte:component
+						this={ClanRecordCardComponent}
+						record={item.data}
+						clan={clanFeed.clan}
+					  />
+					{/if}
 	              {:else if item.kind === 'level'}
-	                <FriendLevelCard level={item.data} context="clan" />
+					{#if FriendLevelCardComponent}
+					  <svelte:component
+						this={FriendLevelCardComponent}
+						level={item.data}
+						context="clan"
+					  />
+					{/if}
 	              {:else}
                 <div class="community-feed-item">
                   <CommunityPostCard
@@ -1398,8 +1519,12 @@
         {/if}
       {/if}
     </section>
-    <div class="right-rail-column">
-      <SocialRightRail />
+    <div class="right-rail-column" use:loadRightRail>
+	  {#if SocialRightRailComponent}
+		<svelte:component this={SocialRightRailComponent} />
+	  {:else}
+		<div class="right-rail-placeholder" aria-hidden="true"></div>
+	  {/if}
     </div>
   </div>
 </main>
@@ -1432,6 +1557,12 @@
   top: 76px;
   min-width: 0;
   align-self: start;
+}
+
+.right-rail-placeholder {
+  min-height: 420px;
+  border-radius: 14px;
+  background: hsl(var(--muted) / 0.18);
 }
 
 .feed-tabs {
@@ -1582,6 +1713,8 @@
 
 .feed-card {
   overflow: hidden;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 520px;
 }
 
 .post-head {
@@ -1813,6 +1946,9 @@
 }
 
 .community-feed-item {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 420px;
+
   :global(.communityPost) {
     border-radius: 14px;
     border-color: var(--feed-border);

@@ -35,9 +35,6 @@
 		getPvpRatingForMode,
 		resolvePvpRank
 	} from '$lib/utils/pvpRank';
-	import Chart from 'chart.js/auto';
-	import 'chartjs-adapter-date-fns';
-	import annotationPlugin from 'chartjs-plugin-annotation';
 	import {
 		Activity,
 		CalendarClock,
@@ -55,7 +52,48 @@
 	import type { PageData } from '../../$types';
 	import { getBorderStyle } from './cards/getBorderStyle';
 
-	Chart.register(annotationPlugin);
+	let chartConstructorPromise: Promise<any> | null = null;
+
+	function loadChartConstructor() {
+		if (!chartConstructorPromise) {
+			chartConstructorPromise = Promise.all([
+				import('chart.js/auto'),
+				import('chartjs-adapter-date-fns'),
+				import('chartjs-plugin-annotation')
+			])
+				.then(([chartModule, _adapter, annotationModule]) => {
+					const ChartConstructor = chartModule.default;
+
+					ChartConstructor.register(annotationModule.default);
+
+					return ChartConstructor;
+				});
+		}
+
+		return chartConstructorPromise;
+	}
+
+	function mountDeferredChart(
+		node: HTMLCanvasElement,
+		createConfig: () => Record<string, any>
+	) {
+		let chart: any = null;
+		let destroyed = false;
+
+		void loadChartConstructor()
+			.then((ChartConstructor) => {
+				if (!destroyed && node.isConnected) {
+					chart = new ChartConstructor(node, createConfig());
+				}
+			});
+
+		return {
+			destroy() {
+				destroyed = true;
+				chart?.destroy();
+			}
+		};
+	}
 
 	export let data: PageData;
 
@@ -459,7 +497,7 @@
 	}
 
 	function createEventChart(node: HTMLCanvasElement) {
-		const chart = new Chart(node, {
+		return mountDeferredChart(node, () => ({
 			type: 'line',
 			data: {
 				labels: rankedEventHistory.labels,
@@ -502,10 +540,10 @@
 					},
 					tooltip: {
 						callbacks: {
-							title: (context) =>
+							title: (context: any) =>
 								rankedEventHistory.titles[context[0].dataIndex]
 									|| '',
-							label: (context) => {
+							label: (context: any) => {
 								const diff =
 									rankedEventHistory.diffs[context.dataIndex];
 								const diffLabel = diff >= 0
@@ -524,17 +562,11 @@
 				}
 			},
 			plugins: [eventRatingBackgroundPlugin]
-		});
-
-		return {
-			destroy() {
-				chart.destroy();
-			}
-		};
+		}));
 	}
 
 	function createPvpChart(node: HTMLCanvasElement) {
-		const chart = new Chart(node, {
+		return mountDeferredChart(node, () => ({
 			type: 'line',
 			data: {
 				labels: pvpRatingHistory.labels,
@@ -573,7 +605,7 @@
 					},
 					tooltip: {
 						callbacks: {
-							label: (context) => {
+							label: (context: any) => {
 								const diff =
 									pvpRatingHistory.diffs[context.dataIndex];
 								const lines = [
@@ -600,13 +632,7 @@
 				}
 			},
 			plugins: [eventRatingBackgroundPlugin]
-		});
-
-		return {
-			destroy() {
-				chart.destroy();
-			}
-		};
+		}));
 	}
 </script>
 
