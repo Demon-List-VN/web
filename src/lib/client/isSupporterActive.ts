@@ -1,4 +1,3 @@
-export function isActive(_expiryDate: string | null) {
-    // Temporary: treat supporter and clan boost expirations as active for everyone.
-    return true;
+export function isActive(expiryDate?: string | null) {
+    return Boolean(expiryDate && Date.parse(expiryDate) > Date.now());
 }
