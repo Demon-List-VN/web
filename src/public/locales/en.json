@@ -1721,7 +1721,8 @@
         "no_result": "No results found",
         "dlvn": "Levels from GDListHub",
         "gd": "Levels from Geometry Dash",
-        "players": "Players"
+        "players": "Players",
+        "custom_lists": "Custom lists"
     },
     "card": {
         "inactive": "This card is not activated.\nPlease contact a moderator to activate this card.",

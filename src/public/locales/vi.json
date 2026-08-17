@@ -1720,7 +1720,8 @@
         "no_result": "Không có kết quả",
         "dlvn": "Levels từ GDListHub",
         "gd": "Levels từ Geometry Dash",
-        "players": "Người chơi"
+        "players": "Người chơi",
+        "custom_lists": "Danh sách tùy chỉnh"
     },
     "card": {
         "inactive": "Thẻ này chưa được kích hoạt.\nVui lòng liên hệ với quản trị viên để kích hoạt thẻ này.",

@@ -16,7 +16,8 @@
 	let result: any = {
 		levels: [],
 		gdBrowserLevels: [],
-		players: []
+		players: [],
+		customLists: []
 	};
 
 	let state = 0;
@@ -32,7 +33,8 @@
 		result = {
 			levels: [],
 			gdBrowserLevels: [],
-			players: []
+			players: [],
+			customLists: []
 		};
 
 		value = '';
@@ -56,7 +58,7 @@
 		}
 
 		const promises = [
-			fetch(`${import.meta.env.VITE_API_URL}/search/${value}`, {
+			fetch(`${import.meta.env.VITE_API_URL}/search/${encodeURIComponent(value)}`, {
 				headers: await getSearchAuthHeaders()
 			})
 				.then((res) => res.json()),
@@ -80,9 +82,10 @@
 				}
 
 				result = {
-					levels: res[0].levels,
+					levels: res[0].levels || [],
 					gdBrowserLevels: [],
-					players: res[0].players
+					players: res[0].players || [],
+					customLists: res[0].customLists || []
 				};
 
 				for (const i of res[1]) {
@@ -257,6 +260,23 @@
                   <span class="ml-[10px] text-yellow-500">{item.name}</span>
                 {:else}
                   <span class="ml-[10px]">{item.name}</span>
+                {/if}
+              </Command.Item>
+            </a>
+          {/each}
+        </Command.Group>
+      {/if}
+      {#if result.customLists.length}
+        <Command.Group heading={$_('search.custom_lists')}>
+          {#each result.customLists as item}
+            <a
+              href={`/lists/${encodeURIComponent(item.slug || item.id)}`}
+              data-sveltekit-preload-data="tap"
+            >
+              <Command.Item>
+                <span class="font-medium">{item.title}</span>
+                {#if item.ownerData?.name}
+                  <span class="ml-1 text-muted-foreground">by {item.ownerData.name}</span>
                 {/if}
               </Command.Item>
             </a>
