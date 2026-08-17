@@ -1698,19 +1698,6 @@
 			{$_('custom_lists.back')}
 		</Button>
 		<div class="toolbarActions">
-			{#if list && list.levelSubmissionEnabled}
-				<Button
-					variant="outline"
-					size="sm"
-					on:click={() => goto(`/lists/${$page.params.id}/submit`)}
-				>
-					{#if $locale == 'vi'}
-						Nộp level
-					{:else}
-						Submit level
-					{/if}
-				</Button>
-			{/if}
 			{#if list && canManageList}
 				<Button size="sm" on:click={() => goto(`/lists/${$page.params.id}/manage`)}>
 					<Settings class="mr-2 h-4 w-4" />
@@ -1732,14 +1719,19 @@
 		</div>
 	{:else if list}
 		<!-- Hero Card -->
-		<div class="hero" class:heroHasBanner={Boolean(list.bannerUrl && list.bannerPlacement !== 'navigation')} style={getListHeroStyle(list)}>
+		<div
+			class="hero"
+			class:heroHasBanner={Boolean(list.bannerUrl && list.bannerPlacement !== 'navigation')}
+			class:heroNavigationMode={list.bannerPlacement === 'navigation'}
+			style={getListHeroStyle(list)}
+		>
 			{#if list.bannerUrl && list.bannerPlacement !== 'navigation'}
 				<div class="heroBanner" style={getListHeroBannerStyle(list)}>
 					<img src={list.bannerUrl} alt="" loading="lazy" decoding="async" />
 				</div>
 			{/if}
 			<div class="heroTop">
-				{#if list.logoUrl}
+				{#if list.logoUrl && list.bannerPlacement !== 'navigation'}
 					<img class="heroLogo" src={list.logoUrl} alt="" loading="lazy" decoding="async" />
 				{/if}
 				<div class="heroText">
@@ -1750,8 +1742,18 @@
 						<p class="heroDesc muted">{$_('custom_lists.detail.no_description')}</p>
 					{/if}
 				</div>
-				{#if canCrawlMirror || canStarList || (list.nonGlobalRecordsEnabled && !list.isOfficial && !list.isBanned && list.visibility !== 'private')}
+				{#if canCrawlMirror || canStarList || list.levelSubmissionEnabled || (list.nonGlobalRecordsEnabled && !list.isOfficial && !list.isBanned && list.visibility !== 'private')}
 					<div class="heroActions">
+						{#if list.levelSubmissionEnabled}
+							<Button
+								variant="outline"
+								size="sm"
+								href={`/lists/${$page.params.id}/submit`}
+							>
+								<FilePlus2 class="mr-2 h-4 w-4" />
+								{$locale === 'vi' ? 'Nộp level' : 'Submit level'}
+							</Button>
+						{/if}
 						{#if list.nonGlobalRecordsEnabled && !list.isOfficial && !list.isBanned && list.visibility !== 'private'}
 							<Button
 								variant="outline"
@@ -2884,6 +2886,19 @@
 	.heroHasBanner {
 		overflow: hidden;
 	}
+
+	.heroNavigationMode {
+		gap: 8px;
+		padding: 12px 16px;
+	}
+
+	.heroNavigationMode .heroTop { align-items: center; }
+	.heroNavigationMode .heroTop h1 { font-size: 1.2rem; }
+	.heroNavigationMode .heroDesc,
+	.heroNavigationMode .tagRow,
+	.heroNavigationMode .updatedAt { display: none; }
+	.heroNavigationMode .heroMeta { gap: 5px; }
+	.heroNavigationMode .metaChip { padding: 3px 8px; font-size: .72rem; }
 
 	.heroBanner {
 		margin: -24px -24px 0;
