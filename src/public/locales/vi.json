@@ -3429,6 +3429,13 @@
                 "heading": "Nhóm quản lý",
                 "hint": "Liên hệ những người đang quản lý danh sách này."
             },
+            "layout_records": {
+                "title": "Record của level",
+                "points": "điểm",
+                "empty": "Level này chưa có record hợp lệ.",
+                "failed": "Không thể tải record của level.",
+                "showing": "Đang hiển thị {shown} trên {total} record."
+            },
             "delete_confirm": "Xoá danh sách này? Hành động này không thể hoàn tác.",
             "edit": {
                 "heading": "Chỉnh sửa thông tin",
@@ -3679,6 +3686,12 @@
             "appearance": {
                 "layout_heading": "Bố cục trang công khai",
                 "layout_hint": "Chọn cấu trúc khách truy cập sẽ thấy. Màu sắc và hình ảnh của danh sách áp dụng cho mọi bố cục.",
+                "banner_placement_label": "Vị trí banner",
+                "banner_placement_hint": "Hiển thị banner trong phần đầu danh sách hoặc dùng làm nền cho thanh điều hướng cố định.",
+                "banner_placements": {
+                    "banner": "Banner đầu trang",
+                    "navigation": "Thanh điều hướng"
+                },
                 "layouts": {
                     "grid": { "label": "Lưới", "description": "Bố cục thẻ hai cột hiện tại." },
                     "list": {

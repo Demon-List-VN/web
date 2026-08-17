@@ -3430,6 +3430,13 @@
                 "heading": "Staff",
                 "hint": "Contact the people maintaining this list."
             },
+            "layout_records": {
+                "title": "Level records",
+                "points": "points",
+                "empty": "No eligible records for this level yet.",
+                "failed": "Failed to load level records.",
+                "showing": "Showing {shown} of {total} records."
+            },
             "delete_confirm": "Delete this list? This cannot be undone.",
             "edit": {
                 "heading": "Edit metadata",
@@ -3680,6 +3687,12 @@
             "appearance": {
                 "layout_heading": "Public page layout",
                 "layout_hint": "Choose the structure visitors see across this list page. Your colors and images apply to every layout.",
+                "banner_placement_label": "Banner placement",
+                "banner_placement_hint": "Show the banner in the list header or use it as the fixed navigation-bar background.",
+                "banner_placements": {
+                    "banner": "Top banner",
+                    "navigation": "Navigation bar"
+                },
                 "layouts": {
                     "grid": {
                         "label": "Grid",

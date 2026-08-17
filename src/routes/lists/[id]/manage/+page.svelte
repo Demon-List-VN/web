@@ -209,6 +209,7 @@
 		overview: string;
 		backgroundColor?: string | null;
 		bannerUrl?: string | null;
+		bannerPlacement?: 'banner' | 'navigation';
 		borderColor?: string | null;
 		communityEnabled: boolean;
 		leaderboardEnabled?: boolean;
@@ -354,6 +355,7 @@
 		overview: string;
 		backgroundColor: string;
 		bannerUrl: string;
+		bannerPlacement: 'banner' | 'navigation';
 		borderColor: string;
 		communityEnabled: boolean;
 		leaderboardEnabled: boolean;
@@ -534,6 +536,7 @@
 		overview: '',
 		backgroundColor: '',
 		bannerUrl: '',
+		bannerPlacement: 'banner' as 'banner' | 'navigation',
 		borderColor: '',
 		communityEnabled: true,
 		leaderboardEnabled: true,
@@ -1049,6 +1052,9 @@
 		editForm.overview = list.overview || '';
 		editForm.backgroundColor = list.backgroundColor || '';
 		editForm.bannerUrl = list.bannerUrl || '';
+		editForm.bannerPlacement = list.bannerPlacement === 'navigation'
+			? 'navigation'
+			: 'banner';
 		editForm.borderColor = list.borderColor || '';
 		editForm.communityEnabled = list.communityEnabled;
 		editForm.leaderboardEnabled = list.leaderboardEnabled ?? true;
@@ -1117,6 +1123,9 @@
 			overview: currentList.overview || '',
 			backgroundColor: currentList.backgroundColor || '',
 			bannerUrl: currentList.bannerUrl || '',
+			bannerPlacement: currentList.bannerPlacement === 'navigation'
+				? 'navigation'
+				: 'banner',
 			borderColor: currentList.borderColor || '',
 			communityEnabled: currentList.communityEnabled,
 			leaderboardEnabled: currentList.leaderboardEnabled ?? true,
@@ -1157,6 +1166,7 @@
 			overview: currentForm.overview,
 			backgroundColor: currentForm.backgroundColor,
 			bannerUrl: currentForm.bannerUrl,
+			bannerPlacement: currentForm.bannerPlacement,
 			borderColor: currentForm.borderColor,
 			communityEnabled: currentForm.communityEnabled,
 			leaderboardEnabled: currentForm.leaderboardEnabled,
@@ -2327,6 +2337,14 @@
 	}
 
 	function getManageHeroBannerUrl() {
+		const placement = initialSyncDone
+			? editForm.bannerPlacement
+			: list?.bannerPlacement || 'banner';
+
+		if (placement === 'navigation') {
+			return null;
+		}
+
 		if (initialSyncDone) {
 			const value = editForm.bannerUrl.trim();
 
@@ -2669,6 +2687,7 @@
 			overview: editForm.overview,
 			backgroundColor: editForm.backgroundColor,
 			bannerUrl: editForm.bannerUrl,
+			bannerPlacement: editForm.bannerPlacement,
 			borderColor: editForm.borderColor,
 			communityEnabled: editForm.communityEnabled,
 			leaderboardEnabled: editForm.leaderboardEnabled,
@@ -4098,6 +4117,10 @@
 			return $_('custom_lists.detail.edit.banner_url_label');
 		}
 
+		if (field === 'bannerPlacement') {
+			return $_('custom_lists.manage.appearance.banner_placement_label');
+		}
+
 		if (field === 'borderColor') {
 			return $_('custom_lists.detail.edit.border_color_label');
 		}
@@ -4245,6 +4268,10 @@
 
 		if (field === 'appearanceLayout' && typeof value === 'string') {
 			return $_(`custom_lists.manage.appearance.layouts.${value}.label`);
+		}
+
+		if (field === 'bannerPlacement' && typeof value === 'string') {
+			return $_(`custom_lists.manage.appearance.banner_placements.${value}`);
 		}
 
 		if (field === 'recordFilterPlatform' && typeof value === 'string') {
@@ -5419,6 +5446,8 @@
 			? {
 				faviconUrl: list.faviconUrl,
 				logoUrl: list.logoUrl,
+				bannerUrl: list.bannerUrl,
+				bannerPlacement: list.bannerPlacement,
 				title: list.title
 			}
 			: null

@@ -23,6 +23,7 @@
 	export let navLogoSrc: string;
 	export let navLogoAlt: string;
 	export let useCustomListLogo = false;
+	export let navBannerUrl = '';
 	export let onCustomLogoError: () => void;
 	export let signIn: () => void;
 	export let signOut: () => void | Promise<void>;
@@ -30,7 +31,13 @@
 	const isDesktop = mediaQuery('(min-width: 1025px)');
 </script>
 
-<header class="topbar">
+<header
+  class="topbar"
+  class:customBanner={Boolean(navBannerUrl)}
+  style:background-image={navBannerUrl
+    ? `linear-gradient(90deg, rgb(0 0 0 / .72), rgb(0 0 0 / .46)), url("${navBannerUrl}")`
+    : undefined}
+>
   <div class="topbar-left">
     <button
       class="desktop-collapse-toggle"
@@ -128,6 +135,15 @@
   padding: 0 16px;
   z-index: 50;
   box-sizing: border-box;
+}
+
+.topbar.customBanner {
+  background-position: center;
+  background-size: cover;
+  --textColor1: #fff;
+  --textColor2: rgb(255 255 255 / .82);
+  --navbar-bg: rgb(0 0 0 / .54);
+  border-bottom-color: rgb(255 255 255 / .2);
 }
 
 .topbar-left {

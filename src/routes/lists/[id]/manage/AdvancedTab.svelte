@@ -582,6 +582,10 @@
 			return $_('custom_lists.detail.edit.banner_url_label');
 		}
 
+		if (field === 'bannerPlacement') {
+			return $_('custom_lists.manage.appearance.banner_placement_label');
+		}
+
 		if (field === 'borderColor') {
 			return $_('custom_lists.detail.edit.border_color_label');
 		}
@@ -712,6 +716,10 @@
 
 		if (field === 'appearanceLayout' && typeof value === 'string') {
 			return $_(`custom_lists.manage.appearance.layouts.${value}.label`);
+		}
+
+		if (field === 'bannerPlacement' && typeof value === 'string') {
+			return $_(`custom_lists.manage.appearance.banner_placements.${value}`);
 		}
 
 		if (field === 'isPlatformer' && typeof value === 'boolean') {

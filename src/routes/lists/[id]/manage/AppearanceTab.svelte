@@ -22,9 +22,14 @@
 	let faviconFileInput: HTMLInputElement | null = null;
 	let logoFileInput: HTMLInputElement | null = null;
 	const appearanceLayouts = ['grid', 'list', 'aredl_tsl', 'pointercrate'] as const;
+	const bannerPlacements = ['banner', 'navigation'] as const;
 
 	function selectAppearanceLayout(layout: typeof appearanceLayouts[number]) {
 		editForm = { ...editForm, appearanceLayout: layout };
+	}
+
+	function selectBannerPlacement(placement: 'banner' | 'navigation') {
+		editForm = { ...editForm, bannerPlacement: placement };
 	}
 
 	$: if (list) {
@@ -256,6 +261,25 @@
           </span>
         </button>
       {/each}
+    </div>
+    <div class="bannerPlacementField">
+      <div>
+        <strong>{$_('custom_lists.manage.appearance.banner_placement_label')}</strong>
+        <p class="hint">{$_('custom_lists.manage.appearance.banner_placement_hint')}</p>
+      </div>
+      <div class="bannerPlacementOptions" role="radiogroup" aria-label={$_('custom_lists.manage.appearance.banner_placement_label')}>
+        {#each bannerPlacements as placement}
+          <button
+            type="button"
+            class:selected={editForm.bannerPlacement === placement}
+            role="radio"
+            aria-checked={editForm.bannerPlacement === placement}
+            on:click={() => selectBannerPlacement(placement)}
+          >
+            {$_(`custom_lists.manage.appearance.banner_placements.${placement}`)}
+          </button>
+        {/each}
+      </div>
     </div>
   </div>
   <div class="toolCard">
@@ -618,6 +642,20 @@
 .layoutCopy strong { font-size: 0.9rem; }
 .layoutCopy small { color: hsl(var(--muted-foreground)); line-height: 1.35; }
 
+.bannerPlacementField {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 14px;
+  border-top: 1px solid hsl(var(--border));
+}
+
+.bannerPlacementField strong { font-size: .9rem; }
+.bannerPlacementOptions { display: inline-flex; gap: 6px; padding: 4px; border-radius: 10px; background: hsl(var(--muted) / .45); }
+.bannerPlacementOptions button { border: 1px solid transparent; border-radius: 7px; background: transparent; color: hsl(var(--muted-foreground)); padding: 7px 11px; cursor: pointer; font-size: .82rem; }
+.bannerPlacementOptions button.selected { border-color: hsl(var(--border)); background: hsl(var(--background)); color: hsl(var(--foreground)); }
+
 .field {
   display: flex;
   flex-direction: column;
@@ -718,5 +756,7 @@ label,
   }
 
   .layoutPicker { grid-template-columns: 1fr; }
+  .bannerPlacementField { align-items: stretch; flex-direction: column; }
+  .bannerPlacementOptions { display: grid; grid-template-columns: repeat(2, 1fr); }
 }
 </style>

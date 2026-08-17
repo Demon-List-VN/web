@@ -68,6 +68,13 @@
 			logoUrl: normalizeThemeAssetUrl(
 				$branding?.logoUrl ?? $page.data?.list?.logoUrl
 			),
+			bannerUrl: normalizeThemeAssetUrl(
+				$branding?.bannerUrl ?? $page.data?.list?.bannerUrl
+			),
+			bannerPlacement: ($branding?.bannerPlacement
+				?? $page.data?.list?.bannerPlacement) === 'navigation'
+				? 'navigation'
+				: 'banner',
 			title: normalizeThemeAssetUrl(
 				$branding?.title ?? $page.data?.list?.title
 			)
@@ -80,6 +87,12 @@
 	const customListLogoUrl = derived(
 		activeCustomListBranding,
 		($branding) => normalizeThemeAssetUrl($branding.logoUrl)
+	);
+	const customListNavigationBannerUrl = derived(
+		activeCustomListBranding,
+		($branding) => $branding.bannerPlacement === 'navigation'
+			? normalizeThemeAssetUrl($branding.bannerUrl)
+			: ''
 	);
 	const customListTitle = derived(
 		activeCustomListBranding,
@@ -373,6 +386,7 @@
     navLogoSrc={$navLogoSrc}
     navLogoAlt={$navLogoAlt}
     useCustomListLogo={$useCustomListLogo}
+    navBannerUrl={$customListNavigationBannerUrl}
     onCustomLogoError={() => customLogoFailed.set(true)}
     {signIn}
     {signOut}

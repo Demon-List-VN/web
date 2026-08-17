@@ -99,6 +99,7 @@
 		backgroundColor?: string | null;
 		appearanceLayout?: 'grid' | 'list' | 'aredl_tsl' | 'pointercrate';
 		bannerUrl?: string | null;
+		bannerPlacement?: 'banner' | 'navigation';
 		borderColor?: string | null;
 		communityEnabled: boolean;
 		leaderboardEnabled?: boolean;
@@ -214,6 +215,14 @@
 	let crawlingMirror = false;
 	let publicStaffEntries: PublicStaffEntry[] = [];
 	let selectedLayoutLevelId: number | null = null;
+	let layoutLevelRecords: CustomListRecordPoint[] = [];
+	let layoutLevelRecordCount = 0;
+	let layoutLevelRecordsLoading = false;
+	let layoutLevelRecordsError = '';
+	let layoutLevelRecordsFetchKey = '';
+	let layoutLevelDetails: any = null;
+	let layoutLevelDetailsLoading = false;
+	let layoutLevelDetailsFetchKey = '';
 
 	function getAppearanceLayout(currentList: CustomList | null) {
 		const value = currentList?.appearanceLayout;
@@ -227,10 +236,39 @@
 		selectedLayoutLevelId = item.levelId;
 	}
 
-	function getLayoutThumbnail(item: CustomListItem | null | undefined) {
-		const videoId = item?.videoID || item?.level?.videoID;
+	function getLayoutRecordPlayerName(record: CustomListRecordPoint) {
+		return record.player?.name || record.uid;
+	}
 
-		return videoId ? `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg` : null;
+	function formatLayoutMinProgress(item: CustomListItem) {
+		const value = item.minProgress ?? item.level?.minProgress;
+
+		if (value == null) {
+			return '-';
+		}
+
+		return list?.isPlatformer ? getTimeString(value) : `${value}%`;
+	}
+
+	function getLayoutVideoId(item: CustomListItem | null | undefined) {
+		return item?.videoID || item?.level?.videoID || null;
+	}
+
+	function sortLayoutLevelRecords(records: CustomListRecordPoint[]) {
+		return [...records].sort((left, right) => {
+			const progressDifference = Number(right.progress) - Number(left.progress);
+
+			if (progressDifference) {
+				return progressDifference;
+			}
+
+			const verificationDifference = Number(Boolean(right.acceptedManually))
+				- Number(Boolean(left.acceptedManually));
+
+			return verificationDifference
+				|| Number(right.point) - Number(left.point)
+				|| left.uid.localeCompare(right.uid);
+		});
 	}
 
 	type LevelFilters = {
@@ -1362,6 +1400,80 @@
 		}
 	}
 
+	async function fetchLayoutLevelRecords(fetchKey: string, levelId: number) {
+		layoutLevelRecordsLoading = true;
+		layoutLevelRecordsError = '';
+
+		try {
+			const query = new URLSearchParams({
+				start: '0',
+				end: '99',
+				levelId: String(levelId)
+			});
+			const headers = $user.loggedIn
+				? { Authorization: `Bearer ${await $user.token()}` }
+				: undefined;
+			const response = await fetch(
+				`${import.meta.env.VITE_API_URL}/lists/${$page.params.id}/records?${query.toString()}`,
+				{ headers }
+			);
+			const payload = await response.json()
+				.catch(() => null);
+
+			if (fetchKey !== layoutLevelRecordsFetchKey) {
+				return;
+			}
+
+			if (!response.ok) {
+				throw new Error(payload?.error || $_('custom_lists.detail.layout_records.failed'));
+			}
+
+			layoutLevelRecords = sortLayoutLevelRecords(payload?.data ?? [])
+				.slice(0, 10);
+			layoutLevelRecordCount = payload?.total ?? 0;
+		} catch (error) {
+			if (fetchKey !== layoutLevelRecordsFetchKey) {
+				return;
+			}
+
+			layoutLevelRecords = [];
+			layoutLevelRecordCount = 0;
+			layoutLevelRecordsError = error instanceof Error
+				? error.message
+				: $_('custom_lists.detail.layout_records.failed');
+		} finally {
+			if (fetchKey === layoutLevelRecordsFetchKey) {
+				layoutLevelRecordsLoading = false;
+			}
+		}
+	}
+
+	async function fetchLayoutLevelDetails(fetchKey: string, levelId: number) {
+		layoutLevelDetailsLoading = true;
+
+		try {
+			const response = await fetch(
+				`${import.meta.env.VITE_API_URL}/levels/${levelId}?fromGD=1`
+			);
+			const payload = await response.json()
+				.catch(() => null);
+
+			if (fetchKey !== layoutLevelDetailsFetchKey) {
+				return;
+			}
+
+			layoutLevelDetails = response.ok ? payload : null;
+		} catch {
+			if (fetchKey === layoutLevelDetailsFetchKey) {
+				layoutLevelDetails = null;
+			}
+		} finally {
+			if (fetchKey === layoutLevelDetailsFetchKey) {
+				layoutLevelDetailsLoading = false;
+			}
+		}
+	}
+
 	async function fetchMyRecordPoints(fetchKey: string, uid: string, pageNumber: number) {
 		myRecordPointsLoading = true;
 		myRecordPointsError = '';
@@ -1492,6 +1604,33 @@
 			fetchRecordPoints(nextKey, selectedLeaderboardPlayer.uid, recordPointsPage);
 		}
 	}
+	$: if (
+		list?.id
+		&& appearanceLayout === 'aredl_tsl'
+		&& activeTab === 'levels'
+		&& selectedLayoutItem?.levelId
+	) {
+		const nextKey = `${list.id}:${selectedLayoutItem.levelId}:${$user.loggedIn ? $user.data?.uid || 'authed' : 'anon'}`;
+
+		if (nextKey !== layoutLevelRecordsFetchKey) {
+			layoutLevelRecordsFetchKey = nextKey;
+			void fetchLayoutLevelRecords(nextKey, selectedLayoutItem.levelId);
+		}
+
+		const nextDetailsKey = `${list.id}:${selectedLayoutItem.levelId}`;
+
+		if (nextDetailsKey !== layoutLevelDetailsFetchKey) {
+			layoutLevelDetailsFetchKey = nextDetailsKey;
+			void fetchLayoutLevelDetails(nextDetailsKey, selectedLayoutItem.levelId);
+		}
+	} else if (appearanceLayout !== 'aredl_tsl' || activeTab !== 'levels') {
+		layoutLevelRecords = [];
+		layoutLevelRecordCount = 0;
+		layoutLevelRecordsError = '';
+		layoutLevelRecordsFetchKey = '';
+		layoutLevelDetails = null;
+		layoutLevelDetailsFetchKey = '';
+	}
 	$: if (browser) {
 		if (activeTab === 'levels' && listLevelsSentinel && hasMoreLevels(list) && !listLevelsError) {
 			setupLevelsObserver();
@@ -1500,7 +1639,15 @@
 		}
 	}
 	$: setCustomListBranding(
-		list ? { faviconUrl: list.faviconUrl, logoUrl: list.logoUrl, title: list.title } : null
+		list
+			? {
+				faviconUrl: list.faviconUrl,
+				logoUrl: list.logoUrl,
+				bannerUrl: list.bannerUrl,
+				bannerPlacement: list.bannerPlacement,
+				title: list.title
+			}
+			: null
 	);
 
 	onDestroy(() => {
@@ -1585,8 +1732,8 @@
 		</div>
 	{:else if list}
 		<!-- Hero Card -->
-		<div class="hero" class:heroHasBanner={Boolean(list.bannerUrl)} style={getListHeroStyle(list)}>
-			{#if list.bannerUrl}
+		<div class="hero" class:heroHasBanner={Boolean(list.bannerUrl && list.bannerPlacement !== 'navigation')} style={getListHeroStyle(list)}>
+			{#if list.bannerUrl && list.bannerPlacement !== 'navigation'}
 				<div class="heroBanner" style={getListHeroBannerStyle(list)}>
 					<img src={list.bannerUrl} alt="" loading="lazy" decoding="async" />
 				</div>
@@ -1800,34 +1947,92 @@
 							</section>
 							<section class="aredlDetailPane">
 								{#if selectedLayoutItem}
-									{#if getLayoutThumbnail(selectedLayoutItem)}
-										<img class="aredlVideo" src={getLayoutThumbnail(selectedLayoutItem)} alt="" loading="lazy" decoding="async" />
+									{#if getLayoutVideoId(selectedLayoutItem)}
+										<div class="aredlVideo">
+											<iframe
+												src={`https://www.youtube.com/embed/${getLayoutVideoId(selectedLayoutItem)}`}
+												title={`${selectedLayoutItem.level?.name || `Level #${selectedLayoutItem.levelId}`} video`}
+												frameborder="0"
+												allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+												referrerpolicy="strict-origin-when-cross-origin"
+												allowfullscreen
+											></iframe>
+										</div>
 									{/if}
 									<div class="aredlDetailCopy">
-										<span class="aredlRank">#{getListItemTop(selectedLayoutItem, listItems.indexOf(selectedLayoutItem))}</span>
-										<h3>{selectedLayoutItem.level?.name || `Level #${selectedLayoutItem.levelId}`}</h3>
-										<p>{selectedLayoutItem.level?.creator || '-'}</p>
-										<div class="aredlStats">
-											<span>{list.mode === 'rating' ? selectedLayoutItem.rating : `#${selectedLayoutItem.position ?? '-'}`}</span>
-											<span>ID {selectedLayoutItem.levelId}</span>
+										<div class="aredlDetailHeading">
+											<div>
+												<span class="aredlRank">#{getListItemTop(selectedLayoutItem, listItems.indexOf(selectedLayoutItem))}</span>
+												<h3>{selectedLayoutItem.level?.name || `Level #${selectedLayoutItem.levelId}`}</h3>
+												<p>{$_('head.labels.by')} {selectedLayoutItem.level?.creator || '-'}</p>
+											</div>
+											<Button
+												variant="outline"
+												size="icon"
+												class="aredlDetailButton"
+												href={getLevelDetailHref(selectedLayoutItem)}
+												title={$_('record_detail.tabs.detail')}
+												aria-label={$_('record_detail.tabs.detail')}
+											>
+												<InfoCircled class="h-4 w-4" />
+											</Button>
 										</div>
-										<Button href={getLevelDetailHref(selectedLayoutItem)}>{$_('record_detail.tabs.detail')}</Button>
+										{#if layoutLevelDetailsLoading}
+											<p class="aredlDescription">{$_('general.loading')}...</p>
+										{:else if layoutLevelDetails?.description}
+											<p class="aredlDescription">{layoutLevelDetails.description}</p>
+										{/if}
+										<div class="aredlLevelFacts">
+											<div><span>{$_('level.id')}</span><strong>{selectedLayoutItem.levelId}</strong></div>
+											<div><span>{$_('level.difficulty')}</span><strong>{layoutLevelDetails?.difficulty || selectedLayoutItem.level?.difficulty || '-'}</strong></div>
+											<div><span>{list.isPlatformer ? $_('level.base_time') : $_('level.minimum_progress')}</span><strong>{formatLayoutMinProgress(selectedLayoutItem)}</strong></div>
+											<div><span>{list.mode === 'rating' ? $_('custom_lists.detail.levels.rating_label') : $_('custom_lists.detail.records.position_label')}</span><strong>{list.mode === 'rating' ? `${selectedLayoutItem.rating} pt` : `#${selectedLayoutItem.position ?? '-'}`}</strong></div>
+										</div>
+										{#if selectedLayoutItem.level?.levelsTags?.length}
+											<div class="aredlLevelTags">
+												{#each selectedLayoutItem.level.levelsTags as tagEntry}
+													{#if tagEntry.levelTags}<Badge variant="outline">{tagEntry.levelTags.name}</Badge>{/if}
+												{/each}
+											</div>
+										{/if}
 									</div>
 								{/if}
 							</section>
-							<aside class="aredlMetaPane">
-								<h3>{list.title}</h3>
-								<p>{list.description || $_('custom_lists.detail.no_description')}</p>
-								<div class="aredlMetaStats">
-									<span><strong>{list.levelCount}</strong>{$_('custom_lists.detail.tabs.levels')}</span>
-									<span><strong>{publicStaffEntries.length}</strong>{$_('custom_lists.detail.tabs.staff')}</span>
+							<aside class="aredlMetaPane aredlRecordsPane">
+								<div class="aredlRecordsHead">
+									<div>
+										<h3>{$_('custom_lists.detail.layout_records.title')}</h3>
+										<p>{selectedLayoutItem?.level?.name || `Level #${selectedLayoutItem?.levelId ?? '-'}`}</p>
+									</div>
+									<Badge variant="outline">{layoutLevelRecordCount}</Badge>
 								</div>
-								{#if publicStaffEntries.length}
-									<div class="layoutStaffList">
-										{#each publicStaffEntries.slice(0, 6) as staffMember}
-											<span>{staffMember.playerData?.name || staffMember.uid}<small>{getStaffRoleLabel(staffMember.role)}</small></span>
+								{#if layoutLevelRecordsLoading}
+									<p class="layoutRecordsState">{$_('general.loading')}...</p>
+								{:else if layoutLevelRecordsError}
+									<p class="layoutRecordsState layoutRecordsError">{layoutLevelRecordsError}</p>
+								{:else if layoutLevelRecords.length}
+									<div class="layoutRecordList">
+										{#each layoutLevelRecords as record}
+											<button
+												type="button"
+												class="layoutRecordRow"
+								title={`${getLayoutRecordPlayerName(record)} · ${formatRecordProgress(record.progress)} · ${formatPoint(record.point)} pt`}
+								on:click={() => openRecordDetail(record)}
+							>
+								<span class="layoutRecordPlayerName">{getLayoutRecordPlayerName(record)}</span>
+								<strong class="layoutRecordProgress">{formatRecordProgress(record.progress)}</strong>
+								<span class="layoutRecordPoints">{formatPoint(record.point)} pt</span>
+								<span class="layoutRecordAcceptance">
+									<AcceptanceBadge acceptedManually={record.acceptedManually} acceptedAuto={record.acceptedAuto} compact />
+								</span>
+											</button>
 										{/each}
 									</div>
+									{#if layoutLevelRecordCount > layoutLevelRecords.length}
+										<p class="layoutRecordsMore">{$_('custom_lists.detail.layout_records.showing', { values: { shown: layoutLevelRecords.length, total: layoutLevelRecordCount } })}</p>
+									{/if}
+								{:else}
+									<p class="layoutRecordsState">{$_('custom_lists.detail.layout_records.empty')}</p>
 								{/if}
 							</aside>
 						</div>
@@ -2975,21 +3180,12 @@
 
 	/* Saved public appearance layouts */
 	.layout-list { max-width: 980px; gap: 14px; }
-	.layout-list .hero { padding: 18px 20px; border-radius: 10px; }
-	.layout-list .heroBanner { margin: -18px -20px 0; }
-	.layout-list .heroBanner img { height: 130px; }
 	.layout-list .levels { grid-template-columns: 1fr; gap: 8px; }
 	.layout-list .overviewSection,
 	.layout-list .staffSection { border-radius: 10px; }
 
 	.layout-aredl_tsl,
 	.layout-pointercrate { max-width: 1360px; }
-	.layout-aredl_tsl .hero { border-radius: 18px; border-width: 2px; }
-	.layout-aredl_tsl .heroTop h1 {
-		font-size: clamp(1.7rem, 3vw, 2.5rem);
-		text-transform: uppercase;
-		letter-spacing: .035em;
-	}
 
 	.aredlLayout {
 		display: grid;
@@ -3036,13 +3232,21 @@
 		color: hsl(var(--primary));
 	}
 	.aredlDetailPane { overflow: hidden; min-height: 390px; }
-	.aredlVideo { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+	.aredlVideo { width: 100%; aspect-ratio: 16 / 9; background: #000; }
+	.aredlVideo iframe { display: block; width: 100%; height: 100%; border: 0; }
 	.aredlDetailCopy { display: grid; gap: 8px; padding: 22px; }
 	.aredlDetailCopy h3 { margin: 0; font-size: 1.55rem; }
 	.aredlDetailCopy p { margin: 0; color: var(--custom-surface-muted, hsl(var(--muted-foreground))); }
 	.aredlRank { color: hsl(var(--primary)); font-size: .8rem; font-weight: 800; letter-spacing: .08em; }
-	.aredlStats { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0; }
-	.aredlStats span { padding: 5px 9px; border-radius: 999px; background: hsl(var(--muted) / .6); font-size: .78rem; }
+	.aredlDetailHeading { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+	.aredlDetailHeading > div { min-width: 0; }
+	:global(.aredlDetailButton) { flex: 0 0 auto; border-radius: 999px !important; }
+	.aredlDescription { margin: 8px 0 !important; line-height: 1.55; white-space: pre-wrap; }
+	.aredlLevelFacts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 6px; }
+	.aredlLevelFacts div { display: grid; gap: 3px; padding: 10px; border-radius: 9px; background: hsl(var(--muted) / .45); }
+	.aredlLevelFacts span { color: var(--custom-surface-muted, hsl(var(--muted-foreground))); font-size: .7rem; }
+	.aredlLevelFacts strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .86rem; }
+	.aredlLevelTags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 	.aredlMetaPane,
 	.pointercrateAside { display: grid; gap: 12px; padding: 18px; }
 	.aredlMetaPane h3,
@@ -3053,6 +3257,38 @@
 	.aredlMetaStats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
 	.aredlMetaStats span { display: grid; gap: 2px; padding: 10px; border-radius: 9px; background: hsl(var(--muted) / .45); font-size: .72rem; }
 	.aredlMetaStats strong { font-size: 1.1rem; }
+	.aredlRecordsPane { max-height: 72vh; overflow-y: auto; align-content: start; }
+	.aredlRecordsHead { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+	.aredlRecordsHead > div { min-width: 0; }
+	.aredlRecordsHead p { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+	.layoutRecordList { display: grid; gap: 8px; }
+	.layoutRecordRow {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto auto auto;
+		align-items: center;
+		gap: 7px;
+		width: 100%;
+		padding: 10px;
+		border: 1px solid hsl(var(--border) / .75);
+		border-radius: 9px;
+		background: hsl(var(--background) / .35);
+		color: inherit;
+		text-align: left;
+		cursor: pointer;
+	}
+	.layoutRecordRow:hover,
+	.layoutRecordRow:focus-visible {
+		border-color: var(--custom-surface-border, hsl(var(--primary) / .55));
+		background: hsl(var(--muted) / .55);
+		outline: none;
+	}
+	.layoutRecordPlayerName { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .82rem; font-weight: 600; }
+	.layoutRecordProgress { white-space: nowrap; font-size: .78rem; }
+	.layoutRecordPoints { white-space: nowrap; color: var(--custom-surface-muted, hsl(var(--muted-foreground))); font-size: .72rem; }
+	.layoutRecordAcceptance { display: inline-flex; justify-content: flex-end; }
+	.layoutRecordsState { padding: 18px 4px; text-align: center; }
+	.layoutRecordsError { color: hsl(var(--destructive)) !important; }
+	.layoutRecordsMore { text-align: center; font-size: .72rem; }
 	.layoutStaffList { display: grid; gap: 7px; }
 	.layoutStaffList > span { display: flex; justify-content: space-between; gap: 8px; font-size: .82rem; }
 	.layoutStaffList small { color: var(--custom-surface-muted, hsl(var(--muted-foreground))); }
@@ -3065,7 +3301,6 @@
 	}
 	.pointercrateFrame .levels { grid-template-columns: 1fr; gap: 14px; }
 	.pointercrateAside { position: sticky; top: 18px; }
-	.layout-pointercrate .hero { border-radius: 4px; box-shadow: 0 12px 34px rgb(0 0 0 / .12); }
 	.layout-pointercrate .overviewSection,
 	.layout-pointercrate .staffSection,
 	.layout-pointercrate .tableWrapper { border-radius: 4px; }

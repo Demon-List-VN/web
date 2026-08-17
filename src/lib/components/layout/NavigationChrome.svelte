@@ -23,6 +23,7 @@
 	export let navLogoSrc: string;
 	export let navLogoAlt: string;
 	export let useCustomListLogo = false;
+	export let navBannerUrl = '';
 	export let onCustomLogoError: () => void;
 	export let signIn: () => void;
 	export let signOut: () => void | Promise<void>;
@@ -105,6 +106,7 @@
   {navLogoSrc}
   {navLogoAlt}
   {useCustomListLogo}
+  {navBannerUrl}
   {onCustomLogoError}
   {signIn}
   {signOut}
