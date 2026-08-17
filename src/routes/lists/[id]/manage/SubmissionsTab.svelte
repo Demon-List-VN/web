@@ -5,7 +5,8 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Textarea } from '$lib/components/ui/textarea';
-	import { locale } from 'svelte-i18n';
+	import { Switch } from '$lib/components/ui/switch';
+	import { _, locale } from 'svelte-i18n';
 	import {
 		Clock3,
 		ExternalLink,
@@ -18,6 +19,8 @@
 	} from 'lucide-svelte';
 
 	export let list: any = null;
+	export let editForm: any;
+	export let canEditSettings = false;
 	export let submissions: any[] = [];
 	export let canReviewSubmissions = false;
 	export let loading = false;
@@ -165,6 +168,29 @@
 </script>
 
 <div class="tabContent">
+  {#if canEditSettings}
+    <div class="toolCard queueSettingsCard">
+      <div class="switchRow">
+        <div>
+          <h2 class="toolHeading">{
+            $_('custom_lists.manage.submissions.queue_heading')
+          }</h2>
+          <p class="hint">{
+            $_('custom_lists.detail.edit.level_submission_hint')
+          }</p>
+        </div>
+        <div class="switchControl">
+          <span class="switchLabel">{
+            editForm.levelSubmissionEnabled ? $_('general.yes') : $_('general.no')
+          }</span>
+          <Switch
+            id="list-level-submission-enabled"
+            bind:checked={editForm.levelSubmissionEnabled}
+          />
+        </div>
+      </div>
+    </div>
+  {/if}
   {#if canReviewSubmissions}
     <div class="toolCard queueCard">
       <div class="queueHeader">
@@ -415,11 +441,53 @@
   gap: 20px;
 }
 
+.toolCard {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  padding: 22px;
+}
+
 .queueCard,
 .summaryCard {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.queueSettingsCard {
+  display: block;
+}
+
+.switchRow,
+.switchControl {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.switchRow {
+  justify-content: space-between;
+}
+
+.switchRow .hint {
+  margin: 4px 0 0;
+}
+
+.switchControl {
+  flex-shrink: 0;
+}
+
+.switchLabel {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+@media (max-width: 640px) {
+  .switchRow {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 .queueHeader,

@@ -131,6 +131,7 @@
 	export let record: LevelCardProps['record'] = null;
 	export let isPlatformer: LevelCardProps['isPlatformer'] = false;
 	export let type: string;
+	export let variant: LevelCardProps['variant'] = 'default';
 	export let hideTop: boolean = false;
 	export let hideRating: boolean = false;
 	export let loading: boolean = false;
@@ -174,14 +175,118 @@
 		: id != null
 		? `/level/${id}`
 		: '#!';
+
+	function formatListPoints(value: number) {
+		return value.toFixed(2);
+	}
+
+	function getLowercaseTranslation(key: string) {
+		return String($_(key))
+			.toLocaleLowerCase();
+	}
 </script>
 
 {#if !loading}
-  <div class="level">
-    <Card.Root style={levelCardStyle}>
-      <Card.Content>
+  <div class:listVariant={variant === 'list'} class="level">
+    <Card.Root class={variant === 'list' ? 'listCard' : undefined} style={levelCardStyle}>
+      <Card.Content class={variant === 'list' ? 'listCardContent' : undefined}>
         <ContextMenu.Root>
           <ContextMenu.Trigger>
+            {#if variant === 'list'}
+              <div class="listCardLayout">
+                <a
+                  href={resolvedHref}
+                  class="listThumbnailLink"
+                  data-sveltekit-preload-data="tap"
+                  aria-label={name || 'Level details'}
+                >
+                  <img
+                    src={thumbnailUrl}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    class="listThumbnail"
+                    on:error={() => {
+                        failedToLoad = true;
+                    }}
+                  />
+                  {#if hasVideoThumbnail && !failedToLoad && !hoverThumbnailFailed}
+                    <img
+                      src={levelThumbUrl}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      class="listThumbnail listThumbnailHover"
+                      on:error={() => {
+                          hoverThumbnailFailed = true;
+                      }}
+                    />
+                  {/if}
+                </a>
+                <div class="listInfo">
+                  <a
+                    href={resolvedHref}
+                    class="listTitle"
+                    data-sveltekit-preload-data="tap"
+                  >
+                    {#if !hideTop && top != null}<span>#{top}<span class="listTitleSeparator"> – </span></span>{/if}{name}
+                  </a>
+                  <div class="listCreator">
+                    <span>{$_('level_card.published_by')}</span>
+                    {#if creatorId}
+                      <span class="listCreatorLink"><PlayerLink player={creatorData} /></span>
+                    {:else}
+                      <span class="listCreatorName">{creator}</span>
+                    {/if}
+                  </div>
+                  {#if !hideRating && rating != null}
+                    <div class="listPoints">
+                      {#if minProgress != null && !isPlatformer}
+                        {formatListPoints(rating / 10)} ({minProgress}%)
+                        <span aria-hidden="true"> — </span>
+                        {formatListPoints(rating)} (100%) {$_('level_card.points')}
+                      {:else if minProgress != null}
+                        {getTimeString(minProgress)} {getLowercaseTranslation('level.base_time')}
+                        <span aria-hidden="true"> — </span>
+                        {formatListPoints(rating)} {$_('level_card.points')}
+                      {:else}
+                        {formatListPoints(rating)} {$_('level_card.points')}
+                      {/if}
+                    </div>
+                  {:else if minProgress != null}
+                    <div class="listPoints">
+                      {isPlatformer
+                        ? `${getTimeString(minProgress)} ${getLowercaseTranslation('level.base_time')}`
+                        : `${minProgress}% ${$_('level_card.minimum')}`}
+                    </div>
+                  {/if}
+                  {#if tags.length > 0}
+                    <div class="listTags">
+                      {#each tags as tag}
+                        <span
+                          class="levelTag"
+                          style="background: {tag.color || '#666'}18; color: {tag.color
+    || '#666'}; border-color: {tag.color || '#666'}30"
+                        >{tag.name}</span>
+                      {/each}
+                    </div>
+                  {/if}
+                  {#if record}
+                    <div class="listProgress">
+                      {#if record.isChecked}
+                        {#if !isPlatformer}
+                          {#if record.progress == 100}<Check />{:else}{record.progress}%{/if}
+                        {:else}
+                          {getTimeString(record.progress)}
+                        {/if}
+                      {:else}
+                        <Clock />
+                      {/if}
+                    </div>
+                  {/if}
+                </div>
+              </div>
+            {:else}
             <a href={resolvedHref} data-sveltekit-preload-data="tap">
               <div class="relative flex h-[235px] justify-center">
                 <img
@@ -310,6 +415,7 @@
                 </div>
               {/if}
             </div>
+            {/if}
           </ContextMenu.Trigger>
           <ContextMenu.Content class="w-64">
             <ContextMenu.Item
@@ -334,11 +440,21 @@
     </Card.Root>
   </div>
 {:else}
-  <div class="level">
-    <Card.Root style={levelCardStyle}>
-      <Card.Content>
+  <div class:listVariant={variant === 'list'} class="level">
+    <Card.Root class={variant === 'list' ? 'listCard' : undefined} style={levelCardStyle}>
+      <Card.Content class={variant === 'list' ? 'listCardContent' : undefined}>
         <ContextMenu.Root>
           <ContextMenu.Trigger>
+            {#if variant === 'list'}
+              <div class="listCardLayout listCardLoading">
+                <Skeleton class="listThumbnailSkeleton" />
+                <div class="listInfo">
+                  <Skeleton class="h-[38px] w-[260px] max-w-full" />
+                  <Skeleton class="h-[24px] w-[190px] max-w-full" />
+                  <Skeleton class="h-[22px] w-[240px] max-w-full" />
+                </div>
+              </div>
+            {:else}
             <a href="#!" data-sveltekit-preload-data="tap">
               <Skeleton class="mb-[15px] mt-[20px] h-[200px] w-full" />
             </a>
@@ -358,6 +474,7 @@
                   </div>
                 </div>
               </div></a>
+            {/if}
           </ContextMenu.Trigger>
         </ContextMenu.Root>
       </Card.Content>
@@ -448,6 +565,167 @@
       margin-left: auto;
       font-weight: 500;
     }
+  }
+}
+
+.listVariant {
+  width: 100%;
+}
+
+.listVariant :global(.listCard) {
+  overflow: hidden;
+  border-color: var(--level-card-border-color, hsl(var(--border)));
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.listVariant :global(.listCardContent) {
+  padding: 0;
+}
+
+.listCardLayout {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(260px, 31%) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(28px, 3.2vw, 48px);
+  min-height: 272px;
+  padding: 40px;
+}
+
+.listThumbnailLink {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: hsl(var(--muted));
+}
+
+.listThumbnail {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.listThumbnailHover {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+
+.listThumbnailLink:hover .listThumbnailHover {
+  opacity: 1;
+}
+
+.listInfo {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.listTitle {
+  max-width: 100%;
+  color: var(--level-card-foreground-color, inherit);
+  font-size: clamp(2rem, 3.2vw, 3rem);
+  font-weight: 750;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
+}
+
+.listTitle:hover {
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+
+.listCreator {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25em;
+  margin-top: 14px;
+  color: var(--level-card-muted-color, hsl(var(--muted-foreground)));
+  font-size: clamp(1.25rem, 2.1vw, 2rem);
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.listCreatorLink,
+.listCreatorName {
+  color: var(--level-card-foreground-color, inherit);
+  text-decoration: underline dotted;
+  text-underline-offset: 8px;
+}
+
+.listPoints {
+  margin-top: 12px;
+  color: var(--level-card-muted-color, hsl(var(--muted-foreground)));
+  font-size: clamp(1rem, 1.55vw, 1.45rem);
+  line-height: 1.3;
+}
+
+.listTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 14px;
+}
+
+.levelTag {
+  display: inline-flex;
+  padding: 1px 6px;
+  border: 1px solid;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.listProgress {
+  position: absolute;
+  top: 18px;
+  right: 20px;
+  display: inline-flex;
+  align-items: center;
+  font-weight: 600;
+}
+
+.listProgress :global(svg) {
+  width: 22px;
+  height: 22px;
+}
+
+.listCardLoading :global(.listThumbnailSkeleton) {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  border-radius: 0;
+}
+
+@media (max-width: 700px) {
+  .listCardLayout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 22px;
+    min-height: 0;
+    padding: 20px;
+  }
+
+  .listTitle {
+    font-size: clamp(1.65rem, 8vw, 2.25rem);
+  }
+
+  .listCreator {
+    margin-top: 10px;
+    font-size: clamp(1.05rem, 5vw, 1.4rem);
+  }
+
+  .listPoints {
+    margin-top: 9px;
+    font-size: 1rem;
   }
 }
 </style>

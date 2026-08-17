@@ -1997,6 +1997,11 @@
         "challenge_rating": "Challenge rating",
         "low_detail_variants": "Low detail variants"
     },
+    "level_card": {
+        "published_by": "published by",
+        "points": "points",
+        "minimum": "minimum"
+    },
     "discord_link": {
         "loading": "Linking your Discord account",
         "success": "Linked!",
@@ -3498,7 +3503,7 @@
                 "non_global_records_label": "Accept list-only records",
                 "non_global_records_hint": "Allow records submitted specifically to this list. When enabled, a Submit record button appears on the public list page.",
                 "collaborators_can_verify_records_label": "Allow collaborators to verify records",
-                "collaborators_can_verify_records_hint": "Let helper collaborators review and accept or reject records submitted specifically to this list.",
+                "collaborators_can_verify_records_hint": "Choose whether collaborators cannot review records, review randomly assigned records through Overwatch, or select records directly from this list's queue.",
                 "leaderboard_mode_label": "Leaderboard mode",
                 "leaderboard_mode_player": "Player",
                 "leaderboard_mode_creator": "Creator",
@@ -3663,9 +3668,10 @@
             "aredl_crawl_hint": "Sync positions and points from AREDL.",
             "tabs": {
                 "basic": "Basic info",
+                "list": "List",
                 "appearance": "Appearance",
                 "formula": "Formula",
-                "record_filter": "Record filter",
+                "record_filter": "Records",
                 "rank": "Rank",
                 "danger": "Dangerous",
                 "levels": "Levels",
@@ -3698,7 +3704,10 @@
                         "label": "Grid",
                         "description": "The current two-column card layout."
                     },
-                    "list": { "label": "List", "description": "Compact, full-width level rows." },
+                    "list": {
+                        "label": "List",
+                        "description": "Full-width level rows with artwork and details."
+                    },
                     "aredl_tsl": {
                         "label": "AREDL / TSL",
                         "description": "Rank selector, focused level details, and list information."
@@ -3738,6 +3747,8 @@
                 "failed": "Failed to resign from the list."
             },
             "pending_records": {
+                "queue_heading": "Record queue",
+                "direct_access_hint": "This queue is available to the owner and moderators. Collaborators can open it when record verification is set to Select directly.",
                 "heading": "Pending list-only records",
                 "hint": "Review records submitted specifically to this list. Oldest submissions appear first.",
                 "loading": "Loading pending records…",
@@ -3764,7 +3775,10 @@
                 "rejected_toast": "Record rejected"
             },
             "record_filter": {
-                "heading": "Leaderboard record filter",
+                "heading": "Record settings",
+                "collaborator_verification_off": "Off",
+                "collaborator_verification_overwatch": "Via Overwatch",
+                "collaborator_verification_direct": "Select directly",
                 "player_mode_only": "These filters only affect player-mode leaderboards and are preserved if you switch modes.",
                 "platform_label": "Platform",
                 "platform_hint": "Choose which device platform counts toward this list leaderboard.",
@@ -3780,6 +3794,9 @@
                 "min_refresh_rate_label": "Min FPS",
                 "max_refresh_rate_label": "Max FPS",
                 "refresh_rate_hint": "Leave either field blank to avoid filtering on that side of the FPS range."
+            },
+            "submissions": {
+                "queue_heading": "Level queue"
             },
             "roles": {
                 "owner": "Owner",

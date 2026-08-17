@@ -21,7 +21,7 @@
 	let bannerFileInput: HTMLInputElement | null = null;
 	let faviconFileInput: HTMLInputElement | null = null;
 	let logoFileInput: HTMLInputElement | null = null;
-	const appearanceLayouts = ['grid', 'list', 'aredl_tsl', 'pointercrate'] as const;
+	const appearanceLayouts = ['grid', 'list', 'aredl_tsl'] as const;
 	const bannerPlacements = ['banner', 'navigation'] as const;
 
 	function selectAppearanceLayout(layout: typeof appearanceLayouts[number]) {
@@ -631,7 +631,6 @@
 .layoutPreview-grid .previewBody { grid-template-columns: repeat(2, 1fr); }
 .layoutPreview-list .previewBody { grid-template-columns: 1fr; }
 .layoutPreview-aredl_tsl .previewBody { grid-template-columns: .65fr 1.5fr .8fr; }
-.layoutPreview-pointercrate .previewBody { grid-template-columns: 1.7fr .75fr; }
 
 .layoutCopy {
   display: grid;

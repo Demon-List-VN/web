@@ -620,6 +620,12 @@
 			);
 		}
 
+		if (field === 'collaboratorRecordVerificationMode') {
+			return $_(
+				'custom_lists.detail.edit.collaborators_can_verify_records_label'
+			);
+		}
+
 		if (field === 'logoUrl') {
 			return $_('custom_lists.detail.edit.logo_url_label');
 		}
@@ -720,6 +726,15 @@
 
 		if (field === 'bannerPlacement' && typeof value === 'string') {
 			return $_(`custom_lists.manage.appearance.banner_placements.${value}`);
+		}
+
+		if (
+			field === 'collaboratorRecordVerificationMode'
+			&& typeof value === 'string'
+		) {
+			return $_(
+				`custom_lists.manage.record_filter.collaborator_verification_${value}`
+			);
 		}
 
 		if (field === 'isPlatformer' && typeof value === 'boolean') {

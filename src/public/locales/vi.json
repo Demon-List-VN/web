@@ -1995,6 +1995,11 @@
         "challenge_rating": "Điểm thử thách",
         "low_detail_variants": "Các biến thể có độ chi tiết thấp"
     },
+    "level_card": {
+        "published_by": "đăng bởi",
+        "points": "điểm",
+        "minimum": "tối thiểu"
+    },
     "discord_link": {
         "loading": "Đang liên kết tài khoản Discord của bạn",
         "success": "Đã liên kết!",
@@ -3497,7 +3502,7 @@
                 "non_global_records_label": "Chấp nhận record riêng cho list",
                 "non_global_records_hint": "Cho phép record được gửi riêng đến danh sách này. Khi bật, nút Nộp record sẽ xuất hiện trên trang danh sách công khai.",
                 "collaborators_can_verify_records_label": "Cho phép cộng tác viên duyệt record",
-                "collaborators_can_verify_records_hint": "Cho phép cộng tác viên vai trò helper chấp nhận hoặc từ chối record được gửi riêng đến danh sách này.",
+                "collaborators_can_verify_records_hint": "Chọn không cho cộng tác viên duyệt record, duyệt record được giao ngẫu nhiên qua Overwatch hoặc tự chọn record trực tiếp từ hàng đợi của list.",
                 "leaderboard_mode_label": "Chế độ bảng xếp hạng",
                 "leaderboard_mode_player": "Người chơi",
                 "leaderboard_mode_creator": "Creator",
@@ -3662,9 +3667,10 @@
             "aredl_crawl_hint": "Đồng bộ vị trí và điểm từ AREDL.",
             "tabs": {
                 "basic": "Thông tin cơ bản",
+                "list": "Danh sách",
                 "appearance": "Giao diện",
                 "formula": "Công thức",
-                "record_filter": "Bộ lọc record",
+                "record_filter": "Records",
                 "rank": "Hạng",
                 "danger": "Nguy hiểm",
                 "levels": "Levels",
@@ -3696,7 +3702,7 @@
                     "grid": { "label": "Lưới", "description": "Bố cục thẻ hai cột hiện tại." },
                     "list": {
                         "label": "Danh sách",
-                        "description": "Các hàng level gọn, chiếm toàn bộ chiều rộng."
+                        "description": "Các hàng level toàn chiều rộng với ảnh và thông tin chi tiết."
                     },
                     "aredl_tsl": {
                         "label": "AREDL / TSL",
@@ -3737,6 +3743,8 @@
                 "failed": "Không thể rời đội ngũ danh sách."
             },
             "pending_records": {
+                "queue_heading": "Hàng đợi record",
+                "direct_access_hint": "Chủ sở hữu và quản lý viên có thể mở hàng đợi này. Cộng tác viên có thể mở khi chế độ duyệt record là Tự chọn trực tiếp.",
                 "heading": "Record riêng đang chờ duyệt",
                 "hint": "Duyệt các record được gửi riêng đến list này. Bản gửi cũ nhất hiển thị trước.",
                 "loading": "Đang tải record chờ duyệt…",
@@ -3763,7 +3771,10 @@
                 "rejected_toast": "Đã từ chối record"
             },
             "record_filter": {
-                "heading": "Bộ lọc record cho bảng xếp hạng",
+                "heading": "Thiết lập record",
+                "collaborator_verification_off": "Tắt",
+                "collaborator_verification_overwatch": "Qua Overwatch",
+                "collaborator_verification_direct": "Tự chọn trực tiếp",
                 "player_mode_only": "Các bộ lọc này chỉ áp dụng cho bảng xếp hạng người chơi và được giữ lại khi đổi chế độ.",
                 "platform_label": "Nền tảng",
                 "platform_hint": "Chọn nền tảng thiết bị nào sẽ được tính vào bảng xếp hạng của danh sách này.",
@@ -3779,6 +3790,9 @@
                 "min_refresh_rate_label": "FPS tối thiểu",
                 "max_refresh_rate_label": "FPS tối đa",
                 "refresh_rate_hint": "Để trống một trong hai ô nếu không muốn lọc ở phía đó của khoảng FPS."
+            },
+            "submissions": {
+                "queue_heading": "Hàng đợi level"
             },
             "roles": {
                 "owner": "Chủ sở hữu",

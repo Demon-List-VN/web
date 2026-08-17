@@ -10,6 +10,7 @@
 	import DangerTab from './DangerTab.svelte';
 	import FormulaTab from './FormulaTab.svelte';
 	import LevelsTab from './LevelsTab.svelte';
+	import ListTab from './ListTab.svelte';
 	import PendingRecordsTab from './PendingRecordsTab.svelte';
 	import RankTab from './RankTab.svelte';
 	import SubmissionsTab from './SubmissionsTab.svelte';
@@ -154,6 +155,7 @@
 		| 'helper'
 		| 'moderator';
 	type RecordFilterAcceptanceStatus = 'manual' | 'auto' | 'any';
+	type CollaboratorRecordVerificationMode = 'off' | 'overwatch' | 'direct';
 	type LevelsFilterState = {
 		nameSearch: string;
 		creatorSearch: string;
@@ -216,6 +218,7 @@
 		leaderboardMode?: 'player' | 'creator';
 		nonGlobalRecordsEnabled?: boolean;
 		collaboratorsCanVerifyRecords?: boolean;
+		collaboratorRecordVerificationMode?: CollaboratorRecordVerificationMode;
 		faviconUrl?: string | null;
 		isBanned: boolean;
 		isPlatformer: boolean;
@@ -361,10 +364,10 @@
 		leaderboardEnabled: boolean;
 		leaderboardMode: 'player' | 'creator';
 		nonGlobalRecordsEnabled: boolean;
-		collaboratorsCanVerifyRecords: boolean;
+		collaboratorRecordVerificationMode: CollaboratorRecordVerificationMode;
 		levelSubmissionEnabled: boolean;
 		staffListEnabled: boolean;
-		appearanceLayout: 'grid' | 'list' | 'aredl_tsl' | 'pointercrate';
+		appearanceLayout: 'grid' | 'list' | 'aredl_tsl';
 		faviconUrl: string;
 		isPlatformer: boolean;
 		logoUrl: string;
@@ -414,6 +417,7 @@
 
 	type ManageTab =
 		| 'basic'
+		| 'list'
 		| 'appearance'
 		| 'formula'
 		| 'record-filter'
@@ -522,6 +526,11 @@
 		'auto',
 		'any'
 	];
+	const COLLABORATOR_RECORD_VERIFICATION_OPTIONS: CollaboratorRecordVerificationMode[] = [
+		'off',
+		'overwatch',
+		'direct'
+	];
 
 	class BatchAddImportAbortedError extends Error {
 		constructor() {
@@ -542,10 +551,10 @@
 		leaderboardEnabled: true,
 		leaderboardMode: 'player' as 'player' | 'creator',
 		nonGlobalRecordsEnabled: false,
-		collaboratorsCanVerifyRecords: false,
+		collaboratorRecordVerificationMode: 'off' as CollaboratorRecordVerificationMode,
 		levelSubmissionEnabled: false,
 		staffListEnabled: true,
-		appearanceLayout: 'grid' as 'grid' | 'list' | 'aredl_tsl' | 'pointercrate',
+		appearanceLayout: 'grid' as 'grid' | 'list' | 'aredl_tsl',
 		faviconUrl: '',
 		isPlatformer: false,
 		logoUrl: '',
@@ -957,6 +966,20 @@
 		return (source.recordFilterManualAcceptanceOnly ?? true) ? 'manual' : 'any';
 	}
 
+	function getCollaboratorRecordVerificationMode(source: {
+		collaboratorRecordVerificationMode?: string | null;
+		collaboratorsCanVerifyRecords?: boolean | null;
+	}): CollaboratorRecordVerificationMode {
+		if (
+			source.collaboratorRecordVerificationMode === 'overwatch'
+			|| source.collaboratorRecordVerificationMode === 'direct'
+		) {
+			return source.collaboratorRecordVerificationMode;
+		}
+
+		return source.collaboratorsCanVerifyRecords ? 'direct' : 'off';
+	}
+
 	function getManualAcceptanceOnlyForStatus(
 		status: RecordFilterAcceptanceStatus
 	) {
@@ -988,6 +1011,7 @@
 
 		if (
 			requestedTab === 'basic'
+			|| requestedTab === 'list'
 			|| requestedTab === 'appearance'
 			|| requestedTab === 'formula'
 			|| requestedTab === 'record-filter'
@@ -1042,6 +1066,16 @@
 		}
 	}
 
+	function normalizeAppearanceLayout(
+		layout: CustomList['appearanceLayout']
+	): typeof editForm.appearanceLayout {
+		if (layout === 'pointercrate') {
+			return 'list';
+		}
+
+		return layout === 'list' || layout === 'aredl_tsl' ? layout : 'grid';
+	}
+
 	function syncForm() {
 		if (!list) {
 			return;
@@ -1060,10 +1094,11 @@
 		editForm.leaderboardEnabled = list.leaderboardEnabled ?? true;
 		editForm.leaderboardMode = list.leaderboardMode === 'creator' ? 'creator' : 'player';
 		editForm.nonGlobalRecordsEnabled = list.nonGlobalRecordsEnabled ?? false;
-		editForm.collaboratorsCanVerifyRecords = list.collaboratorsCanVerifyRecords ?? false;
+		editForm.collaboratorRecordVerificationMode =
+			getCollaboratorRecordVerificationMode(list);
 		editForm.levelSubmissionEnabled = list.levelSubmissionEnabled ?? false;
 		editForm.staffListEnabled = list.staffListEnabled ?? true;
-		editForm.appearanceLayout = list.appearanceLayout || 'grid';
+		editForm.appearanceLayout = normalizeAppearanceLayout(list.appearanceLayout);
 		editForm.faviconUrl = list.faviconUrl || '';
 		editForm.isPlatformer = list.isPlatformer;
 		editForm.logoUrl = list.logoUrl || '';
@@ -1131,11 +1166,11 @@
 			leaderboardEnabled: currentList.leaderboardEnabled ?? true,
 			leaderboardMode: currentList.leaderboardMode === 'creator' ? 'creator' : 'player',
 			nonGlobalRecordsEnabled: currentList.nonGlobalRecordsEnabled ?? false,
-			collaboratorsCanVerifyRecords:
-				currentList.collaboratorsCanVerifyRecords ?? false,
+			collaboratorRecordVerificationMode:
+				getCollaboratorRecordVerificationMode(currentList),
 			levelSubmissionEnabled: currentList.levelSubmissionEnabled ?? false,
 			staffListEnabled: currentList.staffListEnabled ?? true,
-			appearanceLayout: currentList.appearanceLayout || 'grid',
+			appearanceLayout: normalizeAppearanceLayout(currentList.appearanceLayout),
 			faviconUrl: currentList.faviconUrl || '',
 			isPlatformer: currentList.isPlatformer,
 			logoUrl: currentList.logoUrl || '',
@@ -1172,7 +1207,8 @@
 			leaderboardEnabled: currentForm.leaderboardEnabled,
 			leaderboardMode: currentForm.leaderboardMode,
 			nonGlobalRecordsEnabled: currentForm.nonGlobalRecordsEnabled,
-			collaboratorsCanVerifyRecords: currentForm.collaboratorsCanVerifyRecords,
+			collaboratorRecordVerificationMode:
+				currentForm.collaboratorRecordVerificationMode,
 			levelSubmissionEnabled: currentForm.levelSubmissionEnabled,
 			staffListEnabled: currentForm.staffListEnabled,
 			appearanceLayout: currentForm.appearanceLayout,
@@ -2254,7 +2290,7 @@
 		}
 
 		if (tab === 'pending-records') {
-			return canReviewRecords && Boolean(list?.nonGlobalRecordsEnabled);
+			return canReviewRecords || canEditSettings;
 		}
 
 		if (tab === 'danger') {
@@ -2397,6 +2433,15 @@
 		};
 	}
 
+	function setCollaboratorRecordVerificationMode(
+		mode: CollaboratorRecordVerificationMode
+	) {
+		editForm = {
+			...editForm,
+			collaboratorRecordVerificationMode: mode
+		};
+	}
+
 	function updateRecordFilterRefreshRate(
 		field: 'recordFilterMinRefreshRate' | 'recordFilterMaxRefreshRate',
 		event: Event
@@ -2439,6 +2484,14 @@
 		}
 
 		return $_('custom_lists.manage.record_filter.acceptance_manual_only');
+	}
+
+	function formatCollaboratorRecordVerificationMode(
+		mode: CollaboratorRecordVerificationMode
+	) {
+		return $_(
+			`custom_lists.manage.record_filter.collaborator_verification_${mode}`
+		);
 	}
 
 	function getImageExtension(file: File) {
@@ -2693,7 +2746,8 @@
 			leaderboardEnabled: editForm.leaderboardEnabled,
 			leaderboardMode: editForm.leaderboardMode,
 			nonGlobalRecordsEnabled: editForm.nonGlobalRecordsEnabled,
-			collaboratorsCanVerifyRecords: editForm.collaboratorsCanVerifyRecords,
+			collaboratorRecordVerificationMode:
+				editForm.collaboratorRecordVerificationMode,
 			levelSubmissionEnabled: editForm.levelSubmissionEnabled,
 			staffListEnabled: editForm.staffListEnabled,
 			appearanceLayout: editForm.appearanceLayout,
@@ -4149,6 +4203,16 @@
 			return $_('custom_lists.detail.edit.level_submission_label');
 		}
 
+		if (field === 'nonGlobalRecordsEnabled') {
+			return $_('custom_lists.detail.edit.non_global_records_label');
+		}
+
+		if (field === 'collaboratorRecordVerificationMode') {
+			return $_(
+				'custom_lists.detail.edit.collaborators_can_verify_records_label'
+			);
+		}
+
 		if (field === 'staffListEnabled') {
 			return $_('custom_lists.detail.edit.staff_list_label');
 		}
@@ -4293,6 +4357,15 @@
 		}
 
 		if (
+			field === 'collaboratorRecordVerificationMode'
+			&& typeof value === 'string'
+		) {
+			return formatCollaboratorRecordVerificationMode(
+				value as CollaboratorRecordVerificationMode
+			);
+		}
+
+		if (
 			(field === 'recordFilterMinRefreshRate'
 				|| field === 'recordFilterMaxRefreshRate')
 			&& typeof value === 'number'
@@ -4311,6 +4384,7 @@
 				|| field === 'leaderboardEnabled'
 				|| field === 'topEnabled'
 				|| field === 'levelSubmissionEnabled'
+				|| field === 'nonGlobalRecordsEnabled'
 				|| field === 'staffListEnabled')
 			&& typeof value === 'boolean'
 		) {
@@ -5682,13 +5756,14 @@
           {#if canEditSettings}
             <optgroup label={$_('custom_lists.manage.navigation.setup')}>
               <option value="basic">{$_('custom_lists.manage.tabs.basic')}</option>
+              <option value="list">{$_('custom_lists.manage.tabs.list')}</option>
               <option value="appearance">{$_('custom_lists.manage.tabs.appearance')}</option>
             </optgroup>
           {/if}
           <optgroup label={$_('custom_lists.manage.navigation.content')}>
             <option value="levels">{$_('custom_lists.manage.tabs.levels')}</option>
             {#if canReviewSubmissions}<option value="submissions">{$_('custom_lists.manage.tabs.submissions')}</option>{/if}
-            {#if canReviewRecords && list.nonGlobalRecordsEnabled}<option value="pending-records">{$_('custom_lists.manage.tabs.pending_records')}</option>{/if}
+            {#if canReviewRecords || canEditSettings}<option value="pending-records">{$_('custom_lists.manage.tabs.pending_records')}</option>{/if}
           </optgroup>
           {#if canEditSettings}
             <optgroup label={$_('custom_lists.manage.navigation.ranking')}>
@@ -5718,6 +5793,7 @@
               <div class="manageNavGroup">
                 <span>{$_('custom_lists.manage.navigation.setup')}</span>
                 <Tabs.Trigger value="basic" class="manageTab" on:click={() => selectManageTab('basic')}><Settings class="h-4 w-4" />{$_('custom_lists.manage.tabs.basic')}</Tabs.Trigger>
+                <Tabs.Trigger value="list" class="manageTab" on:click={() => selectManageTab('list')}><Layers class="h-4 w-4" />{$_('custom_lists.manage.tabs.list')}</Tabs.Trigger>
                 <Tabs.Trigger value="appearance" class="manageTab" on:click={() => selectManageTab('appearance')}><Palette class="h-4 w-4" />{$_('custom_lists.manage.tabs.appearance')}</Tabs.Trigger>
               </div>
             {/if}
@@ -5727,7 +5803,7 @@
               {#if canReviewSubmissions}
                 <Tabs.Trigger value="submissions" class="manageTab" on:click={() => selectManageTab('submissions')}><Inbox class="h-4 w-4" />{$_('custom_lists.manage.tabs.submissions')}{#if pendingSubmissions?.length}<span class="tabCount">{pendingSubmissions.length}</span>{/if}</Tabs.Trigger>
               {/if}
-              {#if canReviewRecords && list.nonGlobalRecordsEnabled}
+              {#if canReviewRecords || canEditSettings}
                 <Tabs.Trigger value="pending-records" class="manageTab" on:click={() => selectManageTab('pending-records')}><ClipboardCheck class="h-4 w-4" />{$_('custom_lists.manage.tabs.pending_records')}{#if pendingRecords.length}<span class="tabCount">{pendingRecords.length}</span>{/if}</Tabs.Trigger>
               {/if}
             </div>
@@ -5758,7 +5834,11 @@
 
       {#if canEditSettings}
         <Tabs.Content value="basic">
-          <BasicTab bind:editForm {list} {updateItemSort} />
+          <BasicTab bind:editForm {list} />
+        </Tabs.Content>
+
+        <Tabs.Content value="list">
+          <ListTab bind:editForm {updateItemSort} />
         </Tabs.Content>
 
         <Tabs.Content value="appearance">
@@ -5786,6 +5866,26 @@
                 </p>
               {/if}
               <div class="recordFilterFormGrid">
+                <div class="recordFilterField">
+                  <span class="recordFilterFieldLabel">{
+                    $_('custom_lists.detail.edit.collaborators_can_verify_records_label')
+                  }</span>
+                  <div class="recordFilterOptionRow">
+                    {#each COLLABORATOR_RECORD_VERIFICATION_OPTIONS as verificationMode}
+                      <button
+                        type="button"
+                        class="recordFilterOptionBtn"
+                        class:selected={editForm.collaboratorRecordVerificationMode === verificationMode}
+                        on:click={() => setCollaboratorRecordVerificationMode(verificationMode)}
+                      >
+                        {formatCollaboratorRecordVerificationMode(verificationMode)}
+                      </button>
+                    {/each}
+                  </div>
+                  <p class="hint">
+                    {$_('custom_lists.detail.edit.collaborators_can_verify_records_hint')}
+                  </p>
+                </div>
                 <div class="recordFilterField">
                   <span class="recordFilterFieldLabel">{
                     $_('custom_lists.manage.record_filter.platform_label')
@@ -5936,6 +6036,8 @@
         <Tabs.Content value="submissions">
           <SubmissionsTab
             {list}
+			bind:editForm
+			{canEditSettings}
             submissions={pendingSubmissions}
             {canReviewSubmissions}
             loading={pendingSubmissionsLoading}
@@ -5947,9 +6049,12 @@
         </Tabs.Content>
       {/if}
 
-      {#if canReviewRecords && list.nonGlobalRecordsEnabled}
+      {#if canReviewRecords || canEditSettings}
         <Tabs.Content value="pending-records">
           <PendingRecordsTab
+			bind:editForm
+			{canEditSettings}
+			{canReviewRecords}
             records={pendingRecords}
             loading={pendingRecordsLoading}
             errorMessage={pendingRecordsError}

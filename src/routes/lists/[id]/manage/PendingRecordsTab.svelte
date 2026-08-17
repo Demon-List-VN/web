@@ -4,6 +4,7 @@
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { Label } from '$lib/components/ui/label';
 	import { Textarea } from '$lib/components/ui/textarea';
+	import { Switch } from '$lib/components/ui/switch';
 	import { _ } from 'svelte-i18n';
 	import {
 		CheckCircle2,
@@ -43,6 +44,9 @@
 	};
 
 	export let records: PendingRecord[] = [];
+	export let editForm: any;
+	export let canEditSettings = false;
+	export let canReviewRecords = false;
 	export let loading = false;
 	export let errorMessage = '';
 	export let savingRecordId: number | null = null;
@@ -134,7 +138,32 @@
 </script>
 
 <div class="tabContent">
-  <div class="toolCard queueCard">
+  {#if canEditSettings}
+    <div class="toolCard queueSettingsCard">
+      <div class="switchRow">
+        <div>
+          <h2 class="toolHeading">{
+            $_('custom_lists.manage.pending_records.queue_heading')
+          }</h2>
+          <p class="hint">{
+            $_('custom_lists.detail.edit.non_global_records_hint')
+          }</p>
+        </div>
+        <div class="switchControl">
+          <span class="switchLabel">{
+            editForm.nonGlobalRecordsEnabled ? $_('general.yes') : $_('general.no')
+          }</span>
+          <Switch
+            id="list-non-global-records-enabled"
+            bind:checked={editForm.nonGlobalRecordsEnabled}
+          />
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  {#if canReviewRecords && editForm.nonGlobalRecordsEnabled}
+    <div class="toolCard queueCard">
     <div class="queueHeader">
       <div>
         <h2 class="toolHeading">{
@@ -252,7 +281,14 @@
         {/each}
       </div>
     {/if}
-  </div>
+    </div>
+  {:else if editForm.nonGlobalRecordsEnabled}
+    <div class="toolCard">
+      <p class="hint">{
+        $_('custom_lists.manage.pending_records.direct_access_hint')
+      }</p>
+    </div>
+  {/if}
 </div>
 
 <Dialog.Root bind:open={rejectionDialogOpen}>
@@ -313,11 +349,46 @@
   gap: 20px;
 }
 
+.toolCard {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  padding: 22px;
+}
+
 .queueCard,
 .dialogBody {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.queueSettingsCard {
+  display: block;
+}
+
+.switchRow,
+.switchControl {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.switchRow {
+  justify-content: space-between;
+}
+
+.switchRow .hint {
+  margin: 4px 0 0;
+}
+
+.switchControl {
+  flex-shrink: 0;
+}
+
+.switchLabel {
+  font-size: 0.9rem;
+  font-weight: 500;
 }
 
 .queueHeader,
@@ -460,6 +531,11 @@
 }
 
 @media (max-width: 640px) {
+  .switchRow {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
   .queueItemTop {
     flex-direction: column;
   }

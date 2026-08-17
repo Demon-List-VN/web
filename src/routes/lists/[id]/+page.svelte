@@ -227,9 +227,11 @@
 	function getAppearanceLayout(currentList: CustomList | null) {
 		const value = currentList?.appearanceLayout;
 
-		return value === 'list' || value === 'aredl_tsl' || value === 'pointercrate'
-			? value
-			: 'grid';
+		if (value === 'pointercrate') {
+			return 'list';
+		}
+
+		return value === 'list' || value === 'aredl_tsl' ? value : 'grid';
 	}
 
 	function selectLayoutLevel(item: CustomListItem) {
@@ -2042,7 +2044,6 @@
 							<div bind:this={listLevelsSentinel} class="loadMoreSentinel">{#if listLevelsLoading}<span class="loadMoreStatus">{$_('general.loading')}...</span>{/if}</div>
 						{/if}
 					{:else}
-						<div class:pointercrateFrame={appearanceLayout === 'pointercrate'}>
 						<div class="levels">
 							{#each listItems as item, i}
 								{#if item.level}
@@ -2058,6 +2059,7 @@
 											top: getListItemTop(item, i),
 											minProgress: item.minProgress ?? item.level.minProgress ?? null
 										})}
+										variant={appearanceLayout === 'list' ? 'list' : 'default'}
 										backgroundColor={list.backgroundColor ?? null}
 										borderColor={list.borderColor ?? null}
 										type={itemCardType}
@@ -2079,22 +2081,6 @@
 									</div>
 								{/if}
 							{/each}
-						</div>
-						{#if appearanceLayout === 'pointercrate'}
-							<aside class="pointercrateAside">
-								<h3>{list.title}</h3>
-								<p>{list.description || $_('custom_lists.detail.no_description')}</p>
-								<div class="tagRow">{#each list.tags as tag}<Badge variant="outline">{tag}</Badge>{/each}</div>
-								{#if publicStaffEntries.length}
-									<h4>{$_('custom_lists.detail.staff.heading')}</h4>
-									<div class="layoutStaffList">
-										{#each publicStaffEntries.slice(0, 8) as staffMember}
-											<span>{staffMember.playerData?.name || staffMember.uid}<small>{getStaffRoleLabel(staffMember.role)}</small></span>
-										{/each}
-									</div>
-								{/if}
-							</aside>
-						{/if}
 						</div>
 						{#if hasMoreLevels(list)}
 							<div bind:this={listLevelsSentinel} class="loadMoreSentinel">
@@ -3194,13 +3180,12 @@
 	}
 
 	/* Saved public appearance layouts */
-	.layout-list { max-width: 980px; gap: 14px; }
-	.layout-list .levels { grid-template-columns: 1fr; gap: 8px; }
+	.layout-list { max-width: 1400px; gap: 14px; }
+	.layout-list .levels { grid-template-columns: 1fr; gap: 14px; }
 	.layout-list .overviewSection,
 	.layout-list .staffSection { border-radius: 10px; }
 
-	.layout-aredl_tsl,
-	.layout-pointercrate { max-width: 1360px; }
+	.layout-aredl_tsl { max-width: 1360px; }
 
 	.aredlLayout {
 		display: grid;
@@ -3210,8 +3195,7 @@
 	}
 	.aredlRankPane,
 	.aredlDetailPane,
-	.aredlMetaPane,
-	.pointercrateAside {
+	.aredlMetaPane {
 		border: 1px solid var(--custom-surface-border, hsl(var(--border)));
 		border-radius: 14px;
 		background: var(--custom-surface-background, hsl(var(--card)));
@@ -3262,13 +3246,9 @@
 	.aredlLevelFacts span { color: var(--custom-surface-muted, hsl(var(--muted-foreground))); font-size: .7rem; }
 	.aredlLevelFacts strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .86rem; }
 	.aredlLevelTags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
-	.aredlMetaPane,
-	.pointercrateAside { display: grid; gap: 12px; padding: 18px; }
-	.aredlMetaPane h3,
-	.pointercrateAside h3,
-	.pointercrateAside h4 { margin: 0; }
-	.aredlMetaPane p,
-	.pointercrateAside p { margin: 0; color: var(--custom-surface-muted, hsl(var(--muted-foreground))); line-height: 1.5; }
+	.aredlMetaPane { display: grid; gap: 12px; padding: 18px; }
+	.aredlMetaPane h3 { margin: 0; }
+	.aredlMetaPane p { margin: 0; color: var(--custom-surface-muted, hsl(var(--muted-foreground))); line-height: 1.5; }
 	.aredlMetaStats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
 	.aredlMetaStats span { display: grid; gap: 2px; padding: 10px; border-radius: 9px; background: hsl(var(--muted) / .45); font-size: .72rem; }
 	.aredlMetaStats strong { font-size: 1.1rem; }
@@ -3304,23 +3284,6 @@
 	.layoutRecordsState { padding: 18px 4px; text-align: center; }
 	.layoutRecordsError { color: hsl(var(--destructive)) !important; }
 	.layoutRecordsMore { text-align: center; font-size: .72rem; }
-	.layoutStaffList { display: grid; gap: 7px; }
-	.layoutStaffList > span { display: flex; justify-content: space-between; gap: 8px; font-size: .82rem; }
-	.layoutStaffList small { color: var(--custom-surface-muted, hsl(var(--muted-foreground))); }
-
-	.pointercrateFrame {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) 290px;
-		gap: 18px;
-		align-items: start;
-	}
-	.pointercrateFrame .levels { grid-template-columns: 1fr; gap: 14px; }
-	.pointercrateAside { position: sticky; top: 18px; }
-	.layout-pointercrate .overviewSection,
-	.layout-pointercrate .staffSection,
-	.layout-pointercrate .tableWrapper { border-radius: 4px; }
-	.layout-pointercrate :global(.levels > *) { box-shadow: 0 8px 24px rgb(0 0 0 / .08); }
-
 	.relatedGrid {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -3530,8 +3493,6 @@
 
 		.aredlLayout { grid-template-columns: minmax(180px, .75fr) minmax(0, 1.5fr); }
 		.aredlMetaPane { grid-column: 1 / -1; }
-		.pointercrateFrame { grid-template-columns: 1fr; }
-		.pointercrateAside { position: static; }
 	}
 
 	@media (max-width: 480px) {
