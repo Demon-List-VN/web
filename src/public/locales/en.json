@@ -109,7 +109,7 @@
             "detail_description": "{title} on GDListHub with {count} Geometry Dash levels, records, rankings, and player progress."
         },
         "descriptions": {
-            "homepage": "A website for the GDListHub community",
+            "homepage": "Make your own Geometry Dash Demon List with GDListHub.",
             "discord": "Join the GDListHub Discord, add the GDListHub bot to your server, and use current list data right in chat.",
             "community": "Share, discuss, and connect with the GDListHub community",
             "lists": "Browse public lists and manage your level collections.",
