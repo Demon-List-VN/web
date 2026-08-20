@@ -1750,7 +1750,7 @@
 							<Button
 								variant="outline"
 								size="sm"
-								href={`/lists/${$page.params.id}/submit`}
+								href={`/submit?type=level&target=${list.id}`}
 							>
 								<FilePlus2 class="mr-2 h-4 w-4" />
 								{$locale === 'vi' ? 'Nộp level' : 'Submit level'}
@@ -1760,7 +1760,7 @@
 							<Button
 								variant="outline"
 								size="sm"
-								href={`/submit/record?target=${list.id}`}
+								href={`/submit?type=record&target=${list.id}`}
 							>
 								<FilePlus2 class="mr-2 h-4 w-4" />
 								{$_('custom_lists.actions.submit_record')}

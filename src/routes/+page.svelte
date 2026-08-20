@@ -924,7 +924,7 @@
 	                  <a
 	                    class="record-progress-creative"
 	                    href={completed
-	                      ? `/submit/record?levelId=${level?.id ?? record.levelid}`
+	                      ? `/submit?type=record&levelId=${level?.id ?? record.levelid}`
 	                      : `/level/${level?.id ?? record.levelid}`}
 	                    style={`background-image: linear-gradient(105deg, rgba(5,10,20,.95), rgba(5,10,20,.62)), url('${getLevelThumbnail(level)}')`}
 	                  >

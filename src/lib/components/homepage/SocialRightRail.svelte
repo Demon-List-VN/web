@@ -149,7 +149,7 @@
 			home: '/',
 			pvp: '/versus',
 			lists: '/lists',
-			'submit-record': '/submit/record',
+			'submit-record': '/submit?type=record',
 			events: '/events',
 			tournaments: '/tournaments',
 			battlepass: '/battlepass',

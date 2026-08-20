@@ -1,131 +1,83 @@
 <script lang="ts">
-	import { locale, _ } from 'svelte-i18n';
-	import { FileText, Trophy } from 'lucide-svelte';
+	import { locale } from 'svelte-i18n';
+	import { FileText, Gauge, Layers } from 'lucide-svelte';
 
-	export let submissionType: 'record' | 'level';
-	export let onSelect: (type: 'record' | 'level') => void;
+	type SubmissionType = 'record' | 'level' | 'ldm';
+
+	export let submissionType: SubmissionType | null = null;
+	export let onSelect: (type: SubmissionType) => void;
+
+	const options: Array<{
+		type: SubmissionType;
+		icon: typeof FileText;
+		title: { vi: string; en: string; };
+		description: { vi: string; en: string; };
+	}> = [
+		{
+			type: 'level',
+			icon: Layers,
+			title: { vi: 'Nộp Level', en: 'Submit Level' },
+			description: {
+				vi: 'Đề xuất một level cho một hoặc nhiều danh sách đang nhận bài.',
+				en: 'Suggest a level to one or more lists accepting submissions.'
+			}
+		},
+		{
+			type: 'record',
+			icon: FileText,
+			title: { vi: 'Nộp Record', en: 'Submit Record' },
+			description: {
+				vi: 'Gửi record global hoặc đến nhiều custom list.',
+				en: 'Send a global record or target multiple custom lists.'
+			}
+		},
+		{
+			type: 'ldm',
+			icon: Gauge,
+			title: { vi: 'Nộp bản LDM', en: 'Submit LDM' },
+			description: {
+				vi: 'Liên kết một bản Low Detail Mode với level gốc.',
+				en: 'Link a Low Detail Mode copy to its original level.'
+			}
+		}
+	];
 </script>
 
 <div class="step-content">
-  <h2 class="step-heading">
-    {$locale == 'vi' ? 'Bạn muốn nộp gì?' : 'What would you like to submit?'}
-  </h2>
+  <div class="step-header">
+    <p>{$locale == 'vi' ? 'Bước đầu tiên' : 'First step'}</p>
+    <h2>{$locale == 'vi' ? 'Bạn muốn nộp gì?' : 'What would you like to submit?'}</h2>
+  </div>
 
   <div class="type-cards">
-    <button
-      class="type-card"
-      class:selected={submissionType === 'record'}
-      on:click={() => onSelect('record')}
-    >
-      <div class="type-card-icon">
-        <FileText size={28} />
-      </div>
-      <div class="type-card-text">
-        <h3>{$locale == 'vi' ? 'Nộp Record' : 'Submit Record'}</h3>
-        <p>
-          {
-            $locale == 'vi'
-            ? 'Nộp kết quả chơi bất kỳ level hợp lệ nào'
-            : 'Submit your completion of any valid level'
-          }
-        </p>
-      </div>
-    </button>
-
-    <button
-      class="type-card"
-      class:selected={submissionType === 'level'}
-      on:click={() => onSelect('level')}
-    >
-      <div class="type-card-icon">
-        <Trophy size={28} />
-      </div>
-      <div class="type-card-text">
-        <h3>
-          {$locale == 'vi' ? 'Nộp Challenge Level' : 'Submit Challenge Level'}
-        </h3>
-        <p>
-          {
-            $locale == 'vi'
-            ? 'Đề xuất thêm challenge level mới vào danh sách'
-            : 'Suggest a new challenge level to be added to the list'
-          }
-        </p>
-      </div>
-    </button>
+    {#each options as option}
+      <button
+        type="button"
+        class="type-card"
+        class:selected={submissionType === option.type}
+        on:click={() => onSelect(option.type)}
+      >
+        <span class="type-card-icon"><svelte:component this={option.icon} size={24} /></span>
+        <span class="type-card-text">
+          <strong>{option.title[$locale == 'vi' ? 'vi' : 'en']}</strong>
+          <span>{option.description[$locale == 'vi' ? 'vi' : 'en']}</span>
+        </span>
+      </button>
+    {/each}
   </div>
 </div>
 
 <style lang="scss">
-.step-content {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.step-heading {
-  font-size: 16px;
-  font-weight: 600;
-  color: hsl(var(--foreground));
-  text-align: center;
-}
-
-.type-cards {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-
-  @media (max-width: 540px) {
-    grid-template-columns: 1fr;
-  }
-}
-
-.type-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 24px 16px;
-  border: 2px solid hsl(var(--border));
-  border-radius: 12px;
-  background: transparent;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-align: center;
-
-  &:hover {
-    background: hsl(var(--muted) / 0.3);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px hsl(var(--foreground) / 0.06);
-  }
-
-  &.selected {
-    border-color: hsl(var(--primary));
-    background: hsl(var(--primary) / 0.06);
-
-    .type-card-icon {
-      color: hsl(var(--primary));
-    }
-  }
-}
-
-.type-card-icon {
-  color: hsl(var(--muted-foreground));
-  transition: color 0.2s ease;
-}
-
-.type-card-text {
-  h3 {
-    font-size: 14px;
-    font-weight: 600;
-    color: hsl(var(--foreground));
-    margin-bottom: 4px;
-  }
-
-  p {
-    font-size: 12px;
-    color: hsl(var(--muted-foreground));
-    line-height: 1.4;
-  }
-}
+.step-content { display: grid; gap: 20px; }
+.step-header { text-align: center; }
+.step-header p { color: hsl(var(--primary)); font-size: 12px; font-weight: 700; text-transform: uppercase; }
+.step-header h2 { margin-top: 4px; font-size: 20px; font-weight: 700; }
+.type-cards { display: grid; gap: 10px; }
+.type-card { display: flex; align-items: center; gap: 14px; width: 100%; padding: 16px; border: 1px solid hsl(var(--border)); border-radius: 12px; background: hsl(var(--background)); color: hsl(var(--foreground)); text-align: left; cursor: pointer; transition: 0.15s ease; }
+.type-card:hover, .type-card:focus-visible { border-color: hsl(var(--primary)); background: hsl(var(--accent) / 0.4); outline: none; }
+.type-card.selected { border-color: hsl(var(--primary)); box-shadow: 0 0 0 3px hsl(var(--primary) / 0.12); }
+.type-card-icon { display: grid; place-items: center; width: 44px; height: 44px; flex: 0 0 auto; border-radius: 10px; background: hsl(var(--primary) / 0.1); color: hsl(var(--primary)); }
+.type-card-text { display: grid; gap: 4px; }
+.type-card-text strong { font-size: 14px; }
+.type-card-text span { color: hsl(var(--muted-foreground)); font-size: 12px; line-height: 1.45; }
 </style>
