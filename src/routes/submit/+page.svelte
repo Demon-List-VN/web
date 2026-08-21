@@ -366,7 +366,7 @@
 				const fpsMatches = (list?.recordFilterMinRefreshRate == null || numericRefreshRate >= Number(list.recordFilterMinRefreshRate))
 					&& (list?.recordFilterMaxRefreshRate == null || numericRefreshRate <= Number(list.recordFilterMaxRefreshRate));
 
-				return list && !list.isOfficial && !list.isBanned && list.nonGlobalRecordsEnabled === true && list.eligible && platformMatches && fpsMatches
+				return list && !list.isBanned && list.nonGlobalRecordsEnabled === true && list.eligible && platformMatches && fpsMatches
 					? []
 					: [t(`${targetListName(id)} không phù hợp với record này.`, `${targetListName(id)} is not eligible for this record.`)];
 			});

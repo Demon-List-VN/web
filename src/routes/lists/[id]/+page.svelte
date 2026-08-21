@@ -53,7 +53,6 @@
 
 	const LEVELS_PAGE_SIZE = 50;
 	const LEVELS_AD_FREQUENCY = 6;
-	const OFFICIAL_LIST_SLUGS = new Set(['dl', 'cl', 'pl', 'fl']);
 	const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://gdlisthub.dev').replace(/\/$/, '');
 
 	type CustomListItem = {
@@ -109,7 +108,6 @@
 		isBanned: boolean;
 		isMirror?: boolean;
 		isPlatformer: boolean;
-		isOfficial?: boolean;
 		itemSort?: 'mode_default' | 'created_at';
 		itemSortAscending?: boolean;
 		levelSubmissionEnabled?: boolean;
@@ -390,12 +388,6 @@
 			return $_('head.descriptions.lists');
 		}
 
-		const slug = currentList.slug || '';
-
-		if (currentList.isOfficial && OFFICIAL_LIST_SLUGS.has(slug)) {
-			return $_(`head.list_seo.official_descriptions.${slug}`);
-		}
-
 		const description = currentList.description?.trim();
 
 		if (description) {
@@ -468,9 +460,9 @@
 	}
 
 	function shouldHideOwnerInfo(
-		currentList: Pick<CustomList, 'id' | 'isOfficial' | 'isMirror'> | null | undefined
+		currentList: Pick<CustomList, 'id' | 'isMirror'> | null | undefined
 	) {
-		return Boolean(currentList?.isOfficial || currentList?.isMirror);
+		return Boolean(currentList?.isMirror);
 	}
 
 	function getStaffRoleLabel(role: PublicStaffRole) {
@@ -637,10 +629,6 @@
 	}
 
 	function getItemCardType(item: CustomListItem) {
-		if (list?.isOfficial && list.slug === 'fl') {
-			return item.level?.isPlatformer ? 'pl' : 'dl';
-		}
-
 		return list?.isPlatformer ? 'pl' : 'dl';
 	}
 
@@ -1744,7 +1732,7 @@
 						<p class="heroDesc muted">{$_('custom_lists.detail.no_description')}</p>
 					{/if}
 				</div>
-				{#if canCrawlMirror || canStarList || list.levelSubmissionEnabled || (list.nonGlobalRecordsEnabled && !list.isOfficial && !list.isBanned && list.visibility !== 'private')}
+				{#if canCrawlMirror || canStarList || list.levelSubmissionEnabled || (list.nonGlobalRecordsEnabled && !list.isBanned && list.visibility !== 'private')}
 					<div class="heroActions">
 						{#if list.levelSubmissionEnabled}
 							<Button
@@ -1756,7 +1744,7 @@
 								{$locale === 'vi' ? 'Nộp level' : 'Submit level'}
 							</Button>
 						{/if}
-						{#if list.nonGlobalRecordsEnabled && !list.isOfficial && !list.isBanned && list.visibility !== 'private'}
+						{#if list.nonGlobalRecordsEnabled && !list.isBanned && list.visibility !== 'private'}
 							<Button
 								variant="outline"
 								size="sm"
@@ -1823,12 +1811,6 @@
 					<svelte:component this={getModeIcon(list.mode)} class="h-3.5 w-3.5" />
 					{getModeLabel(list.mode)}
 				</span>
-				{#if list.isOfficial}
-					<span class="metaChip">
-						<Star class="starFilled h-3.5 w-3.5" />
-						{$_('custom_lists.detail.official_badge')}
-					</span>
-				{/if}
 				<span class="metaChip">
 					{$_('custom_lists.detail.levels_badge', { values: { count: list.levelCount } })}
 				</span>
