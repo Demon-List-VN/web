@@ -26,7 +26,7 @@
 		reviewsLast7Days: number; activeReviewersLast7Days: number; reviewsPerRecord: number;
 		highRepReviewRate: number; auditRate: number; auditDisagreementRate: number;
 		percentageResolvedAt2: number; percentageResolvedAt3: number;
-		percentageResolvedAt5: number; percentageResolvedAt7: number;
+		percentageResolvedAt4: number; percentageResolvedAt5: number; percentageResolvedAt7: number;
 		evidenceRequestRate: number; appealRate: number; appealOverturnRate: number;
 		overturnRate: number; collusionFlagsLast7Days: number; reviewerProfiles: number;
 		poolRecords: OverwatchCaseSummary[]; queueRecords: OverwatchCaseSummary[];
@@ -213,7 +213,7 @@
             <div class="panel-header"><div><span class="section-kicker">CONSENSUS</span><h2>Resolution depth</h2></div><Activity size={19} class="muted-icon" /></div>
             <p class="panel-copy">Share of resolved cases that reached consensus at each reviewer checkpoint.</p>
             <div class="checkpoint-list">
-              {#each [{ label: '2 reviewers', value: metrics.percentageResolvedAt2, tone: 'blue' }, { label: '3 reviewers', value: metrics.percentageResolvedAt3, tone: 'violet' }, { label: '5 reviewers', value: metrics.percentageResolvedAt5, tone: 'orange' }, { label: '7 reviewers', value: metrics.percentageResolvedAt7, tone: 'red' }] as item}
+              {#each [{ label: '2 reviewers', value: metrics.percentageResolvedAt2, tone: 'blue' }, { label: '3 reviewers', value: metrics.percentageResolvedAt3, tone: 'violet' }, { label: '4 reviewers', value: metrics.percentageResolvedAt4, tone: 'green' }, { label: '5 reviewers', value: metrics.percentageResolvedAt5, tone: 'orange' }, { label: '7 reviewers', value: metrics.percentageResolvedAt7, tone: 'red' }] as item}
                 <div class="checkpoint"><div><span>{item.label}</span><strong>{percent(item.value)}</strong></div><div class="progress-track"><span class="{item.tone}" style={`width:${clampPercent(item.value)}%`}></span></div></div>
               {/each}
             </div>
@@ -261,17 +261,17 @@
 		  </section>
 
 		  <section class="panel case-table-card">
-			<div class="panel-header"><div><span class="section-kicker">ACTIVE POOL</span><h2>Records under review</h2><p>Oldest pool entries appear first.</p></div><Badge variant="outline">{metrics.poolRecords.length} active</Badge></div>
+			<div class="panel-header"><div><span class="section-kicker">ACTIVE POOL</span><h2>Records under review</h2><p>The top 20 queued records appear here with cases already under review.</p></div><Badge variant="outline">{metrics.poolRecords.length} active</Badge></div>
 			<div class="table-scroll"><Table.Root><Table.Header><Table.Row><Table.Head>Record</Table.Head><Table.Head>Player</Table.Head><Table.Head>Status</Table.Head><Table.Head>Phase</Table.Head><Table.Head class="text-center">Round</Table.Head><Table.Head class="text-center">Reviewers</Table.Head><Table.Head>In pool</Table.Head></Table.Row></Table.Header><Table.Body>
 			  {#each metrics.poolRecords as item (item.caseId)}
-				<Table.Row><Table.Cell><div class="record-cell">{#if recordHref(item)}<a href={recordHref(item) ?? '#'}>{item.levelName}</a>{:else}<strong>{item.levelName}</strong>{/if}<small>#{item.recordId ?? '—'} · {number(item.progress)}%</small></div></Table.Cell><Table.Cell>{item.playerName}</Table.Cell><Table.Cell><span class="status-pill {statusTone(item.status)}">{statusLabel(item.status)}</span></Table.Cell><Table.Cell><span class="phase-label">{statusLabel(item.phase)}</span></Table.Cell><Table.Cell class="text-center">{item.round}</Table.Cell><Table.Cell class="text-center">{item.requiredReviewers}</Table.Cell><Table.Cell>{item.poolEnteredAt ? duration(Date.now() - new Date(item.poolEnteredAt).getTime()) : '—'}</Table.Cell></Table.Row>
+				<Table.Row><Table.Cell><div class="record-cell">{#if recordHref(item)}<a href={recordHref(item) ?? '#'}>{item.levelName}</a>{:else}<strong>{item.levelName}</strong>{/if}<small>#{item.recordId ?? '—'} · {number(item.progress)}%</small></div></Table.Cell><Table.Cell>{item.playerName}</Table.Cell><Table.Cell><span class="status-pill {statusTone(item.status)}">{statusLabel(item.status)}</span></Table.Cell><Table.Cell><span class="phase-label">{statusLabel(item.phase)}</span></Table.Cell><Table.Cell class="text-center">{item.round}</Table.Cell><Table.Cell class="text-center">{item.requiredReviewers}</Table.Cell><Table.Cell>{duration(Date.now() - new Date(item.poolEnteredAt ?? item.submittedAt).getTime())}</Table.Cell></Table.Row>
 			  {:else}<Table.Row><Table.Cell colspan={7} class="text-center text-muted-foreground">The review pool is empty.</Table.Cell></Table.Row>{/each}
 			</Table.Body></Table.Root></div>
 		  </section>
 
 		  <div class="case-columns">
 			<section class="panel case-table-card">
-			  <div class="panel-header"><div><span class="section-kicker">UP NEXT</span><h2>Top 5 in queue</h2><p>Ordered by submission time.</p></div><Clock3 size={19} class="muted-icon" /></div>
+			  <div class="panel-header"><div><span class="section-kicker">UP NEXT</span><h2>Top 5 after pool</h2><p>Queue positions begin after the virtual 20-record pool.</p></div><Clock3 size={19} class="muted-icon" /></div>
 			  <div class="compact-case-list">{#each metrics.queueRecords as item, index (item.caseId)}<article><span class="queue-rank">{index + 1}</span><div class="record-cell">{#if recordHref(item)}<a href={recordHref(item) ?? '#'}>{item.levelName}</a>{:else}<strong>{item.levelName}</strong>{/if}<small>{item.playerName} · {number(item.progress)}%</small></div><time>{duration(Date.now() - new Date(item.submittedAt).getTime())}</time></article>{:else}<div class="compact-empty">No records are waiting in queue.</div>{/each}</div>
 			</section>
 			<section class="panel case-table-card">
@@ -306,4 +306,5 @@
   @media(max-width:1050px){.kpi-grid{grid-template-columns:1fr 1fr}.quality-grid{grid-template-columns:1fr 1fr}.reviewer-panel{grid-column:1/-1}.participation{margin:20px auto;max-width:360px}.analytics-layout{grid-template-columns:1fr}.loading-grid{grid-template-columns:1fr 1fr}.case-columns{grid-template-columns:1fr}}
   @media(max-width:760px){.admin-overwatch{padding:28px 16px 70px}.header-row{align-items:flex-start;flex-direction:column}.header-actions{width:100%;justify-content:space-between}.kpi-grid,.quality-grid,.profile-strip,.management-grid,.case-summary-grid{grid-template-columns:1fr}.reviewer-panel{grid-column:auto}.selector-card{grid-template-columns:1fr}.flow-visual{grid-template-columns:1fr}.flow-arrow{transform:rotate(90deg);margin:auto}.flow-footer{grid-template-columns:1fr;gap:12px}.flow-footer>div:first-child{padding:0 0 12px;border-right:0;border-bottom:1px solid hsl(var(--border))}.flow-footer>div:last-child{padding:0}.loading-grid{grid-template-columns:1fr}.view-tabs{overflow-x:auto}.view-tabs button{flex:1;justify-content:center;white-space:nowrap}.updated{display:none}}
   @media(max-width:430px){.kpi-grid{grid-template-columns:1fr}.header-actions :global(button){width:100%;justify-content:center}.quality-panel,.flow-panel,.resolution-panel{padding:18px}.participation{gap:14px}}
+  .progress-track .green{background:var(--ow-green)}
 </style>
