@@ -182,7 +182,7 @@
       <p class="hint">{$_('custom_lists.manage.pending_records.empty')}</p>
     {:else}
       <div class="queueList">
-        {#each records as record}
+        {#each records as record (record.id)}
           <article class="queueItem">
             <div class="queueItemTop">
               <div class="recordHeading">

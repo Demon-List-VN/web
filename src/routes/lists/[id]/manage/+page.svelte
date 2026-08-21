@@ -1863,6 +1863,7 @@
 			const res = await fetch(
 				`${import.meta.env.VITE_API_URL}/lists/${list.id}/record-submissions`,
 				{
+					cache: 'no-store',
 					signal: requestController.signal,
 					headers: {
 						Authorization: `Bearer ${await $user.token()}`
@@ -5315,6 +5316,10 @@
 				.catch(() => null);
 
 			if (!res.ok) {
+				if (res.status === 404 || res.status === 409) {
+					await loadPendingRecords(true);
+				}
+
 				throw new Error(
 					responsePayload?.error
 					|| $_('custom_lists.manage.pending_records.review_failed')
