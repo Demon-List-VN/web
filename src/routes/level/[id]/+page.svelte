@@ -10,6 +10,7 @@
 	import Chart from 'chart.js/auto';
 	import Ads from '$lib/components/ads.svelte';
 	import * as Tabs from '$lib/components/ui/tabs';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Button } from '$lib/components/ui/button';
 	import { goto } from '$app/navigation';
 	import { _ } from 'svelte-i18n';
@@ -22,7 +23,8 @@
 		Crown,
 		Monitor,
 		Smartphone,
-		ListPlus
+		ListPlus,
+		ListFilter
 	} from 'lucide-svelte';
 	import { InfoCircled } from 'svelte-radix';
 
@@ -38,6 +40,9 @@
 	let levelTags: any[] = [];
 	let levelVariants: any[] = [];
 	let effectiveVideoId: string | null = null;
+	let selectedRecordTargets = ['global'];
+	let recordsLoading = false;
+	let recordsFetchAbortController: AbortController | null = null;
 
 	type StarredListEntry = {
 		id: number;
@@ -123,7 +128,6 @@
 		}
 
 		levelAPI = null;
-		records = [];
 		deathCount = [];
 		relatedPosts = [];
 		levelTags = [];
@@ -133,11 +137,7 @@
 			.then((res) => res.json())
 			.then((res) => (levelAPI = res));
 
-		fetch(
-			`${import.meta.env.VITE_API_URL}/levels/${$page.params.id}/records?end=500`
-		)
-			.then((res) => res.json())
-			.then((res: any) => (records = res));
+		void fetchRecords();
 
 		fetch(
 			`${import.meta.env.VITE_API_URL}/levels/${$page.params.id}/deathCount`
@@ -168,6 +168,75 @@
 			.then((res) => res.json())
 			.then((res: any) => (levelVariants = res || []))
 			.catch(() => (levelVariants = []));
+	}
+
+	async function fetchRecords() {
+		recordsFetchAbortController?.abort();
+		const requestController = new AbortController();
+		recordsFetchAbortController = requestController;
+		recordsLoading = true;
+		const targets = encodeURIComponent(selectedRecordTargets.join(','));
+
+		try {
+			const response = await fetch(
+				`${import.meta.env.VITE_API_URL}/levels/${$page.params.id}/records?end=500&targets=${targets}`,
+				{ signal: requestController.signal }
+			);
+
+			if (!response.ok) {
+				throw new Error('Failed to load records');
+			}
+
+			if (recordsFetchAbortController === requestController) {
+				records = await response.json();
+			}
+		} catch (error) {
+			if ((error as any)?.name !== 'AbortError') {
+				records = [];
+			}
+		} finally {
+			if (recordsFetchAbortController === requestController) {
+				recordsLoading = false;
+				recordsFetchAbortController = null;
+			}
+		}
+	}
+
+	function toggleRecordTarget(target: string) {
+		if (
+			selectedRecordTargets.length === 1
+			&& selectedRecordTargets[0] === target
+		) {
+			return;
+		}
+
+		selectedRecordTargets = selectedRecordTargets.includes(target)
+			? selectedRecordTargets.filter((value) => value !== target)
+			: [...selectedRecordTargets, target];
+		void fetchRecords();
+	}
+
+	function getRecordFilterLabel() {
+		if (
+			selectedRecordTargets.length === 1
+			&& selectedRecordTargets[0] === 'global'
+		) {
+			return $_('level.record_filter_global');
+		}
+
+		if (selectedRecordTargets.length === 1) {
+			const selectedList = (data.recordLists ?? []).find(
+				(list: any) => String(list.id) === selectedRecordTargets[0]
+			);
+
+			if (selectedList) {
+				return selectedList.title;
+			}
+		}
+
+		return $_('level.record_filter_selected', {
+			values: { count: selectedRecordTargets.length }
+		});
 	}
 
 	function getList() {
@@ -758,7 +827,38 @@
         </Tabs.Trigger>
       </Tabs.List>
       <Tabs.Content value="records" class="mt-4">
-        {#if sortedRecords && sortedRecords.length > 0}
+        {#if 'level' in data}
+          <div class="record-filter-row">
+            <span class="record-filter-label">{$_('level.record_filter')}</span>
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger asChild let:builder>
+                <Button builders={[builder]} variant="outline" size="sm">
+                  <ListFilter class="mr-2 h-4 w-4" />
+                  {getRecordFilterLabel()}
+                </Button>
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content align="end" class="record-filter-menu">
+                <DropdownMenu.CheckboxItem
+                  checked={selectedRecordTargets.includes('global')}
+                  on:click={() => toggleRecordTarget('global')}
+                >
+                  {$_('level.record_filter_global')}
+                </DropdownMenu.CheckboxItem>
+                {#each data.recordLists ?? [] as list}
+                  <DropdownMenu.CheckboxItem
+                    checked={selectedRecordTargets.includes(String(list.id))}
+                    on:click={() => toggleRecordTarget(String(list.id))}
+                  >
+                    {list.title}
+                  </DropdownMenu.CheckboxItem>
+                {/each}
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
+          </div>
+        {/if}
+        {#if recordsLoading}
+          <div class="records-loading"><Loading inverted /></div>
+        {:else if sortedRecords && sortedRecords.length > 0}
           <div class="records-list">
             {#each sortedRecords as record, index}
               <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
@@ -780,6 +880,9 @@
                   <div on:click={(e) => e.stopPropagation()}>
                     <PlayerLink player={record.players} />
                   </div>
+                  {#if record.targetList}
+                    <span class="record-target">{record.targetList.title}</span>
+                  {/if}
                 </div>
 
                 <div class="record-meta">
@@ -866,6 +969,31 @@
   gap: 4px;
 }
 
+.record-filter-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.record-filter-label {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.8rem;
+}
+
+:global(.record-filter-menu) {
+  max-height: 320px;
+  min-width: 220px;
+  overflow-y: auto;
+}
+
+.records-loading {
+  min-height: 120px;
+  display: grid;
+  place-items: center;
+}
+
 .record-row {
   display: flex;
   align-items: center;
@@ -920,6 +1048,19 @@
   flex: 1;
   min-width: 0;
   font-weight: 500;
+}
+
+.record-target {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 2px;
+  overflow: hidden;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.68rem;
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .record-meta {

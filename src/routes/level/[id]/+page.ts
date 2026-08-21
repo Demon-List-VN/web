@@ -9,22 +9,31 @@ export async function load({ params, url, fetch }: Parameters<PageLoad>[0]) {
 
         if (levelRes.ok) {
             let starredLists: any[] = [];
+            let recordLists: any[] = [];
 
             try {
-                const starredRes = await fetch(
-                    `${import.meta.env.VITE_API_URL}/lists/levels/${id}/starred`
-                );
+                const [starredRes, recordListsRes] = await Promise.all([
+                    fetch(`${import.meta.env.VITE_API_URL}/lists/levels/${id}/starred`),
+                    fetch(`${import.meta.env.VITE_API_URL}/lists/levels/${id}/eligible`)
+                ]);
 
                 if (starredRes.ok) {
                     starredLists = await starredRes.json();
                 }
+
+                if (recordListsRes.ok) {
+                    recordLists = (await recordListsRes.json())
+                        .filter((list: any) => list.id > 0 && list.nonGlobalRecordsEnabled);
+                }
             } catch {
                 starredLists = [];
+                recordLists = [];
             }
 
             return {
                 level: (await levelRes.json()) as any,
-                starredLists
+                starredLists,
+                recordLists
             };
         }
 
@@ -38,7 +47,8 @@ export async function load({ params, url, fetch }: Parameters<PageLoad>[0]) {
                     video: 'https://www.youtube.com/watch?v=XIMLoLxmTDw',
                     requirement: -1
                 },
-                starredLists: []
+                starredLists: [],
+                recordLists: []
             };
         }
 
@@ -49,7 +59,8 @@ export async function load({ params, url, fetch }: Parameters<PageLoad>[0]) {
         return {
             gdbrowser: gdbrowserLevel,
             pointercrate: pointercrateLevel[0],
-            starredLists: []
+            starredLists: [],
+            recordLists: []
         };
     } catch {
         throw error(404, 'Level does not exist');

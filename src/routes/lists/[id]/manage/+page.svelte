@@ -5317,7 +5317,11 @@
 
 			if (!res.ok) {
 				if (res.status === 404 || res.status === 409) {
-					await loadPendingRecords(true);
+					pendingRecords = pendingRecords.filter(
+						(entry) => entry.id !== record.id
+					);
+
+					return true;
 				}
 
 				throw new Error(
