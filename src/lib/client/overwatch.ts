@@ -10,6 +10,7 @@ export type OverwatchAssignment = {
         levelName: string;
         isPlatformer: boolean;
         videoUrl: string;
+		rawUrl: string | null;
         progress: number;
         refreshRate: number | null;
         mobile: boolean;
