@@ -47,8 +47,18 @@
 		data: any;
 		timestamp: number;
 	};
+	type HomeFeedCache = {
+		version: number;
+		savedAt: number;
+		homeData: any;
+		loadedFeedItems: FeedItem[];
+		feedCursor: { before: string; beforeKey: string; } | null;
+		feedHasMore: boolean;
+	};
 
-	const COMMUNITY_PAGE_SIZE = 8;
+	const HOME_FEED_CACHE_VERSION = 1;
+	const HOME_FEED_CACHE_PREFIX = 'gdlist-home-feed';
+	const MAX_CACHED_CONTINUATION_ITEMS = 60;
 
 	const siteUrl = (import.meta.env.VITE_SITE_URL || 'https://gdlisthub.dev').replace(
 		/\/$/,
@@ -75,6 +85,7 @@
 	let feedLoadingMore = false;
 	let feedLoadError = false;
 	let feedInitialized = false;
+	let feedBatchSize = calculateFeedBatchSize();
 	let FriendLevelCardComponent: any = null;
 	let ClanRecordCardComponent: any = null;
 	let ClanTagComponent: any = null;
@@ -120,7 +131,8 @@
 		activeSeason,
 		battlepassProgress,
 		latestUnverifiedRecord,
-		seed: feedSeed
+		seed: feedSeed,
+		contentLimit: feedBatchSize
 	});
 	$: mixedContentItems = mixedFeed.filter(
 		(item) => item.kind === 'community'
@@ -132,7 +144,8 @@
 		(item) => item.kind === 'community' || item.kind === 'level'
 	);
 	$: mixedScrollableKeys = new Set(mixedScrollableItems.map((item) => item.key));
-	$: feedContinuationItems = mergeFeedItems(loadedFeedItems);
+	$: feedContinuationItems = mergeFeedItems(loadedFeedItems)
+		.filter((item) => !mixedScrollableKeys.has(item.key));
 
 	function ensureHomepageLoaded(authenticated: boolean) {
 		const mode: HomepageRequestMode = authenticated ? 'auth' : 'public';
@@ -142,6 +155,13 @@
 		}
 
 		homepageRequestMode = mode;
+
+		if (restoreHomeFeedCache(mode)) {
+			void refreshNewerFeed();
+
+			return;
+		}
+
 		void loadHomepage(mode);
 	}
 
@@ -168,7 +188,11 @@
 		}
 
 		try {
-			const response = await fetch(`${import.meta.env.VITE_API_URL}/homepage?compact=true`, {
+			const params = new URLSearchParams({
+				compact: 'true',
+				feedLimit: String(feedBatchSize)
+			});
+			const response = await fetch(`${import.meta.env.VITE_API_URL}/homepage?${params}`, {
 				headers
 			});
 
@@ -188,6 +212,7 @@
 					?? Math.floor(Math.random() * 2_147_483_647)
 			};
 			initializeFeedContinuation();
+			persistHomeFeedCache();
 		} catch {
 			if (homepageRequestMode === mode && homeData === null) {
 				homeData = {};
@@ -203,12 +228,22 @@
 
 			if (homepageRequestMode !== mode) {
 				homepageRequestMode = mode;
-				await loadHomepage(mode, token);
+
+				if (restoreHomeFeedCache(mode)) {
+					await refreshNewerFeed();
+				} else {
+					await loadHomepage(mode, token);
+				}
 			}
 		} catch {
 			if (homepageRequestMode === null) {
 				homepageRequestMode = 'public';
-				await loadHomepage('public');
+
+				if (restoreHomeFeedCache('public')) {
+					await refreshNewerFeed();
+				} else {
+					await loadHomepage('public');
+				}
 			}
 		}
 	}
@@ -275,8 +310,207 @@
 	}
 
 	onMount(() => {
+		const updateBatchSize = () => {
+			const nextBatchSize = calculateFeedBatchSize();
+
+			if (nextBatchSize !== feedBatchSize) {
+				loadedFeedItems = mergeFeedItems(mixedScrollableItems, loadedFeedItems);
+				feedBatchSize = nextBatchSize;
+				persistHomeFeedCache();
+			}
+		};
+
+		window.addEventListener('resize', updateBatchSize, { passive: true });
 		void loadHomepageFromSession();
+
+		return () => {
+			window.removeEventListener('resize', updateBatchSize);
+		};
 	});
+
+	function calculateFeedBatchSize() {
+		if (!browser) {
+			return 4;
+		}
+
+		return Math.min(5, Math.max(3, Math.ceil(window.innerHeight / 260)));
+	}
+
+	function homeFeedCacheKey(mode: HomepageRequestMode) {
+		const viewerKey = mode === 'auth' ? $user.data?.uid || 'signed-in' : 'public';
+
+		return `${HOME_FEED_CACHE_PREFIX}:v${HOME_FEED_CACHE_VERSION}:${viewerKey}`;
+	}
+
+	function restoreHomeFeedCache(mode: HomepageRequestMode) {
+		if (!browser) {
+			return false;
+		}
+
+		try {
+			const raw = sessionStorage.getItem(homeFeedCacheKey(mode));
+
+			if (!raw) {
+				return false;
+			}
+
+			const cached = JSON.parse(raw) as HomeFeedCache;
+
+			if (cached.version !== HOME_FEED_CACHE_VERSION || !cached.homeData) {
+				return false;
+			}
+
+			homeData = cached.homeData;
+			loadedFeedItems = Array.isArray(cached.loadedFeedItems)
+				? cached.loadedFeedItems
+				: [];
+			feedCursor = cached.feedCursor ?? null;
+			feedHasMore = cached.feedHasMore !== false;
+			feedLoadingMore = false;
+			feedLoadError = false;
+			feedInitialized = true;
+
+			return true;
+		} catch {
+			sessionStorage.removeItem(homeFeedCacheKey(mode));
+
+			return false;
+		}
+	}
+
+	function persistHomeFeedCache() {
+		if (!browser || !homepageRequestMode || !homeData) {
+			return;
+		}
+
+		const cachedLoadedFeedItems = loadedFeedItems
+			.slice(0, MAX_CACHED_CONTINUATION_ITEMS);
+		const cached: HomeFeedCache = {
+			version: HOME_FEED_CACHE_VERSION,
+			savedAt: Date.now(),
+			homeData,
+			loadedFeedItems: cachedLoadedFeedItems,
+			feedCursor: loadedFeedItems.length > cachedLoadedFeedItems.length
+				? getFeedCursor(cachedLoadedFeedItems)
+				: feedCursor,
+			feedHasMore
+		};
+
+		try {
+			sessionStorage.setItem(
+				homeFeedCacheKey(homepageRequestMode),
+				JSON.stringify(cached)
+			);
+		} catch {}
+	}
+
+	async function refreshNewerFeed() {
+		const cachedItems = buildScrollableFeedItems(
+			homeData?.levelFeed ?? buildLegacyLevelFeed(homeData?.levels) ?? [],
+			homeData?.communityPosts ?? []
+		);
+		const newestItem = cachedItems.at(0);
+
+		if (!newestItem) {
+			return;
+		}
+
+		const headers: Record<string, string> = {};
+
+		if ($user.loggedIn) {
+			try {
+				headers.Authorization = `Bearer ${await $user.token()}`;
+			} catch {}
+		}
+
+		try {
+			const after = new Date(feedItemTimestamp(newestItem))
+				.toISOString();
+			let beforeCursor: { before: string; beforeKey: string; } | null = null;
+			let incoming: FeedItem[] = [];
+
+			for (let pageIndex = 0; pageIndex < 5; pageIndex += 1) {
+				const params = new URLSearchParams({
+					limit: '20',
+					after,
+					afterKey: newestItem.key
+				});
+
+				if (beforeCursor) {
+					params.set('before', beforeCursor.before);
+					params.set('beforeKey', beforeCursor.beforeKey);
+				}
+
+				const response = await fetch(
+					`${import.meta.env.VITE_API_URL}/homepage/feed?${params}`,
+					{ headers }
+				);
+
+				if (!response.ok) {
+					return;
+				}
+
+				const result = await response.json();
+				const pageItems: FeedItem[] = Array.isArray(result?.data) ? result.data : [];
+
+				incoming = mergeFeedItems(incoming, pageItems);
+				beforeCursor = result?.nextCursor ?? null;
+
+				if (!result?.hasMore || !beforeCursor || pageItems.length === 0) {
+					break;
+				}
+			}
+
+			if (!incoming.length) {
+				return;
+			}
+
+			const newerPosts = incoming
+				.filter((item) => item.kind === 'community')
+				.map((item) => item.data);
+			const newerLevels = incoming
+				.filter((item) => item.kind === 'level')
+				.map((item) => item.data);
+
+			loadedFeedItems = mergeFeedItems(mixedScrollableItems, loadedFeedItems);
+			homeData = {
+				...homeData,
+				communityPosts: mergeUniqueEntries(
+					newerPosts,
+					homeData?.communityPosts ?? [],
+					(entry) => String(entry?.id)
+				),
+				levelFeed: mergeUniqueEntries(
+					newerLevels,
+					homeData?.levelFeed ?? [],
+					(entry) => String(entry?.feedKey ?? entry?.id ?? entry?.level?.id)
+				)
+			};
+			persistHomeFeedCache();
+		} catch {}
+	}
+
+	function mergeUniqueEntries<T>(
+		newer: T[],
+		existing: T[],
+		getKey: (entry: T) => string
+	) {
+		const seen = new Set<string>();
+
+		return [...newer, ...existing]
+			.filter((entry) => {
+				const key = getKey(entry);
+
+				if (!key || seen.has(key)) {
+					return false;
+				}
+
+				seen.add(key);
+
+				return true;
+			})
+			.slice(0, 100);
+	}
 
 	function initializeFeedContinuation() {
 		loadedFeedItems = [];
@@ -303,16 +537,17 @@
 		}
 
 		try {
-			const cursor = feedCursor ?? getFeedCursor(mixedContentItems);
+			const cursor = feedCursor ?? getFeedCursor(mixedScrollableItems);
 
 			if (!cursor) {
 				feedHasMore = false;
+				persistHomeFeedCache();
 
 				return;
 			}
 
 			const params = new URLSearchParams({
-				limit: String(COMMUNITY_PAGE_SIZE),
+				limit: String(feedBatchSize),
 				before: cursor.before,
 				beforeKey: cursor.beforeKey
 			});
@@ -336,6 +571,7 @@
 			loadedFeedItems = [...loadedFeedItems, ...uniqueItems];
 			feedCursor = result?.nextCursor ?? null;
 			feedHasMore = Boolean(result?.hasMore && result?.nextCursor);
+			persistHomeFeedCache();
 
 			const incomingPostIds = incoming
 				.filter((item) => item.kind === 'community')
@@ -558,9 +794,11 @@
 		battlepassProgress: any;
 		latestUnverifiedRecord: any;
 		seed: number;
+		contentLimit: number;
 	}) {
 		const contentItems: FeedItem[] = [
-			...buildScrollableFeedItems(input.levels, input.posts),
+			...buildScrollableFeedItems(input.levels, input.posts)
+				.slice(0, input.contentLimit),
 			...input.events.map((entry, index) => ({
 				kind: 'event' as const,
 				key: `event-${entry.id ?? index}`,
@@ -576,8 +814,7 @@
 				const timeDifference = feedItemTimestamp(right) - feedItemTimestamp(left);
 
 				return timeDifference || left.key.localeCompare(right.key);
-			})
-			.slice(0, 15);
+			});
 		const promotedItems: FeedItem[] = [
 			{ kind: 'pvp', key: 'pvp-pulse', data: input.pvp }
 		];
@@ -892,7 +1129,7 @@
       <div id="for-you-panel">
         {#if homeData === null}
           <div class="feed-stream" aria-label={tr('Loading feed', 'Đang tải bảng tin')}>
-            {#each { length: 5 } as _}
+            {#each { length: feedBatchSize } as _}
               <div class="feed-card skeleton-card" aria-hidden="true">
                 <div class="skeleton-row">
                   <span class="skeleton-avatar"></span>
