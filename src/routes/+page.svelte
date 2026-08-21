@@ -29,7 +29,7 @@
 	export let data: any;
 
 	type FeedItem = {
-		kind: 'community' | 'event' | 'level' | 'promo' | 'pvp' | 'record-progress' | 'tournament';
+		kind: 'community' | 'event' | 'level' | 'overwatch-promo' | 'promo' | 'pvp' | 'record-progress' | 'tournament';
 		key: string;
 		data: any;
 	};
@@ -112,6 +112,11 @@
 	$: activeSeason = homeData?.activeSeason ?? null;
 	$: battlepassProgress = homeData?.battlepassProgress ?? null;
 	$: latestUnverifiedRecord = homeData?.latestUnverifiedRecord ?? null;
+	$: canReviewOverwatch = $user.loggedIn
+		&& !$user.data?.isOrganization
+		&& !$user.data?.isAdmin
+		&& !$user.data?.isManager
+		&& Number($user.data?.exp ?? 0) >= 4900;
 	$: friendFeed = homeData?.friendFeed ?? null;
 	$: friendActivity = buildFriendActivity(friendFeed);
 	$: clanFeed = homeData?.clanFeed ?? null;
@@ -813,7 +818,8 @@
 				return timeDifference || left.key.localeCompare(right.key);
 			});
 		const promotedItems: FeedItem[] = [
-			{ kind: 'pvp', key: 'pvp-pulse', data: input.pvp }
+			{ kind: 'pvp', key: 'pvp-pulse', data: input.pvp },
+			{ kind: 'overwatch-promo', key: 'overwatch-v2-promo', data: null }
 		];
 
 		promotedItems.push({
@@ -995,7 +1001,9 @@
 		const seconds = Math.floor((value % 60_000) / 1000);
 		const milliseconds = Math.floor(value % 1000);
 
-		return `${minutes}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(3, '0')}`;
+		return `${minutes}:${String(seconds)
+			.padStart(2, '0')}.${String(milliseconds)
+			.padStart(3, '0')}`;
 	}
 
 	function useLevelThumbnailFallback(event: Event, levelId: number | string) {
@@ -1387,6 +1395,41 @@
                       {tr('Browse all', 'Xem tất cả')}
                     </a>
                   </div>
+                </article>
+              {:else if item.kind === 'overwatch-promo'}
+                <article class="feed-card promo-post overwatch-promo-post">
+                  <div class="post-head">
+                    <div class="source-avatar overwatch-source"><Shield size={18} /></div>
+                    <div class="source-copy">
+                      <div class="source-line">
+                        <a href="/overwatch">Overwatch v2</a>
+                        <BadgeCheck size={15} class="verified" />
+                      </div>
+                      <span>{tr('Promoted', 'Quảng bá')} · {tr('Community-powered review', 'Kiểm duyệt bởi cộng đồng')}</span>
+                    </div>
+                  </div>
+
+                  <a class="overwatch-promo-creative" href="/overwatch">
+                    <span class="content-label overwatch-promo-label">
+                      <Shield size={13} /> OVERWATCH V2
+                    </span>
+                    <h2>{tr('Records move forward—even when staff are offline.', 'Record vẫn được xử lý ngay cả khi staff không online.')}</h2>
+                    <p>
+                      {tr(
+                        'Blind assignments, reputation-weighted votes, continuous audits, and independent appeals put every decision in the community’s hands.',
+                        'Assignment ẩn danh, vote theo reputation, audit liên tục và appeal độc lập giúp cộng đồng tự đưa ra quyết định.'
+                      )}
+                    </p>
+                    <div class="overwatch-feature-row" aria-hidden="true">
+                      <span><Shield size={14} /> {tr('Blind review', 'Review ẩn danh')}</span>
+                      <span><BadgeCheck size={14} /> {tr('Weighted trust', 'Uy tín có trọng số')}</span>
+                      <span><Users size={14} /> {tr('Community verdict', 'Cộng đồng quyết định')}</span>
+                    </div>
+                    <span class="overwatch-promo-cta">
+                      {canReviewOverwatch ? tr('Start reviewing', 'Bắt đầu review') : tr('Explore Overwatch', 'Khám phá Overwatch')}
+                      <ArrowRight size={16} />
+                    </span>
+                  </a>
                 </article>
               {:else if item.kind === 'promo'}
                 {@const season = item.data?.activeSeason}
@@ -2418,6 +2461,105 @@
   }
 }
 
+.overwatch-source {
+  color: #67e8f9;
+  background: linear-gradient(145deg, #0e7490, #312e81);
+}
+
+.overwatch-promo-creative {
+  position: relative;
+  display: flex;
+  min-height: 330px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 11px;
+  margin: 2px 12px 12px;
+  padding: 27px;
+  overflow: hidden;
+  border-radius: 11px;
+  color: white;
+  text-decoration: none;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    radial-gradient(circle at 82% 18%, rgba(34, 211, 238, 0.34), transparent 32%),
+    linear-gradient(145deg, #081826, #17133d 68%, #27134f);
+  background-size: 28px 28px, 28px 28px, auto, auto;
+
+  &::before {
+    content: '';
+    position: absolute;
+    width: 250px;
+    height: 250px;
+    top: -118px;
+    right: -52px;
+    border: 1px solid rgba(103, 232, 249, 0.28);
+    border-radius: 50%;
+    box-shadow: 0 0 80px rgba(34, 211, 238, 0.14);
+  }
+
+  > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  h2 {
+    max-width: 560px;
+    margin: 3px 0 0;
+    font-size: clamp(27px, 5vw, 40px);
+    line-height: 1;
+    letter-spacing: -0.045em;
+    font-weight: 900;
+  }
+
+  p {
+    max-width: 530px;
+    margin: 0;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+}
+
+.overwatch-promo-label {
+  color: #cffafe;
+  border-color: rgba(103, 232, 249, 0.32);
+  background: rgba(8, 145, 178, 0.2);
+}
+
+.overwatch-feature-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 9px;
+    border: 1px solid rgba(255, 255, 255, 0.13);
+    border-radius: 999px;
+    color: rgba(255, 255, 255, 0.82);
+    background: rgba(5, 12, 28, 0.4);
+    font-size: 10px;
+    font-weight: 750;
+  }
+}
+
+.overwatch-promo-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 3px;
+  padding: 9px 13px;
+  border-radius: 9px;
+  color: #06202a;
+  background: #cffafe;
+  font-size: 11px;
+  font-weight: 850;
+}
+
 .promo-label {
   color: #ffe5f5;
   border-color: rgba(255, 255, 255, 0.2);
@@ -2664,7 +2806,8 @@
   .event-media,
   .tournament-media,
   .pvp-hero,
-  .promo-creative {
+  .promo-creative,
+  .overwatch-promo-creative {
     margin-right: 8px;
     margin-left: 8px;
   }
@@ -2703,6 +2846,11 @@
 
   .promo-creative {
     min-height: 330px;
+    padding: 20px;
+  }
+
+  .overwatch-promo-creative {
+    min-height: 350px;
     padding: 20px;
   }
 
