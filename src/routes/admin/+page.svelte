@@ -189,7 +189,8 @@
 					managerAccess: true
 				},
 				{ name: 'Account Merger', href: '/admin/accountMerger' },
-				{ name: 'Player Convictions', href: '/admin/convictions' }
+				{ name: 'Player Convictions', href: '/admin/convictions' },
+				{ name: 'Overwatch Reviewers', href: '/admin/overwatch' }
 			]
 		},
 		{

@@ -1,269 +1,205 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { toast } from 'svelte-sonner';
 	import Title from '$lib/components/Title.svelte';
 	import { Button } from '$lib/components/ui/button';
-	import RecordDetail from '$lib/components/recordDetail.svelte';
+	import { Badge } from '$lib/components/ui/badge';
 	import { user } from '$lib/client';
-	import { toast } from 'svelte-sonner';
-	import { onMount } from 'svelte';
-	import { _ } from 'svelte-i18n';
+	import { locale } from 'svelte-i18n';
+	import AssignmentReview from './AssignmentReview.svelte';
+	import {
+		getOverwatchMe,
+		retrieveOverwatchAssignment,
+		returnOverwatchAssignment,
+		submitOverwatchVote,
+		type OverwatchMe,
+		type OverwatchVerdict
+	} from '$lib/client/overwatch';
 
-	type RetrieveType = 'official' | 'nonOfficial';
+	let state: OverwatchMe | null = null;
+	let loading = true;
+	let retrieving = false;
+	let submitting = false;
+	let returning = false;
+	let loadedUid: string | null = null;
 
-	let isOpen = false;
-	let userID: any, levelID: any;
-	let recordID: number | null = null;
-	let officialLimitLeft: number | null = null;
-	let officialDailyLimit = 3;
-	let nonOfficialLimitLeft: number | null = null;
-	let nonOfficialDailyLimit = 5;
-
-	function applyLimitData(data: any) {
-		if (data?.limits?.official) {
-			officialDailyLimit = Number(
-				data.limits.official.limit || officialDailyLimit
-			);
-			officialLimitLeft = Number(data.limits.official.limitLeft || 0);
-		}
-
-		if (data?.limits?.nonOfficial) {
-			nonOfficialDailyLimit = Number(
-				data.limits.nonOfficial.limit || nonOfficialDailyLimit
-			);
-			nonOfficialLimitLeft = Number(data.limits.nonOfficial.limitLeft || 0);
-		}
-
-		if (!data?.limits && typeof data?.limitLeft === 'number') {
-			officialDailyLimit = Number(data.limit || officialDailyLimit);
-			officialLimitLeft = Number(data.limitLeft || 0);
-		}
+	function text(en: string, vi: string) {
+		return $locale === 'vi' ? vi : en;
 	}
 
-	function isLimitReached(type: RetrieveType) {
-		const limitLeft = type === 'official'
-			? officialLimitLeft
-			: nonOfficialLimitLeft;
+	let eligibilityMessages: Record<string, string>;
 
-		return limitLeft !== null && limitLeft <= 0;
-	}
+	$: eligibilityMessages = {
+		ACCOUNT_BANNED: text('Your account is banned.', 'Tài khoản của bạn đã bị khóa.'),
+		ORGANIZATION_ACCOUNT: text('Organization accounts cannot review records.', 'Tài khoản tổ chức không thể duyệt record.'),
+		OPERATOR_ACCOUNT: text('Operator accounts are kept outside the record decision pipeline.', 'Tài khoản vận hành không tham gia quyết định record.'),
+		LEVEL_TOO_LOW: text('Reach global level 50 to unlock Overwatch.', 'Đạt level 50 để mở khóa Overwatch.'),
+		OVERWATCH_BANNED: text('Your Overwatch access is suspended.', 'Quyền truy cập Overwatch của bạn đang bị khóa.')
+	};
 
-	async function fetchLimit() {
+	async function load() {
 		if (!$user.loggedIn) {
-			officialLimitLeft = null;
-			nonOfficialLimitLeft = null;
+			state = null;
+			loading = false;
 
 			return;
 		}
 
+		loading = true;
+
 		try {
-			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/records/retrieve-limit`,
-				{
-					headers: {
-						Authorization: `Bearer ${await $user.token()}`,
-						'Content-Type': 'application/json'
-					}
-				}
-			);
-
-			if (!res.ok) {
-				return;
-			}
-
-			const data = await res.json();
-			applyLimitData(data);
-		} catch {
-		// Ignore silently
+			state = await getOverwatchMe(await $user.token());
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : 'Failed to load Overwatch');
+		} finally {
+			loading = false;
 		}
 	}
 
-	async function retrieve(type: RetrieveType) {
-		const label = type === 'official' ? 'official list' : 'non official list';
+	async function retrieve() {
+		retrieving = true;
 
-		toast.promise(
-			fetch(`${import.meta.env.VITE_API_URL}/records/retrieve?type=${type}`, {
-				headers: {
-					Authorization: `Bearer ${await $user.token()}`,
-					'Content-Type': 'application/json'
-				}
-			})
-				.then(async (res) => {
-					const data = await res.json()
-						.catch(() => ({}));
+		try {
+			const assignment = await retrieveOverwatchAssignment(await $user.token());
 
-					if (!res.ok) {
-						throw data;
-					}
-
-					return data;
-				})
-				.then((res) => {
-					userID = res.userid;
-					levelID = res.levelid;
-					recordID = typeof res.id === 'number' ? res.id : null;
-					applyLimitData(res);
-					isOpen = true;
-				}),
-			{
-				loading: `Retrieving ${label} record...`,
-				success: `Retrieved ${label} record!`,
-				error: (err) => {
-					applyLimitData(err);
-
-					if (err && typeof err === 'object' && 'limitLeft' in err) {
-						if (type === 'official') {
-							officialLimitLeft = Number((err as any).limitLeft || 0);
-							officialDailyLimit = Number(
-								(err as any).limit || officialDailyLimit
-							);
-						} else {
-							nonOfficialLimitLeft = Number(
-								(err as any).limitLeft || 0
-							);
-							nonOfficialDailyLimit = Number(
-								(err as any).limit || nonOfficialDailyLimit
-							);
-						}
-
-						return 'Daily limit reached. Please try again tomorrow.';
-					}
-
-					return `Failed to retrieve ${label} record`;
-				}
+			if (state) {
+				state.currentAssignment = assignment;
 			}
-		);
+		} catch (error) {
+			const message = error instanceof Error ? error.message : 'Failed to retrieve a record';
+
+			toast.error(message === 'NO_OVERWATCH_RECORD' ? 'No eligible record is available right now.' : message);
+		} finally {
+			retrieving = false;
+		}
 	}
 
-	onMount(() => {
-		fetchLimit();
+	async function vote(verdict: OverwatchVerdict, reason: string) {
+		if (!state?.currentAssignment) {
+			return;
+		}
 
-		const unsubscribe = user.subscribe((u) => {
-			if (u.loggedIn) {
-				fetchLimit();
-			}
-		});
+		submitting = true;
 
-		return () => unsubscribe();
-	});
+		try {
+			await submitOverwatchVote(
+				await $user.token(),
+				state.currentAssignment.assignmentId,
+				verdict,
+				reason,
+				crypto.randomUUID()
+			);
+			toast.success('Verdict recorded. Thank you for reviewing.');
+			await load();
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : 'Failed to submit verdict');
+		} finally {
+			submitting = false;
+		}
+	}
+
+	async function returnAssignment() {
+		if (!state?.currentAssignment || !confirm('Return this record to the pool?')) {
+			return;
+		}
+
+		returning = true;
+
+		try {
+			await returnOverwatchAssignment(
+				await $user.token(),
+				state.currentAssignment.assignmentId
+			);
+			toast.success('Record returned to the pool.');
+			await load();
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : 'Failed to return record');
+		} finally {
+			returning = false;
+		}
+	}
+
+	onMount(() => user.subscribe((currentUser) => {
+		const uid = currentUser.loggedIn ? String(currentUser.data?.uid ?? '') : null;
+
+		if (currentUser.checked && uid !== loadedUid) {
+			loadedUid = uid;
+			void load();
+		}
+	}));
 </script>
 
 <svelte:head>
-  <title>{$_('head.titles.overwatch')} - {$_('head.site_name')}</title>
+  <title>Overwatch</title>
 </svelte:head>
 
-<RecordDetail bind:open={isOpen} uid={userID} {levelID} recordId={recordID} />
+<Title value="Overwatch" />
 
-{#if $user.loggedIn && ($user.data.isAdmin || $user.data.isTrusted)}
-  <Title value="Overwatch" />
-  <div class="wrapper">
-    <h2>Overview</h2>
-    <ul>
-      <li>
-        Overwatch allows the GDListHub community to regulate itself by providing a method for qualified and
-        experienced members of community to review submitted records.
-      </li>
-    </ul>
-    <h2>Instruction</h2>
-    <ul>
-      <li>
-        Step 1: Click on the <b>Retrieve from official list</b> or
-        <b>Retrieve from non official list</b> button. A record detail window
-        will appear.
-      </li>
-      <li>
-        Step 2: After reviewed the record, go to <b>Review</b> tab and provide
-        appropriate verdict for the reviewed record.
-      </li>
-      <li>Step 3: You are done!</li>
-    </ul>
-    <h2>Note</h2>
-    <ul>
-      <li>
-        You can review up to 3 official list records and 5 non official list
-        records per day.
-      </li>
-      <li>
-        After retrieving a record, you must provide a verdict before reviewing
-        other records.
-      </li>
-      <li>You cannot review your own record.</li>
-      <li>
-        A blatant error of judgment will result in a temporary or permanent ban
-        from accessing Overwatch.
-      </li>
-    </ul>
-    {#if officialLimitLeft !== null || nonOfficialLimitLeft !== null}
-      <div class="limitGrid">
-        <p class="limitText">
-          Official list daily limit left: {officialLimitLeft ?? '-'}/{
-            officialDailyLimit
-          }
-        </p>
-        <p class="limitText">
-          Non official list daily limit left: {nonOfficialLimitLeft ?? '-'}/{
-            nonOfficialDailyLimit
-          }
-        </p>
+<main class="overwatch-page">
+  {#if loading}
+    <div class="empty-card">{text('Loading Overwatch…', 'Đang tải Overwatch…')}</div>
+  {:else if !$user.loggedIn}
+    <div class="empty-card">{text('Sign in to view your Overwatch profile.', 'Đăng nhập để xem hồ sơ Overwatch.')}</div>
+  {:else if state}
+    <section class="hero">
+      <div>
+        <p class="eyebrow">{text('Community record review', 'Cộng đồng kiểm duyệt record')}</p>
+        <h1>{text('Review without seeing the crowd', 'Đánh giá độc lập, không bị ảnh hưởng bởi số đông')}</h1>
+        <p>{text('Assignments are anonymous and never reveal their review phase, previous votes or reviewer identities.', 'Assignment được ẩn danh và không tiết lộ giai đoạn, vote trước đó hay danh tính reviewer.')}</p>
       </div>
+      <Badge variant={state.eligible ? 'default' : 'secondary'}>
+        {state.eligible ? text('Eligible', 'Đủ điều kiện') : text('Unavailable', 'Không khả dụng')}
+      </Badge>
+    </section>
+
+    <section class="stats">
+      <article><span>Reputation</span><strong>{state.profile.reputationScore}</strong><small>{state.profile.reputationTier}</small></article>
+      <article><span>Vote weight</span><strong>{state.profile.effectiveWeight.toFixed(2)}</strong><small>{state.profile.probation ? `${state.profile.probationReviewsLeft} probation reviews left` : 'Full weight active'}</small></article>
+      <article><span>Completed</span><strong>{state.profile.completedReviews}</strong><small>Validated history</small></article>
+      <article><span>Today</span><strong>{state.profile.limitLeft}/{state.profile.dailyLimit}</strong><small>Reviews remaining</small></article>
+    </section>
+
+    {#if !state.eligible}
+      <section class="notice-card danger">
+        <h2>{text('Overwatch is unavailable', 'Overwatch không khả dụng')}</h2>
+        <p>{eligibilityMessages[state.eligibilityReason ?? ''] ?? 'This account is not eligible.'}</p>
+        {#if state.profile.banned && state.profile.banReason}
+          <p><strong>Reason:</strong> {state.profile.banReason}</p>
+          <p>{state.profile.bannedUntil ? `Ends ${new Date(state.profile.bannedUntil)
+.toLocaleString()}` : 'Permanent suspension'}</p>
+        {/if}
+      </section>
+    {:else if state.currentAssignment}
+      <AssignmentReview
+        assignment={state.currentAssignment}
+        {submitting}
+        {returning}
+        onVote={vote}
+        onReturn={returnAssignment}
+      />
+    {:else}
+      <section class="retrieve-card">
+        <div>
+          <h2>{text('Ready for the next record?', 'Sẵn sàng cho record tiếp theo?')}</h2>
+          <p>{text('The system chooses a normal, audit or independent review without revealing which one.', 'Hệ thống tự chọn normal, audit hoặc independent review mà không tiết lộ loại assignment.')}</p>
+        </div>
+        <Button disabled={retrieving || state.profile.limitLeft <= 0} on:click={retrieve}>
+          {retrieving ? text('Retrieving…', 'Đang lấy record…') : state.profile.limitLeft <= 0 ? text('Daily limit reached', 'Đã hết lượt hôm nay') : text('Retrieve record', 'Nhận record')}
+        </Button>
+      </section>
     {/if}
-    <br />
-    <div class="buttonRow">
-      <Button
-        on:click={() => retrieve('official')}
-        disabled={isLimitReached('official')}
-      >Retrieve from official list</Button>
-      <Button
-        on:click={() => retrieve('nonOfficial')}
-        disabled={isLimitReached('nonOfficial')}
-      >Retrieve from non official list</Button>
-    </div>
-  </div>
-{/if}
 
-<style lang="scss">
-.wrapper {
-  padding-inline: 100px;
+    <section class="rules-card">
+      <h2>{text('Review rules', 'Quy tắc review')}</h2>
+      <div class="rule-grid">
+        <p><strong>Accept</strong><span>The submitted evidence clearly validates the record.</span></p>
+        <p><strong>Reject</strong><span>The record is invalid. A concrete reason is required.</span></p>
+        <p><strong>Unsure</strong><span>You cannot decide confidently from the available evidence.</span></p>
+      </div>
+    </section>
+  {/if}
+</main>
 
-  h2 {
-    display: block;
-    font-size: 1.5em;
-    margin-top: 0.83em;
-    margin-bottom: 0.83em;
-    margin-left: 0;
-    margin-right: 0;
-    font-weight: bold;
-  }
-
-  ul {
-    list-style: initial;
-    margin: initial;
-    padding: 0 0 0 40px;
-  }
-
-  li {
-    display: list-item;
-  }
-
-  .limitGrid {
-    display: grid;
-    gap: 4px;
-    margin-top: 12px;
-  }
-
-  .limitText {
-    margin: 0;
-    font-weight: 600;
-  }
-
-  .buttonRow {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-}
-
-@media screen and (max-width: 900px) {
-  .wrapper {
-    padding-inline: 15px;
-  }
-}
+<style>
+  .overwatch-page{max-width:1050px;margin:0 auto;padding:22px 18px 80px;display:grid;gap:18px}.hero,.retrieve-card{display:flex;align-items:center;justify-content:space-between;gap:22px;border:1px solid hsl(var(--border));border-radius:20px;background:linear-gradient(135deg,hsl(var(--card)),hsl(var(--muted)/.55));padding:28px}.eyebrow{font-size:.72rem;text-transform:uppercase;letter-spacing:.13em;font-weight:800;color:hsl(var(--primary))}.hero h1{font-size:clamp(1.7rem,4vw,2.7rem);font-weight:850;letter-spacing:-.04em;margin:4px 0}.hero p:last-child,.retrieve-card p{max-width:680px;color:hsl(var(--muted-foreground))}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.stats article{display:grid;gap:3px;border:1px solid hsl(var(--border));border-radius:14px;background:hsl(var(--card));padding:17px}.stats span,.stats small{font-size:.78rem;color:hsl(var(--muted-foreground))}.stats strong{font-size:1.55rem}.notice-card,.rules-card,.empty-card{border:1px solid hsl(var(--border));border-radius:16px;background:hsl(var(--card));padding:22px}.danger{border-color:hsl(var(--destructive)/.45)}.notice-card h2,.retrieve-card h2,.rules-card h2{font-size:1.15rem;font-weight:750}.notice-card p{margin-top:7px;color:hsl(var(--muted-foreground))}.rule-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;margin-top:13px}.rule-grid p{display:grid;gap:4px;border-radius:10px;background:hsl(var(--muted)/.5);padding:13px}.rule-grid span{font-size:.84rem;color:hsl(var(--muted-foreground))}@media(max-width:760px){.stats,.rule-grid{grid-template-columns:1fr 1fr}.hero,.retrieve-card{align-items:flex-start;flex-direction:column}}@media(max-width:480px){.stats,.rule-grid{grid-template-columns:1fr}.retrieve-card :global(button){width:100%}}
 </style>

@@ -19,6 +19,7 @@
 	import { _ } from 'svelte-i18n';
 	import { EllipsisIcon, FileText, Gauge, SkipForward } from 'lucide-svelte';
 	import AcceptanceBadge from '$lib/components/AcceptanceBadge.svelte';
+	import OverwatchSubmissionStatus from '$lib/components/OverwatchSubmissionStatus.svelte';
 
 	export let data: PageData;
 	let alertOpened = false;
@@ -377,6 +378,7 @@
               <Table.Head class="w-[130px] text-center">{
                 $_('acceptance.label')
               }</Table.Head>
+              <Table.Head class="w-[150px] text-center">Overwatch</Table.Head>
               <Table.Head class="w-[100px] text-center">{
                 $_('submissions.queue_no')
               }</Table.Head>
@@ -390,7 +392,7 @@
             {#each data.records as record, index}
               {#if index !== 0 && index % 50 === 0}
                 <Table.Row class="hover:bg-transparent">
-                  <Table.Cell colspan={8} class="p-0">
+                  <Table.Cell colspan={9} class="p-0">
                     <Ads />
                   </Table.Cell>
                 </Table.Row>
@@ -446,6 +448,13 @@
                     acceptedAuto={record.acceptedAuto}
                     rejectedAt={record.rejectedAt}
                   />
+                </Table.Cell>
+                <Table.Cell class="text-center">
+                  {#if $user.loggedIn && $user.data?.uid == $page.params.uid}
+                    <OverwatchSubmissionStatus recordId={record.id} />
+                  {:else}
+                    <span class="muted">—</span>
+                  {/if}
                 </Table.Cell>
                 <Table.Cell class="text-center">
                   {#if !isPendingSubmission(record)}

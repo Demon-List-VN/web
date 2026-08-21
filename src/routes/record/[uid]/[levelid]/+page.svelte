@@ -909,7 +909,9 @@
                         $_('record_detail.reviewed_by')
                       }</span>
                       <span class="row-value">
-                        {#if !record.data.isChecked && !record.data.reviewer}
+                        {#if record.data.reviewedByOverwatch}
+                          <span class="mod-badge">Overwatch consensus</span>
+                        {:else if !record.data.isChecked && !record.data.reviewer}
                           <span class="row-muted">?</span>
                         {:else if record.data.reviewer}
                           <PlayerHoverCard player={record.data.reviewer} />
