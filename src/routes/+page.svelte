@@ -29,7 +29,7 @@
 	export let data: any;
 
 	type FeedItem = {
-		kind: 'community' | 'event' | 'level' | 'promo' | 'pvp' | 'record-progress' | 'supporter' | 'tournament';
+		kind: 'community' | 'event' | 'level' | 'promo' | 'pvp' | 'record-progress' | 'tournament';
 		key: string;
 		data: any;
 	};
@@ -107,7 +107,6 @@
 	$: events = homeData?.events ?? null;
 	$: communityPosts = homeData?.communityPosts ?? null;
 	$: officialTournaments = homeData?.officialTournaments ?? null;
-	$: topSupporters = homeData?.topSupporters ?? [];
 	$: pvp = homeData?.pvp ?? null;
 	$: feedSeed = Number(homeData?.feedSeed ?? 1);
 	$: activeSeason = homeData?.activeSeason ?? null;
@@ -126,7 +125,6 @@
 		posts: communityPosts ?? [],
 		events: events ?? [],
 		tournaments: officialTournaments ?? [],
-		supporters: topSupporters,
 		pvp,
 		activeSeason,
 		battlepassProgress,
@@ -788,7 +786,6 @@
 		posts: any[];
 		events: any[];
 		tournaments: any[];
-		supporters: any[];
 		pvp: any;
 		activeSeason: any;
 		battlepassProgress: any;
@@ -818,14 +815,6 @@
 		const promotedItems: FeedItem[] = [
 			{ kind: 'pvp', key: 'pvp-pulse', data: input.pvp }
 		];
-
-		if (input.supporters.length) {
-			promotedItems.push({
-				kind: 'supporter',
-				key: 'top-supporters',
-				data: input.supporters.slice(0, 3)
-			});
-		}
 
 		promotedItems.push({
 			kind: 'promo',
@@ -1399,48 +1388,6 @@
                     </a>
                   </div>
                 </article>
-              {:else if item.kind === 'supporter'}
-                <article class="feed-card supporter-post">
-                  <div class="post-head">
-                    <div class="source-avatar supporter-source"><Star size={18} fill="currentColor" /></div>
-                    <div class="source-copy">
-                      <div class="source-line">
-                        <a href="/premium/top">GDListHub Premium</a>
-                        <BadgeCheck size={15} class="verified" />
-                      </div>
-                      <span>{tr('Community-powered', 'Được cộng đồng chung tay')}</span>
-                    </div>
-                  </div>
-
-                  <div class="supporter-spotlight">
-                    <span class="content-label supporter-label"><Trophy size={13} /> {tr('TOP PREMIUM MEMBERS', 'TOP THÀNH VIÊN PREMIUM')}</span>
-                    <h2>{tr('The players powering GDListHub.', 'Những người chơi tiếp sức cho GDListHub.')}</h2>
-                    <div class="supporter-list">
-                      {#each item.data as supporter, index}
-                        <a href={`/player/${supporter.player?.uid}`} class="supporter-row">
-                          <strong>#{index + 1}</strong>
-                          <img
-                            src={`https://cdn.gdlisthub.dev/avatars/${supporter.player?.uid}${supporter.player?.isAvatarGif ? '.gif' : '.jpg'}?version=${supporter.player?.avatarVersion ?? 0}`}
-                            alt=""
-                            loading="lazy"
-                          />
-                          <span>{supporter.player?.name}</span>
-                          <small>{formatNumber(supporter.totalAmount)}₫</small>
-                        </a>
-                      {/each}
-                    </div>
-                    <div class="supporter-actions">
-                      <a class="supporter-buy-cta" href="/premium">
-                        <Star size={15} fill="currentColor" />
-                        {tr('Get Premium', 'Mua Premium')}
-                      </a>
-                      <a class="supporter-cta" href="/premium/top">
-                        {tr('View leaderboard', 'Xem bảng xếp hạng')}
-                        <ArrowRight size={16} />
-                      </a>
-                    </div>
-                  </div>
-                </article>
               {:else if item.kind === 'promo'}
                 {@const season = item.data?.activeSeason}
                 {@const progress = item.data?.battlepassProgress}
@@ -2001,11 +1948,6 @@
   background: hsl(153 72% 45% / 0.11);
 }
 
-.supporter-source {
-  color: hsl(43 90% 45%);
-  background: hsl(43 95% 52% / 0.12);
-}
-
 .source-copy {
   min-width: 0;
   display: flex;
@@ -2348,112 +2290,6 @@
   font-weight: 850;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-}
-
-.supporter-spotlight {
-  margin: 2px 12px 12px;
-  padding: 22px;
-  border-radius: 11px;
-  color: #fff9e9;
-  background:
-    radial-gradient(circle at 88% 5%, rgba(250, 204, 21, 0.28), transparent 38%),
-    linear-gradient(145deg, #3b2808, #17130d 68%);
-
-  h2 {
-    margin: 9px 0 16px;
-    font-size: clamp(22px, 4vw, 30px);
-    line-height: 1.08;
-    letter-spacing: -0.03em;
-    font-weight: 870;
-  }
-}
-
-.supporter-label {
-  color: #fff1a8;
-  border-color: rgba(253, 224, 71, 0.22);
-  background: rgba(234, 179, 8, 0.14);
-}
-
-.supporter-list {
-  display: grid;
-  gap: 6px;
-}
-
-.supporter-row {
-  display: grid;
-  grid-template-columns: 28px 38px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 9px;
-  min-height: 48px;
-  padding: 5px 9px;
-  border: 1px solid rgba(253, 224, 71, 0.1);
-  border-radius: 9px;
-  color: #fff9e9;
-  background: rgba(255, 255, 255, 0.045);
-  text-decoration: none;
-
-  > strong {
-    color: #fde047;
-    font-size: 12px;
-    text-align: center;
-  }
-
-  img {
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    object-fit: cover;
-  }
-
-  > span {
-    min-width: 0;
-    overflow: hidden;
-    font-size: 12px;
-    font-weight: 800;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  small {
-    color: rgba(255, 249, 233, 0.64);
-    font-size: 10px;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-  }
-}
-
-.supporter-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 14px;
-  flex-wrap: wrap;
-}
-
-.supporter-buy-cta,
-.supporter-cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  min-height: 36px;
-  text-decoration: none;
-}
-
-.supporter-buy-cta {
-  padding: 0 13px;
-  border: 1px solid rgba(255, 241, 168, 0.8);
-  border-radius: 9px;
-  color: #2a1d05;
-  background: linear-gradient(135deg, #fde68a, #facc15);
-  box-shadow: 0 8px 22px rgba(234, 179, 8, 0.16);
-  font-size: 11px;
-  font-weight: 900;
-}
-
-.supporter-cta {
-  color: #fde68a;
-  font-size: 11px;
-  font-weight: 800;
 }
 
 .record-progress-creative {
@@ -2828,7 +2664,6 @@
   .event-media,
   .tournament-media,
   .pvp-hero,
-  .supporter-spotlight,
   .promo-creative {
     margin-right: 8px;
     margin-left: 8px;
