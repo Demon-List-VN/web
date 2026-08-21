@@ -464,7 +464,11 @@
                       $_('submissions.forwarded')
                     }</Badge>
                   {:else if record.queueNo}
-                    <Badge>{record.queueNo}</Badge>
+                    {#if record.queueNo <= 20}
+                      <Badge variant="outline">{$_('submissions.in_review')}</Badge>
+                    {:else}
+                      <Badge>{record.queueNo - 20}</Badge>
+                    {/if}
                   {:else}
                     <span class="muted">-</span>
                   {/if}

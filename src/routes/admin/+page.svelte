@@ -190,7 +190,7 @@
 				},
 				{ name: 'Account Merger', href: '/admin/accountMerger' },
 				{ name: 'Player Convictions', href: '/admin/convictions' },
-				{ name: 'Overwatch Reviewers', href: '/admin/overwatch' }
+				{ name: 'Overwatch Analytics', href: '/admin/overwatch' }
 			]
 		},
 		{

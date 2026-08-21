@@ -6,6 +6,10 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { user } from '$lib/client';
+	import {
+		getAdminOverwatchRecordVotes,
+		type AdminOverwatchRecordVotes
+	} from '$lib/client/overwatch';
 	import { pickRecordUpdatePayload } from '$lib/client/recordPayload';
 	import { toast } from 'svelte-sonner';
 	import { _, locale } from 'svelte-i18n';
@@ -90,6 +94,10 @@
 	let estimatedQueueNo: number | null = null;
 	let estimatedQueueLoading = false;
 	let queueBoostInventory: any[] = [];
+	let overwatchVotes: AdminOverwatchRecordVotes | null = null;
+	let overwatchVotesLoading = false;
+	let overwatchVotesLoaded = false;
+	let overwatchVotesError = '';
 
 	function getTimeString(ms: number) {
 		const minutes = Math.floor(ms / 60000);
@@ -98,6 +106,48 @@
 
 		return `${minutes}:${seconds.toString()
 			.padStart(2, '0')}.${milliseconds}`;
+	}
+
+	function overwatchLabel(value: string | null | undefined) {
+		if (!value) return 'Pending';
+
+		return value.toLowerCase().split('_')
+			.map((part) => part[0]?.toUpperCase() + part.slice(1))
+			.join(' ');
+	}
+
+	function voteShare(weight: number) {
+		if (!overwatchVotes) return 0;
+
+		const total = overwatchVotes.summary.accept.weight
+			+ overwatchVotes.summary.reject.weight
+			+ overwatchVotes.summary.unsure.weight;
+
+		return total > 0 ? Math.max(0, Math.min(100, weight / total * 100)) : 0;
+	}
+
+	async function loadOverwatchVotes(force = false) {
+		if (!record?.data?.id || overwatchVotesLoading || (overwatchVotesLoaded && !force)) return;
+
+		overwatchVotesLoading = true;
+		overwatchVotesError = '';
+
+		try {
+			overwatchVotes = await getAdminOverwatchRecordVotes(
+				await $user.token(),
+				Number(record.data.id)
+			);
+			overwatchVotesLoaded = true;
+		} catch (error) {
+			overwatchVotesError = error instanceof Error ? error.message : 'Failed to load Overwatch votes';
+		} finally {
+			overwatchVotesLoading = false;
+		}
+	}
+
+	function openOverwatchVotes() {
+		activeTab = 'overwatchVotes';
+		void loadOverwatchVotes();
 	}
 
 	function genPercent() {
@@ -547,6 +597,10 @@
 
 		await fetchData();
 
+		if (activeTab === 'overwatchVotes' && $user.data?.isAdmin) {
+			void loadOverwatchVotes();
+		}
+
 		if ($user.loggedIn) {
 			fetchQueueBoostInventory();
 		}
@@ -718,6 +772,16 @@
                   </button>
                 {/if}
                 {#if $user.loggedIn && $user.data.isAdmin}
+                  <button
+                    class="tab-btn"
+                    class:active={activeTab === 'overwatchVotes'}
+                    on:click={openOverwatchVotes}
+                    role="tab"
+                  >
+                    <Shield size={14} />
+                    <span>Overwatch votes</span>
+                    {#if activeTab === 'overwatchVotes'}<div class="tab-glow"></div>{/if}
+                  </button>
                   <button
                     class="tab-btn"
                     class:active={activeTab === 'edit'}
@@ -1198,6 +1262,72 @@
                 </RadioGroup.Root>
               </div>
             </Tabs.Content>
+
+            <!-- OVERWATCH VOTES TAB (ADMIN ONLY) -->
+            {#if $user.loggedIn && $user.data.isAdmin}
+              <Tabs.Content value="overwatchVotes">
+                {#if overwatchVotesLoading}
+                  <div class="glass-card overwatch-state"><Loading inverted /><span>Loading voting results…</span></div>
+                {:else if overwatchVotesError}
+                  <div class="glass-card overwatch-state error">
+                    <Shield size={24} />
+                    <strong>Could not load voting results</strong>
+                    <span>{overwatchVotesError}</span>
+                    <Button variant="outline" on:click={() => loadOverwatchVotes(true)}>Try again</Button>
+                  </div>
+                {:else if overwatchVotes}
+                  <div class="overwatch-votes-view">
+                    <div class="ow-case-header glass-card">
+                      <div>
+                        <span class="ow-eyebrow">OVERWATCH CASE #{overwatchVotes.case.id}</span>
+                        <h2>{overwatchLabel(overwatchVotes.case.finalVerdict ?? overwatchVotes.case.status)}</h2>
+                        <p>{overwatchLabel(overwatchVotes.case.phase)} phase · Round {overwatchVotes.case.round} · {overwatchVotes.case.requiredReviewers} reviewers required</p>
+                      </div>
+                      <div class="ow-case-meta">
+                        <span class="ow-status {overwatchVotes.case.finalVerdict === 'ACCEPTED' ? 'accept' : overwatchVotes.case.finalVerdict ? 'reject' : 'pending'}">{overwatchLabel(overwatchVotes.case.status)}</span>
+                        {#if overwatchVotes.case.confidence !== null}<small>{(Number(overwatchVotes.case.confidence) * 100).toFixed(1)}% confidence</small>{/if}
+                      </div>
+                    </div>
+
+                    <div class="ow-summary-grid">
+                      {#each [
+						{ key: 'accept', label: 'Accept', data: overwatchVotes.summary.accept },
+						{ key: 'reject', label: 'Reject', data: overwatchVotes.summary.reject },
+						{ key: 'unsure', label: 'Unsure', data: overwatchVotes.summary.unsure }
+					] as result}
+                        <article class="glass-card ow-result {result.key}">
+                          <div><span>{result.label}</span><strong>{result.data.count}</strong></div>
+                          <div class="ow-weight"><span>{Number(result.data.weight).toFixed(2)} weight</span><b>{voteShare(result.data.weight).toFixed(1)}%</b></div>
+                          <div class="ow-bar"><span style={`width:${voteShare(result.data.weight)}%`}></span></div>
+                        </article>
+                      {/each}
+                      <article class="glass-card ow-result total"><div><span>Effective votes</span><strong>{overwatchVotes.summary.effectiveVotes}</strong></div><div class="ow-weight"><span>{overwatchVotes.summary.totalVotes} total submissions</span><b>{overwatchVotes.summary.quarantinedVotes} quarantined</b></div></article>
+                    </div>
+
+                    <div class="glass-card ow-vote-card">
+                      <div class="card-header"><Shield size={15} class="card-icon" /><span>Reviewer decisions</span><button on:click={() => loadOverwatchVotes(true)} disabled={overwatchVotesLoading}>Refresh</button></div>
+                      <div class="ow-vote-table">
+                        <div class="ow-vote-row heading"><span>Reviewer</span><span>Decision</span><span>Context</span><span>Weight</span><span>Reason</span><span>Submitted</span></div>
+                        {#each overwatchVotes.votes as vote (vote.id)}
+                          <div class:quarantined={vote.quarantined} class="ow-vote-row">
+                            <span class="ow-reviewer">{#if vote.reviewer}<a href="/player/{vote.reviewer.uid}">{vote.reviewer.name}</a>{:else}<strong>Unknown reviewer</strong>{/if}<small>{vote.reviewerId}</small></span>
+                            <span><span class="ow-verdict {vote.verdict}">{overwatchLabel(vote.verdict)}</span>{#if vote.quarantined}<small class="ow-quarantine">Quarantined</small>{/if}</span>
+                            <span class="ow-context"><strong>{overwatchLabel(vote.reviewType)}</strong><small>Round {vote.round} · Rep {Number(vote.reputationSnapshot).toFixed(0)}</small></span>
+                            <span class="ow-number">{Number(vote.weightSnapshot).toFixed(2)}</span>
+                            <span class="ow-reason">{vote.reason || '—'}</span>
+                            <time>{new Date(vote.createdAt).toLocaleString()}</time>
+                          </div>
+                        {:else}
+                          <div class="ow-empty">No votes have been submitted for this case.</div>
+                        {/each}
+                      </div>
+                    </div>
+                  </div>
+                {:else if overwatchVotesLoaded}
+                  <div class="glass-card overwatch-state"><Shield size={25} /><strong>No Overwatch case</strong><span>This record has not entered the Overwatch review system.</span></div>
+                {/if}
+              </Tabs.Content>
+            {/if}
 
             <!-- EDIT TAB -->
             <Tabs.Content value="edit">
@@ -1932,10 +2062,271 @@
   background-clip: text;
 }
 
+/* ── Admin Overwatch voting results ── */
+.overwatch-votes-view {
+  display: grid;
+  gap: 14px;
+}
+
+.overwatch-state {
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.55);
+
+  strong {
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  &.error > :global(svg) {
+    color: #fb7185;
+  }
+}
+
+.ow-case-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+
+  h2 {
+    margin: 4px 0;
+    font-size: 1.55rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  p {
+    color: rgba(255, 255, 255, 0.48);
+    font-size: 0.78rem;
+  }
+}
+
+.ow-eyebrow {
+  color: #a78bfa;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.ow-case-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 7px;
+
+  small {
+    color: rgba(255, 255, 255, 0.46);
+    font-size: 0.7rem;
+  }
+}
+
+.ow-status,
+.ow-verdict {
+  display: inline-flex;
+  width: fit-content;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 0.67rem;
+  font-weight: 750;
+  white-space: nowrap;
+
+  &.accept {
+    background: rgba(34, 197, 94, 0.13);
+    color: #86efac;
+  }
+
+  &.reject {
+    background: rgba(244, 63, 94, 0.13);
+    color: #fda4af;
+  }
+
+  &.unsure,
+  &.pending {
+    background: rgba(245, 158, 11, 0.13);
+    color: #fcd34d;
+  }
+}
+
+.ow-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.ow-result {
+  min-width: 0;
+
+  > div:first-child,
+  .ow-weight {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  > div:first-child span {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.75rem;
+  }
+
+  > div:first-child strong {
+    font-size: 1.45rem;
+  }
+
+  &.accept > div:first-child strong { color: #86efac; }
+  &.reject > div:first-child strong { color: #fda4af; }
+  &.unsure > div:first-child strong { color: #fcd34d; }
+}
+
+.ow-weight {
+  margin-top: 12px;
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 0.66rem;
+
+  b {
+    color: rgba(255, 255, 255, 0.72);
+  }
+}
+
+.ow-bar {
+  height: 4px;
+  margin-top: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+
+  span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+  }
+}
+
+.ow-result.accept .ow-bar span { background: #4ade80; }
+.ow-result.reject .ow-bar span { background: #fb7185; }
+.ow-result.unsure .ow-bar span { background: #fbbf24; }
+
+.ow-vote-card {
+  min-width: 0;
+  overflow: hidden;
+
+  .card-header button {
+    margin-left: auto;
+    color: #c4b5fd;
+    font-size: 0.7rem;
+    font-weight: 650;
+  }
+}
+
+.ow-vote-table {
+  overflow-x: auto;
+}
+
+.ow-vote-row {
+  min-width: 900px;
+  display: grid;
+  grid-template-columns: 1.25fr 0.8fr 1fr 0.55fr 1.65fr 1fr;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  font-size: 0.75rem;
+
+  &.heading {
+    padding-top: 5px;
+    border: 0;
+    color: rgba(255, 255, 255, 0.38);
+    font-size: 0.64rem;
+    font-weight: 750;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  &.quarantined {
+    opacity: 0.52;
+    background: rgba(244, 63, 94, 0.035);
+  }
+
+  time {
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 0.67rem;
+  }
+}
+
+.ow-reviewer,
+.ow-context,
+.ow-vote-row > span:nth-child(2) {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+
+  small {
+    max-width: 150px;
+    overflow: hidden;
+    color: rgba(255, 255, 255, 0.38);
+    font-size: 0.63rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.ow-reviewer a {
+  color: #ddd6fe;
+  font-weight: 700;
+
+  &:hover { text-decoration: underline; }
+}
+
+.ow-context strong {
+  font-size: 0.7rem;
+}
+
+.ow-number {
+  font-variant-numeric: tabular-nums;
+  font-weight: 750;
+}
+
+.ow-reason {
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.4;
+}
+
+.ow-quarantine {
+  color: #fda4af !important;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ow-empty {
+  padding: 45px 12px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 0.78rem;
+}
+
 /* ── Responsive ── */
 @media (max-width: 600px) {
   .glass-grid {
     grid-template-columns: 1fr;
+  }
+
+  .ow-case-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .ow-case-meta {
+    align-items: flex-start;
+  }
+
+  .ow-summary-grid {
+    grid-template-columns: 1fr 1fr;
   }
 }
 </style>

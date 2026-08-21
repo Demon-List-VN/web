@@ -2046,6 +2046,7 @@
         "time": "Thời gian",
         "queue_no": "Số thứ tự",
         "forwarded": "Đã chuyển tiếp",
+        "in_review": "Đang duyệt",
         "rejection_reason": "Lý do từ chối",
         "detail": "Chi tiết",
         "boost": "Tăng tốc duyệt",

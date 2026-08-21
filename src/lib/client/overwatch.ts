@@ -134,6 +134,53 @@ export function getAdminOverwatchMetrics(token: string | undefined) {
     return request<any>('/overwatch/admin/metrics', token);
 }
 
+export type AdminOverwatchRecordVotes = {
+    case: {
+        id: number;
+        recordId: number;
+        status: string;
+        phase: string;
+        round: number;
+        requiredReviewers: number;
+        finalVerdict: string | null;
+        confidence: number | null;
+        winningWeight: number | null;
+        submittedAt: string;
+        poolEnteredAt: string | null;
+        finalizedAt: string | null;
+        evidenceRequestedAt: string | null;
+        appealCount: number;
+    };
+    summary: {
+        accept: { count: number; weight: number; };
+        reject: { count: number; weight: number; };
+        unsure: { count: number; weight: number; };
+        effectiveVotes: number;
+        totalVotes: number;
+        quarantinedVotes: number;
+    };
+    votes: Array<{
+        id: number;
+        reviewerId: string;
+        reviewer: { uid: string; name: string; } | null;
+        verdict: OverwatchVerdict;
+        reason: string | null;
+        weightSnapshot: number;
+        reputationSnapshot: number;
+        reviewType: string;
+        round: number;
+        quarantined: boolean;
+        createdAt: string;
+    }>;
+};
+
+export function getAdminOverwatchRecordVotes(token: string | undefined, recordId: number) {
+    return request<AdminOverwatchRecordVotes | null>(
+        `/overwatch/admin/records/${recordId}/votes`,
+        token
+    );
+}
+
 export function setAdminOverwatchReputation(
     token: string | undefined,
     uid: string,

@@ -2048,6 +2048,7 @@
         "time": "Time",
         "queue_no": "Queue no.",
         "forwarded": "Forwarded",
+        "in_review": "In review",
         "rejection_reason": "Rejection reason",
         "detail": "Detail",
         "boost": "Boost",
