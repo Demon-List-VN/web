@@ -80,7 +80,9 @@
 		return 'active';
 	}
 	function recordHref(item: OverwatchCaseSummary) {
-		return item.playerId && item.levelId ? `/record/${item.playerId}/${item.levelId}` : null;
+		if (!item.playerId || !item.levelId) return null;
+
+		return `/record/${item.playerId}/${item.levelId}${item.recordId ? `?id=${item.recordId}` : ''}`;
 	}
 
 	async function loadMetrics(showToast = false) {

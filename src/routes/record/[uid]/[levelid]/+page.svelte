@@ -560,9 +560,12 @@
 		const recordUrl = recordIdParam
 			? `${API}/records/${uid}/${levelid}?id=${recordIdParam}`
 			: `${API}/records/${uid}/${levelid}`;
+		const authToken = $user.loggedIn ? await $user.token() : undefined;
 
 		const [recordRes, deathCountRes] = await Promise.all([
-			fetch(recordUrl),
+			fetch(recordUrl, {
+				headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined
+			}),
 			fetch(`${API}/deathCount/${uid}/${levelid}`)
 		]);
 
@@ -628,6 +631,15 @@
     {#if !record?.data}
       <div class="loading-center"><Loading inverted /></div>
     {:else}
+      {#if record.data.rejectedAt && ($user.data?.isAdmin || $user.data?.isManager)}
+        <div class="rejected-record-notice" role="status">
+          <Info size={20} />
+          <div>
+            <strong>{t('Bản ghi đã bị từ chối', 'Rejected record')}</strong>
+            <p>{t('Bản ghi này được giữ lại để quản trị viên và quản lý kiểm tra.', 'This record is retained for administrator and manager review.')}</p>
+          </div>
+        </div>
+      {/if}
       <!-- Hero section -->
       {#if showHero}
         <div
@@ -2329,4 +2341,5 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+  .rejected-record-notice{display:flex;align-items:flex-start;gap:12px;margin:0 auto 18px;max-width:1400px;border:1px solid color-mix(in srgb,#ef6b72 42%,hsl(var(--border)));border-radius:12px;background:color-mix(in srgb,#ef6b72 9%,hsl(var(--card)));padding:14px 16px;color:#ef6b72}.rejected-record-notice :global(svg){flex:none;margin-top:1px}.rejected-record-notice strong{display:block}.rejected-record-notice p{margin-top:3px;color:hsl(var(--muted-foreground));font-size:.84rem}
 </style>
