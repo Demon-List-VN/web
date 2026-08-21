@@ -66,11 +66,13 @@
 	async function deleteRecord() {
 		const { uid } = $user.data;
 		const token = await $user.token();
+		const recordId = recID;
+		const levelId = lvID;
 
 		toast.promise(
 			fetch(
-				`${import.meta.env.VITE_API_URL}/records/${uid}/${lvID}${
-					recID ? `?id=${recID}` : ''
+				`${import.meta.env.VITE_API_URL}/records/${uid}/${levelId}${
+					recordId ? `?id=${recordId}` : ''
 				}`,
 				{
 					method: 'DELETE',
@@ -78,19 +80,27 @@
 						Authorization: 'Bearer ' + token
 					}
 				}
-			),
+			)
+				.then(async (response) => {
+					if (!response.ok) {
+						const payload = await response.json()
+							.catch(() => null);
+
+						throw new Error(payload?.message || payload?.vi || payload?.en || response.statusText);
+					}
+
+					return response;
+				}),
 			{
 				loading: $_('toast.submission_cancel.loading'),
 				success: () => {
 					data.records = data.records.filter((x) => {
-						return recID ? x.id != recID : x.levelid != lvID;
+						return recordId ? x.id != recordId : x.levelid != levelId;
 					});
 
 					return $_('toast.submission_cancel.success');
 				},
-				error: (err) => {
-					return $_('toast.submission_cancel.error');
-				}
+				error: () => $_('toast.submission_cancel.error')
 			}
 		);
 	}
