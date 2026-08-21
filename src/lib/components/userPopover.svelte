@@ -163,7 +163,7 @@
           <span>{$_('dropdown.clan')}</span>
         </button>
       {/if}
-      {#if !$user.data?.isOrganization && !$user.data?.isAdmin && !$user.data?.isManager && Number($user.data?.exp ?? 0) >= 4900}
+      {#if !$user.data?.isOrganization && Number($user.data?.exp ?? 0) >= 4900}
         <button class="popover-item" on:click={() => navigate('/overwatch')}>
           <Shield size={16} />
           <span>{$_('dropdown.overwatch')}</span>

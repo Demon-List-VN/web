@@ -114,8 +114,6 @@
 	$: latestUnverifiedRecord = homeData?.latestUnverifiedRecord ?? null;
 	$: canReviewOverwatch = $user.loggedIn
 		&& !$user.data?.isOrganization
-		&& !$user.data?.isAdmin
-		&& !$user.data?.isManager
 		&& Number($user.data?.exp ?? 0) >= 4900;
 	$: friendFeed = homeData?.friendFeed ?? null;
 	$: friendActivity = buildFriendActivity(friendFeed);

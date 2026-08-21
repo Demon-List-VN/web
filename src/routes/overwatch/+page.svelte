@@ -32,7 +32,6 @@
 	$: eligibilityMessages = {
 		ACCOUNT_BANNED: text('Your account is banned.', 'Tài khoản của bạn đã bị khóa.'),
 		ORGANIZATION_ACCOUNT: text('Organization accounts cannot review records.', 'Tài khoản tổ chức không thể duyệt record.'),
-		OPERATOR_ACCOUNT: text('Operator accounts are kept outside the record decision pipeline.', 'Tài khoản vận hành không tham gia quyết định record.'),
 		LEVEL_TOO_LOW: text('Reach global level 50 to unlock Overwatch.', 'Đạt level 50 để mở khóa Overwatch.'),
 		OVERWATCH_BANNED: text('Your Overwatch access is suspended.', 'Quyền truy cập Overwatch của bạn đang bị khóa.')
 	};
