@@ -13,7 +13,7 @@
 	}
 
 	function avatarUrl(player: any) {
-		return `https://cdn.gdvn.net/avatars/${player.uid}${
+		return `https://cdn.gdlisthub.dev/avatars/${player.uid}${
 			isActive(player.supporterUntil) && player.isAvatarGif ? '.gif' : '.jpg'
 		}?version=${player.avatarVersion || 0}`;
 	}

@@ -13,7 +13,7 @@
 			? '.gif'
 			: '.jpg';
 
-		return `https://cdn.gdvn.net/avatars/${player.uid}${ext}?version=${
+		return `https://cdn.gdlisthub.dev/avatars/${player.uid}${ext}?version=${
 			player.avatarVersion || 0
 		}`;
 	}

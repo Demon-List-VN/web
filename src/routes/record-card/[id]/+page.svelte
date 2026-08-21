@@ -176,7 +176,7 @@
 			<div class="player-section" in:fly={{ y: 15, duration: 400, easing: quintOut }}>
 				<img
 					class="player-avatar"
-					src={`https://cdn.gdvn.net/avatars/${player.uid}.jpg`}
+					src={`https://cdn.gdlisthub.dev/avatars/${player.uid}.jpg`}
 					alt={player.name}
 				/>
 				<div class="player-details">

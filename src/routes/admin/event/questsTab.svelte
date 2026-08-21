@@ -178,7 +178,7 @@
                     >
                       <img
                         class="max-h-full max-w-full object-contain p-1"
-                        src={`https://cdn.gdvn.net/items/${reward.id}.webp`}
+                        src={`https://cdn.gdlisthub.dev/items/${reward.id}.webp`}
                         alt={reward.name}
                       />
                     </div>

@@ -98,7 +98,7 @@
         isBannerFailedToLoad = isBannerFailedToLoad;
     }}
     class="bgGradient absolute z-0 mt-[-505x] h-[100vh] w-[850px] object-cover"
-    src={`https://cdn.gdvn.net/banners/${data.players[0].uid}${
+    src={`https://cdn.gdlisthub.dev/banners/${data.players[0].uid}${
         data.players[0].isBannerGif ? '.gif' : '.jpg'
     }?version=${data.players[0].bannerVersion}`}
     alt={$_('pvp.ban_pick.player_banner', { values: { player: data.players[0].name } })}
@@ -111,7 +111,7 @@
         isBannerFailedToLoad = isBannerFailedToLoad;
     }}
     class="bgGradient1 absolute right-0 z-0 mt-[-55px] h-[100vh] w-[850px] object-cover"
-    src={`https://cdn.gdvn.net/banners/${data.players[1].uid}${
+    src={`https://cdn.gdlisthub.dev/banners/${data.players[1].uid}${
         data.players[1].isBannerGif ? '.gif' : '.jpg'
     }?version=${data.players[1].bannerVersion}`}
     alt={$_('pvp.ban_pick.player_banner', { values: { player: data.players[1].name } })}
@@ -130,7 +130,7 @@
       <Avatar.Root class="h-8 w-8">
         <Avatar.Image
           class="object-cover"
-          src={`https://cdn.gdvn.net/avatars/${data.players[0].uid}${
+          src={`https://cdn.gdlisthub.dev/avatars/${data.players[0].uid}${
               isActive(data.players[0].supporterUntil) && data.players[0].isAvatarGif
                   ? '.gif'
                   : '.jpg'
@@ -149,7 +149,7 @@
       <Avatar.Root class="h-8 w-8">
         <Avatar.Image
           class="object-cover"
-          src={`https://cdn.gdvn.net/avatars/${data.players[1].uid}${
+          src={`https://cdn.gdlisthub.dev/avatars/${data.players[1].uid}${
               isActive(data.players[1].supporterUntil) && data.players[1].isAvatarGif
                   ? '.gif'
                   : '.jpg'

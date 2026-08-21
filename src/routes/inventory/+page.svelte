@@ -350,7 +350,7 @@
             >
               <div class="item-thumb flex h-36 w-full items-center justify-center rounded-sm">
                 <img
-                  src={`https://cdn.gdvn.net/items/${item.itemId}.webp`}
+                  src={`https://cdn.gdlisthub.dev/items/${item.itemId}.webp`}
                   alt={item.name}
                   class="h-full w-full object-contain py-1"
                 />
@@ -424,7 +424,7 @@
                   } bg-neutral-800 p-2`}
                 >
                   <img
-                    src={`https://cdn.gdvn.net/items/${item.itemId}.webp`}
+                    src={`https://cdn.gdlisthub.dev/items/${item.itemId}.webp`}
                     alt={selectedItems[item.inventoryId].data.name ?? item.name}
                     class="h-full w-full object-cover"
                   />
@@ -526,7 +526,7 @@
                         }`}
                       >
                         <img
-                          src={`https://cdn.gdvn.net/items/${c.items.id}.webp`}
+                          src={`https://cdn.gdlisthub.dev/items/${c.items.id}.webp`}
                           alt={c.items.name}
                           class="mb-1 h-16 w-16 object-contain"
                         />
@@ -544,7 +544,7 @@
                     } mt-2 bg-neutral-800 p-2`}
                   >
                     <img
-                      src={`https://cdn.gdvn.net/items/${item.itemId}.webp`}
+                      src={`https://cdn.gdlisthub.dev/items/${item.itemId}.webp`}
                       alt={item.name}
                       class="h-full w-full object-cover"
                     />

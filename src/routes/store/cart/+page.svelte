@@ -165,7 +165,7 @@
                     bgImage: rc.imgUrl
                         || `https://levelthumbs.prevter.me/thumbnail/${rc.levelID}/high`,
                     avatarImage: rc.avatarUrl
-                        || `https://cdn.gdvn.net/avatars/${$user.data?.uid}.jpg`,
+                        || `https://cdn.gdlisthub.dev/avatars/${$user.data?.uid}.jpg`,
                     template: rc.template
                 }}
                 size="mini"

@@ -10,7 +10,7 @@
 	export let tournament: any;
 
 	$: eloText = eloRangeText(tournament.minElo, tournament.maxElo);
-	$: bannerUrl = `https://cdn.gdvn.net/tournament-banner/${tournament.id}.webp?v=${tournament.bannerVersion ?? 0}`;
+	$: bannerUrl = `https://cdn.gdlisthub.dev/tournament-banner/${tournament.id}.webp?v=${tournament.bannerVersion ?? 0}`;
 	$: milestone = nextMilestone(tournament);
 	$: hasReward = tournament.topRewardRarity !== null && tournament.topRewardRarity !== undefined;
 	$: inviteOnlyUpcoming = tournament.registrationMode === 'invite_only'

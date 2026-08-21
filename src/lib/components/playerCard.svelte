@@ -350,7 +350,7 @@
           <Avatar.Root class="player-card-avatar">
             <Avatar.Image
               class="object-cover"
-              src={`https://cdn.gdvn.net/avatars/${cardPlayer.uid}${
+              src={`https://cdn.gdlisthub.dev/avatars/${cardPlayer.uid}${
                   isActive(cardPlayer.supporterUntil) && cardPlayer.isAvatarGif
                       ? '.gif'
                       : '.jpg'

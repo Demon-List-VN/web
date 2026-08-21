@@ -78,7 +78,7 @@
           <Avatar.Root class="h-[38px] w-[38px]">
             <Avatar.Image
               class="object-cover"
-              src={`https://cdn.gdvn.net/avatars/${$user.data.uid}${
+              src={`https://cdn.gdlisthub.dev/avatars/${$user.data.uid}${
                   isActive($user.data.supporterUntil) && $user.data.isAvatarGif
                       ? '.gif'
                       : '.jpg'

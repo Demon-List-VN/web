@@ -1772,7 +1772,7 @@
           >
             <img
               class="max-h-full max-w-full object-contain p-1"
-              src={`https://cdn.gdvn.net/items/${selectedItem.id}.webp`}
+              src={`https://cdn.gdlisthub.dev/items/${selectedItem.id}.webp`}
               alt={selectedItem.name}
             />
           </div>
@@ -1820,7 +1820,7 @@
                   >
                     <img
                       class="max-h-full max-w-full object-contain p-1"
-                      src={`https://cdn.gdvn.net/items/${item.id}.webp`}
+                      src={`https://cdn.gdlisthub.dev/items/${item.id}.webp`}
                       alt={item.name}
                     />
                   </div>

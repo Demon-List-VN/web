@@ -218,7 +218,7 @@
             >
               {#if d && d.id && d.id !== 0}
                 <img
-                  src={`https://cdn.gdvn.net/items/${d.id}.webp`}
+                  src={`https://cdn.gdlisthub.dev/items/${d.id}.webp`}
                   alt={d.name}
                   class="case-img"
                 />
@@ -256,7 +256,7 @@
             style="border-color: {rarityColor(rollResult.items.rarity ?? 0)}"
           >
             <img
-              src={`https://cdn.gdvn.net/items/${rollResult.items.id}.webp`}
+              src={`https://cdn.gdlisthub.dev/items/${rollResult.items.id}.webp`}
               alt={rollResult.items.name}
               class="h-full w-full object-cover p-[10px]"
             />

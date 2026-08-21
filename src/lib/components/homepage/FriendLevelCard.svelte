@@ -45,7 +45,7 @@
           {#if creator}
             <span class="friend-player">
               <img
-                src={`https://cdn.gdvn.net/avatars/${creator.uid}${creator.isAvatarGif ? '.gif' : '.jpg'}?version=${creator.avatarVersion ?? 0}`}
+                src={`https://cdn.gdlisthub.dev/avatars/${creator.uid}${creator.isAvatarGif ? '.gif' : '.jpg'}?version=${creator.avatarVersion ?? 0}`}
                 alt=""
               />
               <strong>{creator.name}</strong>

@@ -108,7 +108,7 @@
           {#if reward.items?.id || reward.itemId}
             <img
               class="h-12 w-12 object-contain"
-              src={`https://cdn.gdvn.net/items/${reward.items?.id || reward.itemId}.webp`}
+              src={`https://cdn.gdlisthub.dev/items/${reward.items?.id || reward.itemId}.webp`}
               alt={reward.description}
             />
           {:else}
@@ -147,7 +147,7 @@
       {#if reward.items?.id || reward.itemId}
         <img
           class="h-12 w-12 object-contain"
-          src={`https://cdn.gdvn.net/items/${reward.items?.id || reward.itemId}.webp`}
+          src={`https://cdn.gdlisthub.dev/items/${reward.items?.id || reward.itemId}.webp`}
           alt={reward.description}
         />
       {:else}

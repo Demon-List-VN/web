@@ -139,7 +139,7 @@
             <Avatar.Root class="h-16 w-16">
               <Avatar.Image
                 class="object-cover"
-                src={`https://cdn.gdvn.net/avatars/${player1.uid}${
+                src={`https://cdn.gdlisthub.dev/avatars/${player1.uid}${
                     isActive(player1.supporterUntil) && player1.isAvatarGif ? '.gif' : '.jpg'
                 }`}
                 alt={player1.name}
@@ -181,7 +181,7 @@
             <Avatar.Root class="h-16 w-16">
               <Avatar.Image
                 class="object-cover"
-                src={`https://cdn.gdvn.net/avatars/${player2.uid}${
+                src={`https://cdn.gdlisthub.dev/avatars/${player2.uid}${
                     isActive(player2.supporterUntil) && player2.isAvatarGif ? '.gif' : '.jpg'
                 }`}
                 alt={player2.name}

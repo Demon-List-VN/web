@@ -414,7 +414,7 @@
       >
         <div class="myClanBanner">
           <img
-            src={`https://cdn.gdvn.net/clan-photos/${myClan.id}.jpg?v=${
+            src={`https://cdn.gdlisthub.dev/clan-photos/${myClan.id}.jpg?v=${
                 myClan.imageVersion || 0
             }`}
             alt={myClan.name}
@@ -659,7 +659,7 @@
               <a href={`/clan/${clan.id}`} class="featuredCard">
                 <div class="featuredCardBanner">
                   <img
-                    src={`https://cdn.gdvn.net/clan-photos/${clan.id}.jpg`}
+                    src={`https://cdn.gdlisthub.dev/clan-photos/${clan.id}.jpg`}
                     alt={clan.name}
                     loading="lazy"
                   />
@@ -702,7 +702,7 @@
             >
               <div class="clanCardBanner">
                 <img
-                  src={`https://cdn.gdvn.net/clan-photos/${clan.id}.jpg`}
+                  src={`https://cdn.gdlisthub.dev/clan-photos/${clan.id}.jpg`}
                   alt={clan.name}
                   loading="lazy"
                 />
@@ -798,7 +798,7 @@
           <Card.Root class="clanCard">
             <div class="clanCardBanner">
               <img
-                src={`https://cdn.gdvn.net/clan-photos/${invitation.clans.id}.jpg`}
+                src={`https://cdn.gdlisthub.dev/clan-photos/${invitation.clans.id}.jpg`}
                 alt={invitation.clans.name}
                 loading="lazy"
               />

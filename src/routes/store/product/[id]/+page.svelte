@@ -56,7 +56,7 @@
   <meta property="og:description" content={getFirstLine(data.description)} />
   <meta
     property="og:image"
-    content={`https://cdn.gdvn.net/products/${data.id}/0.webp`}
+    content={`https://cdn.gdlisthub.dev/products/${data.id}/0.webp`}
   />
 </svelte:head>
 
@@ -81,7 +81,7 @@
     >
       <img
         class="h-full w-full object-cover"
-        src={`https://cdn.gdvn.net/products/${data.id}/${selectedImageIndex}.webp`}
+        src={`https://cdn.gdlisthub.dev/products/${data.id}/${selectedImageIndex}.webp`}
         alt={t('store.product.image_alt', { values: { product: data.name } })}
       />
     </button>
@@ -98,7 +98,7 @@
         >
           <img
             class="h-full w-full object-cover"
-            src={`https://cdn.gdvn.net/products/${data.id}/${index}.webp`}
+            src={`https://cdn.gdlisthub.dev/products/${data.id}/${index}.webp`}
             alt={t('store.product.thumbnail_alt', {
                 values: { index: index + 1, product: data.name }
             })}
@@ -214,7 +214,7 @@
       <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
       <img
         class="max-h-[700px] max-w-full rounded-lg object-contain"
-        src={`https://cdn.gdvn.net/products/${data.id}/${selectedImageIndex}.webp`}
+        src={`https://cdn.gdlisthub.dev/products/${data.id}/${selectedImageIndex}.webp`}
         alt={t('store.product.image_alt', { values: { product: data.name } })}
         on:click|stopPropagation
       />

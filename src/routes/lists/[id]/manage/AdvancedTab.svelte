@@ -278,7 +278,7 @@
 			: '.jpg';
 		const version = player.avatarVersion ?? 0;
 
-		return `https://cdn.gdvn.net/avatars/${player.uid}${extension}?version=${version}`;
+		return `https://cdn.gdlisthub.dev/avatars/${player.uid}${extension}?version=${version}`;
 	}
 
 	function getAvatarFallback(player: any) {

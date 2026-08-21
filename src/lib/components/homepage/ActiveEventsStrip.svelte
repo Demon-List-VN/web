@@ -34,7 +34,7 @@
 	}
 
 	function getEventThumbnail(item: any) {
-		return item?.imgUrl || `https://cdn.gdvn.net/event-banner/${item?.id}.webp`;
+		return item?.imgUrl || `https://cdn.gdlisthub.dev/event-banner/${item?.id}.webp`;
 	}
 </script>
 

@@ -373,7 +373,7 @@
           <div class="image-grid">
             {#each Array(form.imgCount || 0) as _, i}
               <img
-                src={`https://cdn.gdvn.net/products/${editingProduct.id}/${i}.webp?v=${Date.now()}`}
+                src={`https://cdn.gdlisthub.dev/products/${editingProduct.id}/${i}.webp?v=${Date.now()}`}
                 alt="Product {i}"
                 class="thumb"
               />

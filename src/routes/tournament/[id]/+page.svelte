@@ -61,7 +61,7 @@
 	$: canRegister = Boolean(tournament?.registrationOpen || lateRegistrationOpen);
 	$: inviteOnly = tournament?.registrationMode === 'invite_only';
 	$: bannerUrl = tournament
-		? `https://cdn.gdvn.net/tournament-banner/${tournament.id}.webp?v=${tournament.bannerVersion ?? 0}`
+		? `https://cdn.gdlisthub.dev/tournament-banner/${tournament.id}.webp?v=${tournament.bannerVersion ?? 0}`
 		: '';
 	$: milestone = tournament ? nextMilestone(tournament) : null;
 	$: freezeAtMs = parseTime(tournament?.contestConfig?.freezeAt);

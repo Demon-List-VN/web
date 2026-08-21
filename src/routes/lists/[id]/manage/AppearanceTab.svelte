@@ -5,7 +5,7 @@
 	import { _ } from 'svelte-i18n';
 
 	type AssetInputMode = 'upload' | 'link';
-	const CUSTOM_LIST_CDN_BASE_URL = 'https://cdn.gdvn.net';
+	const CUSTOM_LIST_CDN_BASE_URL = 'https://cdn.gdlisthub.dev';
 
 	export let editForm: any;
 	export let list: any = null;

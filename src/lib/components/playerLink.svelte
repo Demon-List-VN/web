@@ -71,7 +71,7 @@
 			? '.gif'
 			: '.jpg';
 
-		return `https://cdn.gdvn.net/avatars/${player.uid}${extension}?version=${
+		return `https://cdn.gdlisthub.dev/avatars/${player.uid}${extension}?version=${
 			player.avatarVersion ?? 0
 		}`;
 	}

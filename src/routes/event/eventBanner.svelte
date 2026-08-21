@@ -59,7 +59,7 @@
       style={`background-image: url('${
           data.imgUrl
               ? data.imgUrl
-              : `https://cdn.gdvn.net/event-banner/${data.id}.webp`
+              : `https://cdn.gdlisthub.dev/event-banner/${data.id}.webp`
       }')`}
     >
       <div class="promotionContent">

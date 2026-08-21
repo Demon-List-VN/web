@@ -266,7 +266,7 @@
 						creator: rc.levels?.creator || '',
 						progress: rc.records?.progress ?? null,
 						bgImage: bgImage(rc),
-						avatarImage: rc.avatar || `https://cdn.gdvn.net/avatars/${cardPlayerUID}.jpg`,
+						avatarImage: rc.avatar || `https://cdn.gdlisthub.dev/avatars/${cardPlayerUID}.jpg`,
 						template: rc.template
 					}}
 					size="full"
@@ -293,7 +293,7 @@
 					creator: selectedCard.levels?.creator || '',
 					progress: selectedCard.records?.progress ?? null,
 					bgImage: bgImage(selectedCard),
-					avatarImage: selectedCard.avatar || `https://cdn.gdvn.net/avatars/${cardPlayerUID}.jpg`,
+					avatarImage: selectedCard.avatar || `https://cdn.gdlisthub.dev/avatars/${cardPlayerUID}.jpg`,
 					template: selectedCard.template
 				}}
 				size="full"
@@ -364,7 +364,7 @@
 									<a href={`/store/product/${item.productID}`}>
 										<img
 											class="h-[65px] w-[65px] rounded-lg object-cover"
-											src={`https://cdn.gdvn.net/products/${item.productID}/0.webp`}
+											src={`https://cdn.gdlisthub.dev/products/${item.productID}/0.webp`}
 											alt="product"
 										/>
 									</a>
@@ -405,7 +405,7 @@
 													bgImage:
 														rc.img || `https://levelthumbs.prevter.me/thumbnail/${rc.levelID}/high`,
 													avatarImage:
-														rc.avatar || `https://cdn.gdvn.net/avatars/${cardPlayerUID}.jpg`,
+														rc.avatar || `https://cdn.gdlisthub.dev/avatars/${cardPlayerUID}.jpg`,
 													template: rc.template
 												}}
 												size="mini"
@@ -590,7 +590,7 @@
 									progress: selectedCard.records?.progress ?? null,
 									bgImage: bgImage(selectedCard),
 									avatarImage:
-										selectedCard.avatar || `https://cdn.gdvn.net/avatars/${cardPlayerUID}.jpg`,
+										selectedCard.avatar || `https://cdn.gdlisthub.dev/avatars/${cardPlayerUID}.jpg`,
 									template: selectedCard.template
 								}}
 								size="full"
@@ -693,7 +693,7 @@
 										creator: rc.levels?.creator || '',
 										progress: rc.records?.progress ?? null,
 										bgImage: bgImage(rc),
-										avatarImage: rc.avatar || `https://cdn.gdvn.net/avatars/${cardPlayerUID}.jpg`,
+										avatarImage: rc.avatar || `https://cdn.gdlisthub.dev/avatars/${cardPlayerUID}.jpg`,
 										template: rc.template
 									}}
 									size="full"

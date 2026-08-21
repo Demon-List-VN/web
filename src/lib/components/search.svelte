@@ -249,7 +249,7 @@
                 <Avatar.Root>
                   <Avatar.Image
                     class="object-cover"
-                    src={`https://cdn.gdvn.net/avatars/${item.uid}${
+                    src={`https://cdn.gdlisthub.dev/avatars/${item.uid}${
                         isActive(item.supporterUntil) && item.isAvatarGif ? '.gif' : '.jpg'
                     }`}
                     alt="@shadcn"

@@ -125,7 +125,7 @@
 <div class="hero-section relative overflow-hidden" style={cssVars}>
 	<div class="hero-bg-image absolute inset-0">
 		<img
-			src={season?.backgroundUrl || `https://cdn.gdvn.net/battlepasses/${season?.id}.webp`}
+			src={season?.backgroundUrl || `https://cdn.gdlisthub.dev/battlepasses/${season?.id}.webp`}
 			alt="Season Background"
 			class="h-full w-full object-cover"
 		/>

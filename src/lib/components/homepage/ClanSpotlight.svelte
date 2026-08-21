@@ -78,7 +78,7 @@
                     class="object-cover"
                     loading="lazy"
                     decoding="async"
-                    src={`https://cdn.gdvn.net/avatars/${clan.players.uid}${
+                    src={`https://cdn.gdlisthub.dev/avatars/${clan.players.uid}${
                         isActive(clan.players.supporterUntil) && clan.players.isAvatarGif
                             ? '.gif'
                             : '.jpg'

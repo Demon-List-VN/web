@@ -503,7 +503,7 @@
 	let changelogRefreshKey = 0;
 	let nextPendingLevelItemId = -1;
 
-	const CUSTOM_LIST_CDN_BASE_URL = 'https://cdn.gdvn.net';
+	const CUSTOM_LIST_CDN_BASE_URL = 'https://cdn.gdlisthub.dev';
 	const CSV_IMPORT_RATE_LIMIT_RETRY_MS = 1000;
 	const CSV_IMPORT_RATE_LIMIT_TIMEOUT_MS = 15000;
 	const CUSTOM_LIST_BATCH_SAVE_TARGET_BYTES = 80 * 1024;

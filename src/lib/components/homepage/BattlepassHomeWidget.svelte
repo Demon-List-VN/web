@@ -34,7 +34,7 @@
 			<!-- Season banner background with tier track + progress -->
 			<div
 				class="bpBanner"
-				style="background-image: url('{activeSeason.backgroundUrl || `https://cdn.gdvn.net/battlepasses/${activeSeason.id}.webp`}')"
+				style="background-image: url('{activeSeason.backgroundUrl || `https://cdn.gdlisthub.dev/battlepasses/${activeSeason.id}.webp`}')"
 			>
 				<div class="bpBannerOverlay"></div>
 				<div class="bpBannerContent">

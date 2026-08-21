@@ -155,7 +155,7 @@
 			return '';
 		}
 
-		return `https://cdn.gdvn.net/clan-photos/${clan.id}.jpg?version=${
+		return `https://cdn.gdlisthub.dev/clan-photos/${clan.id}.jpg?version=${
 			clan.imageVersion ?? 0
 		}`;
 	}

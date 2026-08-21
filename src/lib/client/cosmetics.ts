@@ -10,13 +10,13 @@ export interface Cosmetic {
 }
 
 export function frameImageUrl(cosmetic: Cosmetic): string {
-    return `https://cdn.gdvn.net/cosmetics/frames/${cosmetic.itemId}.webp?version=${
+    return `https://cdn.gdlisthub.dev/cosmetics/frames/${cosmetic.itemId}.webp?version=${
         cosmetic.imageVersion ?? 0
     }`;
 }
 
 export function bannerImageUrl(cosmetic: Cosmetic): string {
-    return `https://cdn.gdvn.net/cosmetics/banners/${cosmetic.itemId}.webp?version=${
+    return `https://cdn.gdlisthub.dev/cosmetics/banners/${cosmetic.itemId}.webp?version=${
         cosmetic.imageVersion ?? 0
     }`;
 }

@@ -181,7 +181,7 @@
               <Avatar.Root class="h-10 w-10">
                 <Avatar.Image
                   class="object-cover"
-                  src={`https://cdn.gdvn.net/avatars/${player.uid}${
+                  src={`https://cdn.gdlisthub.dev/avatars/${player.uid}${
                       isActive(player.supporterUntil) && player.isAvatarGif ? '.gif' : '.jpg'
                   }`}
                   alt={player.name}

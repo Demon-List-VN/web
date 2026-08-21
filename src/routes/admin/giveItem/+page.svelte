@@ -202,7 +202,7 @@
               >
                 <img
                   class="h-10 w-10 rounded object-contain"
-                  src={`https://cdn.gdvn.net/items/${item.id}.webp`}
+                  src={`https://cdn.gdlisthub.dev/items/${item.id}.webp`}
                   alt=""
                 />
                 <span class="min-w-0">
@@ -222,7 +222,7 @@
         <div class="flex items-center gap-3 rounded-md border bg-muted/30 p-3">
           <img
             class="h-14 w-14 rounded object-contain"
-            src={`https://cdn.gdvn.net/items/${selectedItem.id}.webp`}
+            src={`https://cdn.gdlisthub.dev/items/${selectedItem.id}.webp`}
             alt=""
           />
           <div>
