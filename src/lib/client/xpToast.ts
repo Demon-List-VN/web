@@ -4,9 +4,10 @@ import type { PvpXpAward } from '$lib/client/pvp';
 import { toast } from 'svelte-sonner';
 
 function syncUserXpFromAward(award: PvpXpAward) {
-    const newXp = Number(award?.newXp);
+    const newActualXp = Number(award?.newActualXp ?? award?.newXp);
+    const newExpectedXp = Number(award?.newExpectedXp ?? award?.newXp);
 
-    if (!Number.isFinite(newXp)) {
+    if (!Number.isFinite(newActualXp) || !Number.isFinite(newExpectedXp)) {
         return;
     }
 
@@ -15,7 +16,8 @@ function syncUserXpFromAward(award: PvpXpAward) {
         data: current.data
             ? {
                 ...current.data,
-                exp: Math.max(0, Math.trunc(newXp)),
+                exp: Math.max(0, Math.trunc(newActualXp)),
+                expectedExp: Math.max(0, Math.trunc(newExpectedXp)),
                 extraExp: 0
             }
             : current.data

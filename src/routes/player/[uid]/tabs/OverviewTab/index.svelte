@@ -2,7 +2,12 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { getTitle } from '$lib/client';
-	import { getExpLevel, getLevelBadgeCounts } from '$lib/client/getExpLevel';
+	import {
+		getExpLevel,
+		getLevelBadgeCounts,
+		getPlayerExp,
+		getPlayerExpectedExp
+	} from '$lib/client/getExpLevel';
 	import {
 		getPvpParticipantRatingAfter,
 		getPvpParticipantRatingBefore,
@@ -186,7 +191,8 @@
 	$: selectedListCoverage = selectedListTotalLevels && selectedListTotalLevels > 0
 		? Math.round((selectedListTotalRecords / selectedListTotalLevels) * 100)
 		: null;
-	$: exp = player.exp + player.extraExp;
+	$: exp = getPlayerExp(player) ?? 0;
+	$: expectedExp = getPlayerExpectedExp(player) ?? exp;
 	$: expLevel = getExpLevel(exp);
 	$: expTierCounts = getLevelBadgeCounts(expLevel.level);
 	$: nextStarProgress = getNextStarProgress(exp, expLevel.level);
@@ -883,16 +889,16 @@
         </div>
         <div class="exp-detail-grid">
           <div>
-            <span>EXP</span>
+            <span>{$_('player.actual_xp')}</span>
             <strong>{exp}</strong>
+          </div>
+          <div>
+            <span>{$_('player.expected_xp')}</span>
+            <strong>{expectedExp}</strong>
           </div>
           <div>
             <span>{$_('player.exp_to_next')}</span>
             <strong>{expLevel.upperBound - exp}</strong>
-          </div>
-          <div>
-            <span>{$_('player.overview.exp_to_next_star')}</span>
-            <strong>{nextStarProgress.remainingExp}</strong>
           </div>
         </div>
       </Card.Content>

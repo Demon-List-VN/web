@@ -7,7 +7,7 @@
 	} from '$lib/client/getExpLevel';
 	import { Crown, Diamond, Star } from 'lucide-svelte';
 
-	export let player: { exp?: unknown; extraExp?: unknown; } | null | undefined = null;
+	export let player: { exp?: unknown; } | null | undefined = null;
 	export let level: number | null = null;
 	export let color: string | null = null;
 	export let size: 'sm' | 'md' | 'lg' = 'md';

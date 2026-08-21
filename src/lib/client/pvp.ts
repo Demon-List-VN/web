@@ -429,6 +429,10 @@ export type PvpXpAward = {
     reason?: 'pvp_match_win' | 'pvp_match_loss' | string;
     diff?: number;
     newXp?: number;
+    actualDiff?: number;
+    expectedDiff?: number;
+    newActualXp?: number;
+    newExpectedXp?: number;
     sourceType?: 'pvp_match' | string;
     sourceId?: string;
     metadata?: Record<string, unknown> | null;

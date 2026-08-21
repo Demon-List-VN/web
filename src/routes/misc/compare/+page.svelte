@@ -8,6 +8,7 @@
 	import PlayerLink from '$lib/components/playerLink.svelte';
 	import { X } from 'lucide-svelte';
 	import { _ } from 'svelte-i18n';
+	import { getPlayerExp } from '$lib/client/getExpLevel';
 
 	let player1: any = null;
 	let player2: any = null;
@@ -447,23 +448,23 @@
             <div
               class="
                 stat-cell {getStatComparison(
-                player1.exp + player1.extraExp,
-                player2.exp + player2.extraExp
+                getPlayerExp(player1) ?? 0,
+                getPlayerExp(player2) ?? 0
                 )}
               "
             >
-              {getStatDisplay(player1.exp + player1.extraExp)}
+              {getStatDisplay(getPlayerExp(player1) ?? 0)}
             </div>
             <div class="stat-label">{$_('compare.total_experience')}</div>
             <div
               class="
                 stat-cell {getStatComparison(
-                player2.exp + player2.extraExp,
-                player1.exp + player1.extraExp
+                getPlayerExp(player2) ?? 0,
+                getPlayerExp(player1) ?? 0
                 )}
               "
             >
-              {getStatDisplay(player2.exp + player2.extraExp)}
+              {getStatDisplay(getPlayerExp(player2) ?? 0)}
             </div>
           </div>
 

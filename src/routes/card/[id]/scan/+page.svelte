@@ -13,7 +13,7 @@
 	import { isActive } from '$lib/client/isSupporterActive';
 	import * as Avatar from '$lib/components/ui/avatar';
 	import { badgeVariants } from '$lib/components/ui/badge';
-	import { getExpLevel } from '$lib/client/getExpLevel';
+	import { getExpLevel, getPlayerExp } from '$lib/client/getExpLevel';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import Markdown from '$lib/components/markdown.svelte';
 	import * as Dialog from '$lib/components/ui/dialog';
@@ -22,7 +22,7 @@
 	export let data: PageData;
 
 	let isBannerFailedToLoad = false;
-	const exp = data.owner ? data.players.exp + data.players.extraExp : 0;
+	const exp = data.owner ? getPlayerExp(data.players) ?? 0 : 0;
 	const expLevel = getExpLevel(exp);
 	let editMode = false;
 	let previewMode = false;

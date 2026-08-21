@@ -2395,6 +2395,8 @@
         "copy_uid": "Đã sao chép UID vào bảng nhớ tạm!",
         "level": "Lv",
         "exp_to_next": "EXP để lên cấp tiếp theo",
+        "actual_xp": "XP thực tế",
+        "expected_xp": "XP dự kiến",
         "tabs": {
             "dl": "Classic",
             "pl": "Platformer",
@@ -2465,6 +2467,8 @@
             "current_elo": "ELO hiện tại",
             "reason": "Lý do",
             "diff": "Thay đổi",
+            "actual_diff": "Đổi XP thực tế",
+            "expected_diff": "Đổi XP dự kiến",
             "new_xp": "XP mới"
         },
         "no_events": "Chưa tham gia sự kiện nào",
@@ -2480,6 +2484,7 @@
                 "pvp_mission_claim": "Nhiệm vụ PvP",
                 "record_manual_100": "Bản ghi 100% được duyệt",
                 "record_submission": "Nộp bản ghi",
+                "record_submission_accepted": "Bản ghi được duyệt",
                 "record_submission_rejected": "Bản ghi bị từ chối",
                 "challenge_submission": "Nộp Challenge",
                 "challenge_submission_rejected": "Challenge bị từ chối",

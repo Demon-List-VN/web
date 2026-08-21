@@ -7,6 +7,7 @@
 	import { toast } from 'svelte-sonner';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { _ } from 'svelte-i18n';
+	import { getPlayerExp } from '$lib/client/getExpLevel';
 
 	export let data: any;
 
@@ -163,7 +164,7 @@
         $_('contest.participate.event_ended')
       }</Button>
     {:else if rewardState == 4}
-      {#if $user.data.exp < data.minExp}
+      {#if (getPlayerExp($user.data) ?? 0) < data.minExp}
         <Button class="w-[300px]" disabled>{
           $_('contest.participate.not_enough_exp', { values: { minExp: data.minExp } })
         }</Button>

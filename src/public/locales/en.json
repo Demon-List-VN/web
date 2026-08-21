@@ -2397,6 +2397,8 @@
         "copy_uid": "Copied UID to clipboard!",
         "level": "Level",
         "exp_to_next": "EXP to next level",
+        "actual_xp": "Actual XP",
+        "expected_xp": "Expected XP",
         "tabs": {
             "dl": "Classic",
             "pl": "Platformer",
@@ -2467,6 +2469,8 @@
             "current_elo": "Current ELO",
             "reason": "Reason",
             "diff": "Diff",
+            "actual_diff": "Actual change",
+            "expected_diff": "Expected change",
             "new_xp": "New XP"
         },
         "no_events": "No events participated yet",
@@ -2482,6 +2486,7 @@
                 "pvp_mission_claim": "PvP mission",
                 "record_manual_100": "100% record accepted",
                 "record_submission": "Record submitted",
+                "record_submission_accepted": "Record accepted",
                 "record_submission_rejected": "Record rejected",
                 "challenge_submission": "Challenge submitted",
                 "challenge_submission_rejected": "Challenge rejected",

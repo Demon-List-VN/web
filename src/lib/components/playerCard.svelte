@@ -19,7 +19,7 @@
 	import { getPvpVisibleRatingLabel } from '$lib/client/pvp';
 	import { badgeVariants } from '$lib/components/ui/badge';
 	import { Skeleton } from '$lib/components/ui/skeleton';
-	import { getExpLevel } from '$lib/client/getExpLevel';
+	import { getExpLevel, getPlayerExp } from '$lib/client/getExpLevel';
 	import PlayerLevelBadge from '$lib/components/PlayerLevelBadge.svelte';
 	import AvatarFrame from '$lib/components/AvatarFrame.svelte';
 	import {
@@ -82,7 +82,7 @@
 	$: supporterTier = getSupporterTier(cardPlayer?.supporterUntil);
 	$: supporterTierStyle = getSupporterTierStyle(supporterTier);
 	$: hasKnownPlayerCardStatLines = Array.isArray(cardPlayer?.playerCardStatLines);
-	$: exp = (cardPlayer?.exp ?? 0) + (cardPlayer?.extraExp ?? 0);
+	$: exp = getPlayerExp(cardPlayer) ?? 0;
 	$: expLevel = getExpLevel(exp);
 	$: summaries = listSummaries ?? remoteSummaries;
 	$: hasLoadedListSummaries = listSummaries !== null || hasLoadedRemote;

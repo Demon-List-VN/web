@@ -11,6 +11,10 @@
 		reason: string;
 		diff: number;
 		newXp: number;
+		actualDiff?: number;
+		expectedDiff?: number;
+		newActualXp?: number;
+		newExpectedXp?: number;
 		sourceType: string;
 		sourceId: string;
 		metadata?: Record<string, unknown> | null;
@@ -21,6 +25,7 @@
 		pvp_match_loss: 'player.xp_log.reasons.pvp_match_loss',
 		record_manual_100: 'player.xp_log.reasons.record_manual_100',
 		record_submission: 'player.xp_log.reasons.record_submission',
+		record_submission_accepted: 'player.xp_log.reasons.record_submission_accepted',
 		record_submission_rejected: 'player.xp_log.reasons.record_submission_rejected',
 		challenge_submission: 'player.xp_log.reasons.challenge_submission',
 		challenge_submission_rejected: 'player.xp_log.reasons.challenge_submission_rejected',
@@ -82,8 +87,10 @@
       <Table.Row>
         <Table.Head class="min-w-[180px]">{$_('player.table.time')}</Table.Head>
         <Table.Head>{$_('player.table.reason')}</Table.Head>
-        <Table.Head class="w-[100px] text-center">{$_('player.table.diff')}</Table.Head>
-        <Table.Head class="w-[120px] text-center">{$_('player.table.new_xp')}</Table.Head>
+        <Table.Head class="w-[110px] text-center">{$_('player.table.actual_diff')}</Table.Head>
+        <Table.Head class="w-[120px] text-center">{$_('player.actual_xp')}</Table.Head>
+        <Table.Head class="w-[120px] text-center">{$_('player.table.expected_diff')}</Table.Head>
+        <Table.Head class="w-[130px] text-center">{$_('player.expected_xp')}</Table.Head>
       </Table.Row>
     </Table.Header>
     <Table.Body>
@@ -92,13 +99,25 @@
           <Table.Cell>{formatDate(log.created_at)}</Table.Cell>
           <Table.Cell class="font-medium">{reasonLabel(log.reason)}</Table.Cell>
           <Table.Cell
-            class={log.diff > 0
+            class={(log.actualDiff ?? log.diff) > 0
               ? 'text-center font-semibold text-green-600'
-              : 'text-center font-semibold text-red-600'}
+              : (log.actualDiff ?? log.diff) < 0
+                ? 'text-center font-semibold text-red-600'
+                : 'text-center text-muted-foreground'}
           >
-            {formatDiff(log.diff)}
+            {formatDiff(log.actualDiff ?? log.diff)}
           </Table.Cell>
-          <Table.Cell class="text-center font-semibold">{log.newXp}</Table.Cell>
+          <Table.Cell class="text-center font-semibold">{log.newActualXp ?? log.newXp}</Table.Cell>
+          <Table.Cell
+            class={(log.expectedDiff ?? log.diff) > 0
+              ? 'text-center font-semibold text-green-600'
+              : (log.expectedDiff ?? log.diff) < 0
+                ? 'text-center font-semibold text-red-600'
+                : 'text-center text-muted-foreground'}
+          >
+            {formatDiff(log.expectedDiff ?? log.diff)}
+          </Table.Cell>
+          <Table.Cell class="text-center font-semibold">{log.newExpectedXp ?? log.newXp}</Table.Cell>
         </Table.Row>
       {/each}
     </Table.Body>

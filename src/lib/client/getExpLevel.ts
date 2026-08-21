@@ -38,23 +38,38 @@ export function getExpLevel(exp: number) {
     return res;
 }
 
-export function getPlayerExp(player: { exp?: unknown; extraExp?: unknown; } | null | undefined) {
+export function getPlayerExp(player: { exp?: unknown; } | null | undefined) {
     if (!player || player.exp === undefined || player.exp === null) {
         return null;
     }
 
-    const baseExp = Number(player.exp);
-    const extraExp = Number(player.extraExp ?? 0);
+    const actualExp = Number(player.exp);
 
-    if (!Number.isFinite(baseExp) || !Number.isFinite(extraExp)) {
+    if (!Number.isFinite(actualExp)) {
         return null;
     }
 
-    return Math.max(0, Math.floor(baseExp + extraExp));
+    return Math.max(0, Math.floor(actualExp));
+}
+
+export function getPlayerExpectedExp(
+    player: { exp?: unknown; expectedExp?: unknown; } | null | undefined
+) {
+    const actualExp = getPlayerExp(player);
+
+    if (actualExp === null) {
+        return null;
+    }
+
+    const expectedExp = Number(player?.expectedExp ?? actualExp);
+
+    return Number.isFinite(expectedExp)
+        ? Math.max(actualExp, Math.floor(expectedExp))
+        : actualExp;
 }
 
 export function getPlayerExpLevel(
-    player: { exp?: unknown; extraExp?: unknown; } | null | undefined
+    player: { exp?: unknown; } | null | undefined
 ) {
     const exp = getPlayerExp(player);
 

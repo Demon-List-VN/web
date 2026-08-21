@@ -13,6 +13,7 @@
 		pvp_match_loss: 'player.xp_log.reasons.pvp_match_loss',
 		pvp_mission_claim: 'player.xp_log.reasons.pvp_mission_claim',
 		record_submission: 'player.xp_log.reasons.record_submission',
+		record_submission_accepted: 'player.xp_log.reasons.record_submission_accepted',
 		record_submission_rejected: 'player.xp_log.reasons.record_submission_rejected',
 		challenge_submission: 'player.xp_log.reasons.challenge_submission',
 		challenge_submission_rejected: 'player.xp_log.reasons.challenge_submission_rejected',
@@ -23,8 +24,13 @@
 	let displayedXp = 0;
 	let displayedDiff = 0;
 
-	$: newXp = normalizeInteger(award?.newXp);
-	$: diff = normalizeInteger(award?.diff);
+	$: actualDiff = normalizeInteger(award?.actualDiff ?? award?.diff);
+	$: expectedDiff = normalizeInteger(award?.expectedDiff ?? award?.diff);
+	$: isExpectedOnly = actualDiff === 0 && expectedDiff !== 0;
+	$: actualXp = normalizeInteger(award?.newActualXp ?? award?.newXp);
+	$: expectedXp = normalizeInteger(award?.newExpectedXp ?? award?.newXp);
+	$: newXp = isExpectedOnly ? expectedXp : actualXp;
+	$: diff = isExpectedOnly ? expectedDiff : actualDiff;
 	$: previousXp = Math.max(0, newXp - diff);
 	$: currentLevel = getExpLevel(displayedXp);
 	$: previousLevel = getExpLevel(previousXp);
@@ -102,7 +108,7 @@
       <Trophy class="h-5 w-5" />
     </div>
     <div class="toast-title">
-      <strong>{$_('pvp.xp_toast.title')}</strong>
+      <strong>{isExpectedOnly ? $_('player.expected_xp') : $_('pvp.xp_toast.title')}</strong>
       <span>{reasonLabel(award?.reason)}</span>
     </div>
     <button
@@ -117,36 +123,47 @@
 
   <div class="xp-gain">
     <span>{formatSigned(displayedDiff)}</span>
-    <small>XP</small>
+    <small>{isExpectedOnly ? $_('player.expected_xp') : $_('player.actual_xp')}</small>
   </div>
 
-  <div class="level-meta">
-    <span>{$_('pvp.xp_toast.level', { values: { level: currentLevel.level } })}</span>
-    <span>{$_('pvp.xp_toast.total_xp', { values: { xp: displayedXp } })}</span>
-  </div>
+  {#if isExpectedOnly}
+    <div class="level-meta">
+      <span>{$_('player.expected_xp')}</span>
+      <span>{displayedXp} XP</span>
+    </div>
+    <div class="toast-footer">
+      <span>{$_('player.actual_xp')}</span>
+      <span>{actualXp} XP</span>
+    </div>
+  {:else}
+    <div class="level-meta">
+      <span>{$_('pvp.xp_toast.level', { values: { level: currentLevel.level } })}</span>
+      <span>{$_('pvp.xp_toast.total_xp', { values: { xp: displayedXp } })}</span>
+    </div>
 
-  <div class="xp-track" aria-hidden="true">
-    <div class="xp-fill" style={`width: ${currentLevel.progress}%;`} />
-  </div>
+    <div class="xp-track" aria-hidden="true">
+      <div class="xp-fill" style={`width: ${currentLevel.progress}%;`} />
+    </div>
 
-  <div class="toast-footer">
-    {#if levelChanged}
+    <div class="toast-footer">
+      {#if levelChanged}
+        <span>
+          {$_('pvp.xp_toast.level_up', { values: { level: targetLevel.level } })}
+        </span>
+      {:else}
+        <span>
+          {
+            $_('pvp.xp_toast.progress', {
+              values: { progress: formatProgress(currentLevel.progress) }
+            })
+          }
+        </span>
+      {/if}
       <span>
-        {$_('pvp.xp_toast.level_up', { values: { level: targetLevel.level } })}
+        {currentLevel.upperBound - displayedXp} {$_('player.exp_to_next')}
       </span>
-    {:else}
-      <span>
-        {
-          $_('pvp.xp_toast.progress', {
-            values: { progress: formatProgress(currentLevel.progress) }
-          })
-        }
-      </span>
-    {/if}
-    <span>
-      {currentLevel.upperBound - displayedXp} {$_('player.exp_to_next')}
-    </span>
-  </div>
+    </div>
+  {/if}
 </div>
 
 <style lang="scss">

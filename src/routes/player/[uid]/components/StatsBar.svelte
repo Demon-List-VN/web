@@ -4,7 +4,11 @@
 	import { page } from '$app/stores';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { getTitle, user } from '$lib/client';
-	import { getExpLevel } from '$lib/client/getExpLevel';
+	import {
+		getExpLevel,
+		getPlayerExp,
+		getPlayerExpectedExp
+	} from '$lib/client/getExpLevel';
 	import ListSelector, {
 		type ListSelectorOption
 	} from '$lib/components/listSelector.svelte';
@@ -21,7 +25,8 @@
 	$: listSummaries = data.listSummaries || [];
 	$: selectedList = data.selectedList;
 	$: requestedListIdentifier = $page.url.searchParams.get('list');
-	$: exp = player.exp + player.extraExp;
+	$: exp = getPlayerExp(player) ?? 0;
+	$: expectedExp = getPlayerExpectedExp(player) ?? exp;
 	$: expLevel = getExpLevel(exp);
 	$: rankedListOptions = listSummaries.map(toRankedListOption);
 	$: listSelectorOptions = mergeListOptions(listSuggestions, rankedListOptions);
@@ -326,7 +331,8 @@
           </div>
         </Tooltip.Trigger>
         <Tooltip.Content>
-          <p>{exp}/{expLevel.upperBound} ({expLevel.progress}%)</p>
+          <p>{$_('player.actual_xp')}: {exp}/{expLevel.upperBound} ({expLevel.progress}%)</p>
+          <p>{$_('player.expected_xp')}: {expectedExp}</p>
           <p class="text-xs text-muted-foreground">
             {expLevel.upperBound - exp} {$_('player.exp_to_next')}
           </p>
