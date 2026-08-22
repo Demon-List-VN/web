@@ -460,7 +460,7 @@
                   />
                 </Table.Cell>
                 <Table.Cell class="text-center">
-                  {#if $user.loggedIn && $user.data?.uid == $page.params.uid}
+                  {#if record.target === null && $user.loggedIn && $user.data?.uid == $page.params.uid}
                     <OverwatchSubmissionStatus recordId={record.id} />
                   {:else}
                     <span class="muted">—</span>

@@ -21,6 +21,7 @@
 		voteSummary: { accept: number; reject: number; unsure: number; total: number; };
 	};
 	type OverwatchMetrics = {
+		recordScope: 'global';
 		poolSize: number; queueLength: number; poolLength: number; recordsResolvedLast7Days: number;
 		averageDailyThroughput: number; recordsEnteredPoolLast7Days: number;
 		medianQueueTimeMs: number | null; medianReviewTimeMs: number | null;
@@ -175,8 +176,9 @@
     <header class="page-header">
       <div class="eyebrow"><span></span> MODERATION INTELLIGENCE</div>
       <div class="header-row">
-        <div><h1>Overwatch <em>analytics</em></h1><p>System health, review quality, and investigator operations in one place.</p></div>
+        <div><h1>Overwatch <em>analytics</em></h1><p>System health, review quality, and investigator operations for global record submissions.</p></div>
         <div class="header-actions">
+          <Badge variant="outline">GLOBAL SUBMISSIONS ONLY</Badge>
           {#if lastUpdated}<span class="updated"><span class="live-dot"></span>Updated {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>{/if}
           <Button variant="outline" disabled={metricsLoading} on:click={() => loadMetrics(true)}><RefreshCw size={15} class={metricsLoading ? 'spin' : ''} /> Refresh</Button>
         </div>
@@ -256,7 +258,7 @@
 		<section class="error-card"><AlertTriangle size={22} /><div><strong>Case data is unavailable</strong><p>{metricsError}</p></div><Button variant="outline" on:click={() => loadMetrics()}>Try again</Button></section>
 	  {:else if metrics}
 		<section class="case-workspace">
-		  <div class="reviewer-intro"><span class="section-kicker">LIVE CASE OPERATIONS</span><h2>Case monitor</h2><p>Track records as they move from the queue through review to a final verdict.</p></div>
+		  <div class="reviewer-intro"><span class="section-kicker">LIVE CASE OPERATIONS · GLOBAL ONLY</span><h2>Case monitor</h2><p>Track globally submitted records as they move from the queue through review to a final verdict. List-targeted records are excluded.</p></div>
 		  <section class="case-summary-grid">
 			<div><span class="summary-dot blue"></span><strong>{metrics.poolRecords.length}</strong><small>records in pool</small></div>
 			<div><span class="summary-dot orange"></span><strong>{metrics.queueLength}</strong><small>waiting in queue</small></div>

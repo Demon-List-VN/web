@@ -12,6 +12,7 @@
 	import LevelsTab from './LevelsTab.svelte';
 	import ListTab from './ListTab.svelte';
 	import PendingRecordsTab from './PendingRecordsTab.svelte';
+	import RecordsTab from './RecordsTab.svelte';
 	import RankTab from './RankTab.svelte';
 	import SubmissionsTab from './SubmissionsTab.svelte';
 	import imageCompression from 'browser-image-compression';
@@ -48,6 +49,7 @@
 		ListOrdered,
 		Inbox,
 		ClipboardCheck,
+		Database,
 		ShieldAlert,
 		History,
 		SlidersHorizontal
@@ -155,7 +157,7 @@
 		| 'helper'
 		| 'moderator';
 	type RecordFilterAcceptanceStatus = 'manual' | 'auto' | 'any';
-	type CollaboratorRecordVerificationMode = 'off' | 'overwatch' | 'direct';
+	type CollaboratorRecordVerificationMode = 'off' | 'direct';
 	type LevelsFilterState = {
 		nameSearch: string;
 		creatorSearch: string;
@@ -425,6 +427,7 @@
 		| 'danger'
 		| 'levels'
 		| 'submissions'
+		| 'records'
 		| 'pending-records'
 		| 'collaboration'
 		| 'changelog';
@@ -528,7 +531,6 @@
 	];
 	const COLLABORATOR_RECORD_VERIFICATION_OPTIONS: CollaboratorRecordVerificationMode[] = [
 		'off',
-		'overwatch',
 		'direct'
 	];
 
@@ -970,10 +972,7 @@
 		collaboratorRecordVerificationMode?: string | null;
 		collaboratorsCanVerifyRecords?: boolean | null;
 	}): CollaboratorRecordVerificationMode {
-		if (
-			source.collaboratorRecordVerificationMode === 'overwatch'
-			|| source.collaboratorRecordVerificationMode === 'direct'
-		) {
+		if (source.collaboratorRecordVerificationMode === 'direct') {
 			return source.collaboratorRecordVerificationMode;
 		}
 
@@ -1015,6 +1014,7 @@
 			|| requestedTab === 'appearance'
 			|| requestedTab === 'formula'
 			|| requestedTab === 'record-filter'
+			|| requestedTab === 'records'
 			|| requestedTab === 'rank'
 			|| requestedTab === 'collaboration'
 			|| requestedTab === 'changelog'
@@ -2291,6 +2291,10 @@
 		}
 
 		if (tab === 'pending-records') {
+			return canReviewRecords || canEditSettings;
+		}
+
+		if (tab === 'records') {
 			return canReviewRecords || canEditSettings;
 		}
 
@@ -5320,8 +5324,12 @@
 					pendingRecords = pendingRecords.filter(
 						(entry) => entry.id !== record.id
 					);
+					toast.info(
+						responsePayload?.error
+						|| $_('custom_lists.manage.pending_records.already_reviewed_toast')
+					);
 
-					return true;
+					return false;
 				}
 
 				throw new Error(
@@ -5331,13 +5339,12 @@
 			}
 
 			pendingRecords = pendingRecords.filter((entry) => entry.id !== record.id);
-			toast.success(
-				$_(
-					payload.accept
-						? 'custom_lists.manage.pending_records.accepted_toast'
-						: 'custom_lists.manage.pending_records.rejected_toast'
-				)
-			);
+
+			if (payload.accept) {
+				toast.success($_('custom_lists.manage.pending_records.accepted_toast'));
+			} else {
+				toast.success($_('custom_lists.manage.pending_records.rejected_toast'));
+			}
 
 			return true;
 		} catch (error) {
@@ -5772,6 +5779,7 @@
           <optgroup label={$_('custom_lists.manage.navigation.content')}>
             <option value="levels">{$_('custom_lists.manage.tabs.levels')}</option>
             {#if canReviewSubmissions}<option value="submissions">{$_('custom_lists.manage.tabs.submissions')}</option>{/if}
+            {#if canReviewRecords || canEditSettings}<option value="records">{$_('custom_lists.manage.tabs.records')}</option>{/if}
             {#if canReviewRecords || canEditSettings}<option value="pending-records">{$_('custom_lists.manage.tabs.pending_records')}</option>{/if}
           </optgroup>
           {#if canEditSettings}
@@ -5813,6 +5821,7 @@
                 <Tabs.Trigger value="submissions" class="manageTab" on:click={() => selectManageTab('submissions')}><Inbox class="h-4 w-4" />{$_('custom_lists.manage.tabs.submissions')}{#if pendingSubmissions?.length}<span class="tabCount">{pendingSubmissions.length}</span>{/if}</Tabs.Trigger>
               {/if}
               {#if canReviewRecords || canEditSettings}
+                <Tabs.Trigger value="records" class="manageTab" on:click={() => selectManageTab('records')}><Database class="h-4 w-4" />{$_('custom_lists.manage.tabs.records')}</Tabs.Trigger>
                 <Tabs.Trigger value="pending-records" class="manageTab" on:click={() => selectManageTab('pending-records')}><ClipboardCheck class="h-4 w-4" />{$_('custom_lists.manage.tabs.pending_records')}{#if pendingRecords.length}<span class="tabCount">{pendingRecords.length}</span>{/if}</Tabs.Trigger>
               {/if}
             </div>
@@ -6059,6 +6068,15 @@
       {/if}
 
       {#if canReviewRecords || canEditSettings}
+        <Tabs.Content value="records">
+          <RecordsTab
+            listId={list.id}
+            {canReviewRecords}
+            savingRecordId={savingPendingRecordId}
+            reviewRecord={reviewPendingRecord}
+          />
+        </Tabs.Content>
+
         <Tabs.Content value="pending-records">
           <PendingRecordsTab
 			bind:editForm

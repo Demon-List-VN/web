@@ -600,7 +600,7 @@
 
 		await fetchData();
 
-		if (activeTab === 'overwatchVotes' && $user.data?.isAdmin) {
+		if (activeTab === 'overwatchVotes' && $user.data?.isAdmin && record.data.target == null) {
 			void loadOverwatchVotes();
 		}
 
@@ -783,7 +783,7 @@
                       </div>{/if}
                   </button>
                 {/if}
-                {#if $user.loggedIn && $user.data.isAdmin}
+                {#if $user.loggedIn && $user.data.isAdmin && record.data.target == null}
                   <button
                     class="tab-btn"
                     class:active={activeTab === 'overwatchVotes'}
@@ -1276,7 +1276,7 @@
             </Tabs.Content>
 
             <!-- OVERWATCH VOTES TAB (ADMIN ONLY) -->
-            {#if $user.loggedIn && $user.data.isAdmin}
+            {#if $user.loggedIn && $user.data.isAdmin && record.data.target == null}
               <Tabs.Content value="overwatchVotes">
                 {#if overwatchVotesLoading}
                   <div class="glass-card overwatch-state"><Loading inverted /><span>Loading voting results…</span></div>

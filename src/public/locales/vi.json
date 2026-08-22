@@ -3511,7 +3511,7 @@
                 "non_global_records_label": "Chấp nhận record riêng cho list",
                 "non_global_records_hint": "Cho phép record được gửi riêng đến danh sách này. Khi bật, nút Nộp record sẽ xuất hiện trên trang danh sách công khai.",
                 "collaborators_can_verify_records_label": "Cho phép cộng tác viên duyệt record",
-                "collaborators_can_verify_records_hint": "Chọn không cho cộng tác viên duyệt record, duyệt record được giao ngẫu nhiên qua Overwatch hoặc tự chọn record trực tiếp từ hàng đợi của list.",
+                "collaborators_can_verify_records_hint": "Chọn không cho cộng tác viên duyệt record hoặc cho phép tự chọn record trực tiếp từ hàng đợi của list.",
                 "leaderboard_mode_label": "Chế độ bảng xếp hạng",
                 "leaderboard_mode_player": "Người chơi",
                 "leaderboard_mode_creator": "Creator",
@@ -3679,7 +3679,7 @@
                 "list": "Danh sách",
                 "appearance": "Giao diện",
                 "formula": "Công thức",
-                "record_filter": "Records",
+                "record_filter": "Thiết lập record",
                 "rank": "Hạng",
                 "danger": "Nguy hiểm",
                 "levels": "Levels",
@@ -3688,6 +3688,7 @@
                 "changelog": "Cập nhật",
                 "pending_invitations": "Lời mời chờ",
                 "submissions": "Nộp level",
+                "records": "Records",
                 "pending_records": "Record chờ duyệt"
             },
             "navigation": {
@@ -3777,12 +3778,30 @@
                 "cancel": "Huỷ",
                 "confirm_reject": "Từ chối record",
                 "accepted_toast": "Đã chấp nhận record",
-                "rejected_toast": "Đã từ chối record"
+                "rejected_toast": "Đã từ chối record",
+                "already_reviewed_toast": "Record này đã được duyệt. Hàng đợi đã được làm mới."
+            },
+            "targeted_records": {
+                "heading": "Record riêng của list",
+                "hint": "Xem tất cả record được gửi riêng đến list này, bao gồm record chờ duyệt, đã chấp nhận và đã từ chối.",
+                "loading": "Đang tải record riêng của list…",
+                "load_failed": "Không thể tải record riêng của list",
+                "empty": "Chưa có record nào được gửi riêng đến list này.",
+                "no_search_results": "Không có record nào trên trang này khớp với tìm kiếm.",
+                "search_placeholder": "Tìm trên trang này…",
+                "status_filter": "Bộ lọc trạng thái record",
+                "status_all": "Tất cả",
+                "status_pending": "Chờ duyệt",
+                "status_accepted": "Đã chấp nhận",
+                "status_rejected": "Đã từ chối",
+                "reviewed_by": "Duyệt bởi",
+                "submitter_note": "Ghi chú người gửi",
+                "reviewer_note": "Ghi chú người duyệt",
+                "page_summary": "Trang {page}/{pages} · {total} record"
             },
             "record_filter": {
                 "heading": "Thiết lập record",
                 "collaborator_verification_off": "Tắt",
-                "collaborator_verification_overwatch": "Qua Overwatch",
                 "collaborator_verification_direct": "Tự chọn trực tiếp",
                 "player_mode_only": "Các bộ lọc này chỉ áp dụng cho bảng xếp hạng người chơi và được giữ lại khi đổi chế độ.",
                 "platform_label": "Nền tảng",

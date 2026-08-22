@@ -3512,7 +3512,7 @@
                 "non_global_records_label": "Accept list-only records",
                 "non_global_records_hint": "Allow records submitted specifically to this list. When enabled, a Submit record button appears on the public list page.",
                 "collaborators_can_verify_records_label": "Allow collaborators to verify records",
-                "collaborators_can_verify_records_hint": "Choose whether collaborators cannot review records, review randomly assigned records through Overwatch, or select records directly from this list's queue.",
+                "collaborators_can_verify_records_hint": "Choose whether collaborators cannot review records or can select records directly from this list's queue.",
                 "leaderboard_mode_label": "Leaderboard mode",
                 "leaderboard_mode_player": "Player",
                 "leaderboard_mode_creator": "Creator",
@@ -3680,7 +3680,7 @@
                 "list": "List",
                 "appearance": "Appearance",
                 "formula": "Formula",
-                "record_filter": "Records",
+                "record_filter": "Record settings",
                 "rank": "Rank",
                 "danger": "Dangerous",
                 "levels": "Levels",
@@ -3689,6 +3689,7 @@
                 "changelog": "Changelog",
                 "pending_invitations": "Pending invites",
                 "submissions": "Submissions",
+                "records": "Records",
                 "pending_records": "Pending records"
             },
             "navigation": {
@@ -3781,12 +3782,30 @@
                 "cancel": "Cancel",
                 "confirm_reject": "Reject record",
                 "accepted_toast": "Record accepted",
-                "rejected_toast": "Record rejected"
+                "rejected_toast": "Record rejected",
+                "already_reviewed_toast": "This record was already reviewed. The queue has been refreshed."
+            },
+            "targeted_records": {
+                "heading": "List-targeted records",
+                "hint": "View every record submitted specifically to this list, including pending, accepted, and rejected records.",
+                "loading": "Loading list-targeted records…",
+                "load_failed": "Failed to load list-targeted records",
+                "empty": "No records have been submitted specifically to this list.",
+                "no_search_results": "No records on this page match your search.",
+                "search_placeholder": "Search this page…",
+                "status_filter": "Record status filter",
+                "status_all": "All",
+                "status_pending": "Pending",
+                "status_accepted": "Accepted",
+                "status_rejected": "Rejected",
+                "reviewed_by": "Reviewed by",
+                "submitter_note": "Submitter note",
+                "reviewer_note": "Reviewer note",
+                "page_summary": "Page {page} of {pages} · {total} records"
             },
             "record_filter": {
                 "heading": "Record settings",
                 "collaborator_verification_off": "Off",
-                "collaborator_verification_overwatch": "Via Overwatch",
                 "collaborator_verification_direct": "Select directly",
                 "player_mode_only": "These filters only affect player-mode leaderboards and are preserved if you switch modes.",
                 "platform_label": "Platform",
