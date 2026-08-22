@@ -147,7 +147,7 @@
 
 		const loaded = await Promise.all(ids.map(async (id) => {
 			try {
-				const response = await fetch(`${import.meta.env.VITE_API_URL}/lists/${id}?submitGate=1&cacheBust=${Date.now()}`, { headers, cache: 'no-store' });
+				const response = await fetch(`${import.meta.env.VITE_API_URL}/lists/${id}?submitGate=1`, { headers, cache: 'no-store' });
 
 				return response.ok ? await response.json() as TargetList : null;
 			} catch {

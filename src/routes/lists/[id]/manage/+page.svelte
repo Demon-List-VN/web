@@ -11,7 +11,6 @@
 	import FormulaTab from './FormulaTab.svelte';
 	import LevelsTab from './LevelsTab.svelte';
 	import ListTab from './ListTab.svelte';
-	import PendingRecordsTab from './PendingRecordsTab.svelte';
 	import RecordsTab from './RecordsTab.svelte';
 	import RankTab from './RankTab.svelte';
 	import SubmissionsTab from './SubmissionsTab.svelte';
@@ -48,7 +47,6 @@
 		Award,
 		ListOrdered,
 		Inbox,
-		ClipboardCheck,
 		Database,
 		ShieldAlert,
 		History,
@@ -428,7 +426,6 @@
 		| 'levels'
 		| 'submissions'
 		| 'records'
-		| 'pending-records'
 		| 'collaboration'
 		| 'changelog';
 
@@ -481,10 +478,7 @@
 	let pendingSubmissionsLoading = false;
 	let pendingSubmissionsError = '';
 	let pendingSubmissionsRequestKey = '';
-	let pendingRecords: CustomListPendingRecord[] = [];
-	let pendingRecordsLoading = false;
-	let pendingRecordsError = '';
-	let pendingRecordsRequestKey = '';
+	let pendingRecordsCount = 0;
 	let levelsPage = 1;
 	let levelsRequestedPage = 1;
 	let listLevelsLoading = false;
@@ -1027,7 +1021,11 @@
 			return 'levels';
 		}
 
-		if (requestedTab === 'submissions' || requestedTab === 'pending-records') {
+		if (requestedTab === 'pending-records') {
+			return 'records';
+		}
+
+		if (requestedTab === 'submissions') {
 			return requestedTab;
 		}
 
@@ -1826,86 +1824,6 @@
 		}
 	}
 
-	let pendingRecordsFetchAbortController: AbortController | null = null;
-
-	async function loadPendingRecords(force: boolean = false) {
-		if (
-			!list
-			|| !list.nonGlobalRecordsEnabled
-			|| !canReviewRecords
-			|| !$user.checked
-			|| !$user.loggedIn
-		) {
-			pendingRecords = [];
-			pendingRecordsError = '';
-			pendingRecordsLoading = false;
-			pendingRecordsRequestKey = '';
-			pendingRecordsFetchAbortController?.abort();
-			pendingRecordsFetchAbortController = null;
-
-			return;
-		}
-
-		const key = `${list.id}:${$user.data?.uid || ''}`;
-
-		if (!force && key === pendingRecordsRequestKey) {
-			return;
-		}
-
-		pendingRecordsRequestKey = key;
-		pendingRecordsError = '';
-		pendingRecordsLoading = true;
-		pendingRecordsFetchAbortController?.abort();
-		const requestController = new AbortController();
-		pendingRecordsFetchAbortController = requestController;
-
-		try {
-			const res = await fetch(
-				`${import.meta.env.VITE_API_URL}/lists/${list.id}/record-submissions`,
-				{
-					cache: 'no-store',
-					signal: requestController.signal,
-					headers: {
-						Authorization: `Bearer ${await $user.token()}`
-					}
-				}
-			);
-			const payload = await res.json()
-				.catch(() => null);
-
-			if (!res.ok) {
-				throw new Error(
-					payload?.error
-					|| $_('custom_lists.manage.pending_records.load_failed')
-				);
-			}
-
-			if (pendingRecordsFetchAbortController !== requestController) {
-				return;
-			}
-
-			pendingRecords = Array.isArray(payload) ? payload : [];
-		} catch (error) {
-			if ((error as any)?.name === 'AbortError') {
-				return;
-			}
-
-			if (pendingRecordsFetchAbortController !== requestController) {
-				return;
-			}
-
-			pendingRecords = [];
-			pendingRecordsError = error instanceof Error
-				? error.message
-				: $_('custom_lists.manage.pending_records.load_failed');
-		} finally {
-			if (pendingRecordsFetchAbortController === requestController) {
-				pendingRecordsLoading = false;
-				pendingRecordsFetchAbortController = null;
-			}
-		}
-	}
-
 	function updateItemSort(nextItemSort: 'mode_default' | 'created_at') {
 		if (!list) {
 			return;
@@ -2288,10 +2206,6 @@
 
 		if (tab === 'submissions') {
 			return canReviewSubmissions;
-		}
-
-		if (tab === 'pending-records') {
-			return canReviewRecords || canEditSettings;
 		}
 
 		if (tab === 'records') {
@@ -5296,7 +5210,6 @@
 	) {
 		if (
 			!list
-			|| !list.nonGlobalRecordsEnabled
 			|| !canReviewRecords
 		) {
 			return false;
@@ -5321,15 +5234,12 @@
 
 			if (!res.ok) {
 				if (res.status === 404 || res.status === 409) {
-					pendingRecords = pendingRecords.filter(
-						(entry) => entry.id !== record.id
-					);
 					toast.info(
 						responsePayload?.error
 						|| $_('custom_lists.manage.pending_records.already_reviewed_toast')
 					);
 
-					return false;
+					return true;
 				}
 
 				throw new Error(
@@ -5337,8 +5247,6 @@
 					|| $_('custom_lists.manage.pending_records.review_failed')
 				);
 			}
-
-			pendingRecords = pendingRecords.filter((entry) => entry.id !== record.id);
 
 			if (payload.accept) {
 				toast.success($_('custom_lists.manage.pending_records.accepted_toast'));
@@ -5471,27 +5379,6 @@
 		pendingSubmissionsRequestKey = '';
 		pendingSubmissionsLoading = false;
 	}
-	$: if (
-		list?.nonGlobalRecordsEnabled
-		&& $user.checked
-		&& canReviewRecords
-	) {
-		const requestKey = `${list.id}:${$user.data?.uid || ''}`;
-
-		if (
-			pendingRecordsRequestKey !== requestKey
-			&& !pendingRecordsLoading
-		) {
-			void loadPendingRecords();
-		}
-	} else if (pendingRecords.length || pendingRecordsRequestKey) {
-		pendingRecords = [];
-		pendingRecordsError = '';
-		pendingRecordsRequestKey = '';
-		pendingRecordsLoading = false;
-		pendingRecordsFetchAbortController?.abort();
-		pendingRecordsFetchAbortController = null;
-	}
 	$: if (showPendingLevelChangesDialog && !pendingManageAuditEntries.length) {
 		showPendingLevelChangesDialog = false;
 	}
@@ -5550,7 +5437,6 @@
 	onDestroy(() => {
 		batchAddAbortController?.abort();
 		pendingSubmissionsFetchAbortController?.abort();
-		pendingRecordsFetchAbortController?.abort();
 		clearCustomListBranding();
 	});
 </script>
@@ -5780,7 +5666,6 @@
             <option value="levels">{$_('custom_lists.manage.tabs.levels')}</option>
             {#if canReviewSubmissions}<option value="submissions">{$_('custom_lists.manage.tabs.submissions')}</option>{/if}
             {#if canReviewRecords || canEditSettings}<option value="records">{$_('custom_lists.manage.tabs.records')}</option>{/if}
-            {#if canReviewRecords || canEditSettings}<option value="pending-records">{$_('custom_lists.manage.tabs.pending_records')}</option>{/if}
           </optgroup>
           {#if canEditSettings}
             <optgroup label={$_('custom_lists.manage.navigation.ranking')}>
@@ -5821,8 +5706,7 @@
                 <Tabs.Trigger value="submissions" class="manageTab" on:click={() => selectManageTab('submissions')}><Inbox class="h-4 w-4" />{$_('custom_lists.manage.tabs.submissions')}{#if pendingSubmissions?.length}<span class="tabCount">{pendingSubmissions.length}</span>{/if}</Tabs.Trigger>
               {/if}
               {#if canReviewRecords || canEditSettings}
-                <Tabs.Trigger value="records" class="manageTab" on:click={() => selectManageTab('records')}><Database class="h-4 w-4" />{$_('custom_lists.manage.tabs.records')}</Tabs.Trigger>
-                <Tabs.Trigger value="pending-records" class="manageTab" on:click={() => selectManageTab('pending-records')}><ClipboardCheck class="h-4 w-4" />{$_('custom_lists.manage.tabs.pending_records')}{#if pendingRecords.length}<span class="tabCount">{pendingRecords.length}</span>{/if}</Tabs.Trigger>
+                <Tabs.Trigger value="records" class="manageTab" on:click={() => selectManageTab('records')}><Database class="h-4 w-4" />{$_('custom_lists.manage.tabs.records')}{#if pendingRecordsCount}<span class="tabCount">{pendingRecordsCount}</span>{/if}</Tabs.Trigger>
               {/if}
             </div>
             {#if canEditSettings}
@@ -6071,20 +5955,11 @@
         <Tabs.Content value="records">
           <RecordsTab
             listId={list.id}
+            bind:editForm
+            bind:pendingCount={pendingRecordsCount}
+            active={activeTab === 'records'}
+            {canEditSettings}
             {canReviewRecords}
-            savingRecordId={savingPendingRecordId}
-            reviewRecord={reviewPendingRecord}
-          />
-        </Tabs.Content>
-
-        <Tabs.Content value="pending-records">
-          <PendingRecordsTab
-			bind:editForm
-			{canEditSettings}
-			{canReviewRecords}
-            records={pendingRecords}
-            loading={pendingRecordsLoading}
-            errorMessage={pendingRecordsError}
             savingRecordId={savingPendingRecordId}
             reviewRecord={reviewPendingRecord}
           />

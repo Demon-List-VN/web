@@ -8,7 +8,6 @@
 	import Ads from '$lib/components/ads.svelte';
 	import { user } from '$lib/client';
 	import { goto } from '$app/navigation';
-	import { getListCache, setListCache } from '$lib/client/listCache';
 	import { browser } from '$app/environment';
 	import { ChevronUp } from 'lucide-svelte';
 	import { fly, slide } from 'svelte/transition';
@@ -39,14 +38,6 @@
 		ascending: $page.params.list !== 'cl',
 		tagIds: null as string | null
 	};
-
-	function getCacheKey() {
-		const filtersKey = JSON.stringify(filters);
-
-		return `${$page.params.list}|${
-			$page.url.searchParams.get('uid') ?? ''
-		}|${filtersKey}`;
-	}
 
 	async function fetchData(resetList = false) {
 		if (!loaded && !resetList) {
@@ -186,14 +177,6 @@
 			return;
 		}
 
-		const key = getCacheKey();
-		const cached = getListCache(key);
-
-		if (cached) {
-			data.levels = cached.levels as PageData['levels'];
-			curPage = cached.curPage;
-		}
-
 		unsubscribeUser = user.subscribe((value) => {
 			if (value.loggedIn) {
 				redirect();
@@ -207,12 +190,6 @@
 		if (!browser) {
 			return;
 		}
-
-		const key = getCacheKey();
-		setListCache(key, {
-			levels: data.levels as unknown[],
-			curPage
-		});
 
 		if (unsubscribeUser) {
 			unsubscribeUser();
@@ -266,10 +243,6 @@
   margin-inline: auto;
   margin-bottom: 20px;
   padding-inline: 10px;
-}
-
-.ad-row {
-  grid-column: 1 / -1;
 }
 
 @media screen and (max-width: 1100px) {

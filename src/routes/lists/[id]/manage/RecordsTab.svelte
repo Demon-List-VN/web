@@ -5,6 +5,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import { Label } from '$lib/components/ui/label';
+	import { Switch } from '$lib/components/ui/switch';
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { _ } from 'svelte-i18n';
 	import {
@@ -15,6 +16,7 @@
 		ExternalLink,
 		FileVideo2,
 		Monitor,
+		RefreshCw,
 		Search,
 		Smartphone,
 		User,
@@ -51,7 +53,11 @@
 	};
 
 	export let listId: number;
+	export let editForm: any;
+	export let active = false;
+	export let canEditSettings = false;
 	export let canReviewRecords = false;
+	export let pendingCount = 0;
 	export let savingRecordId: number | null = null;
 	export let reviewRecord: (
 		record: TargetedRecord,
@@ -63,7 +69,7 @@
 	let records: TargetedRecord[] = [];
 	let total = 0;
 	let page = 1;
-	let status: RecordStatus = 'all';
+	let status: RecordStatus = 'pending';
 	let searchQuery = '';
 	let loading = true;
 	let errorMessage = '';
@@ -71,6 +77,9 @@
 	let rejectionDialogOpen = false;
 	let activeRecord: TargetedRecord | null = null;
 	let rejectionReason = '';
+	let mounted = false;
+	let wasActive = false;
+	let activeListId: number | null = null;
 
 	$: pageCount = Math.max(1, Math.ceil(total / pageSize));
 	$: visibleRecords = records.filter((record) => {
@@ -179,6 +188,10 @@
 			records = Array.isArray(payload?.records) ? payload.records : [];
 			total = Number(payload?.total) || 0;
 
+			if (status === 'pending') {
+				pendingCount = total;
+			}
+
 			if (page > Math.max(1, Math.ceil(total / pageSize))) {
 				page = Math.max(1, Math.ceil(total / pageSize));
 				await loadRecords();
@@ -246,18 +259,86 @@
 		}
 	}
 
-	onMount(loadRecords);
+	function syncActiveState(nextActive: boolean, nextListId: number) {
+		const shouldLoad = nextActive && (!wasActive || activeListId !== nextListId);
+
+		wasActive = nextActive;
+		activeListId = nextListId;
+
+		if (shouldLoad) {
+			void loadRecords();
+		}
+	}
+
+	function refreshActiveRecords() {
+		if (active) {
+			void loadRecords();
+		}
+	}
+
+	function refreshVisibleRecords() {
+		if (document.visibilityState === 'visible') {
+			refreshActiveRecords();
+		}
+	}
+
+	$: if (mounted) {
+		syncActiveState(active, listId);
+	}
+
+	onMount(() => {
+		mounted = true;
+
+		if (active) {
+			syncActiveState(active, listId);
+		} else {
+			activeListId = listId;
+			void loadRecords();
+		}
+
+		window.addEventListener('focus', refreshActiveRecords);
+		document.addEventListener('visibilitychange', refreshVisibleRecords);
+
+		return () => {
+			window.removeEventListener('focus', refreshActiveRecords);
+			document.removeEventListener('visibilitychange', refreshVisibleRecords);
+		};
+	});
 	onDestroy(() => requestController?.abort());
 </script>
 
 <div class="tabContent">
+  {#if canEditSettings}
+    <section class="toolCard queueSettingsCard">
+      <div class="switchRow">
+        <div>
+          <h2>{$_('custom_lists.manage.pending_records.queue_heading')}</h2>
+          <p>{$_('custom_lists.detail.edit.non_global_records_hint')}</p>
+        </div>
+        <div class="switchControl">
+          <span>{editForm.nonGlobalRecordsEnabled ? $_('general.yes') : $_('general.no')}</span>
+          <Switch
+            id="list-non-global-records-enabled"
+            bind:checked={editForm.nonGlobalRecordsEnabled}
+          />
+        </div>
+      </div>
+    </section>
+  {/if}
+
   <section class="toolCard">
     <div class="headerRow">
       <div>
         <h2>{$_('custom_lists.manage.targeted_records.heading')}</h2>
         <p>{$_('custom_lists.manage.targeted_records.hint')}</p>
       </div>
-      <Badge variant="secondary">{total}</Badge>
+      <div class="headerActions">
+        <Badge variant="secondary">{total}</Badge>
+        <Button variant="outline" size="sm" disabled={loading} on:click={loadRecords}>
+          <RefreshCw size={14} class={loading ? 'spin' : undefined} />
+          {$_('general.refresh')}
+        </Button>
+      </div>
     </div>
 
     <div class="toolbar">
@@ -321,6 +402,11 @@
               <span class="chip">{formatProgress(record)}</span>
               {#if record.refreshRate != null}<span class="chip">{record.refreshRate} FPS</span>{/if}
               <span class="chip"><Clock3 size={12} /> {formatDate(record.timestamp)}</span>
+              {#if record.suggestedRating != null}
+                <span class="chip">
+                  {$_('custom_lists.manage.pending_records.suggested_rating')}: {record.suggestedRating}
+                </span>
+              {/if}
               {#if record.reviewerData}
                 <span class="chip">{$_('custom_lists.manage.targeted_records.reviewed_by')}: {record.reviewerData.name || record.reviewerData.uid}</span>
               {/if}
@@ -387,6 +473,14 @@
 .headerRow,.recordTop,.recordFooter,.pagination { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
 .headerRow h2 { margin: 0; font-size: 1.1rem; font-weight: 700; }
 .headerRow p,.creator,.pagination>span { margin: 4px 0 0; color: hsl(var(--muted-foreground)); font-size: .78rem; }
+.headerActions,.switchRow,.switchControl { display: flex; align-items: center; gap: 10px; }
+.headerActions { flex-shrink: 0; }
+.headerActions :global(button) { display: inline-flex; gap: 6px; }
+.queueSettingsCard { display: block; }
+.switchRow { justify-content: space-between; }
+.switchControl { flex-shrink: 0; font-size: .85rem; font-weight: 600; }
+.spin { animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .statusTabs { display: flex; flex-wrap: wrap; gap: 5px; }
 .statusTabs button { padding: 7px 11px; border-radius: 8px; color: hsl(var(--muted-foreground)); font-size: .75rem; font-weight: 650; }
@@ -414,5 +508,5 @@
 .dialogBody { display: grid; gap: 10px; }
 .dialogSummary { padding: 11px; border: 1px solid hsl(var(--border)); border-radius: 10px; }
 .dialogSummary span { color: hsl(var(--muted-foreground)); font-size: .78rem; }
-@media(max-width:720px) { .toolbar,.recordFooter,.pagination { align-items: stretch; flex-direction: column; } .searchField { width: 100%; } .actions { width: 100%; } .actions :global(button) { flex: 1; } }
+@media(max-width:720px) { .toolbar,.recordFooter,.pagination,.switchRow,.headerRow { align-items: stretch; flex-direction: column; } .headerActions { justify-content: space-between; } .searchField { width: 100%; } .actions { width: 100%; } .actions :global(button) { flex: 1; } }
 </style>
